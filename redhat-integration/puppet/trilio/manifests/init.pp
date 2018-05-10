@@ -16,6 +16,11 @@ class trilio {
         swift_region_name               => 'RegionOne',
 
     } */
-   class {'trilio::api': } 
-
+#   class {'trilio::api':
+#         tvault_virtual_ip    => '192.168.1.26' 
+#    } 
+   class {'trilio::horizon':
+       tvault_virtual_ip               => '192.168.1.26',
+       horizon_dir                     => '/usr/share/openstack-dashboard/',
+   }
 }
