@@ -1,0 +1,10 @@
+---
+- name: install tvault_contego_api
+  import_tasks: contego-api-install.yml
+  tags: 
+       - contego-api-install  
+
+- name: install tvault_contego_api
+  import_tasks: contego-api-uninstall.yml
+  tags: 
+       - contego-api-uninstall

@@ -1,0 +1,26 @@
+---
+- name: copy object store service file , write content , enable and daemon reload service if object restore is True
+  block:
+    - set_fact:
+        service_file_dest_path: /etc/systemd/system/tvault-contego.service
+    - copy: src={{automation_home}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
+    - ini_file: path={{service_file_dest_path}} section=Service option=User value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
+    - ini_file: path={{service_file_dest_path}} section=Service option=Group value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
+    - ini_file: path={{service_file_dest_path}} section=Service option=ExecStart value="{{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} {{CONFIG_FILES}}" state=present
+  when: is_nova_conf_present.stat.exists != true
+
+- block:
+    - set_fact:
+        service_file_dest_path: /etc/systemd/system/tvault-contego.service
+    - copy: src={{automation_home}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
+    - ini_file: path={{service_file_dest_path}} section=Service option=User value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
+    - ini_file: path={{service_file_dest_path}} section=Service option=Group value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
+    - ini_file: path={{service_file_dest_path}} section=Service option=ExecStart value="{{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} {{CONFIG_FILES_1}}" state=present
+  when: is_nova_conf_present.stat.exists == true
+
+- name: execute systemd daemon reload and enable service
+  block:
+    - shell: systemctl daemon-reload
+
+    - name: enable tvault-contego service and reload it
+      service: name=tvault-contego state=started enabled=yes

@@ -1,0 +1,11 @@
+---
+- hosts: horizon
+  remote_user: root
+  roles:
+    - role: ansible-horizon-plugin/horizon-plugin-install
+      tags:
+        - horizon-plugin-install 
+  
+    - role: ansible-horizon-plugin/horizon-plugin-uninstall
+      tags:
+        - horizon-plugin-uninstall 

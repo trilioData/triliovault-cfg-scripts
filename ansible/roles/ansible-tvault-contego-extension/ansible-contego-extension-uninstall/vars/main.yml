@@ -1,0 +1,69 @@
+####IP address of Tvault appliance###
+IP_ADDRESS: 192.168.1.26
+TVAULT_CONTEGO_VERSION: 3.0.5
+automation_home: /root/automation/tvault-deploy-scripts/roles/ansible-tvault-contego-extension
+#Uncomment following node which you want to configure##
+controller: True
+compute: True
+
+#Nova compute.filters file path
+#Uncomment following line as per the OS distribution, you can edit the path as per your nova configuration
+
+###For RHEL systems
+NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
+
+###For Debian systems
+#NOVA_COMPUTE_FILTERS_FILE: /etc/nova/rootwrap.d/compute.filters
+
+##For any other system
+##NOVA_COMPUTE_FILTERS_FILE:
+
+##### Select snapshot storage type #####
+#Details for NFS as snapshot storage
+NFS: False
+NFS_SHARES: 192.168.1.33:/mnt/tvault
+NFS_OPTS: ""
+
+#### Details for Swift as snapshot storage
+Swift: True
+VAULT_SWIFT_AUTH_URL: http://192.168.1.75/auth/v1.0 
+VAULT_SWIFT_TENANT:  
+VAULT_SWIFT_USERNAME: nikita
+VAULT_SWIFT_PASSWORD: password
+VAULT_SWIFT_DOMAIN_ID:  
+### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3
+VAULT_SWIFT_AUTH_VERSION: KEYSTONEV2
+
+#### Details for S3 as snapshot storage
+S3: False
+VAULT_S3_ACCESS_KEY: S3user1
+VAULT_S3_SECRET_ACCESS_KEY: S3user1key
+VAULT_S3_REGION_NAME: us-east-1
+VAULT_S3_BUCKET: shyambucket
+#### S3 Specific Backend Configurations
+#### Uncomment one of the following for the specific S3 type
+Amazon: False
+Ceph_S3: True
+Minio_S3: False
+#### Required field(s) for all S3 backends except Amazon
+VAULT_S3_ENDPOINT_URL: http://35.168.54.178/
+VAULT_S3_SECURE: False
+
+###static fields for tvault contego extension 
+#tvault contego file path
+TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
+NOVA_CONF_FILE: /etc/nova/nova.conf
+#Nova distribution specific configuration file path
+NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
+TVAULT_CONTEGO_EXT_USER: nova
+TVAULT_CONTEGO_EXT_GROUP: nova
+TVAULT_DATA_DIR: /var/triliovault-mounts
+TVAULT_DATA_DIR_OLD: /var/triliovault
+TVAULT_CONTEGO_VIRTENV: /home/tvault
+TVAULT_CONTEGO_VIRTENV_PATH: "{{TVAULT_CONTEGO_VIRTENV}}/.virtenv"
+TVAULT_CONTEGO_EXT_BIN: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/bin/tvault-contego"
+TVAULT_CONTEGO_EXT_PYTHON: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/bin/python"
+TVAULT_CONTEGO_EXT_OBJECT_STORE: ""
+TVAULT_CONTEGO_EXT_BACKEND_TYPE: ""
+TVAULT_CONTEGO_EXT_SWIFT: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/lib/python2.7/site-packages/contego/nova/extension/driver/vaultfuse.py"
+TVAULT_CONTEGO_EXT_S3: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/lib/python2.7/site-packages/contego/nova/extension/driver/s3vaultfuse.py"
