@@ -177,9 +177,9 @@ vault_s3_support_empty_dir = True
 vault_s3_ssl =  ${ssl_enabled}"
 
 
-
     class {'trilio::contego::contego_install': }
     class {'trilio::contego::contego_postinstall': }
+    class {'trilio::contego::cgroup': }
     class {'trilio::contego::contego_service': }
 
 }
