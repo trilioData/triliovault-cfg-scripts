@@ -1,4 +1,6 @@
-class trilio::api {
+class trilio::api (
+     $tvault_virtual_ip    = undef 
+){
 
     package {'python-pip':
         ensure   => present,
@@ -8,7 +10,7 @@ class trilio::api {
     package {'tvault-contego-api':
         ensure   => present,
         provider => pip,
-        source   => "http://192.168.1.26:8081/packages/tvault-contego-api-${contego_version}.tar.gz",
+        source   => "http://${tvault_virtual_ip}:8081/packages/tvault-contego-api-${tvault_version}.tar.gz",
         require  => Package['python-pip'],
         notify   => Service['openstack-nova-api']
     }
