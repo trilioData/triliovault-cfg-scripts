@@ -1,5 +1,7 @@
 class trilio::contego::cgroup inherits trilio::contego {
 
+
+    require trilio::contego::validate
     if "${is_cpu_exists}" == "true" {
         if "${is_trilio_exists}" != "true" {
              file { "/sys/fs/cgroup/cpu/trilio/cpu.shares":

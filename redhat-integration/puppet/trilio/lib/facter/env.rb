@@ -4,3 +4,24 @@ Facter.add(:tvault_version) do
   version
   end
 end
+
+Facter.add(:is_cpu_exists) do
+  setcode do
+  Facter::Core::Execution::exec("/usr/bin/test -d /sys/fs/cgroup/cpu")
+  $?.exitstatus == 0
+  end
+end
+
+Facter.add(:is_blkio_exists) do
+  setcode do
+  Facter::Core::Execution::exec("/usr/bin/test -d /sys/fs/cgroup/blkio")
+  $?.exitstatus == 0
+  end
+end
+
+Facter.add(:is_trilio_exists) do
+  setcode do
+  Facter::Core::Execution::exec("/usr/bin/test -d /sys/fs/cgroup/cpu/trilio")
+  $?.exitstatus == 0
+  end
+end
