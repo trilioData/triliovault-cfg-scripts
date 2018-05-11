@@ -1,26 +1,19 @@
 class trilio {
 
-    #class {'trilio::contego':
-   #     nova_conf_file			=> '/etc/nova/nova.conf',
-   #     nova_dist_conf_file	        => '/usr/share/nova/nova-dist.conf',
-   #     backup_target_type              => 'swift',
-   #     tvault_appliance_ip		=> '192.168.1.26',
-   #     redhat_openstack_version        => '9',
-   #     swift_auth_version              => 'keystone_v2',
-   #     swift_auth_url                  => 'http://192.168.1.21:5000/v2.0',
-   #     swift_tenant                    => 'admin',
-   #     swift_username                  => 'admin',
-   /*     swift_password                  => 'password',
-        swift_domain_id                 => 'default',
-        swift_domain_name               => 'Default',
-        swift_region_name               => 'RegionOne',
+    class {'trilio::contego':
+        nova_conf_file			=> '/etc/nova/nova.conf',
+        nova_dist_conf_file	        => '/usr/share/nova/nova-dist.conf',
+        backup_target_type              => 's3',
+        tvault_appliance_ip		=> '192.168.1.26',
+        redhat_openstack_version        => '9',
+        s3_type                         => 'amazon_s3',         ##Other values: ceph_s3, minio_s3
+        s3_accesskey                    => 'AKIAIWV6KUOHBMLUQ46A',
+        s3_secretkey                    => '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',
+        s3_region_name                  => 'us-east-2',
+        s3_bucket                       => 'shyamtvault',
+        s3_endpoint_url                 => undef,
+        s3_ssl_enabled                  => 'True',
+        s3_signature_version            => 's3v4',
+    } 
 
-    } */
-#   class {'trilio::api':
-#         tvault_virtual_ip    => '192.168.1.26' 
-#    } 
-   class {'trilio::horizon':
-       tvault_virtual_ip               => '192.168.1.26',
-       horizon_dir                     => '/usr/share/openstack-dashboard/',
-   }
 }

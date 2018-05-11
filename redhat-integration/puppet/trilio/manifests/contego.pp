@@ -13,7 +13,7 @@ class trilio::contego (
     $swift_password                       = undef,
     $swift_domain_id                      = undef,
     $swift_domain_name                    = 'default',
-    $swift_region_name                    = 'RegionOne',
+    $swift_region_name                    = undef,
     $s3_type                              = 'amazon_s3',         ##Other values: ceph_s3, minio_s3
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
@@ -177,9 +177,11 @@ vault_s3_support_empty_dir = True
 vault_s3_ssl =  ${ssl_enabled}"
 
 
-    class {'trilio::contego::contego_install': }
-    class {'trilio::contego::contego_postinstall': }
+    class {'trilio::contego::validate': }
+    class {'trilio::contego::install': }
+    class {'trilio::contego::postinstall': }
     class {'trilio::contego::cgroup': }
-    class {'trilio::contego::contego_service': }
+    class {'trilio::contego::service': }
+
 
 }
