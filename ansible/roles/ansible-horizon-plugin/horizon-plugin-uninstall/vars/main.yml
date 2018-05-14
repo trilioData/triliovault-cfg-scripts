@@ -1,16 +1,1 @@
-###Answer file for horizon plugin installation
-
-### Specify Tvault appliance IP address
-TVAULTAPP: 192.168.1.26
-
-###Specify openstack dashboard folder path
-HORIZON_PATH: /usr/share/openstack-dashboard
-
-##Specify webserver service name
-WebServer: httpd
-
-##tvault version to be installed
-TVAULT_V: 3.0.5.tar.gz
-
-###automation vars
-automation_home: /root/automation/tvault-deploy-scripts/roles/ansible-horizon-plugin/horizon-plugin-uninstall
+###Answer file for horizon plugin uninstallation

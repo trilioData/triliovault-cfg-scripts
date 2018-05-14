@@ -3,7 +3,7 @@
   block:
     - set_fact:
         service_file_dest_path: /etc/systemd/system/tvault-contego.service
-    - copy: src={{automation_home}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
+    - copy: src={{files_path}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
     - ini_file: path={{service_file_dest_path}} section=Service option=User value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
     - ini_file: path={{service_file_dest_path}} section=Service option=Group value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
     - ini_file: path={{service_file_dest_path}} section=Service option=ExecStart value="{{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} {{CONFIG_FILES}}" state=present
@@ -12,7 +12,7 @@
 - block:
     - set_fact:
         service_file_dest_path: /etc/systemd/system/tvault-contego.service
-    - copy: src={{automation_home}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
+    - copy: src={{files_path}}/files/services/tvault-contego.service  dest={{service_file_dest_path}}
     - ini_file: path={{service_file_dest_path}} section=Service option=User value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
     - ini_file: path={{service_file_dest_path}} section=Service option=Group value="{{TVAULT_CONTEGO_EXT_USER}}" state=present
     - ini_file: path={{service_file_dest_path}} section=Service option=ExecStart value="{{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} {{CONFIG_FILES_1}}" state=present

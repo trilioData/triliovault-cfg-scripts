@@ -16,19 +16,19 @@
      set_fact:
          OPEN_STACK_RELEASE: "mitaka"
          OPEN_STACK_RELEASE_SUB: "gtliberty"
-     when: openstack_version.stdout == 2016
+     when: openstack_version.stdout == "2016"
 
-   - name: set variables openstack_release to mitaka and openstack_release_sub to gtliberty if opestack version is greater than 13
+   - name: set variables openstack_release to newton and openstack_release_sub to gtliberty if opestack version is greater than 13
      set_fact:
          OPEN_STACK_RELEASE: "newton"
          OPEN_STACK_RELEASE_SUB: "gtliberty"
      when: (openstack_version.stdout > "13" and openstack_version.stdout < "2000")
 
-   - name: set variables openstack_release to mitaka and openstack_release_sub to gtliberty if opestack version is greater than 2016
+   - name: set variables openstack_release to newton and openstack_release_sub to gtliberty if opestack version is greater than 2016
      set_fact:
          OPEN_STACK_RELEASE: "newton"
          OPEN_STACK_RELEASE_SUB: "gtliberty"
-     when: openstack_version.stdout > 2016
+     when: openstack_version.stdout > "2016"
 
    - name: set variables openstack_release to premitaka and openstack_release_sub to premitaka if opestack version is less than 13
      set_fact:

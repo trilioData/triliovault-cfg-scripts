@@ -26,49 +26,45 @@ These ansible scripts are designed to configure tvault cluster, deploy trilioVau
 
 
 ===Steps to use these scripts================
-1.	Download/clone tvault-ansible-scripts directory in your playbook directory
+1.	Download/clone ansible directory in your playbook directory , change working directory to ansible
 
-2.	Edit tvault-install-conf.yml file to configure necessary parameters. Provide TLS certificate and private key in files triliovault.cert and triliovault.key respectively.
+2.	Edit vars.yml file to configure necessary parameters. 
 
 3.	Execute master-install.yml to configure tvault nodes and install contego and horizon plugin. Use following command.
 
-        ansible-playbook site.yml -i environments/hosts --tags "all-install"
+        ansible-playbook main-install.yml -i environments/hosts --tags "all-install"
 
 5.      See "Usage" section to know how this scripts can be used to install contego,horizon,tvault-configuration cluster seperately 
 
 
-==================================================================================================================================
-Usage:
-==================================================================================================================================
-##For end to end installation of trilliovault(datamover extension,horizon,contego-api and tvault-configuation):
+====Usage=============================================================================================================
 
-#To install all above tasks
-#ansible-playbook site.yml -i environments/hosts --tags "all-install"
+For end to end installation of trilliovault(datamover extension,horizon,contego-api and tvault-configuation):
 
-#To uninstall all above tasks
-#ansible-playbook site.yml -i environments/hosts --tags "all-uninstall"
-==================================================================================================================================
+To install all above tasks
+ansible-playbook main-install.yml -i environments/hosts --tags "all-install"
 
-#For installing tvault-horizon on openstack-horizon node
-#ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-install"
+To uninstall all above tasks
+ansible-playbook main-install.yml -i environments/hosts --tags "all-uninstall"
+==========================================================
 
-#For uninstalling tvault-horizon on openstack-horizon node
-#ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-uninstall"
-#----------------------------------------------------------------------------------------------------------------
+For installing tvault-horizon on openstack-horizon node
+ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-install"
 
-#For installing datamover extension on compute node
-#ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-install"
+For uninstalling tvault-horizon on openstack-horizon node
+ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-uninstall"
+==========================================================
 
-#For uninstalling datamover extension on compute node
-#ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-uninstall"
-#-----------------------------------------------------------------------------------------------------------------
+For installing datamover extension on compute node
+ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-install"
 
-#For installing contego-api on controller node
-#ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-install"
+For uninstalling datamover extension on compute node
+ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-uninstall"
+=========================================================
 
-#For uninstalling contego-api on controller node
-#ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-uninstall"
-#-----------------------------------------------------------------------------------------------------------------
+For installing contego-api on controller node
+ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-install"
 
+For uninstalling contego-api on controller node
+ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-uninstall"
 
-==================================================================================================================================
