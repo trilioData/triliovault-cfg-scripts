@@ -1,0 +1,13 @@
+[Unit]
+Description=Tvault Object Store
+After=tvault-contego.service
+[Service]
+User=
+Group=
+Type=simple
+ExecStart=
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

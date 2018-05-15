@@ -1,0 +1,29 @@
+---
+- name: remove all python files from openstack_dashboard directory
+  file: path="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/{{item}}" state=absent
+  with_items:
+    - tvault_panel_group.py
+    - tvault_admin_panel_group.py
+    - tvault_panel.py
+    - tvault_admin_panel.py
+    - tvault_settings_panel.py
+
+- name: remove tvault_filter.py file from openstack_dashboard diretory
+  file: path="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py" state=absent
+
+- block:
+    - copy: src="{{automation_home}}/files/py_files/sync_static.py" dest="/tmp/sync_static.py" 
+    - shell: ./manage.py shell < /tmp/sync_static.py &> /dev/null 
+      args:
+         chdir: "{{HORIZON_PATH}}"
+    - file: path=/tmp/sync_static.py state=absent
+
+- name: uninstall python-workloadmanager client 
+  pip: name=python-workloadmgrclient state=absent 
+ 
+- name: uninstall horizon plugin 
+  pip: name=tvault-horizon-plugin state=absent 
+
+- name: restart webserver service
+  service: name={{WebServer}} state=restarted
+

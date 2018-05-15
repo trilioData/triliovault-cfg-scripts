@@ -1,0 +1,11 @@
+---
+- hosts: compute
+  remote_user: root
+  roles:
+    - role: ansible-tvault-contego-extension/ansible-contego-extension-install
+      tags:
+        - contego-extension-install
+
+    - role: ansible-tvault-contego-extension/ansible-contego-extension-uninstall
+      tags:
+        - contego-extension-uninstall  

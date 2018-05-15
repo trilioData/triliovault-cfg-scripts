@@ -1,0 +1,21 @@
+- hosts: compute
+  vars_files:
+   - ../vars/tvault-contego-answers.yml
+   - ../vars/tvault-contego-static-answers.yml
+
+  vars:
+   automation_home: /root/automation/tvault_deploy_scripts
+
+  tasks:  
+  - debug: msg="derdgg"
+ 
+  - name: check tvault_data_dir is accessible by nova user nor not 
+    block: 
+       - shell: cat /proc/mounts | grep "{{NFS_SHARES}}" | awk '{print $2}'
+         register: tvault_data_dir
+
+       - debug: msg={{tvault_data_dir}}
+
+       - shell: sudo -u $TVAULT_CONTEGO_EXT_USER [ -w $MOUNT_POINT -a -r $MOUNT_POINT ]
+         register: is_accessible
+    with_items: "NFS_SHARES.split(',')"

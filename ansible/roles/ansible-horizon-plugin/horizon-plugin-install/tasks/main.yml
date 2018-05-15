@@ -1,0 +1,61 @@
+---
+- set_fact:
+     automation_home : "{{playbook_dir}}/roles/ansible-horizon-plugin/horizon-plugin-install" 
+
+- name: check pip version 
+  shell: pip --version || True
+  register: pip_version
+
+- debug: msg="pip version is:{{pip_version.stdout}}" verbosity=2
+       
+- name: install pip if it is not installed 
+  shell: easy_install --no-deps http://{{IP_ADDRESS}}:8081/packages/pip-7.1.2.tar.gz 
+  register: pip_installation
+  when: "'pip' not in pip_version.stdout"
+
+- name: grep tvault-contego version using CURL call
+  shell: curl -s http://{{IP_ADDRESS}}:8081/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5
+  register: TVAULT_CONTEGO_VERSION
+
+- name: install workloadmanagr package 
+  shell: pip install --no-deps http://{{IP_ADDRESS}}:8081/packages/python-workloadmgrclient-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
+  register: install_workloadmgr
+
+- name: install horizon plugin 
+  shell: pip install --no-deps http://{{IP_ADDRESS}}:8081/packages/tvault-horizon-plugin-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
+  register: install_horizon
+
+- name: copy tvault_panel_group.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel_group.py" 
+
+- name: copy tvault_admin_panel_group.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_admin_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel_group.py"
+
+- name: copy tvault_panel.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel.py"
+
+- name: copy tvault_settings_panel.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_settings_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_settings_panel.py" 
+
+- name: copy tvault_admin_panel.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_admin_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel.py"
+
+- name: copy tvault_filter.py file to remote location
+  copy: src="{{automation_home}}/files/py_files/tvault_filter.py" dest="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py"
+
+- name: restart webserver service 
+  service: name={{WebServer}} state=restarted
+
+- name: write content into destination file - sync_static.py 
+  copy: src="{{automation_home}}/files/py_files/sync_static.py" dest="/tmp/sync_static.py" 
+ 
+- name: Change the working directory to horizon and excute shell command
+  shell: ./manage.py shell < /tmp/sync_static.py &> /dev/null
+  args:
+       chdir: "{{HORIZON_PATH}}"
+
+- name: remove temporary file -  sync_static.py
+  file: path=/tmp/sync_static.py state=absent
+     
+
+
