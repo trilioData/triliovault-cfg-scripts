@@ -1,0 +1,6 @@
+---
+- hosts: controller
+  remote_user: root
+  roles:
+    - role: ansible-contego-api
+   
