@@ -1,0 +1,30 @@
+---
+- name: write content into {{TVAULT_CONTEGO_CONF}} if nfs is used as backend
+  template:
+     src: nfs.conf.j2
+     dest: "{{TVAULT_CONTEGO_CONF}}"
+  when: NFS == True
+
+- name: write content into {{TVAULT_CONTEGO_CONF}} if swift is used as backend
+  template:
+     src: swift.conf.j2
+     dest: "{{TVAULT_CONTEGO_CONF}}"
+  when: Swift == True
+
+- name: copy tvault-contego config file to destination and write content into it if s3 AWS used as backend
+  template:
+     src: s3_amazon.conf.j2
+     dest: "{{TVAULT_CONTEGO_CONF}}"
+  when: (S3 == True) and (Amazon == True)
+
+- name: copy tvault-contego config file to destination and write content into it if s3 Ceph used as backend
+  template:
+     src: s3_ceph.conf.j2
+     dest: "{{TVAULT_CONTEGO_CONF}}"
+  when: (S3 == True) and (Ceph_S3 == True)
+
+- name: copy tvault-contego config file to destination and write content into it if s3 minio used as backend
+  template:
+     src: s3_minio.conf.j2
+     dest: "{{TVAULT_CONTEGO_CONF}}"
+  when: (S3 == True) and (Minio_S3 == True)

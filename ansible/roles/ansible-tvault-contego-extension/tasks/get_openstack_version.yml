@@ -1,0 +1,39 @@
+---
+- name: get openstack release version and subversion
+  block:
+   - shell: nova-manage version | awk -F. '{print $1}'
+     register: openstack_version
+
+   - debug: msg="{{openstack_version.stdout}}" verbosity={{verbosity_level}}
+
+   - name: set variables openstack_release to mitaka and openstack_release_sub to gtliberty if opestack version is 13
+     set_fact:
+         OPEN_STACK_RELEASE: "{{mitaka}}"
+         OPEN_STACK_RELEASE_SUB: "{{gtliberty}}"
+     when: (openstack_version.stdout == release_13 and openstack_version.stdout < release_2000)
+
+   - name: set variables openstack_release to mitaka and openstack_release_sub to gtliberty if opestack version is 2016
+     set_fact:
+         OPEN_STACK_RELEASE: "{{mitaka}}"
+         OPEN_STACK_RELEASE_SUB: "{{gtliberty}}"
+     when: openstack_version.stdout == release_2016
+
+   - name: set variables openstack_release to newton and openstack_release_sub to gtliberty if opestack version is greater than 13
+     set_fact:
+         OPEN_STACK_RELEASE: "{{newton}}"
+         OPEN_STACK_RELEASE_SUB: "{{gtliberty}}"
+     when: (openstack_version.stdout > release_13 and openstack_version.stdout < release_2000)
+
+   - name: set variables openstack_release to newton and openstack_release_sub to gtliberty if opestack version is greater than 2016
+     set_fact:
+         OPEN_STACK_RELEASE: "{{newton}}"
+         OPEN_STACK_RELEASE_SUB: "{{gtliberty}}"
+     when: openstack_version.stdout > release_2016
+
+   - name: set variables openstack_release to premitaka and openstack_release_sub to premitaka if opestack version is less than 13
+     set_fact:
+         OPEN_STACK_RELEASE: "{{premitaka}}"
+         OPEN_STACK_RELEASE_SUB: "{{premitaka}}"
+     when: openstack_version.stdout < release_13
+
+   - debug: msg="openstack_release:{{OPEN_STACK_RELEASE}}" verbosity={{verbosity_level}}

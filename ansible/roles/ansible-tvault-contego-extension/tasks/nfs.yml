@@ -1,0 +1,5 @@
+---
+- block:     
+    - include: validate_nfs.yml item1="{{item}}"
+      with_items: "{{NFS_SHARES}}"
+  when: NFS == True

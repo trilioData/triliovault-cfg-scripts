@@ -1,0 +1,135 @@
+---
+#- hosts: compute
+#  vars_files:
+#   - /root/cfg-scripts/ansible/envrionments/group_vars/all/vars.yml
+#  vars:
+#   automation_home: /root/automation/tvault_deploy_scripts
+#
+#  tasks:  
+- debug: msg="openstack_relrease is :{{OPEN_STACK_RELEASE}}" verbosity={{verbosity_level}}
+
+- set_fact: 
+     VAULT_SWIFT_DOMAIN_ID: ""
+     VAULT_SWIFT_DOMAIN_NAME: ""
+     VAULT_SWIFT_REGION_NAME: ""
+     VAULT_SWIFT_TENANT: ""   
+     VAULT_SWIFT_AUTH_VERSION: "TEMPAUTH"
+- name: check curl status if swift authenticaation tyope is TEMAUTH
+  block: 
+     - name: ensure that curl_call status is 200 or 201
+       shell: "curl -i -o /dev/null --silent --write-out '%{http_code}\n' -H 'X-Auth-User: {{VAULT_SWIFT_USERNAME}}' -H 'X-Auth-Key: {{VAULT_SWIFT_PASSWORD}}' {{VAULT_SWIFT_AUTH_URL}}"
+       register: curl_status
+
+     - debug : msg="curl_status:{{curl_status.stdout}}" verbosity={{verbosity_level}}
+
+     - fail: msg="Please enter correct swift credentials"
+       when: curl_status.stdout != status_200 and curl_status.stdout != status_201
+  when: VAULT_SWIFT_AUTH_VERSION1 == "TEMPAUTH"
+
+- name: fetch content from target machine's nova config file to local machine
+  fetch: src="{{NOVA_CONF_FILE}}" dest="{{NOVA_CONF_FILE}}" flat=yes
+ 
+- name: set configuration parameters for swift if authentication type is KEYSTONE2 
+  block:
+   - block:  
+      - name: get admin_auth_url from nova_conf_file and store it in variable if openstack release is not mitaka
+        set_fact: 
+            VAULT_SWIFT_AUTH_URL: "{{lookup('ini', 'admin_auth_url section=neutron file={{NOVA_CONF_FILE}}')}}" 
+
+      - debug: msg="vault swift authentication url:{{VAULT_SWIFT_AUTH_URL}}" verbosity={{verbosity_level}}
+
+      - name: get admin_tenant_name from nova_conf_file and store it in variable if openstack release is not mitaka, keystonev2
+        set_fact:
+            VAULT_SWIFT_TENANT: "{{lookup('ini', 'admin_tenant_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity={{verbosity_level}}
+     when: OPEN_STACK_RELEASE != mitaka
+
+   - block:
+      - name: get auth_url of keystonev2 from nova_conf_file and store it in variable if openstack release is mitaka, keystone_v2
+        set_fact:
+            VAULT_SWIFT_AUTH_URL: "{{lookup('ini', 'auth_url section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault swift authentication url:{{VAULT_SWIFT_AUTH_URL}}" verbosity={{verbosity_level}}
+
+      - name: get project_name from nova_conf_file and store it in variableif openstack relrease is mitaka , keystone_v2
+        set_fact:
+            VAULT_SWIFT_TENANT: "{{lookup('ini', 'project_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity={{verbosity_level}}
+     when: OPEN_STACK_RELEASE == mitaka       
+
+   - set_fact:
+        VAULT_SWIFT_USERNAME: "triliovault"
+        VAULT_SWIFT_PASSWORD: "52T8FVYZJse"
+        VAULT_SWIFT_DOMAIN_ID: ""
+        VAULT_SWIFT_AUTH_VERSION: "KEYSTONE"
+   - debug: msg="vault swift username:{{VAULT_SWIFT_USERNAME}} vault_swift_password:{{VAULT_SWIFT_PASSWORD}} vault_swift_domain_id:{{VAULT_SWIFT_DOMAIN_ID}}" verbosity={{verbosity_level}}
+  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV2"
+
+- block: 
+   - block:
+      - name: get auth_url from nova_conf_file and store it in variable if openstack release is mitaka 
+        set_fact:
+            VAULT_SWIFT_AUTH_URL: "{{lookup('ini', 'auth_url section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault swift authentication url:{{VAULT_SWIFT_AUTH_URL}}" verbosity={{verbosity_level}}
+
+      - name: get project_name from nova_conf_file and store it in variable
+        set_fact:
+            VAULT_SWIFT_TENANT: "{{lookup('ini', 'project_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity=1
+     when: OPEN_STACK_RELEASE == mitaka
+
+   - block:
+      - name: get admin_auth_url from nova_conf_file and store it in variable if openstack release is not mitaka
+        set_fact:
+            VAULT_SWIFT_AUTH_URL: "{{lookup('ini', 'admin_auth_url section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault swift authentication url:{{VAULT_SWIFT_AUTH_URL}}" verbosity={{verbosity_level}}
+
+      - name: get admin_tenant_name from nova_conf_file and store it in variable
+        set_fact:
+            VAULT_SWIFT_TENANT: "{{lookup('ini', 'admin_tenant_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+
+      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity={{verbosity_level}}
+     when: OPEN_STACK_RELEASE != mitaka
+
+   - set_fact:
+             VAULT_SWIFT_DOMAIN_ID: []
+
+   - name: get vault swift domain id from nova_conf_file and store it in variable when project_domain_id option exist
+     set_fact:              
+           VAULT_SWIFT_DOMAIN_ID: "{{lookup('ini', 'user_domain_id section=neutron file={{NOVA_CONF_FILE}}')}}"
+     when: VAULT_SWIFT_DOMAIN_ID.0 is not defined
+
+   - name: get vault swift domain id from nova_conf_file and store it in variable when project_domain_id option exist
+     set_fact:
+           VAULT_SWIFT_DOMAIN_ID: "{{lookup('ini', 'project_domain_id section=neutron file={{NOVA_CONF_FILE}}')}}"
+     when: VAULT_SWIFT_DOMAIN_ID.0 is not defined
+
+   - debug: msg="vault swift domain id:{{VAULT_SWIFT_DOMAIN_ID}}" verbosity={{verbosity_level}}
+
+   - set_fact:
+             VAULT_SWIFT_DOMAIN_NAME: []
+
+   - name: get vault swift domain name from nova_conf_file and store it in variable when project_domain_name option exist
+     set_fact:
+           VAULT_SWIFT_DOMAIN_NAME: "{{lookup('ini', 'user_domain_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+     when: VAULT_SWIFT_DOMAIN_NAME.0 is not defined
+
+   - name: get vault swift domain name from nova_conf_file and store it in variable when project_domain_name option exist
+     set_fact:
+           VAULT_SWIFT_DOMAIN_NAME: "{{lookup('ini', 'project_domain_name section=neutron file={{NOVA_CONF_FILE}}')}}"
+     when: VAULT_SWIFT_DOMAIN_NAME.0 is not defined
+
+   - debug: msg="vault swift domain name:{{VAULT_SWIFT_DOMAIN_NAME}}" verbosity={{verbosity_level}}
+     
+   - set_fact:
+        VAULT_SWIFT_USERNAME: "triliovault"
+        VAULT_SWIFT_PASSWORD: "52T8FVYZJse"
+        VAULT_SWIFT_AUTH_VERSION: "KEYSTONE"
+
+   - debug: msg="vault swift username:{{VAULT_SWIFT_USERNAME}} vault_swift_password:{{VAULT_SWIFT_PASSWORD}} vault_swift_domain_id:{{VAULT_SWIFT_DOMAIN_ID}}" verbosity={{verbosity_level}}
+  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV3"
