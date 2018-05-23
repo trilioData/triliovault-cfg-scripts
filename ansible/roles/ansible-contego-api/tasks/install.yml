@@ -1,0 +1,31 @@
+---
+- block:
+
+    - name: ensure that pip of version 7.1.2 is installed on controller
+      easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
+
+    - name: check installed tvault-contego-api version
+      shell: pip list  | grep tvault-contego-api | cut -d'(' -f2 | cut -d')' -f1
+      register: CONTEGO_VERSION_INSTALLED
+
+    - debug: msg="CONTEGO_VERSION_INSTALLED:{{CONTEGO_VERSION_INSTALLED.stdout}}" verbosity={{verbosity_level}}
+
+    - name: grep tvault-contego version using CURL call
+      shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5
+      register: TVAULT_CONTEGO_VERSION
+
+
+    - name: check if latest tvault-contego-api is already_installed
+      fail: msg="Latest tvault-contego-api package is already installed, exiting"
+      when: CONTEGO_VERSION_INSTALLED.stdout==TVAULT_CONTEGO_VERSION
+
+    - name: ensure that tvault-contego-api package is installed on controller     
+      shell: |
+              export TVAULT_PACKAGE=tvault-contego-api
+              pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-api-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+      register: install_contego_api_cmd
+
+    - debug: msg="install contego-api:{{install_contego_api_cmd.stdout}}" verbosity={{verbosity_level}}
+
+    - name: restart openstack-nova-api service
+      service: name="openstack-nova-api" state=restarted 

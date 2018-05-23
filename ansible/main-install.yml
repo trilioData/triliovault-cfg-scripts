@@ -1,13 +1,7 @@
 ---
 - hosts: horizon
   roles: 
-    - role: ansible-horizon-plugin/horizon-plugin-install
-      tags:
-        - all-install
-
-    - role: ansible-horizon-plugin/horizon-plugin-uninstall
-      tags:
-        - all-uninstall
+    - role: ansible-horizon-plugin
 
 - hosts: controller
   roles:
@@ -15,10 +9,4 @@
 
 - hosts: compute
   roles:   
-    - role: ansible-tvault-contego-extension/ansible-contego-extension-install
-      tags:
-        - all-install
-
-    - role: ansible-tvault-contego-extension/ansible-contego-extension-uninstall
-      tags:
-        - all-uninstall   
+    - role: ansible-tvault-contego-extension
