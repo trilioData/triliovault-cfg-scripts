@@ -23,7 +23,7 @@ VAULT_SWIFT_TENANT:   sample_vault_swift_tenant
 VAULT_SWIFT_USERNAME: sample_vault_swift_username
 VAULT_SWIFT_PASSWORD: sample_vault_swift_password
 VAULT_SWIFT_DOMAIN_ID:  sample_swift_domain_id
-### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3(Provide one of them)
+### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3(Provide one of them value in VAULT_SWIFT_AUTH_VERSION1 variable) 
 VAULT_SWIFT_AUTH_VERSION1: KEYSTONEV2
 
 #### Details for S3 as snapshot storage
@@ -33,7 +33,7 @@ VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
 #### S3 Specific Backend Configurations
-#### Uncomment one of the following for the specific S3 type
+#### Provide one of follwoing three values in s3_type variable, string's case should be match
 #Amazon/Ceph_S3/Minio_S3
 s3_type: Ceph_S3
 #### Required field(s) for all S3 backends except Amazon
@@ -78,3 +78,12 @@ release_2016: "2016"
 ubuntu: "Ubuntu"
 centos: "CentOS"
 suse: "Suse"
+vault_keystone_swift_username: "triliovault"
+vault_keystone_swift_password: "52T8FVYZJse"
+Amazon: "Amazon"
+Ceph_S3: "Ceph_S3"
+Minio_S3: "Minio_S3"
+TEMPAUTH: "TEMPAUTH" 
+KEYSTONEV2: "KEYSTONEV2" 
+KEYSTONEV3: "KEYSTONEV3"
+KEYSTONE: "KEYSTONE"        

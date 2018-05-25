@@ -15,16 +15,16 @@
   template:
      src: s3_amazon.conf.j2
      dest: "{{TVAULT_CONTEGO_CONF}}"
-  when: (S3 == True) and (Amazon == True)
+  when: (S3 == True) and (s3_type == Amazon)
 
 - name: copy tvault-contego config file to destination and write content into it if s3 Ceph used as backend
   template:
      src: s3_ceph.conf.j2
      dest: "{{TVAULT_CONTEGO_CONF}}"
-  when: (S3 == True) and (Ceph_S3 == True)
+  when: (S3 == True) and (s3_type == Ceph_S3)
 
 - name: copy tvault-contego config file to destination and write content into it if s3 minio used as backend
   template:
      src: s3_minio.conf.j2
      dest: "{{TVAULT_CONTEGO_CONF}}"
-  when: (S3 == True) and (Minio_S3 == True)
+  when: (S3 == True) and (s3_type == Minio_S3)

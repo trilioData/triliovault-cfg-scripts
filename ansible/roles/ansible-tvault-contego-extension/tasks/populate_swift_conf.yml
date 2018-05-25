@@ -13,7 +13,7 @@
      VAULT_SWIFT_DOMAIN_NAME: ""
      VAULT_SWIFT_REGION_NAME: ""
      VAULT_SWIFT_TENANT: ""   
-     VAULT_SWIFT_AUTH_VERSION: "TEMPAUTH"
+     VAULT_SWIFT_AUTH_VERSION: "{{TEMPAUTH}}"
 - name: check curl status if swift authenticaation tyope is TEMAUTH
   block: 
      - name: ensure that curl_call status is 200 or 201
@@ -24,7 +24,7 @@
 
      - fail: msg="Please enter correct swift credentials"
        when: curl_status.stdout != status_200 and curl_status.stdout != status_201
-  when: VAULT_SWIFT_AUTH_VERSION1 == "TEMPAUTH"
+  when: VAULT_SWIFT_AUTH_VERSION1 == TEMPAUTH
 
 - name: fetch content from target machine's nova config file to local machine
   fetch: src="{{NOVA_CONF_FILE}}" dest="{{NOVA_CONF_FILE}}" flat=yes
@@ -60,12 +60,12 @@
      when: OPEN_STACK_RELEASE == mitaka       
 
    - set_fact:
-        VAULT_SWIFT_USERNAME: "triliovault"
-        VAULT_SWIFT_PASSWORD: "52T8FVYZJse"
+        VAULT_SWIFT_USERNAME: "{{vault_keystone_swift_username}}"
+        VAULT_SWIFT_PASSWORD: "{{vault_keystone_swift_password}}"
         VAULT_SWIFT_DOMAIN_ID: ""
-        VAULT_SWIFT_AUTH_VERSION: "KEYSTONE"
+        VAULT_SWIFT_AUTH_VERSION: "{{KEYSTONE}}"
    - debug: msg="vault swift username:{{VAULT_SWIFT_USERNAME}} vault_swift_password:{{VAULT_SWIFT_PASSWORD}} vault_swift_domain_id:{{VAULT_SWIFT_DOMAIN_ID}}" verbosity={{verbosity_level}}
-  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV2"
+  when: VAULT_SWIFT_AUTH_VERSION1 == KEYSTONEV2
 
 - block: 
    - block:
@@ -79,7 +79,7 @@
         set_fact:
             VAULT_SWIFT_TENANT: "{{lookup('ini', 'project_name section=neutron file={{NOVA_CONF_FILE}}')}}"
 
-      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity=1
+      - debug: msg="vault admin_tenant_name:{{VAULT_SWIFT_TENANT}}" verbosity={{verbosity_level}}
      when: OPEN_STACK_RELEASE == mitaka
 
    - block:
@@ -127,9 +127,9 @@
    - debug: msg="vault swift domain name:{{VAULT_SWIFT_DOMAIN_NAME}}" verbosity={{verbosity_level}}
      
    - set_fact:
-        VAULT_SWIFT_USERNAME: "triliovault"
-        VAULT_SWIFT_PASSWORD: "52T8FVYZJse"
-        VAULT_SWIFT_AUTH_VERSION: "KEYSTONE"
+        VAULT_SWIFT_USERNAME: "{{vault_keystone_swift_username}}"
+        VAULT_SWIFT_PASSWORD: "{{vault_keystone_swift_password}}"
+        VAULT_SWIFT_AUTH_VERSION: "{{KEYSTONE}}"
 
    - debug: msg="vault swift username:{{VAULT_SWIFT_USERNAME}} vault_swift_password:{{VAULT_SWIFT_PASSWORD}} vault_swift_domain_id:{{VAULT_SWIFT_DOMAIN_ID}}" verbosity={{verbosity_level}}
-  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV3"
+  when: VAULT_SWIFT_AUTH_VERSION1 == KEYSTONEV3
