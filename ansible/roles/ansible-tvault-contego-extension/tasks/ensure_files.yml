@@ -1,0 +1,22 @@
+---
+- name: ensure that /var/log/nova file is present
+  file: path="/var/log/nova" state=directory owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
+
+- name: check if tvault contego external bin is present or not
+  stat: path="{{TVAULT_CONTEGO_EXT_BIN}}"
+  register: tvault_contego_ext_bin
+
+- debug: msg="tvault_contego_ext_bin:{{tvault_contego_ext_bin}}" verbosity={{verbosity_level}}
+
+- name: Fail if tvault_contego_ext_bin directory is not present
+  fail: msg="vault_contego_external_bin directory is not present"
+  when: tvault_contego_ext_bin.stat.exists != true
+
+- name: check if tvault contego external bin is present or not
+  stat: path="{{TVAULT_CONTEGO_CONF}}"
+  register: tvault_contego_conf
+
+- name: create /etc/tvault-contego dir if tvault_contego_cof file is not present
+  file: path=/etc/tvault-contego state=directory
+  when: tvault_contego_conf.stat.exists != true
+

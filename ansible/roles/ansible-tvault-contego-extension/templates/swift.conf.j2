@@ -1,0 +1,18 @@
+[DEFAULT]
+vault_storage_type = swift-s
+vault_storage_nfs_export = TrilioVault
+vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
+vault_data_directory = {{TVAULT_DATA_DIR}}
+log_file = /var/log/nova/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+vault_swift_auth_url = {{VAULT_SWIFT_AUTH_URL}}
+vault_swift_username = {{VAULT_SWIFT_USERNAME}}
+vault_swift_password = {{VAULT_SWIFT_PASSWORD}}
+vault_swift_auth_version = {{VAULT_SWIFT_AUTH_VERSION}}
+vault_swift_domain_id = {{VAULT_SWIFT_DOMAIN_ID}}
+vault_swift_domain_name = {{VAULT_SWIFT_DOMAIN_NAME}}
+vault_swift_tenant = {{VAULT_SWIFT_TENANT}}
+vault_swift_region_name = {{VAULT_SWIFT_REGION_NAME}}

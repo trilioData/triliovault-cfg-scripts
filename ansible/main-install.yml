@@ -1,0 +1,12 @@
+---
+- hosts: horizon
+  roles: 
+    - role: ansible-horizon-plugin
+
+- hosts: controller
+  roles:
+    - role: ansible-contego-api
+
+- hosts: compute
+  roles:   
+    - role: ansible-tvault-contego-extension

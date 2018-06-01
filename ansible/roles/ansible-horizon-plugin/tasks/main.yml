@@ -1,0 +1,20 @@
+---
+- set_fact:
+     automation_home : "{{playbook_dir}}/roles/ansible-horizon-plugin"
+  tags: 
+    - horizon
+    - all-install
+    - horizon-uninstall
+    - all-uninstall
+
+- name: install horizon plugin on controller node
+  import_tasks: install.yml
+  tags:
+    - horizon
+    - all-install
+
+- name: uninstall horizon plugin from controller node
+  import_tasks: uninstall.yml
+  tags:
+    - horizon-uninstall
+    - all-uninstall

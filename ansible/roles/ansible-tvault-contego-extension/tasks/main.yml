@@ -1,0 +1,119 @@
+---
+- set_fact:
+     files_path : "{{playbook_dir}}/roles/ansible-tvault-contego-extension"
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: validate NFS bkp target is reachable
+  import_tasks: nfs.yml
+  when: NFS == True
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+ 
+- name: get openstack version
+  import_tasks: get_openstack_version.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: setting up swift authentication variables if contego installed with swift as backend 
+  import_tasks: populate_swift_conf.yml
+  when: Swift == True
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: set object_store to false if NFS is true
+  set_fact: 
+      object_store: False 
+  when: NFS == True
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: set object_store to true if NFS is flase
+  set_fact:
+      object_store: True
+  when: NFS == False
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: validate oject bkp target is reachable
+  import_tasks: validate_obj_bkp.yml
+  when: NFS == False
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: validate virsh version is greater than 1.2.8
+  import_tasks: validate_virsh_version.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: add users to nova group
+  import_tasks: add_users.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: set_virtual environment and comapre tvault version if contego is already installed
+  import_tasks: set_virtenv.yml 
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: ensure log/nova, bin, contego_conf files are present
+  import_tasks: ensure_files.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: create tvault_conteo.conf file
+  import_tasks: create_contego_conf.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: ensure data directories and logroatate files are present
+  import_tasks: ensure_data_dirs.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: create contego service on host
+  import_tasks: contego_service.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
+- name: create object store service on host
+  import_tasks: object_store_service.yml
+  tags: 
+       - contego
+       - contego-extension
+       - all-install
+
+- name: uninstall tvault contego extension 
+  import_tasks: uninstall.yml
+  tags:
+       - contego-uninstall
+       - contego-extesnion-uninstall  
+       - all-uninstall

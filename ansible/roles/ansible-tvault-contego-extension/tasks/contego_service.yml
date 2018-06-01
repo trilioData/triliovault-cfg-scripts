@@ -1,0 +1,53 @@
+- name: get configuration parameters from {{TVAULT_CONTEGO_CONF}}
+  copy: src={{files_path}}/files/get_configs.py dest=/tmp/get_configs.py
+
+- name: run /tmp/get_configs.py
+  shell: "sudo -u {{TVAULT_CONTEGO_EXT_USER}} python /tmp/get_configs.py"
+  register: CONFIG_FILES
+
+- debug: msg=" config file output -{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
+
+- name: run /tmp/get_configs.py with config file
+  shell: "echo '{{CONFIG_FILES.stdout}} --config-file={{TVAULT_CONTEGO_CONF}}'"
+  register: CONFIG_FILES
+
+- debug: msg="config file string is:{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
+
+- name: check if /etc/nova/nova.conf.d is exist or not
+  stat: path=/etc/nova/nova.conf.d
+  register: is_nova_conf_present
+
+- name: run /tmp/get_configs.py with config file and config directory
+  shell: "echo '{{CONFIG_FILES.stdout}} --config-dir=/etc/nova/nova.conf.d'"
+  register: CONFIG_FILES_1
+
+- name: remove /tmp/get_configs.py file
+  file: path=/tmp/get_configs.py state=absent
+
+- set_fact:
+    CONFIG_FILES: "{{CONFIG_FILES.stdout}}"
+  when: is_nova_conf_present.stat.exists != true
+
+- set_fact:
+    CONFIG_FILES: "{{CONFIG_FILES_1.stdout}}"
+  when: is_nova_conf_present.stat.exists == true
+
+- name: create tvault-contego-service-in-systemd if ansible_distribution is Centos
+  template:
+     src: contego_service.j2
+     dest: "{{contego_service_file_path}}"
+  when: >
+        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") 
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or ansible_distribution=="Suse"
+
+- name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
+  template:
+     src: contego_service.j2
+     dest: "{{contego_service_file_path}}"
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)
+
+- name: create tvault-contego-service-in-systemd ansible_distribution is ubuntu 14
+  template:
+     src: contego_service_debian.j2
+     dest: "{{contego_service_debian_path}}"
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy)
