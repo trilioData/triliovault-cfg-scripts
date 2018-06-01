@@ -9,6 +9,9 @@ WebServer: sample_webservice
 #Specify opestack dashboard path 
 HORIZON_PATH: /usr/share/openstack-dashboard
 
+#specify openstack's nova api service name
+nova_api_service: sample_name_of_nova_api_service
+
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage
 NFS: False

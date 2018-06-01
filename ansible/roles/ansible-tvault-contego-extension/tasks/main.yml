@@ -103,6 +103,7 @@
        - contego
        - contego-extension
        - all-install
+
 - name: create object store service on host
   import_tasks: object_store_service.yml
   tags: 
