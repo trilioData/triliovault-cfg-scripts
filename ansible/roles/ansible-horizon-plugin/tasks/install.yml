@@ -1,17 +1,18 @@
 ---
 - name: check pip version 
-  shell: pip --version || True
-  register: pip_version
+  shell: python -m pip --version
+  register: pip_version1
+  ignore_errors: yes
 
-- debug: msg="pip version is:{{pip_version.stdout}}" verbosity={{verbosity_level}}
+- debug: msg="pip version is:{{pip_version1.stdout}}" verbosity={{verbosity_level}}
        
 - name: install pip if it is not installed 
   shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
   register: pip_installation
-  when: "'pip' not in pip_version.stdout"
+  when: "'No module' in pip_version1.stderr"
 
 - name: grep tvault-contego version using CURL call
-  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5
+  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
   register: TVAULT_CONTEGO_VERSION
 
 - name: install workloadmanagr package 

@@ -36,7 +36,9 @@
   template:
      src: contego_service.j2
      dest: "{{contego_service_file_path}}"
-  when: (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or ansible_distribution=="Suse"
+  when: >
+        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") 
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or ansible_distribution=="Suse"
 
 - name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
   template:

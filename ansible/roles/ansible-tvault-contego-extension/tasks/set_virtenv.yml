@@ -30,7 +30,7 @@
   when: venv_dir.stat.exists == false
 
 - name: grep tvault-contego version using CURL call
-  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5
+  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
   register: TVAULT_CONTEGO_VERSION
 
 - debug: msg="tvault contego version from current package:{{TVAULT_CONTEGO_VERSION.stdout}}" verbosity={{verbosity_level}}

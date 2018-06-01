@@ -1,7 +1,7 @@
 ---
 - block:    
-    - name: Ensure python2-pip is installed 
-      package: name="python2-pip" state=present
+    - name: Ensure python-pip is installed 
+      package: name="python-pip" state=present
 
     - name: Ensure pytohn swift client is present 
       pip: name="python-swiftclient" state=present
@@ -28,8 +28,8 @@
   when: Swift == True
 
 - block:
-    - name: Ensure python2-pip is installed
-      package: name="python2-pip" state=present
+    - name: Ensure python-pip is installed
+      shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
 
     - name: Ensure python swift client is present
       pip: name="python-swiftclient" state=present
@@ -39,7 +39,7 @@
           pip: name="boto" state=present
 
         - name: copy python s3 file 
-          copy: src=files/test_s3.py dest=/tmp/test_s3.py
+          copy: src="{{files_path}}/files/test_s3.py" dest=/tmp/test_s3.py
 
         - name: check s3_amazon connectivity
           shell: python /tmp/test_s3.py {{VAULT_S3_ACCESS_KEY}} {{VAULT_S3_SECRET_ACCESS_KEY}}
@@ -59,10 +59,10 @@
 
     - block:
         - name: copy minio file to destination host 
-          copy: src=files/mc dest=/tmp/mc
+          copy: src="{{files_path}}files/mc" dest=/tmp/mc
 
         - name: check connectivity for s3 minio 
           shell: /tmp/mc config host add minio {{VAULT_S3_ENDPOINT_URL}} {{VAULT_S3_ACCESS_KEY}} {{VAULT_S3_SECRET_ACCESS_KEY}} {{s3_signature_version}}
           async: 60
-      when: s3_type = Minio_S3
+      when: s3_type == Minio_S3
   when: S3 == True
