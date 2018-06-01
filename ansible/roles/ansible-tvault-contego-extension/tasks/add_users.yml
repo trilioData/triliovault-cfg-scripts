@@ -1,0 +1,20 @@
+- name: Adding passwordless sudo access to nova user
+  lineinfile: "dest=/etc/sudoers.d/tvault-nova state=present create=yes line='nova ALL=(ALL) NOPASSWD: ALL'"
+
+- name: Adding nova user to system groups
+  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
+  with_items:
+   - kvm
+   - qemu
+   - disk
+
+- name: check if /usr/lib64 dir not exist or not
+  stat: path=/usr/lib64
+  register: lib64_dir
+
+- debug: msg="print True if lib64 dir is exist:{{lib64_dir.stat.exists}}" verbosity={{verbosity_level}}
+
+- name: create symlink /usr/lib64/ if /usr/lib64 dir not exist
+  file: src=/usr/lib/ dest=/usr/lib64 state=link
+  when: lib64_dir.stat.exists != true
+

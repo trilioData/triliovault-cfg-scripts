@@ -1,0 +1,43 @@
+- name: create contego service on host
+  import_tasks: contego_service.yml
+
+- name: set external object store to tvault_contego_s3_ext if S3 is true
+  set_fact:
+       TVAULT_CONTEGO_EXT_OBJECT_STORE: "{{TVAULT_CONTEGO_EXT_S3}}"
+  when: object_store == True and S3 == True
+
+- name: set external object store to tvault_contego_swift if swift is true
+  set_fact:
+       TVAULT_CONTEGO_EXT_OBJECT_STORE: "{{TVAULT_CONTEGO_EXT_SWIFT}}"
+  when: object_store == True and Swift == True
+
+- debug: msg="external s3:{{TVAULT_CONTEGO_EXT_S3}}" verbosity={{verbosity_level}}
+- debug: msg="object store:{{TVAULT_CONTEGO_EXT_SWIFT}}" verbosity={{verbosity_level}}
+
+- block:
+    - name: create object-store-service in systemd if ansible_distribution is Centos
+      template:
+         src: objstore_service.j2
+         dest: "{{objstore_service_file_path}}"
+      when: (ansible_distribution_major_version=="7" and ansible_distribution == centos) or ansible_distribution == suse
+
+    - name: create object-store-service in-systemd if ansible_distribution is Ubuntu 16
+      template:
+         src: objstore_service.j2
+         dest: "{{objstore_service_file_path}}"
+      when: ansible_distribution == ubuntu and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)
+
+    - name: create object-store-service in-systemd if ansible_distribution is ubuntu 14
+      template:
+         src: objstore_service_debian.j2
+         dest: "{{objstore_service_debian_path}}"
+      when: ansible_distribution == ubuntu and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy)
+  when: (object_store == True)
+
+- name: copy object store service file , write content , enable and daemon reload service if object restore is True
+  block:
+    - shell: systemctl daemon-reload
+    - name: enable tvault-object-store service and reload it
+      service: name=tvault-object-store  state=started enabled=yes
+  when: (object_store == True)
+

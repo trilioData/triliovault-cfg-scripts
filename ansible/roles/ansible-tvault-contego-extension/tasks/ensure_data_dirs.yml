@@ -1,0 +1,13 @@
+- name: ensure that {{TVAULT_DATA_DIR}} is present
+  file: name="{{TVAULT_DATA_DIR}}" state=directory
+
+- name: ensure that {{TVAULT_DATA_DIR_OLD}} is removed
+  file: name="{{TVAULT_DATA_DIR_OLD}}" state=absent
+
+- name: ensure that {{TVAULT_DATA_DIR_OLD}} is present
+  file: name="{{TVAULT_DATA_DIR_OLD}}" state=directory
+
+- name: create logrotate file for tvault-contego.log
+  copy: src={{files_path}}/files/tvault-contego  dest=/etc/logrotate.d/tvault-contego
+
+

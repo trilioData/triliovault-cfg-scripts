@@ -1,0 +1,22 @@
+description "TrilioVault Contego - Openstack Nova Compute Extension"
+author "TrilioData <info@triliodata.com>"
+start on (filesystem and net-device-up IFACE!=lo)
+stop on runlevel [016]
+respawn
+chdir /var/run
+pre-start script
+    if [ ! -d /var/run/{{TVAULT_CONTEGO_EXT_USER}} ]; then
+        mkdir /var/run/{{TVAULT_CONTEGO_EXT_USER}}
+        chown root:{{TVAULT_CONTEGO_EXT_USER}} /var/run/{{TVAULT_CONTEGO_EXT_USER}}
+    fi
+    if [ ! -d /var/lock/{{TVAULT_CONTEGO_EXT_USER}} ]; then
+        mkdir -p /var/lock/{{TVAULT_CONTEGO_EXT_USER}}
+        chown root:{{TVAULT_CONTEGO_EXT_USER}} /var/lock/{{TVAULT_CONTEGO_EXT_USER}}
+    fi
+    if [ -f /var/log/nova/tvault-contego.log ]; then
+       chown {{TVAULT_CONTEGO_EXT_USER}}:{{TVAULT_CONTEGO_EXT_USER}} /var/log/nova/tvault-contego.log
+    fi
+end script
+script
+    exec start-stop-daemon --start --chuid {{TVAULT_CONTEGO_EXT_USER}} --exec {{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} -- {{CONFIG_FILES}}
+end script

@@ -1,0 +1,110 @@
+---
+- name: create virtenv dir(/home/tvault) if it is not exist
+  file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory mode=765 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
+
+- name: check if /home/tvault/.venv directory exist or not
+  stat: path={{TVAULT_CONTEGO_VIRTENV_PATH}}
+  register: venv_dir
+
+- debug: msg="print true if  virtual env dir exists:{{venv_dir.stat.exists}}" verbosity={{verbosity_level}}
+
+- block:
+    - name: activate virtual environment and grep tvault contego from virtual environment
+      shell: |
+           cd '{{TVAULT_CONTEGO_VIRTENV}}'
+           source .virtenv/bin/activate
+           pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+           deactivate
+      register: tvault_contego_version
+
+    - debug: msg="tvault-contego version from previous installed pack:{{tvault_contego_version.stdout}}" verbosity={{verbosity_level}}
+
+    - name: set tvault_contego_version to a varaible if contego is already installed
+      set_fact:
+          tvault_contego_version_set : "{{tvault_contego_version.stdout}}"
+  when: venv_dir.stat.exists == true
+
+- name: set tvault_contego_version to a varaible if contego is already installed
+  set_fact:
+          tvault_contego_version_set : ""
+  when: venv_dir.stat.exists == false
+
+- name: grep tvault-contego version using CURL call
+  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
+  register: TVAULT_CONTEGO_VERSION
+
+- debug: msg="tvault contego version from current package:{{TVAULT_CONTEGO_VERSION.stdout}}" verbosity={{verbosity_level}}
+
+- name: print tvault contego version
+  fail: msg="Latest Tvault-contego package is already installed, exiting"
+  when: TVAULT_CONTEGO_VERSION.stdout == tvault_contego_version_set
+
+- name: download virtual environment tar bundle from applainace
+  get_url: url="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/{{OPEN_STACK_RELEASE}}/tvault-contego-virtenv.tar.gz" dest="{{TVAULT_CONTEGO_VIRTENV}}"
+
+- name: remove existing .virtenv directory
+  file: path={{TVAULT_CONTEGO_VIRTENV_PATH}} state=absent
+
+- name:  Untar virtual environment bundle
+  unarchive: src="{{TVAULT_CONTEGO_VIRTENV}}/tvault-contego-virtenv.tar.gz" dest="{{TVAULT_CONTEGO_VIRTENV}}" remote_src=yes
+
+- name: set cryptography if openstack release is mitaka
+  shell:   |
+            python -c "import cryptography;print cryptography.__path__[0]"
+            python -c "import Crypto;print Crypto.__path__[0]"
+  register: cryptography_mitaka
+  when: OPEN_STACK_RELEASE == mitaka
+
+- name: set cryptography if openstack release is newton
+  shell:   |
+            python -c "import cryptography;print cryptography.__path__[0]"
+            python -c "import libvirtmod;print libvirtmod.__file__"
+            python -c "import cffi;print cffi.__path__[0]"
+            python -c "import _cffi_backend;print _cffi_backend.__file__"
+  register: cryptography
+  when: OPEN_STACK_RELEASE == newton
+
+- debug: msg="cryptography_path={{cryptography_mitaka}}"  verbosity={{verbosity_level}}
+
+- name: activate the virtual environment and set cryptography symlinks when openstack_release is mitaka
+  shell:  |
+        cd '{{TVAULT_CONTEGO_VIRTENV}}'
+        source .virtenv/bin/activate
+        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+        rm -rf .virtenv/lib/python2.7/site-packages/cryptography
+        ln -s {{cryptography_mitaka.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
+        rm -rf .virtenv/lib/python2.7/site-packages/Crypto
+        ln -s {{cryptography_mitaka.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/Crypto
+        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+        rm -rf tvault-contego-virtenv.tar.gz
+  register: tvault_contego_version_installed
+  when: OPEN_STACK_RELEASE == mitaka
+
+- name: activate the virtual environment and set cryptography symlinks when openstack_release is premitaka
+  shell:  |
+        cd '{{TVAULT_CONTEGO_VIRTENV}}'
+        source .virtenv/bin/activate
+        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+        rm -rf tvault-contego-virtenv.tar.gz
+  register: tvault_contego_version_installed
+  when: OPEN_STACK_RELEASE == premitaka
+
+- name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
+  shell:  |
+        cd '{{TVAULT_CONTEGO_VIRTENV}}'
+        source .virtenv/bin/activate
+        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+        rm -rf .virtenv/lib/python2.7/site-packages/cryptography
+        ln -s {{cryptography.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
+        cp {{cryptography.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/libvirtmod.so
+        rm -rf .virtenv/lib/python2.7/site-packages/cffi
+        ln -s {{cryptography.stdout_lines[2]}} .virtenv/lib/python2.7/site-packages/cffi
+        cp {{cryptography.stdout_lines[3]}} .virtenv/lib/python2.7/site-packages/_cffi_backend.so
+        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+        rm -rf tvault-contego-virtenv.tar.gz
+  register: tvault_contego_version_installed
+  when: OPEN_STACK_RELEASE == newton
+
+- debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
+

@@ -1,0 +1,68 @@
+---
+- block:    
+    - name: Ensure python-pip is installed 
+      package: name="python-pip" state=present
+
+    - name: Ensure pytohn swift client is present 
+      pip: name="python-swiftclient" state=present
+
+    - block: 
+        - name: execute swift command and store output
+          command: swift -A {{VAULT_SWIFT_AUTH_URL}} -U {{VAULT_SWIFT_USERNAME}} -K {{VAULT_SWIFT_PASSWORD}} list
+          register: temp_auth_result
+
+        - debug: msg="temp_auth_result is:{{temp_auth_result.stdout}}"  verbosity={{verbosity_level}}     
+      when: VAULT_SWIFT_AUTH_VERSION1 == TEMPAUTH
+
+    #- block:
+    #    #- set_fact:
+    #    #     swift_cmd : "swift --os-auth-url {{VAULT_SWIFT_AUTH_URL}} --os-tenant-name {{VAULT_SWIFT_TENANT}} --os-username {{VAULT_SWIFT_USERNAME}} --os-password {{VAULT_SWIFT_PASSWORD}} list"  
+    #    #- debug : msg="swift command for keystone v2 is:{{swift_cmd}}"
+
+    #    - name: execute swift command and store output
+    #      shell: swift --os-auth-url {{VAULT_SWIFT_AUTH_URL}} --os-tenant-name {{VAULT_SWIFT_TENANT}} --os-username {{VAULT_SWIFT_USERNAME}} --os-password {{VAULT_SWIFT_PASSWORD}} list
+    #      register: temp_auth_result
+
+    #    - debug: msg="temp_auth_result is:{{temp_auth_result}}"
+    #  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV2"
+  when: Swift == True
+
+- block:
+    - name: Ensure python-pip is installed
+      shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
+
+    - name: Ensure python swift client is present
+      pip: name="python-swiftclient" state=present
+
+    - block:
+        - name: install boto package
+          pip: name="boto" state=present
+
+        - name: copy python s3 file 
+          copy: src="{{files_path}}/files/test_s3.py" dest=/tmp/test_s3.py
+
+        - name: check s3_amazon connectivity
+          shell: python /tmp/test_s3.py {{VAULT_S3_ACCESS_KEY}} {{VAULT_S3_SECRET_ACCESS_KEY}}
+          register: s3_boto_out
+    
+        - debug: msg="amazon s3 bucket list:{{s3_boto_out.stdout}}" verbosity={{verbosity_level}}
+      when: s3_type == Amazon
+
+    - block: 
+        - name: check s3_ceph connectivity using swift call
+          shell: swift -A {{VAULT_S3_ENDPOINT_URL}} -U {{VAULT_S3_ACCESS_KEY}} -K {{VAULT_S3_SECRET_ACCESS_KEY}} list
+          async: 60
+          register: s3_ceph_out
+
+        - debug: msg:"ceph s3 bucket list:{{s3_ceph_out.}}"
+      when: s3_type == Ceph_S3
+
+    - block:
+        - name: copy minio file to destination host 
+          copy: src="{{files_path}}files/mc" dest=/tmp/mc
+
+        - name: check connectivity for s3 minio 
+          shell: /tmp/mc config host add minio {{VAULT_S3_ENDPOINT_URL}} {{VAULT_S3_ACCESS_KEY}} {{VAULT_S3_SECRET_ACCESS_KEY}} {{s3_signature_version}}
+          async: 60
+      when: s3_type == Minio_S3
+  when: S3 == True

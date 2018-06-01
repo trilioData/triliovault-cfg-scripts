@@ -1,0 +1,22 @@
+---
+- set_fact: 
+    nfsmount: "{{TVAULT_DATA_DIR}}"
+
+- name: Ensure {{nfsmount}} directory exists
+  action: file path={{nfsmount}} state=directory
+
+- shell: if [ -z "$NFS_OPTS" ]; then  echo rw,sync,nfsvers=3; else echo $NFS_OPTS; fi
+  register: _nfsopts
+  sudo: false
+  connection: local
+
+- debug: msg="value of NFS_SHARES is:{{NFS_SHARES}}" verbosity={{verbosity_level}}
+
+- name: mount NFS
+  action: mount name={{nfsmount}} src="{{item1}}" fstype=nfs opts={{_nfsopts.stdout}} state=mounted
+
+- debug: msg="NFS SHRARE PATH is:{{item1}}" verbosity={{verbosity_level}}
+
+- name: umount NFS
+  action: mount name={{nfsmount}} src={{item1}} fstype=nfs opts={{_nfsopts.stdout}} state=unmounted
+  when: NFS == True

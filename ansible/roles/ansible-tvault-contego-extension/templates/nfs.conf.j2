@@ -1,0 +1,11 @@
+[DEFAULT]
+vault_storage_nfs_export = {{NFS_SHARES}}
+vault_storage_nfs_options = {{NFS_OPTS}}
+vault_storage_type = nfs
+vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
+vault_data_directory = {{TVAULT_DATA_DIR}}
+log_file = /var/log/nova/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
