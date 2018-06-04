@@ -34,8 +34,11 @@
 
     - name: reload daemon
       shell: systemctl daemon-reload
-  when: ansible_distribution_major_version=="7" and ansible_distribution=="CentOS"
-
+  when: >
+        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") 
+      
+        
 - block:
     - block:
         - name: ensure tvault-contego service file is deleted if os release is Ubuntu
