@@ -51,3 +51,10 @@
      src: contego_service_debian.j2
      dest: "{{contego_service_debian_path}}"
   when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy)
+
+- name: enable and daemon reload tvault contego service 
+  block:
+    - shell: systemctl daemon-reload
+    - name: enable tvault-contego service and reload it
+      service: name=tvault-contego  state=started enabled=yes
+
