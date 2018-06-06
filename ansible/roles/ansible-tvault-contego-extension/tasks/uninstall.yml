@@ -34,8 +34,11 @@
 
     - name: reload daemon
       shell: systemctl daemon-reload
-  when: ansible_distribution_major_version=="7" and ansible_distribution=="CentOS"
-
+  when: >
+        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") 
+      
+        
 - block:
     - block:
         - name: ensure tvault-contego service file is deleted if os release is Ubuntu
@@ -89,4 +92,13 @@
       shell: systemctl daemon-reload
   when: ansible_distribution=="Suse" 
 
+- name: grep mountpath
+  shell: df -h | grep '{{TVAULT_DATA_DIR}}' | awk -F' ' '{print $6}'
+  register: mount_path
+
+- debug: msg="{{mount_path.stdout}}"  verbosity={{verbosity_level}}
+
+- name:  unmount mountpath incase contego is failed to unmount
+  shell: umount {{mount_path.stdout}}
+  when: mount_path.stdout != ""
 
