@@ -1,6 +1,7 @@
-class trilio::contego::contego_postinstall inherits trilio::contego {
+class trilio::contego::postinstall inherits trilio::contego {
   
-    require trilio::contego::contego_install   
+    require trilio::contego::validate
+    require trilio::contego::install   
 ## Adding passwordless sudo access to 'nova' user
     file { "/etc/sudoers.d/${contego_user}":
         ensure => present,
