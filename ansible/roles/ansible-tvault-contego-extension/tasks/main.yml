@@ -115,5 +115,5 @@
   import_tasks: uninstall.yml
   tags:
        - contego-uninstall
-       - contego-extesnion-uninstall  
+       - contego-extension-uninstall  
        - all-uninstall

@@ -7,6 +7,14 @@
    - kvm
    - qemu
    - disk
+  when: ansible_distribution=="CentOS" or ansible_distribution=="Suse" or ansible_distribution=="RedHat" 
+
+- name: Adding nova user to system groups
+  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
+  with_items:
+   - kvm
+   - disk
+  when: ansible_distribution=="Ubuntu"
 
 - name: check if /usr/lib64 dir not exist or not
   stat: path=/usr/lib64
@@ -17,4 +25,3 @@
 - name: create symlink /usr/lib64/ if /usr/lib64 dir not exist
   file: src=/usr/lib/ dest=/usr/lib64 state=link
   when: lib64_dir.stat.exists != true
-
