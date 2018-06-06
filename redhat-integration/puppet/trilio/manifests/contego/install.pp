@@ -1,6 +1,6 @@
-class trilio::contego::contego_install inherits trilio::contego {
+class trilio::contego::install inherits trilio::contego {
   
-
+    require trilio::contego::validate
     notify { $openstack_release: } 
 ## Adding nova user to system groups
     user { 'Add_nova_user_to_system_groups':

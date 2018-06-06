@@ -1,7 +1,9 @@
-class trilio::contego::contego_service inherits trilio::contego {
+class trilio::contego::service inherits trilio::contego {
 
-    require trilio::contego::contego_install
-    require trilio::contego::contego_postinstall
+    require trilio::contego::validate
+    require trilio::contego::install
+    require trilio::contego::postinstall
+    require trilio::contego::cgroup   
 
     if ($backup_target_type == 'swift') or ($backup_target_type == 's3') {
         service { 'tvault-object-store':
