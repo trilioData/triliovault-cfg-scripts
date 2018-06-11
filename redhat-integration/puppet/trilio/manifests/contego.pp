@@ -1,4 +1,5 @@
 class trilio::contego (
+    $tvault_version                       = undef,
     $redhat_openstack_version             = '10',
     $tvault_appliance_ip                  = undef,
     $nova_conf_file			  = '/etc/nova/nova.conf',
@@ -176,6 +177,13 @@ vault_s3_signature_version = ${s3_signature_version}
 vault_s3_support_empty_dir = True
 vault_s3_ssl =  ${ssl_enabled}"
 
+    exec { 'install_pip':
+        command => 'easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz',
+        cwd     => "/tmp/",
+        unless  => '/usr/bin/which pip',
+        provider => shell,
+        path    => ['/usr/bin','/usr/sbin'],
+    }
 
     class {'trilio::contego::validate': }
     class {'trilio::contego::install': }
