@@ -1,17 +1,21 @@
 class trilio::api (
-     $tvault_virtual_ip    = undef 
+     $tvault_virtual_ip    = undef,
+     $tvault_version       = undef
 ){
 
-    package {'python-pip':
-        ensure   => present,
-        provider => yum,
+    exec { 'install_pip':
+        command => 'easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz',
+        cwd     => "/tmp/",
+        unless  => '/usr/bin/which pip',
+        provider => shell,
+        path    => ['/usr/bin','/usr/sbin'],
     }
 
     package {'tvault-contego-api':
         ensure   => present,
         provider => pip,
         source   => "http://${tvault_virtual_ip}:8081/packages/tvault-contego-api-${tvault_version}.tar.gz",
-        require  => Package['python-pip'],
+        require  => Exec['install_pip'],
         notify   => Service['openstack-nova-api']
     }
 
