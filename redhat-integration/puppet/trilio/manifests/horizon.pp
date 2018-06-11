@@ -1,18 +1,23 @@
 class trilio::horizon (
     $tvault_virtual_ip                  = undef, 
     $horizon_dir                        = '/usr/share/openstack-dashboard/',
+    $tvault_version                     = undef,
 ){
 
-    package {'python-pip':
-        ensure   => present,
-        provider => yum,
+
+    exec { 'install_pip':
+        command => 'easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz',
+        cwd     => "/tmp/",
+        unless  => '/usr/bin/which pip',
+        provider => shell,
+        path    => ['/usr/bin','/usr/sbin'],
     }
 
     package {'python-workloadmgrclient':
         ensure   => present,
         provider => pip,
         source   => "http://${tvault_virtual_ip}:8081/packages/python-workloadmgrclient-${tvault_version}.tar.gz",
-        require  => Package['python-pip'],
+        require  => Exec['install_pip'],
         before   => Package['tvault-horizon-plugin'],
     }
 
@@ -20,7 +25,7 @@ class trilio::horizon (
         ensure   => present,
         provider => pip,
         source   => "http://${tvault_virtual_ip}:8081/packages/tvault-horizon-plugin-${tvault_version}.tar.gz",
-        require  => Package['python-pip'],
+        require  => Exec['install_pip'],
         notify   => Service['httpd']
     }
 
