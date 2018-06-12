@@ -52,24 +52,24 @@ ansible-playbook main-install.yml -i environments/hosts --tags "all-uninstall"
 
 For installing tvault-horizon on openstack-horizon node
 
-ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-install"
+ansible-playbook main-install.yml -i environments/hosts --tags "horizon"
 
 For uninstalling tvault-horizon on openstack-horizon node
-ansible-playbook horizon-plugin.yml -i environments/hosts --tags "horizon-plugin-uninstall"
+ansible-playbook main-install.yml -i environments/hosts --tags "horizon-plugin-uninstall"
 
 ==========================================================
 
 For installing datamover extension on compute node
-ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-install"
+ansible-playbook main-install.yml -i environments/hosts --tags "contego-extension"
 
 For uninstalling datamover extension on compute node
-ansible-playbook contego-extension.yml -i environments/hosts --tags "contego-extension-uninstall"
+ansible-playbook main-install.yml -i environments/hosts --tags "contego-extension-uninstall"
 
 =========================================================
 
 For installing contego-api on controller node
-ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-install"
+ansible-playbook main-install.yml -i environments/hosts --tags "contego-api"
 
 For uninstalling contego-api on controller node
-ansible-playbook contego-api-install.yml -i environments/hosts --tags "contego-api-uninstall"
+ansible-playbook main-install.yml -i environments/hosts --tags "contego-api-uninstall"
 

@@ -1,6 +1,3 @@
-- name: create contego service on host
-  import_tasks: contego_service.yml
-
 - name: set external object store to tvault_contego_s3_ext if S3 is true
   set_fact:
        TVAULT_CONTEGO_EXT_OBJECT_STORE: "{{TVAULT_CONTEGO_EXT_S3}}"
