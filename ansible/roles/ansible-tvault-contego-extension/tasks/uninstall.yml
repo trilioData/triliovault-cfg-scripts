@@ -48,7 +48,7 @@
           shell: systemctl daemon-reload
 
         - name:  ensure tvault-object-store service file is deleted if os release is Ubuntu
-          file: path=/etc/systemd/system/tvault-object-store.service
+          file: path=/etc/systemd/system/tvault-object-store.service state=absent
 
         - name: ensure tvault-swift service file is deleted if os release is rhel7
           file: path=/etc/systemd/system/tvault-swift.service state=absent

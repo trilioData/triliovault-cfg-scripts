@@ -1,3 +1,5 @@
+- debug: msg="{{ansible_distribution}}"
+
 - name: get configuration parameters from {{TVAULT_CONTEGO_CONF}}
   copy: src={{files_path}}/files/get_configs.py dest=/tmp/get_configs.py
 
@@ -11,7 +13,7 @@
   shell: "echo '{{CONFIG_FILES.stdout}} --config-file={{TVAULT_CONTEGO_CONF}}'"
   register: CONFIG_FILES
 
-- debug: msg="config file string is:{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
+- debug: msg="config file string is:{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}} 
 
 - name: check if /etc/nova/nova.conf.d is exist or not
   stat: path=/etc/nova/nova.conf.d
@@ -50,7 +52,7 @@
   template:
      src: contego_service_debian.j2
      dest: "{{contego_service_debian_path}}"
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
 
 - name: enable and daemon reload tvault contego service 
   block:

@@ -65,46 +65,72 @@
   when: OPEN_STACK_RELEASE == newton
 
 - debug: msg="cryptography_path={{cryptography_mitaka}}"  verbosity={{verbosity_level}}
+- debug: msg="cryptography_path={{cryptography}}"  verbosity={{verbosity_level}}
 
-- name: activate the virtual environment and set cryptography symlinks when openstack_release is mitaka
-  shell:  |
-        cd '{{TVAULT_CONTEGO_VIRTENV}}'
-        source .virtenv/bin/activate
-        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
-        rm -rf .virtenv/lib/python2.7/site-packages/cryptography
-        ln -s {{cryptography_mitaka.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
-        rm -rf .virtenv/lib/python2.7/site-packages/Crypto
-        ln -s {{cryptography_mitaka.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/Crypto
-        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
-        rm -rf tvault-contego-virtenv.tar.gz
-  register: tvault_contego_version_installed
+#- name: activate the virtual environment and set cryptography symlinks when openstack_release is mitaka
+#  shell:  |
+#        cd '{{TVAULT_CONTEGO_VIRTENV}}'
+#        source .virtenv/bin/activate
+#        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+#        rm -rf .virtenv/lib/python2.7/site-packages/cryptography
+#        ln -s {{cryptography_mitaka.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
+#        rm -rf .virtenv/lib/python2.7/site-packages/Crypto
+#        ln -s {{cryptography_mitaka.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/Crypto
+#        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+#        rm -rf tvault-contego-virtenv.tar.gz
+#  register: tvault_contego_version_installed
+#  when: OPEN_STACK_RELEASE == mitaka
+#
+#- name: activate the virtual environment and set cryptography symlinks when openstack_release is premitaka
+#  shell:  |
+#        cd '{{TVAULT_CONTEGO_VIRTENV}}'
+#        source .virtenv/bin/activate
+#        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+#        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+#        rm -rf tvault-contego-virtenv.tar.gz
+#  register: tvault_contego_version_installed
+#  when: OPEN_STACK_RELEASE == premitaka
+- block:
+    - name: copy set_virenv_premitaka.sh to destination host
+      template:
+         src: set_virt_mitaka.j2
+         dest: "{{virtenv_mitaka_script_path}}"
+
+    - file: path="{{virtenv_mitaka_script_path}}" mode=765
+
+    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
+      shell: '{{virtenv_mitaka_script_path}}'
+      register: tvault_contego_version_installed
   when: OPEN_STACK_RELEASE == mitaka
 
-- name: activate the virtual environment and set cryptography symlinks when openstack_release is premitaka
-  shell:  |
-        cd '{{TVAULT_CONTEGO_VIRTENV}}'
-        source .virtenv/bin/activate
-        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
-        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
-        rm -rf tvault-contego-virtenv.tar.gz
-  register: tvault_contego_version_installed
+- block:
+    - name: copy set_virenv_premitaka.sh to destination host
+      template:
+         src: set_virt_premitaka.j2
+         dest: "{{virtenv_premitaka_script_path}}"
+
+    - file: path="{{virtenv_premitaka_script_path}}" mode=765
+
+    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
+      shell: '{{virtenv_premitaka_script_path}}'
+      register: tvault_contego_version_installed
   when: OPEN_STACK_RELEASE == premitaka
 
-- name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
-  shell:  |
-        cd '{{TVAULT_CONTEGO_VIRTENV}}'
-        source .virtenv/bin/activate
-        pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
-        rm -rf .virtenv/lib/python2.7/site-packages/cryptography
-        ln -s {{cryptography.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
-        cp {{cryptography.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/libvirtmod.so
-        rm -rf .virtenv/lib/python2.7/site-packages/cffi
-        ln -s {{cryptography.stdout_lines[2]}} .virtenv/lib/python2.7/site-packages/cffi
-        cp {{cryptography.stdout_lines[3]}} .virtenv/lib/python2.7/site-packages/_cffi_backend.so
-        pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
-        rm -rf tvault-contego-virtenv.tar.gz
-  register: tvault_contego_version_installed
+- block:
+    - name: copy set_virtenv_newton.sh to destination host
+      template:
+         src: set_virt_newton.j2
+         dest: "{{virtenv_newton_script_path}}"
+
+    - file: path="{{virtenv_newton_script_path}}" mode=765 
+
+    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
+      shell: '{{virtenv_newton_script_path}}'
+      register: tvault_contego_version_installed
   when: OPEN_STACK_RELEASE == newton
 
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
+
+- name: create virtenv dir(/home/tvault) if it is not exist
+  file: path={{TVAULT_CONTEGO_VIRTENV}} mode=765 recurse=yes owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
