@@ -1,12 +1,16 @@
 class trilio::contego::validate inherits trilio::contego {
-     package { 'python2-pip':
-             ensure      => present,
-             provider    => yum,
-     }
+
+    exec { 'install_pip':
+        command => "easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz",
+        cwd     => "/tmp/",
+        unless  => '/usr/bin/which pip',
+        provider => shell,
+        path    => ['/usr/bin','/usr/sbin'],
+    }
 
 
     if $backup_target_type == 'nfs' {
-        $nfs_shares.each |Integer $index, String $nfs_share| {
+        $nfs_shares_list.each |Integer $index, String $nfs_share| {
        
             file { "/tmp/test_dir_${index}":
                 ensure => "directory",
@@ -18,24 +22,19 @@ class trilio::contego::validate inherits trilio::contego {
                 timeout => 10,
             }->
 
-            exec { "unmount nfs share: ${nfs_share}":
+            exec { "unmount nfs share: ${index}":
                 command => "umount /tmp/test_dir_${index}",
                 path    => ['/usr/bin','/usr/sbin'],
                 timeout => 20,
-            }->
-
-            exec {"Delete directory: /tmp/test_dir_${index}": 
-                command  => "rm -rf /tmp/test_dir_${index}",
-                path     => ['/usr/bin','/usr/sbin'],
             }
-            
+
         }
     } 
     elsif $backup_target_type == 'swift' {
          package { 'python-swiftclient':
              ensure      => present,
              provider    => pip,
-             require     => Package['python2-pip'],
+             require     => Exec['install_pip'],
          }
          if $swift_auth_version == 'tempauth' {
              exec {'test swift tempauth credentials':
@@ -74,7 +73,7 @@ class trilio::contego::validate inherits trilio::contego {
          package { 'boto':
              ensure      => present,
              provider    => pip,
-             require     => Package['python2-pip'],
+             require     => Exec['install_pip'],
          } ->
          
   

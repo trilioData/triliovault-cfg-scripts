@@ -25,7 +25,7 @@ class trilio::contego::install inherits trilio::contego {
         require => File["/home/tvault"]
     }->
     exec { 'install_upgrade_datamover':
-        command  => "/tmp/contego_install.sh ${contego_dir} ${tvault_appliance_ip} ${openstack_release} > /tmp/contego_install.log",
+        command  => "/tmp/contego_install.sh ${contego_dir} ${tvault_virtual_ip} ${openstack_release} > /tmp/contego_install.log",
         provider => shell,
         path     => ['/bin/bash','/usr/bin','/usr/sbin','usr/local/bin'],
         onlyif   => '/usr/bin/test -e /tmp/contego_install.sh',

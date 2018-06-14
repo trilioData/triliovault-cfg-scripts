@@ -6,7 +6,9 @@ CONTEGO_DIR=$1
 TVAULT_APPLIANCE_IP=$2 
 OPENSTACK_RELEASE=$3
 
-export CONTEGO_VERSION=`curl -s http://192.168.1.26:8081/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5`
+#export CONTEGO_VERSION=`curl -s http://192.168.1.26:8081/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5`
+
+export CONTEGO_VERSION=`curl -s http://${TVAULT_APPLIANCE_IP}:8081/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'`
 	
    ###Check if current contego package is latest
    if [ -d $CONTEGO_DIR/.virtenv ]; then
