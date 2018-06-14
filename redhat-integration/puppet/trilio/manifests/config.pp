@@ -45,7 +45,12 @@ class trilio::config (
 
     $create_file_system="off"
     $storage_local_device="/dev/sdb"
-
+    $_cert=""
+    $_private_key=""
+    if $enable_tls == "on" {
+       $_cert=file($cert_file_path)
+       $_private_key=file($privatekey_file_path)
+    }
 
     exec { 'trilio configuration: login to configurator':
         command => "curl -k --cookie-jar $cookie --data 'username=$configurator_username&password=$configurator_password' 'https://$configurator_node_ip/login",
