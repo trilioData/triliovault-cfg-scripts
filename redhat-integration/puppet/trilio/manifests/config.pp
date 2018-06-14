@@ -1,46 +1,43 @@
 class trilio::config (
     $tvault_version                       = undef,
     $redhat_openstack_version             = '10',
-    $configurator_node_ip                 = admin,
-    $configurator_username                = admin,
-    $configurator_password                = password,
+    $configurator_node_ip                 = undef,
+    $configurator_username                = 'admin',
+    $configurator_password                = 'password',
     $controller_nodes                     = undef,
     $tvault_virtual_ip                    = undef,
-    $name_server                          = 8.8.8.8,
+    $name_server                          = undef,
     $domain_search_order                  = undef,
-    $ntp_enabled                          = on,
-    $ntp_servers                          = 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,
-    $timezone                             = Etc/UTC,
+    $ntp_enabled                          = 'on',
+    $ntp_servers                          = '0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org',
+    $timezone                             = 'Etc/UTC',
     $keystone_admin_url                   = undef,
     $keystone_public_url                  = undef,
-    $admin_username                       = admin,
-    $admin_password                       = password,
-    $admin_tenant_name                    = admin,
-    $region_name                          = RegionOne,
-    $domain_id                            = default,
-    $trustee_role                         = _member_,
-    $backup_target_type                   = NFS,
+    $admin_username                       = undef,
+    $admin_password                       = undef,
+    $admin_tenant_name                    = undef,
+    $region_name                          = undef,
+    $domain_id                            = undef,
+    $trustee_role                         = '_member_',
+    $backup_target_type                   = undef,
     $storage_nfs_export                   = undef,
-    $nfs_options                          = nolock,soft,timeo=180,intr,
+    $nfs_options                          = 'nolock,soft,timeo=180,intr',
     $swift_auth_version                   = undef,
     $swift_auth_url                       = undef,
     $swift_username                       = undef,
     $swift_password                       = undef,
-    $s3_type                              = Amazon
+    $s3_type                              = undef,
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
     $s3_bucket                            = undef,
     $s3_region_name                       = undef,
-    $s3_access_key                        = undef,
-    $s3_secret_key                        = undef,
-    $s3_bucket                            = undef,
     $s3_endpoint_url                      = undef,
     $s3_ssl_enabled                       = False,
     $s3_signature_version                 = 's3v4',
-    $enable_tls                           = off,
+    $enable_tls                           = 'off',
     $cert_file_path                       = undef,
     $privatekey_file_path                 = undef,
-    $import_workloads                     = off,
+    $import_workloads                     = 'off',
 ){
 
     $create_file_system="off"
@@ -53,7 +50,7 @@ class trilio::config (
     }
 
     exec { 'trilio configuration: login to configurator':
-        command => "curl -k --cookie-jar $cookie --data 'username=$configurator_username&password=$configurator_password' 'https://$configurator_node_ip/login",
+        command => "curl -k --cookie-jar $cookie --data 'username=$configurator_username&password=$configurator_password' 'https://$configurator_node_ip/login'",
         cwd     => "/tmp/",
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
@@ -67,28 +64,28 @@ class trilio::config (
     }->
 
     exec { 'trilio configuration: populate variables':
-        command => "curl -k --cookie $cookie 'https://$configurator_node_ip/populate_variables",
+        command => "curl -k --cookie '$cookie' 'https://$configurator_node_ip/populate_variables'",
         cwd     => "/tmp/",
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
     }->
 
     exec { 'trilio configuration: configure host':
-        command => "curl -k --cookie $cookie 'https://$configurator_node_ip/configure_host",
+        command => "curl -k --cookie '$cookie' 'https://$configurator_node_ip/configure_host'",
         cwd     => "/tmp/",
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
     }->
 	
     exec { 'trilio configuration: configure workloadmgr':
-        command => "curl -k --cookie $cookie 'https://$configurator_node_ip/configure_workloadmgr",
+        command => "curl -k --cookie '$cookie' 'https://$configurator_node_ip/configure_workloadmgr'",
         cwd     => "/tmp/",
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
     }->
 
     exec { 'trilio configuration: register workload types':
-        command => "curl -k --cookie $cookie 'https://$configurator_node_ip/register_workloadtypes",
+        command => "curl -k --cookie '$cookie' 'https://$configurator_node_ip/register_workloadtypes'",
         cwd     => "/tmp/",
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
