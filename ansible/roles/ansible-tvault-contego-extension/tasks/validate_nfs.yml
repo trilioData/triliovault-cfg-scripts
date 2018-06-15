@@ -1,9 +1,9 @@
 ---
-#- name: mount NFS
-#  action: mount name={{nfsmount}} src="{{item1}}" fstype=nfs opts={{_nfsopts.stdout}} state=mounted
-#
-#- debug: msg="NFS SHRARE PATH is:{{item1}}" verbosity={{verbosity_level}}
-#
-#- name: umount NFS
-#  action: mount name={{nfsmount}} src={{item1}} fstype=nfs opts={{_nfsopts.stdout}} state=unmounted
-#  when: NFS == True
+- name: mount NFS
+  action: mount name={{nfsmount}} src="{{item1}}" fstype=nfs opts={{_nfsopts.stdout}} state=mounted
+
+- debug: msg="NFS SHRARE PATH is:{{item1}}" verbosity={{verbosity_level}}
+
+- name: umount NFS
+  action: mount name={{nfsmount}} src={{item1}} fstype=nfs opts={{_nfsopts.stdout}} state=unmounted
+  when: NFS == True
