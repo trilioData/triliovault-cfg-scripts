@@ -1,0 +1,22 @@
+# Clear any old environment that may conflict.
+for key in $( set | awk '{FS="="}  /^OS_/ {print $1}' ); do unset $key ; done
+NOVA_VERSION=1.1
+export NOVA_VERSION
+OS_PASSWORD=$(sudo hiera admin_password)
+export OS_PASSWORD
+OS_AUTH_URL=http://192.168.122.21:5000/v2.0
+export OS_AUTH_URL
+OS_USERNAME=admin
+OS_TENANT_NAME=admin
+COMPUTE_API_VERSION=1.1
+OS_BAREMETAL_API_VERSION=1.15
+OS_NO_CACHE=True
+OS_CLOUDNAME=undercloud
+OS_IMAGE_API_VERSION=1
+export OS_USERNAME
+export OS_TENANT_NAME
+export COMPUTE_API_VERSION
+export OS_BAREMETAL_API_VERSION
+export OS_NO_CACHE
+export OS_CLOUDNAME
+export OS_IMAGE_API_VERSION
