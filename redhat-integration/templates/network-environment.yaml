@@ -1,0 +1,46 @@
+# This template configures each role to use Vlans on a single nic for
+# each isolated network.
+# This template assumes use of network-isolation.yaml.
+#
+# FIXME: if/when we add functionality to heatclient to include heat
+# environment files we should think about using it here to automatically
+# include network-isolation.yaml.
+resource_registry:
+  OS::TripleO::BlockStorage::Net::SoftwareConfig: /home/stack/templates/nic-configs/cinder-storage.yaml
+  OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/templates/nic-configs/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/templates/nic-configs/controller.yaml
+  OS::TripleO::ObjectStorage::Net::SoftwareConfig: /home/stack/templates/nic-configs/swift-storage.yaml
+
+parameter_defaults:
+  # This sets 'external_network_bridge' in l3_agent.ini to an empty string
+  # so that external networks act like provider bridge networks (they
+  # will plug into br-int instead of br-ex)
+  NeutronExternalNetworkBridge: "''"
+
+  InternalApiNetCidr: 172.16.0.0/24
+  TenantNetCidr: 172.17.0.0/24
+  StorageNetCidr: 172.18.0.0/24
+  StorageMgmtNetCidr: 172.19.0.0/24
+  #ManagementNetCidr: 172.20.0.0/24
+  ExternalNetCidr: 144.217.196.128/28
+  InternalApiAllocationPools: [{'start': '172.16.0.10', 'end':  '172.16.0.200'}]
+  TenantAllocationPools: [{'start': '172.17.0.10', 'end': '172.17.0.200'}]
+  StorageAllocationPools: [{'start': '172.18.0.10', 'end': '172.18.0.200'}]
+  StorageMgmtAllocationPools: [{'start': '172.19.0.10', 'end':  '172.19.0.200'}]
+  #ManagementAllocationPools: [{'start': '172.20.0.10', 'end':  '172.20.0.200'}]
+  # Leave room for floating IPs in the External allocation pool
+  ExternalAllocationPools: [{'start': '144.217.196.133', 'end': '144.217.196.140'}]
+  # Set to the router gateway on the external network
+  ExternalInterfaceDefaultRoute: 144.217.196.142
+  # Gateway router for the provisioning network (or Undercloud IP)
+  ControlPlaneDefaultRoute: 192.168.122.1
+  # The IP address of the EC2 metadata server. Generally the IP of the Undercloud
+  EC2MetadataIp: 192.168.122.21
+  # Define the DNS servers (maximum 2) for the overcloud nodes
+  DnsServers: ["144.217.196.83","8.8.8.8"]
+  InternalApiNetworkVlanID: 201
+  StorageNetworkVlanID: 202
+  StorageMgmtNetworkVlanID: 203
+  TenantNetworkVlanID: 204
+  ManagementNetworkVlanID: 205
+  ExternalNetworkVlanID: 100

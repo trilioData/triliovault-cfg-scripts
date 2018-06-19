@@ -1,0 +1,41 @@
+{
+  "name": "openstack-tripleo",
+  "version": "5.6.4",
+  "author": "OpenStack Contributors",
+  "summary": "Puppet module for TripleO",
+  "license": "Apache-2.0",
+  "source": "git://github.com/openstack/puppet-tripleo.git",
+  "project_page": "https://launchpad.net/puppet-tripleo",
+  "issues_url": "https://bugs.launchpad.net/puppet-tripleo",
+  "dependencies": [
+    {"name":"puppetlabs/stdlib","version_requirement":">= 3.2.0 < 5.0.0"},
+    {"name":"sensu/sensu"},
+    {"name":"yelp/uchiwa"}
+  ],
+  "data_provider": null,
+  "description": "Installs and configures Tripleo.",
+  "requirements": [
+    {
+      "name": "pe",
+      "version_requirement": "3.x"
+    },
+    {
+      "name": "puppet",
+      "version_requirement": "3.x"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "7"
+      ]
+    }
+  ]
+}
