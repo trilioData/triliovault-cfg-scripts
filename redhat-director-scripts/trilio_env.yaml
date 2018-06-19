@@ -1,0 +1,22 @@
+resource_registry:
+  OS::TripleO::Services::TrilioDatamover: heat/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: heat/trilio-datamover-api.yaml
+  OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
+
+
+parameter_defaults:
+
+   ##Edit following parameters to set correct NFS share of your environment
+   ##This share will act as backup target for triliovault backups, should be accessible from all compute nodes and triliovault vm
+   NFSShares: '192.168.1.33:/mnt/tvault/'
+   NfsOptions: ''
+
+   ##Edit following parameter to set real triliovault VM IP address from your environment
+   ##You are supposed to launch a triliovault VM before executing these scripts
+   TvaultApplianceIP: '192.168.1.122'
+
+   ##Edit following parameters only if you are using non-default locations for nova configuration files,
+   ##Otherwise just keep them as it is
+   NovaConfFile: '/etc/nova/nova.conf'
+   NovaDistConfFile: '/usr/share/nova/nova-dist.conf'
+   NovaComputeFiltersFile: '/usr/share/nova/rootwrap/compute.filters'
