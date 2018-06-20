@@ -27,11 +27,11 @@ Edit `trilio_env.yaml` to set all details required for trilio.
 
 ### Prepare artifacts 
 Run prepare_artifacts.sh script as shown below, it will do following things
-i) Takes tripelO puppet module from undercloud(/etc/puppet/modules/tripleo) and adds trilio puppet, heat templates to it. It does not modify any existing code of tripleo module. It creats a copy of it in cureent directory
-ii) Takes 'trilio' puppet module from "puppet/trilio" directory of trilio repository, both modules tripleO and trilio will get copied in 
+- Takes tripelO puppet module from undercloud(/etc/puppet/modules/tripleo) and adds trilio puppet, heat templates to it. It does not modify any existing code of tripleo module. It creats a copy of it in cureent directory
+- Takes 'trilio' puppet module from "puppet/trilio" directory of trilio repository, both modules tripleO and trilio will get copied in 
 trilio_puppet_modules directory in current directory 
-iii) Then scripyt will use "upload-puppet-modules" tools of RHOSP and will upload both puppet modules to overcloud.
-vi) Finally it will take roles_data file path as input and will add trilio services under controller and compute role.
+- Then scripyt will use "upload-puppet-modules" tools of RHOSP and will upload both puppet modules to overcloud.
+- Finally it will take roles_data file path as input and will add trilio services under controller and compute role.
 ```
 ./prepare_artifacts.sh <Roles_data_file_path>
 ./prepare_artifacts.sh /usr/share/openstack-tripleo-heat-templates/roles_data.yaml
