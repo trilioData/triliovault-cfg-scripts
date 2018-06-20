@@ -1,6 +1,7 @@
-import yaml
+import yaml, sys
 
-role_data_file = '/tmp/roles_data.yaml'
+
+role_data_file = sys.argv[1]
 
 with open(role_data_file) as f:
     roles = yaml.load(f)
