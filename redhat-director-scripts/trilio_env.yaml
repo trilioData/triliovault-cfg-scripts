@@ -41,7 +41,7 @@ parameter_defaults:
    S3RegionName: ''
    S3Bucket: ''
    S3EndpointUrl: ''
-   S3SslEnabled: ''
+   S3SslEnabled: false
    S3SignatureVersion: 's3v4'
 
    #Horizon directory on controller node, this location will be used to install trilio horizon plugin
