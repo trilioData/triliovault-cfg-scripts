@@ -13,21 +13,6 @@ basedir="$current_dir"
 fi
 
 
-##Prepare puppet modules need to upload to obvercloud
-rm -rf $basedir/trilio_puppet_modules
-mkdir $basedir/trilio_puppet_modules
-cp -R ${basedir}/puppet/trilio ${basedir}/trilio_puppet_modules/
-cp -R /etc/puppet/modules/tripleo ${basedir}/trilio_puppet_modules/
-cp -R ${basedir}/puppet/tripleo/manifests/profile/base/trilio/ ${basedir}/trilio_puppet_modules/tripleo/manifests/profile/base/
-
-
-##Following command will upload trilio and tripleo puppet modules to overcloud nodes
-#As we are adding trilio.pp puppet manifest to trieplo module, we need to upload it to overcloud before deployment
-cd ${basedir}/
-upload-puppet-modules -d trilio_puppet_modules
-
-
-
 ##Overcloud deployment command with trilio components
 #It will install trilio datamover daemon on all compute nodes
 #It will install trilio datamover api part on all controller nodes
