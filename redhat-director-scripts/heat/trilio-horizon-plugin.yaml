@@ -22,42 +22,27 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  NFSShares:
+  TrilioVaultClusterVirtualIp:
     default: ''
-    description: Provide comma separated list of NFS shares to use as backup target
-    type: string
-  TvaultApplianceIP:
-    default: ''
-    description: Provide TrilioVault appliance IP address which is reachable from all compute nodes and controller node
-    type: string
-  NfsOptions:
-    default: ''
-    description: Provide any non-default NFS options for the NFS share
-    type: string
-  NovaConfFile:
-    default: ''
-    description: The location of the nova configuration file
-    type: string
-  NovaDistConfFile:
+    description: Provide TrilioVault cluster virtual IP address
+    type: string 
+  TrilioVaultVersion:
     default: ''
     description: The location of the default nova distribution configuration file
     type: string
-  NovaComputeFiltersFile:
+  HorizonDir:
     default: ''
-    description: The location of the nova compute filters file
+    description: Openstack horizon directory
     type: string
+
 
 outputs:
   role_data:
     description: Role data for the trilio role.
     value:
-      service_name: tvault-contego
       config_settings:
-        trilio::nfs_shares: {get_param: NFSShares} 
-        trilio::tvault_appliance_ip: {get_param: TvaultApplianceIP }
-        trilio::nfs_options: {get_param: NfsOptions}
-        trilio::nova_conf_file: {get_param: NovaConfFile}
-        trilio::nova_dist_conf_file: {get_param: NovaDistConfFile}
-        trilio::nova_compute_filters_file: {get_param: NovaComputeFiltersFile}
+        trilio::horizon::tvault_virtual_ip: {get_param: TrilioVaultClusterVirtualIp}
+        trilio::horizon::tvault_version: {get_param: TrilioVaultVersion}
+        trilio::horizon::horizon_dir: {get_param: HorizonDir}
       step_config: |
         include ::tripleo::profile::base::trilio::horizon

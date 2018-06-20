@@ -6,17 +6,43 @@ resource_registry:
 
 parameter_defaults:
 
-   ##Edit following parameters to set correct NFS share of your environment
-   ##This share will act as backup target for triliovault backups, should be accessible from all compute nodes and triliovault vm
-   NFSShares: '192.168.1.33:/mnt/tvault/'
-   NfsOptions: ''
-
-   ##Edit following parameter to set real triliovault VM IP address from your environment
-   ##You are supposed to launch a triliovault VM before executing these scripts
-   TvaultApplianceIP: '192.168.1.122'
-
+   TrilioVaultClusterVirtualIp: ''
    ##Edit following parameters only if you are using non-default locations for nova configuration files,
    ##Otherwise just keep them as it is
    NovaConfFile: '/etc/nova/nova.conf'
    NovaDistConfFile: '/usr/share/nova/nova-dist.conf'
-   NovaComputeFiltersFile: '/usr/share/nova/rootwrap/compute.filters'
+   TrilioVaultVersion:   ''
+   RedhatOpenstackVersion: '10'
+
+   ##Backup target nfs/swift/s3
+   BackupTargetType: 'nfs'
+    
+   ##For backup target 'nfs'
+   NfsShares: ''
+   NfsOptions: 'nolock,soft,timeo=180,intr'
+   
+
+   ##For backup target 'swift'
+   # Keystone api version for swift: tempauth/keystone_v2/keystone_v3
+   SwiftAuthVersion: 'tempauth'
+   SwiftAuthUrl: ''
+   Swift_tenant: ''
+   SwiftUsername: ''
+   SwiftPassword: ''
+   SwiftDomainId: ''
+   SwiftDomainName: ''
+   SwiftRegionName: ''
+
+   ##For backup target 's3'
+   #S3 type: amazon_s3/ceph_s3/minio_s3
+   S3Type: 'amazon_s3'
+   S3AccessKey: ''
+   S3SecretKey: ''
+   S3RegionName: ''
+   S3Bucket: ''
+   S3EndpointUrl: ''
+   S3SslEnabled: false
+   S3SignatureVersion: 's3v4'
+
+   #Horizon directory on controller node, this location will be used to install trilio horizon plugin
+   HorizonDir: '/usr/share/openstack-dashboard/'
