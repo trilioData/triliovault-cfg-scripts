@@ -9,8 +9,8 @@ class trilio::contego::validate inherits trilio::contego {
     }
 
 
-    if $backup_target_type == 'nfs' {
-        $nfs_shares_list.each |Integer $index, String $nfs_share| {
+/*    if $backup_target_type == 'nfs' {
+       $nfs_shares_list.each |Integer $index, String $nfs_share| {
        
             file { "/tmp/test_dir_${index}":
                 ensure => "directory",
@@ -29,8 +29,8 @@ class trilio::contego::validate inherits trilio::contego {
             }
 
         }
-    } 
-    elsif $backup_target_type == 'swift' {
+    } */
+    if $backup_target_type == 'swift' {
          package { 'python-swiftclient':
              ensure      => present,
              provider    => pip,
@@ -118,9 +118,9 @@ class trilio::contego::validate inherits trilio::contego {
               fail("Invalid s3_type provided: ${s3_type}")
          }
     }
-    else {
+/*    else {
          fail("Invalid backup_target_type: ${backup_target_type}")
-    }
+    }*/
 
   
 }
