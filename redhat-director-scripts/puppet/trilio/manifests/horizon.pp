@@ -5,29 +5,20 @@ class trilio::horizon (
 ){
 
 
-    exec { 'install_pip':
-        command => 'easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz',
-        cwd     => "/tmp/",
-        unless  => '/usr/bin/which pip',
-        provider => shell,
-        path    => ['/usr/bin','/usr/sbin'],
+    exec {'python-workloadmgrclient':
+        command  => "yes | pip install http://${tvault_virtual_ip}:8081/packages/python-workloadmgrclient-${tvault_version}.tar.gz",
+        require  => Exec['install_pip'],
+        before   => Exec['tvault-horizon-plugin'],
+        path     => ['/usr/bin/', '/usr/sbin'],
     }
 
-    package {'python-workloadmgrclient':
-        ensure   => present,
-        provider => pip,
-        source   => "http://${tvault_virtual_ip}:8081/packages/python-workloadmgrclient-${tvault_version}.tar.gz",
+    exec {'tvault-horizon-plugin':
+        command  => "yes | pip install http://${tvault_virtual_ip}:8081/packages/tvault-horizon-plugin-${tvault_version}.tar.gz",
         require  => Exec['install_pip'],
-        before   => Package['tvault-horizon-plugin'],
+        path     => ['/usr/bin/', '/usr/sbin'],
+        notify   => Service['httpd'],
     }
 
-    package {'tvault-horizon-plugin':
-        ensure   => present,
-        provider => pip,
-        source   => "http://${tvault_virtual_ip}:8081/packages/tvault-horizon-plugin-${tvault_version}.tar.gz",
-        require  => Exec['install_pip'],
-        notify   => Service['httpd']
-    }
 
     service { 'httpd':
         ensure      => running,
