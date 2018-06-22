@@ -4,5 +4,5 @@ import sys
 access_key = sys.argv[1]
 secret_key = sys.argv[2]
 
-conn = S3Connection('AKIAIWV6KUOHBMLUQ46A', 'bMTsS3AqSUIMbXxCyyzP8wVB92LRRPBdumoHPsfk')
+conn = S3Connection(access_key, secret_key)
 response = conn.get_all_buckets()
