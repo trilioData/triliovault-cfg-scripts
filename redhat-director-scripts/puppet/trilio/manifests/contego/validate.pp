@@ -7,29 +7,6 @@ class trilio::contego::validate inherits trilio::contego {
         provider => shell,
         path    => ['/usr/bin','/usr/sbin'],
     }
-
-
-/*    if $backup_target_type == 'nfs' {
-       $nfs_shares_list.each |Integer $index, String $nfs_share| {
-       
-            file { "/tmp/test_dir_${index}":
-                ensure => "directory",
-            }->
-
-            exec { "mount nfs share: ${nfs_share}":
-                command => "mount -t nfs ${nfs_share} /tmp/test_dir_${index}",
-                path    => ['/usr/bin','/usr/sbin'],
-                timeout => 10,
-            }->
-
-            exec { "unmount nfs share: ${index}":
-                command => "umount /tmp/test_dir_${index}",
-                path    => ['/usr/bin','/usr/sbin'],
-                timeout => 20,
-            }
-
-        }
-    } */
     if $backup_target_type == 'swift' {
          package { 'python-swiftclient':
              ensure      => present,
@@ -74,7 +51,7 @@ class trilio::contego::validate inherits trilio::contego {
              ensure      => present,
              provider    => pip,
              require     => Exec['install_pip'],
-         } ->
+         }
          
   
          if $s3_type == 'amazon_s3' {
@@ -86,6 +63,7 @@ class trilio::contego::validate inherits trilio::contego {
              exec { 'test amazon s3 credentials':
                   command  => "python /tmp/test_s3.py ${s3_accesskey} ${s3_secretkey}",
                   path     => ['/usr/bin','/usr/sbin', '/usr/local/bin','/usr/local/sbin'],
+                  require  => Package['boto'],
              }
 
          }
@@ -118,9 +96,4 @@ class trilio::contego::validate inherits trilio::contego {
               fail("Invalid s3_type provided: ${s3_type}")
          }
     }
-/*    else {
-         fail("Invalid backup_target_type: ${backup_target_type}")
-    }*/
-
-  
 }
