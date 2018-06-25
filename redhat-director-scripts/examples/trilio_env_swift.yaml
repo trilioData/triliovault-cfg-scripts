@@ -1,0 +1,53 @@
+resource_registry:
+  OS::TripleO::Services::TrilioDatamover: heat/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: heat/trilio-datamover-api.yaml
+  OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
+
+
+parameter_defaults:
+
+   TrilioVaultClusterVirtualIp: '192.168.3.4'
+   ##Edit following parameters only if you are using non-default locations for nova configuration files,
+   ##Otherwise just keep them as it is
+   NovaConfFile: '/etc/nova/nova.conf'
+   NovaDistConfFile: '/usr/share/nova/nova-dist.conf'
+   TrilioVaultVersion:   '3.0.40'
+   RedhatOpenstackVersion: '10'
+
+   ##Backup target nfs/swift/s3
+   BackupTargetType: 'nfs'
+    
+   ##For backup target 'nfs'
+   NfsShares: '192.168.4.5:/var/share'
+   NfsOptions: 'nolock,soft,timeo=180,intr'
+   
+
+
+##Ignore these parameters if backup target is NFS or S3
+   ##For backup target 'swift'
+   # Keystone api version for swift: tempauth/keystone_v2/keystone_v3
+   SwiftAuthVersion: 'tempauth'
+   SwiftAuthUrl: ''
+   Swift_tenant: ''
+   SwiftUsername: ''
+   SwiftPassword: ''
+   SwiftDomainId: ''
+   SwiftDomainName: ''
+   SwiftRegionName: ''
+
+
+##Ignore these parameters if backup target if NFS or Swift
+   ##For backup target 's3'
+   #S3 type: amazon_s3/ceph_s3/minio_s3
+   S3Type: 'amazon_s3'
+   S3AccessKey: ''
+   S3SecretKey: ''
+   S3RegionName: ''
+   S3Bucket: ''
+   S3EndpointUrl: ''
+   S3SslEnabled: false
+   S3SignatureVersion: 's3v4'
+
+##This parameter is required irrespective of backup target type
+   #Horizon directory on controller node, this location will be used to install trilio horizon plugin
+   HorizonDir: '/usr/share/openstack-dashboard/'
