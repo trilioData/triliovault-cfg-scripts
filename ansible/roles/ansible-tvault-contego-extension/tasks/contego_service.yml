@@ -59,4 +59,9 @@
     - shell: systemctl daemon-reload
     - name: enable tvault-contego service and reload it
       service: name=tvault-contego  state=started enabled=yes
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution== suse) or
+       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))
 

@@ -61,8 +61,8 @@
         - name: ensure tvault-contego service file is deleted if os release is Ubuntu
           file: path=/etc/init/tvault-contego.conf state=absent
 
-        - name: reload daemon
-          shell: systemctl daemon-reload
+        #- name: reload daemon
+        #  shell: systemctl daemon-reload
 
         - name:  ensure tvault-object-store service file is deleted if os release is Ubuntu
           file: path=/etc/init/tvault-object-store.conf state=absent
@@ -70,8 +70,8 @@
         - name: ensure tvault-swift service file is deleted if os release is rhel7
           file: path=/etc/init/tvault-swift.conf state=absent
 
-        - name: reload daemon
-          shell: systemctl daemon-reload
+        #- name: reload daemon
+        #  shell: systemctl daemon-reload
       when: ansible_lsb.codename != 'xenial' or ansible_lsb.codename != 'willy'
   when: ansible_distribution=="Ubuntu"
 
