@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+cd {{TVAULT_CONTEGO_VIRTENV}}
 source .virtenv/bin/activate
 pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
 rm -rf .virtenv/lib/python2.7/site-packages/cryptography
