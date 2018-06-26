@@ -1,5 +1,5 @@
 [DEFAULT]
-vault_storage_nfs_export = {{NFS_SHARES[0]}}
+vault_storage_nfs_export = {{ NFS_SHARES|join(",") }}
 vault_storage_nfs_options = {{NFS_OPTIONS}}
 vault_storage_type = nfs
 vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}

@@ -98,7 +98,13 @@
 
 - debug: msg="{{mount_path.stdout}}"  verbosity={{verbosity_level}}
 
+- set_fact:
+    mount_list : "{{ mount_path.stdout.split('\n') }}"
+
+- debug : msg="mount list is:{{mount_list}}"
+
 - name:  unmount mountpath incase contego is failed to unmount
-  shell: umount {{mount_path.stdout}}
+  shell: umount {{item}}
+  with_items: "{{mount_list}}"
   when: mount_path.stdout != ""
 

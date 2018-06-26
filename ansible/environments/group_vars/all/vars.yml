@@ -2,32 +2,42 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
+
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
 verbosity_level: 2
-#Name of web server service that opennstack horizon node uses 
+
+#Name of web server service that openstack horizon node uses 
+#Debian: apache2
+#RHEL: httpd
 WebServer: sample_webservice
-#Specify opestack dashboard path 
+
+#Specify opestack dashboard path based on type of operating system of controller node
+#For Debian/RHEL: /usr/share/openstack-dashboard
+#For SUSE: /srv/www/openstack-dashboard 
 HORIZON_PATH: /usr/share/openstack-dashboard
 
 #specify openstack's nova api service name
+#For Debian: nova-api
+#For RHEL : openstack-nova-api 
 nova_api_service: sample_name_of_nova_api_service
 
 ##### Select snapshot storage type #####
-#Details for NFS as snapshot storage
+#Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
 NFS: False
 NFS_SHARES: 
-          - sample_nfs_server_ip:sample_share_path
+          - sample_nfs_server_ip1:sample_share_path
+          - sample_nfs_server_ip2:sample_share_path
 NFS_OPTS: ""
 
 #### Details for Swift as snapshot storage
-Swift: True
+Swift: False
 VAULT_SWIFT_AUTH_URL: sample_vault_swift_url
 VAULT_SWIFT_TENANT:   sample_vault_swift_tenant
 VAULT_SWIFT_USERNAME: sample_vault_swift_username
 VAULT_SWIFT_PASSWORD: sample_vault_swift_password
 VAULT_SWIFT_DOMAIN_ID:  sample_swift_domain_id
 ### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3(Provide one of them value in VAULT_SWIFT_AUTH_VERSION1 variable) 
-VAULT_SWIFT_AUTH_VERSION1: KEYSTONEV2
+VAULT_SWIFT_AUTH_VERSION1: sample_auth_version
 
 #### Details for S3 as snapshot storage
 S3: False
@@ -36,14 +46,17 @@ VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
 #### S3 Specific Backend Configurations
-#### Provide one of follwoing three values in s3_type variable, string's case should be match
-#Amazon/Ceph_S3/Minio_S3
-s3_type: Ceph_S3
+#### Provide one of follwoing two values in s3_type variable, string's case should be match
+#Amazon/Ceph_S3/
+s3_type: sample_s3_type
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
 VAULT_S3_SECURE: False
 
-###static fields for tvault contego extension 
+
+#******************************************************************************************************************************************************************
+###static fields for tvault contego extension ,Please Do not Edit Below Variables
+#******************************************************************************************************************************************************************
 #tvault contego file path
 TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
