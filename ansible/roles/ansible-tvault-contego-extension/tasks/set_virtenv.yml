@@ -133,6 +133,6 @@
 
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
 
-- name: create virtenv dir(/home/tvault) if it is not exist
+- name: change virtenv dir(/home/tvault) users to nova
   file: path={{TVAULT_CONTEGO_VIRTENV}} mode=765 recurse=yes owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
