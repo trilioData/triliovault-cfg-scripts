@@ -9,7 +9,7 @@
 - name: install pip if it is not installed 
   shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
   register: pip_installation
-  when: "'No module' in pip_version1.stderr"
+  when: "'No module' in pip_version1.stderr or 'pip' in pip_version1.stdout"
 
 - name: grep tvault-contego version using CURL call
   shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
