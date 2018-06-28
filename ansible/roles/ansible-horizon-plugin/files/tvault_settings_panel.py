@@ -5,4 +5,6 @@ PANEL_DASHBOARD = 'project'
 # The slug of the panel group the PANEL is associated with.
 PANEL_GROUP = 'backups'
 # Python panel class of the PANEL to be added.
+ADD_PANEL = ('dashboards.settings.panel.Settings')
+DISABLED = False
 
