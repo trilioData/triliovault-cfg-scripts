@@ -1,4 +1,4 @@
- # The slug of the panel to be added to HORIZON_CONFIG. Required.
+# The slug of the panel to be added to HORIZON_CONFIG. Required.
 PANEL = 'workloads'
 # The slug of the dashboard the PANEL associated with. Required.
 PANEL_DASHBOARD = 'project'

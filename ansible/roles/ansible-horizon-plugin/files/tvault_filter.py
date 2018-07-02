@@ -52,9 +52,13 @@ def get_local_time(record_time, input_format, output_format, tz):
             if not record_time or record_time is None or record_time == '':
                 return ''
             else:
-                if not input_format                         or input_format == None                         or input_format == '':
+                if not input_format \
+                        or input_format == None \
+                        or input_format == '':
                     input_format = '%Y-%m-%dT%H:%M:%S.%f';
-                if not output_format                          or output_format == None                         or output_format == '':
+                if not output_format  \
+                        or output_format == None \
+                        or output_format == '':
                     output_format = "%m/%d/%Y %I:%M:%S %p";
 
                 local_time = datetime.strptime(
@@ -110,4 +114,3 @@ def display_time_quantifier(seconds):
 def custom_split(value, key):
     key=int(key)
     return value.split('_')[key]
-
