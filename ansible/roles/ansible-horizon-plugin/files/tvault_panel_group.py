@@ -5,4 +5,3 @@ PANEL_GROUP = 'backups'
 PANEL_GROUP_NAME = _('Backups')
 # The slug of the dashboard the PANEL_GROUP associated with. Required.
 PANEL_GROUP_DASHBOARD = 'project'
-
