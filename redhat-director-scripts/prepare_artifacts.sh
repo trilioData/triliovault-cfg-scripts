@@ -1,23 +1,30 @@
-#!/bin/bash -x
+#!/bin/bash
 
 set -e
 
-if [ $# -ne 1 ]; then
-   echo -e "Provide roles_data file path as argument to this script \nBy default it present at /usr/share/openstack-tripleo-heat-templates/roles_data.yaml on undercloud \nLike this:\n./prepare_artifacts.sh /usr/share/openstack-tripleo-heat-templates/roles_data.yaml"
+if [ $# -ne 2 ]; then
+   echo -e "\nError: Script takes exactly two arguments, $# provided\n    First argument: undercloud rc file path \n    Second argument: Roles_data file path which is used to deploy overcloud \n    By default roles data file is present at /usr/share/openstack-tripleo-heat-templates/roles_data.yaml on undercloud \nFor Example:\n    ./prepare_artifacts.sh /home/stack/stackrc /usr/share/openstack-tripleo-heat-templates/roles_data.yaml\n"
    exit 0
 fi
 
+undercloud_rc_file=$1
+roles_data_file=$2
 
 current_dir=$(pwd)
 basedir=$(dirname $0)
-echo "$BASEDIR"
-echo "$current_dir"
 
 if [ $basedir = '.' ]
 then
 basedir="$current_dir"
 fi
 
+cd $basedir/
+
+source $undercloud_rc_file
+
+cp $undercloud_rc_file undercloudrc
+
+chmod +x undercloudrc
 
 ##Prepare puppet modules need to upload to obvercloud
 rm -rf $basedir/trilio_puppet_modules
@@ -34,4 +41,6 @@ upload-puppet-modules -d trilio_puppet_modules
 
 
 ##Prepare roles data
-/usr/bin/python prepare_roles_data.py $1
+/usr/bin/python prepare_roles_data.py $roles_data_file
+
+cd $current_dir
