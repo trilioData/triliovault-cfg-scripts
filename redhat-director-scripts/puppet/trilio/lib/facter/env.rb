@@ -1,9 +1,31 @@
-Facter.add(:tvault_version) do
+Facter.add(:which_cryptography) do
   setcode do
-  version = Facter::Core::Execution::exec("/usr/bin/curl -s http://192.168.1.26:8081/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | cut -c-5")
-  version
+  result = Facter::Core::Execution::exec("python -c 'import cryptography;print cryptography.__path__[0]'")
+  result
   end
 end
+
+Facter.add(:which_libvirt) do
+  setcode do
+  result = Facter::Core::Execution::exec("python -c 'import libvirtmod;print libvirtmod.__file__'")
+  result
+  end
+end
+
+Facter.add(:which_cffi) do
+  setcode do
+  result = Facter::Core::Execution::exec("python -c 'import cffi;print cffi.__path__[0]'")
+  result
+  end
+end
+
+Facter.add(:which_cffi_so) do
+  setcode do
+  result = Facter::Core::Execution::exec("python -c 'import _cffi_backend;print _cffi_backend.__file__'")
+  result
+  end
+end
+
 
 Facter.add(:is_cpu_exists) do
   setcode do
