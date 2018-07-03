@@ -2,12 +2,39 @@ class trilio::contego::postinstall inherits trilio::contego {
   
     require trilio::contego::validate
     require trilio::contego::install   
+
+
+    file { "$contego_dir/.virtenv/lib/python2.7/site-packages/cryptography":
+        ensure => 'link',
+        target => $which_cryptography,
+        force  => yes,
+    }
+
+    file { "$contego_dir/.virtenv/lib/python2.7/site-packages/cffi":
+        ensure => 'link',
+        target => $which_cffi,
+        force  => yes,
+    }
+  
+  
+    file { "Copy libvirtmod so file":
+        source => $which_libvirt,
+        path   => "$contego_dir/.virtenv/lib/python2.7/site-packages/libvirtmod.so",
+    }
+  
+    file { 'Copy cffi so file':
+        source => $which_cffi_so,
+	path   => "$contego_dir/.virtenv/lib/python2.7/site-packages/_cffi_backend.so",
+    }	  
+
+
+
 ## Adding passwordless sudo access to 'nova' user
-    file { "/etc/sudoers.d/${contego_user}":
+    file { "/etc/sudoers.d/triliovault_${contego_user}":
         ensure => present,
     }->
     file_line { 'Adding passwordless sudo access to nova user':
-        path   => "/etc/sudoers.d/${contego_user}",
+        path   => "/etc/sudoers.d/triliovault_${contego_user}",
         line   => "${contego_user} ALL=(ALL) NOPASSWD: ALL",
     }
 

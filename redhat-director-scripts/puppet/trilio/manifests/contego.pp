@@ -184,6 +184,5 @@ vault_s3_ssl =  ${ssl_enabled}"
     class {'trilio::contego::postinstall': }
     class {'trilio::contego::cgroup': }
     class {'trilio::contego::service': }
-    class {'trilio::contego::cleanup': }
 
 }
