@@ -2,16 +2,17 @@
 
 set -e 
 
+
 current_dir=$(pwd)
 basedir=$(dirname $0)
-echo "$BASEDIR" 
-echo "$current_dir"
 
 if [ $basedir = '.' ]
 then
 basedir="$current_dir"
 fi
 
+
+source ${basedir}/undercloudrc
 
 ##Overcloud deployment command with trilio components
 #It will install trilio datamover daemon on all compute nodes

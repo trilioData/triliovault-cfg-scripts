@@ -2,12 +2,40 @@ class trilio::contego::postinstall inherits trilio::contego {
   
     require trilio::contego::validate
     require trilio::contego::install   
+
+    if $openstack_release == "newton" {
+        file { "$contego_dir/.virtenv/lib/python2.7/site-packages/cryptography":
+            ensure => 'link',
+            target => $which_cryptography,
+            force  => yes,
+        }
+
+        file { "$contego_dir/.virtenv/lib/python2.7/site-packages/cffi":
+            ensure => 'link',
+            target => $which_cffi,
+            force  => yes,
+        }
+  
+  
+        file { "Copy libvirtmod so file":
+            source => $which_libvirt,
+            path   => "$contego_dir/.virtenv/lib/python2.7/site-packages/libvirtmod.so",
+        }
+  
+        file { 'Copy cffi so file':
+            source => $which_cffi_so,
+	    path   => "$contego_dir/.virtenv/lib/python2.7/site-packages/_cffi_backend.so",
+        }	  
+    }
+
+
+
 ## Adding passwordless sudo access to 'nova' user
-    file { "/etc/sudoers.d/${contego_user}":
+    file { "/etc/sudoers.d/triliovault_${contego_user}":
         ensure => present,
     }->
     file_line { 'Adding passwordless sudo access to nova user':
-        path   => "/etc/sudoers.d/${contego_user}",
+        path   => "/etc/sudoers.d/triliovault_${contego_user}",
         line   => "${contego_user} ALL=(ALL) NOPASSWD: ALL",
     }
 
@@ -30,33 +58,27 @@ class trilio::contego::postinstall inherits trilio::contego {
     if $backup_target_type == 'nfs' {
         file { "/etc/tvault-contego/tvault-contego.conf":
             ensure  => present,
-            content => $contego_conf_nfs,
+            content => template('trilio/contego_nfs_conf.erb'),
         }    
     }
     elsif $backup_target_type == 'swift' {
         file { "/etc/tvault-contego/tvault-contego.conf":
             ensure  => present,
-            content => $contego_conf_swift,
+            content => template('trilio/contego_swift_conf.erb'),
         }
     }
     elsif $backup_target_type == 's3' {
         if $s3_type == 'amazon_s3' {
             file { "/etc/tvault-contego/tvault-contego.conf":
                 ensure  => present,
-                content => $contego_conf_amazon_s3,
+                content => template('trilio/contego_amazon_s3_conf.erb'),
             }    
         }
         elsif $s3_type == 'ceph_s3' {
             file { "/etc/tvault-contego/tvault-contego.conf":
                 ensure  => present,
-                content => $contego_conf_ceph_s3,
+                content => template('contego_ceph_s3_conf.erb'),
             }    
-        }
-        elsif $s3_type == 'minio_s3' {
-            file { "/etc/tvault-contego/tvault-contego.conf":
-                ensure  => present,
-                content => $contego_conf_minio_s3,
-            }
         }
         else {
             fail("s3_type is not valid")
@@ -75,14 +97,14 @@ class trilio::contego::postinstall inherits trilio::contego {
 
     file { '/etc/systemd/system/tvault-contego.service':
         ensure  => present,
-        content => $contego_systemd_file_content,
+        content => template('trilio/contego_systemd_conf.erb'),
     }
 
 
      if ($backup_target_type == 'swift') or ($backup_target_type == 's3') {
          file { '/etc/systemd/system/tvault-object-store.service':
              ensure  => present,
-             content => $object_store_systemd_file_content,
+             content => template('trilio/object_store_systemd_conf.erb'),
          }
 
          exec { 'daemon_reload_for_object_store':

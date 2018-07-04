@@ -30,5 +30,4 @@ class trilio::contego::install inherits trilio::contego {
         path     => ['/bin/bash','/usr/bin','/usr/sbin','usr/local/bin'],
         onlyif   => '/usr/bin/test -e /tmp/contego_install.sh',
     }
-  
 }

@@ -31,20 +31,6 @@ export CONTEGO_VERSION=`curl -s http://${TVAULT_APPLIANCE_IP}:8081/packages/ | g
        mkdir -p $CONTEGO_DIR/
        cd $CONTEGO_DIR/
    fi	   
-      
-   ###Install new contego package
-   
-   #Set library paths as per openstack release
-   if [[ "$OPENSTACK_RELEASE" == "mitaka" ]];then
-      which_cryptography=$(python -c "import cryptography;print cryptography.__path__[0]")
-      which_crypto=$(python -c "import Crypto;print Crypto.__path__[0]")
-   fi
-   if [[ "$OPENSTACK_RELEASE" == "newton" ]];then
-      which_cryptography=$(python -c "import cryptography;print cryptography.__path__[0]")
-      which_libvirt=$(python -c "import libvirtmod;print libvirtmod.__file__")
-      which_cffi=$(python -c "import cffi;print cffi.__path__[0]")
-      which_cffi_so=$(python -c "import _cffi_backend;print _cffi_backend.__file__")
-   fi
    rm -f tvault-contego-virtenv.tar.gz
    curl -O http://$TVAULT_APPLIANCE_IP:8081/packages/$OPENSTACK_RELEASE/tvault-contego-virtenv.tar.gz
    tar -zxf tvault-contego-virtenv.tar.gz
@@ -55,21 +41,7 @@ export CONTEGO_VERSION=`curl -s http://${TVAULT_APPLIANCE_IP}:8081/packages/ | g
         exit 1
    fi
    pip install http://$TVAULT_APPLIANCE_IP:8081/packages/tvault-contego-$CONTEGO_VERSION.tar.gz
-   systemctl stop tvault-contego
-   if [[ "$OPENSTACK_RELEASE" == "mitaka" ]];then
-      rm -rf .virtenv/lib/python2.7/site-packages/cryptography
-      ln -s $which_cryptography .virtenv/lib/python2.7/site-packages/cryptography
-      rm -rf .virtenv/lib/python2.7/site-packages/Crypto
-      ln -s $which_crypto .virtenv/lib/python2.7/site-packages/Crypto
-   fi
-   if [[ "$OPENSTACK_RELEASE" == "newton" ]];then
-      rm -rf .virtenv/lib/python2.7/site-packages/cryptography
-      ln -s $which_cryptography .virtenv/lib/python2.7/site-packages/cryptography
-      cp $which_libvirt .virtenv/lib/python2.7/site-packages/libvirtmod.so
-      rm -rf .virtenv/lib/python2.7/site-packages/cffi
-      ln -s $which_cffi .virtenv/lib/python2.7/site-packages/cffi
-      cp $which_cffi_so .virtenv/lib/python2.7/site-packages/_cffi_backend.so
-   fi
+
    CONTEGO_VERSION_INSTALLED=`pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1`
    deactivate
    
