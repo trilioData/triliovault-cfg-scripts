@@ -28,13 +28,13 @@ These ansible scripts are designed to configure tvault cluster, deploy trilioVau
         --------------------------
 3.	Edit environments/group_vars/all/vars.yml file to configure necessary parameters. 
 
-4.	Execute master-install.yml to configure tvault nodes and install contego and horizon plugin. Use following command.
+4.	Execute main-install.yml to configure tvault nodes and install contego and horizon plugin. Use following command.
 
         ansible-playbook main-install.yml -i environments/hosts --tags "all-install"
 
 5.      See "Usage" section to know how this scripts can be used to install contego,horizon,tvault-configuration cluster seperately 
 
-====Usage=============================================================================================================
+====Usage================================================
 
 For end to end installation of trilliovault(datamover extension,horizon,contego-api and tvault-configuation):
 
@@ -47,8 +47,6 @@ To uninstall all above tasks
 ansible-playbook main-install.yml -i environments/hosts --tags "all-uninstall"
 
 ==== tags can be used with playbook ===
-
-==========================================================
 
 For installing tvault-horizon on openstack-horizon node
 
