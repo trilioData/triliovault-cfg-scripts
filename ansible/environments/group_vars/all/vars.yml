@@ -7,8 +7,8 @@ PORT_NO: 8081
 verbosity_level: 2
 
 #Name of web server service that openstack horizon node uses 
-#Debian: apache2
-#RHEL: httpd
+#For Debian: apache2
+#For RHEL: httpd
 WebServer: sample_webservice
 
 #Specify opestack dashboard path based on type of operating system of controller node
