@@ -17,14 +17,4 @@ class trilio::api (
         path     => ['/usr/bin', '/usr/sbin'],
         notify   => Service['openstack-nova-api'],
     }   
-
-
-    service { 'openstack-nova-api':
-        ensure      => running,
-        enable      => true,
-        hasstatus   => true,
-        hasrestart  => true,
-    }
- 
-
 }
