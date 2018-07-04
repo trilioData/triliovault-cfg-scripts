@@ -13,8 +13,20 @@ class trilio::contego::install inherits trilio::contego {
         ensure => 'directory',
         owner  => $contego_user,
         group  => $contego_group,
-    }
+    }->
+     file { "/var/triliovault":
+        ensure => 'directory',
+        mode =>  0777,
+        owner  => $contego_user,
+        group  => $contego_group,
+    }->
 
+     file { "/var/triliovault-mounts":
+        ensure => 'directory',
+        mode =>  0777,
+        owner  => $contego_user,
+        group  => $contego_group,
+    }->
 
     file { '/tmp/contego_install.sh':
         ensure  => 'present',
