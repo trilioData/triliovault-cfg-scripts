@@ -18,15 +18,6 @@ class trilio::horizon (
         path     => ['/usr/bin/', '/usr/sbin'],
         notify   => Service['httpd'],
     }
-
-
-    service { 'httpd':
-        ensure      => running,
-        enable      => true,
-        hasstatus   => true,
-        hasrestart  => true,
-        notify      => Exec['sync_static'],
-    }
     file { "${horizon_dir}/openstack_dashboard/local/enabled/tvault_panel_group.py":
         ensure => 'present',
         owner  => 'root',
@@ -93,6 +84,7 @@ class trilio::horizon (
         command => "${horizon_dir}/manage.py shell < /tmp/sync_static.py &> /dev/null",
         path    => ['/usr/bin','usr/sbin'],
         refreshonly => true,
+        require => Service['httpd'],
     }
 
 }
