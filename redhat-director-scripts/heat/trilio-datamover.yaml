@@ -46,7 +46,7 @@ parameters:
     default: ''
     description: 
     type: string
-  NFSShares:
+  NfsShares:
     default: ''
     description: Provide comma separated list of NFS shares to use as backup target
     type: string
@@ -131,7 +131,7 @@ outputs:
         trilio::contego::nova_conf_file: {get_param: NovaConfFile}
         trilio::contego::nova_dist_conf_file: {get_param: NovaDistConfFile}
         trilio::contego::backup_target_type: {get_param: BackupTargetType}
-        trilio::contego::nfs_shares: {get_param: NFSShares}
+        trilio::contego::nfs_shares: {get_param: NfsShares}
         trilio::contego::nfs_options: {get_param: NfsOptions}
         trilio::contego::swift_auth_version: {get_param: SwiftAuthVersion}
         trilio::contego::swift_auth_url: {get_param: SwiftAuthUrl}
