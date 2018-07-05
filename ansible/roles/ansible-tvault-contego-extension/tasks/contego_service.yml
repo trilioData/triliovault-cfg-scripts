@@ -1,4 +1,4 @@
-- debug: msg="{{ansible_distribution}}"
+- debug: msg="ansible distribution is:{{ansible_distribution}}"
 
 - name: get configuration parameters from {{TVAULT_CONTEGO_CONF}}
   copy: src={{files_path}}/files/get_configs.py dest=/tmp/get_configs.py
@@ -40,7 +40,7 @@
      dest: "{{contego_service_file_path}}"
   when: >
         (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or ansible_distribution== suse
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES)
 
 - name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
   template:
