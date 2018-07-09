@@ -4,20 +4,23 @@ class trilio::horizon (
     $tvault_version                     = undef,
 ){
 
+    $version_numbers= split($tvault_version, '\.')
+    $tvault_release = "${version_numbers[0]}.${version_numbers[1]}"
 
-    exec {'python-workloadmgrclient':
-        command  => "yes | pip install http://${tvault_virtual_ip}:8081/packages/python-workloadmgrclient-${tvault_version}.tar.gz",
-        require  => Exec['install_pip'],
-        before   => Exec['tvault-horizon-plugin'],
-        path     => ['/usr/bin/', '/usr/sbin'],
-    }
-
-    exec {'tvault-horizon-plugin':
-        command  => "yes | pip install http://${tvault_virtual_ip}:8081/packages/tvault-horizon-plugin-${tvault_version}.tar.gz",
-        require  => Exec['install_pip'],
-        path     => ['/usr/bin/', '/usr/sbin'],
+    package { 'python-workloadmgrclient':
+        ensure => latest,
+        provider => 'rpm',
+        source => "/var/tmp/python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm",
         notify   => Service['httpd'],
     }->
+
+    package { 'tvault-horizon-plugin':
+        ensure => latest,
+        provider => 'rpm',
+        source => "/var/tmp/tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm",
+        notify   => Service['httpd'],
+    }->
+
     file { "${horizon_dir}/openstack_dashboard/local/enabled/tvault_panel_group.py":
         ensure => 'present',
         owner  => 'root',
