@@ -39,4 +39,4 @@ outputs:
         trilio::api::tvault_virtual_ip: {get_param: TrilioVaultClusterVirtualIp}
         trilio::api::tvault_version: {get_param: TrilioVaultVersion}
       step_config: |
-        include ::tripleo::profile::base::trilio::api
+        include ::trilio::tripleo::api

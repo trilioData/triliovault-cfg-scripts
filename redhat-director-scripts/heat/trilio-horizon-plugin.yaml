@@ -45,4 +45,4 @@ outputs:
         trilio::horizon::tvault_version: {get_param: TrilioVaultVersion}
         trilio::horizon::horizon_dir: {get_param: HorizonDir}
       step_config: |
-        include ::tripleo::profile::base::trilio::horizon
+        include ::trilio::tripleo::horizon
