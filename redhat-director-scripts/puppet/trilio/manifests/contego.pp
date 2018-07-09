@@ -61,8 +61,6 @@ class trilio::contego (
 
     }
 
-    $version_numbers= split($tvault_version, '\.')
-    $tvault_release = "${version_numbers[0]}.${version_numbers[1]}"
     class {'trilio::contego::validate': }
     class {'trilio::contego::install': }
     class {'trilio::contego::postinstall': }

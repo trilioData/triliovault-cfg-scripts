@@ -3,14 +3,6 @@ class trilio::contego::install inherits trilio::contego {
     require trilio::contego::validate
     notify { $openstack_release: } 
 
-    file { '/var/trilio-rpms':
-        ensure => 'directory',
-        mode   => '0755'
-    }->
-    file { "/var/trilio-rpms/tvault-contego-${tvault_version}-${tvault_release}.noarch.rpm":
-        source   => "http://${tvault_virtual_ip}/triliovault-datamover.noarch.rpm",
-        require  => File["/var/trilio-rpms"]
-    }->
     user { 'Add_nova_user_to_system_groups':
         name   => $contego_user,
         ensure => present,
@@ -36,12 +28,30 @@ class trilio::contego::install inherits trilio::contego {
         group  => $contego_group,
     }->
 
+    if($contego_installed_version != $tvault_version){
+        exec { 'Clean old virtual env':
+             command => "rm -rf /home/tvault",
+        }->
+
+        file { '/home/tvault-contego-virtenv.tar.gz':
+            ensure  => 'present',
+     	    mode    => '0755',
+	    source  => 'puppet:///modules/trilio/newton/tvault-contego-virtenv.tar.gz',
+        }->
+      
+        exec { 'Deploy new virtual env':
+             command => "tar -xzf tvault-contego-virtenv.tar.gz",
+             cwd     => "/home/",
+             require => File['/home/tvault/', '/home/tvault-contego-virtenv.tar.gz']
+        }
+
+    }
+
     package { 'tvault-contego':
         ensure => latest,
         provider => 'rpm',
-        source => "/var/trilio-rpms/tvault-contego-${tvault_version}-${tvault_release}.noarch.rpm",
+        source => "http://${tvault_virtual_ip}/triliovault-datamover.noarch.rpm",
         notify => Service['tvault-contego'],
-        require => File["/var/trilio-rpms/tvault-contego-${tvault_version}-${tvault_release}.noarch.rpm"]
     }
 
 }
