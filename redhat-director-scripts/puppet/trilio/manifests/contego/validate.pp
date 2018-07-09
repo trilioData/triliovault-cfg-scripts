@@ -1,12 +1,5 @@
 class trilio::contego::validate inherits trilio::contego {
 
-    exec { 'install_pip':
-        command => "easy_install http://${tvault_virtual_ip}:8081/packages/pip-7.1.2.tar.gz",
-        cwd     => "/tmp/",
-        unless  => '/usr/bin/which pip',
-        provider => shell,
-        path    => ['/usr/bin','/usr/sbin'],
-    }
     if $backup_target_type == 'swift' {
          package { 'python-swiftclient':
              ensure      => present,
