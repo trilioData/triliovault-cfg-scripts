@@ -30,8 +30,6 @@ chmod +x undercloudrc
 rm -rf $basedir/trilio_puppet_modules
 mkdir $basedir/trilio_puppet_modules
 cp -R ${basedir}/puppet/trilio ${basedir}/trilio_puppet_modules/
-cp -R /usr/share/openstack-puppet/modules/tripleo ${basedir}/trilio_puppet_modules/
-cp -R ${basedir}/puppet/tripleo/manifests/profile/base/trilio/ ${basedir}/trilio_puppet_modules/tripleo/manifests/profile/base/
 
 
 ##Following command will upload trilio and tripleo puppet modules to overcloud nodes

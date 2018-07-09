@@ -150,4 +150,4 @@ outputs:
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::s3_signature_version: {get_param: S3SignatureVersion}
       step_config: |
-        include ::tripleo::profile::base::trilio::contego
+        include ::trilio::tripleo::contego
