@@ -7,18 +7,30 @@ class trilio::horizon (
     $version_numbers= split($tvault_version, '\.')
     $tvault_release = "${version_numbers[0]}.${version_numbers[1]}"
 
+    file { "/var/trilio-rpms/tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm":
+        source => "http://${tvault_virtual_ip}/triliovault-horizon-plugin.noarch.rpm",
+        require => File['/var/trilio-rpms'],
+    }->
+    file { "/var/trilio-rpms/python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm":
+        source => "http://${tvault_virtual_ip}/python-workloadmgrclient.noarch.rpm",
+        require => File['/var/trilio-rpms'],
+    }->
+
+
     package { 'python-workloadmgrclient':
-        ensure => latest,
+        ensure   => latest,
         provider => 'rpm',
-        source => "/var/tmp/python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm",
+        source   => "/var/trilio-rpms/python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm",
         notify   => Service['httpd'],
+        require  => File["/var/trilio-rpms/python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm"],
     }->
 
     package { 'tvault-horizon-plugin':
-        ensure => latest,
+        ensure   => latest,
         provider => 'rpm',
-        source => "/var/tmp/tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm",
+        source   => "/var/trilio-rpms/tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm",
         notify   => Service['httpd'],
+        require  => File["/var/trilio-rpms/tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm"],
     }->
 
     file { "${horizon_dir}/openstack_dashboard/local/enabled/tvault_panel_group.py":
