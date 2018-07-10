@@ -47,3 +47,11 @@ Facter.add(:is_trilio_exists) do
   $?.exitstatus == 0
   end
 end
+
+contego_version = %x{/bin/rpm -q --queryformat "%{VERSION}" tvault-contego}
+
+Facter.add(:contego_installed_version) do
+    setcode do
+        contego_version
+    end
+end
