@@ -13,18 +13,6 @@
 
         - debug: msg="temp_auth_result is:{{temp_auth_result.stdout}}"  verbosity={{verbosity_level}}     
       when: VAULT_SWIFT_AUTH_VERSION1 == TEMPAUTH
-
-    #- block:
-    #    #- set_fact:
-    #    #     swift_cmd : "swift --os-auth-url {{VAULT_SWIFT_AUTH_URL}} --os-tenant-name {{VAULT_SWIFT_TENANT}} --os-username {{VAULT_SWIFT_USERNAME}} --os-password {{VAULT_SWIFT_PASSWORD}} list"  
-    #    #- debug : msg="swift command for keystone v2 is:{{swift_cmd}}"
-
-    #    - name: execute swift command and store output
-    #      shell: swift --os-auth-url {{VAULT_SWIFT_AUTH_URL}} --os-tenant-name {{VAULT_SWIFT_TENANT}} --os-username {{VAULT_SWIFT_USERNAME}} --os-password {{VAULT_SWIFT_PASSWORD}} list
-    #      register: temp_auth_result
-
-    #    - debug: msg="temp_auth_result is:{{temp_auth_result}}"
-    #  when: VAULT_SWIFT_AUTH_VERSION1 == "KEYSTONEV2"
   when: Swift == True
 
 - block:
@@ -48,14 +36,14 @@
         - debug: msg="amazon s3 bucket list:{{s3_boto_out.stdout}}" verbosity={{verbosity_level}}
       when: s3_type == Amazon
 
-    - block: 
-        - name: check s3_ceph connectivity using swift call
-          shell: swift -A {{VAULT_S3_ENDPOINT_URL}} -U {{VAULT_S3_ACCESS_KEY}} -K {{VAULT_S3_SECRET_ACCESS_KEY}} list
-          async: 60
-          register: s3_ceph_out
+    #- block: 
+    #    - name: check s3_ceph connectivity using swift call
+    #      shell: swift -A {{VAULT_S3_ENDPOINT_URL}} -U {{VAULT_S3_ACCESS_KEY}} -K {{VAULT_S3_SECRET_ACCESS_KEY}} list
+    #      async: 60
+    #      register: s3_ceph_out
 
-        - debug: msg:"ceph s3 bucket list:{{s3_ceph_out.}}"
-      when: s3_type == Ceph_S3
+    #    - debug: msg:"ceph s3 bucket list:{{s3_ceph_out.}}"
+    #  when: s3_type == Ceph_S3
 
     - block:
         - name: copy minio file to destination host 
