@@ -15,13 +15,13 @@ These ansible scripts are designed to configure tvault cluster, deploy trilioVau
         For Ex. Your <base-dir>/environments/hosts file should look like this
         ---/environments/hosts------
         [controller]
-        192.168.1.21
+        192.168.1.1
 
         [compute]
-        192.168.1.29
+        192.168.1.1
 
         [horizon]
-        192.168.1.21
+        192.168.1.1
 
         [localhost]
         127.0.0.1
@@ -46,7 +46,7 @@ To uninstall all above tasks
 
 ansible-playbook main-install.yml -i environments/hosts --tags "all-uninstall"
 
-==== tags can be used with playbook ===
+==== tags can be used with playbook =====================
 
 For installing tvault-horizon on openstack-horizon node
 
