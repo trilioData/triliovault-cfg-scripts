@@ -79,7 +79,7 @@ virsh_version: "1.2.8"
 contego_service_file_path: /etc/systemd/system/tvault-contego.service
 contego_service_debian_path: /etc/init/tvault-contego.conf
 objstore_service_file_path:  /etc/systemd/system/tvault-object-store.service
-objstore_service_debian_path: /etc/init.d/tvault-object-store
+objstore_service_debian_path: /etc/init/tvault-object-store.conf
 mitaka: "mitaka"
 newton: "newton"
 premitaka: "premitaka"
