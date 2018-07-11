@@ -2,14 +2,16 @@ These ansible scripts are designed to configure tvault cluster, deploy trilioVau
 =====================================================================================================================================
 
 ===Pre-requisites to use these scripts===============================
-1.	Ansible server
+1.	Ansible server with ansible version > 2.4.0
          
-2.	On all clients nodes (Compute, controller and horizon) Ansible server’s passwordless authentication setup should be done(Server should be able to run ansible scripts on these nodes).
+2.	On all clients nodes (Compute, controller and horizon) Ansible server’s passwordless authentication setup should be done(Server should be able to run ansible scripts on these nodes).  
+        For reference : https://www.tecmint.com/ssh-passwordless-login-using-ssh-keygen-in-5-easy-steps/
 
 3.      Tvault appliance deployed in cloud environment and floating ip which is accessible from ansible server should be assigned to all tvault nodes.
 
 ===Steps to use these scripts================
-1.	Download/clone ansible directory in your playbook directory , change working directory to ansible
+1.	Download tvault ansible scripts tarball from tvault appliance's downloads tab shown in UI.
+        Extract tarball and change working directory to tvault-pure-ansible-scripts/ansible/
 
 2.      Ansible’s host inventory file should have three host goups, one is "controller" listing all controller nodes, next is "compute" listing all compute nodes and last is "horizon" listing all horizon nodes
         For Ex. Your <base-dir>/environments/hosts file should look like this
