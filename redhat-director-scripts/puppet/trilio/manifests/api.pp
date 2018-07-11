@@ -5,8 +5,7 @@ class trilio::api (
 
     package { 'tvault-contego-api':
         ensure   => latest,
-        provider => 'rpm',
-        source   => "http://${tvault_virtual_ip}/triliovault-datamover-api.noarch.rpm",
+        provider => 'yum',
 #        notify   => Service['nova-api'],
     }
 
