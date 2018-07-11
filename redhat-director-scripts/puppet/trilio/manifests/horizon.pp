@@ -6,15 +6,13 @@ class trilio::horizon (
 
     package { 'python-workloadmgrclient':
         ensure   => latest,
-        provider => 'rpm',
-        source   => "http://${tvault_virtual_ip}/python-workloadmgrclient.noarch.rpm",
+        provider => 'yum',
         notify   => Service['httpd'],
     }->
 
     package { 'tvault-horizon-plugin':
         ensure   => latest,
-        provider => 'rpm',
-        source   => "http://${tvault_virtual_ip}/triliovault-horizon-plugin.noarch.rpm",
+        provider => 'yum',
         notify   => Service['httpd'],
     }->
 
