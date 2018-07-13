@@ -1,15 +1,14 @@
-#!/bin/bash -x
+#!/bin/bash
 
 set -e
 
-if [ $# -ne 3 ]; then
-   echo -e "\nError: Script takes exactly three arguments, $# provided\n    First argument:    undercloud rc file path \n    Second argument:   Roles_data file path which is used to deploy overcloud \n    Third argument:    TrilioVault VM/cluster IP \n    By default roles data file is present at /usr/share/openstack-tripleo-heat-templates/roles_data.yaml on undercloud\nFor Example:\n    ./prepare_artifacts.sh /home/stack/stackrc /usr/share/openstack-tripleo-heat-templates/roles_data.yaml 192.168.122.201\n"
+if [ $# -ne 2 ]; then
+   echo -e "\nError: Script takes exactly three arguments, $# provided\n    First argument:    undercloud rc file path \n    Second argument:    TrilioVault VM/cluster IP \nFor Example:\n    ./prepare_artifacts.sh /home/stack/stackrc 192.168.122.201\n"
    exit 0
 fi
 
 undercloud_rc_file=$1
-roles_data_file=$2
-tvault_ip=$3
+tvault_ip=$2
 
 
 current_dir=$(pwd)
@@ -30,9 +29,19 @@ tvault_version=`curl -s http://${tvault_ip}:8081/packages/ | grep tvault-contego
 
 tvault_release=`echo $tvault_version | awk '{split($0,a,"."); print a[1], a[2]}'`
 tvault_release=`echo $tvault_release | sed 's/\ /\./'`
-rpm_name="puppet-triliovault-${tvault_version}-${tvault_release}.noarch.rpm"
 
-curl -O http://${tvault_ip}:8085/yum-repo/${rpm_name}
+rpm1="puppet-triliovault-${tvault_version}-${tvault_release}.noarch.rpm"
+rpm2="tvault-contego-${tvault_version}-${tvault_release}.noarch.rpm"
+rpm3="tvault-contego-api-${tvault_version}-${tvault_release}.noarch.rpm"
+rpm4="tvault-horizon-plugin-${tvault_version}-${tvault_release}.noarch.rpm"
+rpm5="python-workloadmgrclient-${tvault_version}-${tvault_release}.noarch.rpm"
+
+curl -O http://${tvault_ip}:8085/yum-repo/${rpm1}
+curl -O http://${tvault_ip}:8085/yum-repo/${rpm2}
+curl -O http://${tvault_ip}:8085/yum-repo/${rpm3}
+curl -O http://${tvault_ip}:8085/yum-repo/${rpm4}
+curl -O http://${tvault_ip}:8085/yum-repo/${rpm5}
+
 if [ ! -f $rpm_name ]; then
     echo "rpm download failed, rpm name: $rpm_name"
     exit 1
@@ -44,9 +53,4 @@ sed -i.bak "s/TVAULTIP/${tvault_ip}/" $basedir/trilio.repo
 cp $basedir/trilio.repo ${basedir}/etc/yum.repos.d/
 tar -cvzf triliorepo.tgz etc
 
-upload-swift-artifacts -f triliorepo.tgz -f $rpm_name
-
-##Prepare roles data
-/usr/bin/python prepare_roles_data.py $roles_data_file
-
-cd $current_dir
+upload-swift-artifacts -f triliorepo.tgz -f $rpm1 -f $rpm2 -f $rpm3 -f $rpm4 -f $rpm5 
