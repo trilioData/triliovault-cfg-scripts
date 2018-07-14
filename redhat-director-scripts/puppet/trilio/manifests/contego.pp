@@ -1,21 +1,11 @@
 class trilio::contego (
-    $tvault_version                       = undef,
     $redhat_openstack_version             = '10',
-    $tvault_virtual_ip                    = undef,
     $nova_conf_file			  = '/etc/nova/nova.conf',
     $nova_dist_conf_file		  = '/usr/share/nova/nova-dist.conf',
-    $backup_target_type                   = 'nfs',   ##Other values: swift, s3
+    $backup_target_type                   = 'nfs',
     $nfs_shares				  = undef,
     $nfs_options			  = 'nolock,soft,timeo=180,intr',
-    $swift_auth_version                   = 'tempauth',          ## Other values: keystone_v2, keystone_v3
-    $swift_auth_url                       = undef,
-    $swift_tenant                         = undef,
-    $swift_username                       = undef,
-    $swift_password                       = undef,
-    $swift_domain_id                      = undef,
-    $swift_domain_name                    = 'default',
-    $swift_region_name                    = undef,
-    $s3_type                              = 'amazon_s3',         ##Other values: ceph_s3, minio_s3
+    $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
     $s3_region_name                       = undef,
@@ -53,15 +43,11 @@ class trilio::contego (
 
 ##Set object_store_ext
 
-    if $backup_target_type == 'swift' {
-        $contego_ext_object_store = "${contego_virtenv_dir}/lib/python2.7/site-packages/contego/nova/extension/driver/vaultfuse.py"
-    }
-    elsif $backup_target_type == 's3' {
+    if $backup_target_type == 's3' {
         $contego_ext_object_store = "${contego_virtenv_dir}/lib/python2.7/site-packages/contego/nova/extension/driver/s3vaultfuse.py"
 
     }
 
-    class {'trilio::contego::validate': }
     class {'trilio::contego::install': }
     class {'trilio::contego::postinstall': }
     class {'trilio::contego::cgroup': }

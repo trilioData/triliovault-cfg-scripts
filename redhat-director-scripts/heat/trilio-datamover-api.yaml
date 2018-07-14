@@ -22,21 +22,11 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  TrilioVaultClusterVirtualIp:
-    default: ''
-    description: Provide TrilioVault cluster virtual IP address
-    type: string
-  TrilioVaultVersion:
-    default: ''
-    description: The location of the default nova distribution configuration file
-    type: string
 
 outputs:
   role_data:
     description: Role data for the trilio role.
     value:
       config_settings:
-        trilio::api::tvault_virtual_ip: {get_param: TrilioVaultClusterVirtualIp}
-        trilio::api::tvault_version: {get_param: TrilioVaultVersion}
       step_config: |
         include ::trilio::tripleo::api

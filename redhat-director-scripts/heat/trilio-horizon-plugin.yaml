@@ -22,14 +22,6 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  TrilioVaultClusterVirtualIp:
-    default: ''
-    description: Provide TrilioVault cluster virtual IP address
-    type: string 
-  TrilioVaultVersion:
-    default: ''
-    description: The location of the default nova distribution configuration file
-    type: string
   HorizonDir:
     default: ''
     description: Openstack horizon directory
@@ -41,8 +33,6 @@ outputs:
     description: Role data for the trilio role.
     value:
       config_settings:
-        trilio::horizon::tvault_virtual_ip: {get_param: TrilioVaultClusterVirtualIp}
-        trilio::horizon::tvault_version: {get_param: TrilioVaultVersion}
         trilio::horizon::horizon_dir: {get_param: HorizonDir}
       step_config: |
         include ::trilio::tripleo::horizon
