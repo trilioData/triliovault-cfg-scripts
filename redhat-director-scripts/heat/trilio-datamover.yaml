@@ -22,19 +22,11 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  TrilioVaultClusterVirtualIp:
-    default: ''
-    description: Provide TrilioVault cluster virtual IP address
-    type: string   
   NovaConfFile:
     default: ''
     description: The location of the nova configuration file
     type: string
   NovaDistConfFile:
-    default: ''
-    description: The location of the default nova distribution configuration file
-    type: string
-  TrilioVaultVersion:
     default: ''
     description: The location of the default nova distribution configuration file
     type: string
@@ -53,38 +45,6 @@ parameters:
   NfsOptions:
     default: ''
     description: NFS mount otpions
-    type: string
-  SwiftAuthVersion:
-    default: ''
-    description: Keystone api version for swift authentication
-    type: string
-  SwiftAuthUrl:
-    default: ''
-    description: Swift auth url for authentication 
-    type: string
-  SwiftTenant:
-    default: ''
-    description: Swift Tenant Name for authentication 
-    type: string
-  SwiftUsername:
-    default: ''
-    description: Swift username for authentication 
-    type: string
-  SwiftPassword:
-    default: ''
-    description: Swift password for authentication 
-    type: string
-  SwiftDomainId:
-    default: ''
-    description: Swift domain id for authentication 
-    type: string
-  SwiftDomainName:
-    default: ''
-    description: Swift domain name for authentication 
-    type: string
-  SwiftRegionName:
-    default: ''
-    description: Swift region name for authentication 
     type: string
   S3Type:
     default: ''
@@ -125,22 +85,12 @@ outputs:
     value:
       service_name: tvault-contego
       config_settings:
-        trilio::contego::tvault_virtual_ip: {get_param: TrilioVaultClusterVirtualIp}
-        trilio::contego::tvault_version: {get_param: TrilioVaultVersion}
         trilio::contego::redhat_openstack_version: {get_param: RedhatOpenstackVersion}
         trilio::contego::nova_conf_file: {get_param: NovaConfFile}
         trilio::contego::nova_dist_conf_file: {get_param: NovaDistConfFile}
         trilio::contego::backup_target_type: {get_param: BackupTargetType}
         trilio::contego::nfs_shares: {get_param: NfsShares}
         trilio::contego::nfs_options: {get_param: NfsOptions}
-        trilio::contego::swift_auth_version: {get_param: SwiftAuthVersion}
-        trilio::contego::swift_auth_url: {get_param: SwiftAuthUrl}
-        trilio::contego::swift_tenant: {get_param: SwiftTenant}
-        trilio::contego::swift_username: {get_param: SwiftUsername}
-        trilio::contego::swift_password: {get_param: SwiftPassword}
-        trilio::contego::swift_domain_id: {get_param: SwiftDomainId}
-        trilio::contego::swift_domain_name: {get_param: SwiftDomainName}
-        trilio::contego::swift_region_name: {get_param: SwiftRegionName}
         trilio::contego::s3_type: {get_param: S3Type}
         trilio::contego::s3_accesskey: {get_param: S3AccessKey}
         trilio::contego::s3_secretkey: {get_param: S3SecretKey}

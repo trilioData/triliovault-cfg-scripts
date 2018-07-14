@@ -1,6 +1,5 @@
 class trilio::contego::postinstall inherits trilio::contego {
   
-    require trilio::contego::validate
     require trilio::contego::install   
 
     if $openstack_release == "newton" {
@@ -61,12 +60,6 @@ class trilio::contego::postinstall inherits trilio::contego {
             content => template('trilio/contego_nfs_conf.erb'),
         }    
     }
-    elsif $backup_target_type == 'swift' {
-        file { "/etc/tvault-contego/tvault-contego.conf":
-            ensure  => present,
-            content => template('trilio/contego_swift_conf.erb'),
-        }
-    }
     elsif $backup_target_type == 's3' {
         if $s3_type == 'amazon_s3' {
             file { "/etc/tvault-contego/tvault-contego.conf":
@@ -101,7 +94,7 @@ class trilio::contego::postinstall inherits trilio::contego {
     }
 
 
-     if ($backup_target_type == 'swift') or ($backup_target_type == 's3') {
+     if $backup_target_type == 's3' {
          file { '/etc/systemd/system/tvault-object-store.service':
              ensure  => present,
              content => template('trilio/object_store_systemd_conf.erb'),
