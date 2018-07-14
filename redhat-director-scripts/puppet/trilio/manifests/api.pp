@@ -1,13 +1,8 @@
-class trilio::api (
-     $tvault_virtual_ip    = undef,
-     $tvault_version       = undef
-){
+class trilio::api {
 
     package { 'tvault-contego-api':
-        ensure   => latest,
+        ensure   => present,
         provider => 'yum',
         notify   => Service['nova-api'],
     }
-
-
 }

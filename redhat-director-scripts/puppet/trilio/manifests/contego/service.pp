@@ -1,6 +1,5 @@
 class trilio::contego::service inherits trilio::contego {
 
-    require trilio::contego::validate
     require trilio::contego::install
     require trilio::contego::postinstall
     require trilio::contego::cgroup   
@@ -23,7 +22,5 @@ class trilio::contego::service inherits trilio::contego {
         hasrestart => true,
         subscribe  => File['/etc/tvault-contego/tvault-contego.conf']
     }
-
-
 
 }

@@ -1,17 +1,15 @@
 class trilio::horizon (
-    $tvault_virtual_ip                  = undef, 
     $horizon_dir                        = '/usr/share/openstack-dashboard/',
-    $tvault_version                     = undef,
 ){
 
     package { 'python-workloadmgrclient':
-        ensure   => latest,
+        ensure   => present,
         provider => 'yum',
         notify   => Service['httpd'],
     }->
 
     package { 'tvault-horizon-plugin':
-        ensure   => latest,
+        ensure   => present,
         provider => 'yum',
         notify   => Service['httpd'],
     }->
