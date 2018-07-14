@@ -47,10 +47,11 @@ if [ ! -f $rpm_name ]; then
     exit 1
 fi
 
-
-mkdir -p etc/yum.repos.d/
-sed -i.bak "s/TVAULTIP/${tvault_ip}/" $basedir/trilio.repo
-cp $basedir/trilio.repo ${basedir}/etc/yum.repos.d/
+rm -rf etc/
+rm -f triliorepo.tgz
+mkdir -p $basedir/etc/yum.repos.d/
+cp $basedir/trilio.repo.template $basedir/etc/yum.repos.d/trilio.repo
+sed -i.bak "s/TVAULTIP/${tvault_ip}/" $basedir/etc/yum.repos.d/trilio.repo
 tar -cvzf triliorepo.tgz etc
 
 upload-swift-artifacts -f triliorepo.tgz -f $rpm1 -f $rpm2 -f $rpm3 -f $rpm4 -f $rpm5 
