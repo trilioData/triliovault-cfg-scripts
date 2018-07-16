@@ -19,7 +19,7 @@ then
 basedir="$current_dir"
 fi
 
-cd $basedir/
+cd ${basedir}/
 source $undercloud_rc_file
 cp $undercloud_rc_file undercloudrc
 chmod +x undercloudrc
@@ -49,9 +49,8 @@ fi
 
 rm -rf etc/
 rm -f triliorepo.tgz
-mkdir -p $basedir/etc/yum.repos.d/
-cp $basedir/trilio.repo.template $basedir/etc/yum.repos.d/trilio.repo
-sed -i.bak "s/TVAULTIP/${tvault_ip}/" $basedir/etc/yum.repos.d/trilio.repo
-tar -cvzf triliorepo.tgz etc
-
-upload-swift-artifacts -f triliorepo.tgz -f $rpm1 -f $rpm2 -f $rpm3 -f $rpm4 -f $rpm5 
+mkdir -p ${basedir}/etc/yum.repos.d/
+cp ${basedir}/trilio.repo.template ${basedir}/etc/yum.repos.d/trilio.repo
+sed -i.bak "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
+/usr/bin/tar -cvzf triliorepo.tgz etc
+/usr/bin/upload-swift-artifacts -f triliorepo.tgz -f $rpm1 -f $rpm2 -f $rpm3 -f $rpm4 -f $rpm5 --environment ${basedir}/trilio_artifacts.yaml
