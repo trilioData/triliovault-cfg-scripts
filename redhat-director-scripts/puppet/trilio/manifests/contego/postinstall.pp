@@ -39,14 +39,6 @@ class trilio::contego::postinstall inherits trilio::contego {
     }
 
 
-##Ensure contego log directory /var/log/nova
-    file { "/var/log/nova/":
-        ensure => 'directory',
-        owner  => $contego_user,
-        group  => $contego_group,
-    }
-
-
 ##Create /etc/tvault-contego/ directory and tvault-contego.conf
     file { '/etc/tvault-contego/':
         ensure => 'directory',
