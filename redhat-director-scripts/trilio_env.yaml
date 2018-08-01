@@ -32,3 +32,4 @@ parameter_defaults:
 
    #Horizon directory on controller node, this location will be used to install trilio horizon plugin
    HorizonDir: '/usr/share/openstack-dashboard/'
+   EnablePackageInstall: True

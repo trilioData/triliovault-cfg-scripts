@@ -22,6 +22,7 @@ source ${basedir}/undercloudrc
 openstack overcloud deploy --templates -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml \
 -e /home/stack/templates/network-environment.yaml \
 -e /home/stack/templates/storage-environment.yaml \
+-e ${basedir}/trilio_artifacts.yaml \
 -e ${basedir}/trilio_env.yaml \
 -r ${basedir}/roles_data.yaml \
 --control-scale 1 --compute-scale 1 --control-flavor control --compute-flavor compute \
