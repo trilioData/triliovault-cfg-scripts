@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-echo "$1"
-echo "$2"
-
 backup_target_type=$1
 
 if [ "$backup_target_type" == "nfs" ]; then
@@ -37,5 +34,5 @@ elif [ "$backup_target_type" == "ceph_s3" ]; then
     sed -i "/vault_s3_ssl/c\vault_s3_ssl=${s3_ssl}" /etc/tvault-contego/tvault-contego.conf	
 fi
 
-#systemctl stop tvault-contego
-#systemctl start tvault-contego
+sudo /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf \
+--config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
