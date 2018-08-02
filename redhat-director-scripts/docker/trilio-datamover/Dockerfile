@@ -29,12 +29,6 @@ RUN useradd -g nova nova
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-contego -y
 
-#ADD rpms/tvault-contego-${triliovault_version}-${triliovault_release}.noarch.rpm /tmp/
-#ADD rpms/puppet-triliovault-${triliovault_version}-${triliovault_release}.noarch.rpm /tmp/
-#RUN rpm -ivh /tmp/puppet-triliovault-${triliovault_version}-${triliovault_release}.noarch.rpm
-#RUN rpm -ivh /tmp/tvault-contego-${triliovault_version}-${triliovault_release}.noarch.rpm
-
-
 ##Set correct libraries
 RUN rm -rf /home/tvault/.virtenv/lib/python2.7/site-packages/cryptography
 RUN rm -rf /home/tvault/.virtenv/lib/python2.7/site-packages/cffi
