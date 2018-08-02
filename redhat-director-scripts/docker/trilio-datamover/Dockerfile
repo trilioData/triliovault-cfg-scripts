@@ -15,7 +15,7 @@ USER root
 
 RUN subscription-manager register --user=${redhat_username} \
 --password=${redhat_password} && subscription-manager attach --pool ${redhat_pool_id}
-RUN yum install sudo -y
+RUN yum install sudo python2-cryptography -y
 RUN yum clean all
 RUN subscription-manager unregister
 
@@ -29,9 +29,11 @@ ADD rpms/puppet-triliovault-${triliovault_version}-${triliovault_release}.noarch
 RUN rpm -ivh /tmp/puppet-triliovault-${triliovault_version}-${triliovault_release}.noarch.rpm
 RUN rpm -ivh /tmp/tvault-contego-${triliovault_version}-${triliovault_release}.noarch.rpm
 
-##Set facts
-#which_cryptography = $()
-
+##Set correct libraries
+RUN ln -s /usr/lib64/python2.7/site-packages/cryptography /home/tvault/.virtenv/lib/python2.7/site-packages/cryptography
+RUN ln -s /usr/lib64/python2.7/site-packages/cffi /home/tvault/.virtenv/lib/python2.7/site-packages/cffi
+RUN cp /usr/lib64/python2.7/site-packages/libvirtmod.so /home/tvault/.virtenv/lib/python2.7/site-packages/libvirtmod.so
+RUN cp /usr/lib64/python2.7/site-packages/_cffi_backend.so /home/tvault/.virtenv/lib/python2.7/site-packages/_cffi_backend.so
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
@@ -46,11 +48,10 @@ RUN chown nova:nova /var/triliovault
 RUN chmod 777 /var/triliovault
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
-
 ##Become nova user for further operations
 USER nova
 RUN chmod +x /home/nova/trilio-datamover-entrypoint.sh
 
 ##Entrypoint
-ENTRYPOINT ["/home/nova/trilio-datamover-entrypoint.sh"]
-#CMD ["/bin/bash"]
+#ENTRYPOINT ["/home/nova/trilio-datamover-entrypoint.sh"]
+CMD ["/bin/bash"]
