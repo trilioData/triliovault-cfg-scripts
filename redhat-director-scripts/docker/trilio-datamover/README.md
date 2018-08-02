@@ -1,6 +1,15 @@
+## Assumptions
+This container is only designed for and tested on Redhat OpenStack Platform 13.
+
+## Pre-requisites
+1. Redhat OpenStack Platform 13 setup deployed with container approach
+2. To build container you will need redhat subscription with OpenStack Platform suite
+
 ## Command to build container
 ```
-docker build --build-arg triliovault_version=3.0.73 --build-arg triliovault_release=3.0 \
+git clone <repo>
+cd /path/to/redhat-director-scripts/docker/trilio-datamover/
+docker build \
 --build-arg redhat_username=<redhat_subscription_username> --build-arg redhat_password=<redhat_subscription_password> \
 --build-arg redhat_pool_id=8a85f9815f01591e015f01777826485f  -t shyambiradar/trilio-datamover:queens .
 ```
