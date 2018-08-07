@@ -1,0 +1,33 @@
+---
+- block:
+    - name: ensure that pip of version 7.1.2 is installed on controller
+      easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
+
+    - name: check installed tvault_datamover_api version
+      shell: pip list  | grep {{tvault_datamover_api}} | cut -d'(' -f2 | cut -d')' -f1
+      register: datamover_api_version_installed
+
+    - debug: msg="datamover_api_version_installed:{{datamover_api_version_installed.stdout}}" verbosity={{verbosity_level}}
+
+    - name: grep tvault-datamover version using CURL call
+      shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep {{tvault_datamover_api}}-[0-9] | awk -F '{{tvault_datamover_api}}-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
+      register: tvault_datamover_api_version
+
+    - name: check if latest tvault_datamover_api is already_installed
+      fail: msg="Latest tvault-datmover-api package is already installed, exiting"
+      ignore_errors: yes
+      when: datamover_api_version_installed.stdout==tvault_datamover_api_version
+
+    #- name: ensure that tvault_datamover_api package is installed on controller
+    #  shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/{{tvault_datamover_api}}-{{tvault_datamover_api_version.stdout}}.tar.gz
+    #  register: install_contego_api_cmd
+ 
+    #- debug: msg="install contego-api:{{install_contego_api_cmd.stdout}}" verbosity={{verbosity_level}}
+
+    - name: create trilio vault datamover api keystone service and create endpoints
+      shell: |
+              source {{keystonerc_admin_file_path}}
+              openstack service create --name datamover --description "Trilio vault datamover api service" datamover
+   
+    - name: restart {{nova_api_service}} service
+      service: name="{{nova_api_service}}" state=restarted
