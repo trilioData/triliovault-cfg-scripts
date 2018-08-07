@@ -1,12 +1,35 @@
 ---
-- name: install tvault_contego_api
+- name: get openstack version
+  shell: nova-manage version | awk -F. '{print $1}'
+  register: openstack_version
+  tags:
+       - contego
+       - contego-api
+       - all-install
+
+- debug: msg="openstack version is:{{openstack_version.stdout}}" 
+  tags:
+       - contego
+       - contego-api
+       - all-install
+
+- name: install tvault_contego_api if openstack version is liberty/mitaka/newton/ocata
   import_tasks: install.yml
+  when: openstack_version.stdout < "16"
   tags: 
        - contego
        - contego-api 
        - all-install 
 
-- name: install tvault_contego_api
+- name:  install tvault_datamover_api if openstack version is pike/queens
+  import_tasks: install_on_queens.yml
+  when: openstack_version.stdout >= "16"
+  tags:
+       - contego
+       - contego-api
+       - all-install
+
+- name: uninstall tvault_contego_api
   import_tasks: uninstall.yml
   tags: 
        - contego-uninstall
