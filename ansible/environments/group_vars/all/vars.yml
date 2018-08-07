@@ -107,4 +107,8 @@ KEYSTONE: "KEYSTONE"
 virtenv_newton_script_path: /tmp/set_virtenv_newton.sh 
 virtenv_mitaka_script_path: /tmp/set_virtenv_mitaka.sh
 virtenv_premitaka_script_path: /tmp/set_virtenv_premitaka.sh
+tvault_datamover_api: tvault-datamover-api
+release_16: "16"
+keystonerc_admin_file_path: /root/keystonerc_admin
+
 
