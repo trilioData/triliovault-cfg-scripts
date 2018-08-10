@@ -39,6 +39,7 @@
 
 - name: print tvault contego version
   fail: msg="Latest Tvault-contego package is already installed, exiting"
+  ignore_errors: yes
   when: TVAULT_CONTEGO_VERSION.stdout == tvault_contego_version_set
 
 - name: download virtual environment tar bundle from applainace
