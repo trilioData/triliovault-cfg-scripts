@@ -3,7 +3,7 @@
 set -e
 
 if [ $# -ne 2 ]; then
-   echo -e "\nError: Script takes exactly three arguments, $# provided\n    First argument:    undercloud rc file path \n    Second argument:    TrilioVault VM/cluster IP \nFor Example:\n    ./prepare_artifacts.sh /home/stack/stackrc 192.168.122.201\n"
+   echo -e "\nError: Script takes exactly two arguments, $# provided\n    First argument:    undercloud rc file path \n    Second argument:    TrilioVault VM/cluster IP \nFor Example:\n    ./prepare_artifacts.sh /home/stack/stackrc 192.168.122.201\n"
    exit 0
 fi
 
