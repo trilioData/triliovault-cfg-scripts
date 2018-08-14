@@ -6,6 +6,9 @@ resource_registry:
 
 parameter_defaults:
 
+   ##Container locations
+   DockerTrilioDatamoverImage: 192.168.122.151:8787/shyambiradar/trilio-datamover:queens
+
    ##Edit following parameters only if you are using non-default locations for nova configuration files,
    ##Otherwise just keep them as it is
    NovaConfFile: '/etc/nova/nova.conf'
@@ -16,7 +19,7 @@ parameter_defaults:
    BackupTargetType: 'nfs'
     
    ##For backup target 'nfs'
-   NfsShares: ''
+   NfsShares: '192.168.122.240:/nfsfileshare'
    NfsOptions: 'nolock,soft,timeo=180,intr'
    
    ##For backup target 's3'
