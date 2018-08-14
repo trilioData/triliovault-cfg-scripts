@@ -1,5 +1,5 @@
 class trilio::contego::config inherits trilio::contego {
-
+    tag 'triliodm'
 
     if $backup_target_type == 'nfs' {
         file { "/etc/tvault-contego/tvault-contego.conf":
