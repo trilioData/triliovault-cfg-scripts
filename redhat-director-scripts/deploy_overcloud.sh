@@ -12,7 +12,7 @@ basedir="$current_dir"
 fi
 
 
-source ${basedir}/undercloudrc
+source /home/stack/stackrc
 
 ##Overcloud deployment command with trilio components
 #It will install trilio datamover daemon on all compute nodes
