@@ -38,18 +38,6 @@ parameters:
     default: false
     type: boolean
     description: Remove package if the service is being disabled during upgrade
-  NovaConfFile:
-    default: ''
-    description: The location of the nova configuration file
-    type: string
-  NovaDistConfFile:
-    default: ''
-    description: The location of the default nova distribution configuration file
-    type: string
-  RedhatOpenstackVersion:
-    default: ''
-    description: The location of the default nova distribution configuration file
-    type: string
   BackupTargetType:
     default: ''
     description: 
@@ -90,10 +78,6 @@ parameters:
     default: false
     description: S3 ssl enabled
     type: boolean
-  S3SignatureVersion:
-    default: ''
-    description: S3 signature 
-    type: string
 
 outputs:
   role_data:
