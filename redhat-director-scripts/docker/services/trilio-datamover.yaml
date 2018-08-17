@@ -89,29 +89,41 @@ outputs:
         step_config: |
             include ::trilio::tripleo::contego           
         config_image: {get_param: DockerTrilioDatamoverImage}
-#      kolla_config:
-#        /var/lib/kolla/config_files/trilio_dm.json:
-#          command: /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf                   
-#          config_files:
-#            - source: "/var/lib/kolla/config_files/src/*"
-#              dest: "/"
-#              merge: true
-#              preserve_properties: true
-#          permissions:
-#            - path: /var/log/nova
-#              owner: nova:nova
-#              recurse: true     
+      kolla_config:
+        /var/lib/kolla/config_files/trilio_dm.json:
+          command: /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf                   
+          config_files:  
+            - source: "/var/lib/kolla/config_files/nova_libvirt/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliodm/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-iscsid/*"
+              dest: "/etc/iscsi/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-ceph/"
+              dest: "/etc/ceph/"
+              merge: true
+              preserve_properties: true 
       docker_config:
         step_5:
           trilio_datamover:
-            image: &trilio_datamover_image {get_param: DockerTrilioDatamoverImage}
+            image: {get_param: DockerTrilioDatamoverImage}
             net: host
             privileged: true
             user: nova
             restart: always
             volumes:
-                - /var/lib/config-data/puppet-generated/nova_libvirt/etc/nova:/etc/nova:ro
-                - /var/run/libvirt/:/var/run/libvirt/
-                - /var/lib/config-data/triliodm/etc/tvault-contego:/etc/tvault-contego:ro
-            command: /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
+              - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
+              - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+              - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config-files/triliodm:ro
+              - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+              - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+              - /dev:/dev
+              - /var/lib/nova:/var/lib/nova:shared
+              - /var/run/libvirt/:/var/run/libvirt/
       upgrade_tasks: ''
