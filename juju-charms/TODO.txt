@@ -2,3 +2,4 @@
 1. Add unit tests using tox for each charm
 2. Replace scripts used for start/stop of the service with juju way to do the same
 3. Bundle trilio-openstack.yaml to be updated as per changes in 3 charms
+4. Update documentation (README) files
