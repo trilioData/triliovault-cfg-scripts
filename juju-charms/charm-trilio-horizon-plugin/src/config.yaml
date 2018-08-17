@@ -1,0 +1,10 @@
+options:
+  TVAULT_VERSION:
+    type: string
+    default: "3.0.73.tar.gz"
+    description: "TVault version"
+  TVAULT_IPADDRESS:
+    type: string
+    default: 
+    description: "TVault IP Address"
+

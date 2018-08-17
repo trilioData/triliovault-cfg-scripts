@@ -1,0 +1,6 @@
+options:
+  TVAULT_IPADDRESS:
+    type: string
+    default: 
+    description: "TVault IP Address"
+
