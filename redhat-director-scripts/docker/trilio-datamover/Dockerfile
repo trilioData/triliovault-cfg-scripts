@@ -58,6 +58,6 @@ RUN subscription-manager unregister
 USER nova
 RUN chmod +x /home/nova/trilio-datamover-entrypoint.sh
 
-##Entrypoint
-ENTRYPOINT ["/home/nova/trilio-datamover-entrypoint.sh"]
-CMD ["/bin/bash"]
+##Default command
+CMD ["/home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf \
+--config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf"]
