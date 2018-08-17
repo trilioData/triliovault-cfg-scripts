@@ -1,6 +1,6 @@
 options:
-  TVAULT_IPADDRESS:
+  TrilioVault_IP:
     type: string
     default: 
-    description: "TVault IP Address"
+    description: "TrilioVault IP Address"
 

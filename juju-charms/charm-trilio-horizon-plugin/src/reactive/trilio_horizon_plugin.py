@@ -16,9 +16,9 @@ from charmhelpers.core.hookenv import (
 
 
 def validate_ip(ip):
-    """Validate TVAULT_IPADDRESS provided by the user
-    TVAULT_IPADDRESS should not be blank
-    TVAULT_IPADDRESS should have a valid IP address and reachable
+    """Validate TrilioVault_IP provided by the user
+    TrilioVault_IP should not be blank
+    TrilioVault_IP should have a valid IP address and reachable
     """
     if ip.strip():
         # Not blank
@@ -49,12 +49,11 @@ def install_trilio_horizon_plugin():
     s_env = os.environ.copy()
     s_env['PATH'] = '/usr/bin:{}'.format(s_env['PATH'])
 
-    # Read config parameters TVault version, TVault IP, Horizon Path and
-    # Webserver
-    tv_version = config('TVAULT_VERSION')
-    tv_ip = config('TVAULT_IPADDRESS')
+    # Read config parameters TrilioVault version, TrilioVault IP
+    tv_version = config('TrilioVault_version')
+    tv_ip = config('TrilioVault_IP')
 
-    # Validate TVAULT_IPADDRESS
+    # Validate TrilioVault_IP
     validate_op = validate_ip(tv_ip)
 
     if validate_op:
@@ -65,8 +64,9 @@ def install_trilio_horizon_plugin():
             'Invalid IP address, please provide correct IP address')
         return 1
 
-    # Proceed as TVAULT IP Address is valid
+    # Proceed as TrilioVault_IP Address is valid
     # Call install script to install the packages
+    # TODO: SK: replace install script with steps for installation
     subprocess.check_call(
         ['files/trilio/install', tv_version, tv_ip], env=s_env)
 
@@ -74,6 +74,8 @@ def install_trilio_horizon_plugin():
     status_set('maintenance', 'Starting...')
 
     # Call the script to re-start webserver
+    # TODO: SK: replace webserver-restart script with steps for restarting the
+    # service
     subprocess.check_call(['files/trilio/webserver-restart'])
 
     status_set('active', 'Ready...')
@@ -100,7 +102,8 @@ def stop_trilio_horizon_plugin():
     s_env = os.environ.copy()
     s_env['PATH'] = '/usr/bin:{}'.format(s_env['PATH'])
 
-    # Call the script to stop and uninstll TVM Horizon Plugin
+    # Call the script to stop and uninstll TrilioVault Horizon Plugin
+    # TODO: SK: replace stop script with steps for stop and uninstall
     subprocess.check_call(['files/trilio/stop'], env=s_env)
 
     # Remove the state "stopping" since it's done

@@ -1,8 +1,8 @@
 name: trilio-data-mover-api 
-summary: Trilio Data Mover API
-maintainer: charms@trilio.com 
+summary: TrilioVault Data Mover API
+maintainer: support@trilio.io 
 description: |
-  Trilio Data Mover API
+  TrilioVault Data Mover API
 tags:
   - openstack
   - storage
