@@ -57,7 +57,7 @@ def install_trilio_data_mover_api():
             'Invalid IP address, please provide correct IP address')
         return 1
 
-    # Proceed as TVAULT IP Address is valid
+    # Proceed as TrilioVault_IP Address is valid
     # Call install script to install the packages
     # TODO: SK: replace install script with steps for installation
     subprocess.check_call(['files/trilio/install', tv_ip])
