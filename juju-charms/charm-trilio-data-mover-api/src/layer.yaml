@@ -1,0 +1,6 @@
+includes: [
+  'layer:basic',
+  'interface:mysql-shared',
+  'interface:rabbitmq',
+  'interface:keystone',
+]

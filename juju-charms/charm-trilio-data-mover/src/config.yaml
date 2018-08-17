@@ -1,0 +1,10 @@
+options:
+  NFS_SHARES:
+    type: string
+    default: 
+    description: "NFS Shares path"
+  TVAULT_IPADDRESS:
+    type: string
+    default: 
+    description: "TVault IP Address"
+

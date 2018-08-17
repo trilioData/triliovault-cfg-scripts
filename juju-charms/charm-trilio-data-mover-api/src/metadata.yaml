@@ -1,0 +1,22 @@
+name: trilio-data-mover-api 
+summary: Trilio Data Mover API
+maintainer: charms@trilio.com 
+description: |
+  Trilio Data Mover API
+tags:
+  - openstack
+  - storage
+  - backup
+series:
+  - xenial
+extra-bindings:
+    public:
+    admin:
+    internal:
+requires:
+    shared-db:
+      interface: mysql-shared
+    amqp:
+      interface: rabbitmq
+    identity-service:
+      interface: keystone   
