@@ -39,8 +39,6 @@ RUN cp /usr/lib64/python2.7/site-packages/_cffi_backend.so /home/tvault/.virtenv
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 ADD --chown=nova:nova tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
-ADD tvault-contego.service /etc/systemd/system/tvault-contego.service
-ADD --chown=nova:nova trilio-datamover-entrypoint.sh /home/nova/
 RUN mkdir -p /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault-mounts
 RUN mkdir -p /var/triliovault
@@ -56,8 +54,6 @@ RUN subscription-manager unregister
 
 ##Become nova user for further operations
 USER nova
-RUN chmod +x /home/nova/trilio-datamover-entrypoint.sh
 
 ##Default command
-CMD ["/home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf \
---config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf"]
+CMD /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
