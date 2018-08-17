@@ -1,10 +1,10 @@
 options:
-  NFS_SHARES:
+  NFS_Shares_IP:
     type: string
     default: 
-    description: "NFS Shares path"
-  TVAULT_IPADDRESS:
+    description: "NFS Shares IP address"
+  TrilioVault_IP:
     type: string
     default: 
-    description: "TVault IP Address"
+    description: "TrilioVault IP Address"
 

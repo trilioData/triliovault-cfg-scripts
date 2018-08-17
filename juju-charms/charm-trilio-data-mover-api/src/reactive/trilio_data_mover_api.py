@@ -16,9 +16,9 @@ from charmhelpers.core.hookenv import (
 
 
 def validate_ip(ip):
-    """Validate TVAULT_IPADDRESS provided by the user
-    TVAULT_IPADDRESS should not be blank
-    TVAULT_IPADDRESS should have a valid IP address and reachable
+    """Validate TrilioVault_IP provided by the user
+    TrilioVault_IP should not be blank
+    TrilioVault_IP should have a valid IP address and reachable
     """
     if ip.strip():
         # Not blank
@@ -43,10 +43,10 @@ def install_trilio_data_mover_api():
 
     status_set('maintenance', 'Installing...')
 
-    # Read config parameters TVault IP
-    tv_ip = config('TVAULT_IPADDRESS')
+    # Read config parameters TrilioVault IP
+    tv_ip = config('TrilioVault_IP')
 
-    # Validate TVAULT_IPADDRESS
+    # Validate TrilioVault_IP
     validate_op = validate_ip(tv_ip)
 
     if validate_op:
@@ -59,12 +59,14 @@ def install_trilio_data_mover_api():
 
     # Proceed as TVAULT IP Address is valid
     # Call install script to install the packages
+    # TODO: SK: replace install script with steps for installation
     subprocess.check_call(['files/trilio/install', tv_ip])
 
     # Start the application
     status_set('maintenance', 'Starting...')
 
     # Call the script to start Data Mover API
+    # TODO: SK: replace start script with steps for starting the service
     subprocess.check_call(['files/trilio/start'])
 
     status_set('active', 'Ready...')
@@ -86,6 +88,7 @@ def stop_trilio_data_mover_api():
     status_set('maintenance', 'Stopping...')
 
     # Call the script to stop and uninstll Data Mover
+    # TODO: SK: replace stop script with steps for stop and uninstall
     subprocess.check_call(['files/trilio/stop'])
 
     # Remove the state "stopping" since it's done

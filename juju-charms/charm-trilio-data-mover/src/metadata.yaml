@@ -1,6 +1,6 @@
 name: trilio-data-mover
 summary: Trilio-Data-Mover plugin
-maintainer: charms@trilio.com
+maintainer: support@trilio.io
 description: |
   Trilio-Data-Mover plugin installation on all compute nodes
 subordinate: true

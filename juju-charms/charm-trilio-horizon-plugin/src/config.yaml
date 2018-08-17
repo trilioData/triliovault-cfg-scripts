@@ -1,10 +1,10 @@
 options:
-  TVAULT_VERSION:
-    type: string
-    default: "3.0.73.tar.gz"
-    description: "TVault version"
-  TVAULT_IPADDRESS:
+  TrilioVault_version:
     type: string
     default: 
-    description: "TVault IP Address"
+    description: "TrilioVault version"
+  TrilioVault_IP:
+    type: string
+    default: 
+    description: "TrilioVault IP Address"
 
