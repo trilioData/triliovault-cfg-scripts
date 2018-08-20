@@ -13,7 +13,7 @@ LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
 ARG redhat_username
 ARG redhat_password
 ARG redhat_pool_id
-
+ARG tag
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -25,7 +25,7 @@ RUN yum clean all
 RUN yum install sudo python2-cryptography libvirt-python -y
 
 ##Install datamover packages
-ADD trilio.repo /etc/yum.repos.d/
+ADD trilio-${tag}.repo /etc/yum.repos.d/
 RUN yum install tvault-contego -y
 
 ##Set correct libraries
