@@ -19,8 +19,8 @@ source /home/stack/stackrc
 #It will install trilio datamover api part on all controller nodes
 #It will install trilio horizon plugin on all controller nodes
 
-
 openstack overcloud deploy --templates \
+-e /home/stack/templates/overcloud_images.yaml \
 -e ${basedir}/trilio_env.yaml \
 -r ${basedir}/roles_data.yaml \
 --control-scale 1 --compute-scale 1 --control-flavor control --compute-flavor compute \
