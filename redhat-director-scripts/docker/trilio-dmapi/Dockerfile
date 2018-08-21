@@ -18,25 +18,12 @@ ARG tag
 # switch to root and install a custom RPM, etc.
 USER root
 
-#RUN subscription-manager register --user=${redhat_username} \
-#--password=${redhat_password} && subscription-manager attach --pool ${redhat_pool_id}
-#RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms
-#RUN yum clean all
 
 ##Install datamover packages
 ADD trilio-${tag}.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
 RUN mkdir -p /var/log/dmapi/
 RUN chown nova:nova /var/log/dmapi/
-
-##Copy conf files
-#ADD --chown=nova:nova dmapi.conf /etc/dmapi/dmapi.conf
-#ADD log-rotate-conf /etc/logrotate.d/dmapi
-
-##Clean subscription
-#RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms
-#RUN yum clean all
-#RUN subscription-manager unregister
 
 ##Become nova user for further operations
 USER nova
