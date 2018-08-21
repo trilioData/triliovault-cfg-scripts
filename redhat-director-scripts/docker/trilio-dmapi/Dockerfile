@@ -26,6 +26,8 @@ USER root
 ##Install datamover packages
 ADD trilio-${tag}.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
+RUN mkdir -p /var/log/dmapi/
+RUN chown nova:nova /var/log/dmapi/
 
 ##Copy conf files
 #ADD --chown=nova:nova dmapi.conf /etc/dmapi/dmapi.conf
@@ -40,4 +42,4 @@ RUN yum install dmapi -y
 USER nova
 
 ##Default command
-CMD /usr/bin/python /usr/bin/dmapi-api-wsgi
+CMD /usr/bin/python /usr/bin/dmapi-api
