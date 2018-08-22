@@ -1,10 +1,15 @@
 [DEFAULT]
 dmapi_workers = 2
 transport_url = <%= @default_transport_url %>
-dmapi_link_prefix = https://hiera(''):<%= @dmapi_port %>
+<% if @is_ssl_enabled == true %>
+dmapi_link_prefix = https://<%= @my_ip %>:<%= @dmapi_port %>
+dmapi_enabled_ssl_apis = dmapi
+<% else %> 
+dmapi_link_prefix = http://<%= @my_ip %>:<%= @dmapi_port %>
+dmapi_enabled_ssl_apis =
+<% end %>
 dmapi_listen_port = <%= @dmapi_port %>
 dmapi_enabled_apis = dmapi
-dmapi_enabled_ssl_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x
 dmapi_listen = 0.0.0.0
@@ -15,9 +20,9 @@ log_file = /var/log/dmapi/dmapi.log
 log_dir = /var/log/dmapi
 
 [wsgi]
-ssl_cert_file = /opt/stack/data/CA/int-ca/devstack-cert.crt
-ssl_key_file = /opt/stack/data/CA/int-ca/private/devstack-cert.key
-#ssl_ca_file  = /opt/stack/data/devstack-cert.pem
+ssl_cert_file = 
+ssl_key_file =
+ssl_ca_file  =
 
 [wsgi]
 api_paste_config = /etc/dmapi/api-paste.ini
@@ -31,7 +36,7 @@ connection = <%= @api_database_connection %>
 [keystone_authtoken]
 memcached_servers = <%= @memcached_servers %>
 signing_dir = /var/cache/dmapi
-cafile = /opt/stack/data/ca-bundle.pem
+cafile =
 project_domain_name = <%= @project_domain_name %>
 project_name = <%= @project_name %> 
 user_domain_name = <%= @user_domain_name %>
