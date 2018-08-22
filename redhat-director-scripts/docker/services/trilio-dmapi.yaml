@@ -4,7 +4,7 @@ description: >
   Trilio Datamover Api containerized service
 
 parameters:
-  DockerTrilioDatamoverApiImage:
+  DockerTrilioDmApiImage:
     default: ''
     description: The location of Trilio Datamover container image
     type: string
@@ -34,66 +34,52 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
+  DmApiPort:
+    default: '8784'
+    description: Trilio Dmapi listen port
+    type: string
 
 outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: tvault-contego
+      service_name: dmapi
       config_settings:
-        trilio::contego::backup_target_type: {get_param: BackupTargetType}
-        trilio::contego::nfs_shares: {get_param: NfsShares}
-        trilio::contego::nfs_options: {get_param: NfsOptions}
-        trilio::contego::s3_type: {get_param: S3Type}
-        trilio::contego::s3_accesskey: {get_param: S3AccessKey}
-        trilio::contego::s3_secretkey: {get_param: S3SecretKey}
-        trilio::contego::s3_region_name: {get_param: S3RegionName}
-        trilio::contego::s3_bucket: {get_param: S3Bucket}
-        trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
-        trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}            
+        trilio::api::dmapi_port: {get_param: DmApiPort}
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
         step_config: |
             include ::trilio::api     
-        config_image: {get_param: DockerTrilioDatamoverApiImage}
+        config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
-        /var/lib/kolla/config_files/trilio_dm.json:
-          command: /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf                   
+        /var/lib/kolla/config_files/trilio_dmapi.json:
+          command: /usr/bin/python /usr/bin/dmapi-api 
           config_files:  
-            - source: "/var/lib/kolla/config_files/nova_libvirt/*"
+            - source: "/var/lib/kolla/config_files/src/*"
               dest: "/"
               merge: true
               preserve_properties: true
-            - source: "/var/lib/kolla/config_files/triliodm/*"
+            - source: "/var/lib/kolla/config_files/triliodmapi/*"
               dest: "/"
               merge: true
               preserve_properties: true
-            - source: "/var/lib/kolla/config_files/src-iscsid/*"
-              dest: "/etc/iscsi/"
-              merge: true
-              preserve_properties: true
-            - source: "/var/lib/kolla/config_files/src-ceph/"
-              dest: "/etc/ceph/"
-              merge: true
-              preserve_properties: true 
+          permissions:
+            - path: /var/log/dmapi
+              owner: nova:nova
+              recurse: true
       docker_config:
         step_5:
-          trilio_datamover:
-            image: {get_param: DockerTrilioDatamoverImage}
+          trilio_dmapi:
+            image: {get_param: DockerTrilioDmApiImage}
             net: host
             privileged: true
             user: nova
             restart: always
             volumes:
-              - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
-              - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-              - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
-              - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
-              - /dev:/dev
-              - /var/lib/nova:/var/lib/nova:shared
-              - /var/run/libvirt/:/var/run/libvirt/
+              - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+              - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
+              - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
             environment:
               - KOLLA_CONFIG_STRATEGY=COPY_ALWAYS
       upgrade_tasks: ''

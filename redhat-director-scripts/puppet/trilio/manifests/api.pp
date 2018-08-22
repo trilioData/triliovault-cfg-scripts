@@ -1,8 +1,8 @@
 class trilio::api {
+    tag 'dmapiconfig'
 
-    package { 'tvault-contego-api':
-        ensure   => present,
-        provider => 'yum',
-        notify   => Service['nova-api'],
+    file { "/etc/dmapi/dmapi.conf":
+        ensure  => present,
+        content => template('trilio/dmapi.erb'),
     }
 }
