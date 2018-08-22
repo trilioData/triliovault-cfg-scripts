@@ -60,7 +60,7 @@
     'OS::TripleO::Services::SwiftStorage', 'OS::TripleO::Services::Tacker', 'OS::TripleO::Services::Timezone',
     'OS::TripleO::Services::TripleoFirewall', 'OS::TripleO::Services::TripleoPackages',
     'OS::TripleO::Services::Tuned', 'OS::TripleO::Services::Vpp', 'OS::TripleO::Services::Zaqar',
-    'OS::TripleO::Services::Ptp']
+    'OS::TripleO::Services::Ptp','OS::TripleO::Services::TrilioDatamoverApi']
   default_route_networks: [External]
   deprecated_nic_config_name: controller.yaml
   deprecated_param_extraconfig: controllerExtraConfig

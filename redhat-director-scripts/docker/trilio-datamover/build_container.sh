@@ -13,4 +13,4 @@ redhat_openStack_pool_id=$5
 
 docker build --no-cache \
 --build-arg redhat_username=$redhat_subscription_username --build-arg redhat_password=$redhat_subscription_password \
---build-arg redhat_pool_id=$redhat_openStack_pool_id  -t $name:$tag .
+--build-arg redhat_pool_id=$redhat_openStack_pool_id --build-arg tag=$tag -t $name:$tag .
