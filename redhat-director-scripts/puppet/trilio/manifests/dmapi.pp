@@ -1,5 +1,6 @@
 class trilio::dmapi ( 
-  $bootstrap_node                  = hiera('bootstrap_nodeid', undef),
+  $dmapi_port                      = '8785',
+  $is_ssl_enabled                  = hiera('nova::wsgi::apache_api::ssl', false),
   $oslomsg_rpc_proto       	   = hiera('messaging_rpc_service_name', 'rabbit'),
   $oslomsg_rpc_hosts       	   = any2array(hiera('rabbitmq_node_names', undef)),
   $oslomsg_rpc_password    	   = hiera('nova::rabbit_password'),
@@ -22,7 +23,7 @@ class trilio::dmapi (
   $auth_url                        = hiera('nova::keystone::authtoken::auth_url', undef),
   $auth_uri                        = hiera('nova::keystone::authtoken::auth_uri', undef),
   $driver                          = hiera('nova::notification_driver', undef),
-  $enable_proxy_headers_parsing    = hiera('nova::api::enable_proxy_headers_parsing', True),
+  $enable_proxy_headers_parsing    = hiera('nova::api::enable_proxy_headers_parsing', false),
 ) {
     tag 'dmapiconfig'
 
@@ -32,7 +33,7 @@ class trilio::dmapi (
         'port'      => $oslomsg_rpc_port,
         'username'  => $oslomsg_rpc_username,
         'password'  => $oslomsg_rpc_password,
-        'ssl'       => $oslomsg_use_ssl_real,
+        'ssl'       => $oslomsg_use_ssl,
       })
 
       $notification_transport_url = os_transport_url({
@@ -41,7 +42,7 @@ class trilio::dmapi (
         'port'      => $oslomsg_notify_port,
         'username'  => $oslomsg_notify_username,
         'password'  => $oslomsg_notify_password,
-        'ssl'       => $oslomsg_use_ssl_real,
+        'ssl'       => $oslomsg_use_ssl,
       })
 
       $memcached_servers = suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211')
