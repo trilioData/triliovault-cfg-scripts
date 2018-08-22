@@ -50,7 +50,7 @@ outputs:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
         step_config: |
-            include ::trilio::api     
+            include ::trilio::dmapi     
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:

@@ -1,6 +1,6 @@
 [DEFAULT]
 dmapi_workers = 2
-transport_url = rabbit://stackrabbit:project1@172.20.4.101:5672/
+transport_url = <%= @default_transport_url %>
 dmapi_link_prefix = https://hiera(''):<%= @dmapi_port %>
 dmapi_listen_port = <%= @dmapi_port %>
 dmapi_enabled_apis = dmapi
@@ -8,7 +8,7 @@ dmapi_enabled_ssl_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x
 dmapi_listen = 0.0.0.0
-my_ip = <%= scope.function_hiera(['nova::my_ip']) %>
+my_ip = <%= @my_ip %>
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = True
 log_file = /var/log/dmapi/dmapi.log
@@ -23,27 +23,27 @@ ssl_key_file = /opt/stack/data/CA/int-ca/private/devstack-cert.key
 api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
-connection = <%= scope.function_hiera(['nova::database_connection']) %>
+connection = <%= @database_connection %>
 
 [api_database]
-connection = <%= scope.function_hiera(['nova::api_database_connection']) %>
+connection = <%= @api_database_connection %>
 
 [keystone_authtoken]
-memcached_servers = <%= scope.function_hiera(['']) %>
+memcached_servers = <%= @memcached_servers %>
 signing_dir = /var/cache/dmapi
 cafile = /opt/stack/data/ca-bundle.pem
-project_domain_name = <%= scope.function_hiera(['nova::keystone::authtoken::project_domain_name']) %>
-project_name = <%= scope.function_hiera(['nova::keystone::authtoken::project_name']) 
-user_domain_name = <%= scope.function_hiera(['nova::keystone::authtoken::user_domain_name']) %>
-password = <%= scope.function_hiera(['nova::keystone::authtoken::password']) %>
+project_domain_name = <%= @project_domain_name %>
+project_name = <%= @project_name %> 
+user_domain_name = <%= @user_domain_name %>
+password = <%= @password %>
 username = nova
-auth_url = <%= scope.function_hiera(['nova::keystone::authtoken::auth_url']) %>
+auth_url = <%= @auth_url %>
 auth_type = password
-auth_uri = <%= scope.function_hiera(['nova::keystone::authtoken::auth_uri']) %>
+auth_uri = <%= @auth_uri %>
 
 [oslo_messaging_notifications]
-transport_url = rabbit://stackrabbit:project1@172.20.4.101:5672
-driver = <%= scope.function_hiera(['nova::notification_driver']) %>
+transport_url = <%= @default_transport_url %>
+driver = <%= @notification_driver %>
 
 [oslo_middleware]
-enable_proxy_headers_parsing = <%= scope.function_hiera(['nova::api::enable_proxy_headers_parsing']) %>
+enable_proxy_headers_parsing = <%= @enable_proxy_headers_parsing %>
