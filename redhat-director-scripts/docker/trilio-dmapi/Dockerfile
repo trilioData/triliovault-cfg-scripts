@@ -10,9 +10,6 @@ LABEL name="rhosp13/openstack-trilio-dmapi-plugin" \
       description="Trilio Datamover Api for Redhat OpenStack Platform 13"
 
 ##Build arguments (Redhat subscription details)
-#ARG redhat_username
-#ARG redhat_password
-#ARG redhat_pool_id
 ARG tag
 
 # switch to root and install a custom RPM, etc.
@@ -29,4 +26,4 @@ RUN chown nova:nova /var/log/dmapi/
 USER nova
 
 ##Default command
-CMD /usr/bin/python /usr/bin/dmapi-api
+#CMD /usr/bin/python
