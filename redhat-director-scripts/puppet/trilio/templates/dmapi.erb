@@ -1,0 +1,49 @@
+[DEFAULT]
+dmapi_workers = 2
+transport_url = rabbit://stackrabbit:project1@172.20.4.101:5672/
+dmapi_link_prefix = https://hiera(''):<%= @dmapi_port %>
+dmapi_listen_port = <%= @dmapi_port %>
+dmapi_enabled_apis = dmapi
+dmapi_enabled_ssl_apis = dmapi
+bindir = /usr/bin
+instance_name_template = instance-%08x
+dmapi_listen = 0.0.0.0
+my_ip = <%= scope.function_hiera(['nova::my_ip']) %>
+rootwrap_config = /etc/dmapi/rootwrap.conf
+debug = True
+log_file = /var/log/dmapi/dmapi.log
+log_dir = /var/log/dmapi
+
+[wsgi]
+ssl_cert_file = /opt/stack/data/CA/int-ca/devstack-cert.crt
+ssl_key_file = /opt/stack/data/CA/int-ca/private/devstack-cert.key
+#ssl_ca_file  = /opt/stack/data/devstack-cert.pem
+
+[wsgi]
+api_paste_config = /etc/dmapi/api-paste.ini
+
+[database]
+connection = <%= scope.function_hiera(['nova::database_connection']) %>
+
+[api_database]
+connection = <%= scope.function_hiera(['nova::api_database_connection']) %>
+
+[keystone_authtoken]
+memcached_servers = <%= scope.function_hiera(['']) %>
+signing_dir = /var/cache/dmapi
+cafile = /opt/stack/data/ca-bundle.pem
+project_domain_name = <%= scope.function_hiera(['nova::keystone::authtoken::project_domain_name']) %>
+project_name = <%= scope.function_hiera(['nova::keystone::authtoken::project_name']) 
+user_domain_name = <%= scope.function_hiera(['nova::keystone::authtoken::user_domain_name']) %>
+password = <%= scope.function_hiera(['nova::keystone::authtoken::password']) %>
+username = nova
+auth_url = <%= scope.function_hiera(['nova::keystone::authtoken::auth_url']) %>
+auth_type = password
+auth_uri = <%= scope.function_hiera(['nova::keystone::authtoken::auth_uri']) %>
+
+[oslo_messaging_notifications]
+transport_url = rabbit://stackrabbit:project1@172.20.4.101:5672
+driver = <%= scope.function_hiera(['nova::notification_driver']) %>
+
+[oslo_middleware]
+enable_proxy_headers_parsing = <%= scope.function_hiera(['nova::api::enable_proxy_headers_parsing']) %>
