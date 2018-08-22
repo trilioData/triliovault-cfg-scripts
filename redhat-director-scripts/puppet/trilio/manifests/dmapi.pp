@@ -22,7 +22,7 @@ class trilio::dmapi (
   $password                        = hiera('nova::keystone::authtoken::password', undef),
   $auth_url                        = hiera('nova::keystone::authtoken::auth_url', undef),
   $auth_uri                        = hiera('nova::keystone::authtoken::auth_uri', undef),
-  $driver                          = hiera('nova::notification_driver', undef),
+  $notification_driver             = hiera('nova::notification_driver', undef),
   $enable_proxy_headers_parsing    = hiera('nova::api::enable_proxy_headers_parsing', false),
 ) {
     tag 'dmapiconfig'
