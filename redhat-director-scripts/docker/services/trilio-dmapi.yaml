@@ -43,9 +43,9 @@ outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: dmapi
+      service_name: tvault-datamover-api
       config_settings:
-        trilio::api::dmapi_port: {get_param: DmApiPort}
+        trilio::dmapi::dmapi_port: {get_param: DmApiPort}
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
