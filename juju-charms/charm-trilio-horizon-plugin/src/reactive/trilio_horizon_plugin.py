@@ -13,6 +13,12 @@ from charmhelpers.core.hookenv import (
     config,
     log,
 )
+from charmhelpers.contrib.python.packages import (
+    pip_install,
+)
+from charmhelpers.core.host import (
+    service_restart,
+)
 
 
 def validate_ip(ip):
@@ -38,37 +44,39 @@ def install_plugin(ip, ver):
     """Install Horizon plugin and workloadmgrclient packages
     from TVAULT_IPADDRESS provided by the user
     """
-    cmd = "/usr/bin/pip install --no-deps http://" + ip + \
-        ":8081/packages/python-workloadmgrclient-" + ver + " > /dev/null 2>&1"
-    wm_ret = os.system(cmd)
 
-    if wm_ret:
+    pkg = "http://" + ip + \
+          ":8081/packages/python-workloadmgrclient-" + ver
+
+    try:
+        pip_install(pkg, venv="/usr", options="--no-deps")
+        log("TrilioVault WorkloadMgrClient package installation passed")
+    except BaseException:
         # workloadmgrclient package install failed
         log("TrilioVault WorkloadMgrClient package installation failed")
-        return wm_ret
-    else:
-        log("TrilioVault WorkloadMgrClient package installation passed")
 
-    cmd = "/usr/bin/pip install --no-deps http://" + ip + \
-        ":8081/packages/tvault-horizon-plugin-" + ver + " > /dev/null 2>&1"
-    hp_ret = os.system(cmd)
+    pkg = "http://" + ip + \
+          ":8081/packages/tvault-horizon-plugin-" + ver
 
-    if hp_ret:
+    try:
+        pip_install(pkg, venv="/usr", options="--no-deps")
+        log("TrilioVault Horizon Plugin package installation passed")
+    except BaseException:
         # Horixon Plugin package install failed
         log("TrilioVault Horizon Plugin package installation failed")
-        return hp_ret
-    else:
-        log("TrilioVault Horizon Plugin package installation passed")
 
     # Start the application
     status_set('maintenance', 'Starting...')
-    cmd = "service apache2 restart"
-    os.system(cmd)
+
+    service_restart("apache2")
 
     return 0
 
 
 def uninstall_plugin():
+    # pip_uninstall doesn't work as it calls pip from venv of charm
+    # Can not pass venv to pip_uninstall like pip_install
+    # Using alternate approach for now
     # Uninstall Horizon plugin and workloadmgrclient packages
     cmd = "/usr/bin/pip uninstall python-workloadmgrclient -y"
     wm_ret = os.system(cmd)
@@ -84,15 +92,14 @@ def uninstall_plugin():
     hp_ret = os.system(cmd)
 
     if hp_ret:
-        # Horixon Plugin package uninstall failed
+        # Horizon Plugin package uninstall failed
         log("TrilioVault Horizon Plugin package un-installation failed")
         return hp_ret
     else:
         log("TrilioVault Horizon Plugin package uninstalled successfully")
 
     # Re-start the Webserver
-    cmd = "service apache2 restart"
-    os.system(cmd)
+    service_restart("apache2")
 
     return 0
 
