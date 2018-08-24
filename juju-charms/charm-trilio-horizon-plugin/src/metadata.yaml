@@ -1,0 +1,17 @@
+name: trilio-horizon-plugin
+summary: TrilioVault Horizon Plugin
+maintainer: support@trilio.io
+description: |
+  Openstack Dashboard - Horizon plugin for TrilioVault 
+tags:
+  # Replace "misc" with one or more whitelisted tags from this list:
+  # https://jujucharms.com/docs/stable/authors-charm-metadata
+  - misc
+  - openstack
+subordinate: true
+series:
+  - xenial
+requires:
+  dashboard-plugin:
+    interface: dashboard-plugin
+    scope: container
