@@ -38,6 +38,9 @@ parameters:
     default: '8784'
     description: Trilio Dmapi listen port
     type: string
+  DmApiLinkPrefix:
+    description: Trilio Dmapi link prefix
+    type: string
 
 outputs:
   role_data:
@@ -46,11 +49,12 @@ outputs:
       service_name: tvault-datamover-api
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
+        trilio::dmapi::dmapi_link_prefix: {get_param: DmApiLinkPrefix}
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
         step_config: |
-            include ::trilio::dmapi     
+            include ::trilio::dmapi
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
