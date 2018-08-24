@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+pip uninstall tvault-horizon-plugin -y
+pip uninstall python-workloadmgrclient -y
+
+juju-log "Workloadmanager client and tvault-horizon-plugin are uninstalled"
+
+service apache2 restart

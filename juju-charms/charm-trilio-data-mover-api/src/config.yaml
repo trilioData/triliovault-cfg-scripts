@@ -1,0 +1,6 @@
+options:
+  TrilioVault_IP:
+    type: string
+    default: 
+    description: "TrilioVault IP Address"
+
