@@ -51,9 +51,11 @@ def install_plugin(ip, ver):
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault WorkloadMgrClient package installation passed")
-    except BaseException:
+    except Exception as e:
         # workloadmgrclient package install failed
         log("TrilioVault WorkloadMgrClient package installation failed")
+        log("With exception --".format(e))
+        return 1
 
     pkg = "http://" + ip + \
           ":8081/packages/tvault-horizon-plugin-" + ver
@@ -61,9 +63,11 @@ def install_plugin(ip, ver):
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault Horizon Plugin package installation passed")
-    except BaseException:
+    except Exception as e:
         # Horixon Plugin package install failed
         log("TrilioVault Horizon Plugin package installation failed")
+        log("With exception --".format(e))
+        return 1
 
     # Start the application
     status_set('maintenance', 'Starting...')
@@ -135,9 +139,11 @@ def install_trilio_horizon_plugin():
     if not inst_ret:
         # Install was successful
         status_set('active', 'Ready...')
-
-    # Add the flag "installed" since it's done
-    set_flag('trilio-horizon-plugin.installed')
+        # Add the flag "installed" since it's done
+        set_flag('trilio-horizon-plugin.installed')
+    else:
+        # Install failed
+        status_set('blocked', 'Packages installation failed.....retry..')
 
 
 @hook('stop')
