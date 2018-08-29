@@ -46,7 +46,7 @@ class trilio::dmapi (
         'ssl'       => $oslomsg_use_ssl,
       })
 
-      $memcached_servers = suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211')
+      $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
 
 
     file { "/etc/dmapi/dmapi.conf":
