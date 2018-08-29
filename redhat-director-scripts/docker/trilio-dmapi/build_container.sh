@@ -1,18 +1,14 @@
 #!/bin/bash
 
-#if [ $# -lt 5 ];then
-#   echo "Script takes 5 arguments"
-#   exit 1
-#fi
+if [ $# -ne 2 ];then
+   echo -e "Script takes exactly 2 arguments\n"
+   echo -e "./build_container.sh <container_name> <container_tag>"
+   echo -e "./build_container.sh shyambiradar/trilio-dmapi queens"
+   exit 1
+fi
 
-tag=$2
 name=$1
-#redhat_subscription_username=$3
-#redhat_subscription_password=$4
-#redhat_openStack_pool_id=$5
-
-#docker build --no-cache \
-#--build-arg redhat_username=$redhat_subscription_username --build-arg redhat_password=$redhat_subscription_password \
-#--build-arg redhat_pool_id=$redhat_openStack_pool_id --build-arg tag=$tag -t $name:$tag .
+tag=$2
 
 docker build --no-cache --build-arg tag=$tag -t $name:$tag .
+docker push $name:$tag
