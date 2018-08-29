@@ -22,22 +22,21 @@ from charmhelpers.core.host import (
 
 
 def validate_ip(ip):
-    """Validate TrilioVault_IP provided by the user
-    TrilioVault_IP should not be blank
-    TrilioVault_IP should have a valid IP address and reachable
+    """Validate TrilioVault IP provided by the user
+    TrilioVault IP should not be blank
+    TrilioVault IP should have a valid IP address and reachable
     """
     if ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable
-            ip_re = os.system("ping -c 1 " + ip)
-            return ip_re
+            if os.system("ping -c 1 " + ip):
+                return False
+            return True
         else:
             # Invalid IP address
-            return 1
-    else:
-        # Blank
-        return 1
+            return False
+    return False
 
 
 def install_plugin(ip, ver):
@@ -51,11 +50,12 @@ def install_plugin(ip, ver):
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault WorkloadMgrClient package installation passed")
+        return True
     except Exception as e:
         # workloadmgrclient package install failed
         log("TrilioVault WorkloadMgrClient package installation failed")
-        log("With exception --".format(e))
-        return 1
+        log("With exception --{}".format(e))
+        return False
 
     pkg = "http://" + ip + \
           ":8081/packages/tvault-horizon-plugin-" + ver
@@ -63,18 +63,23 @@ def install_plugin(ip, ver):
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault Horizon Plugin package installation passed")
+        return True
     except Exception as e:
         # Horixon Plugin package install failed
         log("TrilioVault Horizon Plugin package installation failed")
-        log("With exception --".format(e))
-        return 1
+        log("With exception --{}".format(e))
+        return False
 
     # Start the application
     status_set('maintenance', 'Starting...')
 
-    service_restart("apache2")
-
-    return 0
+    try:
+        service_restart("apache2")
+        return True
+    except Exception as e:
+        # apache2 restart failed
+        log("Apache2 restart failed with exception --{}".format(e))
+        return False
 
 
 def uninstall_plugin():
@@ -103,9 +108,13 @@ def uninstall_plugin():
         log("TrilioVault Horizon Plugin package uninstalled successfully")
 
     # Re-start the Webserver
-    service_restart("apache2")
-
-    return 0
+    try:
+        service_restart("apache2")
+        return True
+    except Exception as e:
+        # apache2 restart failed
+        log("Apache2 restart failed with exception --{}".format(e))
+        return False
 
 
 @when_not('trilio-horizon-plugin.installed')
@@ -118,21 +127,21 @@ def install_trilio_horizon_plugin():
     # This will make pip to be called from host install rather than virtualenv.
 
     # Read config parameters TrilioVault version, TrilioVault IP
-    tv_version = config('TrilioVault_version')
-    tv_ip = config('TrilioVault_IP')
+    tv_version = config('triliovault-version')
+    tv_ip = config('triliovault-ip')
 
-    # Validate TrilioVault_IP
+    # Validate TrilioVault IP
     validate_op = validate_ip(tv_ip)
 
-    if validate_op:
+    if not validate_op:
         # IP address is invalid
         # Set status as blocked and return
         status_set(
             'blocked',
             'Invalid IP address, please provide correct IP address')
-        return 1
+        return
 
-    # Proceed as TrilioVault_IP Address is valid
+    # Proceed as TrilioVault IP Address is valid
     # Call install handler to install the packages
     inst_ret = install_plugin(tv_ip, tv_version)
 

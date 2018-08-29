@@ -1,10 +1,9 @@
 options:
-  TrilioVault_version:
+  triliovault-version:
     type: string
-    default: 
+    default:
     description: "TrilioVault version"
-  TrilioVault_IP:
+  triliovault-ip:
     type: string
-    default: 
+    default:
     description: "TrilioVault IP Address"
-
