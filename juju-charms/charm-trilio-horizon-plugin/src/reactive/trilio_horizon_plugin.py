@@ -93,9 +93,10 @@ def uninstall_plugin():
     if wm_ret:
         # workloadmgrclient package uninstall failed
         log("TrilioVault WorkloadMgrClient package un-installation failed")
-        return wm_ret
+        return False
     else:
         log("TrilioVault WorkloadMgrClient package uninstalled successfully")
+	return True
 
     cmd = "/usr/bin/pip uninstall tvault-horizon-plugin -y"
     hp_ret = os.system(cmd)
@@ -103,9 +104,10 @@ def uninstall_plugin():
     if hp_ret:
         # Horizon Plugin package uninstall failed
         log("TrilioVault Horizon Plugin package un-installation failed")
-        return hp_ret
+        return False
     else:
         log("TrilioVault Horizon Plugin package uninstalled successfully")
+	return True
 
     # Re-start the Webserver
     try:
@@ -145,7 +147,7 @@ def install_trilio_horizon_plugin():
     # Call install handler to install the packages
     inst_ret = install_plugin(tv_ip, tv_version)
 
-    if not inst_ret:
+    if inst_ret:
         # Install was successful
         status_set('active', 'Ready...')
         # Add the flag "installed" since it's done
@@ -170,7 +172,7 @@ def stop_trilio_horizon_plugin():
     # Call the script to stop and uninstll TrilioVault Horizon Plugin
     uninst_ret = uninstall_plugin()
 
-    if not uninst_ret:
+    if uninst_ret:
         # Uninstall was successful
         # Remove the state "stopping" since it's done
         remove_state('trilio-horizon-plugin.stopping')
