@@ -1,7 +1,4 @@
 class trilio::contego (
-    $redhat_openstack_version             = '10',
-    $nova_conf_file			  = '/etc/nova/nova.conf',
-    $nova_dist_conf_file		  = '/usr/share/nova/nova-dist.conf',
     $backup_target_type                   = 'nfs',
     $nfs_shares				  = undef,
     $nfs_options			  = 'nolock,soft,timeo=180,intr',
@@ -12,7 +9,6 @@ class trilio::contego (
     $s3_bucket                            = undef,
     $s3_endpoint_url                      = undef,
     $s3_ssl_enabled                       = 'False',
-    $s3_signature_version                 = 's3v4',
 ) {
 
 
@@ -48,9 +44,10 @@ class trilio::contego (
 
     }
 
-    class {'trilio::contego::install': }
-    class {'trilio::contego::postinstall': }
-    class {'trilio::contego::cgroup': }
-    class {'trilio::contego::service': }
+    #class {'trilio::contego::install': }
+    #class {'trilio::contego::postinstall': }
+    #class {'trilio::contego::cgroup': }
+    #class {'trilio::contego::service': }
+    class {'trilio::contego::config': }
 
 }

@@ -8,10 +8,10 @@ This container is only designed for and tested on Redhat OpenStack Platform 13.
 ## Command to build container
 ```
 git clone <repo>
-cd /path/to/redhat-director-scripts/docker/trilio-datamover/
+cd /path/to/redhat-director-scripts/docker/trilio-dmapi/
 docker build \
 --build-arg redhat_username=<redhat_subscription_username> --build-arg redhat_password=<redhat_subscription_password> \
---build-arg redhat_pool_id=<Redhat_OpenStack_Pool_ID>  -t shyambiradar/trilio-datamover:queens .
+--build-arg redhat_pool_id=<Redhat_OpenStack_Pool_ID>  -t shyambiradar/trilio-dmapi:queens .
 ```
 
 ## Command to run container
@@ -21,15 +21,15 @@ If you are running this container on non RHOSP setup, create /var/log/containers
 ##Step1:
 Create tvault-contego.conf with all parameters(backup target) at location "/var/lib/config-data/triliodm/etc/tvault-contego/tvault-contego.conf"
 Use puppet for that:(use puppet/trilio)
-puppet agent --test --tags dmconfig
+puppet agent --test --tags dmapiconfig
 
 #### For NFS as backup target:
 ```
 docker run -v /var/lib/config-data/puppet-generated/nova_libvirt/etc/nova:/etc/nova:ro \
--v /var/run/libvirt/:/var/run/libvirt/ -v /var/lib/config-data/triliodm/etc/tvault-contego:/etc/tvault-contego:ro \
+-v /var/run/libvirt/:/var/run/libvirt/ -v /var/lib/config-data/triliodmaoi/etc/dmapi:/etc/dmapi:ro \
 -v /usr/sbin:/usr/sbin -v /usr/bin:/usr/bin -v /bin:/bin \
 -v /sbin:/sbin --network host --privileged=true \
--dt --name dm shyambiradar/trilio-datamover:queens
+-dt --name dmapi shyambiradar/trilio-dmapi:queens
 ```
 #### For Amazon S3 as backup target:
 ```

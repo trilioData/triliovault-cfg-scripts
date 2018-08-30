@@ -1,0 +1,5 @@
+[trilio-queens]
+name=Trilio Repository
+baseurl=http://192.168.15.31:8085/yum-repo/queens/
+enabled=1
+gpgcheck=0

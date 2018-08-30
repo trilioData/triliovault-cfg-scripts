@@ -1,0 +1,24 @@
+name: trilio-data-mover
+summary: Trilio-Data-Mover plugin
+maintainer: support@trilio.io
+description: |
+  Trilio-Data-Mover plugin installation on all compute nodes
+subordinate: true
+tags:
+  - openstack
+  - storage
+  - backup
+series:
+  - xenial
+  - bionic
+requires:
+  amqp:
+    interface: rabbitmq
+  juju-info:
+    interface: juju-info
+    scope: container
+provides:
+  data-mover:
+    interface: data-mover
+    scope: container
+

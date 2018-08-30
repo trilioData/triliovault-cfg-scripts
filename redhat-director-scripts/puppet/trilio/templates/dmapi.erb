@@ -1,0 +1,51 @@
+[DEFAULT]
+dmapi_workers = 2
+transport_url = <%= @default_transport_url %>
+<% if @is_ssl_enabled == true %>
+dmapi_link_prefix = <%= @dmapi_link_prefix %>
+dmapi_enabled_ssl_apis = dmapi
+<% else %> 
+dmapi_link_prefix = <%= @dmapi_link_prefix %>
+dmapi_enabled_ssl_apis =
+<% end %>
+dmapi_listen_port = <%= @dmapi_port %>
+dmapi_enabled_apis = dmapi
+bindir = /usr/bin
+instance_name_template = instance-%08x
+dmapi_listen = 0.0.0.0
+my_ip = <%= @my_ip %>
+rootwrap_config = /etc/dmapi/rootwrap.conf
+debug = True
+log_file = /var/log/dmapi/dmapi.log
+log_dir = /var/log/dmapi
+
+[wsgi]
+ssl_cert_file = 
+ssl_key_file =
+api_paste_config = /etc/dmapi/api-paste.ini
+
+[database]
+connection = <%= @database_connection %>
+
+[api_database]
+connection = <%= @api_database_connection %>
+
+[keystone_authtoken]
+memcached_servers = <%= @memcached_servers %>
+signing_dir = /var/cache/dmapi
+cafile =
+project_domain_name = <%= @project_domain_name %>
+project_name = <%= @project_name %> 
+user_domain_name = <%= @user_domain_name %>
+password = <%= @password %>
+username = nova
+auth_url = <%= @auth_url %>
+auth_type = password
+auth_uri = <%= @auth_uri %>
+
+[oslo_messaging_notifications]
+transport_url = <%= @default_transport_url %>
+driver = <%= @notification_driver %>
+
+[oslo_middleware]
+enable_proxy_headers_parsing = <%= @enable_proxy_headers_parsing %>
