@@ -12,6 +12,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     config,
     log,
+    application_version_set,
 )
 from charmhelpers.contrib.python.packages import (
     pip_install,
@@ -45,12 +46,12 @@ def install_plugin(ip, ver):
     """
 
     pkg = "http://" + ip + \
-          ":8081/packages/python-workloadmgrclient-" + ver
+          ":8081/packages/python-workloadmgrclient-" + ver + \
+          ".tar.gz"
 
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault WorkloadMgrClient package installation passed")
-        return True
     except Exception as e:
         # workloadmgrclient package install failed
         log("TrilioVault WorkloadMgrClient package installation failed")
@@ -58,12 +59,12 @@ def install_plugin(ip, ver):
         return False
 
     pkg = "http://" + ip + \
-          ":8081/packages/tvault-horizon-plugin-" + ver
+          ":8081/packages/tvault-horizon-plugin-" + ver + \
+          ".tar.gz"
 
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault Horizon Plugin package installation passed")
-        return True
     except Exception as e:
         # Horixon Plugin package install failed
         log("TrilioVault Horizon Plugin package installation failed")
@@ -75,11 +76,12 @@ def install_plugin(ip, ver):
 
     try:
         service_restart("apache2")
-        return True
     except Exception as e:
         # apache2 restart failed
         log("Apache2 restart failed with exception --{}".format(e))
         return False
+
+    return True
 
 
 def uninstall_plugin():
@@ -96,7 +98,6 @@ def uninstall_plugin():
         return False
     else:
         log("TrilioVault WorkloadMgrClient package uninstalled successfully")
-	return True
 
     cmd = "/usr/bin/pip uninstall tvault-horizon-plugin -y"
     hp_ret = os.system(cmd)
@@ -107,16 +108,16 @@ def uninstall_plugin():
         return False
     else:
         log("TrilioVault Horizon Plugin package uninstalled successfully")
-	return True
 
     # Re-start the Webserver
     try:
         service_restart("apache2")
-        return True
     except Exception as e:
         # apache2 restart failed
         log("Apache2 restart failed with exception --{}".format(e))
         return False
+
+    return True
 
 
 @when_not('trilio-horizon-plugin.installed')
@@ -133,14 +134,13 @@ def install_trilio_horizon_plugin():
     tv_ip = config('triliovault-ip')
 
     # Validate TrilioVault IP
-    validate_op = validate_ip(tv_ip)
-
-    if not validate_op:
+    if not validate_ip(tv_ip):
         # IP address is invalid
         # Set status as blocked and return
         status_set(
             'blocked',
             'Invalid IP address, please provide correct IP address')
+        application_version_set('Unknown')
         return
 
     # Proceed as TrilioVault IP Address is valid
@@ -150,6 +150,7 @@ def install_trilio_horizon_plugin():
     if inst_ret:
         # Install was successful
         status_set('active', 'Ready...')
+        application_version_set(tv_version)
         # Add the flag "installed" since it's done
         set_flag('trilio-horizon-plugin.installed')
     else:
