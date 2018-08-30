@@ -1,23 +1,25 @@
 resource_registry:
-  OS::TripleO::Services::TrilioDatamover: heat/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: heat/trilio-datamover-api.yaml
-  OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
+  OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-dmapi.yaml
+#OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
 
 
 parameter_defaults:
 
-   ##Edit following parameters only if you are using non-default locations for nova configuration files,
-   ##Otherwise just keep them as it is
-   NovaConfFile: '/etc/nova/nova.conf'
-   NovaDistConfFile: '/usr/share/nova/nova-dist.conf'
-   RedhatOpenstackVersion: '10'
+   ##Container locations
+   DockerTrilioDatamoverImage: 192.168.122.151:8787/shyambiradar/trilio-datamover:queens
 
+   DockerTrilioDmApiImage: 192.168.122.151:8787/shyambiradar/trilio-dmapi:queens
+
+   #Dmapi port
+   DmApiPort: 8784
+   DmApiLinkPrefix: http://192.168.122.161:8784
    ##Backup target nfs/s3
    BackupTargetType: 'nfs'
     
    ##For backup target 'nfs'
-   NfsShares: ''
-   NfsOptions: 'nolock,soft,timeo=180,intr'
+   NfsShares: '192.168.122.240:/nfsfileshare'
+   NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
    
    ##For backup target 's3'
    #S3 type: amazon_s3/ceph_s3/minio_s3
@@ -28,7 +30,6 @@ parameter_defaults:
    S3Bucket: ''
    S3EndpointUrl: ''
    S3SslEnabled: false
-   S3SignatureVersion: 's3v4'
 
    #Horizon directory on controller node, this location will be used to install trilio horizon plugin
    HorizonDir: '/usr/share/openstack-dashboard/'
