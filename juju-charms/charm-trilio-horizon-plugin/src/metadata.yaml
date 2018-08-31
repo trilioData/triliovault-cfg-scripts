@@ -2,7 +2,7 @@ name: trilio-horizon-plugin
 summary: TrilioVault Horizon Plugin
 maintainer: support@trilio.io
 description: |
-  Openstack Dashboard - Horizon plugin for TrilioVault 
+  Openstack Dashboard - Horizon plugin for TrilioVault
 tags:
   # Replace "misc" with one or more whitelisted tags from this list:
   # https://jujucharms.com/docs/stable/authors-charm-metadata

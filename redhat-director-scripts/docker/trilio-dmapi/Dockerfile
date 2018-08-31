@@ -21,7 +21,8 @@ ADD trilio-${tag}.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
 RUN mkdir -p /var/log/dmapi/
 RUN chown nova:nova /var/log/dmapi/
-
+RUN mkdir -p /var/cache/dmapi/
+RUN chown nova:nova /var/cache/dmapi/
 ##Become nova user for further operations
 USER nova
 

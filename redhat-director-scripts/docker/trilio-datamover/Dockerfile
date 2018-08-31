@@ -23,7 +23,6 @@ RUN subscription-manager register --user=${redhat_username} \
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN yum install sudo python2-cryptography libvirt-python -y
-
 ##Install datamover packages
 ADD trilio-${tag}.repo /etc/yum.repos.d/
 RUN yum install tvault-contego -y
@@ -38,6 +37,7 @@ RUN cp /usr/lib64/python2.7/site-packages/_cffi_backend.so /home/tvault/.virtenv
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+RUN usermod -aG disk nova
 ADD --chown=nova:nova tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 RUN mkdir -p /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault-mounts
@@ -56,4 +56,5 @@ RUN subscription-manager unregister
 USER nova
 
 ##Default command
+CMD /usr/bin/python
 #CMD /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
