@@ -1,7 +1,7 @@
 ---
 name: dmapi
-maintainer: example@example.com
-summary: TrilioVault DataMover API
+maintainer: support@trilio.io 
+summary: TrilioVault Data Mover API
 description: | 
   API service of TrilioVault Datamover 
 series:
