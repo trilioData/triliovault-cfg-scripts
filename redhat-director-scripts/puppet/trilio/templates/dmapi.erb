@@ -2,10 +2,10 @@
 dmapi_workers = 2
 transport_url = <%= @default_transport_url %>
 <% if @is_ssl_enabled == true %>
-dmapi_link_prefix = https://<%= @my_ip %>:<%= @dmapi_port %>
+dmapi_link_prefix = <%= @dmapi_link_prefix %>
 dmapi_enabled_ssl_apis = dmapi
 <% else %> 
-dmapi_link_prefix = http://<%= @my_ip %>:<%= @dmapi_port %>
+dmapi_link_prefix = <%= @dmapi_link_prefix %>
 dmapi_enabled_ssl_apis =
 <% end %>
 dmapi_listen_port = <%= @dmapi_port %>
