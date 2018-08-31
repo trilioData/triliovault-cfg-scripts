@@ -1,4 +1,5 @@
 import os
+import re
 import netaddr
 from charms.reactive import (
     when,
@@ -20,6 +21,9 @@ from charmhelpers.contrib.python.packages import (
 from charmhelpers.core.host import (
     service_restart,
 )
+from subprocess import (
+    check_output,
+)
 
 
 def validate_ip(ip):
@@ -38,6 +42,22 @@ def validate_ip(ip):
             # Invalid IP address
             return False
     return False
+
+
+def get_new_version(pkg):
+    """
+    Get the latest version available on the TrilioVault node.
+    """
+    tv_ip = config('triliovault-ip')
+    tv_port = 8081
+
+    curl_cmd = 'curl -s http://{}:{}/packages/'.format(tv_ip, tv_port).split()
+    pkgs = check_output(curl_cmd)
+    new_ver = re.search(
+        r'packages/{}-\s*([\d.]+)'.format(pkg),
+        pkgs.decode('utf-8')).group(1)[:-1]
+
+    return new_ver
 
 
 def install_plugin(ip, ver):
@@ -129,8 +149,7 @@ def install_trilio_horizon_plugin():
     # subprocess call for the install script.
     # This will make pip to be called from host install rather than virtualenv.
 
-    # Read config parameters TrilioVault version, TrilioVault IP
-    tv_version = config('triliovault-version')
+    # Read config parameters TrilioVault IP
     tv_ip = config('triliovault-ip')
 
     # Validate TrilioVault IP
@@ -144,10 +163,11 @@ def install_trilio_horizon_plugin():
         return
 
     # Proceed as TrilioVault IP Address is valid
-    # Call install handler to install the packages
-    inst_ret = install_plugin(tv_ip, tv_version)
+    # Get latest version of the tvault-horizon-plugin pkg
+    tv_version = get_new_version('tvault-horizon-plugin')
 
-    if inst_ret:
+    # Call install handler to install the packages
+    if install_plugin(tv_ip, tv_version):
         # Install was successful
         status_set('active', 'Ready...')
         application_version_set(tv_version)
