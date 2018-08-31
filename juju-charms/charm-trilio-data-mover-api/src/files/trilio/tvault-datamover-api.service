@@ -2,8 +2,8 @@
 Description=Datamover API service
 
 [Service]
-User = root
-Group = root
+User = dmapi
+Group = dmapi
 Type = Simple
 ExecStart=/usr/bin/python /usr/bin/dmapi-api
 KillMode=process

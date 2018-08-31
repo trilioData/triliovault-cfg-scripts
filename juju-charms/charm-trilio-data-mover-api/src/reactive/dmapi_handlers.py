@@ -19,6 +19,7 @@ from charmhelpers.fetch import (
 
 from charmhelpers.core.host import (
     service_restart,
+    adduser,
 )
 
 # Minimal inferfaces required for operation
@@ -48,6 +49,20 @@ def validate_ip(ip):
     return False
 
 
+def add_user():
+    """
+    Adding passwordless sudo access to nova user and adding to required groups
+    """
+    usr = 'dmapi'
+    try:
+        adduser(usr, password=None, shell='/bin/bash', system_user=True)
+    except Exception as e:
+        log("Failed while adding user with msg: {}".format(e))
+        return False
+
+    return True
+
+
 # use a synthetic state to ensure that it get it to be installed independent of
 # the install hook.
 @reactive.when_not('charm.installed')
@@ -57,6 +72,11 @@ def install_packages():
     if not validate_ip(config('triliovault-ip')):
         log("Invalid IP address !")
         return
+
+    if not add_user():
+        log("Adding dmapi user failed!")
+        return
+
     add_source('deb http://{}:8085/deb-repo /'.format(
                 config('triliovault-ip')))
     os.system('sudo add-apt-repository cloud-archive:queens')
@@ -64,8 +84,9 @@ def install_packages():
     dmapi.install()
     apt_install(['dmapi'], options=['--allow-unauthenticated'], fatal=True)
     # Placing the service file
-    os.system('sudo cp files/trilio/trilio-data-mover-api.service '
+    os.system('sudo cp files/trilio/tvault-datamover-api.service '
               '/etc/systemd/system/')
+    os.system('chown -R dmapi /var/log/dmapi')
     os.system('sudo systemctl enable trilio-data-mover-api')
     service_restart('trilio-data-mover-api')
 
@@ -100,6 +121,8 @@ def setup_endpoint(keystone):
 def render(*args):
     dmapi.render_configs(args)
     reactive.set_state('config.complete')
+    # change the ownership to 'dmapi'
+    os.system('chown dmapi /etc/dmapi/dmapi.conf')
     dmapi.assess_status()
 
 

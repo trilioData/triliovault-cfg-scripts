@@ -33,7 +33,7 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     packages = ['python-nova']
 
     # Init services the charm manages
-    services = ['trilio-data-mover-api']
+    services = ['tvault-datamover-api']
 
     # Ports that need exposing.
     default_service = 'dmapi-api'
