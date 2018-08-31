@@ -20,6 +20,9 @@ from charmhelpers.fetch import (
 from charmhelpers.core.host import (
     service_restart,
     adduser,
+    add_group,
+    add_user_to_group,
+    chownr,
 )
 
 # Minimal inferfaces required for operation
@@ -28,6 +31,9 @@ MINIMAL_INTERFACES = [
     'identity-service.available',
     'amqp.available',
 ]
+
+DMAPI_USR = 'dmapi'
+DMAPI_GRP = 'dmapi'
 
 
 def validate_ip(ip):
@@ -53,9 +59,10 @@ def add_user():
     """
     Adding passwordless sudo access to nova user and adding to required groups
     """
-    usr = 'dmapi'
     try:
-        adduser(usr, password=None, shell='/bin/bash', system_user=True)
+        add_group(DMAPI_GRP, system_group=True)
+        adduser(DMAPI_USR, password=None, shell='/bin/bash', system_user=True)
+        add_user_to_group(DMAPI_USR, DMAPI_GRP)
     except Exception as e:
         log("Failed while adding user with msg: {}".format(e))
         return False
@@ -78,7 +85,7 @@ def install_packages():
         return
 
     add_source('deb http://{}:8085/deb-repo /'.format(
-                config('triliovault-ip')))
+        config('triliovault-ip')))
     os.system('sudo add-apt-repository cloud-archive:queens')
     apt_update()
     dmapi.install()
@@ -86,9 +93,9 @@ def install_packages():
     # Placing the service file
     os.system('sudo cp files/trilio/tvault-datamover-api.service '
               '/etc/systemd/system/')
-    os.system('chown -R dmapi /var/log/dmapi')
-    os.system('sudo systemctl enable trilio-data-mover-api')
-    service_restart('trilio-data-mover-api')
+    chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
+    os.system('sudo systemctl enable tvault-datamover-api')
+    service_restart('tvault-datamover-api')
 
     reactive.set_state('charm.installed')
 
@@ -122,7 +129,7 @@ def render(*args):
     dmapi.render_configs(args)
     reactive.set_state('config.complete')
     # change the ownership to 'dmapi'
-    os.system('chown dmapi /etc/dmapi/dmapi.conf')
+    chownr('/etc/dmapi', DMAPI_USR, DMAPI_GRP)
     dmapi.assess_status()
 
 
