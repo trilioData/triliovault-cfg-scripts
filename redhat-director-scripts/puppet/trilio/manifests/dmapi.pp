@@ -28,6 +28,10 @@ class trilio::dmapi (
 ) {
     tag 'dmapiconfig'
 
+
+      file { '/etc/dmapi/':
+          ensure => 'directory',
+      }
       $default_transport_url = os_transport_url({
         'transport' => $oslomsg_rpc_proto,
         'hosts'     => $oslomsg_rpc_hosts,

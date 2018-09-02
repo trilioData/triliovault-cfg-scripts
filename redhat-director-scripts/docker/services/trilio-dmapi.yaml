@@ -38,6 +38,10 @@ parameters:
     default: '8784'
     description: Trilio Dmapi listen port
     type: string
+  DmApiSslPort:
+    default: '13784'
+    description: Trilio Dmapi ssl listen port
+    type: string
   DmApiLinkPrefix:
     description: Trilio Dmapi link prefix
     type: string
@@ -46,10 +50,13 @@ outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: tvault-datamover-api
+      service_name: trilio_datamover_api
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_link_prefix: {get_param: DmApiLinkPrefix}
+        tripleo::haproxy::service_ports:
+              trilio_datamover_api_port: {get_param: DmApiPort}
+              trilio_datamover_api_ssl_port: {get_param: DmApiSslPort}
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
@@ -58,7 +65,7 @@ outputs:
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
-          command: /usr/bin/python /usr/bin/dmapi-api 
+          command: /usr/bin/python /usr/bin/dmapi-api
           config_files:  
             - source: "/var/lib/kolla/config_files/src/*"
               dest: "/"
