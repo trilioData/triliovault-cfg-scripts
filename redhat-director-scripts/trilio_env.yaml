@@ -1,6 +1,6 @@
 resource_registry:
   OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-dmapi.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api.yaml
 #OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
 
 
