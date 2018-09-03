@@ -1,2 +1,0 @@
-RUN subscription-manager register --user=shyam.biradar --password='' \
-&& subscription-manager attach --pool 8a85f9815f01591e015f01777826485f
