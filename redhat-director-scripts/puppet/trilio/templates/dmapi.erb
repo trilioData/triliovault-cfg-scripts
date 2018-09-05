@@ -12,7 +12,7 @@ dmapi_listen_port = <%= @dmapi_port %>
 dmapi_enabled_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x
-dmapi_listen = 0.0.0.0
+dmapi_listen = <%= @my_ip %>
 my_ip = <%= @my_ip %>
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = True
