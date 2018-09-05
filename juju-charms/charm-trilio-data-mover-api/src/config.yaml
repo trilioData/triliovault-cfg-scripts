@@ -1,6 +1,6 @@
+---
 options:
-  TrilioVault_IP:
+  triliovault-ip:
     type: string
-    default: 
-    description: "TrilioVault IP Address"
-
+    default: sample_ip(0.0.0.0)
+    description: TrilioVault IP Address
