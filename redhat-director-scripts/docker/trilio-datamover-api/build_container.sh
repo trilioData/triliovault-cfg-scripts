@@ -10,5 +10,5 @@ fi
 name=$1
 tag=$2
 
-docker build --no-cache --build-arg tag=$tag -t $name:$tag .
+docker build --no-cache -t $name:$tag .
 docker push $name:$tag

@@ -1,4 +1,5 @@
 import os
+import re
 import netaddr
 from charms.reactive import (
     when,
@@ -12,6 +13,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     config,
     log,
+    application_version_set,
 )
 from charmhelpers.contrib.python.packages import (
     pip_install,
@@ -19,25 +21,43 @@ from charmhelpers.contrib.python.packages import (
 from charmhelpers.core.host import (
     service_restart,
 )
+from subprocess import (
+    check_output,
+)
 
 
 def validate_ip(ip):
-    """Validate TrilioVault_IP provided by the user
-    TrilioVault_IP should not be blank
-    TrilioVault_IP should have a valid IP address and reachable
+    """Validate TrilioVault IP provided by the user
+    TrilioVault IP should not be blank
+    TrilioVault IP should have a valid IP address and reachable
     """
     if ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable
-            ip_re = os.system("ping -c 1 " + ip)
-            return ip_re
+            if os.system("ping -c 1 " + ip):
+                return False
+            return True
         else:
             # Invalid IP address
-            return 1
-    else:
-        # Blank
-        return 1
+            return False
+    return False
+
+
+def get_new_version(pkg):
+    """
+    Get the latest version available on the TrilioVault node.
+    """
+    tv_ip = config('triliovault-ip')
+    tv_port = 8081
+
+    curl_cmd = 'curl -s http://{}:{}/packages/'.format(tv_ip, tv_port).split()
+    pkgs = check_output(curl_cmd)
+    new_ver = re.search(
+        r'packages/{}-\s*([\d.]+)'.format(pkg),
+        pkgs.decode('utf-8')).group(1)[:-1]
+
+    return new_ver
 
 
 def install_plugin(ip, ver):
@@ -46,31 +66,42 @@ def install_plugin(ip, ver):
     """
 
     pkg = "http://" + ip + \
-          ":8081/packages/python-workloadmgrclient-" + ver
+          ":8081/packages/python-workloadmgrclient-" + ver + \
+          ".tar.gz"
 
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault WorkloadMgrClient package installation passed")
-    except BaseException:
+    except Exception as e:
         # workloadmgrclient package install failed
         log("TrilioVault WorkloadMgrClient package installation failed")
+        log("With exception --{}".format(e))
+        return False
 
     pkg = "http://" + ip + \
-          ":8081/packages/tvault-horizon-plugin-" + ver
+          ":8081/packages/tvault-horizon-plugin-" + ver + \
+          ".tar.gz"
 
     try:
         pip_install(pkg, venv="/usr", options="--no-deps")
         log("TrilioVault Horizon Plugin package installation passed")
-    except BaseException:
+    except Exception as e:
         # Horixon Plugin package install failed
         log("TrilioVault Horizon Plugin package installation failed")
+        log("With exception --{}".format(e))
+        return False
 
     # Start the application
     status_set('maintenance', 'Starting...')
 
-    service_restart("apache2")
+    try:
+        service_restart("apache2")
+    except Exception as e:
+        # apache2 restart failed
+        log("Apache2 restart failed with exception --{}".format(e))
+        return False
 
-    return 0
+    return True
 
 
 def uninstall_plugin():
@@ -84,7 +115,7 @@ def uninstall_plugin():
     if wm_ret:
         # workloadmgrclient package uninstall failed
         log("TrilioVault WorkloadMgrClient package un-installation failed")
-        return wm_ret
+        return False
     else:
         log("TrilioVault WorkloadMgrClient package uninstalled successfully")
 
@@ -94,14 +125,19 @@ def uninstall_plugin():
     if hp_ret:
         # Horizon Plugin package uninstall failed
         log("TrilioVault Horizon Plugin package un-installation failed")
-        return hp_ret
+        return False
     else:
         log("TrilioVault Horizon Plugin package uninstalled successfully")
 
     # Re-start the Webserver
-    service_restart("apache2")
+    try:
+        service_restart("apache2")
+    except Exception as e:
+        # apache2 restart failed
+        log("Apache2 restart failed with exception --{}".format(e))
+        return False
 
-    return 0
+    return True
 
 
 @when_not('trilio-horizon-plugin.installed')
@@ -113,31 +149,33 @@ def install_trilio_horizon_plugin():
     # subprocess call for the install script.
     # This will make pip to be called from host install rather than virtualenv.
 
-    # Read config parameters TrilioVault version, TrilioVault IP
-    tv_version = config('TrilioVault_version')
-    tv_ip = config('TrilioVault_IP')
+    # Read config parameters TrilioVault IP
+    tv_ip = config('triliovault-ip')
 
-    # Validate TrilioVault_IP
-    validate_op = validate_ip(tv_ip)
-
-    if validate_op:
+    # Validate TrilioVault IP
+    if not validate_ip(tv_ip):
         # IP address is invalid
         # Set status as blocked and return
         status_set(
             'blocked',
             'Invalid IP address, please provide correct IP address')
-        return 1
+        application_version_set('Unknown')
+        return
 
-    # Proceed as TrilioVault_IP Address is valid
+    # Proceed as TrilioVault IP Address is valid
+    # Get latest version of the tvault-horizon-plugin pkg
+    tv_version = get_new_version('tvault-horizon-plugin')
+
     # Call install handler to install the packages
-    inst_ret = install_plugin(tv_ip, tv_version)
-
-    if not inst_ret:
+    if install_plugin(tv_ip, tv_version):
         # Install was successful
         status_set('active', 'Ready...')
-
-    # Add the flag "installed" since it's done
-    set_flag('trilio-horizon-plugin.installed')
+        application_version_set(tv_version)
+        # Add the flag "installed" since it's done
+        set_flag('trilio-horizon-plugin.installed')
+    else:
+        # Install failed
+        status_set('blocked', 'Packages installation failed.....retry..')
 
 
 @hook('stop')
@@ -155,7 +193,7 @@ def stop_trilio_horizon_plugin():
     # Call the script to stop and uninstll TrilioVault Horizon Plugin
     uninst_ret = uninstall_plugin()
 
-    if not uninst_ret:
+    if uninst_ret:
         # Uninstall was successful
         # Remove the state "stopping" since it's done
         remove_state('trilio-horizon-plugin.stopping')

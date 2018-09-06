@@ -1,19 +1,24 @@
 resource_registry:
   OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-dmapi.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api.yaml
 #OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
 
 
 parameter_defaults:
 
-   ##Container locations
-   DockerTrilioDatamoverImage: 192.168.122.151:8787/shyambiradar/trilio-datamover:queens
+   ##Define network map for trilio services
+   ServiceNetMap:
+       TrilioDatamoverApiNetwork: internal_api
 
-   DockerTrilioDmApiImage: 192.168.122.151:8787/shyambiradar/trilio-dmapi:queens
+   ##Container locations
+   DockerTrilioDatamoverImage: 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
+
+   DockerTrilioDmApiImage: 192.168.122.151:8787/trilio/trilio-datamover:ditest
 
    #Dmapi port
    DmApiPort: 8784
-   DmApiLinkPrefix: http://192.168.122.161:8784
+   DmApiSslPort: 13784
+   DmApiLinkPrefix: http://192.168.122.170:8784
    ##Backup target nfs/s3
    BackupTargetType: 'nfs'
     
