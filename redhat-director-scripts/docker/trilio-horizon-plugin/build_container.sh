@@ -1,4 +1,14 @@
 #!/bin/bash -x
 
-cp kolla-build.conf /etc/kolla/
-kolla-build --base-image registry.access.redhat.com/rhel7/rhel --base rhel --template-override horizon_template_overrides.j2 horizon
+if [ $# -ne 2 ];then
+   echo -e "Script takes exactly 2 arguments\n"
+   echo -e "./build_container.sh <container_name> <container_tag>"
+   echo -e "./build_container.sh trilio/openstack-horizon-with-trilio-plugin queens"
+   exit 1
+fi
+
+name=$1
+tag=$2
+
+docker build --no-cache -t $name:$tag .
+docker push $name:$tag
