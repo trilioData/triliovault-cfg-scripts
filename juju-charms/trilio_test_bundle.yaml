@@ -177,11 +177,11 @@ applications:
       backup-target-type: s3
       tv-data-dir: /var/triliovault-mounts
       tv-data-dir-old: /var/triliovault
-      tv-s3-secret-key: yU3xe3CSpYHRmYlpFcIf/kJQW5d48p/WOA4Ldd+k
-      tv-s3-access-key: AKIAIO2M3BBK6YW66EMA
+      tv-s3-secret-key: sample_s3_secret_key
+      tv-s3-access-key: sample_s3_access_key
       tv-s3-type: Amazon
-      tv-s3-region-name: us-east-2
-      tv-s3-bucket: qa-ekta
+      tv-s3-region-name: sample_s3_region_name
+      tv-s3-bucket: sample_s3_bucket
       tv-s3-endpoint-url: sample_s3_endpoint_url
       tv-s3-secure: false
     annotations:
