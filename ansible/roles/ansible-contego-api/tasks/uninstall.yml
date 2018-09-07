@@ -1,9 +1,0 @@
----
-- name: ensure that pip of version 7.1.2 is installed on controller
-  easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present 
-
-- name: uninstall tvault-contego-api package from pip repo
-  pip: name="tvault-contego-api" state=absent
-
-- name: ensure that pip of version 7.1.2 is uninstalled from controller
-  pip: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=absent

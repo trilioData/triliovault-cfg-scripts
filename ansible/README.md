@@ -67,9 +67,9 @@ ansible-playbook main-install.yml -i environments/hosts --tags "contego-extensio
 
 =========================================================
 
-For installing contego-api on controller node
-ansible-playbook main-install.yml -i environments/hosts --tags "contego-api"
+For installing datamover-api on controller node
+ansible-playbook main-install.yml -i environments/hosts --tags "datamover-api"
 
-For uninstalling contego-api on controller node
-ansible-playbook main-install.yml -i environments/hosts --tags "contego-api-uninstall"
+For uninstalling datamover-api on controller node
+ansible-playbook main-install.yml -i environments/hosts --tags "datamover-api-uninstall"
 
