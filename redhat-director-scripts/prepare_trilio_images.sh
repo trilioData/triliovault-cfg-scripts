@@ -1,14 +1,14 @@
 #!/bin/bash
 
 
-docker pull docker.io/trilio/trilio-datamover:ditest
+docker pull docker.io/trilio/trilio-datamover:queens
 
-docker tag docker.io/trilio/trilio-datamover:ditest 192.168.122.151:8787/trilio/trilio-datamover:ditest
+docker tag docker.io/trilio/trilio-datamover:queens 192.168.122.151:8787/trilio/trilio-datamover:queens
 
-docker push 192.168.122.151:8787/trilio/trilio-datamover:ditest
+docker push 192.168.122.151:8787/trilio/trilio-datamover:queens
 
-docker pull docker.io/trilio/trilio-datamover-api:ditest
+docker pull docker.io/trilio/trilio-datamover-api:queens
 
-docker tag docker.io/trilio/trilio-datamover-api:ditest 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
+docker tag docker.io/trilio/trilio-datamover-api:queens 192.168.122.151:8787/trilio/trilio-datamover-api:queens
 
-docker push 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
+docker push 192.168.122.151:8787/trilio/trilio-datamover-api:queens
