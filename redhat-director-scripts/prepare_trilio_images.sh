@@ -1,14 +1,24 @@
 #!/bin/bash
 
+if [ $# -lt 1 ];then
+   echo "Script takes exacyly 1 argument"
+   echo -e "./prepare_trilio_images.sh <undercloud_ip>"
+   exit 1
+fi
 
-docker pull docker.io/trilio/trilio-datamover:ditest
+undercloud_ip=$1
 
-docker tag docker.io/trilio/trilio-datamover:ditest 192.168.122.151:8787/trilio/trilio-datamover:ditest
+## Prepare openstack horizon with trilio container
+docker pull docker.io/trilio/openstack-horizon-with-trilio-plugin:queens
+docker tag docker.io/trilio/openstack-horizon-with-trilio-plugin:ditest ${undercloud_ip}:8787/trilio/openstack-horizon-with-trilio-plugin:queens
+docker push ${undercloud_ip}:8787/trilio/openstack-horizon-with-trilio-plugin:queens
 
-docker push 192.168.122.151:8787/trilio/trilio-datamover:ditest
+## Prepare trilio datamover container
+docker pull docker.io/trilio/trilio-datamover:queens
+docker tag docker.io/trilio/trilio-datamover:queens ${undercloud_ip}:8787/trilio/trilio-datamover:queens
+docker push ${undercloud_ip}:8787/trilio/trilio-datamover:queens
 
-docker pull docker.io/trilio/trilio-datamover-api:ditest
-
-docker tag docker.io/trilio/trilio-datamover-api:ditest 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
-
-docker push 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
+## Prepare trilio datamover api container
+docker pull docker.io/trilio/trilio-datamover-api:queens
+docker tag docker.io/trilio/trilio-datamover-api:queens ${undercloud_ip}:8787/trilio/trilio-datamover-api:queens
+docker push ${undercloud_ip}:8787/trilio/trilio-datamover-api:queens

@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="3.0.73" \
-      release="3.0" \
+      version="3.1.0" \
+      release="3.1" \
       summary="Trilio Datamover" \
       description="Trilio Datamover for Redhat OpenStack Platform 13"
 
