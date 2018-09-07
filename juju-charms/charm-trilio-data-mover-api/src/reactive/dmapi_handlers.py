@@ -84,7 +84,7 @@ def install_packages():
         log("Adding dmapi user failed!")
         return
 
-    add_source('deb http://{}:8085/deb-repo /'.format(
+    add_source('deb http://{}:8085 deb-repo/'.format(
         config('triliovault-ip')))
     os.system('sudo add-apt-repository cloud-archive:queens')
     apt_update()
