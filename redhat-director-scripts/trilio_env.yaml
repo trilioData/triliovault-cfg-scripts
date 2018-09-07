@@ -11,9 +11,9 @@ parameter_defaults:
        TrilioDatamoverApiNetwork: internal_api
 
    ##Container locations
-   DockerTrilioDatamoverImage: 192.168.122.151:8787/trilio/trilio-datamover-api:ditest
+   DockerTrilioDatamoverImage: 192.168.122.151:8787/trilio/trilio-datamover:queens
 
-   DockerTrilioDmApiImage: 192.168.122.151:8787/trilio/trilio-datamover:ditest
+   DockerTrilioDmApiImage: 192.168.122.151:8787/trilio/trilio-datamover-api:queens
 
    #Dmapi port
    DmApiPort: 8784
