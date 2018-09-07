@@ -1,0 +1,8 @@
+[DEFAULT]
+dmapi_link_prefix = {{datamover_url}}
+dmapi_enabled_ssl_apis = {{dmapi_enabled_ssl_apis}}
+
+[wsgi]
+ssl_cert_file = {{ssl_cert_file}}
+ssl_key_file = {{ssl_key_file}}
+

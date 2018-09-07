@@ -1,0 +1,14 @@
+---
+- name:  install tvault_datamover_api if openstack version is pike/queens
+  import_tasks: install_on_queens.yml
+  tags:
+       - contego
+       - contego-api
+       - all-install
+
+- name: uninstall tvault_contego_api
+  import_tasks: uninstall.yml
+  tags: 
+       - contego-uninstall
+       - contego-api-uninstall
+       - all-uninstall
