@@ -13,7 +13,6 @@ LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
 ARG redhat_username
 ARG redhat_password
 ARG redhat_pool_id
-ARG tag
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -24,8 +23,14 @@ RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN yum install sudo python2-cryptography libvirt-python -y
 ##Install datamover packages
-ADD trilio-${tag}.repo /etc/yum.repos.d/
+ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-contego -y
+
+#Copy executable files
+RUN mkdir -p /opt/tvault/
+ADD start_datamover start_tvault_contego start_tvault_object_store /opt/tvault/
+RUN chown -R nova:nova /opt/tvault/
+RUN chmod 755 /opt/tvault/start_datamover /opt/tvault/start_tvault_contego /opt/tvault/start_tvault_object_store
 
 ##Set correct libraries
 RUN rm -rf /home/tvault/.virtenv/lib/python2.7/site-packages/cryptography
@@ -51,10 +56,6 @@ ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN subscription-manager unregister
-
+RUN rm -f /etc/yum.repos.d/trilio.repo
 ##Become nova user for further operations
 USER nova
-
-##Default command
-CMD /usr/bin/python
-#CMD /home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
