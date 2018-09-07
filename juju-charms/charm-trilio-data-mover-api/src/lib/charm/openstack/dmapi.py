@@ -24,7 +24,8 @@ class DmapiAdapters(charms_openstack.adapters.OpenStackAPIRelationAdapters):
 class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
 
     # Internal name of charm + keystone endpoint
-    service_name = name = 'dmapi'
+    service_name = 'dmapi'
+    name = 'trilio-dm-api'
 
     # First release supported
     release = 'queens'
