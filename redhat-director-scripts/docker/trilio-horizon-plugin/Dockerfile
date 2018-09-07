@@ -17,3 +17,7 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-horizon-plugin python-workloadmgrclient -y
 RUN rm /etc/yum.repos.d/trilio.repo
+
+##Move necessary files
+ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
