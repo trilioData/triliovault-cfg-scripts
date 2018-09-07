@@ -1,4 +1,4 @@
 #Here are the tasks in TODO list
-1. Add unit tests using tox for each charm
-2. Bundle trilio-openstack.yaml to be updated as per changes in 3 charms
+1. Add unit tests using tox for datamover and data-mover-api charms
+2. Bundle bundle.yaml is under development - issues while deploying trilio charms
 3. Update documentation (README) files
