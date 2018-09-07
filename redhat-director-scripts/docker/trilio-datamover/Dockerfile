@@ -28,7 +28,7 @@ RUN yum install tvault-contego -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
-RUN cp start_datamover start_tvault_contego start_tvault_object_store /opt/tvault/
+ADD start_datamover start_tvault_contego start_tvault_object_store /opt/tvault/
 RUN chown -R nova:nova /opt/tvault/
 RUN chmod 755 /opt/tvault/start_datamover /opt/tvault/start_tvault_contego /opt/tvault/start_tvault_object_store
 
