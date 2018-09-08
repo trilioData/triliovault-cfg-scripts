@@ -44,6 +44,81 @@ def validate_ip(ip):
     return False
 
 
+def copy_files():
+    """
+    Copy TrilioVault Horizon panel files from files/trilio dir
+    """
+    horizon_path = '/usr/share/openstack-dashboard/'
+    os.system(
+        'cp files/trilio/tvault_panel_group.py {}/openstack_dashboard'
+        '/local/enabled/tvault_panel_group.py'.format(horizon_path))
+    os.system(
+        'cp files/trilio/tvault_admin_panel_group.py {}/openstack_dashboard'
+        '/local/enabled/tvault_admin_panel_group.py'.format(horizon_path))
+    os.system(
+        'cp files/trilio/tvault_panel.py {}/openstack_dashboard'
+        '/local/enabled/tvault_panel.py'.format(horizon_path))
+    os.system(
+        'cp files/trilio/tvault_settings_panel.py {}/openstack_dashboard'
+        '/local/enabled/tvault_settings_panel.py'.format(horizon_path))
+    os.system(
+        'cp files/trilio/tvault_admin_panel.py {}/openstack_dashboard'
+        '/local/enabled/tvault_admin_panel.py'.format(horizon_path))
+    os.system(
+        'cp files/trilio/tvault_filter.py {}/openstack_dashboard'
+        '/templatetags/tvault_filter.py'.format(horizon_path))
+
+    # Restart webserver apache2
+    service_restart("apache2")
+
+    # write content into destination file - sync_static.py
+    os.system('cp files/trilio/sync_static.py /tmp/sync_static.py')
+
+    # Change the working directory to horizon and excute shell command
+    os.system(
+        '{}/manage.py shell < /tmp/sync_static.py &> '
+        '/dev/null'.format(horizon_path))
+
+    # Remove temporary file
+    os.system('rm /tmp/sync_static.py')
+
+
+def delete_files():
+    """
+    Delete TrilioVault Horizon panel files
+    """
+    horizon_path = '/usr/share/openstack-dashboard/'
+    os.system(
+        'rm {}/openstack_dashboard/local/enabled/'
+        'tvault_panel_group.py*'.format(horizon_path))
+    os.system(
+        'rm {}/openstack_dashboard/local/enabled/'
+        'tvault_admin_panel_group.py*'.format(horizon_path))
+    os.system(
+        'rm {}/openstack_dashboard/local/enabled/'
+        'tvault_panel.py*'.format(horizon_path))
+    os.system(
+        'rm {}/openstack_dashboard/local/enabled/'
+        'tvault_settings_panel.py*'.format(horizon_path))
+    os.system(
+        'rm {}/openstack_dashboard/local/enabled/'
+        'tvault_admin_panel.py*'.format(horizon_path))
+    os.system(
+        'rm {}/openstack_dashboard/templatetags/'
+        'tvault_filter.py*'.format(horizon_path))
+
+    # write content into destination file - sync_static1.py
+    os.system('cp files/trilio/sync_static1.py /tmp/sync_static1.py')
+
+    # Change the working directory to horizon and excute shell command
+    os.system(
+        '{}/manage.py shell < /tmp/sync_static1.py &> '
+        '/dev/null'.format(horizon_path))
+
+    # Remove temporary file
+    os.system('rm /tmp/sync_static1.py')
+
+
 def get_new_version(pkg):
     """
     Get the latest version available on the TrilioVault node.
@@ -91,6 +166,9 @@ def install_plugin(ip, ver):
         log("With exception --{}".format(e))
         return False
 
+    # Copy TrilioVault files
+    copy_files()
+
     # Start the application
     status_set('maintenance', 'Starting...')
 
@@ -109,6 +187,9 @@ def uninstall_plugin():
     # Can not pass venv to pip_uninstall like pip_install
     # Using alternate approach for now
     # Uninstall Horizon plugin and workloadmgrclient packages
+    # Start with deleting TrilioVault files
+    delete_files()
+
     cmd = "/usr/bin/pip uninstall python-workloadmgrclient -y"
     wm_ret = os.system(cmd)
 
