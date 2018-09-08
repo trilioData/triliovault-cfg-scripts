@@ -69,6 +69,15 @@ class Test(unittest.TestCase):
         self._patches = None
         self._patches_start = None
 
+    def patch(self, obj, attr, return_value=None, side_effect=None):
+        mocked = mock.patch.object(obj, attr)
+        self._patches[attr] = mocked
+        started = mocked.start()
+        started.return_value = return_value
+        started.side_effect = side_effect
+        self._patches_start[attr] = started
+        setattr(self, attr, started)
+
     def test_registered_hooks(self):
         # test that the hooks actually registered the relation expressions that
         # are meaningful for this interface: this is to handle regressions.
@@ -92,3 +101,75 @@ class Test(unittest.TestCase):
                     lists += a['args'][:]
                 self.assertEqual(sorted(lists), sorted(p[f]),
                                  "{}: incorrect state registration".format(f))
+
+    def test_install_plugin(self):
+         self.patch(plugin, 'install_plugin')
+         plugin.install_plugin('1.2.3.4', 'version')
+         self.install_plugin.assert_called_once_with('1.2.3.4', 'version')
+
+    def test_uninstall_plugin(self):
+         self.patch(plugin, 'uninstall_plugin')
+         plugin.uninstall_plugin()
+         self.uninstall_plugin.assert_called_once_with()
+
+    def test_install_trilio_horizon_plugin(self):
+         self.patch(plugin, 'install_trilio_horizon_plugin')
+         plugin.install_trilio_horizon_plugin()
+         self.install_trilio_horizon_plugin.assert_called_once_with()
+
+    def test_stop_trilio_horizon_plugin(self):
+         self.patch(plugin, 'status_set')
+         self.patch(plugin, 'remove_state')
+         self.patch(plugin, 'uninstall_plugin')
+         self.uninstall_plugin.return_value = True
+         plugin.stop_trilio_horizon_plugin()
+         self.status_set.assert_called_with(
+             'maintenance', 'Stopping...')
+         self.remove_state.assert_called_with('trilio-horizon-plugin.stopping')
+
+    def test_invalid_ip(self):
+         self.patch(plugin, 'config')
+         self.patch(plugin, 'status_set')
+         self.patch(plugin, 'application_version_set')
+         self.patch(plugin, 'validate_ip')
+         self.validate_ip.return_value = False
+         plugin.install_trilio_horizon_plugin()
+         self.status_set.assert_called_with(
+             'blocked',
+             'Invalid IP address, please provide correct IP address')
+         self.application_version_set.assert_called_with('Unknown')
+
+    def test_valid_ip_install_pass(self):
+         self.patch(plugin, 'config')
+         self.config.return_value = '1.2.3.4'
+         self.patch(plugin, 'status_set')
+         self.patch(plugin, 'application_version_set')
+         self.patch(plugin, 'validate_ip')
+         self.validate_ip.return_value = True
+         self.patch(plugin, 'get_new_version')
+         self.get_new_version.return_value = 'Version'
+         self.patch(plugin, 'install_plugin')
+         self.install_plugin.return_value = True
+         plugin.install_trilio_horizon_plugin()
+         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
+         self.status_set.assert_called_with(
+             'active', 'Ready...')
+         self.application_version_set.assert_called_with('Version')
+
+    def test_valid_ip_install_fail(self):
+         self.patch(plugin, 'config')
+         self.config.return_value = '1.2.3.4'
+         self.patch(plugin, 'status_set')
+         self.patch(plugin, 'application_version_set')
+         self.patch(plugin, 'validate_ip')
+         self.validate_ip.return_value = True
+         self.patch(plugin, 'get_new_version')
+         self.get_new_version.return_value = 'Version'
+         self.patch(plugin, 'install_plugin')
+         self.install_plugin.return_value = False
+         plugin.install_trilio_horizon_plugin()
+         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
+         self.status_set.assert_called_with(
+             'blocked',
+             'Packages installation failed.....retry..')
+         self.application_version_set.assert_not_called()
