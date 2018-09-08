@@ -1,7 +1,7 @@
 [DEFAULT]
 dmapi_workers = 2
 transport_url = <%= @default_transport_url %>
-<% if @is_ssl_enabled == true %>
+<% if @dmapi_enable_ssl == true %>
 dmapi_link_prefix = <%= @dmapi_link_prefix %>
 dmapi_enabled_ssl_apis = dmapi
 <% else %> 
