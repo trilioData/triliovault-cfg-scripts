@@ -1,6 +1,6 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
 #ip address and port no for tvault applicance
-IP_ADDRESS: 192.168.17.118
+IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
@@ -100,6 +100,7 @@ release_2000: "2000"
 release_2016: "2016"
 ubuntu: "Ubuntu"
 centos: "CentOS"
+redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
 vault_keystone_swift_username: "triliovault"
