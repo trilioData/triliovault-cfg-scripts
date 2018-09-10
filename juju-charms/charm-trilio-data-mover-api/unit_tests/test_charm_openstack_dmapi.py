@@ -54,7 +54,7 @@ class TestDmapiAdapters(Helper):
     @mock.patch('charmhelpers.core.hookenv.config')
     def test_dmapi_adapters(self, config):
         reply = {
-            'keystone-api-version': '2',
+            'keystone-api-version': '3',
         }
         config.side_effect = lambda: reply
         self.patch_object(
