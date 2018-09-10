@@ -54,6 +54,12 @@ VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
 VAULT_S3_SECURE: False
 
 
+###details of datamover API
+datamover_url: sample_datamover_url
+dmapi_enabled_ssl_apis: ""
+ssl_cert_file: ""
+ssl_key_file:  ""
+
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
 #******************************************************************************************************************************************************************
@@ -83,6 +89,7 @@ objstore_service_debian_path: /etc/init/tvault-object-store.conf
 mitaka: "mitaka"
 newton: "newton"
 premitaka: "premitaka"
+queens: "queens"
 gtliberty: "gtliberty"
 status_200: "200"
 status_201: "201"
@@ -93,6 +100,7 @@ release_2000: "2000"
 release_2016: "2016"
 ubuntu: "Ubuntu"
 centos: "CentOS"
+redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
 vault_keystone_swift_username: "triliovault"
@@ -107,4 +115,15 @@ KEYSTONE: "KEYSTONE"
 virtenv_newton_script_path: /tmp/set_virtenv_newton.sh 
 virtenv_mitaka_script_path: /tmp/set_virtenv_mitaka.sh
 virtenv_premitaka_script_path: /tmp/set_virtenv_premitaka.sh
+tvault_datamover_api: tvault-datamover-api
+release_16: "16"
+datamover_service_file_path: /etc/systemd/system/tvault-datamover-api.service
+tvault_datmover_python: /usr/bin/python
+datamover_service_debian_path: /etc/init/tvault-datamover.conf
+datamover_log_dir: /var/log/dmapi
+trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+release_17: "17"
+
+
 

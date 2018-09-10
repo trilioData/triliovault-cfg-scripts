@@ -1,21 +1,30 @@
 resource_registry:
   OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover.yaml
-
-#  OS::TripleO::Services::TrilioDatamoverApi: heat/trilio-datamover-api.yaml
-#  OS::TripleO::Services::TrilioHorizonPlugin: heat/trilio-horizon-plugin.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api.yaml
 
 
 parameter_defaults:
 
-   ##Container locations
-   DockerTrilioDatamoverImage: 192.168.122.151:8787/shyambiradar/trilio-datamover:queens
+   ##Define network map for trilio services
+   ServiceNetMap:
+       TrilioDatamoverApiNetwork: internal_api
 
+   ##Container locations
+   DockerTrilioDatamoverImage: 192.168.122.151:8787/trilio/trilio-datamover:queens
+
+   DockerTrilioDmApiImage: 192.168.122.151:8787/trilio/trilio-datamover-api:queens
+
+   #Dmapi port
+   DmApiPort: 8784
+   DmApiEnableSSL: true
+   DmApiSslPort: 13784
+   DmApiLinkPrefix: http://192.168.122.170:8784
    ##Backup target nfs/s3
    BackupTargetType: 'nfs'
     
    ##For backup target 'nfs'
    NfsShares: '192.168.122.240:/nfsfileshare'
-   NfsOptions: 'nolock,soft,timeo=180,intr'
+   NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
    
    ##For backup target 's3'
    #S3 type: amazon_s3/ceph_s3/minio_s3
@@ -27,6 +36,4 @@ parameter_defaults:
    S3EndpointUrl: ''
    S3SslEnabled: false
 
-   #Horizon directory on controller node, this location will be used to install trilio horizon plugin
-   HorizonDir: '/usr/share/openstack-dashboard/'
    EnablePackageInstall: True

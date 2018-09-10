@@ -1,6 +1,12 @@
 class trilio::contego::config inherits trilio::contego {
     tag 'dmconfig'
 
+
+##Create /etc/tvault-contego/ directory and tvault-contego.conf
+    file { '/etc/tvault-contego/':
+        ensure => 'directory',
+    }
+
     if $backup_target_type == 'nfs' {
         file { "/etc/tvault-contego/tvault-contego.conf":
             ensure  => present,
