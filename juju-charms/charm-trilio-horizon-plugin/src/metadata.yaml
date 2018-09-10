@@ -11,6 +11,8 @@ tags:
 subordinate: true
 series:
   - xenial
+  - bionic
+  - trusty
 requires:
   dashboard-plugin:
     interface: dashboard-plugin

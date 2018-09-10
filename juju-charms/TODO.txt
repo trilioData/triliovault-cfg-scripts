@@ -1,3 +1,4 @@
 #Here are the tasks in TODO list
 1. Update documentation (README) files
 2. Functional test complete for TrilioVault with Charms deployment
+3. Update icon file

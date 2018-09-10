@@ -1,0 +1,312 @@
+series: xenial
+applications:
+  ntp:
+    charm: 'cs:ntp-24'
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+  neutron-gateway:
+    charm: 'cs:neutron-gateway-247'
+    num_units: 1
+    options:
+      bridge-mappings: 'physnet1:br-ex'
+      data-port: 'br-ex:ens192'
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '0'
+    to:
+      - '3'
+  cinder-ceph:
+    charm: 'cs:cinder-ceph-231'
+    annotations:
+      gui-x: '1456.6666870117188'
+      gui-y: '347.77777099609375'
+  cinder:
+    charm: 'cs:cinder-268'
+    num_units: 1
+    options:
+      block-device: None
+      glance-api-version: 2
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '750'
+      gui-y: '0'
+    to:
+      - 'lxd:nova-compute/1'
+  neutron-openvswitch:
+    charm: 'cs:neutron-openvswitch-249'
+    annotations:
+      gui-x: '250'
+      gui-y: '500'
+  neutron-api:
+    charm: 'cs:neutron-api-258'
+    num_units: 1
+    options:
+      flat-network-providers: physnet1
+      neutron-security-groups: true
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '500'
+    to:
+      - 'lxd:nova-compute/1'
+  glance:
+    charm: 'cs:glance-263'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '250'
+      gui-y: '0'
+    to:
+      - 'lxd:nova-compute/2'
+  ceph-radosgw:
+    charm: 'cs:ceph-radosgw-256'
+    num_units: 1
+    options:
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    to:
+      - 'lxd:neutron-gateway/0'
+  ceph-osd:
+    charm: 'cs:ceph-osd-257'
+    num_units: 3
+    options:
+      osd-devices: /dev/sdb
+      osd-reformat: 'yes'
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '500'
+    to:
+      - '0'
+      - '1'
+      - '2'
+  ceph-mon:
+    charm: 'cs:ceph-mon-23'
+    num_units: 3
+    options:
+      expected-osd-count: 3
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '750'
+      gui-y: '500'
+    to:
+      - 'lxd:nova-compute/0'
+      - 'lxd:nova-compute/1'
+      - 'lxd:nova-compute/2'
+  nova-cloud-controller:
+    charm: 'cs:nova-cloud-controller-306'
+    num_units: 1
+    options:
+      network-manager: Neutron
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '500'
+    to:
+      - 'lxd:nova-compute/2'
+  trilio-horizon-plugin:
+    charm: './charm-trilio-horizon-plugin/build/builds/trilio-horizon-plugin'
+    options:
+      triliovault-ip: 192.168.18.11
+    annotations:
+      gui-x: '1823.888916015625'
+      gui-y: '-287.22218322753906'
+  openstack-dashboard:
+    charm: 'cs:openstack-dashboard-257'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '500'
+      gui-y: '-250'
+    to:
+      - 'lxd:nova-compute/0'
+  nova-compute:
+    charm: 'cs:nova-compute-282'
+    num_units: 3
+    options:
+      config-flags: default_ephemeral_format=ext4
+      enable-live-migration: true
+      enable-resize: true
+      openstack-origin: 'cloud:xenial-queens'
+      virt-type: qemu
+    annotations:
+      gui-x: '250'
+      gui-y: '250'
+    to:
+      - '0'
+      - '1'
+      - '2'
+  trilio-dm-api:
+    charm: './charm-trilio-data-mover-api/build/builds/trilio-dm-api'
+    num_units: 1
+    options:
+      triliovault-ip: 192.168.18.11
+    annotations:
+      gui-x: '2520'
+      gui-y: '813.5'
+    to:
+      - 'lxd:nova-compute/0'
+  rabbitmq-server:
+    charm: 'cs:rabbitmq-server-72'
+    num_units: 1
+    annotations:
+      gui-x: '500'
+      gui-y: '250'
+    to:
+      - 'lxd:neutron-gateway/0'
+  trilio-data-mover:
+    charm: './charm-trilio-data-mover/build/builds/trilio-data-mover'
+    options:
+      triliovault-ip: 192.168.18.11
+      tvault-datamover-ext-usr: "nova"
+      tvault-datamover-ext-group: 'nova'
+      tvault-datamover-virtenv: /home/tvault
+      tvault-datamover-virtenv-path: /home/tvault/.virtenv
+      tv-datamover-conf: /etc/tvault-contego/tvault-contego.conf
+      backup-target-type: s3
+      tv-data-dir: /var/triliovault-mounts
+      tv-data-dir-old: /var/triliovault
+      tv-s3-secret-key: sample_s3_secret_key
+      tv-s3-access-key: sample_s3_access_key
+      tv-s3-type: Amazon
+      tv-s3-region-name: sample_s3_region_name
+      tv-s3-bucket: sample_s3_bucket
+      tv-s3-endpoint-url: sample_s3_endpoint_url
+      tv-s3-secure: false
+    annotations:
+      gui-x: '1968.33349609375'
+      gui-y: '896.1944427490234'
+  keystone:
+    charm: 'cs:keystone-275'
+    num_units: 1
+    options:
+      admin-password: openstack
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '0'
+    to:
+      - 'lxd:nova-compute/0'
+  mysql:
+    charm: 'cs:percona-cluster-259'
+    num_units: 1
+    options:
+      innodb-buffer-pool-size: 256M
+      max-connections: 1000
+    annotations:
+      gui-x: '1071.1110534667969'
+      gui-y: '949.9999694824219'
+    to:
+      - 'lxd:neutron-gateway/0'
+relations:
+  - - 'neutron-api:shared-db'
+    - 'mysql:shared-db'
+  - - 'trilio-dm-api:identity-service'
+    - 'keystone:identity-service'
+  - - 'neutron-gateway:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'keystone:shared-db'
+    - 'mysql:shared-db'
+  - - 'neutron-openvswitch:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'ntp:juju-info'
+    - 'neutron-gateway:juju-info'
+  - - 'nova-compute:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:identity-service'
+    - 'keystone:identity-service'
+  - - 'neutron-openvswitch:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'neutron-api:identity-service'
+    - 'keystone:identity-service'
+  - - 'glance:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-compute:ceph-access'
+    - 'cinder-ceph:ceph-access'
+  - - 'glance:shared-db'
+    - 'mysql:shared-db'
+  - - 'cinder-ceph:storage-backend'
+    - 'cinder:storage-backend'
+  - - 'neutron-api:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:image-service'
+    - 'glance:image-service'
+  - - 'cinder:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-compute:image-service'
+    - 'glance:image-service'
+  - - 'glance:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'ceph-radosgw:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-cloud-controller:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'cinder:image-service'
+    - 'glance:image-service'
+  - - 'cinder:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'ceph-mon:client'
+    - 'glance:ceph'
+  - - 'ceph-mon:client'
+    - 'nova-compute:ceph'
+  - - 'ceph-osd:mon'
+    - 'ceph-mon:osd'
+  - - 'trilio-dm-api:shared-db'
+    - 'mysql:shared-db'
+  - - 'ceph-radosgw:mon'
+    - 'ceph-mon:radosgw'
+  - - 'nova-cloud-controller:cloud-compute'
+    - 'nova-compute:cloud-compute'
+  - - 'ceph-mon:client'
+    - 'cinder-ceph:ceph'
+  - - 'nova-cloud-controller:shared-db'
+    - 'mysql:shared-db'
+  - - 'nova-cloud-controller:quantum-network-service'
+    - 'neutron-gateway:quantum-network-service'
+  - - 'neutron-gateway:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'nova-compute:neutron-plugin'
+    - 'neutron-openvswitch:neutron-plugin'
+  - - 'cinder:cinder-volume-service'
+    - 'nova-cloud-controller:cinder-volume-service'
+  - - 'ntp:juju-info'
+    - 'nova-compute:juju-info'
+  - - 'nova-cloud-controller:neutron-api'
+    - 'neutron-api:neutron-api'
+  - - 'cinder:shared-db'
+    - 'mysql:shared-db'
+  - - 'trilio-dm-api:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'trilio-data-mover:juju-info'
+    - 'nova-compute:juju-info'
+  - - 'trilio-data-mover:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'trilio-horizon-plugin:dashboard-plugin'
+    - 'openstack-dashboard:dashboard-plugin'
+  - - 'openstack-dashboard:identity-service'
+    - 'keystone:identity-service'
+machines:
+  '0':
+    series: xenial
+    constraints: arch=amd64 cpu-cores=32 mem=20480
+  '1':
+    series: xenial
+    constraints: arch=amd64 cpu-cores=32 mem=20480
+  '2':
+    series: xenial
+    constraints: arch=amd64 cpu-cores=32 mem=20480
+  '3':
+    series: xenial
+    constraints: arch=amd64 cpu-cores=32 mem=20480

@@ -5,7 +5,7 @@
 
 - hosts: controller
   roles:
-    - role: ansible-contego-api
+    - role: ansible-datamover-api
 
 - hosts: compute
   roles:   

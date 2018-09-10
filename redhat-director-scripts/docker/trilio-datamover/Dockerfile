@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="3.0.73" \
-      release="3.0" \
+      version="3.1.0" \
+      release="3.1" \
       summary="Trilio Datamover" \
       description="Trilio Datamover for Redhat OpenStack Platform 13"
 
@@ -13,7 +13,6 @@ LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
 ARG redhat_username
 ARG redhat_password
 ARG redhat_pool_id
-
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -23,10 +22,15 @@ RUN subscription-manager register --user=${redhat_username} \
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN yum install sudo python2-cryptography libvirt-python -y
-
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-contego -y
+
+#Copy executable files
+RUN mkdir -p /opt/tvault/
+ADD start_datamover start_tvault_contego start_tvault_object_store /opt/tvault/
+RUN chown -R nova:nova /opt/tvault/
+RUN chmod 755 /opt/tvault/start_datamover /opt/tvault/start_tvault_contego /opt/tvault/start_tvault_object_store
 
 ##Set correct libraries
 RUN rm -rf /home/tvault/.virtenv/lib/python2.7/site-packages/cryptography
@@ -38,9 +42,8 @@ RUN cp /usr/lib64/python2.7/site-packages/_cffi_backend.so /home/tvault/.virtenv
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+RUN usermod -aG disk nova
 ADD --chown=nova:nova tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
-ADD tvault-contego.service /etc/systemd/system/tvault-contego.service
-ADD --chown=nova:nova trilio-datamover-entrypoint.sh /home/nova/
 RUN mkdir -p /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault-mounts
 RUN mkdir -p /var/triliovault
@@ -53,11 +56,6 @@ ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN subscription-manager unregister
-
+RUN rm -f /etc/yum.repos.d/trilio.repo
 ##Become nova user for further operations
 USER nova
-RUN chmod +x /home/nova/trilio-datamover-entrypoint.sh
-
-##Default command
-CMD ["/home/tvault/.virtenv/bin/python /home/tvault/.virtenv/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf \
---config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf"]
