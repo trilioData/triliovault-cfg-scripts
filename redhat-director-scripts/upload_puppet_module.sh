@@ -1,7 +1,10 @@
-#!/bin/bash -x
+#!/bin/bash
 
-mkdir puppet-modules
+##Source udndercloud credentials
+source /home/stack/stackrc
 
-cp -R puppet/trilio puppet-modules/
 
-upload-puppet-modules -d puppet-modules
+rm -rf trilio-puppet-module
+mkdir trilio-puppet-module
+cp -R puppet/trilio trilio-puppet-module/
+upload-puppet-modules -d trilio-puppet-module
