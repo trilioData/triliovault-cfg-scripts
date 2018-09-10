@@ -1,6 +1,6 @@
 import mock
 import unittest
-import trilio_horizon_plugin as plugin
+import trilio_data_mover as datamover
 
 _when_args = {}
 _when_not_args = {}
@@ -36,10 +36,10 @@ class Test(unittest.TestCase):
         # try except is Python2/Python3 compatibility as Python3 has moved
         # reload to importlib.
         try:
-            reload(plugin)
+            reload(datamover)
         except NameError:
             import importlib
-            importlib.reload(plugin)
+            importlib.reload(datamover)
 
     @classmethod
     def tearDownClass(cls):
@@ -51,10 +51,10 @@ class Test(unittest.TestCase):
         cls._patched_when_not = None
         # and fix any breakage we did to the module
         try:
-            reload(plugin)
+            reload(datamover)
         except NameError:
             import importlib
-            importlib.reload(plugin)
+            importlib.reload(datamover)
 
     def setUp(self):
         self._patches = {}
@@ -81,11 +81,11 @@ class Test(unittest.TestCase):
         # are meaningful for this interface: this is to handle regressions.
         # The keys are the function names that the hook attaches to.
         when_patterns = {
-            'stop_trilio_horizon_plugin': ('trilio-horizon-plugin.stopping', ),
+            'stop_tvault_contego_plugin': ('tvault-contego.stopping', ),
         }
         when_not_patterns = {
-            'install_trilio_horizon_plugin': (
-                'trilio-horizon-plugin.installed', ), }
+            'install_tvault_contego_plugin': (
+                'tvault-contego.installed', ), }
         # check the when hooks are attached to the expected functions
         for t, p in [(_when_args, when_patterns),
                      (_when_not_args, when_not_patterns)]:
@@ -101,73 +101,95 @@ class Test(unittest.TestCase):
                                  "{}: incorrect state registration".format(f))
 
     def test_install_plugin(self):
-         self.patch(plugin, 'install_plugin')
-         plugin.install_plugin('1.2.3.4', 'version')
-         self.install_plugin.assert_called_once_with('1.2.3.4', 'version')
+         self.patch(datamover, 'install_plugin')
+         datamover.install_plugin('1.2.3.4', 'version', 'venv')
+         self.install_plugin.assert_called_once_with('1.2.3.4', 'version', 'venv')
 
     def test_uninstall_plugin(self):
-         self.patch(plugin, 'uninstall_plugin')
-         plugin.uninstall_plugin()
+         self.patch(datamover, 'uninstall_plugin')
+         datamover.uninstall_plugin()
          self.uninstall_plugin.assert_called_once_with()
 
-    def test_install_trilio_horizon_plugin(self):
-         self.patch(plugin, 'install_trilio_horizon_plugin')
-         plugin.install_trilio_horizon_plugin()
-         self.install_trilio_horizon_plugin.assert_called_once_with()
+    def test_install_tvault_contego_plugin(self):
+         self.patch(datamover, 'install_tvault_contego_plugin')
+         datamover.install_tvault_contego_plugin()
+         self.install_tvault_contego_plugin.assert_called_once_with()
 
-    def test_stop_trilio_horizon_plugin(self):
-         self.patch(plugin, 'status_set')
-         self.patch(plugin, 'remove_state')
-         self.patch(plugin, 'uninstall_plugin')
+    def test_stop_tvault_contego_plugin(self):
+         self.patch(datamover, 'status_set')
+         self.patch(datamover, 'remove_state')
+         self.patch(datamover, 'uninstall_plugin')
          self.uninstall_plugin.return_value = True
-         plugin.stop_trilio_horizon_plugin()
+         datamover.stop_tvault_contego_plugin()
          self.status_set.assert_called_with(
              'maintenance', 'Stopping...')
-         self.remove_state.assert_called_with('trilio-horizon-plugin.stopping')
+         self.remove_state.assert_called_with('tvault-contego.stopping')
 
     def test_invalid_ip(self):
-         self.patch(plugin, 'config')
-         self.patch(plugin, 'status_set')
-         self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
+         self.patch(datamover, 'config')
+         self.patch(datamover, 'status_set')
+         self.patch(datamover, 'validate_ip')
          self.validate_ip.return_value = False
-         plugin.install_trilio_horizon_plugin()
+         datamover.install_tvault_contego_plugin()
          self.status_set.assert_called_with(
              'blocked',
              'Invalid IP address, please provide correct IP address')
-         self.application_version_set.assert_called_with('Unknown')
 
-    def test_valid_ip_install_pass(self):
-         self.patch(plugin, 'config')
-         self.config.return_value = '1.2.3.4'
-         self.patch(plugin, 'status_set')
-         self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
+    def test_s3_object_storage_fail(self):
+         self.patch(datamover, 'config')
+         self.config.return_value = 's3'
+         self.patch(datamover, 'status_set')
+         self.patch(datamover, 'validate_ip')
          self.validate_ip.return_value = True
-         self.patch(plugin, 'get_new_version')
-         self.get_new_version.return_value = 'Version'
-         self.patch(plugin, 'install_plugin')
-         self.install_plugin.return_value = True
-         plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
-         self.status_set.assert_called_with(
-             'active', 'Ready...')
-         self.application_version_set.assert_called_with('Version')
-
-    def test_valid_ip_install_fail(self):
-         self.patch(plugin, 'config')
-         self.config.return_value = '1.2.3.4'
-         self.patch(plugin, 'status_set')
-         self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
-         self.validate_ip.return_value = True
-         self.patch(plugin, 'get_new_version')
-         self.get_new_version.return_value = 'Version'
-         self.patch(plugin, 'install_plugin')
-         self.install_plugin.return_value = False
-         plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
+         self.patch(datamover, 'validate_backup')
+         self.validate_backup.return_value = True
+         self.patch(datamover, 'add_users')
+         self.add_users.return_value = True
+         self.patch(datamover, 'create_virt_env')
+         self.create_virt_env.return_value = True
+         self.patch(datamover, 'ensure_files')
+         self.ensure_files.return_value = True
+         self.patch(datamover, 'create_conf')
+         self.create_conf.return_value = True
+         self.patch(datamover, 'ensure_data_dir')
+         self.ensure_data_dir.return_value = True
+         self.patch(datamover, 'create_service_file')
+         self.create_service_file.return_value = True
+         self.patch(datamover, 'create_object_storage_service')
+         self.create_object_storage_service.return_value = False
+         datamover.install_tvault_contego_plugin()
          self.status_set.assert_called_with(
              'blocked',
-             'Packages installation failed.....retry..')
-         self.application_version_set.assert_not_called()
+             'Failed while creating ObjectStore service file')
+
+    def test_s3_object_storage_pass(self):
+         self.patch(datamover, 'config')
+         self.config.side_effect = ['1.2.3.4', 's3']
+         self.patch(datamover, 'status_set')
+         self.patch(datamover, 'validate_ip')
+         self.validate_ip.return_value = True
+         self.patch(datamover, 'validate_backup')
+         self.validate_backup.return_value = True
+         self.patch(datamover, 'add_users')
+         self.add_users.return_value = True
+         self.patch(datamover, 'create_virt_env')
+         self.create_virt_env.return_value = True
+         self.patch(datamover, 'ensure_files')
+         self.ensure_files.return_value = True
+         self.patch(datamover, 'create_conf')
+         self.create_conf.return_value = True
+         self.patch(datamover, 'ensure_data_dir')
+         self.ensure_data_dir.return_value = True
+         self.patch(datamover, 'create_service_file')
+         self.create_service_file.return_value = True
+         self.patch(datamover, 'create_object_storage_service')
+         self.create_object_storage_service.return_value = True
+         self.patch(datamover, 'service_restart')
+         self.patch(datamover, 'set_flag')
+         datamover.install_tvault_contego_plugin()
+         self.service_restart.assert_called_with(
+             'tvault-contego')
+         self.status_set.assert_called_with(
+             'active', 'Ready...')
+         self.set_flag.assert_called_with(
+             'tvault-contego.installed')
