@@ -1,6 +1,6 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
 #ip address and port no for tvault applicance
-IP_ADDRESS: sample_tvault_ip_address
+IP_ADDRESS: 192.168.17.118
 PORT_NO: 8081
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
@@ -89,6 +89,7 @@ objstore_service_debian_path: /etc/init/tvault-object-store.conf
 mitaka: "mitaka"
 newton: "newton"
 premitaka: "premitaka"
+queens: "queens"
 gtliberty: "gtliberty"
 status_200: "200"
 status_201: "201"
@@ -115,11 +116,13 @@ virtenv_mitaka_script_path: /tmp/set_virtenv_mitaka.sh
 virtenv_premitaka_script_path: /tmp/set_virtenv_premitaka.sh
 tvault_datamover_api: tvault-datamover-api
 release_16: "16"
-mover_service_file_path: /etc/systemd/system/tvault-datamover-api.service
+datamover_service_file_path: /etc/systemd/system/tvault-datamover-api.service
 tvault_datmover_python: /usr/bin/python
 datamover_service_debian_path: /etc/init/tvault-datamover.conf
 datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+release_17: "17"
+
 
 
