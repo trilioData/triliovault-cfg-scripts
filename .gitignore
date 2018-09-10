@@ -3,4 +3,11 @@
 *.retry
 *.swp
 *.pyc
-
+# Charm build artifacts
+.tox/
+build/
+builds/
+deps/
+.stestr/
+results.txt
+*.db
