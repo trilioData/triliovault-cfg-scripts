@@ -1,7 +1,5 @@
 import mock
 import unittest
-import sys
-sys.path.append('build/builds/trilio-data-mover/reactive')
 import trilio_data_mover as datamover
 
 _when_args = {}
