@@ -1,4 +1,3 @@
 #Here are the tasks in TODO list
-1. Add unit tests using tox for datamover and data-mover-api charms
-2. Bundle bundle.yaml is under development - issues while deploying trilio charms
-3. Update documentation (README) files
+1. Update documentation (README) files
+2. Functional test complete for TrilioVault with Charms deployment
