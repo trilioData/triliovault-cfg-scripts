@@ -7,4 +7,3 @@ PANEL_GROUP = 'backups'
 # Python panel class of the PANEL to be added.
 ADD_PANEL = ('dashboards.settings.panel.Settings')
 DISABLED = False
-
