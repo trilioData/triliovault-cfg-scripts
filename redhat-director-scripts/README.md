@@ -1,4 +1,4 @@
-### 1.Plan for deployment
+### 1. Plan for deployment
   #### i) Identify target protocol to store backup images taken by TrilioVault and details needed for configuration: 
      a) NFS - Export IP and path
      b) S3 - Access Key, Secret Key, Region (AWS), Endpoint URL (CEPH), Bucket name
