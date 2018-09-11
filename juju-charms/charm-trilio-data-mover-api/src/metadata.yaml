@@ -1,9 +1,11 @@
 ---
 name: trilio-dm-api
-maintainer: support@trilio.io 
+maintainer: Trilio Support <support@trilio.io>
 summary: TrilioVault Data Mover API
 description: | 
   API service of TrilioVault Datamover 
+tags:
+  - openstack
 requires:
   shared-db:
     interface: mysql-shared
