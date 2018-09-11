@@ -7,10 +7,13 @@ on the Openstack and provides TrilioVault UI components.
 
 TrilioVault Horizon Plugin is a sub-ordinate charm of openstack-dashboard
 and relies on services from openstack-dashboard.
+
 Steps to deploy the charm:
 
 juju deploy trilio-horizon-plugin --config "triliovault-ip=<IP Address>"
+
 juju deploy openstack-dashboard
+
 juju add-relation trilio-horizon-plugin openstack-dashboard
 
 # Configuration
