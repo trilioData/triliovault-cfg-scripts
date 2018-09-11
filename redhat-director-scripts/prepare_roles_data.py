@@ -11,8 +11,6 @@ for role in roles:
         controller_service_list = role['ServicesDefault']
         if 'OS::TripleO::Services::TrilioDatamoverApi' not in controller_service_list:
             controller_service_list.append('OS::TripleO::Services::TrilioDatamoverApi')
-        if 'OS::TripleO::Services::TrilioHorizonPlugin' not in controller_service_list:
-            controller_service_list.append('OS::TripleO::Services::TrilioHorizonPlugin')
 	role['ServicesDefault'] = controller_service_list 
     if role["name"] == "Compute": 
 	compute_service_list = role['ServicesDefault']
