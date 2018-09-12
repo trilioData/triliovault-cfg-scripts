@@ -219,7 +219,7 @@ def create_virt_env():
     try:
         # remove old venv if it exists
         os.system('rm -rf {}'.format(venv_path))
-        venv_src = 'http://{}:8081/packages/queens'\
+        venv_src = 'http://{}:8081/packages/queens_ubuntu'\
                    '/tvault-contego-virtenv.tar.gz'.format(tv_ip)
         venv_dest = path
         handler.install(venv_src, venv_dest)
