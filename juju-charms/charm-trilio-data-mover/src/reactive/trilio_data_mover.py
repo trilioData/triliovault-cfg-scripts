@@ -170,7 +170,7 @@ def add_users():
     destination = '/usr/lib64'
     content = '{} ALL=(ALL) NOPASSWD: ALL'.format(usr)
     try:
-        write_file(path, content, owner='root', group='root', perms=292)
+        write_file(path, content, owner='root', group='root', perms=755)
 
         # Adding nova user to system groups
         add_user_to_group(usr, 'kvm')
@@ -273,7 +273,7 @@ def ensure_files():
     conf_path = '/etc/tvault-contego'
     # Creates log directory if doesn't exists
     mkdir(log_path, owner=usr, group=grp, perms=765, force=False)
-    write_file(log_file, '', owner=usr, group=grp, perms=292)
+    write_file(log_file, '', owner=usr, group=grp, perms=755)
     if not check_presence(dm_bin):
         log("TrilioVault Datamover binary is not present")
         return False
