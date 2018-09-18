@@ -103,7 +103,7 @@
     - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
       shell: '{{virtenv_premitaka_script_path}}'
       register: tvault_contego_version_installed
-  when: OPEN_STACK_RELEASE == premitaka
+  when: OPEN_STACK_RELEASE == premitaka or OPEN_STACK_RELEASE == queens
 
 - block:
     - name: copy set_virtenv_newton.sh to destination host
