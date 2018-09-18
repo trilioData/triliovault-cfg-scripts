@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ $# -ne 2 ];then
    echo -e "Script takes exactly 2 arguments\n"
    echo -e "./build_container.sh <container_name> <container_tag>"
