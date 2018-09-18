@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ $# -lt 5 ];then
    echo "Script takes exacyly 5 arguments"
    echo -e "./build_container.sh <container_name> <container_tag> <redhat_subscription_username> <redhat_subscription_password> <redhat_openStack_pool_id>"
