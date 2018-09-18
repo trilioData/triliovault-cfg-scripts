@@ -38,6 +38,10 @@ parameters:
     default: '8784'
     description: Trilio Dmapi listen port
     type: string
+  DmApiEnableSSL:
+    default: true
+    description: Need to enable ssl for dmapi endpoints or not
+    type: boolean
   DmApiSslPort:
     default: '13784'
     description: Trilio Dmapi ssl listen port
@@ -53,6 +57,7 @@ outputs:
       service_name: trilio_datamover_api
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
+        trilio::dmapi::dmapi_enable_ssl: {get_param: DmApiEnableSSL}
         trilio::dmapi::dmapi_link_prefix: {get_param: DmApiLinkPrefix}
         tripleo::haproxy::service_ports:
             trilio_datamover_api_port: {get_param: DmApiPort}

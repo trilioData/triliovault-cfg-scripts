@@ -1,7 +1,5 @@
 import mock
 import unittest
-import sys
-sys.path.append('build/builds/trilio-horizon-plugin/reactive')
 import trilio_horizon_plugin as plugin
 
 _when_args = {}

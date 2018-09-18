@@ -1,13 +1,13 @@
 FROM registry.access.redhat.com/rhosp13/openstack-nova-compute
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="rhosp13/openstack-trilio-datamover-plugin" \
+LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="3.0.73" \
-      release="3.0" \
-      summary="Trilio Datamover" \
-      description="Trilio Datamover for Redhat OpenStack Platform 13"
+      version="3.1.0" \
+      release="3.1" \
+      summary="Red Hat OpenStack Platform 13.0 nova-compute TrilioData Datamover" \
+      description="Red Hat OpenStack Platform 13.0 nova-compute TrilioData Datamover"
 
 ##Build arguments (Redhat subscription details)
 ARG redhat_username
@@ -57,5 +57,11 @@ RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN subscription-manager unregister
 RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
 ##Become nova user for further operations
 USER nova
