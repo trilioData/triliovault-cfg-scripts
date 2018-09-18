@@ -269,11 +269,11 @@ def ensure_files():
     venv_path = config('tvault-datamover-virtenv-path')
     dm_bin = '{}/bin/tvault-contego'.format(venv_path)
     log_path = '/var/log/nova'
+    log_file = '{}/tvault-contego.log'.format(log_path)
     conf_path = '/etc/tvault-contego'
-
     # Creates log directory if doesn't exists
     mkdir(log_path, owner=usr, group=grp, perms=765, force=False)
-
+    write_file(log_file, '', owner=usr, group=grp, perms=292)
     if not check_presence(dm_bin):
         log("TrilioVault Datamover binary is not present")
         return False
