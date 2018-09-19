@@ -10,15 +10,16 @@ LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
       description="Red Hat OpenStack Platform 13.0 nova-compute TrilioData Datamover"
 
 ##Build arguments (Redhat subscription details)
-ARG redhat_username
-ARG redhat_password
-ARG redhat_pool_id
+#ARG redhat_username
+#ARG redhat_password
+#ARG redhat_pool_id
 
 # switch to root and install a custom RPM, etc.
 USER root
 
-RUN subscription-manager register --user=${redhat_username} \
---password=${redhat_password} && subscription-manager attach --pool ${redhat_pool_id}
+#RUN subscription-manager register --user=${redhat_username} \
+#--password=${redhat_password} && subscription-manager attach --pool ${redhat_pool_id}
+
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms
 RUN yum clean all
 RUN yum install sudo python2-cryptography libvirt-python -y
