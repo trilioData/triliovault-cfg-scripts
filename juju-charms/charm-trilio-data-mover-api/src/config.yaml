@@ -4,3 +4,15 @@ options:
     type: string
     default: sample_ip(0.0.0.0)
     description: TrilioVault IP Address
+  public-port:
+    type: int
+    default: 8784
+    description: DataMover API public endpoint port
+  internal-port:
+    type: int
+    default: 8784
+    description: DataMover API internal endpoint port
+  admin-port:
+    type: int
+    default: 8784
+    description: DataMover API admin endpoint port
