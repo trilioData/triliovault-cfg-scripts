@@ -11,7 +11,6 @@ LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
 
 # switch to root and install a custom RPM, etc.
 USER root
-RUN yum clean all
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
