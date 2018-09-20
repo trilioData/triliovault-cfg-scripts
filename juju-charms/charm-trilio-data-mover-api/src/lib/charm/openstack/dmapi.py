@@ -4,9 +4,12 @@ import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.ip as os_ip
 
+from charmhelpers.core.hookenv import (
+    config
+)
+
 DMAPI_DIR = '/etc/dmapi'
 DMAPI_CONF = os.path.join(DMAPI_DIR, 'dmapi.conf')
-
 
 class DmapiAdapters(charms_openstack.adapters.OpenStackAPIRelationAdapters):
     """
@@ -40,9 +43,9 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     default_service = 'dmapi-api'
     api_ports = {
         'dmapi-api': {
-            os_ip.PUBLIC: 8784,
-            os_ip.ADMIN: 8784,
-            os_ip.INTERNAL: 8784,
+            os_ip.PUBLIC: config('public-port'),
+            os_ip.ADMIN: config('admin-port'),
+            os_ip.INTERNAL: config('internal-port'),
         }
     }
 
@@ -94,7 +97,6 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     def internal_url(self):
         return super().internal_url + "/v2"
 
-
 def install():
     """Use the singleton from the DmapiCharm to install the packages on the
     unit
@@ -119,7 +121,6 @@ def setup_endpoint(keystone):
                                 charm.public_url,
                                 charm.internal_url,
                                 charm.admin_url)
-
 
 def render_configs(interfaces_list):
     """Using a list of interfaces, render the configs and, if they have
