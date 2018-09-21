@@ -16,3 +16,9 @@ vault_swift_domain_id = {{VAULT_SWIFT_DOMAIN_ID}}
 vault_swift_domain_name = {{VAULT_SWIFT_DOMAIN_NAME}}
 vault_swift_tenant = {{VAULT_SWIFT_TENANT}}
 vault_swift_region_name = {{VAULT_SWIFT_REGION_NAME}}
+
+[contego_sys_admin]
+helper_command = sudo {{privsep_helper_file}}
+
+[conductor]
+use_local = True
