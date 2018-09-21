@@ -18,6 +18,7 @@
 - block:
     - name: Ensure python-pip is installed
       shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
+      ignore_errors: yes
 
     - name: Ensure python swift client is present
       pip: name="python-swiftclient" state=present
