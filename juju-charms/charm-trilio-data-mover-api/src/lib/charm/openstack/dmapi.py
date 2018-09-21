@@ -11,6 +11,7 @@ from charmhelpers.core.hookenv import (
 DMAPI_DIR = '/etc/dmapi'
 DMAPI_CONF = os.path.join(DMAPI_DIR, 'dmapi.conf')
 
+
 class DmapiAdapters(charms_openstack.adapters.OpenStackAPIRelationAdapters):
     """
     Adapters class for the Data Mover API charm.
@@ -97,6 +98,7 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     def internal_url(self):
         return super().internal_url + "/v2"
 
+
 def install():
     """Use the singleton from the DmapiCharm to install the packages on the
     unit
@@ -121,6 +123,7 @@ def setup_endpoint(keystone):
                                 charm.public_url,
                                 charm.internal_url,
                                 charm.admin_url)
+
 
 def render_configs(interfaces_list):
     """Using a list of interfaces, render the configs and, if they have

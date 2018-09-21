@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     config,
     log,
+    application_version_set,
 )
 from charmhelpers.contrib.python.packages import (
     pip_install,
@@ -316,6 +317,11 @@ def create_conf():
     tv_config.set('DEFAULT', 'verbose', True)
     tv_config.set('DEFAULT', 'max_uploads_pending', 3)
     tv_config.set('DEFAULT', 'max_commit_pending', 3)
+    tv_config.add_section('contego_sys_admin')
+    tv_config.set('contego_sys_admin', 'helper_command',
+                  '/home/tvault/.virtenv/bin/privsep-helper')
+    tv_config.add_section('conductor')
+    tv_config.set('conductor', 'use_local', True)
 
     with open(config('tv-datamover-conf'), 'w') as cf:
         tv_config.write(cf)
@@ -576,6 +582,7 @@ def install_tvault_contego_plugin():
     # Install was successful
     status_set('active', 'Ready...')
     # Add the flag "installed" since it's done
+    application_version_set(get_new_version('tvault-contego'))
     set_flag('tvault-contego.installed')
 
 
