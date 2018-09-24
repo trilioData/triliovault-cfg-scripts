@@ -89,7 +89,7 @@
   - name: create tvault-datamover-api service in systemd if ansible_distribution is uubuntu16
     template:
        src: datamover_service_debian.j2
-       dest: "{{datamover_service_file_path}}"
+       dest: "{{datamover_service_debian_path}}"
   when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
 
 - name: enable and daemon reload tvault-datamover-api service
