@@ -115,7 +115,8 @@ def setup_database(database):
     """On receiving database credentials, configure the database on the
     interface.
     """
-    database.configure('dmapi', 'dmapi', hookenv.unit_private_ip())
+    database.configure('nova', 'dmapi', prefix='nova')
+    database.configure('nova_api', 'dmapi', prefix='novaapi')
     dmapi.assess_status()
 
 
