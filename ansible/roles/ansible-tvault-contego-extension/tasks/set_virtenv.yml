@@ -11,10 +11,7 @@
 - block:
     - name: activate virtual environment and grep tvault contego from virtual environment
       shell: |           
-           #cd '{{TVAULT_CONTEGO_VIRTENV}}'
-           #source .virtenv/bin/activate
            pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
-           #deactivate
       args:
         executable: /bin/bash
       register: tvault_contego_version
@@ -24,7 +21,6 @@
     - name: set tvault_contego_version to a varaible if contego is already installed
       set_fact:
           tvault_contego_version_set : "{{tvault_contego_version.stdout}}"
-  #when: venv_dir.stat.exists == true
 
 - name: set tvault_contego_version to a varaible if contego is already installed
   set_fact:
