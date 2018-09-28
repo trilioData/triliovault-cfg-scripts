@@ -11,10 +11,10 @@
 - block:
     - name: activate virtual environment and grep tvault contego from virtual environment
       shell: |           
-           cd '{{TVAULT_CONTEGO_VIRTENV}}'
-           source .virtenv/bin/activate
+           #cd '{{TVAULT_CONTEGO_VIRTENV}}'
+           #source .virtenv/bin/activate
            pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
-           deactivate
+           #deactivate
       args:
         executable: /bin/bash
       register: tvault_contego_version
@@ -24,7 +24,7 @@
     - name: set tvault_contego_version to a varaible if contego is already installed
       set_fact:
           tvault_contego_version_set : "{{tvault_contego_version.stdout}}"
-  when: venv_dir.stat.exists == true
+  #when: venv_dir.stat.exists == true
 
 - name: set tvault_contego_version to a varaible if contego is already installed
   set_fact:
@@ -79,6 +79,7 @@
 - debug: msg="cryptography_path={{cryptography_mitaka}}"  verbosity={{verbosity_level}}
 - debug: msg="cryptography_path={{cryptography}}"  verbosity={{verbosity_level}}
 
+
 - block:
     - name: copy set_virenv_premitaka.sh to destination host
       template:
@@ -117,6 +118,14 @@
       shell: '{{virtenv_newton_script_path}}'
       register: tvault_contego_version_installed
   when: OPEN_STACK_RELEASE == newton
+
+- name: get tvault contego binary path 
+  shell: which tvault-contego
+  register: tvault_contego_bin_path
+
+- name: get tvault object store s3vaultfuse file path
+  shell: find /usr/ -name "s3vaultfuse.py"
+  register: s3_fuse_file
 
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
 
