@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 cd {{TVAULT_CONTEGO_VIRTENV}}
-source .virtenv/bin/activate
 pip install http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz
+pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
+source .virtenv/bin/activate
 rm -rf .virtenv/lib/python2.7/site-packages/cryptography
 ln -s {{cryptography_mitaka.stdout_lines[0]}} .virtenv/lib/python2.7/site-packages/cryptography
 rm -rf .virtenv/lib/python2.7/site-packages/Crypto
 ln -s {{cryptography_mitaka.stdout_lines[1]}} .virtenv/lib/python2.7/site-packages/Crypto
-pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
 rm -rf tvault-contego-virtenv.tar.gz
