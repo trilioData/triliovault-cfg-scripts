@@ -20,7 +20,8 @@
 
 - name: ensure that pip of version 7.1.2 is installed on controller
   easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
-
+  ignore_errors: yes
+ 
 - name: uninstall python-workloadmanager client 
   pip: name=python-workloadmgrclient state=absent 
  
