@@ -1,5 +1,4 @@
 import charms.reactive as reactive
-import charmhelpers.core.hookenv as hookenv
 import os
 import netaddr
 
@@ -115,13 +114,14 @@ def setup_database(database):
     """On receiving database credentials, configure the database on the
     interface.
     """
-    database.configure('nova', 'dmapi', prefix='nova')
-    database.configure('nova_api', 'dmapi', prefix='novaapi')
+    database.configure('nova', 'nova')
+    database.configure('nova_api', 'nova')
     dmapi.assess_status()
 
 
 @reactive.when('identity-service.connected')
 def setup_endpoint(keystone):
+    dmapi.configure_ssl()
     dmapi.setup_endpoint(keystone)
     dmapi.assess_status()
 
@@ -138,6 +138,7 @@ def render(*args):
 @reactive.when_not('cluster.available')
 @reactive.when(*MINIMAL_INTERFACES)
 def render_unclustered(*args):
+    dmapi.configure_ssl()
     render(*args)
 
 
