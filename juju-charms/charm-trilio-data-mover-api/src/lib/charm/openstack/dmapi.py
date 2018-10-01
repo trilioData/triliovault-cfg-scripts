@@ -143,3 +143,9 @@ def configure_ha_resources(hacluster):
     """Use the singleton from the DmapiCharm to run configure_ha_resources
     """
     DmapiCharm.singleton.configure_ha_resources(hacluster)
+
+
+def configure_ssl():
+    """Use the singleton from the DmapiCharm to run configure_ssl
+    """
+    DmapiCharm.singleton.configure_ssl()
