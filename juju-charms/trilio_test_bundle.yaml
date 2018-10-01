@@ -115,9 +115,7 @@ applications:
     to:
       - 'lxd:nova-compute/2'
   trilio-horizon-plugin:
-    charm: './charm-trilio-horizon-plugin/build/builds/trilio-horizon-plugin'
-    options:
-      triliovault-ip: 192.168.18.11
+    charm: './builds/trilio-horizon-plugin'
     annotations:
       gui-x: '1823.888916015625'
       gui-y: '-287.22218322753906'
@@ -148,15 +146,13 @@ applications:
       - '1'
       - '2'
   trilio-dm-api:
-    charm: './charm-trilio-data-mover-api/build/builds/trilio-dm-api'
+    charm: './builds/trilio-dm-api'
     num_units: 1
-    options:
-      triliovault-ip: 192.168.18.11
     annotations:
       gui-x: '2520'
       gui-y: '813.5'
     to:
-      - 'lxd:nova-compute/0'
+      - 'lxd:1'
   rabbitmq-server:
     charm: 'cs:rabbitmq-server-72'
     num_units: 1
@@ -166,24 +162,8 @@ applications:
     to:
       - 'lxd:neutron-gateway/0'
   trilio-data-mover:
-    charm: './charm-trilio-data-mover/build/builds/trilio-data-mover'
+    charm: './builds/trilio-data-mover'
     options:
-      triliovault-ip: 192.168.18.11
-      tvault-datamover-ext-usr: "nova"
-      tvault-datamover-ext-group: 'nova'
-      tvault-datamover-virtenv: /home/tvault
-      tvault-datamover-virtenv-path: /home/tvault/.virtenv
-      tv-datamover-conf: /etc/tvault-contego/tvault-contego.conf
-      backup-target-type: s3
-      tv-data-dir: /var/triliovault-mounts
-      tv-data-dir-old: /var/triliovault
-      tv-s3-secret-key: sample_s3_secret_key
-      tv-s3-access-key: sample_s3_access_key
-      tv-s3-type: Amazon
-      tv-s3-region-name: sample_s3_region_name
-      tv-s3-bucket: sample_s3_bucket
-      tv-s3-endpoint-url: sample_s3_endpoint_url
-      tv-s3-secure: false
     annotations:
       gui-x: '1968.33349609375'
       gui-y: '896.1944427490234'
