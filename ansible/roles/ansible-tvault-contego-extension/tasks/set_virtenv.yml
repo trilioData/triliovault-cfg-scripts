@@ -9,7 +9,7 @@
 - debug: msg="print true if  virtual env dir exists:{{venv_dir.stat.exists}}" verbosity={{verbosity_level}}
 
 - block:
-    - name: activate virtual environment and grep tvault contego from virtual environment
+    - name: set virtual environment and grep tvault contego from virtual environment
       shell: |           
            pip list | grep tvault-contego | cut -d'(' -f2 | cut -d')' -f1
       args:
@@ -75,6 +75,8 @@
 - debug: msg="cryptography_path={{cryptography_mitaka}}"  verbosity={{verbosity_level}}
 - debug: msg="cryptography_path={{cryptography}}"  verbosity={{verbosity_level}}
 
+- name : install tvault-contego pip  pacakge
+  pip: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-contego-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz"  state=present
 
 - block:
     - name: copy set_virenv_premitaka.sh to destination host
@@ -119,10 +121,14 @@
   shell: which tvault-contego
   register: tvault_contego_bin_path
 
-- name: get tvault object store s3vaultfuse file path
-  shell: find /usr/ -name "s3vaultfuse.py"
-  register: s3_fuse_file
+- name: get tvault contego driver file path
+  shell: python -c "import contego.nova.extension.driver; print contego.nova.extension.driver.__path__[0]"
+  register: contego_driver_path
 
+- name: append tvault object store s3vaultfuse file path
+  set_fact:
+     s3_fuse_file: "{{contego_driver_path.stdout}}/s3vaultfuse.py"
+  
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
 
 - name: change virtenv dir(/home/tvault) users to nova
