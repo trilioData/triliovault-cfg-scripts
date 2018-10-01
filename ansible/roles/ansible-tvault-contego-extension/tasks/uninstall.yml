@@ -1,4 +1,11 @@
 ---
+- name: ensure that pip of version 7.1.2 is installed on controller
+  easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
+  ignore_errors: yes
+
+- name: uninstall tvault-contego pip package
+  pip: name=tvault-contego state=absent
+
 - name: ensure tvault-contego service is stopped
   service: name=tvault-contego state=stopped enabled=yes
   ignore_errors: yes
