@@ -114,8 +114,8 @@ def setup_database(database):
     """On receiving database credentials, configure the database on the
     interface.
     """
-    database.configure('nova', 'nova')
-    database.configure('nova_api', 'nova')
+    database.configure('nova', 'nova', prefix='dmapinova')
+    database.configure('nova_api', 'nova', prefix='dmapinovaapi')
     dmapi.assess_status()
 
 
