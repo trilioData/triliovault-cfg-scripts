@@ -154,8 +154,8 @@ class TestDmapiHandlers(unittest.TestCase):
         self.patch(handlers.dmapi, 'assess_status')
         handlers.setup_database(database)
         database.configure.assert_has_calls([
-            mock.call('nova', 'nova'),
-            mock.call('nova_api', 'nova'),
+            mock.call('nova', 'nova', prefix='dmapinova'),
+            mock.call('nova_api', 'nova', prefix='dmapinovaapi'),
             ])
 
     def test_setup_endpoint(self):
@@ -168,8 +168,10 @@ class TestDmapiHandlers(unittest.TestCase):
     def test_render(self):
         self.patch(handlers.dmapi, 'render_configs')
         self.patch(handlers.dmapi, 'assess_status')
+        #self.patch(handlers.dmapi, 'upgrade_if_available')
         self.patch(handlers.dmapi, 'configure_ssl')
         handlers.render_unclustered('args')
         self.render_configs.assert_called_once_with(('args', ))
         self.assess_status.assert_called_once()
         self.configure_ssl.assert_called_once()
+        #self.upgrade_if_available.assert_called_once_with(('args', ))

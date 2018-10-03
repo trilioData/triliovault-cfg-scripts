@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import mock
 import sys
-#sys.path.append('build/builds/trilio-dm-api/lib')
+
 import charm.openstack.dmapi as dmapi
 
 import charms_openstack.test_utils as test_utils
@@ -49,6 +49,21 @@ class TestOpenStackDmapi(Helper):
         self.render_with_interfaces.assert_called_once_with(
             'interfaces-list')
 
+
+class TestDmapiDBAdapter(Helper):
+
+    def fake_get_uri(self, prefix):
+        return 'mysql://uri/{}-database'.format(prefix)
+
+    def test_dmapi_uri(self):
+        relation = mock.MagicMock()
+        a = dmapi.DmapiDBAdapter(relation)
+        self.patch_object(dmapi.DmapiDBAdapter, 'get_uri')
+        self.get_uri.side_effect = self.fake_get_uri
+        self.assertEqual(a.dmapi_nova_uri, 'mysql://uri/dmapinova-database')
+        self.assertEqual(a.dmapi_nova_api_uri, 'mysql://uri/dmapinovaapi-database')
+
+
 class TestDmapiAdapters(Helper):
 
     @mock.patch('charmhelpers.core.hookenv.config')
@@ -79,10 +94,6 @@ class TestDmapiAdapters(Helper):
             isinstance(
                 b.other,
                 dmapi.charms_openstack.adapters.OpenStackRelationAdapter))
-        self.assertTrue(
-            isinstance(
-                b.options,
-                dmapi.charms_openstack.adapters.APIConfigurationAdapter))
 
 
 class TestDmapiCharm(Helper):
