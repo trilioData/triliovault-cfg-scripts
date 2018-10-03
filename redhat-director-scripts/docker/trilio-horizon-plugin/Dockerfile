@@ -9,10 +9,6 @@ LABEL name="rhosp13/openstack-horizon-triliodata-plugin" \
       summary="Red Hat OpenStack Platform 13.0 horizon TrilioData TrilioVault Horizon Plugin" \
       description="Red Hat OpenStack Platform 13.0 horizon TrilioData TrilioVault Horizon Plugin"
 
-# switch to root and install a custom RPM, etc.
-USER root
-
-
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-horizon-plugin python-workloadmgrclient -y
