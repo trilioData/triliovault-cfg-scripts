@@ -59,9 +59,7 @@ outputs:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_enable_ssl: {get_param: DmApiEnableSSL}
         trilio::dmapi::dmapi_link_prefix: {get_param: DmApiLinkPrefix}
-        tripleo::haproxy::service_ports:
-            trilio_datamover_api_port: {get_param: DmApiPort}
-            trilio_datamover_api_ssl_port: {get_param: DmApiSslPort}
+        trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
         tripleo::trilio_datamover_api::haproxy_endpoints:
             trilio_datamover_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
