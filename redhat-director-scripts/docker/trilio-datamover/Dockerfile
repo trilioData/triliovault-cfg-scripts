@@ -14,7 +14,8 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-contego puppet-triliovault -y
+RUN yum install puppet-triliovault -y
+RUN yum install tvault-contego -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
