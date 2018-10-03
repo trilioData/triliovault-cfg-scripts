@@ -1,9 +1,10 @@
 # Overview
 
 Provides 3 TrilioVault charms
-charm-trilio-data-mover-api
-charm-trilio-data-mover
-charm-trilio-horizon-plugin
+
+            charm-trilio-data-mover-api
+            charm-trilio-data-mover
+            charm-trilio-horizon-plugin
 
 trilio_test_bundle.yaml - Bundle to deploy Openstack services and TrilioVault 
 service with TrilioVault charms
