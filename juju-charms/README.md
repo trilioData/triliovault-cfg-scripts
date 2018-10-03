@@ -34,17 +34,23 @@ Steps to deploy the charm:
     
     For trilio-data-mover:
   
-        triliovault-ip: "IP Address of  TrilioVault Appliance"
-    
+        triliovault-ip: "IP Address of the TrilioVault Appliance"
+
         backup-target-type: "Backup target type e.g. nfs or s3"
-    
-        tv-s3-secret-key: "S3 secret access key"
-    
-        tv-s3-access-key: "S3 access key"
-    
-        tv-s3-region-name: "S3 region name"
-    
-        tv-s3-bucket: "S3 bucket name"
+
+            For NFS backup target:
+
+                        nfs-shares: "NFS Shares IP address only for nfs backup target"
+
+            For S3 bakup target:
+
+                        tv-s3-secret-key: "S3 secret access key"
+
+                        tv-s3-access-key: "S3 access key"
+
+                        tv-s3-region-name: "S3 region name"
+
+                        tv-s3-bucket: "S3 bucket name"
 
 3. deploy the bundle:
 
