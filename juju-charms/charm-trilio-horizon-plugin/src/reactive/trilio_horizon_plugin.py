@@ -31,7 +31,7 @@ def validate_ip(ip):
     TrilioVault IP should not be blank
     TrilioVault IP should have a valid IP address and reachable
     """
-    if ip.strip():
+    if ip and ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable

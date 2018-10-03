@@ -57,15 +57,6 @@ VALID_S3_TYPES = [
 ]
 
 
-def pip_list(venv):
-    """
-    Charmhelpers do not have any option to list out installed
-    pip packages in a virtual environment, hence this module.
-    """
-    pip_cmd = '{}/bin/pip'.format(venv)
-    return check_output([pip_cmd, 'list']).decode('utf-8').split('\n')
-
-
 def get_new_version(pkg):
     """
     Get the latest version available on the TrilioVault node.
@@ -99,6 +90,11 @@ def validate_nfs():
     grp = config('tvault-datamover-ext-group')
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
+
+    if not device:
+        log("NFS mount device can not be empty."
+            "Check 'nfs-shares' value in config")
+        return False
 
     # Ensure mount directory exists
     mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
@@ -191,15 +187,6 @@ def create_virt_env():
     # create virtenv dir(/home/tvault) if it does not exist
     mkdir(path, owner=usr, group=grp, perms=501, force=True)
 
-    # check existance of already installed virtual env
-    ''' TODO: Need to validate this section
-    venv_chk = check_presence(venv_path)
-    if venv_chk: # if path exists
-        pl = pip_list(venv_path)
-        dm_pkg = [l for l in pl if 'tvault-contego' in l]
-        if dm_pkg:
-            dm_ver = dm_pkg[0].split('(')[1].split(')')[0]
-    '''
     latest_dm_ver = get_new_version('tvault-contego')
     if dm_ver == latest_dm_ver:
         log("Latest TrilioVault DataMover package is already installed,"
@@ -429,7 +416,8 @@ def validate_ip(ip):
     triliovault_ip should not be blank
     triliovault_ip should have a valid IP address and reachable
     """
-    if ip.strip():
+
+    if ip and ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable
@@ -530,7 +518,7 @@ def install_tvault_contego_plugin():
         log("Failed while validating backup")
         status_set(
             'blocked',
-            'Invalid Backup target type, please provide valid info')
+            'Invalid Backup target info, please provide valid info')
         return
 
     # Proceed as triliovault_ip Address is valid
