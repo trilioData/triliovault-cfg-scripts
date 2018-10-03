@@ -14,14 +14,13 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install puppet-triliovault -y
-RUN yum install tvault-contego -y
+RUN yum install tvault-contego puppet-triliovault -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
-ADD start_datamover start_tvault_contego start_tvault_object_store /opt/tvault/
+ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
 RUN chown -R nova:nova /opt/tvault/
-RUN chmod 755 /opt/tvault/start_datamover /opt/tvault/start_tvault_contego /opt/tvault/start_tvault_object_store
+RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
