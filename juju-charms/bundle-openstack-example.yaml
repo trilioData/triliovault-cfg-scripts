@@ -1,3 +1,8 @@
+# This example bundle is based on cs:openstack-base for a dev/test
+# environment.
+#
+# This bundle is not intended for production use, as it is a simple,
+# non-highly-available configuration.
 series: xenial
 applications:
   ntp:
