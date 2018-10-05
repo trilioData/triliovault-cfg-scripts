@@ -10,9 +10,9 @@ parameter_defaults:
        TrilioDatamoverApiNetwork: internal_api
 
    ## Container locations
-   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.31
+   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.58-queens
 
-   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.31
+   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.58-queens
 
    ## Datamover api port, default is 8784
    DmApiPort: 8784
@@ -24,10 +24,6 @@ parameter_defaults:
    ## If you are enabling ssl for datamover api public endpoint then following parameter is 
    ## taken into consideration otherwise not
    DmApiSslPort: 13784
-
-   ## Following parameter expects datamover api public endpoint url in keystone catalog
-   ## This endpoint url is created during triliovault configuration step
-   DmApiLinkPrefix: http://192.168.122.25:8784
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'
