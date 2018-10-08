@@ -14,7 +14,8 @@
     yum:
        name: dmapi
        state: present
- 
+       update_cache: yes
+
   - name: change permission of datamover log file 
     file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
 
@@ -46,6 +47,7 @@
        name: dmapi
        state: present
        allow_unauthenticated: yes
+       update_cache: yes
 
   - name: change permission of datamover log file
     file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
@@ -75,6 +77,7 @@
        name: dmapi
        state: present
        allow_unauthenticated: yes
+       update_cache: yes
 
   - name: change permission of datamover log file
     file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
