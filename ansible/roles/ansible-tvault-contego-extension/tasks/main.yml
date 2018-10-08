@@ -69,12 +69,23 @@
        - contego-extension
        - all-install
 
-- name: set_virtual environment and comapre tvault version if contego is already installed
-  import_tasks: set_virtenv.yml 
+- name: Install datamover extension
+  import_tasks: install_rhel_queens.yml 
   tags:
        - contego
        - contego-extension
        - all-install
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: Install datamover extension
+  import_tasks: install_rhel_ubuntu.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+  when: ansible_distribution=="Ubuntu"
 
 - name: ensure log/nova, bin, contego_conf files are present
   import_tasks: ensure_files.yml
