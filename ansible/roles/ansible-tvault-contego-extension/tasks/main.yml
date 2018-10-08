@@ -70,7 +70,7 @@
        - all-install
 
 - name: Install datamover extension
-  import_tasks: install_rhel_queens.yml 
+  import_tasks: install_rhel.yml 
   tags:
        - contego
        - contego-extension
@@ -80,7 +80,7 @@
        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
 
 - name: Install datamover extension
-  import_tasks: install_ubuntu_queens.yml
+  import_tasks: install_ubuntu.yml
   tags:
        - contego
        - contego-extension
@@ -123,8 +123,19 @@
        - all-install
 
 - name: uninstall tvault contego extension 
-  import_tasks: uninstall.yml
+  import_tasks: uninstall_rhel.yml
   tags:
        - contego-uninstall
        - contego-extension-uninstall  
        - all-uninstall
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: uninstall tvault contego extension
+  import_tasks: uninstall_ubuntu.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall
+  when: ansible_distribution=="Ubuntu"
