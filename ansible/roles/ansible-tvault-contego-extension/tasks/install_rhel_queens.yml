@@ -9,6 +9,7 @@
      update_cache: yes
      name:
         - tvault-contego
+        - puppet-triliovault
      state: present
 
 
