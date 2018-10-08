@@ -13,32 +13,8 @@
      state: present
 
 
-- name: create virtenv dir(/home/tvault) if it is not exist
+- name: change ownership of virtenv dir(/home/tvault)
   file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory mode=765 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
-
-- name: check if /home/tvault/.venv directory exist or not
-  stat: path={{TVAULT_CONTEGO_VIRTENV_PATH}}
-  register: venv_dir
-
-- debug: msg="print true if  virtual env dir exists:{{venv_dir.stat.exists}}" verbosity={{verbosity_level}}
-
-- name: download virtual environment tar bundle from applainace if distribution is RedHat
-  get_url: url="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/queens_redhat/tvault-contego-virtenv.tar.gz" dest="{{TVAULT_CONTEGO_VIRTENV}}"
-  when: >
-        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-        (ansible_distribution_major_version=="7" and ansible_distribution== redhat) or
-        (ansible_distribution == SLES) or
-        (ansible_distribution== suse)
-  
-- name: download virtual environment tar bundle from applaince if distribution is Ubuntu
-  get_url: url="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/queens_ubuntu/tvault-contego-virtenv.tar.gz" dest="{{TVAULT_CONTEGO_VIRTENV}}"
-  when: ansible_distribution== ubuntu
-  
-- name: remove existing .virtenv directory
-  file: path={{TVAULT_CONTEGO_VIRTENV_PATH}} state=absent
-
-- name:  Untar virtual environment bundle
-  unarchive: src="{{TVAULT_CONTEGO_VIRTENV}}/tvault-contego-virtenv.tar.gz" dest="{{TVAULT_CONTEGO_VIRTENV}}" remote_src=yes
 
 - name: set cryptography if openstack release is mitaka
   shell:   |
@@ -111,7 +87,3 @@
      s3_fuse_file: "{{contego_driver_path.stdout}}/s3vaultfuse.py"
   
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
-
-- name: change virtenv dir(/home/tvault) users to nova
-  file: path={{TVAULT_CONTEGO_VIRTENV}} mode=765 recurse=yes owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
-
