@@ -146,3 +146,10 @@
        - contego-extension-uninstall
        - all-uninstall
   when: ansible_distribution=="Ubuntu"
+
+- name: post uninstall tvault contego extension
+  import_tasks: post_uninstall.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall
