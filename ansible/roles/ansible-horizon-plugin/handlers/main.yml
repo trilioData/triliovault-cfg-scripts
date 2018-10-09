@@ -1,5 +1,3 @@
 ---
-- name: restart httpd
-  systemd:
-     name: "httpd"
-     state: "restarted"
+- name: restart webserver
+  service: name={{WebServer}} state=restarted

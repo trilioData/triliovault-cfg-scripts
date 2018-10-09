@@ -87,6 +87,13 @@
        - all-install
   when: ansible_distribution=="Ubuntu"
 
+- name: postinstall datamover extension
+  import_tasks: post_install.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+
 - name: ensure log/nova, bin, contego_conf files are present
   import_tasks: ensure_files.yml
   tags:
