@@ -12,6 +12,7 @@
 
   - name: install tvault-datamover-api package
     yum:
+       update_cache: yes
        name: dmapi
        state: present
  

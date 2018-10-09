@@ -13,4 +13,4 @@
         - python-workloadmgrclient
      state: present
   notify:
-     - restart httpd
+     - restart webserver

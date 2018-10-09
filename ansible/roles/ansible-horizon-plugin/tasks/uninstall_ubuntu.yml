@@ -5,8 +5,6 @@
  
 - name: uninstall python-workloadmanager client 
   pip: name=python-workloadmgrclient state=absent
-  notify:
-     - restart webserver
  
 - name: uninstall horizon plugin 
   pip: name=tvault-horizon-plugin state=absent
