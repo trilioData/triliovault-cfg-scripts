@@ -68,3 +68,5 @@
        (ansible_distribution== suse) or (ansible_distribution== SLES) or
        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))
 
+- name: restart tvault-contego service
+  service: name=tvault-contego state=restarted
