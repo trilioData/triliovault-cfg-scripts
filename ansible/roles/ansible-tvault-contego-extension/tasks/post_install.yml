@@ -1,18 +1,4 @@
 ---
-- name: Setup trilio yum repo for queens
-  template:
-     src: trilio.repo
-     dest: "{{trilio_yum_repo_file_path}}"
-
-- name: install contego extension packages
-  yum:
-     update_cache: yes
-     name:
-        - tvault-contego
-        - puppet-triliovault
-     state: present
-
-
 - name: change ownership of virtenv dir(/home/tvault)
   file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory mode=765 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
