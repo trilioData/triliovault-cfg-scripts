@@ -22,3 +22,5 @@
 - name: install horizon plugin 
   shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-horizon-plugin-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
   register: install_horizon
+  notify:
+     - restart webserver
