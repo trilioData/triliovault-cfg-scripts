@@ -55,7 +55,7 @@ For installing tvault-horizon on openstack-horizon node
 ansible-playbook main-install.yml -i environments/hosts --tags "horizon"
 
 For uninstalling tvault-horizon on openstack-horizon node
-ansible-playbook main-install.yml -i environments/hosts --tags "horizon-plugin-uninstall"
+ansible-playbook main-install.yml -i environments/hosts --tags "horizon-uninstall"
 
 ==========================================================
 
