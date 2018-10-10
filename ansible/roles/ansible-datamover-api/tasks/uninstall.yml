@@ -1,18 +1,18 @@
 ---
-- name: uninstall tvault-contego-api package from pip repo
+- name: disable and stopp tvault-datamover-api service
+  service: name=tvault-datamover-api  state=stopped enabled=no
+
+- name: uninstall dmapi deb package
   apt: name=dmapi state=absent purge=yes
   when: ansible_distribution==ubuntu
         
-- name: ensure that pip of version 7.1.2 is uninstalled from controller
+- name: install dmapi rpm package
   yum: name=dmapi state=absent
   when: >
         (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
         (ansible_distribution_major_version=="7" and ansible_distribution== redhat)
 
-- name: disable and stopp tvault-datamover-api service
-  service: name=tvault-datamover-api  state=stopped enabled=no
-
-- name: ensure tvault-swift service file is deleted if os release is rhel7
+- name: ensure datamover service file is deleted if os release is rhel7
   file: path={{datamover_service_file_path}} state=absent
   when: > 
        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
@@ -20,7 +20,6 @@
        (ansible_distribution== SLES) or (ansible_distribution== suse) or
        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)) 
 
-- name: ensure tvault-swift service file is deleted if os release is ubuntu
+- name: ensure datamover service file is deleted if os release is ubuntu
   file: path={{datamover_service_debian_path}} state=absent
   when: (ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy))
-
