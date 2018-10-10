@@ -11,6 +11,6 @@
      name:
         - tvault-horizon-plugin
         - python-workloadmgrclient
-     state: present
+     state: latest
   notify:
      - restart webserver

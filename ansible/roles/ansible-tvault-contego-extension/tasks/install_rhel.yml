@@ -10,7 +10,7 @@
      name:
         - tvault-contego
         - puppet-triliovault
-     state: present
+     state: latest
 
 
 - name: change ownership of virtenv dir(/home/tvault)
