@@ -1,15 +1,18 @@
 ---
-- name: ensure that pip of version 7.1.2 is installed on controller
-  easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
-  ignore_errors: yes
- 
-- name: uninstall python-workloadmanager client 
-  pip: name=python-workloadmgrclient state=absent
- 
-- name: uninstall horizon plugin 
-  pip: name=tvault-horizon-plugin state=absent
-  notify:
-     - restart webserver
+- name: create apt repo file
+  template:
+     src: trilio.list
+     dest: "{{trilio_apt_repo_file_path}}"
 
-- name: ensure that pip of version 7.1.2 is removed from controller
-  pip: name=pip  state=absent
+- name: uninstall tvault-horizon-plugin deb packages
+  apt:
+     update_cache: yes
+     name: "{{ horizon_packages }}"
+     state: absent
+     allow_unauthenticated: yes
+  vars:
+    horizon_packages:
+    - tvault-horizon-plugin
+    - python-workloadmgrclient
+  notify:
+      - restart webserver 
