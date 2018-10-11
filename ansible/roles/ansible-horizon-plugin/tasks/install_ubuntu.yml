@@ -1,26 +1,18 @@
 ---
-- name: check pip version 
-  shell: python -m pip --version
-  register: pip_version1
-  ignore_errors: yes
+- name: create apt repo file
+  template:
+     src: trilio.list
+     dest: "{{trilio_apt_repo_file_path}}"
 
-- debug: msg="pip version is:{{pip_version1.stdout}}" verbosity={{verbosity_level}}
-       
-- name: install pip if it is not installed 
-  shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
-  ignore_errors: yes
-  when: "'No module' in pip_version1.stderr or 'pip' in pip_version1.stdout"
-
-- name: grep tvault-contego version using CURL call
-  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
-  register: TVAULT_CONTEGO_VERSION
-
-- name: install workloadmanagr package 
-  shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/python-workloadmgrclient-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
-  register: install_workloadmgr
-
-- name: install horizon plugin 
-  shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-horizon-plugin-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
-  register: install_horizon
+- name: install tvault-horizon-plugin deb packages
+  apt:
+     update_cache: yes
+     name: "{{ horizon_packages }}"
+     state: latest
+     allow_unauthenticated: yes
+  vars:
+    horizon_packages:
+    - tvault-horizon-plugin
+    - python-workloadmgrclient
   notify:
-     - restart webserver
+      - restart webserver
