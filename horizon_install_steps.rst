@@ -1,4 +1,4 @@
-**Pre/Post install steps to install tvault-horizon-plugin pacakge:**
+**Pre/Post install steps to install tvault-horizon-plugin pacakge on RHEL/Centos:**
 
 1. Create a trilio.repo file at path -/etc/yum.repo.d/trilio.repo with following content.
 
@@ -44,7 +44,7 @@
     
 8. Execute following commands.
 
-    *cd $HORIZON*
+    *cd /usr/share/openstack-dashboard*
     
     *./manage.py shell < /tmp/sync_static.py &> /dev/null*
     
