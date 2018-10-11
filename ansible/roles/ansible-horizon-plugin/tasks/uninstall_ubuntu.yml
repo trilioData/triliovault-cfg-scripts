@@ -6,10 +6,10 @@
 
 - name: uninstall tvault-horizon-plugin deb packages
   apt:
-     update_cache: yes
      name: "{{ horizon_packages }}"
      state: absent
      allow_unauthenticated: yes
+     purge: yes
   vars:
     horizon_packages:
     - tvault-horizon-plugin

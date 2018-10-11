@@ -1,7 +1,14 @@
 ---
-- name: ensure that pip of version 7.1.2 is installed on controller
-  easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
-  ignore_errors: yes
+- name: uninstall tvault-contego virtual env deb package
+  apt:
+     name: contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
 
-- name: uninstall tvault-contego pip package
-  pip: name=tvault-contego state=absent
+- name: uninstall tvault-contego deb package
+  apt:
+     name: tvault-contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
