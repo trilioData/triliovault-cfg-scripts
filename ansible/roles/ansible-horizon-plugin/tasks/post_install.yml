@@ -1,48 +1,34 @@
 ---
-- name: check pip version 
-  shell: python -m pip --version
-  register: pip_version1
-  ignore_errors: yes
-
-- debug: msg="pip version is:{{pip_version1.stdout}}" verbosity={{verbosity_level}}
-       
-- name: install pip if it is not installed 
-  shell: easy_install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz 
-  ignore_errors: yes
-  when: "'No module' in pip_version1.stderr or 'pip' in pip_version1.stdout"
-
-- name: grep tvault-contego version using CURL call
-  shell: curl -s http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/ | grep tvault-contego-[0-9] | awk -F 'tvault-contego-' '{print $2}' | awk -F 'tar.gz' '{print $1}' | sed 's/.\{1\}$//'
-  register: TVAULT_CONTEGO_VERSION
-
-- name: install workloadmanagr package 
-  shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/python-workloadmgrclient-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
-  register: install_workloadmgr
-
-- name: install horizon plugin 
-  shell: pip install --no-deps http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/tvault-horizon-plugin-{{TVAULT_CONTEGO_VERSION.stdout}}.tar.gz 
-  register: install_horizon
-
 - name: copy tvault_panel_group.py file to remote location
   copy: src="{{automation_home}}/files/tvault_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel_group.py" 
+  notify:
+     - restart webserver
 
 - name: copy tvault_admin_panel_group.py file to remote location
   copy: src="{{automation_home}}/files/tvault_admin_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel_group.py"
+  notify:
+     - restart webserver
+
 
 - name: copy tvault_panel.py file to remote location
   copy: src="{{automation_home}}/files/tvault_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel.py"
+  notify:
+     - restart webserver
 
 - name: copy tvault_settings_panel.py file to remote location
   copy: src="{{automation_home}}/files/tvault_settings_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_settings_panel.py" 
+  notify:
+     - restart webserver
 
 - name: copy tvault_admin_panel.py file to remote location
   copy: src="{{automation_home}}/files/tvault_admin_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel.py"
+  notify:
+     - restart webserver
 
 - name: copy tvault_filter.py file to remote location
   copy: src="{{automation_home}}/files/tvault_filter.py" dest="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py"
-
-- name: restart webserver service 
-  service: name={{WebServer}} state=restarted
+  notify:
+     - restart webserver
 
 - name: write content into destination file - sync_static.py 
   copy: src="{{automation_home}}/files/sync_static.py" dest="/tmp/sync_static.py" 
@@ -54,6 +40,3 @@
 
 - name: remove temporary file -  sync_static.py
   file: path=/tmp/sync_static.py state=absent
-     
-
-

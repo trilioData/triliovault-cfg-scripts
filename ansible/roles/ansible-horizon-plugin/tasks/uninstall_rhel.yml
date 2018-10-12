@@ -1,0 +1,10 @@
+---
+- name: uninstall tvault horizon plugin packages
+  yum:
+     update_cache: yes
+     name:
+        - tvault-horizon-plugin
+        - python-workloadmgrclient
+     state: absent
+  notify:
+     - restart webserver

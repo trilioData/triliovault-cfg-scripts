@@ -69,8 +69,26 @@
        - contego-extension
        - all-install
 
-- name: set_virtual environment and comapre tvault version if contego is already installed
-  import_tasks: set_virtenv.yml 
+- name: Install datamover extension
+  import_tasks: install_rhel.yml 
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: Install datamover extension
+  import_tasks: install_ubuntu.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+  when: ansible_distribution=="Ubuntu"
+
+- name: postinstall datamover extension
+  import_tasks: post_install.yml
   tags:
        - contego
        - contego-extension
@@ -112,8 +130,26 @@
        - all-install
 
 - name: uninstall tvault contego extension 
-  import_tasks: uninstall.yml
+  import_tasks: uninstall_rhel.yml
   tags:
        - contego-uninstall
        - contego-extension-uninstall  
+       - all-uninstall
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: uninstall tvault contego extension
+  import_tasks: uninstall_ubuntu.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall
+  when: ansible_distribution=="Ubuntu"
+
+- name: post uninstall tvault contego extension
+  import_tasks: post_uninstall.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
        - all-uninstall
