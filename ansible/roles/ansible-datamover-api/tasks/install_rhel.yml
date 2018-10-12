@@ -1,0 +1,48 @@
+---
+- name: create /tmp/datamover_url
+  template:
+     src: datamover_url
+     dest: /tmp/datamover_url
+   
+- name: create yum repo file in if  ansible_distribution is Centos/RHEL/SLES
+  template:
+     src: trilio.repo
+     dest: "{{trilio_yum_repo_file_path}}"
+
+- name: install tvault-datamover-api rpm package
+  yum:
+    update_cache: yes
+    name: dmapi
+    state: latest
+  notify:
+      - restart tvault-datamover-api
+
+- name: change permission of datamover log file 
+  file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
+  notify:
+      - restart tvault-datamover-api
+
+- name: find out path of dmapi bianry 
+  shell: which dmapi-api
+  register: dmapi_bin
+
+- name: execute populate-conf binary
+  shell: populate-conf
+  register: populate_conf
+  notify:
+      - restart tvault-datamover-api
+
+- name: create tvault-datamover-api service in systemd if ansible_distribution is Centos/RHEL/SLES
+  template:
+     src: tvault_datamover_service.j2
+     dest: "{{datamover_service_file_path}}"
+  register: create_systemd
+  notify:
+      - restart tvault-datamover-api
+  
+
+- name: enable and daemon reload tvault-datamover-api service
+  shell: systemctl daemon-reload
+  when: populate_conf.changed or create_systemd.changed
+  notify:
+      - restart tvault-datamover-api

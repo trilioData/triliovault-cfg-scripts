@@ -7,9 +7,13 @@
     - tvault_panel.py
     - tvault_admin_panel.py
     - tvault_settings_panel.py
+  notify:
+     - restart webserver
 
 - name: remove tvault_filter.py file from openstack_dashboard diretory
   file: path="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py" state=absent
+  notify:
+     - restart webserver
 
 - block:
     - copy: src="{{automation_home}}/files/sync_static1.py" dest="/tmp/sync_static1.py" 
@@ -17,20 +21,3 @@
       args:
          chdir: "{{HORIZON_PATH}}"
     - file: path=/tmp/sync_static1.py state=absent
-
-- name: ensure that pip of version 7.1.2 is installed on controller
-  easy_install: name="http://{{IP_ADDRESS}}:{{PORT_NO}}/packages/pip-{{pip_version}}.tar.gz" state=present
-  ignore_errors: yes
- 
-- name: uninstall python-workloadmanager client 
-  pip: name=python-workloadmgrclient state=absent 
- 
-- name: uninstall horizon plugin 
-  pip: name=tvault-horizon-plugin state=absent 
-
-- name: restart webserver service
-  service: name={{WebServer}} state=restarted
-
-- name: ensure that pip of version 7.1.2 is removed from controller
-  pip: name=pip  state=absent
-
