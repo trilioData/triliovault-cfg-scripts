@@ -1,7 +1,7 @@
 **Install steps for Trilio DatamoverAPI**
 
 1. Pre-requisites
- i) You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
+  i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
     OpenStack compute, controller and horizon nodes.
     Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
  ii)Select which storage type you want to use to store your snapshots.
@@ -11,7 +11,7 @@
   i)Create /etc/yum.repo.d/trilio.repo file with following content.
     Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
 
-    *[trilio]*
+    [trilio]
     
     name=Trilio Repository
 
@@ -21,30 +21,30 @@
 
     gpgcheck=0
 
-  ii) Update yum cache
+  ii)Update yum cache
 
-    *yum makecache*
+    yum makecache
     
-    *yum repolist*
+    yum repolist
 
     make sure you see "trilio" named repo in the list
 
 2. Install Trilio Datamover extension package
 
-    *yum install tvault-contego*
+    yum install tvault-contego
 
    Note that "tvault-contego" is the name of our datamover extension package.   
     
 3. Populate datamover conf file: /etc/tvault-contego/tvault-contego.conf
-  i) If backup target is NFS, You will need a NFS share: for ex: 192.168.16.14:/var/share1
+  i)If backup target is NFS, You will need a NFS share: for ex: 192.168.16.14:/var/share1
      Download conf template with below command and edit NFS_SHARE value and save.
       cp tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
 
-  ii) If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and bucket_name
+  ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and bucket_name
      Download conf template with below command and edit s3 credentials to provide actual values.
       cp tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf 
 
-  iii) If backup target is amazon S3, you will need four values:  acess_key, secret_key, endpoint_url, bucket_name and if ssl     enabled on s3 endpoint
+  iii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, endpoint_url, bucket_name and if ssl     enabled on s3 endpoint
      Download conf template with below command and edit s3 credentials to provide actual values.
       cp tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf 
 
@@ -56,12 +56,13 @@
    usermod -a -G kvm,qemu,libvirt,disk,nova nova
 
 8. Create necessary directories
-   mkdir -p /var/triliovault-mounts
-   chown nova:nova /var/triliovault-mounts
-   mkdir -p /var/triliovault
-   chown nova:nova /var/triliovault
-   chmod 777 /var/triliovault-mounts
-   chmod 777 /var/triliovault
+
+  mkdir -p /var/triliovault-mounts
+  chown nova:nova /var/triliovault-mounts
+  mkdir -p /var/triliovault
+  chown nova:nova /var/triliovault
+  chmod 777 /var/triliovault-mounts
+  chmod 777 /var/triliovault
 
 9. Configure log rotation for datamover logs
    cp redhat-director-scripts/docker/trilio-datamover/log-rotate-conf /etc/logrotate.d/tvault-contego
