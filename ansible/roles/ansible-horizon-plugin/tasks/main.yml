@@ -8,13 +8,45 @@
     - all-uninstall
 
 - name: install horizon plugin on controller node
-  import_tasks: install.yml
+  import_tasks: install_rhel.yml
+  tags:
+    - horizon
+    - all-install
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: install horizon plugin on controller node
+  import_tasks: install_ubuntu.yml
+  tags:
+    - horizon
+    - all-install
+  when: ansible_distribution=="Ubuntu"
+
+- name: post install horizon plugin on controller node
+  import_tasks: post_install.yml
   tags:
     - horizon
     - all-install
 
 - name: uninstall horizon plugin from controller node
-  import_tasks: uninstall.yml
+  import_tasks: uninstall_rhel.yml
+  tags:
+    - horizon-uninstall
+    - all-uninstall
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- name: uninstall horizon plugin from controller node
+  import_tasks: uninstall_ubuntu.yml
+  tags:
+    - horizon-uninstall
+    - all-uninstall
+  when: ansible_distribution=="Ubuntu"
+
+- name: post uninstall horizon plugin from controller node
+  import_tasks: post_uninstall.yml
   tags:
     - horizon-uninstall
     - all-uninstall
