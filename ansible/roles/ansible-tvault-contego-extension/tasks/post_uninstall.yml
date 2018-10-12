@@ -1,12 +1,4 @@
 ---
-- name: ensure tvault-contego service is stopped
-  service: name=tvault-contego state=stopped enabled=yes
-  ignore_errors: yes
-
-- name: ensure tvault-object-store service is stopped 
-  service: name=tvault-object-store  state=stopped enabled=yes
-  ignore_errors: yes
-
 - name: ensure virtenv dir(/home/tvault) is deleted
   file: path={{TVAULT_CONTEGO_VIRTENV}} state=absent
 
