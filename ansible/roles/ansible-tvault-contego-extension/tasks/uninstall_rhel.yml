@@ -1,7 +1,14 @@
 ---
+- name: ensure tvault-object-store service is stopped
+  service: name=tvault-object-store  state=stopped enabled=no
+  ignore_errors: yes
+
+- name: stop datamover extension service
+  service: name=tvault-contego state=stopped enabled=no
+  ignore_errors: yes
+
 - name: uninstall tvault contego extension packages
   yum:
-     update_cache: yes
      name:
         - tvault-contego
         - puppet-triliovault
