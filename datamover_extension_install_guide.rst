@@ -1,5 +1,5 @@
 
-    **Install steps for Trilio Datamover Extension**
+ **Install steps for Trilio Datamover Extension**
 
 **1. Pre-requisites**
 
