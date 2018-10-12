@@ -1,0 +1,17 @@
+[DEFAULT]
+vault_storage_nfs_export = <NFS_SHARE>
+vault_storage_nfs_options = nolock,soft,timeo=180,intr,lookupcache=none
+vault_storage_type = nfs
+vault_data_directory_old = /var/triliovault
+vault_data_directory = /var/triliovault-mounts
+log_file = /var/log/nova/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
