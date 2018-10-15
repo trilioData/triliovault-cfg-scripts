@@ -28,6 +28,7 @@ from charmhelpers.fetch import (
     apt_install,
     apt_update,
     apt_purge,
+    filter_missing_packages,
 )
 from charmhelpers.core.host import (
     service_restart,
@@ -92,9 +93,7 @@ def validate_nfs():
     device = config('nfs-shares')
 
     # install nfs-common package
-    cmd = 'apt list --installed'.split()
-    installed_list = check_output(cmd).decode('utf-8')
-    if 'nfs-common' not in installed_list:
+    if not filter_missing_packages(['nfs-common']):
         log("'nfs-common' package not found, installing the package...")
         apt_install(['nfs-common'], fatal=True)
 
