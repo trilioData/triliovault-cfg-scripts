@@ -1,6 +1,9 @@
 **Install steps for Trilio Datamover Api (DmApi)**
+
 This triliovault components need to be installed on all controller nodes. Here on-words we will be reffering this component as 'DmApi'.
 Perform all steps starting from step-2 on all of your controller nodes of target OpenStack.
+
+**Note**: *Perform following steps on all controller nodes(Starting from step-2).*
 
 **1. Pre-requisites**
 
@@ -11,8 +14,11 @@ Perform all steps starting from step-2 on all of your controller nodes of target
 **2. Setup Trilio repository**
 
 Clone the repository on controller node:
+
    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+   
    cd triliovault-cfg-scripts/
+   
   *If platform is RHEL/CentOs*
   Create /etc/yum.repos.d/trilio.repo file with following content.
   Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
