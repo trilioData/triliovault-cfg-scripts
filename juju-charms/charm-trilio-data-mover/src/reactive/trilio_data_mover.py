@@ -3,7 +3,6 @@ import re
 import netaddr
 import configparser
 import time
-# import base64
 
 from subprocess import (
     check_output,
