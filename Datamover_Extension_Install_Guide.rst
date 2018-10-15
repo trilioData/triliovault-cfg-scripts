@@ -13,7 +13,7 @@
   ii)Select which storage type you want to use to store your snapshots.
   TrilioVault supports NFS, Amazon S3 and Ceph S3. This would be your backup target type.
 
-**Notes**: *Perform following steps on all compute nodes.*
+**Note**: *Perform following steps on all compute nodes.*
 
 **2. Setup Trilio repository**
 
