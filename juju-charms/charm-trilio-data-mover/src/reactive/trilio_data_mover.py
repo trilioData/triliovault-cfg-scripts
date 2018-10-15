@@ -294,6 +294,7 @@ def create_conf():
     tv_config.set('DEFAULT', 'verbose', True)
     tv_config.set('DEFAULT', 'max_uploads_pending', 3)
     tv_config.set('DEFAULT', 'max_commit_pending', 3)
+    tv_config.set('DEFAULT', 'qemu_agent_ping_timeout', 600)
     tv_config.add_section('contego_sys_admin')
     tv_config.set('contego_sys_admin', 'helper_command',
                   'sudo /usr/bin/privsep-helper')

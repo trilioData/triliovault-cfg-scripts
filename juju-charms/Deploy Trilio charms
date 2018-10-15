@@ -1,0 +1,50 @@
+Step-by-step guide for deploying local Juju Charms for TrilioVault
+1. Clone TrilioVault Juju Charms repo using below command:
+		git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+2. Build the charms by running script
+		cd triliovault-cfg-scripts/juju-charms
+		./unit-lint-tests.sh
+3. Deploy TrilioVault VM
+4. Deploy openstack by running bundle
+5. Deploy Trilio charms by running overlay bundle
+		e.g. juju deploy trilio_test_os_bundle.yaml --overlay nfs_trilio_bundle.yaml
+6. Configure TVM manually - Please refer http://ns544114.ip-144-217-78.net/3.1/documentation/sphinx-doc/build/html/deployment.html
+7. Configure Openstack with 
+		Create flavor
+		Create image
+		Create Network
+		Create Volume Types
+8. For running Functional Sanity test using Tempest, download TrilioData tempest framework from GitHub using command:
+		git clone https://github.com/trilioData/tempest.git
+
+9. Refer to README for configuring Tempest - https://github.com/trilioData/tempest/blob/master/README.md
+
+10. As specified in README, we need workloadmgr client in virtual env. This can be done by
+
+		Install manually using below command 
+		pip install http://<TrilioVault IP>:8081/packages/python-workloadmgrclient-3.1.62.tar.gz
+		OR
+		Update requirements.txt adding below line to install workloadmgr in the virtual env
+		http://<TrilioVault IP>:8081/packages/python-workloadmgrclient-3.1.62.tar.gz
+
+11. Add a license on TrilioVault - License file available at https://github.com/trilioData/tempest/blob/master/test_licenses/tvault_license_10VM.txt
+
+12. Source openstack rc file with below env variable which are needed for workloadmgr client CLI commands
+		OS_TENANT_ID
+		OS_TENANT_NAME
+		OS_PROJECT_DOMAIN_NAME
+		OS_DOMAIN_ID
+		OS_DOMAIN_NAME
+		OS_USER_DOMAIN_ID
+
+13. Activate virtual env
+		. .venv/bin/activate
+
+14. Run Functional sanity test 
+		./run_tempest.sh tempest.api.workloadmgr.sanity.test_create_full_snapshot (uses existing virtual env)
+		OR
+		./run_tempest.sh -V tempest.api.workloadmgr.sanity.test_create_full_snapshot (created new virtual env)
+
+		Test Results - test_results
+		Test Log - tempest.log
+

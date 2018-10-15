@@ -1,9 +1,20 @@
 ---
-- name:  install tvault_datamover_api if openstack version is pike/queens
-  import_tasks: install_on_queens.yml
+- name:  install tvault_datamover_api on rhel/centos
+  import_tasks: install_rhel.yml
   tags:
        - datamover-api
        - all-install
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+
+- name:  install tvault_datamover_api on ubuntu
+  import_tasks: install_ubuntu.yml
+  tags:
+       - datamover-api
+       - all-install
+  when: ansible_distribution=="Ubuntu"
 
 - name: uninstall tvault_datamover_api
   import_tasks: uninstall.yml
