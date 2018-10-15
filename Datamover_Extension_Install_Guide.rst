@@ -1,5 +1,8 @@
 
  **Install steps for Trilio Datamover Extension**
+ 
+ This trilio component sits on compute node and performs backups and recovery.
+ User should install this plugin all compute nodes.
 
 **1. Pre-requisites**
 
@@ -10,12 +13,14 @@
   ii)Select which storage type you want to use to store your snapshots.
   TrilioVault supports NFS, Amazon S3 and Ceph S3. This would be your backup target type.
 
+**Note**: *Perform following steps on all compute nodes.*
+
 **2. Setup Trilio repository**
 
   Clone the repository:
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
     
-    cd /triliovault-cfg-scripts
+    cd triliovault-cfg-scripts
    
   *If platform is RHEL/CentOs*
   Create /etc/yum.repos.d/trilio.repo file with following content.
