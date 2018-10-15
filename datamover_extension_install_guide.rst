@@ -15,7 +15,7 @@
   Clone the repository:
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
     
-    cd /triliovault-cfg-scripts
+    cd triliovault-cfg-scripts
    
   *If platform is RHEL/CentOs*
   Create /etc/yum.repos.d/trilio.repo file with following content.
