@@ -55,8 +55,12 @@
   i)If backup target is NFS, You will need a NFS share: for ex: 192.168.16.14:/var/share1
 
   Download conf template with below command and edit NFS_SHARE value and save.
-     
+  
+   mkdir /etc/tvault-contego
+   
    cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+   
+   chown -R nova:nova /etc/tvault-contego/
 
   ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and 
   bucket_name.
