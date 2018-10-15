@@ -15,33 +15,33 @@ Perform all steps starting from step-2 on all of your controller nodes of target
 
 Clone the repository on controller node:
 
-   git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
-   cd triliovault-cfg-scripts/
+    cd triliovault-cfg-scripts/
    
   *If platform is RHEL/CentOs*
   Create /etc/yum.repos.d/trilio.repo file with following content.
   Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+      cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+      cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
 
 **3. Install Trilio Datamover Api package**
 
    *If platform is RHEL/CentOS*
    
-    yum makecache
+      yum makecache
 
-    yum install dmapi
+      yum install dmapi
    
    *If platform is Ubuntu*
    
-    apt-get update
+      apt-get update
 
-    apt-get install dmapi
+      apt-get install dmapi
     
 **4. Populate DmApi conf file (/etc/dmapi/dmapi.conf)**
 You can either manually edit "/etc/dmapi/dmapi.conf" and fill all the configuration values OR
@@ -51,7 +51,7 @@ This tool will be automatically installed with "dmapi" package[step-2].
 Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
  i) Create /tmp/datamover_url 
  
-    cp ansible/roles/ansible-datamover-api/templates/datamover_url /tmp/datamover_url
+          cp ansible/roles/ansible-datamover-api/templates/datamover_url /tmp/datamover_url
     
     Edit this file /tmp/datamover_url and fill controller node fixed ip. This file will be used by populate-conf tool.
     
@@ -65,9 +65,9 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       [wsgi]
     
-      ssl_cert_file = sample_ssl_cert_file
+      ssl_cert_file = 
     
-      ssl_key_file = sample_ssl_key_file
+      ssl_key_file = 
     
     **In case of ssl enabled on dmapi endpoint, datamover_url file will look like following:**
     
@@ -83,25 +83,25 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       ssl_key_file = sample_ssl_key_file
       
-  ii) Run 'populate-conf' command, it will populate necessary fields in /ec/dmapi/dmapi.conf. You can verify that.
+  ii) Run 'populate-conf' command, it will populate necessary fields in /etc/dmapi/dmapi.conf. You can verify that.
       populate-conf
 
 **5. Create dmapi log directory:**
-     mkdir /var/log/dmapi
+        mkdir /var/log/dmapi
      
-     chown -R nova:nova /usr/bin/dmapi/  
+        chown -R nova:nova /var/log/dmapi
     
 **6. Create service init file: /etc/systemd/system/tvault-datamover-api.service**
 
-    cp conf-files/tvault-datamover-api.service /etc/systemd/system/   
+        cp conf-files/tvault-datamover-api.service /etc/systemd/system/   
     
 **7. Start dmapi service**
 
-    systemctl daemon-reload
+        systemctl daemon-reload
     
-    systemctl enable tvault-datamover-api.service
+        systemctl enable tvault-datamover-api.service
           
-    systemctl restart tvault-datamover-api.service
+        systemctl restart tvault-datamover-api.service
     
 **8. Verify Installation**
 
