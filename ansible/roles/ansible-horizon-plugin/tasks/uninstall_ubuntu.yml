@@ -1,0 +1,18 @@
+---
+- name: create apt repo file
+  template:
+     src: trilio.list
+     dest: "{{trilio_apt_repo_file_path}}"
+
+- name: uninstall tvault-horizon-plugin deb packages
+  apt:
+     name: "{{ horizon_packages }}"
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
+  vars:
+    horizon_packages:
+    - tvault-horizon-plugin
+    - python-workloadmgrclient
+  notify:
+      - restart webserver 
