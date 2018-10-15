@@ -3,7 +3,7 @@
 This plugin is responsible to facilitate triliovault GUI on OpenStack horizon.
 It is supposed to be installed on all horizon nodes.
 
-**Notes**: *Perform following steps on all horizon nodes.*
+**Note**: *Perform following steps on all horizon nodes.*
 
 
 **1. Pre-requisites**
