@@ -1,0 +1,22 @@
+---
+- name: ensure tvault-object-store service is stopped
+  service: name=tvault-object-store  state=stopped enabled=no
+  ignore_errors: yes
+
+- name: stop datamover extension service
+  service: name=tvault-contego state=stopped enabled=no
+  ignore_errors: yes
+
+- name: uninstall tvault-contego virtual env deb package
+  apt:
+     name: contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
+
+- name: uninstall tvault-contego deb package
+  apt:
+     name: tvault-contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
