@@ -1,54 +1,79 @@
-**Pre/Post install steps to install tvault-horizon-plugin pacakge on RHEL/Centos:**
+**Install TrilioVault Horizon Plugin**
+This plugin is responsible to facilitate triliovault GUI on OpenStack horizon.
+It is supposed to be installed on all horizon nodes.
+**Notes**: *Perform following steps on all horizon nodes.*
 
-1. Create a trilio.repo file at path -/etc/yum.repo.d/trilio.repo with following content.
 
-    *[trilio]*
+**1. Pre-requisites**
+
+  i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
+  OpenStack compute, controller and horizon nodes.
+  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
+  
+**2. Setup Trilio repository**
+
+Clone the repository:
+   git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+   cd triliovault-cfg-scripts/
+   
+  *If platform is RHEL/CentOs*
+  Create /etc/yum.repos.d/trilio.repo file with following content.
+  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
+  
+    cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+
+  *If platform is Ubuntu*
+  
+    cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+
+**3. Install Trilio Datamover extension package**
+
+   *If platform is RHEL/CentOS*
+   
+    yum makecache
+
+    yum install tvault-horizon-plugin python-workloadmgrclient
+   
+   *If platform is Ubuntu*
+   
+    apt-get update
+
+    apt-get install tvault-horizon-plugin
     
-    name=Trilio Repository
-
-    baseurl=http:<TVAULT_APPLIANCE_IP>:8085/yum-repo/queens/
-
-    enabled=1
-
-    gpgcheck=0
-
-2. Execute follwoing commands to makesure trilio's pacakges are availible controller node.
-
-    *yum makecache*
+    apt-get install python-workloadmgrclient
     
-    *yum list | grep -i tvault-**
+**4. Copy config files to OpenStack dashboard directory**
 
-3. Install python-wrokloadmgr and tvault-horizon-plugin with follwoing commands.
+    cd ansible/roles/ansible-horizon-plugin/files/
+    
+    cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack_dashboard/openstack_dashboard/local/enabled/
+    
+    cp tvault_filter.py /usr/share/openstack_dashboard/openstack_dashboard/templatetags/tvault_filter.py
+    
+**5. Restart webserver**
+   We need to restart webserver(used by horizon) to reflect changes.
+   
+  *On RHLE/CentOS based OpenStack*
+  
+    systemctl restart httpd
 
-    *yum install python-workloadmgrclient*
-    
-    *yum install tvault-horizon-plugin*
-    
-4. Download triliovault-script-repo public repository from https://github.com/trilioData/triliovault-cfg-scripts to working directory(<triliovault-cfg-repo-absolute-path>) on controller node.    
-    
-5. Copy triliovault-horizon files from triliovault-cfg-repos to openstack dashboad path.
+  *On Ubuntu based OpenStack*
+     
+     systemctl restart apache2
+     
+**7. Copy sync_static.py to /tmp**
 
-    *cd <triliovault-cfg-repo-absolute-path>/triliovault-cfg-scripts/ansible/roles/ansible-horizon-plugin/files/*
+    cd ansible/roles/ansible-horizon-plugin/files/
     
-    *cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack_dashboard/openstack_dashboard/local/enabled/*
+    cp sync_static.py /tmp
     
-    *cp tvault_filter.py /usr/share/openstack_dashboard/openstack_dashboard/templatetags/tvault_filter.py*
-    
-6. Restart httpd webserver using command - service httpd restart
+  Execute following commands.
 
-7. Copy sync_static.py to /tmp
-
-    *cd <triliovault-cfg-repo-absolute-path>/triliovault-cfg-scripts/ansible/roles/ansible-horizon-plugin/files/*
+    cd /usr/share/openstack-dashboard
     
-    *cp sync_static.py /tmp*
+    ./manage.py shell < /tmp/sync_static.py &> /dev/null
     
-8. Execute following commands.
-
-    *cd /usr/share/openstack-dashboard*
-    
-    *./manage.py shell < /tmp/sync_static.py &> /dev/null*
-    
-    *rm -rf /tmp/sync_static.py*
+    rm -rf /tmp/sync_static.py
 
 
 
