@@ -79,8 +79,14 @@ Clone the repository:
     
     rm -rf /tmp/sync_static.py
 
-
-
+**7. Verify Installation**
+    
+    Login to OpenStack dashboard.
+    
+    After successful installation of triliovault horizon plugin, you should see a new tab named "Backups" in tenant space of OpenStack dashboard.
+    
+    In admin space you should see "Backups-Admin" tab. These two tabs belong to TrilioVault.
+    If you do not see "Backups" tab, then installation was not successful. 
 
 
 
