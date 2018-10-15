@@ -36,7 +36,7 @@ tv-datamover-conf: Config file e.g. /etc/tvault-contego/tvault-contego.conf
 
 backup-target-type: Backup target type e.g. nfs or s3
 
-nfs-shares: NFS Shared mount source path only for nfs backup target
+nfs-shares: NFS Shares mount source path only for nfs backup target
 
 tv-data-dir: TrilioVault data dir e.g. /var/triliovault-mounts
 

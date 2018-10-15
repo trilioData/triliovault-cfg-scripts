@@ -35,7 +35,7 @@ options:
   nfs-shares:
     type: string
     default:
-    description: NFS Shared mount source path
+    description: NFS Shares mount source path
   nfs-options:
     type: string
     default: nolock,soft,timeo=180,intr,lookupcache=none
