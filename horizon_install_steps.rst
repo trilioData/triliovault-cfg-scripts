@@ -1,6 +1,8 @@
 **Install TrilioVault Horizon Plugin**
+
 This plugin is responsible to facilitate triliovault GUI on OpenStack horizon.
 It is supposed to be installed on all horizon nodes.
+
 **Notes**: *Perform following steps on all horizon nodes.*
 
 
@@ -13,7 +15,9 @@ It is supposed to be installed on all horizon nodes.
 **2. Setup Trilio repository**
 
 Clone the repository:
+
    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+   
    cd triliovault-cfg-scripts/
    
   *If platform is RHEL/CentOs*
@@ -30,17 +34,17 @@ Clone the repository:
 
    *If platform is RHEL/CentOS*
    
-    yum makecache
+      yum makecache
 
-    yum install tvault-horizon-plugin python-workloadmgrclient
+      yum install tvault-horizon-plugin python-workloadmgrclient
    
    *If platform is Ubuntu*
    
-    apt-get update
+      apt-get update
 
-    apt-get install tvault-horizon-plugin
+      apt-get install tvault-horizon-plugin
     
-    apt-get install python-workloadmgrclient
+      apt-get install python-workloadmgrclient
     
 **4. Copy config files to OpenStack dashboard directory**
 
@@ -61,7 +65,7 @@ Clone the repository:
      
      systemctl restart apache2
      
-**7. Copy sync_static.py to /tmp**
+**6. Copy sync_static.py to /tmp**
 
     cd ansible/roles/ansible-horizon-plugin/files/
     
