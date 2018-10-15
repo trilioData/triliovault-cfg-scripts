@@ -1,0 +1,59 @@
+# This example overlay bundle contains the basic, non-ha charm
+# config to deploy Trilio on top of the example cs:openstack-base
+# bundle for dev/test purposes.  This is not for production use.
+#
+# The sample s3 values and ip address(es) must be edited to fit
+# the specific model and environment prior to deployment.
+#
+# ex.
+#   juju deploy cs:openstack-base --overlay bundle-trilio-overlay.yaml
+#
+variables:
+  triliovault-ip:    &triliovault-ip    N.N.N.N
+series: xenial
+applications:
+  keystone:
+    charm: 'cs:~openstack-charmers-next/keystone'
+  trilio-horizon-plugin:
+    charm: './builds/trilio-horizon-plugin'
+    annotations:
+      gui-x: '1823'
+      gui-y: '-287'
+    options:
+      triliovault-ip: *triliovault-ip
+  trilio-dm-api:
+    charm: './builds/trilio-dm-api'
+    num_units: 1
+    annotations:
+      gui-x: '2520'
+      gui-y: '813'
+    options:
+      triliovault-ip: *triliovault-ip
+    to:
+      - 'lxd:1'
+  trilio-data-mover:
+    charm: './builds/trilio-data-mover'
+    options:
+    annotations:
+      gui-x: '1968'
+      gui-y: '896'
+    options:
+      triliovault-ip: *triliovault-ip
+      backup-target-type: s3
+      tv-s3-secret-key: sample_secret_key
+      tv-s3-access-key: sample_access_key
+      tv-s3-region-name: sample_region_name
+      tv-s3-bucket: sample_bucket
+relations:
+  - - 'trilio-dm-api:identity-service'
+    - 'keystone:identity-service'
+  - - 'trilio-dm-api:shared-db'
+    - 'mysql:shared-db'
+  - - 'trilio-dm-api:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'trilio-data-mover:juju-info'
+    - 'nova-compute:juju-info'
+  - - 'trilio-data-mover:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'trilio-horizon-plugin:dashboard-plugin'
+    - 'openstack-dashboard:dashboard-plugin'
