@@ -3,6 +3,7 @@ import re
 import netaddr
 import configparser
 import time
+# import base64
 
 from subprocess import (
     check_output,
@@ -90,6 +91,13 @@ def validate_nfs():
     grp = config('tvault-datamover-ext-group')
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
+
+    # install nfs-common package
+    cmd = 'apt list --installed'.split()
+    installed_list = check_output(cmd).decode('utf-8')
+    if 'nfs-common' not in installed_list:
+        log("'nfs-common' package not found, installing the package...")
+        apt_install(['nfs-common'], fatal=True)
 
     if not device:
         log("NFS mount device can not be empty."
@@ -392,7 +400,6 @@ def create_object_storage_service():
     tv_config.add_section('Install')
     tv_config.set('Unit', 'Description', 'TrilioVault Object Store')
     tv_config.set('Unit', 'After', 'tvault-contego.service')
-    # TODO : make the user and group 'nova'
     tv_config.set('Service', 'User', usr)
     tv_config.set('Service', 'Group', grp)
     tv_config.set('Service', 'Type', 'simple')
