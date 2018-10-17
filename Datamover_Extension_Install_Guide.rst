@@ -51,29 +51,22 @@
    **Note**: "tvault-contego" is the name of our datamover extension package.
     
 **4. Populate datamover conf file**
-
+     mkdir /etc/tvault-contego
+     
+     chown -R nova:nova /etc/tvault-contego/
+     
+     cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+     
   i)If backup target is NFS, You will need a NFS share: for ex: 192.168.16.14:/var/share1
-
-  Download conf template with below command and edit NFS_SHARE value and save.
-  
-   mkdir /etc/tvault-contego
-   
-   cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
-   
-   chown -R nova:nova /etc/tvault-contego/
+     Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
+     NFS share value
 
   ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and 
   bucket_name.
-
-  Download conf template with below command and edit s3 credentials to provide actual values.
-     
-      cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf 
-
+  Edit /etc/tvault-contego/tvault-contego.conf for the same
+  
   iii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, endpoint_url, bucket_name and if ssl     enabled on s3 endpoint
-
-  Download conf template with below command and edit s3 credentials to provide actual values.
-     
-      cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf 
+  Edit /etc/tvault-contego/tvault-contego.conf for the same
 
 **5. Setup password-less sudo access for nova user**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery.
