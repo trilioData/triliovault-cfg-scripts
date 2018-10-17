@@ -50,9 +50,9 @@ Clone the repository:
 
     cd ansible/roles/ansible-horizon-plugin/files/
     
-    cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack_dashboard/openstack_dashboard/local/enabled/
+    cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
-    cp tvault_filter.py /usr/share/openstack_dashboard/openstack_dashboard/templatetags/tvault_filter.py
+    cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
     
 **5. Restart webserver**
    We need to restart webserver(used by horizon) to reflect changes.

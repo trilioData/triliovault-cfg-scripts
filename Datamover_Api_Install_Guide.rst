@@ -21,7 +21,7 @@ Clone the repository on controller node:
    
   *If platform is RHEL/CentOs*
   Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
+  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP(if you have deployed 3 node tvault cluster, provide virtual ip) from your enviornment
   
       cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
 
