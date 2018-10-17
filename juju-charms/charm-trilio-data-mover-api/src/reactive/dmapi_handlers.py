@@ -8,6 +8,7 @@ import charm.openstack.dmapi as dmapi
 from charmhelpers.core.hookenv import (
     config,
     log,
+    status_set,
 )
 
 from charmhelpers.fetch import (
@@ -77,7 +78,7 @@ def install_packages():
     # and add queens repo to install nova libraries
     if not validate_ip(config('triliovault-ip')):
         log("Invalid IP address !")
-        reactive.status_set(
+        status_set(
             'blocked',
             'Invalid IP address, please provide correct IP address')
         return
