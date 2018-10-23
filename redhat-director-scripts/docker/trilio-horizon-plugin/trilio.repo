@@ -1,5 +1,21 @@
 [trilio-queens]
-name=Trilio Repository
-baseurl=http://192.168.15.31:8085/yum-repo/queens/
-enabled=1
+name=trilio-queens
+baseurl=https://2e1e3dc9108843d6955b0ab12eff8c27a15992cb524e64ed:@packagecloud.io/shyam-biradar/trilio-queens/el/7/$basearch
+repo_gpgcheck=1
 gpgcheck=0
+enabled=1
+gpgkey=https://2e1e3dc9108843d6955b0ab12eff8c27a15992cb524e64ed:@packagecloud.io/shyam-biradar/trilio-queens/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+
+[trilio-queens-source]
+name=trilio-queens-source
+baseurl=https://2e1e3dc9108843d6955b0ab12eff8c27a15992cb524e64ed:@packagecloud.io/shyam-biradar/trilio-queens/el/7/SRPMS
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://2e1e3dc9108843d6955b0ab12eff8c27a15992cb524e64ed:@packagecloud.io/shyam-biradar/trilio-queens/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300

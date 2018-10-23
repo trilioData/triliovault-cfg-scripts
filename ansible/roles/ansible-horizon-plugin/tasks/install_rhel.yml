@@ -1,0 +1,16 @@
+---
+
+- name: Setup trilio yum repo for queens
+  template:
+     src: trilio.repo
+     dest: "{{trilio_yum_repo_file_path}}"
+
+- name: install tvault horizon plugin packages
+  yum:
+     update_cache: yes
+     name:
+        - tvault-horizon-plugin
+        - python-workloadmgrclient
+     state: latest
+  notify:
+     - restart webserver

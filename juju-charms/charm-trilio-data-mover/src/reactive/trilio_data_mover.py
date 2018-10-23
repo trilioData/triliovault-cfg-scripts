@@ -21,11 +21,15 @@ from charmhelpers.core.hookenv import (
     status_set,
     config,
     log,
+    application_version_set,
 )
-from charmhelpers.contrib.python.packages import (
-    pip_install,
+from charmhelpers.fetch import (
+    add_source,
+    apt_install,
+    apt_update,
+    apt_purge,
+    filter_missing_packages,
 )
-
 from charmhelpers.core.host import (
     service_restart,
     service_stop,
@@ -52,26 +56,6 @@ VALID_BACKUP_TARGETS = [
 VALID_S3_TYPES = [
     'Amazon'
 ]
-
-
-def pip_list(venv):
-    """
-    Charmhelpers do not have any option to list out installed
-    pip packages in a virtual environment, hence this module.
-    """
-    pip_cmd = '{}/bin/pip'.format(venv)
-    return check_output([pip_cmd, 'list']).decode('utf-8').split('\n')
-
-
-def pip_uninstall(pkg, venv):
-    """
-    Charmhelpers do not have any option to un-install
-    pip packages in a virtual environment, hence this module.
-    """
-    pip_cmd = '{}/bin/pip'.format(venv)
-    if not call([pip_cmd, 'uninstall', '-y', pkg]):
-        return True
-    return False
 
 
 def get_new_version(pkg):
@@ -108,8 +92,18 @@ def validate_nfs():
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
 
+    # install nfs-common package
+    if not filter_missing_packages(['nfs-common']):
+        log("'nfs-common' package not found, installing the package...")
+        apt_install(['nfs-common'], fatal=True)
+
+    if not device:
+        log("NFS mount device can not be empty."
+            "Check 'nfs-shares' value in config")
+        return False
+
     # Ensure mount directory exists
-    mkdir(data_dir, owner=usr, group=grp)
+    mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
 
     # check for mountable device
     if not mount(device, data_dir, filesystem='nfs'):
@@ -170,7 +164,7 @@ def add_users():
     destination = '/usr/lib64'
     content = '{} ALL=(ALL) NOPASSWD: ALL'.format(usr)
     try:
-        write_file(path, content, owner='root', group='root', perms=292)
+        write_file(path, content, owner='root', group='root', perms=501)
 
         # Adding nova user to system groups
         add_user_to_group(usr, 'kvm')
@@ -197,17 +191,8 @@ def create_virt_env():
     tv_ip = config('triliovault-ip')
     dm_ver = None
     # create virtenv dir(/home/tvault) if it does not exist
-    mkdir(path, owner=usr, group=grp, perms=765, force=False)
+    mkdir(path, owner=usr, group=grp, perms=501, force=True)
 
-    # check existance of already installed virtual env
-    ''' TODO: Need to validate this section
-    venv_chk = check_presence(venv_path)
-    if venv_chk: # if path exists
-        pl = pip_list(venv_path)
-        dm_pkg = [l for l in pl if 'tvault-contego' in l]
-        if dm_pkg:
-            dm_ver = dm_pkg[0].split('(')[1].split(')')[0]
-    '''
     latest_dm_ver = get_new_version('tvault-contego')
     if dm_ver == latest_dm_ver:
         log("Latest TrilioVault DataMover package is already installed,"
@@ -237,7 +222,7 @@ def create_virt_env():
         return False
 
     # Install TrilioVault Datamover package
-    if not install_plugin(tv_ip, latest_dm_ver, venv_path):
+    if not install_plugin(tv_ip, latest_dm_ver, '/usr'):
         return False
 
     # Create symlinks of the dependent libraries
@@ -266,20 +251,19 @@ def ensure_files():
     """
     usr = config('tvault-datamover-ext-usr')
     grp = config('tvault-datamover-ext-group')
-    venv_path = config('tvault-datamover-virtenv-path')
-    dm_bin = '{}/bin/tvault-contego'.format(venv_path)
+    dm_bin = '/usr/bin/tvault-contego'
     log_path = '/var/log/nova'
+    log_file = '{}/tvault-contego.log'.format(log_path)
     conf_path = '/etc/tvault-contego'
-
     # Creates log directory if doesn't exists
-    mkdir(log_path, owner=usr, group=grp, perms=765, force=False)
-
+    mkdir(log_path, owner=usr, group=grp, perms=501, force=True)
+    write_file(log_file, '', owner=usr, group=grp, perms=501)
     if not check_presence(dm_bin):
         log("TrilioVault Datamover binary is not present")
         return False
 
     # Creates conf directory if doesn't exists
-    mkdir(conf_path, owner=usr, group=grp, perms=765, force=False)
+    mkdir(conf_path, owner=usr, group=grp, perms=501, force=True)
 
     return True
 
@@ -316,6 +300,12 @@ def create_conf():
     tv_config.set('DEFAULT', 'verbose', True)
     tv_config.set('DEFAULT', 'max_uploads_pending', 3)
     tv_config.set('DEFAULT', 'max_commit_pending', 3)
+    tv_config.set('DEFAULT', 'qemu_agent_ping_timeout', 600)
+    tv_config.add_section('contego_sys_admin')
+    tv_config.set('contego_sys_admin', 'helper_command',
+                  'sudo /usr/bin/privsep-helper')
+    tv_config.add_section('conductor')
+    tv_config.set('conductor', 'use_local', True)
 
     with open(config('tv-datamover-conf'), 'w') as cf:
         tv_config.write(cf)
@@ -333,11 +323,11 @@ def ensure_data_dir():
     data_dir = config('tv-data-dir')
     data_dir_old = config('tv-data-dir-old')
     # ensure that data_dir is present
-    mkdir(data_dir, owner=usr, group=grp)
+    mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
     # remove data_dir_old
     os.system('rm -rf {}'.format(data_dir_old))
     # recreate the data_dir_old
-    mkdir(data_dir_old, owner=usr, group=grp)
+    mkdir(data_dir_old, owner=usr, group=grp, perms=501, force=True)
 
     # create logrotate file for tvault-contego.log
     src = 'files/trilio/tvault-contego'
@@ -364,8 +354,8 @@ def create_service_file():
             config_files)
 
     # create service file
-    exec_start = '{}/bin/python {}/bin/tvault-contego {}\
-                 '.format(venv_path, venv_path, config_files)
+    exec_start = '/usr/bin/python /usr/bin/tvault-contego {}\
+                 '.format(config_files)
     tv_config = configparser.RawConfigParser()
     tv_config.optionxform = str
     tv_config.add_section('Unit')
@@ -379,7 +369,7 @@ def create_service_file():
     tv_config.set('Service', 'ExecStart', exec_start)
     tv_config.set('Service', 'TimeoutStopSec', 20)
     tv_config.set('Service', 'KillMode', 'process')
-    tv_config.set('Service', 'Restart', 'on-failure')
+    tv_config.set('Service', 'Restart', 'always')
     tv_config.set('Install', 'WantedBy', 'multi-user.target')
 
     with open('/etc/systemd/system/tvault-contego.service', 'w') as cf:
@@ -392,9 +382,11 @@ def create_object_storage_service():
     """
     Creates object storage service file.
     """
+    usr = config('tvault-datamover-ext-usr')
+    grp = config('tvault-datamover-ext-group')
     venv_path = config('tvault-datamover-virtenv-path')
-    storage_path = '{}/lib/python2.7/site-packages/contego/nova/'\
-                   'extension/driver/s3vaultfuse.py'.format(venv_path)
+    storage_path = '/usr/lib/python2.7/dist-packages/contego/nova/'\
+                   'extension/driver/s3vaultfuse.py'
     config_file = config('tv-datamover-conf')
     # create service file
     exec_start = '{}/bin/python {} --config-file={}'\
@@ -406,9 +398,8 @@ def create_object_storage_service():
     tv_config.add_section('Install')
     tv_config.set('Unit', 'Description', 'TrilioVault Object Store')
     tv_config.set('Unit', 'After', 'tvault-contego.service')
-    # TODO : make the user and group 'nova'
-    tv_config.set('Service', 'User', 'root')
-    tv_config.set('Service', 'Group', 'root')
+    tv_config.set('Service', 'User', usr)
+    tv_config.set('Service', 'Group', grp)
     tv_config.set('Service', 'Type', 'simple')
     tv_config.set('Service', 'ExecStart', exec_start)
     tv_config.set('Service', 'TimeoutStopSec', 20)
@@ -428,7 +419,8 @@ def validate_ip(ip):
     triliovault_ip should not be blank
     triliovault_ip should have a valid IP address and reachable
     """
-    if ip.strip():
+
+    if ip and ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable
@@ -445,10 +437,12 @@ def install_plugin(ip, ver, venv):
     """
     Install TrilioVault DataMover package
     """
-    pkg = 'http://{}:8081/packages/tvault-contego-{}.tar.gz'.format(ip, ver)
+    add_source('deb http://{}:8085 deb-repo/'.format(ip))
 
     try:
-        pip_install(pkg, venv=venv, options="--no-deps")
+        apt_update()
+        apt_install(['tvault-contego'],
+                    options=['--allow-unauthenticated'], fatal=True)
         log("TrilioVault DataMover package installation passed")
 
         status_set('maintenance', 'Starting...')
@@ -492,6 +486,8 @@ def uninstall_plugin():
 
         for sl in sorted_list:
             umount(sl)
+        # Uninstall tvault-contego package
+        apt_purge(['tvault-contego'])
 
         log("TrilioVault Datamover package uninstalled successfully")
         return True
@@ -525,7 +521,7 @@ def install_tvault_contego_plugin():
         log("Failed while validating backup")
         status_set(
             'blocked',
-            'Invalid Backup target type, please provide valid info')
+            'Invalid Backup target info, please provide valid info')
         return
 
     # Proceed as triliovault_ip Address is valid
@@ -576,6 +572,7 @@ def install_tvault_contego_plugin():
     # Install was successful
     status_set('active', 'Ready...')
     # Add the flag "installed" since it's done
+    application_version_set(get_new_version('tvault-contego'))
     set_flag('tvault-contego.installed')
 
 
