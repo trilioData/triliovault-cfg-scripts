@@ -152,20 +152,26 @@ class TestDmapiHandlers(unittest.TestCase):
     def test_database(self):
         database = mock.MagicMock()
         self.patch(handlers.dmapi, 'assess_status')
-        self.patch(handlers.hookenv, 'unit_private_ip')
-        self.unit_private_ip.return_value = 'private_ip'
         handlers.setup_database(database)
-        database.configure.assert_called_once_with('dmapi', 'dmapi', 'private_ip')
+        database.configure.assert_has_calls([
+            mock.call('nova', 'nova', prefix='dmapinova'),
+            mock.call('nova_api', 'nova', prefix='dmapinovaapi'),
+            ])
 
     def test_setup_endpoint(self):
         self.patch(handlers.dmapi, 'setup_endpoint')
         self.patch(handlers.dmapi, 'assess_status')
-        handlers.setup_endpoint('endpoint_object')
-        self.setup_endpoint.assert_called_once_with('endpoint_object')
+        self.patch(handlers.dmapi, 'configure_ssl')
+        handlers.setup_endpoint('keystone')
+        self.setup_endpoint.assert_called_once_with('keystone')
 
     def test_render(self):
         self.patch(handlers.dmapi, 'render_configs')
         self.patch(handlers.dmapi, 'assess_status')
-        handlers.render_unclustered('arg1', 'arg2')
-        self.render_configs.assert_called_once_with(('arg1', 'arg2', ))
+        #self.patch(handlers.dmapi, 'upgrade_if_available')
+        self.patch(handlers.dmapi, 'configure_ssl')
+        handlers.render_unclustered('args')
+        self.render_configs.assert_called_once_with(('args', ))
         self.assess_status.assert_called_once()
+        self.configure_ssl.assert_called_once()
+        #self.upgrade_if_available.assert_called_once_with(('args', ))

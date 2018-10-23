@@ -4,21 +4,35 @@ import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.ip as os_ip
 
+from charmhelpers.core.hookenv import (
+    config
+)
+
 DMAPI_DIR = '/etc/dmapi'
 DMAPI_CONF = os.path.join(DMAPI_DIR, 'dmapi.conf')
+
+
+class DmapiDBAdapter(charms_openstack.adapters.DatabaseRelationAdapter):
+    """Get database URIs for the two nova databases"""
+
+    @property
+    def dmapi_nova_uri(self):
+        """URI for nova DB"""
+        return self.get_uri(prefix='dmapinova')
+
+    @property
+    def dmapi_nova_api_uri(self):
+        """URI for nova_api DB"""
+        return self.get_uri(prefix='dmapinovaapi')
 
 
 class DmapiAdapters(charms_openstack.adapters.OpenStackAPIRelationAdapters):
     """
     Adapters class for the Data Mover API charm.
     """
-
-    def __init__(self, relations):
-        print(relations)
-        super(DmapiAdapters, self).__init__(
-            relations,
-            options_instance=charms_openstack.adapters.APIConfigurationAdapter(
-                port_map=DmapiCharm.api_ports))
+    relation_adapters = {
+        'shared_db': DmapiDBAdapter,
+    }
 
 
 class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
@@ -40,9 +54,9 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     default_service = 'dmapi-api'
     api_ports = {
         'dmapi-api': {
-            os_ip.PUBLIC: 8784,
-            os_ip.ADMIN: 8784,
-            os_ip.INTERNAL: 8784,
+            os_ip.PUBLIC: config('public-port'),
+            os_ip.ADMIN: config('admin-port'),
+            os_ip.INTERNAL: config('internal-port'),
         }
     }
 
@@ -54,6 +68,8 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     restart_map = {
         DMAPI_CONF: services,
     }
+
+    adapters_class = DmapiAdapters
 
     # Resource when in HA mode
     ha_resources = ['vips', 'haproxy']
@@ -139,3 +155,9 @@ def configure_ha_resources(hacluster):
     """Use the singleton from the DmapiCharm to run configure_ha_resources
     """
     DmapiCharm.singleton.configure_ha_resources(hacluster)
+
+
+def configure_ssl():
+    """Use the singleton from the DmapiCharm to run configure_ssl
+    """
+    DmapiCharm.singleton.configure_ssl()

@@ -1,5 +1,4 @@
 import charms.reactive as reactive
-import charmhelpers.core.hookenv as hookenv
 import os
 import netaddr
 
@@ -9,6 +8,7 @@ import charm.openstack.dmapi as dmapi
 from charmhelpers.core.hookenv import (
     config,
     log,
+    status_set,
 )
 
 from charmhelpers.fetch import (
@@ -42,7 +42,7 @@ def validate_ip(ip):
     triliovault_ip should not be blank
     triliovault_ip should have a valid IP address and reachable
     """
-    if ip.strip():
+    if ip and ip.strip():
         # Not blank
         if netaddr.valid_ipv4(ip):
             # Valid IP address, check if it's reachable
@@ -78,6 +78,9 @@ def install_packages():
     # and add queens repo to install nova libraries
     if not validate_ip(config('triliovault-ip')):
         log("Invalid IP address !")
+        status_set(
+            'blocked',
+            'Invalid IP address, please provide correct IP address')
         return
 
     if not add_user():
@@ -115,12 +118,14 @@ def setup_database(database):
     """On receiving database credentials, configure the database on the
     interface.
     """
-    database.configure('dmapi', 'dmapi', hookenv.unit_private_ip())
+    database.configure('nova', 'nova', prefix='dmapinova')
+    database.configure('nova_api', 'nova', prefix='dmapinovaapi')
     dmapi.assess_status()
 
 
 @reactive.when('identity-service.connected')
 def setup_endpoint(keystone):
+    dmapi.configure_ssl()
     dmapi.setup_endpoint(keystone)
     dmapi.assess_status()
 
@@ -137,6 +142,7 @@ def render(*args):
 @reactive.when_not('cluster.available')
 @reactive.when(*MINIMAL_INTERFACES)
 def render_unclustered(*args):
+    dmapi.configure_ssl()
     render(*args)
 
 

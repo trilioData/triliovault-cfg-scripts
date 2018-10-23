@@ -23,7 +23,7 @@ options:
   tv-datamover-conf:
     type: string
     default: /etc/tvault-contego/tvault-contego.conf
-    description: NFS Shares IP address
+    description: Trilio Vault Datamover config file location
   backup-target-type:
     type: string
     default: nfs
@@ -35,7 +35,7 @@ options:
   nfs-shares:
     type: string
     default:
-    description: NFS Shares IP address
+    description: NFS Shares mount source path
   nfs-options:
     type: string
     default: nolock,soft,timeo=180,intr,lookupcache=none
@@ -43,7 +43,7 @@ options:
   tv-data-dir:
     type: string
     default: /var/triliovault-mounts
-    description: TrilioVault data dir
+    description: TrilioVault data mount point
   tv-data-dir-old:
     type: string
     default: /var/triliovault

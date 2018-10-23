@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start the first process
-./start_tvault_object_store &
+/opt/tvault/start_tvault_object_store &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start tvault-object-store service: $status"
@@ -9,7 +9,7 @@ if [ $status -ne 0 ]; then
 fi
 
 # Start the second process
-./start_tvault_contego &
+/opt/tvault/start_datamover_nfs &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start tvault contego service: $status"

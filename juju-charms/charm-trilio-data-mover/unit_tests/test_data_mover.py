@@ -186,10 +186,13 @@ class Test(unittest.TestCase):
          self.create_object_storage_service.return_value = True
          self.patch(datamover, 'service_restart')
          self.patch(datamover, 'set_flag')
+         self.patch(datamover, 'application_version_set')
+         self.patch(datamover, 'get_new_version')
          datamover.install_tvault_contego_plugin()
          self.service_restart.assert_called_with(
              'tvault-contego')
          self.status_set.assert_called_with(
              'active', 'Ready...')
+         self.application_version_set.assert_called_once()
          self.set_flag.assert_called_with(
              'tvault-contego.installed')

@@ -1,5 +1,5 @@
 - name: ensure that {{TVAULT_DATA_DIR}} is present
-  file: name="{{TVAULT_DATA_DIR}}" state=directory
+  file: name="{{TVAULT_DATA_DIR}}" owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
 
 - name: ensure that {{TVAULT_DATA_DIR_OLD}} is removed
   file: name="{{TVAULT_DATA_DIR_OLD}}" state=absent
