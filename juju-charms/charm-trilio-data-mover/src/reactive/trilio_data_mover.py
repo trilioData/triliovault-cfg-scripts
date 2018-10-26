@@ -28,6 +28,7 @@ from charmhelpers.fetch import (
     apt_install,
     apt_update,
     apt_purge,
+    filter_missing_packages,
 )
 from charmhelpers.core.host import (
     service_restart,
@@ -90,6 +91,11 @@ def validate_nfs():
     grp = config('tvault-datamover-ext-group')
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
+
+    # install nfs-common package
+    if not filter_missing_packages(['nfs-common']):
+        log("'nfs-common' package not found, installing the package...")
+        apt_install(['nfs-common'], fatal=True)
 
     if not device:
         log("NFS mount device can not be empty."
@@ -392,7 +398,6 @@ def create_object_storage_service():
     tv_config.add_section('Install')
     tv_config.set('Unit', 'Description', 'TrilioVault Object Store')
     tv_config.set('Unit', 'After', 'tvault-contego.service')
-    # TODO : make the user and group 'nova'
     tv_config.set('Service', 'User', usr)
     tv_config.set('Service', 'Group', grp)
     tv_config.set('Service', 'Type', 'simple')
