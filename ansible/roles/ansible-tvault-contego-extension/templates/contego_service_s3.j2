@@ -1,13 +1,14 @@
 [Unit]
-Description=Tvault Object Store
-BindsTo=tvault-contego.service
+Description=Tvault contego
+Requires=tvault-object-store.service
 [Service]
 User={{TVAULT_CONTEGO_EXT_USER}}
 Group={{TVAULT_CONTEGO_EXT_USER}}
 Type=simple
-ExecStart={{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_OBJECT_STORE}} --config-file={{TVAULT_CONTEGO_CONF}}
+ExecStart={{TVAULT_CONTEGO_EXT_PYTHON}} {{TVAULT_CONTEGO_EXT_BIN}} {{CONFIG_FILES}}
 TimeoutStopSec=20
 KillMode=process
 Restart=on-failure
+CPUShares=2
 [Install]
 WantedBy=multi-user.target
