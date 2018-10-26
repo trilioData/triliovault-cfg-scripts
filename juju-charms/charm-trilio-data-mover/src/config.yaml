@@ -56,15 +56,9 @@ options:
     type: string
     default: sample_s3_access_key
     description: S3 access key
-  tv-s3-type:
-    type: string
-    default: Amazon
-    description: |
-        S3 type(case sensitive)
-          - Amazon
   tv-s3-region-name:
     type: string
-    default: sample_s3_region_name
+    default:
     description: S3 region name
   tv-s3-bucket:
     type: string
@@ -72,9 +66,5 @@ options:
     description: S3 bucket name
   tv-s3-endpoint-url:
     type: string
-    default: sample_s3_endpoint_url
+    default:
     description: S3 endpoint URL
-  tv-s3-secure:
-    type: boolean
-    default: false
-    description: Use secure connection
