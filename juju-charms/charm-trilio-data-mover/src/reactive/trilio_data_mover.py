@@ -53,10 +53,6 @@ VALID_BACKUP_TARGETS = [
     's3'
 ]
 
-VALID_S3_TYPES = [
-    'Amazon'
-]
-
 
 def get_new_version(pkg):
     """
@@ -119,23 +115,29 @@ def validate_s3():
     """
     Validate S3 backup target
     """
-    s3_type = config('tv-s3-type')
     s3_access_key = config('tv-s3-access-key')
     s3_secret_key = config('tv-s3-secret-key')
+    s3_endpoint = config('tv-s3-endpoint-url')
+    s3_bucket = config('tv-s3-bucket')
+    s3_region = config('tv-s3-region-name')
 
-    if s3_type not in VALID_S3_TYPES:
-        log("{} S3 type not supported".format(s3_type))
+    if not s3_access_key or not s3_secret_key:
+        log("Empty values provided!")
         return False
-
-    if s3_type == 'Amazon':
-        if not s3_access_key or not s3_secret_key:
-            log("Empty values provided!")
-            return False
-        if not call(['python', 'files/trilio/validate_s3.py',
-                     s3_access_key, s3_secret_key]):
-            log("Valid S3 credentials")
-            return True
-        log("Invalid S3 credentials")
+    if not s3_endpoint:
+        s3_endpoint = ''
+    if not s3_region:
+        s3_region = ''
+    cmd = ['python', 'files/trilio/validate_s3.py',
+           '-a', s3_access_key,
+           '-s', s3_secret_key,
+           '-e', s3_endpoint,
+           '-b', s3_bucket,
+           '-r', s3_region]
+    if not call(cmd):
+        log("Valid S3 credentials")
+        return True
+    log("Invalid S3 credentials")
     return False
 
 
