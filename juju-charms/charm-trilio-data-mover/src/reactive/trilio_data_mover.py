@@ -292,8 +292,10 @@ def create_conf():
         tv_config.set('DEFAULT', 'vault_s3_secret_access_key',
                       config('tv-s3-secret-key'))
         tv_config.set('DEFAULT', 'vault_s3_region_name',
-                      config('tv-s3-region-name'))
+                      config('tv-s3-region-name') or '')
         tv_config.set('DEFAULT', 'vault_s3_bucket', config('tv-s3-bucket'))
+        tv_config.set('DEFAULT', 'vault_s3_endpoint_url',
+                      config('tv-s3-endpoint-url') or '')
     tv_config.set('DEFAULT', 'vault_storage_type', bkp_type)
     tv_config.set('DEFAULT', 'vault_data_directory_old', tv_data_dir_old)
     tv_config.set('DEFAULT', 'vault_data_directory', tv_data_dir)
