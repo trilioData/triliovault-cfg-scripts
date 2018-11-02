@@ -30,7 +30,7 @@ For NFS backup target:
 
     nfs-shares: NFS Shares IP address only for nfs backup target
 
-For S3 bakup target:
+For Amazon S3 backup target:
 
     tv-s3-secret-key: S3 secret access key
 
@@ -40,7 +40,21 @@ For S3 bakup target:
 
     tv-s3-bucket: S3 bucket name
 
+For non-AWS S3 backup target:
+
+    tv-s3-secret-key: S3 secret access key
+
+    tv-s3-access-key: S3 access key
+
+    tv-s3-endpoint-url: S3 endpoint URL
+
+    tv-s3-region-name: S3 region name
+
+    tv-s3-bucket: S3 bucket name
+
 TrilioVault appliance should be up and running before deploying this charm.
+
+The configurations options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
 
 # Contact Information
 
