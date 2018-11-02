@@ -42,6 +42,7 @@ applications:
       backup-target-type: s3
       tv-s3-secret-key: sample_secret_key
       tv-s3-access-key: sample_access_key
+      tv-s3-endpoint-url: sample_endpoint_url
       tv-s3-region-name: sample_region_name
       tv-s3-bucket: sample_bucket
 relations:
