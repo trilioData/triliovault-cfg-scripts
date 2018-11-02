@@ -44,7 +44,7 @@ Steps to deploy the charm:
 
                  nfs-shares: "NFS Shares IP address only for nfs backup target"
 
-        For S3 bakup target:
+        For Amazon S3 bakup target:
 
                  tv-s3-secret-key: "S3 secret access key"
 
@@ -69,7 +69,7 @@ Steps to deploy the charm:
 
       TrilioVault appliance should be up and running before deploying this charm.
 
-      The configurations options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
+      The configuration options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
 
 
 3. deploy the bundle:
