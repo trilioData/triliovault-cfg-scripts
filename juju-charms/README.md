@@ -9,6 +9,8 @@ Provides 3 TrilioVault charms
 trilio_test_bundle.yaml - Bundle to deploy Openstack services and TrilioVault 
 service with TrilioVault charms
 
+trilio_overlay_bundle.yaml - Overlay bundle to deploy TrilioVault service with TrilioVault charms on an existing Openstack
+
 # Usage
 
 TrilioVault Data Mover API is a principal charm and provides API service for TrilioVault Datamover
@@ -22,7 +24,7 @@ Steps to deploy the charm:
 
 1. TrilioVault appliance should be up and running before deploying the bundle.
 
-2. Edit the bundle trilio_test_bundle.yaml to provide config options as below:
+2. Edit the bundle trilio_test_bundle.yaml or trilio_overlay_bundle.yaml to provide config options as below:
 
     For trilio-horizon-plugin:
   
@@ -52,9 +54,31 @@ Steps to deploy the charm:
 
                  tv-s3-bucket: "S3 bucket name"
 
+        For non-AWS S3 bakup target:
+
+                 tv-s3-secret-key: "S3 secret access key"
+
+                 tv-s3-access-key: "S3 access key"
+                 
+                 tv-s3-endpoint-url: S3 endpoint URL
+
+                 tv-s3-region-name: "S3 region name"
+
+                 tv-s3-bucket: "S3 bucket name"
+
+
+      TrilioVault appliance should be up and running before deploying this charm.
+
+      The configurations options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
+
+
 3. deploy the bundle:
 
         juju deploy trilio_test_bundle.yaml
+        
+        OR
+        
+        juju deploy <Openstack base bundle> --overlay trilio_overlay_bundle.yaml
 
 # Contact Information
 
