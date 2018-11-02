@@ -54,7 +54,7 @@ For non-AWS S3 backup target:
 
 TrilioVault appliance should be up and running before deploying this charm.
 
-The configurations options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
+The configuration options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
 
 # Contact Information
 
