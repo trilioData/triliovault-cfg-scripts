@@ -7,22 +7,25 @@ if [ $# -lt 2 ];then
 fi
 
 undercloud_ip=$1
-
 tag=$2
 
+##Login to redhat container registry
+echo -e "Enter Redhat container registry credentials"
+docker login registry.connect.redhat.com
+
 ## Prepare openstack horizon with trilio container
-docker pull docker.io/trilio/openstack-horizon-with-trilio-plugin:${tag}
-docker tag docker.io/trilio/openstack-horizon-with-trilio-plugin:${tag} ${undercloud_ip}:8787/trilio/openstack-horizon-with-trilio-plugin:${tag}
-docker push ${undercloud_ip}:8787/trilio/openstack-horizon-with-trilio-plugin:${tag}
+docker pull registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
+docker tag registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag} ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
+docker push ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
 
 ## Prepare trilio datamover container
-docker pull docker.io/trilio/trilio-datamover:${tag}
-docker tag docker.io/trilio/trilio-datamover:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
+docker pull registry.connect.redhat.com/trilio/trilio-datamover:${tag}
+docker tag registry.connect.redhat.com/trilio/trilio-datamover:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
 docker push ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
 
 ## Prepare trilio datamover api container
-docker pull docker.io/trilio/trilio-datamover-api:${tag}
-docker tag docker.io/trilio/trilio-datamover-api:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
+docker pull registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
+docker tag registry.connect.redhat.com/trilio/trilio-datamover-api:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 docker push ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 
 ## Update image locations in env file
