@@ -19,7 +19,7 @@ parameter_defaults:
 
    ## If user wants to enable SSL for datamover api's public endpoint in haproxy
    ## Default value is 'true'
-   DmApiEnableSSL: true
+   DmApiEnableSSL: false
 
    ## If you are enabling ssl for datamover api public endpoint then following parameter is 
    ## taken into consideration otherwise not
