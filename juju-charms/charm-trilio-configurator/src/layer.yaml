@@ -1,1 +1,1 @@
-includes: ['layer:ansible-base']
+includes: ['layer:basic']
