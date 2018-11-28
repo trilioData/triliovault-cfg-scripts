@@ -1,14 +1,7 @@
-# This example overlay bundle contains the basic, non-ha charm
-# config to deploy Trilio on top of the example cs:openstack-base
-# bundle for dev/test purposes.  This is not for production use.
-#
-# The sample s3 values and ip address(es) must be edited to fit
-# the specific model and environment prior to deployment.
-#
-# ex.
-#   juju deploy cs:openstack-base --overlay bundle-trilio-overlay.yaml
-#
 # tvault config details
+# ex.
+#   juju deploy trilio-configurator --config user-config.yaml
+#
 trilio-configurator:
   tv-conf-node-ip: 
   tv-conf-user: 
