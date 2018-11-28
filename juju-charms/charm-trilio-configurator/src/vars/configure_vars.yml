@@ -1,5 +1,4 @@
 ## Configurator password,  maintain same configurator password across all tvault nodes
-webroot: "{{ dashboard-plugin.webroot }}"
 configurator_node_ip: "{{ tv_conf_node_ip }}"
 configurator_username: "{{ tv_conf_user }}"
 configurator_password: "{{ tv_conf_pass }}"
