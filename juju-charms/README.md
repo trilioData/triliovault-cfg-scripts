@@ -86,9 +86,8 @@ Steps to deploy the charm:
 
 Steps to deploy the charm:
 
-            juju deploy trilio-configurator --config user-config.yaml
-            juju deploy trilio-dm-api --config "triliovault-ip=1.2.3.4"
-            juju add-relation trilio-configurator trilio-dm-api
+      juju deploy trilio-configurator --config user-config.yaml
+      juju add-relation trilio-configurator trilio-dm-api
 
 Configuration - Please provide below configuration options using a config file <<user-config.yaml>>:
 
