@@ -1,0 +1,34 @@
+- name: login node
+  shell: curl -k --cookie-jar '{{ cookie }}' --data 'username={{ configurator_username }}&password={{ configurator_password }}' 'https://{{ configurator_node_ip }}/login'
+
+- name: configure node data
+  shell: curl -k --cookie '{{ cookie }}' --data '{{ v1 }}={{ controller_nodes }}&{{ v2 }}={{ virtual_ip }}&{{ v3 }}={{ admin_username }}&{{ v4 }}={{ admin_password }}&{{ v5 }}={{ admin_tenant_name }}&{{ v6 }}={{ keystone_admin_url }}&{{ v7 }}={{ keystone_public_url }}&{{ v8 }}={{ name_server }}&{{ v9 }}={{ domain_search_order}}&{{ v10 }}={{ region_name }}&backup_target_type={{ backup_target_type }}&{{ v12 }}={{ create_file_system }}&{{ v13 }}={{ storage_local_device }}&{{ v14 }}={{ storage_nfs_export }}&{{ v18 }}={{ domain_id }}&{{ v19 }}={{ ntp_enabled }}&{{ v20 }}={{ ntp_servers }}&{{ v21 }}={{ timezone }}&trustee-role={{ trustee_role }}&{{ v24 }}={{ _tls }}&{{ v25 }}={{ _cert }}&{{ v26 }}={{ _private_key }}&{{ v27 }}={{ _s3_access }}&{{ v28 }}={{ _s3_secret }}&{{ v29 }}={{ s3_region_name }}&{{ v30 }}={{ s3_bucket }}&{{ v31 }}={{ s3_endpoint_url }}&{{ v32 }}={{ s3_ssl_enabled }}&{{ v33 }}={{ s3_type }}&{{ v34 }}={{ dm_endpoint }}&workloads-import={{ _import }}' 'https://{{ configurator_node_ip }}/configure_openstack'
+  register: check
+
+- name: populate variables
+  shell: curl -k --cookie '{{ cookie }}' 'https://{{ configurator_node_ip }}/populate_variables'
+
+- name: configure host
+  shell: curl -k --cookie '{{ cookie }}' 'https://{{ configurator_node_ip }}/configure_host'
+  ignore_errors: false
+  register: check
+
+- action: fail msg="Error while configuring host"
+  when: check.rc != 0
+
+- name: configure workloadmgr
+  shell: curl -k --cookie '{{ cookie }}' 'https://{{ configurator_node_ip }}/configure_workloadmgr'
+  ignore_errors: false
+  register: check
+
+- action: fail msg="Error while configuring workloadmgr"
+  when: check.rc != 0
+
+- name: register workloadtypes
+  shell: curl -k --cookie '{{ cookie }}' 'https://{{ configurator_node_ip }}/register_workloadtypes'
+  ignore_errors: false
+  register: check
+
+- action: fail msg="Error while registering workload types"
+  when: check.stdout.find('Success') == -1
+

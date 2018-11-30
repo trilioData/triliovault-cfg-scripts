@@ -1,0 +1,66 @@
+- name: Create cert file
+  shell: cp "{{ cert_file_path }}" "vars/triliovault.cert"
+  when: enable_tls == True
+
+- name: Create privatekey file
+  shell: cp "{{ privatekey_file_path }}" "vars/triliovault.key"
+  when: enable_tls == True
+
+- name: Format cert file
+  shell: "sed 's/$/\\r\\n/' 'vars/triliovault.cert'"
+  when: enable_tls == True
+
+- name: Format privatekey file
+  shell: "sed 's/$/\\r\\n/' 'vars/triliovault.key'"
+  when: enable_tls == True
+
+- name: Fetch cert data
+  shell: cat vars/triliovault.cert
+  when: enable_tls == True
+  ignore_errors: true
+  register: cert
+
+- name: Fetch key data
+  shell: cat vars/triliovault.key
+  when: enable_tls == True
+  ignore_errors: true
+  register: privatekey
+
+- name: Set cert
+  set_fact: _cert={{ cert.stdout.replace('+','%2B') }}
+  when: enable_tls == True
+- debug: var=_cert
+
+- name: Set private key
+  set_fact: _private_key={{ privatekey.stdout.replace('+','%2B') }}
+  when: enable_tls == True
+- debug: var=_private_key
+
+- name: Set s3 access key
+  set_fact: _s3_access={{ s3_access_key.replace('+','%2B') }}
+  when: backup_target_type == "S3"
+- debug: var=_s3_access
+
+- name: Set s3 secret key
+  set_fact: _s3_secret={{ s3_secret_key.replace('+','%2B') }}
+  when: backup_target_type == "S3"
+- debug: var=_s3_secret
+
+- name: Set import variable
+  set_fact: _import=on
+  when: import_workloads == True
+
+- name: Set import variable
+  set_fact: _import=off
+  when: import_workloads == False
+
+- name: Set tls variable
+  set_fact: _tls=on
+  when: enable_tls == True
+
+- name: Set tls variable
+  set_fact: _tls=off
+  when: enable_tls == False
+
+- debug: var=_tls
+- debug: var=_import

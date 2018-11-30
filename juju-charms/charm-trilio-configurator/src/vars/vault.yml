@@ -1,0 +1,35 @@
+---
+# sensitive login data
+
+user_name: admin
+cookie: cookie.txt
+v1: triliovault-hostnames
+v2: virtual-ip
+v3: admin-username
+v4: admin-password
+v5: admin-tenant-name
+v6: keystone-admin-url
+v7: keystone-public-url
+v8: name-server
+v9: domain-search-order
+v10: region-name
+v11: storage-type
+v12: create-file-system
+v13: storage-local-device
+v14: storage-nfs-export
+v17: guest-name
+v18: domain-name
+v19: ntp-enabled
+v20: ntp-servers
+v21: timezone
+v24: enable_tls
+v25: cert
+v26: privatekey
+v27: s3-access-key
+v28: s3-secret-key
+v29: s3-region
+v30: s3-bucket
+v31: s3-endpoint-url
+v32: s3-use-ssl
+v33: s3-backend-type
+v34: dm-endpoint

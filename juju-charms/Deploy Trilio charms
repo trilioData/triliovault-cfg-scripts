@@ -1,4 +1,16 @@
 Step-by-step guide for deploying local Juju Charms for TrilioVault
+
+Pre-requisite - 
+1. Install gcc and dependent packages using below command on Ubuntu 16.04
+sudo apt-get install python3 python-dev python3-dev \
+     build-essential libssl-dev libffi-dev \
+     libxml2-dev libxslt1-dev zlib1g-dev \
+     python-pip
+
+2. Install tox using below command on Ubuntu 16.04
+sudo apt-get install tox
+
+Steps to follow - 
 1. Clone TrilioVault Juju Charms repo using below command:
 		git clone https://github.com/trilioData/triliovault-cfg-scripts.git
 2. Build the charms by running script
@@ -8,7 +20,11 @@ Step-by-step guide for deploying local Juju Charms for TrilioVault
 4. Deploy openstack by running bundle
 5. Deploy Trilio charms by running overlay bundle
 		e.g. juju deploy trilio_test_os_bundle.yaml --overlay nfs_trilio_bundle.yaml
-6. Configure TVM manually - Please refer http://ns544114.ip-144-217-78.net/3.1/documentation/sphinx-doc/build/html/deployment.html
+6. Configure TVM by running overlay bundle. Please update config parameters as mentioned in the README.
+		e.g. juju deploy trilio_bundle.yaml --overlay configurator_trilio_bundle.yaml
+		
+		For config parameters, please refer http://ns544114.ip-144-217-78.net/3.1/documentation/sphinx-doc/build/html/deployment.html
+		
 7. Configure Openstack with 
 		Create flavor
 		Create image

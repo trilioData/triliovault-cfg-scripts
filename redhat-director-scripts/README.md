@@ -69,18 +69,19 @@ To install trilio components on overcloud, you need to use this new roles data f
 
 
 ### 6. Prepare Trilio container images
-#### i) Trilio containers are pushed to dockerhub for now. In future we will be committing them to Redhat registry. Container names are as follows:
-TrilioVault Datamove container: https://hub.docker.com/r/trilio/trilio-datamover/
-TrilioVault Datamover Api Container: https://hub.docker.com/r/trilio/trilio-datamover-api/
-OpenStack horizon with TrilioVault horizon plugin: https://hub.docker.com/r/trilio/openstack-horizon-with-trilio-plugin/
+#### i) Trilio containers are pushed to redhat container registry. Container locations are as follows:
+TrilioVault Datamove container: registry.connect.redhat.com/trilio/trilio-datamover
+TrilioVault Datamover Api Container: registry.connect.redhat.com/trilio/trilio-datamover-api
+OpenStack horizon with TrilioVault horizon plugin: registry.connect.redhat.com/trilio/trilio-horizon-plugin
+
 
 Code repositories are publicly available on github here: https://github.com/trilioData/triliovault-cfg-scripts/tree/master/redhat-director-scripts
 
-Note: Use 'queens' tagged containers.
+Note: Use '3.1.62-queens' tagged containers.
  Following script downloads trilio images from docker hub and uploads them to undercloud's local container registry. You need to provide undercloud ip as argument to script. Script assumes your undercloud container registry is running on 8787 port. If not you need to directly change it in script.
  ```
 ./prepare_trilio_images.sh <undercloud_ip> <container_tag>
-./prepare_trilio_images.sh 192.168.13.34 queens
+./prepare_trilio_images.sh 192.168.13.34 3.1.62-queens
 ```
 ### 7. Update horizon container name in overcloud_images.yaml
 Trilio has created a new horizon container from rhosp13/openstack-horizon container as base image.
@@ -89,7 +90,7 @@ This container will have rhosp13 openstack horizon + TrilioVault's horizon plugi
 Name of container: <undercloud_ip>:8787/$/trilio/openstack-horizon-with-trilio-plugin:queens
 in overcloud_images.yaml  entry looks like following. Edit IP with your undercloud IP if you are using local registry.
 ```
-DockerHorizonImage: 192.168.122.151:8787/trilio/openstack-horizon-with-trilio-plugin:ditest
+DockerHorizonImage: 192.168.122.151:8787/trilio/openstack-horizon-with-trilio-plugin:3.1.62-queens
 ```
 ### 8. Provide environment details in trilio-env.yaml
 Provide backup target details and other necessary details in environment file.
@@ -107,16 +108,16 @@ parameter_defaults:
        TrilioDatamoverApiNetwork: internal_api
 
    ##Container locations
-   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.31
+   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.62-queens
 
-   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.31
+   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.62-queens
 
    ##Datamover api port, default is 8784
    DmApiPort: 8784
 
   ##If user wants to enable SSL for datamover api's public endpoint in haproxy
   ##Default value is 'true'
-   DmApiEnableSSL: true
+   DmApiEnableSSL: false
 
   ## If you are enabling ssl for datamover api public endpoint then following parameter is 
   ## taken into consideration otherwise not
@@ -193,6 +194,13 @@ Make sure trilio datamover container (shown below) is in running state and no ot
 #docker container ls | grep trilio
 
 2598963695c7        192.168.122.151:8787/trilio/trilio-datamover:ditest                        "kolla_start"       2 days ago          Up 2 days                                 trilio_datamover
+```
+
+Note: In case these trilio containers are not started, you can grab the logs and send them to trilio support team
+````
+docker logs trilio_dmapi
+docker logs trilio_datamover
+docker logs horizon
 ```
 #### c) On Overcloud's horizon dashboard:
 Once you login to dashboard, you should see a new tab in project space named "Backups"  and one more tab in admin space named "Backups-Admin".

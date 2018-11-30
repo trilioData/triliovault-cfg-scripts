@@ -1,0 +1,179 @@
+options:
+  tv-conf-node-ip:
+    type: string
+    default: 
+    description: |
+      TrilioVault IP Address.
+  tv-conf-user:
+    type: string
+    default:
+    description: |
+      TrilioVault login user.
+  tv-conf-pass:
+    type: string
+    default:
+    description: |
+      TrilioVault login password.
+  tv-controller-nodes:
+    type: string
+    default:
+    description: "one or three trilioVault controller nodes separated by commas; Format is [IP Address=Hostname]"
+
+  tv-virtual-ip:
+    type: string
+    default: 
+    description: "Virtual IP (Use different ip than controller node ip)"
+
+  tv-name-server:
+    type: string
+    default: "8.8.8.8"
+    description: "DNS server settings, keep these settings empty if you don't have any nameserver (Don't comment)"
+
+  tv-dom-search-order:
+    type: string
+    default: "triliodata.demo"
+    description: |
+      Domain search order
+
+  tv-ntp-enabled:
+    type: boolean
+    default: on
+    description: "Ntp and timezone settings"
+
+  tv-ntp-servers:
+    type: string
+    default: "0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org"
+    description: "ntp server details"
+
+  tv-timezone:
+    type: string
+    default: "Etc/UTC"
+    description: "Timezone"
+
+  tv-keystone-admin-url:
+    type: string
+    default: 
+    description: |
+      Keystone admin point 
+
+  tv-keystone-public-url:
+    type: string
+    default:
+    description: |
+      Keystone public endpoint
+
+  tv-dm-endpoint:
+    type: string
+    default:
+    description: |
+      dm-endpoint
+
+  tv-os-username:
+    type: string
+    default: "admin"
+    description: |
+      Admin user name
+
+  tv-os-password:
+    type: string
+    default: "openstack"
+    description: |
+      Admin password
+
+  tv-os-tenant-name:
+    type: string
+    default: "admin"
+    description: |
+      Admin tenant name
+
+  tv-os-region-name:
+    type: string
+    default: "RegionOne"
+    description: |
+      Openstack deployment region
+
+  tv-os-domain-id:
+    type: string
+    default: "default"
+    description: |
+      Keystone domain id
+
+  tv-os-trustee-role:
+    type: string
+    default: "Admin"
+    description: |
+      Role for creating keystone trust
+
+  tv-backup-target-type:
+    type: string
+    default: NFS
+    description: |
+      Snapshot storage details, NFS/S3
+
+  tv-nfs-share:
+    type: string
+    default: "192.168.1.33:/mnt/tvault"
+    description: |
+      If backup target is NFS
+
+  tv-nfs-options:
+    type: string
+    default: "nolock,soft,timeo=180,intr"
+    description:
+
+  tv-s3-type:
+    type: string
+    default: "Amazon"
+    description: |
+      S3 Backend Type (Amazon or Ceph)
+
+  tv-s3-access-key:
+    type: string
+    default: sample_access_key
+    description:
+
+  tv-s3-secret-key:
+    type: string
+    default: sample_secret_key
+    description:
+
+  tv-s3-bucket:
+    type: string
+    default: sample_bucket
+    description:
+
+  tv-s3-region-name: 
+    type: string
+    default:
+    description: 
+
+  tv-s3-endpoint-url:
+    type: string
+    default:
+    description:
+  tv-s3-ssl-enabled:
+    type: boolean
+    default: False
+    description:
+
+  tv-enable-tls:
+    type: boolean
+    default: False
+    description: |
+      Enable TLS on TrilioVault api endpoint in OpenStack
+
+  tv-cert-file-path:
+    type: string
+    default: 
+    description: 
+
+  tv-privatekey-file-path:
+    type: string
+    default:
+    description:
+
+  tv-import-workloads:
+    type: boolean
+    default: False
+    description: |
+      Import existing workloads from backup target

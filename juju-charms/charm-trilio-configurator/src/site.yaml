@@ -1,0 +1,21 @@
+
+- hosts: localhost
+
+  vars:
+     service_name: "{{ local_unit.split('/')[0] }}"
+     create_file_system: off
+     storage_local_device: /dev/sdb
+     _cert:
+     _private_key:
+     _s3_access:
+     _s3_secret:
+
+  vars_files:
+    - vars/configure_vars.yml
+    - vars/vault.yml
+
+  pre_tasks:
+  - include: tasks/site_pretask.yml
+
+  tasks:
+  - include: tasks/site_task.yml

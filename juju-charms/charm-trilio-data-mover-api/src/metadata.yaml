@@ -13,6 +13,9 @@ requires:
     interface: rabbitmq
   identity-service:
     interface: keystone
+provides:
+  dm-api:
+    interface: dm-api
 series:
   - xenial
   - bionic
