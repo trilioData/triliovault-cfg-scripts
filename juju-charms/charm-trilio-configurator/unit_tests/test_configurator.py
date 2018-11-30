@@ -81,14 +81,10 @@ class Test(unittest.TestCase):
         # are meaningful for this interface: this is to handle regressions.
         # The keys are the function names that the hook attaches to.
         when_patterns = {
-            'install_configurator': ('ansible.available', ),
+            'install_configurator': ('config.changed', ),
         }
-        when_not_patterns = {
-            'install_configurator': (
-                'trilio-configurator.installed', ), }
         # check the when hooks are attached to the expected functions
-        for t, p in [(_when_args, when_patterns),
-                     (_when_not_args, when_not_patterns)]:
+        for t, p in [(_when_args, when_patterns)]:
             for f, args in t.items():
                 # check that function is in patterns
                 self.assertTrue(f in p.keys(),
@@ -99,3 +95,23 @@ class Test(unittest.TestCase):
                     lists += a['args'][:]
                 self.assertEqual(sorted(lists), sorted(p[f]),
                                  "{}: incorrect state registration".format(f))
+
+    def test_install_configurator(self):
+         self.patch(configurator, 'install_configurator')
+         configurator.install_configurator()
+         self.install_configurator.assert_called_once_with()
+
+    def test_install_pass(self):
+         self.patch(configurator, 'status_set')
+         self.patch(configurator.ansible, 'apply_playbook')
+         configurator.install_configurator()
+         self.apply_playbook.assert_called_once_with('site.yaml')
+         self.status_set.assert_called_with('active', 'Ready...')
+
+    def test_install_fail(self):
+         self.patch(configurator, 'status_set')
+         configurator.install_configurator()
+         self.status_set.assert_has_calls([
+             mock.call('maintenance', 'configuring tvault...'),
+             mock.call('blocked', 'configuration failed')
+             ])
