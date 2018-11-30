@@ -1,0 +1,71 @@
+## Configurator password,  maintain same configurator password across all tvault nodes
+configurator_node_ip: "{{ tv_conf_node_ip }}"
+configurator_username: "{{ tv_conf_user }}"
+configurator_password: "{{ tv_conf_pass }}"
+
+# one or three trilioVault controller nodes separated by commas; Format is [IP Address: Hostname]
+controller_nodes: "{{ tv_controller_nodes }}"
+
+##Virtual IP (Use different ip than controller node ip)
+virtual_ip: "{{ tv_virtual_ip }}"
+
+# DNS server settings, keep these settings empty if you don't have any nameserver (Don't comment)
+name_server: "{{ tv_name_server }}"
+domain_search_order: "{{ tv_dom_search_order }}"
+
+#Ntp and timezone settings
+ntp_enabled: "{{ tv_ntp_enabled }}"
+ntp_servers: "{{ tv_ntp_servers }}"
+timezone: "{{ tv_timezone }}"
+
+# Keystone admin point
+keystone_admin_url: "{{ tv_keystone_admin_url }}"
+
+# Keystone public endpoint
+keystone_public_url: "{{tv_keystone_public_url}}"
+
+# dm_endpoint
+dm_endpoint: "{{tv_dm_endpoint}}"
+
+#Admin user name
+admin_username: "{{tv_os_username}}"
+
+# Admin password
+admin_password: "{{tv_os_password}}"
+
+# Admin tenant name
+admin_tenant_name: "{{tv_os_tenant_name}}"
+
+# Openstack deployment region
+region_name: "{{tv_os_region_name}}"
+
+#Keystone domain id
+domain_id: "{{tv_os_domain_id}}"
+
+#Role for creating keystone trust
+trustee_role: "{{tv_os_trustee_role}}"
+
+#Snapshot storage details, NFS/SWIFT/S3
+backup_target_type: "{{tv_backup_target_type}}"
+
+####If backup target is NFS 
+storage_nfs_export: "{{tv_nfs_share}}"
+nfs_options: "{{tv_nfs_options}}"
+
+####If backup target is S3
+#S3 Backend Type (Amazon, Redhat Ceph or Suse Ceph)
+s3_type: "{{tv_s3_type}}"
+s3_access_key: "{{tv_s3_access_key}}"
+s3_secret_key: "{{tv_s3_secret_key}}"
+s3_bucket: "{{tv_s3_bucket}}"
+s3_region_name: "{{tv_s3_region_name}}"
+s3_endpoint_url: "{{tv_s3_endpoint_url}}"
+s3_ssl_enabled: "{{tv_s3_ssl_enabled}}"
+
+##Enable TLS on TrilioVault api endpoint in OpenStack
+enable_tls: "{{tv_enable_tls}}"
+cert_file_path: "{{tv_cert_file_path}}"
+privatekey_file_path: "{{tv_privatekey_file_path}}"
+
+#Import existing workloads from backup target
+import_workloads: "{{tv_import_workloads}}"
