@@ -119,7 +119,8 @@ options:
   tv-nfs-options:
     type: string
     default: "nolock,soft,timeo=180,intr"
-    description:
+    description: | 
+      NFS Options
 
   tv-s3-type:
     type: string
@@ -130,31 +131,38 @@ options:
   tv-s3-access-key:
     type: string
     default: sample_access_key
-    description:
+    description: |  
+      S3 access key
 
   tv-s3-secret-key:
     type: string
     default: sample_secret_key
-    description:
+    description: | 
+      S3 Secret key
 
   tv-s3-bucket:
     type: string
     default: sample_bucket
-    description:
+    description: |
+      S3 bucket name
 
   tv-s3-region-name: 
     type: string
     default:
-    description: 
+    description: |
+      S3 region name
 
   tv-s3-endpoint-url:
     type: string
     default:
-    description:
+    description: |
+      S3 endpoint URL
+
   tv-s3-ssl-enabled:
     type: boolean
     default: False
-    description:
+    description: |
+      Enable SSL
 
   tv-enable-tls:
     type: boolean
@@ -165,12 +173,14 @@ options:
   tv-cert-file-path:
     type: string
     default: 
-    description: 
+    description: |
+      Certificate file path
 
   tv-privatekey-file-path:
     type: string
     default:
-    description:
+    description: |
+      Private Key file path
 
   tv-import-workloads:
     type: boolean
