@@ -110,6 +110,7 @@ class Test(unittest.TestCase):
 
     def test_install_fail(self):
          self.patch(configurator, 'status_set')
+         self.patch(configurator, 'log')
          configurator.install_configurator()
          self.status_set.assert_has_calls([
              mock.call('maintenance', 'configuring tvault...'),
