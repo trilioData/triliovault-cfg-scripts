@@ -1,1 +1,3 @@
-includes: ['layer:basic']
+includes:
+ - layer:basic
+ - layer:ansible-base
