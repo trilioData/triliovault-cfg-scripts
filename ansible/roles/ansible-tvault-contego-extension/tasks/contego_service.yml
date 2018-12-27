@@ -34,22 +34,24 @@
     CONFIG_FILES: "{{CONFIG_FILES_1.stdout}}"
   when: is_nova_conf_present.stat.exists == true
 
-- name: create tvault-contego-service-in-systemd if ansible_distribution is Centos/suse
+- name: create tvault-contego-service-in-systemd if ansible_distribution is Centos
   template:
      src: contego_service.j2
      dest: "{{contego_service_file_path}}"
   when: >
-        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or 
-        (ansible_distribution == SLES) or
-        (ansible_distribution== suse)
+        ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
+        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))) and (NFS == True)
 
 - name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
   template:
-     src: contego_service.j2
+     src: contego_service_s3.j2
      dest: "{{contego_service_file_path}}"
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)
-
+  when: >
+        ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
+        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))) and (object_store == True)
+ 
 - name: create tvault-contego-service-in-systemd ansible_distribution is ubuntu 14
   template:
      src: contego_service_debian.j2
