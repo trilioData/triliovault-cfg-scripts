@@ -85,6 +85,7 @@ python_path: /usr/bin/python
 pip_version: 7.1.2
 virsh_version: "1.2.8"
 contego_service_file_path: /etc/systemd/system/tvault-contego.service
+contego_service_ulimits_count: 65536
 contego_service_debian_path: /etc/init/tvault-contego.conf
 objstore_service_file_path:  /etc/systemd/system/tvault-object-store.service
 objstore_service_debian_path: /etc/init/tvault-object-store.conf
