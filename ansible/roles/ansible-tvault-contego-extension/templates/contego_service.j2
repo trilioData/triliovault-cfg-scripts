@@ -3,7 +3,7 @@ Description=Tvault contego
 [Service]
 User={{TVAULT_CONTEGO_EXT_USER}}
 Group={{TVAULT_CONTEGO_EXT_USER}}
-LimitNOFILE=65536
+LimitNOFILE={{contego_service_ulimits_count}}
 Type=simple
 ExecStart={{python_path}} {{tvault_contego_bin_path.stdout}} {{CONFIG_FILES}}
 TimeoutStopSec=20
