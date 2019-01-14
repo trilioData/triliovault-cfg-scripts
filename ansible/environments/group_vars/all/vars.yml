@@ -38,7 +38,8 @@ VAULT_SWIFT_PASSWORD: sample_vault_swift_password
 VAULT_SWIFT_DOMAIN_ID:  sample_swift_domain_id
 ### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3(Provide one of them value in VAULT_SWIFT_AUTH_VERSION1 variable) 
 VAULT_SWIFT_AUTH_VERSION1: sample_auth_version
-
+vault_keystone_swift_username: sample_swift_username
+vault_keystone_swift_password: sample_swfit_password
 #### Details for S3 as snapshot storage
 S3: False
 VAULT_S3_ACCESS_KEY: sample_s3_access_key
@@ -97,8 +98,6 @@ ubuntu: "Ubuntu"
 centos: "CentOS"
 suse: "Suse"
 SLES: "SLES"
-vault_keystone_swift_username: "triliovault"
-vault_keystone_swift_password: "52T8FVYZJse"
 Amazon: "Amazon"
 Ceph_S3: "Ceph_S3"
 Minio_S3: "Minio_S3"
