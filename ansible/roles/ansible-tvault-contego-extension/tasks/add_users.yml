@@ -1,6 +1,3 @@
-- name: Adding passwordless sudo access to nova user
-  lineinfile: "dest=/etc/sudoers.d/tvault-nova state=present create=yes line='nova ALL=(ALL) NOPASSWD: ALL'"
-
 - name: Adding nova user to system groups
   user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
   with_items:

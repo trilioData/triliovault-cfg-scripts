@@ -20,7 +20,8 @@ HORIZON_PATH: /usr/share/openstack-dashboard
 #For Debian: nova-api
 #For RHEL : openstack-nova-api 
 nova_api_service: sample_name_of_nova_api_service
-
+vault_keystone_swift_username: sample_swift_username
+vault_keystone_swift_password: sample_swift_password
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
 NFS: False
@@ -71,6 +72,7 @@ NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
 TVAULT_CONTEGO_EXT_USER: nova
 TVAULT_CONTEGO_EXT_GROUP: nova
 TVAULT_DATA_DIR: /var/triliovault-mounts
+TVAULT_DATA_DIR_MODE: 0775
 TVAULT_DATA_DIR_OLD: /var/triliovault
 TVAULT_CONTEGO_VIRTENV: /home/tvault
 TVAULT_CONTEGO_VIRTENV_PATH: "{{TVAULT_CONTEGO_VIRTENV}}/.virtenv"
@@ -85,6 +87,7 @@ python_path: /usr/bin/python
 pip_version: 7.1.2
 virsh_version: "1.2.8"
 contego_service_file_path: /etc/systemd/system/tvault-contego.service
+contego_service_ulimits_count: 65536
 contego_service_debian_path: /etc/init/tvault-contego.conf
 objstore_service_file_path:  /etc/systemd/system/tvault-object-store.service
 objstore_service_debian_path: /etc/init/tvault-object-store.conf
@@ -105,8 +108,6 @@ centos: "CentOS"
 redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
-vault_keystone_swift_username: "triliovault"
-vault_keystone_swift_password: "52T8FVYZJse"
 Amazon: "Amazon"
 Ceph_S3: "Ceph_S3"
 Minio_S3: "Minio_S3"
