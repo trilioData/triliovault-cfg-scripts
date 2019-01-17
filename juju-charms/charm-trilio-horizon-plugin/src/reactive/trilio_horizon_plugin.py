@@ -44,6 +44,30 @@ def validate_ip(ip):
     return False
 
 
+def copy_template():
+    """
+    Copy TrilioVault Horizon HTML Template from files/trilio dir
+    """
+    dashboard_path = '/usr/local/lib/python2.7/dist-packages/dashboards/'
+
+    # install and compress new dashboard if it's provided by user
+    if os.path.isfile("files/trilio/trilio-horizon-plugin.html"):
+        old = (
+            '{}/workloads_admin/templates/workloads_admin/index.html'.format(
+                dashboard_path))
+        new = (
+            '{}/workloads_admin/templates/workloads_admin/orig.html'.format(
+                dashboard_path))
+        os.system('cp ' + old + ' ' + new)
+        os.system(
+            'cp files/trilio/trilio-horizon-plugin.html {}/workloads_admin'
+            '/templates/workloads_admin/index.html'.format(dashboard_path))
+        os.system(
+            'cd /usr/share/openstack-dashboard;'
+            '/usr/bin/python manage.py collectstatic;'
+            'python manage.py compress --force')
+
+
 def copy_files():
     """
     Copy TrilioVault Horizon panel files from files/trilio dir
@@ -81,6 +105,9 @@ def copy_files():
 
     # Remove temporary file
     os.system('rm /tmp/sync_static.py')
+
+    # Copy Dashboard HTML template if exists
+    copy_template()
 
 
 def delete_files():
