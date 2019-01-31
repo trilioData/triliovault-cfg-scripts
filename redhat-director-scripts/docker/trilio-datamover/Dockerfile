@@ -27,10 +27,10 @@ ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
-RUN mkdir -p /var/lib/nova/triliovault-mounts
-RUN chown nova:nova /var/lib/nova/triliovault-mounts
+RUN mkdir -p /var/triliovault-mounts
+RUN chown nova:nova /var/triliovault-mounts
 RUN mkdir -p /var/triliovault
-RUN chmod 777 /var/lib/nova/triliovault-mounts
+RUN chmod 777 /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault
 RUN chmod 777 /var/triliovault
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
