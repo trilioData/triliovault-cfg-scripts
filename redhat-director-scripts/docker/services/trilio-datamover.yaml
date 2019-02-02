@@ -132,4 +132,12 @@ outputs:
               - /var/run/libvirt/:/var/run/libvirt/
             environment:
               - KOLLA_CONFIG_STRATEGY=COPY_ALWAYS
+      host_prep_tasks:
+        - name: create trilio mounts directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: ''
