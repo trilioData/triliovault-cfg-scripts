@@ -11,8 +11,8 @@ verbosity_level: 2
 #For Debian: /etc/nova/rootwrap.d/compute.filters
 #For RHEL : /usr/share/nova/rootwrap/compute.filters 
 NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
-FILTERS_FILE_Path_RHEL: /usr/share/nova/rootwrap/trilio.filters
-FILTERS_FILE_Path_DEBIAN: /etc/nova/rootwrap.d/trilio.filters
+FILTERS_FILE_PATH_RHEL: /usr/share/nova/rootwrap/trilio.filters
+FILTERS_FILE_PATH_DEBIAN: /etc/nova/rootwrap.d/trilio.filters
 
 #Name of web server service that openstack horizon node uses 
 #For Debian: apache2
