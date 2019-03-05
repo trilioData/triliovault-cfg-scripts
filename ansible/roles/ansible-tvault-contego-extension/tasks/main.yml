@@ -13,7 +13,14 @@
        - contego
        - contego-extension
        - all-install
- 
+       
+- name: create trilio filters
+  import_tasks: create_filter.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+       
 - name: get openstack version
   import_tasks: get_openstack_version.yml
   tags:
