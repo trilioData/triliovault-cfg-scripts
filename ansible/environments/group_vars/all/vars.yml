@@ -20,7 +20,8 @@ HORIZON_PATH: /usr/share/openstack-dashboard
 #For Debian: nova-api
 #For RHEL : openstack-nova-api 
 nova_api_service: sample_name_of_nova_api_service
-
+vault_keystone_swift_username: sample_swift_username
+vault_keystone_swift_password: sample_swift_password
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
 NFS: False
@@ -107,8 +108,6 @@ centos: "CentOS"
 redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
-vault_keystone_swift_username: "triliovault"
-vault_keystone_swift_password: "52T8FVYZJse"
 Amazon: "Amazon"
 Ceph_S3: "Ceph_S3"
 Minio_S3: "Minio_S3"
