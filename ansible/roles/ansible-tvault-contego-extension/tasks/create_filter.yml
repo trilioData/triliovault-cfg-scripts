@@ -8,5 +8,5 @@
 - name: create trilio.filters for mount and unmount for Debian
   template:
      src: trilio.filters.j2
-     dest: "{{FILTERS_FILE_Path_Debian}}"
+     dest: "{{FILTERS_FILE_Path_DEBIAN}}"
   when: ansible_os_family == "Debian" 
