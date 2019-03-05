@@ -6,6 +6,14 @@ PORT_NO: 8081
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
 verbosity_level: 2
 
+#Details for Nova Compute filter
+#specify NOVA_COMPUTE_FILTERS_FILE
+#For Debian: /etc/nova/rootwrap.d/compute.filters
+#For RHEL : /usr/share/nova/rootwrap/compute.filters 
+NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
+FILTERS_FILE_Path_RHEL: /usr/share/nova/rootwrap
+FILTERS_FILE_Path_Debian: /etc/nova/rootwrap.d
+
 #Name of web server service that openstack horizon node uses 
 #For Debian: apache2
 #For RHEL: httpd
