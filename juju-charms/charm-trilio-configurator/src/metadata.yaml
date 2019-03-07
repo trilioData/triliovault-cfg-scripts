@@ -15,3 +15,5 @@ requires:
   dm-api:
     interface: dm-api
     scope: container
+  identity-admin:
+    interface: keystone-admin
