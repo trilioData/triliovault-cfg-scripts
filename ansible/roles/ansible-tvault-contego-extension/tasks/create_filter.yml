@@ -1,0 +1,12 @@
+---
+- name: create trilio.filters for mount and unmount for RHEL
+  template:
+     src: trilio.filters.j2
+     dest: "{{FILTERS_FILE_PATH_RHEL}}"
+  when: ansible_os_family == "RedHat" 
+
+- name: create trilio.filters for mount and unmount for Debian
+  template:
+     src: trilio.filters.j2
+     dest: "{{FILTERS_FILE_PATH_DEBIAN}}"
+  when: ansible_os_family == "Debian" 
