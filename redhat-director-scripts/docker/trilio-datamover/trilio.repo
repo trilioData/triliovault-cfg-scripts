@@ -1,5 +1,5 @@
 [triliovault-3-1]
 name=triliovault-3-1
-baseurl=http://trilio:XpmkpMFviqSe@149.56.2.142/triliovault-3.1/yum/
+baseurl=http://trilio:XpmkpMFviqSe@149.56.2.142:8283/triliovault-3.1/yum/
 gpgcheck=0
 enabled=1
