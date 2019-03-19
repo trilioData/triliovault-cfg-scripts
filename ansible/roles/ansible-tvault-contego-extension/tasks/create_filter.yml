@@ -10,3 +10,19 @@
      src: trilio.filters.j2
      dest: "{{FILTERS_FILE_PATH_DEBIAN}}"
   when: ansible_os_family == "Debian" 
+  
+- name: Add privsep-helper to nova sudoers file for RHEL
+  lineinfile:
+     path: /etc/sudoers.d/nova
+     line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
+  when: >
+    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
+    ansible_os_family == "RedHat"
+
+- name: Add privsep-helper to nova sudoers file For Debian
+  lineinfile:
+     path: /etc/sudoers.d/nova_sudoers
+     line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
+  when: >
+    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
+    ansible_os_family == "Debian"
