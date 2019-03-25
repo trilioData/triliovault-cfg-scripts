@@ -24,6 +24,7 @@ RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /op
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
