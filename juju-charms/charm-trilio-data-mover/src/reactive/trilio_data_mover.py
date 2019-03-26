@@ -243,6 +243,12 @@ def create_virt_env():
     # change virtenv dir(/home/tvault) users to nova
     chownr(path, usr, grp)
 
+    # Copy Trilio sudoers and filters files
+    os.system(
+        'cp files/trilio/trilio_sudoers /etc/sudoers.d/')
+    os.system(
+        'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
+
     return True
 
 
