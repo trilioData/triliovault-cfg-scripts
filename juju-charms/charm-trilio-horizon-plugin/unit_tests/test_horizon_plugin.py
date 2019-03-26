@@ -149,7 +149,7 @@ class Test(unittest.TestCase):
          self.patch(plugin, 'install_plugin')
          self.install_plugin.return_value = True
          plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
+         self.install_plugin.assert_called_with('1.2.3.4', 'Version', '/usr')
          self.status_set.assert_called_with(
              'active', 'Ready...')
          self.application_version_set.assert_called_with('Version')
@@ -166,7 +166,7 @@ class Test(unittest.TestCase):
          self.patch(plugin, 'install_plugin')
          self.install_plugin.return_value = False
          plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version')
+         self.install_plugin.assert_called_with('1.2.3.4', 'Version', '/usr')
          self.status_set.assert_called_with(
              'blocked',
              'Packages installation failed.....retry..')
