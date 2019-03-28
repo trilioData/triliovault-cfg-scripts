@@ -1,5 +1,5 @@
 ---
-- name: return motd to registered var
+- name: find location of manage.py 
   shell: find / -name "*manage.py" | grep -E 'openstack-dashboard|horizon'
   register: output
 
