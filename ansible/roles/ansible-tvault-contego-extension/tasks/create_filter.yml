@@ -11,9 +11,16 @@
      dest: "{{FILTERS_FILE_PATH_DEBIAN}}"
   when: ansible_os_family == "Debian" 
   
+- name: find location of nova sudoers file
+  shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
+  register: output
+  
+- debug:
+    msg: "{{ output.stdout}}"
+    
 - name: Add privsep-helper to nova sudoers file for RHEL
   lineinfile:
-     path: /etc/sudoers.d/nova
+     path: "{{ output.stdout}}"
      line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
@@ -21,7 +28,7 @@
 
 - name: Add privsep-helper to nova sudoers file For Debian
   lineinfile:
-     path: /etc/sudoers.d/nova_sudoers
+     path: "{{ output.stdout}}"
      line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
