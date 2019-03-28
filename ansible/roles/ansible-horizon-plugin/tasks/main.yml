@@ -29,6 +29,12 @@
     - horizon
     - all-install
 
+- name: post install collect and compress
+  import_tasks: collect_compress.yml
+  tags:
+    - horizon
+    - all-install
+
 - name: uninstall horizon plugin from controller node
   import_tasks: uninstall_rhel.yml
   tags:
