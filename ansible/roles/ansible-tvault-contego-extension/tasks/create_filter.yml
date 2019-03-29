@@ -20,22 +20,12 @@
     msg: "{{ output.stdout}}"
   when: output.stdout != ""
 
-- name: Add privsep-helper to nova sudoers file for RHEL
+- name: Add privsep-helper to nova sudoers file
   lineinfile:
      path: "{{ output.stdout}}"
      line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
-    ansible_os_family == "RedHat" and
-    output.stdout != ""
-
-- name: Add privsep-helper to nova sudoers file For Debian
-  lineinfile:
-     path: "{{ output.stdout}}"
-     line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
-  when: >
-    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
-    ansible_os_family == "Debian" and
     output.stdout != ""
 
 - name: Added nova sudoers file if not exist
