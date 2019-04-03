@@ -12,8 +12,8 @@
 - name: install tvault-datamover-api deb package on ubuntu xenial or above
   apt:
      update_cache: yes
-     name: dmapi
-     state: latest
+     name: dmapi="{{ TVAULT_CONTEGO_VERSION }}"
+     state: present
      allow_unauthenticated: yes
   notify:
       - restart tvault-datamover-api
