@@ -30,7 +30,7 @@
       template:
          src: objstore_service_debian.j2
          dest: "{{objstore_service_debian_path}}"
-      when: ansible_distribution == ubuntu and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
+      when: ansible_distribution == ubuntu and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
   when: (object_store == True)
 
 - name: copy object store service file , write content , enable and daemon reload service if object restore is True
