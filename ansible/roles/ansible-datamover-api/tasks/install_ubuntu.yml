@@ -48,7 +48,7 @@
     when: (populate_conf_ubuntu.changed or create_systemd_ubuntu.changed)
     notify:
         - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)
 
 
 ##Ubuntu14
@@ -58,4 +58,4 @@
      dest: "{{datamover_service_debian_path}}"
   notify:
      - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
