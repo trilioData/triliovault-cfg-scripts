@@ -56,7 +56,7 @@
   template:
      src: contego_service_debian.j2
      dest: "{{contego_service_debian_path}}"
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
 
 - name: enable and daemon reload tvault contego service 
   block:
