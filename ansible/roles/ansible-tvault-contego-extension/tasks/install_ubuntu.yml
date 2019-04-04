@@ -7,13 +7,13 @@
 - name: install tvault-contego virtual env deb package
   apt:
      update_cache: yes
-     name: contego={{ TVAULT_CONTEGO_VERSION }}
+     name: contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
 
 - name: install tvault-contego deb package
   apt:
      update_cache: yes
-     name: tvault-contego={{ TVAULT_CONTEGO_VERSION }}
+     name: tvault-contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes

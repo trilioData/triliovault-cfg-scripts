@@ -7,7 +7,7 @@
 - name: install tvault-horizon-plugin deb packages
   apt:
      update_cache: yes
-     name: "{{ item }}={{ TVAULT_CONTEGO_VERSION }}"
+     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
      state: present
      allow_unauthenticated: yes
   with_items:
