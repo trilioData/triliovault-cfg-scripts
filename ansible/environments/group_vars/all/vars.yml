@@ -2,6 +2,8 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
+#Update TVAULT version here we will install mentioned version plugins
+TVAULT_CONTEGO_VERSION: 3.2.38
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
