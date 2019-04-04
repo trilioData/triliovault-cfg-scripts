@@ -2,8 +2,8 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
-#Update TVAULT version here we will install mentioned version plugins for Example# TVAULT_CONTEGO_VERSION: 3.2.38
-TVAULT_CONTEGO_VERSION: TVAULT_PACKAGE_VERSION
+#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.2.38
+TVAULT_PACKAGE_VERSION: 3.2.38
 DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliovault/ /"
 
 #Need to add the following statement in nova sudoers file
