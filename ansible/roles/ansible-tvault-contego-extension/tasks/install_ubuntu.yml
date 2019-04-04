@@ -15,5 +15,5 @@
   apt:
      update_cache: yes
      name: tvault-contego={{ TVAULT_CONTEGO_VERSION }}
-     state: latest
+     state: present
      allow_unauthenticated: yes
