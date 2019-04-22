@@ -1,16 +1,5 @@
-#!/bin/bash -x
+# This is the output of "runlike trilio_dmapi". It contains lots of stuff
+# that would be set by default if omitted. Note the volume mounts though in
+# particular.
 
-
-if [ ! -f /var/lib/config-data/triliodmapi/etc/dmapi/dmapi.conf ]; then
-    echo "Before running this script, create dmapi.conf file at :\"/var/lib/config-data/triliodmapi/etc/dmapi/dmapi.conf\""
-    exit 1
-fi
-
-if [ ! -d /var/lib/config-data/puppet-generated/nova/etc/nova ]; then
-   echo "Script is expecting nova.conf to be available at /var/lib/config-data/puppet-generated/nova/etc/nova"
-fi
-
-docker run -v /var/lib/config-data/puppet-generated/nova/etc/nova:/etc/nova:ro \
--v /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi:ro -v /usr/sbin:/usr/sbin -v /usr/bin:/usr/bin -v /bin:/bin \
--v /sbin:/sbin --network host --privileged=true \
--dt --name dmapi shyambiradar/trilio-dmapi:queens
+docker run --name=trilio_dmapi --hostname=node001 --user=nova --env=PATH=/var/lib/kolla/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --env=PIP_INDEX_URL=http://mirror.iad.rax.openstack.org:8080/pypi/simple --env=PIP_TRUSTED_HOST=mirror.iad.rax.openstack.org --env=KOLLA_BASE_DISTRO=ubuntu --env=KOLLA_INSTALL_TYPE=source --env=KOLLA_INSTALL_METATYPE=mixed --env='PS1=$(tput bold)($(printenv KOLLA_SERVICE_NAME))$(tput sgr0)[$(id -un)@$(hostname -s) $(pwd)]$ ' --env=DEBIAN_FRONTEND=noninteractive --volume=/etc/kolla/dmapi/dmapi.conf:/etc/dmapi/dmapi.conf --volume=/etc/kolla/dmapi/nova.conf:/etc/nova/nova.conf --network=host --restart=no --label kolla_version="5.0.5" --label name="kolla/openstack-nova-api-triliodata-plugin" --label build-date="20190416" --label vendor="TrilioData" --label release="3.1" --label description="Red Hat OpenStack Platform 13.0 nova-api TrilioData trilio-datamover-api" --label maintainer="shyam.biradar@trilio.io" --label summary="Red Hat OpenStack Platform 13.0 nova-api TrilioData trilio-datamover-api" --label version="3.1.0" --log-opt max-size=10m --detach=true kolla/ubuntu-source-trilio-dmapi:pike /var/lib/kolla/venv/bin/python /usr/bin/dmapi-api
