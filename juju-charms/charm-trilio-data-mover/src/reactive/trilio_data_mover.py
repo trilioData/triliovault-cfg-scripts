@@ -87,6 +87,7 @@ def validate_nfs():
     grp = config('tvault-datamover-ext-group')
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
+    nfs_options = config('nfs-options')
 
     # install nfs-common package
     if not filter_missing_packages(['nfs-common']):
@@ -102,7 +103,7 @@ def validate_nfs():
     mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
 
     # check for mountable device
-    if not mount(device, data_dir, filesystem='nfs'):
+    if not mount(device, data_dir, options=nfs_options, filesystem='nfs'):
         log("Unable to mount, please enter valid mount device")
         return False
     log("Device mounted successfully")
