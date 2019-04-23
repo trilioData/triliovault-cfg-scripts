@@ -1,12 +1,12 @@
 FROM kolla/ubuntu-source-nova-compute:pike
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="kolla/openstack-nova-compute-triliodata-plugin" \
+LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
       version="3.1.0" \
       release="3.1" \
-      summary="nova-compute TrilioData Datamover" \
+      summary="TrilioData Datamover" \
       description="TrilioData Datamover"
 
 # switch to root and install a custom RPM, etc.
@@ -15,15 +15,22 @@ USER root
 ##Install datamover packages
 # This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
 RUN rm -f /etc/nova/rootwrap.conf \
- && echo "deb http://10.17.0.12:8085 deb-repo/" >> /etc/apt/sources.list \
+ && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-1/ /" >> /etc/apt/sources.list.d/trilio.list \
  && apt-get update -y \
  && apt-get install -y tvault-contego --allow-unauthenticated
 
+
+##Download virtenv
+RUN mkdir /home/tvault \
+  && curl -o /home/tvault/tvault-contego-virtenv.tar.gz http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/virtenv/queens/ubuntu/tvault-contego-virtenv.tar.gz \
+  && tar -xzf /home/tvault/tvault-contego-virtenv.tar.gz -C /home/tvault/ \
+  && chown -R nova:nova /home/tvault/
+
 #Copy executable files
-RUN mkdir -p /opt/tvault/
+RUN mkdir -p /opt/tvault/ 
 ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
-RUN chown -R nova:nova /opt/tvault/
-RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
+RUN chown -R nova:nova /opt/tvault/ \
+   && chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
@@ -33,12 +40,13 @@ RUN usermod -aG disk nova \
 # ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 # RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
 
-RUN mkdir -p /var/triliovault-mounts
-RUN chown nova:nova /var/triliovault-mounts
-RUN mkdir -p /var/triliovault
-RUN chmod 777 /var/triliovault-mounts
-RUN chown nova:nova /var/triliovault
-RUN chmod 777 /var/triliovault
+RUN mkdir -p /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault-mounts \
+ && mkdir -p /var/triliovault \
+ && chmod 777 /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault \
+ && chmod 777 /var/triliovault
+
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
 
