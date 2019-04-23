@@ -34,6 +34,7 @@ RUN chown -R nova:nova /opt/tvault/ \
 
 ##Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova \
  && usermod -aG kvm nova
 
