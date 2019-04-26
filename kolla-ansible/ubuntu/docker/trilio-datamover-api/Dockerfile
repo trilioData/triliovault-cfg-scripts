@@ -16,7 +16,7 @@ USER root
 ##Install datamover packages
 # This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
 
-RUN echo "deb http://10.17.0.12:8085 deb-repo/" >> /etc/apt/sources.list \
+RUN echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-2/ /" >> /etc/apt/sources.list \
  && apt-get update -y \
  && apt-get install -y dmapi --allow-unauthenticated
 
