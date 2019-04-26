@@ -8,6 +8,7 @@ from charms.reactive import (
     hook,
     remove_state,
     set_state,
+    clear_flag,
 )
 from charmhelpers.core.hookenv import (
     status_set,
@@ -296,6 +297,14 @@ def install_trilio_horizon_plugin():
     else:
         # Install failed
         status_set('blocked', 'Packages installation failed.....retry..')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Delete static files
+    delete_files()
+    # Clear the flag
+    clear_flag('trilio-horizon-plugin.installed')
 
 
 @hook('stop')
