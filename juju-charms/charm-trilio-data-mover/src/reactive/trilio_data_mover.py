@@ -13,6 +13,7 @@ from charms.reactive import (
     when,
     when_not,
     set_flag,
+    clear_flag,
     hook,
     remove_state,
     set_state,
@@ -585,6 +586,12 @@ def install_tvault_contego_plugin():
     # Add the flag "installed" since it's done
     application_version_set(get_new_version('tvault-contego'))
     set_flag('tvault-contego.installed')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Clear the flag
+    clear_flag('tvault-contego.installed')
 
 
 @hook('stop')
