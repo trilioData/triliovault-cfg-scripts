@@ -9,7 +9,7 @@
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
-- name: install tvault-datamover-api rpm package
+- name: install tvault-datamover-api rpm package when using python2
   yum:
     update_cache: yes
     name: dmapi
@@ -18,7 +18,7 @@
       - restart tvault-datamover-api
   when: PYTHON_VERSION=="python2"
       
-- name: install tvault-datamover-api rpm package
+- name: install tvault-datamover-api rpm package when using python3
   yum:
     update_cache: yes
     name: dmapi
