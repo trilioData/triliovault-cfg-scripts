@@ -4,10 +4,20 @@
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
-- name: install contego extension packages
+- name: install contego extension packages when using python2
   yum:
      update_cache: yes
      name:
         - tvault-contego
         - puppet-triliovault
      state: latest
+  when: PYTHON_VERSION=="python2"
+  
+- name: install contego extension packages when using python3
+  yum:
+     update_cache: yes
+     name:
+        - tvault-contego
+        - puppet-triliovault
+     state: latest
+  when: PYTHON_VERSION=="python3"
