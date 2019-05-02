@@ -4,16 +4,24 @@
      src: trilio.list
      dest: "{{trilio_apt_repo_file_path}}"
 
-- name: install tvault-contego virtual env deb package
+- name: install tvault-contego and  tvault-contego virtual env deb package using python2
   apt:
      update_cache: yes
-     name: contego={{ TVAULT_PACKAGE_VERSION }}
+     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
      state: present
      allow_unauthenticated: yes
+  with_items:
+    - contego
+    - tvault-contego
+  when: PYTHON_VERSION=="python2     
 
-- name: install tvault-contego deb package
+- name: install tvault-contego and  tvault-contego virtual env deb package using python3
   apt:
      update_cache: yes
-     name: tvault-contego={{ TVAULT_PACKAGE_VERSION }}
+     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
      state: present
      allow_unauthenticated: yes
+  with_items:
+    - contego
+    - tvault-contego
+  when: PYTHON_VERSION=="python3
