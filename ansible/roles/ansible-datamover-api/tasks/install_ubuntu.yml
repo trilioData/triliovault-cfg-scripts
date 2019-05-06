@@ -22,7 +22,7 @@
 - name: install tvault-datamover-api deb package on ubuntu xenial or above when using python3
   apt:
      update_cache: yes
-     name: dmapi={{ TVAULT_PACKAGE_VERSION }}
+     name: python3-dmapi={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
   notify:
