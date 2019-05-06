@@ -7,21 +7,15 @@
 - name: install tvault-contego and  tvault-contego virtual env deb package using python2
   apt:
      update_cache: yes
-     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
+     name: tvault-contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
-  with_items:
-    - contego
-    - tvault-contego
-  when: PYTHON_VERSION=="python2     
-
-- name: install tvault-contego and  tvault-contego virtual env deb package using python3
+  when: PYTHON_VERSION=="python2"
+  
+- name: install tvault-contego and tvault-contego virtual env deb package using python3
   apt:
      update_cache: yes
-     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
+     name: python3-tvault-contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
-  with_items:
-    - contego
-    - tvault-contego
-  when: PYTHON_VERSION=="python3
+  when: PYTHON_VERSION=="python3"
