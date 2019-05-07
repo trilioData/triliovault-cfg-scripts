@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="3.1.0" \
-      release="3.1" \
+      version="3.3.0" \
+      release="3.3" \
       summary="TrilioData trilio-datamover-api" \
       description="TrilioData trilio-datamover-api"
 
@@ -16,7 +16,7 @@ USER root
 ##Install datamover packages
 # This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
 
-RUN echo "deb http://10.17.0.12:8085 deb-repo/" >> /etc/apt/sources.list \
+RUN echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /" >> /etc/apt/sources.list.d/trilio.list \
  && apt-get update -y \
  && apt-get install -y dmapi --allow-unauthenticated
 
