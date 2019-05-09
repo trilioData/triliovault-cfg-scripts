@@ -17,6 +17,12 @@
 - meta: end_play
   when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
   
+- import_tasks: roles/ansible-datamover-api/tasks/get_python.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+  
 - name: validate NFS bkp target is reachable
   import_tasks: nfs.yml
   when: NFS == True
