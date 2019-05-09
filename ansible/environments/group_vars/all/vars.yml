@@ -149,5 +149,3 @@ datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
 release_17: "17"
-PYTHON_PATH: /usr/bin/python
-PYTHON3_PATH: /usr/bin/python3
