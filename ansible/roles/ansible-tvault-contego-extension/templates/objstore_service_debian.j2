@@ -19,6 +19,6 @@ pre-start script
     fi
 end script
 script
-    su -c {{TVAULT_CONTEGO_EXT_PYTHON}} {{s3_fuse_file}} --config-file={{TVAULT_CONTEGO_CONF}} {{TVAULT_CONTEGO_EXT_USER}}
+    su -c {{PYTHON_EXEC}} {{s3_fuse_file}} --config-file={{TVAULT_CONTEGO_CONF}} {{TVAULT_CONTEGO_EXT_USER}}
 end script
 EOF
