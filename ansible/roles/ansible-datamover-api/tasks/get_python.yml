@@ -1,0 +1,26 @@
+---
+- name: find location when using python3
+  shell: which python3
+  register: python3
+  when: PYTHON_VERSION=="python3"
+
+- name: find location when using python3
+  shell: which python
+  register: python2
+  when: PYTHON_VERSION=="python2"
+
+- debug:
+    msg: "{{python3.stdout}}"
+  when: PYTHON_VERSION=="python3"
+
+- debug:
+    msg: "{{python2.stdout}}"
+  when: PYTHON_VERSION=="python2"
+
+- set_fact:
+    PYTHON_EXEC : "{{python3.stdout}}"
+  when: PYTHON_VERSION=="python3"
+
+- set_fact:
+    PYTHON_EXEC : "{{python2.stdout}}"
+  when: PYTHON_VERSION=="python2"
