@@ -4,7 +4,7 @@
      src: trilio.list
      dest: "{{trilio_apt_repo_file_path}}"
 
-- name: uninstall tvault-horizon-plugin deb packages
+- name: uninstall tvault-horizon-plugin deb packages when using python2
   apt:
      name: "{{ horizon_packages }}"
      state: absent
@@ -15,4 +15,19 @@
     - tvault-horizon-plugin
     - python-workloadmgrclient
   notify:
-      - restart webserver 
+      - restart webserver
+  when: PYTHON_VERSION=="python2"
+  
+- name: uninstall tvault-horizon-plugin deb packages when using python3
+  apt:
+     name: "{{ horizon_packages }}"
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
+  vars:
+    horizon_packages:
+    - python3-tvault-horizon-plugin
+    - python3-workloadmgrclient
+  notify:
+      - restart webserver
+  when: PYTHON_VERSION=="python3"
