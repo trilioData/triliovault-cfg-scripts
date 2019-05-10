@@ -5,7 +5,18 @@
        - contego
        - contego-extension
        - all-install
-
+       
+- debug:
+    msg:
+        - "You defined 'UPDATE_NOVA_SUDOERS_FILE' as  'notproceed' for updating nova sudoers file,"
+        - "Inside the environments/group_vars/all/vars.yml "
+        - "Exiting the Contego installation"
+        - "Please define varibale  'UPDATE_NOVA_SUDOERS_FILE' as  'proceed' inside the environments/group_vars/all/vars.yml"
+  when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
+  
+- meta: end_play
+  when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
+  
 - name: validate NFS bkp target is reachable
   import_tasks: nfs.yml
   when: NFS == True

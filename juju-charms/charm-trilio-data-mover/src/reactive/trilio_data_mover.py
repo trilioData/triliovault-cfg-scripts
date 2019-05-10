@@ -13,6 +13,7 @@ from charms.reactive import (
     when,
     when_not,
     set_flag,
+    clear_flag,
     hook,
     remove_state,
     set_state,
@@ -87,6 +88,7 @@ def validate_nfs():
     grp = config('tvault-datamover-ext-group')
     data_dir = config('tv-data-dir')
     device = config('nfs-shares')
+    nfs_options = config('nfs-options')
 
     # install nfs-common package
     if not filter_missing_packages(['nfs-common']):
@@ -102,7 +104,7 @@ def validate_nfs():
     mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
 
     # check for mountable device
-    if not mount(device, data_dir, filesystem='nfs'):
+    if not mount(device, data_dir, options=nfs_options, filesystem='nfs'):
         log("Unable to mount, please enter valid mount device")
         return False
     log("Device mounted successfully")
@@ -242,6 +244,12 @@ def create_virt_env():
 
     # change virtenv dir(/home/tvault) users to nova
     chownr(path, usr, grp)
+
+    # Copy Trilio sudoers and filters files
+    os.system(
+        'cp files/trilio/trilio_sudoers /etc/sudoers.d/')
+    os.system(
+        'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
 
     return True
 
@@ -578,6 +586,12 @@ def install_tvault_contego_plugin():
     # Add the flag "installed" since it's done
     application_version_set(get_new_version('tvault-contego'))
     set_flag('tvault-contego.installed')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Clear the flag
+    clear_flag('tvault-contego.installed')
 
 
 @hook('stop')

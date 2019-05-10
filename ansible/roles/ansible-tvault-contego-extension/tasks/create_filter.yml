@@ -3,10 +3,31 @@
   template:
      src: trilio.filters.j2
      dest: "{{FILTERS_FILE_PATH_RHEL}}"
-  when: ansible_os_family == "RedHat" 
+  when: ansible_os_family == "RedHat"
 
 - name: create trilio.filters for mount and unmount for Debian
   template:
      src: trilio.filters.j2
      dest: "{{FILTERS_FILE_PATH_DEBIAN}}"
-  when: ansible_os_family == "Debian" 
+  when: ansible_os_family == "Debian"
+
+- name: find location of nova sudoers file
+  shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
+  ignore_errors: yes
+  register: output
+
+- debug:
+    msg: "{{ output.stdout}}"
+  when: output.stdout != ""
+
+- name: Add privsep-helper to nova sudoers file
+  lineinfile:
+     path: "{{ output.stdout}}"
+     line: "nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *"
+  when: >
+    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
+    output.stdout != ""
+
+- name: Added nova sudoers file if not exist
+  template: src=nova.j2 dest=/etc/sudoers.d/nova mode=644
+  when: output.stdout == ""
