@@ -8,6 +8,7 @@ from charms.reactive import (
     hook,
     remove_state,
     set_state,
+    clear_flag,
 )
 from charmhelpers.core.hookenv import (
     status_set,
@@ -15,14 +16,17 @@ from charmhelpers.core.hookenv import (
     log,
     application_version_set,
 )
-from charmhelpers.contrib.python.packages import (
-    pip_install,
-)
 from charmhelpers.core.host import (
     service_restart,
 )
 from subprocess import (
     check_output,
+)
+from charmhelpers.fetch import (
+    add_source,
+    apt_install,
+    apt_update,
+    apt_purge,
 )
 
 
@@ -48,7 +52,19 @@ def copy_template():
     """
     Copy TrilioVault Horizon HTML Template from files/trilio dir
     """
-    dashboard_path = '/usr/local/lib/python2.7/dist-packages/dashboards/'
+    # Find where the dashboard path is for the index to be replaced,
+    # or default to the first path if none found /usr/local/lib
+    dashboard_paths = ['/usr/local/lib/python2.7/dist-packages/dashboards/',
+                       '/usr/lib/python2.7/dist-packages/dashboards/']
+
+    dashboard_path = None
+    for path in dashboard_paths:
+        if os.path.isfile('{}/workloads_admin/templates/'
+                          'workloads_admin/index.html'.format(path)):
+            dashboard_path = path
+            break
+    if dashboard_path is None:
+        dashboard_path = dashboard_paths[0]
 
     # install and compress new dashboard if it's provided by user
     if os.path.isfile("files/trilio/trilio-horizon-plugin.html"):
@@ -162,17 +178,17 @@ def get_new_version(pkg):
     return new_ver
 
 
-def install_plugin(ip, ver):
+def install_plugin(ip, ver, venv):
     """Install Horizon plugin and workloadmgrclient packages
     from TVAULT_IPADDRESS provided by the user
     """
 
-    pkg = "http://" + ip + \
-          ":8081/packages/python-workloadmgrclient-" + ver + \
-          ".tar.gz"
+    add_source('deb http://{}:8085 deb-repo/'.format(ip))
 
     try:
-        pip_install(pkg, venv="/usr", options="--no-deps")
+        apt_update()
+        apt_install(['python-workloadmgrclient'],
+                    options=['--allow-unauthenticated'], fatal=True)
         log("TrilioVault WorkloadMgrClient package installation passed")
     except Exception as e:
         # workloadmgrclient package install failed
@@ -180,12 +196,9 @@ def install_plugin(ip, ver):
         log("With exception --{}".format(e))
         return False
 
-    pkg = "http://" + ip + \
-          ":8081/packages/tvault-horizon-plugin-" + ver + \
-          ".tar.gz"
-
     try:
-        pip_install(pkg, venv="/usr", options="--no-deps")
+        apt_install(['tvault-horizon-plugin'],
+                    options=['--allow-unauthenticated'], fatal=True)
         log("TrilioVault Horizon Plugin package installation passed")
     except Exception as e:
         # Horixon Plugin package install failed
@@ -217,25 +230,25 @@ def uninstall_plugin():
     # Start with deleting TrilioVault files
     delete_files()
 
-    cmd = "/usr/bin/pip uninstall python-workloadmgrclient -y"
-    wm_ret = os.system(cmd)
-
-    if wm_ret:
-        # workloadmgrclient package uninstall failed
-        log("TrilioVault WorkloadMgrClient package un-installation failed")
-        return False
-    else:
+    try:
+        # Uninstall python-workloadmgrclient
+        apt_purge(['python-workloadmgrclient']),
         log("TrilioVault WorkloadMgrClient package uninstalled successfully")
-
-    cmd = "/usr/bin/pip uninstall tvault-horizon-plugin -y"
-    hp_ret = os.system(cmd)
-
-    if hp_ret:
-        # Horizon Plugin package uninstall failed
-        log("TrilioVault Horizon Plugin package un-installation failed")
+    except Exception as e:
+        # package uninstallation failed
+        log("TrilioVault WorkloadMgrClient package un-installation failed:"
+            " {}".format(e))
         return False
-    else:
+
+    try:
+        # Uninstall TrilioVautl Horizon Plugin package
+        apt_purge(['tvault-horizon-plugin']),
         log("TrilioVault Horizon Plugin package uninstalled successfully")
+    except Exception as e:
+        # package uninstallation failed
+        log("TrilioVault Horizon Plugin package un-installation failed:"
+            " {}".format(e))
+        return False
 
     # Re-start the Webserver
     try:
@@ -275,7 +288,7 @@ def install_trilio_horizon_plugin():
     tv_version = get_new_version('tvault-horizon-plugin')
 
     # Call install handler to install the packages
-    if install_plugin(tv_ip, tv_version):
+    if install_plugin(tv_ip, tv_version, '/usr'):
         # Install was successful
         status_set('active', 'Ready...')
         application_version_set(tv_version)
@@ -284,6 +297,14 @@ def install_trilio_horizon_plugin():
     else:
         # Install failed
         status_set('blocked', 'Packages installation failed.....retry..')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Delete static files
+    delete_files()
+    # Clear the flag
+    clear_flag('trilio-horizon-plugin.installed')
 
 
 @hook('stop')

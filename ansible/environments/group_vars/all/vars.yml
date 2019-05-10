@@ -2,6 +2,17 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
+#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.2.38
+TVAULT_PACKAGE_VERSION: 3.2.38
+DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliovault/ /"
+
+#Need to add the following statement in nova sudoers file
+#nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
+#These changes require for Datamover, Otherwise Datamover will not work
+#Are you sure? Please set variable to 
+#  UPDATE_NOVA_SUDOERS_FILE: proceed
+#other wise ansible tvault-contego installation will exit
+UPDATE_NOVA_SUDOERS_FILE: notproceed
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
 verbosity_level: 2

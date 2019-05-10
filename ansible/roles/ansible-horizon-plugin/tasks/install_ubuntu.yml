@@ -7,11 +7,10 @@
 - name: install tvault-horizon-plugin deb packages
   apt:
      update_cache: yes
-     name: "{{ horizon_packages }}"
-     state: latest
+     name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
+     state: present
      allow_unauthenticated: yes
-  vars:
-    horizon_packages:
+  with_items:
     - tvault-horizon-plugin
     - python-workloadmgrclient
   notify:
