@@ -8,8 +8,8 @@
   yum:
      update_cache: yes
      name:
-        - tvault-contego
         - puppet-triliovault
+        - tvault-contego
      state: latest
   when: PYTHON_VERSION=="python2"
   
@@ -17,7 +17,7 @@
   yum:
      update_cache: yes
      name:
-        - tvault-contego
         - puppet-triliovault
+        - python3-tvault-contego
      state: latest
   when: PYTHON_VERSION=="python3"
