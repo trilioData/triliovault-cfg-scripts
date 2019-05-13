@@ -11,8 +11,8 @@
      state: present
      allow_unauthenticated: yes
   with_items:
-    - tvault-horizon-plugin
     - python-workloadmgrclient
+    - tvault-horizon-plugin
   notify:
       - restart webserver
   when: PYTHON_VERSION=="python2"
@@ -24,8 +24,8 @@
      state: present
      allow_unauthenticated: yes
   with_items:
-    - python3-tvault-horizon-plugin
     - python3-workloadmgrclient
+    - python3-tvault-horizon-plugin
   notify:
       - restart webserver
   when: PYTHON_VERSION=="python3"
