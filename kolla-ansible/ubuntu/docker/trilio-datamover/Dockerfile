@@ -21,7 +21,7 @@ RUN rm -f /etc/nova/rootwrap.conf \
 
 
 ##Download virtenv
-RUN mkdir /home/tvault \
+RUN mkdir -p /home/tvault \
   && curl -o /home/tvault/tvault-contego-virtenv.tar.gz http://{REPO_HOST}/virtenv/queens/ubuntu/tvault-contego-virtenv.tar.gz \
   && tar -xzf /home/tvault/tvault-contego-virtenv.tar.gz -C /home/tvault/ \
   && chown -R nova:nova /home/tvault/
