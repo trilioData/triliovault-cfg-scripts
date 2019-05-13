@@ -587,3 +587,9 @@ def stop_tvault_contego_plugin():
         # Uninstall was successful
         # Remove the state "stopping" since it's done
         remove_state('tvault-contego.stopping')
+
+
+@hook('upgrade-charm')	
+def upgrade_charm():	
+    # Clear the flag	
+    clear_flag('tvault-contego.installed')

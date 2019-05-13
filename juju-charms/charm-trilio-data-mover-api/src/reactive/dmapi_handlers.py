@@ -165,4 +165,5 @@ def cluster_connected(hacluster):
 
 @reactive.hook('upgrade-charm')
 def upgrade_charm():
-    dmapi.install()
+    # Remove sate
+    reactive.remove_state('charm.installed')

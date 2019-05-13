@@ -298,3 +298,11 @@ def stop_trilio_horizon_plugin():
         # Uninstall was successful
         # Remove the state "stopping" since it's done
         remove_state('trilio-horizon-plugin.stopping')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Delete static files
+    delete_files()
+    # Clear the flag
+    clear_flag('trilio-horizon-plugin.installed')
