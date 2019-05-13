@@ -18,6 +18,6 @@
 - name: uninstall tvault contego extension packages when using python3
   yum:
      name:
-        - tvault-contego
+        - python3-tvault-contego
      state: absent
   when: PYTHON_VERSION=="python3"
