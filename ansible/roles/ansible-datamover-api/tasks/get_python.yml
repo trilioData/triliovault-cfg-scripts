@@ -9,14 +9,6 @@
   register: python2
   when: PYTHON_VERSION=="python2"
 
-- debug:
-    msg: "{{python3.stdout}}"
-  when: PYTHON_VERSION=="python3"
-
-- debug:
-    msg: "{{python2.stdout}}"
-  when: PYTHON_VERSION=="python2"
-
 - set_fact:
     PYTHON_EXEC : "{{python3.stdout}}"
   when: PYTHON_VERSION=="python3"
