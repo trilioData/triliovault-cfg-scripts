@@ -21,7 +21,7 @@
 - name: install tvault-datamover-api rpm package when using python3
   yum:
     update_cache: yes
-    name: dmapi
+    name: python3-dmapi
     state: latest
   notify:
       - restart tvault-datamover-api
