@@ -19,5 +19,6 @@
   yum:
      name:
         - python3-tvault-contego
+        - puppet-triliovault
      state: absent
   when: PYTHON_VERSION=="python3"
