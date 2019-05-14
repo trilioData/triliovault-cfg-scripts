@@ -68,3 +68,23 @@ options:
     type: string
     default:
     description: S3 endpoint URL
+  tv-datamover-debug:
+    type: boolean
+    default: False
+    description: debug parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-verbose:
+    type: boolean
+    default: True
+    description: verbose parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-max-uploads-pending:
+    type: int
+    default: 3
+    description: max_uploads_pending parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-max-commit-pending:
+    type: int
+    default: 3
+    description: max_commit_pending parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-qemu-agent-ping-timeout:
+    type: int
+    default: 600
+    description: qemu_agent_ping_timeout parameter value in /etc/tvault-contego/tvault-contego.conf
