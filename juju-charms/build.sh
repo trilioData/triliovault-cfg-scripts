@@ -28,10 +28,10 @@ done
 
 # Check charm proof on the built charms
 for i in $(ls -1 builds/); do
-    (
-        set +e
-        cd builds/$i
-        charm proof
-        tox -e pep8
-    )
+     (
+         set +e
+         cd builds/$i
+         charm proof
+         tox -e pep8
+     )
 done

@@ -8,6 +8,7 @@ from charms.reactive import (
     hook,
     remove_state,
     set_state,
+    clear_flag,
 )
 from charmhelpers.core.hookenv import (
     status_set,
@@ -51,7 +52,19 @@ def copy_template():
     """
     Copy TrilioVault Horizon HTML Template from files/trilio dir
     """
-    dashboard_path = '/usr/local/lib/python2.7/dist-packages/dashboards/'
+    # Find where the dashboard path is for the index to be replaced,
+    # or default to the first path if none found /usr/local/lib
+    dashboard_paths = ['/usr/local/lib/python2.7/dist-packages/dashboards/',
+                       '/usr/lib/python2.7/dist-packages/dashboards/']
+
+    dashboard_path = None
+    for path in dashboard_paths:
+        if os.path.isfile('{}/workloads_admin/templates/'
+                          'workloads_admin/index.html'.format(path)):
+            dashboard_path = path
+            break
+    if dashboard_path is None:
+        dashboard_path = dashboard_paths[0]
 
     # install and compress new dashboard if it's provided by user
     if os.path.isfile("files/trilio/trilio-horizon-plugin.html"):
@@ -284,6 +297,14 @@ def install_trilio_horizon_plugin():
     else:
         # Install failed
         status_set('blocked', 'Packages installation failed.....retry..')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Delete static files
+    delete_files()
+    # Clear the flag
+    clear_flag('trilio-horizon-plugin.installed')
 
 
 @hook('stop')
