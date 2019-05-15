@@ -7,6 +7,7 @@ PYTHON_VERSION: python2
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.2.38
 TVAULT_PACKAGE_VERSION: 3.2.38
 DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
+RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
