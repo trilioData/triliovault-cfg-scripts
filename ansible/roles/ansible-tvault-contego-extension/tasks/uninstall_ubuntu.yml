@@ -7,16 +7,18 @@
   service: name=tvault-contego state=stopped enabled=no
   ignore_errors: yes
 
-- name: uninstall tvault-contego virtual env deb package
-  apt:
-     name: contego
-     state: absent
-     allow_unauthenticated: yes
-     purge: yes
-
-- name: uninstall tvault-contego deb package
+- name: uninstall tvault-contego deb package when using python2
   apt:
      name: tvault-contego
      state: absent
      allow_unauthenticated: yes
      purge: yes
+  when: PYTHON_VERSION=="python2"
+  
+- name: uninstall tvault-contego deb package when using python3
+  apt:
+     name: python3-tvault-contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
+  when: PYTHON_VERSION=="python3"
