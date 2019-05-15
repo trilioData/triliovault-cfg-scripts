@@ -2,9 +2,12 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8081
+#Need to update python version of openstack setup Example PYTHON_VERSION: python2 or PYTHON_VERSION: python3
+PYTHON_VERSION: python2
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.2.38
 TVAULT_PACKAGE_VERSION: 3.2.38
-DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliovault/ /"
+DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
+RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
@@ -119,6 +122,7 @@ status_200: "200"
 status_201: "201"
 xenial: "xenial"
 willy: "willy"
+bionic: "bionic"
 release_13: "13"
 release_2000: "2000"
 release_2016: "2016"
@@ -146,6 +150,3 @@ datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
 release_17: "17"
-
-
-

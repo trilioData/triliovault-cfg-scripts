@@ -6,7 +6,12 @@
     - all-install
     - horizon-uninstall
     - all-uninstall
-
+    
+- import_tasks: roles/ansible-datamover-api/tasks/get_python.yml
+  tags:
+    - horizon
+    - all-install
+    
 - name: install horizon plugin on controller node
   import_tasks: install_rhel.yml
   tags:

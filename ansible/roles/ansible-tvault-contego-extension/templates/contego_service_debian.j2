@@ -18,5 +18,5 @@ pre-start script
     fi
 end script
 script
-    exec start-stop-daemon --start --chuid {{TVAULT_CONTEGO_EXT_USER}} --exec  {{python_path}} {{tvault_contego_bin_path.stdout}} -- {{CONFIG_FILES}}
+    exec start-stop-daemon --start --chuid {{TVAULT_CONTEGO_EXT_USER}} --exec  {{PYTHON_EXEC}} {{tvault_contego_bin_path.stdout}} -- {{CONFIG_FILES}}
 end script
