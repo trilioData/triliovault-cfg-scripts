@@ -1,5 +1,5 @@
 [trilio]
 name=Trilio Repository
-baseurl={{ DEBIAN_PACKAGE_REPO_URL }}
+baseurl={{ RPM_PACKAGE_REPO_URL }}
 enabled=1
 gpgcheck=0
