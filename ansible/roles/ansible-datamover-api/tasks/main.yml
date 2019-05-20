@@ -1,4 +1,10 @@
 ---
+- name: get python details
+  import_tasks: get_python.yml
+  tags:
+       - datamover-api
+       - all-install
+       
 - name:  install tvault_datamover_api on rhel/centos
   import_tasks: install_rhel.yml
   tags:

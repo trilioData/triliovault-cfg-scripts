@@ -1,5 +1,5 @@
 ---
-- name: uninstall tvault horizon plugin packages
+- name: uninstall tvault horizon plugin packages when using python2
   yum:
      update_cache: yes
      name:
@@ -8,3 +8,15 @@
      state: absent
   notify:
      - restart webserver
+  when: PYTHON_VERSION=="python2"
+  
+- name: uninstall tvault horizon plugin packages when using python3
+  yum:
+     update_cache: yes
+     name:
+        - python3-tvault-horizon-plugin
+        - python3-workloadmgrclient
+     state: absent
+  notify:
+     - restart webserver
+  when: PYTHON_VERSION=="python3"

@@ -7,9 +7,18 @@
   service: name=tvault-contego state=stopped enabled=no
   ignore_errors: yes
 
-- name: uninstall tvault contego extension packages
+- name: uninstall tvault contego extension packages when using python2
   yum:
      name:
         - tvault-contego
         - puppet-triliovault
      state: absent
+  when: PYTHON_VERSION=="python2"
+
+- name: uninstall tvault contego extension packages when using python3
+  yum:
+     name:
+        - python3-tvault-contego
+        - puppet-triliovault
+     state: absent
+  when: PYTHON_VERSION=="python3"
