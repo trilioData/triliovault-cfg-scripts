@@ -15,5 +15,5 @@ pre-start script
     fi
 end script
 script
-    exec start-stop-daemon --start --chuid {{TVAULT_CONTEGO_EXT_USER}} --exec {{TVAULT_CONTEGO_EXT_PYTHON}} {{dmapi_bin.stdout}}
+    exec start-stop-daemon --start --chuid {{TVAULT_CONTEGO_EXT_USER}} --exec {{PYTHON_EXEC}} {{dmapi_bin.stdout}}
 end script

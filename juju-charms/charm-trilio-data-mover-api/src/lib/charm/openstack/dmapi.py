@@ -45,7 +45,10 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     release = 'queens'
 
     # Packages the service needs installed
-    packages = ['python-nova']
+    if config('python-version') == 3:
+        packages = ['python3-nova', 'python3-dmapi']
+    else:
+        packages = ['python-nova', 'dmapi']
 
     # Init services the charm manages
     services = ['tvault-datamover-api']
