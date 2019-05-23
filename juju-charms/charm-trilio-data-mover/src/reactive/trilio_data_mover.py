@@ -197,18 +197,6 @@ def create_virt_env(pkg_name):
             " exiting")
         return True
 
-    # Create virtual environment for DataMover
-    handler = ArchiveUrlFetchHandler()
-    try:
-        # remove old venv if it exists
-        os.system('rm -rf {}'.format(venv_path))
-        venv_dest = '/'
-        handler.install(venv_url, venv_dest)
-        log("Virtual Environment installed successfully")
-    except Exception as e:
-        log("Failed to install Virtual Environment")
-        return False
-
     # Install TrilioVault Datamover package
     if not install_plugin(pkg_name):
         return False
@@ -223,7 +211,7 @@ def create_virt_env(pkg_name):
         return False
 
     # Create symlinks of the dependent libraries
-    venv_pkg_path = '{}/lib/python3.6/site-packages/'.format(venv_path)
+    venv_pkg_path = '{}/lib/python2.7/site-packages/'.format(venv_path)
     os.system('rm -rf {}/cryptography'.format(venv_pkg_path))
     os.system('rm -rf {}/cffi'.format(venv_pkg_path))
     os.system('rm -rf {}/contego'.format(venv_pkg_path))
