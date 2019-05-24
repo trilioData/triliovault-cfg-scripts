@@ -4,13 +4,11 @@
 
 - name: uninstall dmapi deb package when using python2
   apt: name=dmapi state=absent purge=yes
-  when: ansible_distribution==ubuntu
-  when: PYTHON_VERSION=="python2"
+  when: ansible_distribution==ubuntu and PYTHON_VERSION=="python2"
   
 - name: uninstall dmapi deb package when using python3
   apt: name=python3-dmapi state=absent purge=yes
-  when: ansible_distribution==ubuntu
-  when: PYTHON_VERSION=="python3"
+  when: ansible_distribution==ubuntu and PYTHON_VERSION=="python3"
         
 - name: uninstall dmapi rpm package when using python2
   yum: name=dmapi state=absent
