@@ -12,6 +12,7 @@ from charms.reactive import (
     when,
     when_not,
     set_flag,
+    clear_flag,
     hook,
     remove_state,
     set_state,
@@ -40,10 +41,6 @@ from charmhelpers.core.host import (
     symlink,
     mkdir,
     chownr,
-)
-
-from charmhelpers.fetch.archiveurl import (
-    ArchiveUrlFetchHandler,
 )
 
 VALID_BACKUP_TARGETS = [
@@ -184,7 +181,6 @@ def create_virt_env(pkg_name):
     grp = config('tvault-datamover-ext-group')
     path = config('tvault-datamover-virtenv')
     venv_path = config('tvault-datamover-virtenv-path')
-    venv_url = config('tvault-datamover-virtenv-url')
 
     dm_ver = None
 
@@ -291,11 +287,14 @@ def create_conf():
     tv_config.set('DEFAULT', 'vault_data_directory_old', tv_data_dir_old)
     tv_config.set('DEFAULT', 'vault_data_directory', tv_data_dir)
     tv_config.set('DEFAULT', 'log_file', '/var/log/nova/tvault-contego.log')
-    tv_config.set('DEFAULT', 'debug', False)
-    tv_config.set('DEFAULT', 'verbose', True)
-    tv_config.set('DEFAULT', 'max_uploads_pending', 3)
-    tv_config.set('DEFAULT', 'max_commit_pending', 3)
-    tv_config.set('DEFAULT', 'qemu_agent_ping_timeout', 600)
+    tv_config.set('DEFAULT', 'debug', config('tv-datamover-debug'))
+    tv_config.set('DEFAULT', 'verbose', config('tv-datamover-verbose'))
+    tv_config.set('DEFAULT', 'max_uploads_pending',
+                  config('tv-datamover-max-uploads-pending'))
+    tv_config.set('DEFAULT', 'max_commit_pending',
+                  config('tv-datamover-max-commit-pending'))
+    tv_config.set('DEFAULT', 'qemu_agent_ping_timeout',
+                  config('tv-datamover-qemu-agent-ping-timeout'))
     tv_config.add_section('contego_sys_admin')
     tv_config.set('contego_sys_admin', 'helper_command',
                   'sudo /usr/bin/privsep-helper')
@@ -385,9 +384,8 @@ def create_object_storage_service(pkg_loc):
                    .format(contego_path)
     config_file = config('tv-datamover-conf')
     # create service file
-    exec_start = '{}/bin/python{} {} --config-file={}'\
-                 .format(venv_path, config('python-version'),
-                         storage_path, config_file)
+    exec_start = '{}/bin/python {} --config-file={}'\
+                 .format(venv_path, storage_path, config_file)
     tv_config = configparser.RawConfigParser()
     tv_config.optionxform = str
     tv_config.add_section('Unit')
@@ -577,7 +575,36 @@ def stop_tvault_contego_plugin():
         remove_state('tvault-contego.stopping')
 
 
-@hook('upgrade-charm')	
-def upgrade_charm():	
-    # Clear the flag	
+@hook('upgrade-charm')
+def upgrade_charm():
+    # Clear the flag
     clear_flag('tvault-contego.installed')
+
+
+@hook('config-changed')
+def reconfig_charm():
+
+    bkp_type = config('backup-target-type')
+
+    # Valildate backup target
+    if not validate_backup():
+        log("Failed while validating backup")
+        status_set(
+            'blocked',
+            'Invalid Backup target info, please provide valid info')
+        return
+
+    if not create_conf():
+        log("Failed while creating conf files")
+        status_set('blocked', 'Failed while creating conf files')
+        return
+
+    # Re-start the object-store service
+    if bkp_type == 's3':
+        service_restart('tvault-object-store')
+
+    # Re-start the datamover service
+    service_restart('tvault-contego')
+
+    # Reconfig successful
+    status_set('active', 'Ready...')
