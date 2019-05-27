@@ -184,3 +184,10 @@
        - contego-uninstall
        - contego-extension-uninstall
        - all-uninstall
+ 
+- name: Remove trilio.filters and trilio.pth files after uninstall
+  import_tasks: remove_trilio_files.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall 
