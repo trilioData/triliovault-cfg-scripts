@@ -1,11 +1,4 @@
 ---
-- name: find location of manage.py
-  shell: "find {{ ENV_PATH }}  -name '*manage.py' | grep -E 'openstack-dashboard|horizon'"
-  register: output
-
-- set_fact:
-    MANAGE_FILE : "{{output.stdout}}"
-
 - debug:
     msg: "{{ MANAGE_FILE }}"
 
