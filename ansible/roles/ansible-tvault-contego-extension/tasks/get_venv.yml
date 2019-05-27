@@ -1,0 +1,38 @@
+---
+
+- name: find  venv is using or not
+  shell: "{{ PYTHON_VERSION }}  -c 'import sys; print(sys.prefix)'"
+  register: ENVPATH
+
+- set_fact:
+    ENV_PATH : "{{ENVPATH.stdout}}"
+
+- set_fact:
+    EXTRA_APT_VAR : "--no-install-recommends"
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    EXTRA_APT_VAR : ""
+  when: ENV_PATH == "/usr"
+
+- name: Found location of trilio.pth file
+  shell: "{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  register: TRILIOFILE
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    TRILIO_FILE : "{{TRILIOFILE.stdout}}/trilio.pth"
+  when: ENV_PATH != "/usr"
+
+- name: Found local packages library
+  shell: "/usr/bin/{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  register: PACKAGELIB
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    PACKAGE_LIB : "{{PACKAGELIB.stdout}}"
+  when: ENV_PATH != "/usr"
+
+- name: Create trilio.pth file
+  shell: "echo {{ PACKAGE_LIB }} > {{ TRILIO_FILE }}"
+  when: ENV_PATH != "/usr"
