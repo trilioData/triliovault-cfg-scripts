@@ -8,11 +8,11 @@
     ENV_PATH : "{{ENVPATH.stdout}}"
 
 - set_fact:
-    EXTRA_APT_VAR : "--no-install-recommends"
+    RECOMMENDS_VAR : "no"
   when: ENV_PATH != "/usr"
 
 - set_fact:
-    EXTRA_APT_VAR : ""
+    RECOMMENDS_VAR : "yes"
   when: ENV_PATH == "/usr"
 
 - name: Found location of trilio.pth file
