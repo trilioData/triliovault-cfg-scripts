@@ -66,3 +66,9 @@
   tags:
     - horizon-uninstall
     - all-uninstall
+    
+- name: Remove trilio.pth file after package uninstall
+  import_tasks: remove_trilio_pth.yml
+  tags:
+    - horizon-uninstall
+    - all-uninstall
