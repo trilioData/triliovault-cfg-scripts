@@ -43,6 +43,8 @@ fi
 rm -rf etc/
 rm -f triliorepo.tgz
 mkdir -p ${basedir}/etc/yum.repos.d/
+mkdir -p ${basedir}/etc/puppet/modules/
+cp ${basedir}/${rpm1} ${basedir}/etc/puppet/modules/
 cp ${basedir}/trilio.repo.template ${basedir}/etc/yum.repos.d/trilio.repo
 sed -i "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
 /usr/bin/tar -cvzf triliorepo.tgz etc
