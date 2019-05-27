@@ -1,0 +1,25 @@
+---
+
+- name: Found location of trilio.pth file
+  shell: "{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  register: TRILIOFILE
+
+- set_fact:
+    TRILIO_FILE : "{{TRILIOFILE.stdout}}/trilio.pth"
+
+- name: Removing trilio.pth file
+  file:
+    path: "{{ TRILIO_FILE }}"
+    state: absent
+
+- name: find the trilio filter file name and location
+  shell: "echo {{NOVA_COMPUTE_FILTERS_FILE}} | sed 's/compute.filters//'"
+  register: TRILIOFILTER
+
+- set_fact:
+    TRILIO_FILTER : "{{TRILIOFILTER.stdout}}"
+
+- name: Removing trilio.filters file
+  file:
+    path: "{{ TRILIO_FILTER}}trilio.filters"
+    state: absent
