@@ -15,7 +15,13 @@
 - import_tasks: roles/ansible-tvault-contego-extension/tasks/get_venv.yml
   tags:
     - horizon
-    - all-install    
+    - all-install
+    
+- name: find manage.py file
+  import_tasks: find_manage_file.yml
+  tags:
+    - horizon
+    - all-install
     
 - name: install horizon plugin on controller node
   import_tasks: install_rhel.yml
