@@ -5,6 +5,3 @@
 
 - set_fact:
     MANAGE_FILE : "{{output.stdout}}"
-
-- debug:
-    msg: "{{ MANAGE_FILE }}"
