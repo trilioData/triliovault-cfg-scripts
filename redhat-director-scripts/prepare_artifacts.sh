@@ -49,8 +49,3 @@ upload-puppet-modules -d trilio-puppet-module
 ##Merge both templates in one file
 tail -1 ${basedir}/trilio_artifacts.yaml >> ~/.tripleo/environments/puppet-modules-url.yaml
 rm -f ${basedir}/trilio_artifacts.yaml
-
-
-
-
-
