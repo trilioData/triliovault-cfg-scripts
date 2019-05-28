@@ -1,6 +1,7 @@
 ---
 - name: disable and stopp tvault-datamover-api service
   service: name=tvault-datamover-api  state=stopped enabled=no
+  ignore_errors: yes
 
 - name: uninstall dmapi deb package when using python2
   apt: name=dmapi state=absent purge=yes
