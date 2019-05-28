@@ -22,7 +22,9 @@
   tags:
     - horizon
     - all-install
-    
+    - horizon-uninstall
+    - all-uninstall
+        
 - name: install horizon plugin on controller node
   import_tasks: install_rhel.yml
   tags:
