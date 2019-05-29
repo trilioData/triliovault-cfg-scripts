@@ -92,6 +92,7 @@ def install_packages():
     os.system('sudo cp files/trilio/tvault-datamover-api.service '
               '/etc/systemd/system/')
     chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
+    mkdir('/var/cache/dmapi',DMAPI_USR, DMAPI_GRP, perms=493)
     os.system('sudo systemctl enable tvault-datamover-api')
     service_restart('tvault-datamover-api')
 
