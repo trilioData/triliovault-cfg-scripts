@@ -68,7 +68,7 @@ VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
 #### S3 Specific Backend Configurations
 #### Provide one of follwoing two values in s3_type variable, string's case should be match
-#Amazon/Ceph_S3/
+#Amazon/Others_S3
 s3_type: sample_s3_type
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
