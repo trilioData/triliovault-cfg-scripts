@@ -12,6 +12,19 @@
     - horizon
     - all-install
     
+- import_tasks: roles/ansible-tvault-contego-extension/tasks/get_venv.yml
+  tags:
+    - horizon
+    - all-install
+    
+- name: find manage.py file
+  import_tasks: find_manage_file.yml
+  tags:
+    - horizon
+    - all-install
+    - horizon-uninstall
+    - all-uninstall
+        
 - name: install horizon plugin on controller node
   import_tasks: install_rhel.yml
   tags:
@@ -58,6 +71,12 @@
 
 - name: post uninstall horizon plugin from controller node
   import_tasks: post_uninstall.yml
+  tags:
+    - horizon-uninstall
+    - all-uninstall
+    
+- name: Remove trilio.pth file after package uninstall
+  import_tasks: remove_trilio_pth.yml
   tags:
     - horizon-uninstall
     - all-uninstall
