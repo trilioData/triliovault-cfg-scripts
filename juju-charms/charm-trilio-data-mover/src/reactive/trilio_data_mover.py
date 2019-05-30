@@ -432,7 +432,6 @@ def uninstall_plugin(pkg_name):
     retry_count = 0
     bkp_type = config('backup-target-type')
     try:
-        path = config('tvault-datamover-virtenv')
         service_stop('tvault-contego')
         os.system('sudo systemctl disable tvault-contego')
         os.system('rm -rf /etc/systemd/system/tvault-contego.service')
@@ -441,7 +440,6 @@ def uninstall_plugin(pkg_name):
             os.system('systemctl disable tvault-object-store')
             os.system('rm -rf /etc/systemd/system/tvault-object-store.service')
         os.system('sudo systemctl daemon-reload')
-        os.system('rm -rf {}'.format(path))
         os.system('rm -rf /etc/logrotate.d/tvault-contego')
         os.system('rm -rf {}'.format(config('tv-datamover-conf')))
         os.system('rm -rf /var/log/nova/tvault-contego.log')
@@ -458,7 +456,7 @@ def uninstall_plugin(pkg_name):
         for sl in sorted_list:
             umount(sl)
         # Uninstall tvault-contego package
-        apt_purge([pkg_name])
+        apt_purge([pkg_name, 'contego'])
 
         log("TrilioVault Datamover package uninstalled successfully")
         return True
