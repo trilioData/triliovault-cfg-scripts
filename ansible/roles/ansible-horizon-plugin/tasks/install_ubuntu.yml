@@ -10,6 +10,7 @@
      name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
      state: present
      allow_unauthenticated: yes
+     install_recommends: "{{ RECOMMENDS_VAR }}"
   with_items:
     - python-workloadmgrclient
     - tvault-horizon-plugin
@@ -23,6 +24,7 @@
      name: "{{ item }}={{ TVAULT_PACKAGE_VERSION }}"
      state: present
      allow_unauthenticated: yes
+     install_recommends: "{{ RECOMMENDS_VAR }}"
   with_items:
     - python3-workloadmgrclient
     - python3-tvault-horizon-plugin

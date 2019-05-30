@@ -17,7 +17,7 @@
 
 - block:
     - copy: src="{{automation_home}}/files/sync_static1.py" dest="/tmp/sync_static1.py" 
-    - shell: ./manage.py shell < /tmp/sync_static1.py &> /dev/null 
+    - shell: "{{ MANAGE_FILE }} shell < /tmp/sync_static1.py &> /dev/null" 
       args:
          chdir: "{{HORIZON_PATH}}"
     - file: path=/tmp/sync_static1.py state=absent

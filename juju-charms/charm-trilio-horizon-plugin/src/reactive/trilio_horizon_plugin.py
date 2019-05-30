@@ -4,6 +4,7 @@ from charms.reactive import (
     when,
     when_not,
     set_flag,
+    clear_flag,
     hook,
     remove_state,
     set_state,
