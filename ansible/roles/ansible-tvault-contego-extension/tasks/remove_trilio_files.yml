@@ -5,11 +5,11 @@
   register: VENVPKGLIB
 
 - set_fact:
-    VENV_PKGLIB : "{{VENVPKGLIB.stdout}}/trilio.pth"
+    TRILIO_FILE : "{{VENVPKGLIB.stdout}}/trilio.pth"
 
 - name: Removing trilio.pth file
   file:
-    path: "{{ VENV_PKGLIB }}"
+    path: "{{ TRILIO_FILE }}"
     state: absent
 
 - name: find the trilio filter file name and location
