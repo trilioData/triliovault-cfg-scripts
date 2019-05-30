@@ -1,10 +1,10 @@
 ---
 - name: Found location of trilio.pth file
   shell: "{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
-  register: TRILIOFILE
+  register: VENV_PKGLIB
 
 - set_fact:
-    TRILIO_FILE : "{{TRILIOFILE.stdout}}/trilio.pth"
+    TRILIO_FILE : "{{VENV_PKGLIB.stdout}}/trilio.pth"
 
 - name: Removing trilio.pth file
   file:
