@@ -68,16 +68,22 @@
 
 - name: get tvault contego driver file path
   shell: python -c "import contego.nova.extension.driver; print contego.nova.extension.driver.__path__[0]"
-  register: contego_driver_path
+  register: contego_driver_path_python2
   when: PYTHON_VERSION=="python2"
   
 - name: get tvault contego driver file path when using python3
   shell: python3 -c "import contego.nova.extension.driver; print(contego.nova.extension.driver.__path__[0])"
-  register: contego_driver_path
+  register: contego_driver_path_python3
   when: PYTHON_VERSION=="python3"
 
-- name: append tvault object store s3vaultfuse file path
+- name: append tvault object store s3vaultfuse file path when using python2
   set_fact:
-     s3_fuse_file: "{{contego_driver_path.stdout}}/s3vaultfuse.py"
+     s3_fuse_file: "{{contego_driver_path_python2.stdout}}/s3vaultfuse.py"
+  when: PYTHON_VERSION=="python2"
+  
+- name: append tvault object store s3vaultfuse file path when using python3
+  set_fact:
+     s3_fuse_file: "{{contego_driver_path_python3.stdout}}/s3vaultfuse.py"
+  when: PYTHON_VERSION=="python3"
   
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}

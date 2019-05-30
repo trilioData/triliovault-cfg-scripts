@@ -34,7 +34,7 @@
   copy: src="{{automation_home}}/files/sync_static.py" dest="/tmp/sync_static.py" 
  
 - name: Change the working directory to horizon and excute shell command
-  shell: ./manage.py shell < /tmp/sync_static.py &> /dev/null
+  shell: "{{ MANAGE_FILE }} shell < /tmp/sync_static.py &> /dev/null"
   args:
        chdir: "{{HORIZON_PATH}}"
 

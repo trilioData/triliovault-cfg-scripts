@@ -10,12 +10,14 @@
      name: tvault-contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
+     install_recommends: "{{ RECOMMENDS_VAR }}"
   when: PYTHON_VERSION=="python2"
-  
+
 - name: install python3-tvault-contego deb package when using python3
   apt:
      update_cache: yes
      name: python3-tvault-contego={{ TVAULT_PACKAGE_VERSION }}
      state: present
      allow_unauthenticated: yes
+     install_recommends: "{{ RECOMMENDS_VAR }}"
   when: PYTHON_VERSION=="python3"
