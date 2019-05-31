@@ -102,8 +102,10 @@ class Test(unittest.TestCase):
 
     def test_install_plugin(self):
          self.patch(plugin, 'install_plugin')
-         plugin.install_plugin('1.2.3.4', 'version')
-         self.install_plugin.assert_called_once_with('1.2.3.4', 'version')
+         self.patch(plugin, 'apt_update')
+         self.patch(plugin, 'apt_install')
+         plugin.install_plugin('triliovault-pkg-source')
+         self.install_plugin.assert_called_once_with('triliovault-pkg-source')
 
     def test_uninstall_plugin(self):
          self.patch(plugin, 'uninstall_plugin')
@@ -125,48 +127,32 @@ class Test(unittest.TestCase):
              'maintenance', 'Stopping...')
          self.remove_state.assert_called_with('trilio-horizon-plugin.stopping')
 
-    def test_invalid_ip(self):
-         self.patch(plugin, 'config')
-         self.patch(plugin, 'status_set')
-         self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
-         self.validate_ip.return_value = False
-         plugin.install_trilio_horizon_plugin()
-         self.status_set.assert_called_with(
-             'blocked',
-             'Invalid IP address, please provide correct IP address')
-         self.application_version_set.assert_called_with('Unknown')
-
     def test_valid_ip_install_pass(self):
          self.patch(plugin, 'config')
-         self.config.return_value = '1.2.3.4'
+         self.config.return_value = 'triliovault-pkg-source'
          self.patch(plugin, 'status_set')
          self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
-         self.validate_ip.return_value = True
          self.patch(plugin, 'get_new_version')
          self.get_new_version.return_value = 'Version'
          self.patch(plugin, 'install_plugin')
          self.install_plugin.return_value = True
          plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version', '/usr')
+         self.install_plugin.assert_called_with('triliovault-pkg-source')
          self.status_set.assert_called_with(
              'active', 'Ready...')
          self.application_version_set.assert_called_with('Version')
 
     def test_valid_ip_install_fail(self):
          self.patch(plugin, 'config')
-         self.config.return_value = '1.2.3.4'
+         self.config.return_value = 'triliovault-pkg-source'
          self.patch(plugin, 'status_set')
          self.patch(plugin, 'application_version_set')
-         self.patch(plugin, 'validate_ip')
-         self.validate_ip.return_value = True
          self.patch(plugin, 'get_new_version')
          self.get_new_version.return_value = 'Version'
          self.patch(plugin, 'install_plugin')
          self.install_plugin.return_value = False
          plugin.install_trilio_horizon_plugin()
-         self.install_plugin.assert_called_with('1.2.3.4', 'Version', '/usr')
+         self.install_plugin.assert_called_with('triliovault-pkg-source')
          self.status_set.assert_called_with(
              'blocked',
              'Packages installation failed.....retry..')

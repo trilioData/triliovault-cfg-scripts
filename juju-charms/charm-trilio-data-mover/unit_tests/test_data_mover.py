@@ -102,8 +102,8 @@ class Test(unittest.TestCase):
 
     def test_install_plugin(self):
          self.patch(datamover, 'install_plugin')
-         datamover.install_plugin('1.2.3.4', 'version', 'venv')
-         self.install_plugin.assert_called_once_with('1.2.3.4', 'version', 'venv')
+         datamover.install_plugin('pkg_name')
+         self.install_plugin.assert_called_once_with('pkg_name')
 
     def test_uninstall_plugin(self):
          self.patch(datamover, 'uninstall_plugin')
@@ -116,6 +116,7 @@ class Test(unittest.TestCase):
          self.install_tvault_contego_plugin.assert_called_once_with()
 
     def test_stop_tvault_contego_plugin(self):
+         self.patch(datamover, 'config')
          self.patch(datamover, 'status_set')
          self.patch(datamover, 'remove_state')
          self.patch(datamover, 'uninstall_plugin')
@@ -125,22 +126,11 @@ class Test(unittest.TestCase):
              'maintenance', 'Stopping...')
          self.remove_state.assert_called_with('tvault-contego.stopping')
 
-    def test_invalid_ip(self):
-         self.patch(datamover, 'config')
-         self.patch(datamover, 'status_set')
-         self.patch(datamover, 'validate_ip')
-         self.validate_ip.return_value = False
-         datamover.install_tvault_contego_plugin()
-         self.status_set.assert_called_with(
-             'blocked',
-             'Invalid IP address, please provide correct IP address')
-
     def test_s3_object_storage_fail(self):
          self.patch(datamover, 'config')
          self.config.return_value = 's3'
+         self.patch(datamover, 'apt_update')
          self.patch(datamover, 'status_set')
-         self.patch(datamover, 'validate_ip')
-         self.validate_ip.return_value = True
          self.patch(datamover, 'validate_backup')
          self.validate_backup.return_value = True
          self.patch(datamover, 'add_users')
@@ -157,6 +147,8 @@ class Test(unittest.TestCase):
          self.create_service_file.return_value = True
          self.patch(datamover, 'create_object_storage_service')
          self.create_object_storage_service.return_value = False
+         self.patch(datamover.os, 'system')
+         self.patch(datamover, 'log')
          datamover.install_tvault_contego_plugin()
          self.status_set.assert_called_with(
              'blocked',
@@ -164,10 +156,8 @@ class Test(unittest.TestCase):
 
     def test_s3_object_storage_pass(self):
          self.patch(datamover, 'config')
-         self.config.side_effect = ['1.2.3.4', 's3']
+         self.patch(datamover, 'apt_update')
          self.patch(datamover, 'status_set')
-         self.patch(datamover, 'validate_ip')
-         self.validate_ip.return_value = True
          self.patch(datamover, 'validate_backup')
          self.validate_backup.return_value = True
          self.patch(datamover, 'add_users')
@@ -188,6 +178,7 @@ class Test(unittest.TestCase):
          self.patch(datamover, 'set_flag')
          self.patch(datamover, 'application_version_set')
          self.patch(datamover, 'get_new_version')
+         self.patch(datamover.os, 'system')
          datamover.install_tvault_contego_plugin()
          self.service_restart.assert_called_with(
              'tvault-contego')
