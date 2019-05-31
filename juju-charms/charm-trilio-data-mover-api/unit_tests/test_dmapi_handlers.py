@@ -129,14 +129,11 @@ class TestDmapiHandlers(unittest.TestCase):
     def test_install_packages(self):
         self.patch(handlers.dmapi, 'install')
         self.patch(handlers.reactive, 'set_state')
-        self.patch(handlers, 'validate_ip')
-        self.validate_ip.return_value = True
         self.patch(handlers, 'add_user')
         self.add_user.return_value = True
-        self.patch(handlers, 'add_source')
         self.patch(handlers.os, 'system')
         self.patch(handlers, 'apt_update')
-        self.patch(handlers, 'apt_install')
+        self.patch(handlers, 'get_new_version')
         self.patch(handlers, 'service_restart')
         handlers.install_packages()
         self.install.assert_called_once_with()
@@ -168,10 +165,8 @@ class TestDmapiHandlers(unittest.TestCase):
     def test_render(self):
         self.patch(handlers.dmapi, 'render_configs')
         self.patch(handlers.dmapi, 'assess_status')
-        #self.patch(handlers.dmapi, 'upgrade_if_available')
         self.patch(handlers.dmapi, 'configure_ssl')
         handlers.render_unclustered('args')
         self.render_configs.assert_called_once_with(('args', ))
         self.assess_status.assert_called_once()
         self.configure_ssl.assert_called_once()
-        #self.upgrade_if_available.assert_called_once_with(('args', ))
