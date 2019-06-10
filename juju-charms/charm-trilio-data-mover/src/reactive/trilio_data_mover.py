@@ -397,7 +397,7 @@ def install_plugin(pkg_name):
     Install TrilioVault DataMover package
     """
     try:
-        apt_install([pkg_name], options='--no-install-recommends', fatal=True)
+        apt_install([pkg_name], ['--no-install-recommends'], fatal=True)
         log("TrilioVault DataMover package installation passed")
 
         status_set('maintenance', 'Starting...')
