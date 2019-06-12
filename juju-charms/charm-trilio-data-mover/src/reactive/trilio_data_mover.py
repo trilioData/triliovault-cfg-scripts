@@ -359,12 +359,12 @@ def create_object_storage_service():
     try:
         cmd = ['/usr/bin/python{}'.format(config('python-version')),
                'files/trilio/get_pkgs.py']
-        contego_path = check_output(cmd).decode('utf-8')
+        contego_path = check_output(cmd).decode('utf-8').strip()
     except Exception as e:
         log("Failed to get the dependent packages--{}".format(e))
         return False
 
-    storage_path = '{}/nova/extension/driver/s3vaultfuse.py'\
+    storage_path = '{}/contego/nova/extension/driver/s3vaultfuse.py'\
                    .format(contego_path)
     config_file = config('tv-datamover-conf')
     # create service file
