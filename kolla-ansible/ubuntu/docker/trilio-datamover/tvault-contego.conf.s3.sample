@@ -1,0 +1,22 @@
+[DEFAULT]
+vault_storage_type = s3
+vault_storage_nfs_export = TrilioVault
+vault_data_directory_old = /var/triliovault
+vault_data_directory = /var/lib/nova/triliovault-mounts
+log_file = /var/log/kolla/trilio-datamover/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+vault_s3_auth_version = DEFAULT
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_region_name = 
+vault_s3_bucket = 
+qemu_agent_ping_timeout=900
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
