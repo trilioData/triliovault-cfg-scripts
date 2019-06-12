@@ -4,20 +4,27 @@
      src: trilio.list
      dest: "{{trilio_apt_repo_file_path}}"
 
+
+- name: install contego virtenv deb package 
+  shell: |
+          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          apt-get install ./tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb -y 
+          rm -rf ./tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb           
+  register: tvault_conf
+
+- debug : msg="{{tvault_conf.stdout}}"
+- debug : msg="wget http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb"
+  
 - name: install tvault-contego deb package when using python2
-  apt:
-     update_cache: yes
-     name: tvault-contego={{ TVAULT_PACKAGE_VERSION }}
-     state: present
-     allow_unauthenticated: yes
-     install_recommends: "{{ RECOMMENDS_VAR }}"
+  shell: | 
+          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+          apt-get install ./tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb   
   when: PYTHON_VERSION=="python2"
 
 - name: install python3-tvault-contego deb package when using python3
-  apt:
-     update_cache: yes
-     name: python3-tvault-contego={{ TVAULT_PACKAGE_VERSION }}
-     state: present
-     allow_unauthenticated: yes
-     install_recommends: "{{ RECOMMENDS_VAR }}"
+  shell: |
+          wget http://{{ IP_ADDRESS }} :{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          apt-get install ./python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
