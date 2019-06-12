@@ -9,24 +9,18 @@
      src: trilio.list
      dest: "{{trilio_apt_repo_file_path}}"
 
-- name: install tvault-datamover-api deb package on ubuntu xenial or above when using python2
-  apt:
-     update_cache: yes
-     name: dmapi={{ TVAULT_PACKAGE_VERSION }}
-     state: present
-     allow_unauthenticated: yes
-  notify:
-      - restart tvault-datamover-api
-  when: PYTHON_VERSION=="python2" 
+- name: install tvault-datamover-api deb package when using python2
+  shell: |
+          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+          apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+  when: PYTHON_VERSION=="python2"
 
-- name: install tvault-datamover-api deb package on ubuntu xenial or above when using python3
-  apt:
-     update_cache: yes
-     name: python3-dmapi={{ TVAULT_PACKAGE_VERSION }}
-     state: present
-     allow_unauthenticated: yes
-  notify:
-      - restart tvault-datamover-api
+- name: install tvault-datamover-api deb package when using python3
+  shell: |
+          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
 
 - name: change permission of datamover log file
