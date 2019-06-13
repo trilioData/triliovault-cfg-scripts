@@ -16,7 +16,7 @@ vault_s3_bucket =
 qemu_agent_ping_timeout=900
 
 [contego_sys_admin]
-helper_command = sudo /usr/bin/privsep-helper
+helper_command = sudo /var/lib/kolla/venv/bin/privsep-helper
 
 [conductor]
 use_local = True
