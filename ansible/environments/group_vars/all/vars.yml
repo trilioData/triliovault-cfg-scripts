@@ -1,11 +1,11 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
-PORT_NO: 8081
+PORT_NO: 8085
 #Need to update python version of openstack setup Example PYTHON_VERSION: python2 or PYTHON_VERSION: python3
 PYTHON_VERSION: python2
-#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.2.38
-TVAULT_PACKAGE_VERSION: 3.2.38
+#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
+TVAULT_PACKAGE_VERSION: 3.3.36
 DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
 RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
 
@@ -66,6 +66,7 @@ VAULT_S3_ACCESS_KEY: sample_s3_access_key
 VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
+VAULT_S3_SIGNATURE_VERSION: default
 #### S3 Specific Backend Configurations
 #### Provide one of follwoing two values in s3_type variable, string's case should be match
 #Amazon/Other_S3_Compatible
@@ -130,6 +131,7 @@ redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
 Amazon: "Amazon"
+Other_S3_Compatible: "Other_S3_Compatible"
 Ceph_S3: "Ceph_S3"
 Minio_S3: "Minio_S3"
 TEMPAUTH: "TEMPAUTH" 
