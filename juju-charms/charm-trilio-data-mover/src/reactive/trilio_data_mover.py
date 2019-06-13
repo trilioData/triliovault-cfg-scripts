@@ -180,7 +180,6 @@ def create_virt_env(pkg_name):
     usr = config('tvault-datamover-ext-usr')
     grp = config('tvault-datamover-ext-group')
     path = config('tvault-datamover-virtenv')
-    venv_path = config('tvault-datamover-virtenv-path')
 
     dm_ver = None
 
@@ -197,30 +196,6 @@ def create_virt_env(pkg_name):
     if not install_plugin(pkg_name):
         return False
 
-    # Get dependent libraries paths
-    try:
-        cmd = ['/usr/bin/python{}'.format(config('python-version')),
-               'files/trilio/get_pkgs.py']
-        sym_link_paths = check_output(cmd).decode('utf-8').strip().split('\n')
-    except Exception as e:
-        log("Failed to get the dependent packages--{}".format(e))
-        return False
-
-    # Create symlinks of the dependent libraries
-    venv_pkg_path = '{}/lib/python2.7/site-packages/'.format(venv_path)
-    os.system('rm -rf {}/cryptography'.format(venv_pkg_path))
-    os.system('rm -rf {}/cffi'.format(venv_pkg_path))
-    os.system('rm -rf {}/contego'.format(venv_pkg_path))
-
-    symlink(sym_link_paths[0], '{}/cryptography'.format(venv_pkg_path))
-    symlink(sym_link_paths[2], '{}/cffi'.format(venv_pkg_path))
-    symlink(sym_link_paths[4], '{}/contego'.format(venv_pkg_path))
-
-    os.system(
-        'cp {} {}/libvirtmod.so'.format(sym_link_paths[1], venv_pkg_path))
-    os.system(
-        'cp {} {}/_cffi_backend.so'.format(sym_link_paths[3], venv_pkg_path))
-
     # change virtenv dir(/home/tvault) users to nova
     chownr(path, usr, grp)
 
@@ -230,7 +205,7 @@ def create_virt_env(pkg_name):
     os.system(
         'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
 
-    return sym_link_paths
+    return True
 
 
 def ensure_files():
@@ -372,15 +347,24 @@ def create_service_file():
     return True
 
 
-def create_object_storage_service(pkg_loc):
+def create_object_storage_service():
     """
     Creates object storage service file.
     """
     usr = config('tvault-datamover-ext-usr')
     grp = config('tvault-datamover-ext-group')
     venv_path = config('tvault-datamover-virtenv-path')
-    contego_path = pkg_loc[4]
-    storage_path = '{}/nova/extension/driver/s3vaultfuse.py'\
+
+    # Get dependent libraries paths
+    try:
+        cmd = ['/usr/bin/python{}'.format(config('python-version')),
+               'files/trilio/get_pkgs.py']
+        contego_path = check_output(cmd).decode('utf-8').strip()
+    except Exception as e:
+        log("Failed to get the dependent packages--{}".format(e))
+        return False
+
+    storage_path = '{}/contego/nova/extension/driver/s3vaultfuse.py'\
                    .format(contego_path)
     config_file = config('tv-datamover-conf')
     # create service file
@@ -413,7 +397,7 @@ def install_plugin(pkg_name):
     Install TrilioVault DataMover package
     """
     try:
-        apt_install([pkg_name], fatal=True)
+        apt_install([pkg_name], ['--no-install-recommends'], fatal=True)
         log("TrilioVault DataMover package installation passed")
 
         status_set('maintenance', 'Starting...')
@@ -525,7 +509,7 @@ def install_tvault_contego_plugin():
         status_set('blocked', 'Failed while creating DataMover service file')
         return
 
-    if bkp_type == 's3' and not create_object_storage_service(pkg_loc):
+    if bkp_type == 's3' and not create_object_storage_service():
         log("Failed while creating Object Store service file")
         status_set('blocked', 'Failed while creating ObjectStore service file')
         return

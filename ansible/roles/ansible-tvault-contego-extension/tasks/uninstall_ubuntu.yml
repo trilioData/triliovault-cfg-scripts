@@ -9,6 +9,13 @@
 
 - name: uninstall tvault-contego deb package when using python2
   apt:
+     name: contego
+     state: absent
+     allow_unauthenticated: yes
+     purge: yes
+
+- name: uninstall tvault-contego deb package when using python2
+  apt:
      name: tvault-contego
      state: absent
      allow_unauthenticated: yes
