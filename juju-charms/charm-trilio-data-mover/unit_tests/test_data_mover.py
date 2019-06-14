@@ -130,6 +130,7 @@ class Test(unittest.TestCase):
          self.patch(datamover, 'config')
          self.config.return_value = 's3'
          self.patch(datamover, 'apt_update')
+         self.patch(datamover, 'apt_upgrade')
          self.patch(datamover, 'status_set')
          self.patch(datamover, 'validate_backup')
          self.validate_backup.return_value = True
@@ -157,6 +158,7 @@ class Test(unittest.TestCase):
     def test_s3_object_storage_pass(self):
          self.patch(datamover, 'config')
          self.patch(datamover, 'apt_update')
+         self.patch(datamover, 'apt_upgrade')
          self.patch(datamover, 'status_set')
          self.patch(datamover, 'validate_backup')
          self.validate_backup.return_value = True
