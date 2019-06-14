@@ -26,6 +26,7 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.fetch import (
     apt_install,
     apt_update,
+    apt_upgrade,
     apt_purge,
     filter_missing_packages,
 )
@@ -468,6 +469,7 @@ def install_tvault_contego_plugin():
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
                config('triliovault-pkg-source')))
     apt_update()
+    apt_upgrade(fatal=True, dist=True)
 
     # Valildate backup target
     if not validate_backup():
@@ -559,7 +561,10 @@ def stop_tvault_contego_plugin():
 
 @hook('upgrade-charm')
 def upgrade_charm():
-    # Clear the flag
+    venv_path = config('tvault-datamover-virtenv-path')
+    # remove old venv if it exists
+    os.system('rm -rf {}'.format(venv_path))
+
     clear_flag('tvault-contego.installed')
 
 
