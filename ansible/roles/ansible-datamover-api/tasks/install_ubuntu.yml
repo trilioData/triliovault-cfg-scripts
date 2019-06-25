@@ -11,14 +11,14 @@
 
 - name: install tvault-datamover-api deb package when using python2
   shell: |
-          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
           apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
           rm -rf dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python2"
 
 - name: install tvault-datamover-api deb package when using python3
   shell: |
-          wget http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
           rm -rf python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
