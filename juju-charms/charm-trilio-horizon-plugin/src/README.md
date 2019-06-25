@@ -10,7 +10,7 @@ and relies on services from openstack-dashboard.
 
 Steps to deploy the charm:
 
-juju deploy trilio-horizon-plugin --config "triliovault-ip=1.2.3.4"
+juju deploy trilio-horizon-plugin
 
 juju deploy openstack-dashboard
 
@@ -18,9 +18,15 @@ juju add-relation trilio-horizon-plugin openstack-dashboard
 
 # Configuration
 
-triliovault-ip - IP Address of the TrilioVault Appliance
+python-version: "Openstack base python version(2 or 3)"
 
-TrilioVault appliance should be up and running before deploying this charm.
+NOTE - Default value is set to "3". Please ensure to update this based on python version since installing
+       python3 packages on python2 based setup might have unexpected impact.
+
+TrilioVault Packages are downloaded from the repository added in below config parameter. Please change this only if you wish to download
+TrilioVault Packages from a different source.
+
+triliovault-pkg-source: Repository address of triliovault packages
 
 # Contact Information
 
