@@ -75,6 +75,7 @@ Steps to deploy the charm:
 
       TrilioVault Packages are downloaded from the repository added in below config parameter. Please change this only if you wish to download
       TrilioVault Packages from a different source. This option is same for all 3 charms.
+
          triliovault-pkg-source: Repository address of triliovault packages
 
       The configuration options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
