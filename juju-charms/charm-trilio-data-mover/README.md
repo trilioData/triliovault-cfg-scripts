@@ -22,7 +22,9 @@ juju add-relation trilio-data-mover nova-compute
 
 Please provide below configuration options using a config file:
 
-triliovault-ip: IP Address of the TrilioVault Appliance
+python-version: "Openstack base python version(2 or 3)"
+NOTE - Default value is set to "3". Please ensure to update this based on python version since installing
+       python3 packages on python2 based setup might have unexpected impact.
 
 backup-target-type: Backup target type e.g. nfs or s3
 
@@ -52,9 +54,11 @@ For non-AWS S3 backup target:
 
     tv-s3-bucket: S3 bucket name
 
-TrilioVault appliance should be up and running before deploying this charm.
-
 The configuration options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
+
+TrilioVault Packages are downloaded from the repository added in below config parameter. Please change this only if you wish to download
+TrilioVault Packages from a different source. 
+    triliovault-pkg-source: Repository address of triliovault packages
 
 # Contact Information
 
