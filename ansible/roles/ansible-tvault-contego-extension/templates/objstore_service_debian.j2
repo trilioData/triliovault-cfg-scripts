@@ -4,6 +4,8 @@ author "TrilioData <info@triliodata.com>"
 start on (filesystem and net-device-up IFACE!=lo)
 stop on runlevel [016]
 respawn
+limit nofile 500000  500000
+limit nproc 500000 500000
 chdir /var/run
 pre-start script
     if [ ! -d /var/run/{{TVAULT_CONTEGO_EXT_USER}} ]; then
