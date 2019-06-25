@@ -24,6 +24,7 @@ juju add-relation trilio-dm-api keystone
 # Configuration
 
 python-version: "Openstack base python version(2 or 3)"
+
 NOTE - Default value is set to "3". Please ensure to update this based on python version since installing
        python3 packages on python2 based setup might have unexpected impact.
 
