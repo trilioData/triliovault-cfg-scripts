@@ -47,3 +47,14 @@ cp ${basedir}/trilio.repo.template ${basedir}/etc/yum.repos.d/trilio.repo
 sed -i "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
 /usr/bin/tar -cvzf triliorepo.tgz etc
 /usr/bin/upload-swift-artifacts -f triliorepo.tgz -f $rpm1 --environment ${basedir}/trilio_artifacts.yaml
+
+
+rm -rf trilio-puppet-module
+mkdir trilio-puppet-module
+cp -R puppet/trilio trilio-puppet-module/
+upload-puppet-modules -d trilio-puppet-module
+
+
+##Merge both templates in one file
+tail -1 ${basedir}/trilio_artifacts.yaml >> ~/.tripleo/environments/puppet-modules-url.yaml
+rm -f ${basedir}/trilio_artifacts.yaml
