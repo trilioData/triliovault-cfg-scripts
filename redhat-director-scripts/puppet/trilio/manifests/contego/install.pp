@@ -20,6 +20,10 @@ class trilio::contego::install inherits trilio::contego {
         owner  => $contego_user,
         group  => $contego_group,
     }
+    package { 'puppet-triliovault':
+        ensure   => present,
+        provider => 'yum',
+    }->
 
     package { 'tvault-contego':
         ensure   => present,
