@@ -31,7 +31,6 @@ tvault_version=`curl -s http://${tvault_ip}:8081/packages/ | grep tvault-contego
 tvault_release=`echo $tvault_version | awk '{split($0,a,"."); print a[1], a[2]}'`
 tvault_release=`echo $tvault_release | sed 's/\ /\./'`
 
-##Create template to upload trilio.repo to overcloud nodes
 rm -rf etc/
 rm -f triliorepo.tgz
 mkdir -p ${basedir}/etc/yum.repos.d/
@@ -40,11 +39,12 @@ sed -i "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
 /usr/bin/tar -cvzf triliorepo.tgz etc
 /usr/bin/upload-swift-artifacts -f triliorepo.tgz --environment ${basedir}/trilio_artifacts.yaml
 
-##Create template to upload trilio puppet module to all overcloud nodes
+
 rm -rf trilio-puppet-module
 mkdir trilio-puppet-module
 cp -R puppet/trilio trilio-puppet-module/
 upload-puppet-modules -d trilio-puppet-module
+
 
 ##Merge both templates in one file
 tail -1 ${basedir}/trilio_artifacts.yaml >> ~/.tripleo/environments/puppet-modules-url.yaml
