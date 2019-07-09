@@ -33,6 +33,25 @@
       when: ansible_distribution == ubuntu and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
   when: (object_store == True)
 
+- name: enable and daemon reload tvault contego service
+  block:
+    - shell: systemctl daemon-reload
+    - name: enable tvault-contego service and reload it
+      service: name=tvault-contego  state=restarted enabled=yes
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution== suse) or (ansible_distribution== SLES) or
+       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))
+
+- name: restart tvault-contego
+  service: name=tvault-contego state=restarted
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution== suse) or (ansible_distribution== SLES) or
+       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))
+
 - name: copy object store service file , write content , enable and daemon reload service if object restore is True
   block:
     - shell: systemctl daemon-reload

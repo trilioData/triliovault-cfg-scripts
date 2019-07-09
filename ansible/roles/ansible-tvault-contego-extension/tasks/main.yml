@@ -22,7 +22,14 @@
        - contego
        - contego-extension
        - all-install
-  
+       
+- name: check if user using custom virtual environment
+  import_tasks: get_venv.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+       
 - name: validate NFS bkp target is reachable
   import_tasks: nfs.yml
   when: NFS == True
@@ -177,3 +184,10 @@
        - contego-uninstall
        - contego-extension-uninstall
        - all-uninstall
+ 
+- name: Remove trilio.filters and trilio.pth files after uninstall
+  import_tasks: remove_trilio_files.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall 
