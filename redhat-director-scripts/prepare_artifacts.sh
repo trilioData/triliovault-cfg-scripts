@@ -31,18 +31,24 @@ tvault_version=`curl -s http://${tvault_ip}:8081/packages/ | grep tvault-contego
 tvault_release=`echo $tvault_version | awk '{split($0,a,"."); print a[1], a[2]}'`
 tvault_release=`echo $tvault_release | sed 's/\ /\./'`
 
-rm -rf etc/
-rm -f triliorepo.tgz
-mkdir -p ${basedir}/etc/yum.repos.d/
-cp ${basedir}/trilio.repo.template ${basedir}/etc/yum.repos.d/trilio.repo
-sed -i "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
+sudo rm -f etc/yum.repos.d/trilio.repo
+sudo rm -f triliorepo.tgz
+sudo mkdir -p ${basedir}/etc/yum.repos.d/
+sudo cp ${basedir}/trilio.repo.template ${basedir}/etc/yum.repos.d/trilio.repo
+sudo sed -i "s/TVAULTIP/${tvault_ip}/" ${basedir}/etc/yum.repos.d/trilio.repo
+sudo chmod 755 ${basedir}/etc
+sudo chmod 755 ${basedir}/etc/yum.repos.d
+sudo chmod 644 ${basedir}/etc/yum.repos.d/trilio.repo
+sudo chown -R root:root ${basedir}/etc
 /usr/bin/tar -cvzf triliorepo.tgz etc
 /usr/bin/upload-swift-artifacts -f triliorepo.tgz --environment ${basedir}/trilio_artifacts.yaml
 
 
-rm -rf trilio-puppet-module
-mkdir trilio-puppet-module
-cp -R puppet/trilio trilio-puppet-module/
+sudo rm -rf trilio-puppet-module
+sudo mkdir trilio-puppet-module
+sudo cp -R puppet/trilio trilio-puppet-module/
+sudo chmod 777 trilio-puppet-module/trilio
+sudo chown -R root:root trilio-puppet-module/
 upload-puppet-modules -d trilio-puppet-module
 
 
