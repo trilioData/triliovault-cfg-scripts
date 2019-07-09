@@ -381,6 +381,8 @@ def create_object_storage_service():
     tv_config.set('Service', 'User', usr)
     tv_config.set('Service', 'Group', grp)
     tv_config.set('Service', 'Type', 'simple')
+    tv_config.set('Service', 'LimitNOFILE', 500000)
+    tv_config.set('Service', 'LimitNPROC', 500000)
     tv_config.set('Service', 'ExecStart', exec_start)
     tv_config.set('Service', 'TimeoutStopSec', 20)
     tv_config.set('Service', 'KillMode', 'process')
