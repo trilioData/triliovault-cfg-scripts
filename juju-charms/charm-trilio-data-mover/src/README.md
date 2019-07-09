@@ -22,41 +22,45 @@ juju add-relation trilio-data-mover nova-compute
 
 Please provide below configuration options using a config file:
 
-triliovault-ip: IP Address of the TrilioVault Appliance
+python-version: "Openstack base python version(2 or 3)"
 
-tvault-datamover-ext-usr: User name e.g. "nova"
-
-tvault-datamover-ext-group: Group name e.g. "nova"
-
-tvault-datamover-virtenv: Virtual env e.g. /home/tvault/.virtenv
-
-tvault-datamover-virtenv-path: Virtual env path e.g. /home/tvault
-
-tv-datamover-conf: Config file e.g. /etc/tvault-contego/tvault-contego.conf
+NOTE - Default value is set to "3". Please ensure to update this based on python version since installing
+       python3 packages on python2 based setup might have unexpected impact.
 
 backup-target-type: Backup target type e.g. nfs or s3
 
-nfs-shares: NFS Shares mount source path only for nfs backup target
+For NFS backup target:
 
-tv-data-dir: TrilioVault data dir e.g. /var/triliovault-mounts
+    nfs-shares: NFS Shares IP address only for nfs backup target
 
-tv-data-dir-old: Old TrilioVault data dir e.g. /var/triliovault
+For Amazon S3 backup target:
 
-tv-s3-secret-key: S3 secret access key
+    tv-s3-secret-key: S3 secret access key
 
-tv-s3-access-key: S3 access key
+    tv-s3-access-key: S3 access key
 
-tv-s3-type: S3 type e.g. Amazon
+    tv-s3-region-name: S3 region name
 
-tv-s3-region-name: S3 region name
+    tv-s3-bucket: S3 bucket name
 
-tv-s3-bucket: S3 bucket name
+For non-AWS S3 backup target:
 
-tv-s3-endpoint-url: S3endpoint URL
+    tv-s3-secret-key: S3 secret access key
 
-tv-s3-secure: true or false
+    tv-s3-access-key: S3 access key
 
-TrilioVault appliance should be up and running before deploying this charm.
+    tv-s3-endpoint-url: S3 endpoint URL
+
+    tv-s3-region-name: S3 region name
+
+    tv-s3-bucket: S3 bucket name
+
+The configuration options need to be updated based on the S3 specific requirements and the parameters that are not needed can be omitted.
+
+TrilioVault Packages are downloaded from the repository added in below config parameter. Please change this only if you wish to download
+TrilioVault Packages from a different source. 
+
+    triliovault-pkg-source: Repository address of triliovault packages
 
 # Contact Information
 
