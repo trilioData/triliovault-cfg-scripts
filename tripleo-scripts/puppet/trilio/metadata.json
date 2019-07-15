@@ -1,0 +1,14 @@
+{
+  "name": "shyambiradar-trilio",
+  "version": "3.0.0",
+  "author": "shyambiradar",
+  "summary": "Designed to deploy TrilioData's TrilioVault product",
+  "license": "Apache 2.0",
+  "source": "https://github.com/shyam-biradar/trilio_puppet_module.git",
+  "project_page": "https://github.com/shyam-biradar/trilio_puppet_module",
+  "issues_url": "https://github.com/shyam-biradar/trilio_puppet_module/issues",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ]
+}
+
