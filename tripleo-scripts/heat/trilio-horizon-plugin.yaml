@@ -1,0 +1,38 @@
+heat_template_version: 2016-10-14
+
+description: >
+  Trilio service configured with Puppet
+
+parameters:
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  Debug:
+    default: ''
+    description: Set to True to enable debugging on all services.
+    type: string
+  DefaultPasswords:
+    default: {}
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  HorizonDir:
+    default: ''
+    description: Openstack horizon directory
+    type: string
+
+
+outputs:
+  role_data:
+    description: Role data for the trilio role.
+    value:
+      config_settings:
+        trilio::horizon::horizon_dir: {get_param: HorizonDir}
+      step_config: |
+        include ::trilio::tripleo::horizon
