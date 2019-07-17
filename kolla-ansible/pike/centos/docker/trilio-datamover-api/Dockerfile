@@ -14,11 +14,8 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
 USER root
 
 ##Install datamover packages
-# This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
-
-RUN echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /" >> /etc/apt/sources.list.d/trilio.list \
- && apt-get update -y \
- && apt-get install -y dmapi --allow-unauthenticated
+ADD trilio.repo /etc/yum.repos.d/
+RUN yum install dmapi -y
 
 
 RUN mkdir -p /var/log/dmapi/ \
@@ -29,6 +26,11 @@ RUN mkdir -p /var/log/dmapi/ \
  && chown -R nova:nova /var/log/kolla/dmapi \
  && chown nova:nova /var/cache/dmapi/ \
  && rm /etc/dmapi/dmapi.conf
+
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Copy license file
 RUN mkdir /licenses
