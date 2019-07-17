@@ -13,18 +13,8 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 ##Install datamover packages
-# This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
-RUN rm -f /etc/nova/rootwrap.conf \
- && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /" >> /etc/apt/sources.list.d/trilio.list \
- && apt-get update -y \
- && apt-get install -y tvault-contego --allow-unauthenticated
-
-
-##Download virtenv
-RUN mkdir -p /home/tvault \
-  && curl -o /home/tvault/tvault-contego-virtenv.tar.gz http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/virtenv/queens/ubuntu/tvault-contego-virtenv.tar.gz \
-  && tar -xzf /home/tvault/tvault-contego-virtenv.tar.gz -C /home/tvault/ \
-  && chown -R nova:nova /home/tvault/
+ADD trilio.repo /etc/yum.repos.d/
+RUN yum install tvault-contego puppet-triliovault -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
@@ -50,6 +40,9 @@ RUN mkdir -p /var/triliovault-mounts \
 
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Add license
 RUN mkdir /licenses
