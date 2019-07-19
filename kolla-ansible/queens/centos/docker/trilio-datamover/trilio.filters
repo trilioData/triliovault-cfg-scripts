@@ -1,0 +1,4 @@
+[Filters]
+# mount and unmout filter
+mount: CommandFilter, mount, root
+umount: CommandFilter, umount, root
