@@ -21,12 +21,12 @@ class trilio::contego::install inherits trilio::contego {
         group  => $contego_group,
     }
     package { 'puppet-triliovault':
-        ensure   => present,
+        ensure   => latest,
         provider => 'yum',
     }->
 
     package { 'tvault-contego':
-        ensure   => present,
+        ensure   => latest,
         provider => 'yum',
         notify   => Service['tvault-contego'],
     }
