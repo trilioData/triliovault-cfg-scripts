@@ -3,13 +3,13 @@ class trilio::horizon (
 ){
 
     package { 'python-workloadmgrclient':
-        ensure   => present,
+        ensure   => latest,
         provider => 'yum',
         notify   => Service['httpd'],
     }->
 
     package { 'tvault-horizon-plugin':
-        ensure   => present,
+        ensure   => latest,
         provider => 'yum',
         notify   => Service['httpd'],
     }->
