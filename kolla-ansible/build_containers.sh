@@ -23,17 +23,17 @@ fi
 
 
 ## Create Pike containers
-echo -e "Creating trilio-datamover container for pike centos"
-cd $base_dir/pike/centos/docker/trilio-datamover/
-docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-pike .
-cd $base_dir/pike/centos/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-pike .
+#echo -e "Creating trilio-datamover container for pike centos"
+#cd $base_dir/pike/centos/docker/trilio-datamover/
+#docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-pike .
+#cd $base_dir/pike/centos/docker/trilio-datamover-api/
+#docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-pike .
 
-echo -e "Creating trilio-datamover container for pike ubuntu"
-cd $base_dir/pike/ubuntu/docker/trilio-datamover/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-pike .
-cd $base_dir/pike/ubuntu/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-pike .
+#echo -e "Creating trilio-datamover container for pike ubuntu"
+#cd $base_dir/pike/ubuntu/docker/trilio-datamover/
+#docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-pike .
+#cd $base_dir/pike/ubuntu/docker/trilio-datamover-api/
+#docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-pike .
 
 ##Queens
 echo -e "Creating trilio-datamover container for queens centos"
