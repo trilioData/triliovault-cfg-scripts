@@ -2,7 +2,7 @@
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
 vault_data_directory_old = /var/triliovault
-vault_data_directory = /var/lib/nova/triliovault-mounts
+vault_data_directory = /var/triliovault-mounts
 log_file = /var/log/kolla/trilio-datamover/tvault-contego.log
 debug = False
 verbose = True
