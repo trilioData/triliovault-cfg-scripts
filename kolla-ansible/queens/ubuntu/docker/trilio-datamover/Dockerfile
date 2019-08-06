@@ -13,9 +13,8 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 ##Install datamover packages
-# This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
 RUN rm -f /etc/nova/rootwrap.conf \
- && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /" >> /etc/apt/sources.list.d/trilio.list \
+ && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list \
  && apt-get update -y \
  && apt-get install -y tvault-contego --allow-unauthenticated
 
