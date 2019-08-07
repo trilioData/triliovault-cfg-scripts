@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="3.3.0" \
-      release="3.3" \
+      version="3.4.0" \
+      release="3.4" \
       summary="TrilioData Datamover" \
       description="TrilioData Datamover"
 
@@ -13,9 +13,8 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 ##Install datamover packages
-# This IP (10.17.0.12) is the TrilioVault VM, only accessible for now
 RUN rm -f /etc/nova/rootwrap.conf \
- && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /" >> /etc/apt/sources.list.d/trilio.list \
+ && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list \
  && apt-get update -y \
  && apt-get install -y tvault-contego --allow-unauthenticated
 
