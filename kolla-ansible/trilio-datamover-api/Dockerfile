@@ -1,11 +1,11 @@
-FROM kolla/centos-source-nova-api:pike
+FROM kolla/centos-source-nova-api:queens
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="3.3.0" \
-      release="3.3" \
+      version="3.4.0" \
+      release="3.4" \
       summary="TrilioData trilio-datamover-api" \
       description="TrilioData trilio-datamover-api"
 
@@ -17,7 +17,6 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
 
-
 RUN mkdir -p /var/log/dmapi/ \
     /var/cache/dmapi/ \
     /etc/nova \
@@ -26,7 +25,6 @@ RUN mkdir -p /var/log/dmapi/ \
  && chown -R nova:nova /var/log/kolla/dmapi \
  && chown nova:nova /var/cache/dmapi/ \
  && rm /etc/dmapi/dmapi.conf
-
 
 ##Clean subscription
 RUN yum clean all
