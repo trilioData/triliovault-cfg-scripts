@@ -30,7 +30,7 @@ do
     do
 
 		build_dir=tmp_docker_${openstack_release}_${openstack_platform}
-
+                rm -rf $base_dir/${build_dir}
         	mkdir -p $base_dir/${build_dir}
 		cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
 		cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/

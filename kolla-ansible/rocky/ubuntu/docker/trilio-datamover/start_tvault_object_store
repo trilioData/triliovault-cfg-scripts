@@ -1,5 +1,0 @@
-#!/bin/bash
-
-/home/tvault/.virtenv/bin/python \
-/usr/lib/python2.7/site-packages/contego/nova/extension/driver/s3vaultfuse.py \
---config-file=/etc/tvault-contego/tvault-contego.conf
