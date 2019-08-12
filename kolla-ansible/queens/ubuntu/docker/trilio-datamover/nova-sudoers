@@ -1,2 +1,0 @@
-nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
-nova ALL = (root) NOPASSWD: /var/lib/kolla/venv/bin/privsep-helper *
