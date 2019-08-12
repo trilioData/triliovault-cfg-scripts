@@ -1,5 +1,0 @@
-#!/bin/bash
-
-/var/lib/kolla/venv/bin/python /usr/bin/tvault-contego \
-  --config-file=/etc/nova/nova.conf \
-    --config-file=/etc/tvault-contego/tvault-contego.conf

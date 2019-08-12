@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
 
 set -e
-
 
 if [ $# -lt 1 ];then
    echo "Script takes exacyly 1 argument"
@@ -12,66 +11,45 @@ fi
 tvault_version=$1
 
 
-
 current_dir=$(pwd)
-base_dir=$(dirname $0)
+base_dir="$(dirname $0)"
 
 if [ $base_dir = '.' ]
 then
 base_dir="$current_dir"
 fi
 
+declare -a openstack_releases=("queens" "rocky" "stein")
 
-## Create Pike containers
-#echo -e "Creating trilio-datamover container for pike centos"
-#cd $base_dir/pike/centos/docker/trilio-datamover/
-#docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-pike .
-#cd $base_dir/pike/centos/docker/trilio-datamover-api/
-#docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-pike .
+declare -a openstack_platforms=("centos" "ubuntu")
 
-#echo -e "Creating trilio-datamover container for pike ubuntu"
-#cd $base_dir/pike/ubuntu/docker/trilio-datamover/
-#docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-pike .
-#cd $base_dir/pike/ubuntu/docker/trilio-datamover-api/
-#docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-pike .
+## now loop through the above array
+for openstack_release in "${openstack_releases[@]}"
+do
+    for openstack_platform in "${openstack_platforms[@]}"
+    do
 
-##Queens
-echo -e "Creating trilio-datamover container for queens centos"
-cd $base_dir/queens/centos/docker/trilio-datamover/
-docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-queens .
-cd $base_dir/queens/centos/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-queens .
+		build_dir=tmp_docker_${openstack_release}_${openstack_platform}
+                rm -rf $base_dir/${build_dir}
+        	mkdir -p $base_dir/${build_dir}
+		cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
+		cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
 
-echo -e "Creating trilio-datamover container for queens ubuntu"
-cd $base_dir/queens/ubuntu/docker/trilio-datamover/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-queens .
-cd $base_dir/queens/ubuntu/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-queens .
+		#Build trilio-datamover containers
+		echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
+		cd $base_dir/${build_dir}/trilio-datamover/
+		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
+		docker build --no-cache -t trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release} .
 
 
-##Rocky
-echo -e "Creating trilio-datamover container for rocky centos"
-cd $base_dir/rocky/centos/docker/trilio-datamover/
-docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-rocky .
-cd $base_dir/rocky/centos/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-rocky .
+		#Build trilio_datamover-api containers
+		echo -e "Creating trilio-datamover container-api for kolla ${openstack_release} ${openstack_platform}"
+		cd $base_dir/${build_dir}/trilio-datamover-api/
+		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
+		docker build --no-cache -t trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release} .
 
-echo -e "Creating trilio-datamover container for rocky ubuntu"
-cd $base_dir/rocky/ubuntu/docker/trilio-datamover/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-rocky .
-cd $base_dir/rocky/ubuntu/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-rocky .
+		# Clean the build_dir
+		rm -rf $base_dir/${build_dir}
 
-
-##Stein
-echo -e "Creating trilio-datamover container for stein centos"
-cd $base_dir/stein/centos/docker/trilio-datamover/
-docker build --no-cache -t trilio/centos-source-trilio-datamover:${tvault_version}-stein .
-cd $base_dir/stein/centos/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/centos-source-trilio-datamover-api:${tvault_version}-stein .
-
-echo -e "Creating trilio-datamover container for stein ubuntu"
-cd $base_dir/stein/ubuntu/docker/trilio-datamover/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover:${tvault_version}-stein .
-cd $base_dir/stein/ubuntu/docker/trilio-datamover-api/
-docker build --no-cache -t trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-stein .
+    done
+done
