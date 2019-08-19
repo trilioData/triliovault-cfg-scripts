@@ -13,6 +13,10 @@ vault_s3_access_key_id =
 vault_s3_secret_access_key = 
 vault_s3_region_name = 
 vault_s3_bucket = 
+
+##'vault_s3_endpoint_url' parameter is valid only for non amazon S3 backup targets 
+vault_s3_endpoint_url = 
+
 qemu_agent_ping_timeout=900
 
 [contego_sys_admin]
