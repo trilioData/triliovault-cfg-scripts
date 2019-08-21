@@ -40,7 +40,7 @@ auth_type = password
 user_domain_id = default
 memcache_security_strategy = ENCRYPT
 memcache_secret_key = zXNAkiAP96xgFkEjoYlg5wWUJJVitvc2axTB3jRb
-
+insecure = True
 
 [oslo_messaging_notifications]
 transport_url = rabbit://openstack:PiTBwZyWUOPVhws2RdaM7IiB1cBV8mjAPqx3FO5b@192.168.122.150:5672
