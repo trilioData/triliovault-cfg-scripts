@@ -83,7 +83,7 @@ outputs:
               merge: true
               preserve_properties: true
           permissions:
-            - path: /var/log/dmapi
+            - path: /var/log/trilio-datamover-api
               owner: nova:nova
               recurse: true
       docker_config:
