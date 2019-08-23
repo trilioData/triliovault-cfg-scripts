@@ -112,7 +112,11 @@ outputs:
             - source: "/var/lib/kolla/config_files/src-ceph/"
               dest: "/etc/ceph/"
               merge: true
-              preserve_properties: true 
+              preserve_properties: true
+          permissions:
+            - path: /var/log/trilio-datamover
+              owner: nova:nova
+              recurse: true 
       docker_config:
         step_5:
           trilio_datamover:
