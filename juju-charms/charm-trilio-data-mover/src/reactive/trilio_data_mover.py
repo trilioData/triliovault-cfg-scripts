@@ -337,6 +337,7 @@ def create_service_file():
     tv_config.set('Service', 'Group', grp)
     tv_config.set('Service', 'Type', 'simple')
     tv_config.set('Service', 'ExecStart', exec_start)
+    tv_config.set('Service', 'MemoryMax', '10G')
     tv_config.set('Service', 'TimeoutStopSec', 20)
     tv_config.set('Service', 'KillMode', 'process')
     tv_config.set('Service', 'Restart', 'always')
