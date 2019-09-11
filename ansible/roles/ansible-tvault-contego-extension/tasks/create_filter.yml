@@ -1,15 +1,15 @@
 ---
-- name: create trilio.filters for mount and unmount for RHEL
-  template:
-     src: trilio.filters.j2
-     dest: "{{FILTERS_FILE_PATH_RHEL}}"
-  when: ansible_os_family == "RedHat"
+- name: find the trilio filter file name and location
+  shell: "echo {{NOVA_COMPUTE_FILTERS_FILE}} | sed 's/compute.filters//'"
+  register: TRILIOFILTER
 
-- name: create trilio.filters for mount and unmount for Debian
+- set_fact:
+    TRILIO_FILTER : "{{TRILIOFILTER.stdout}}"
+
+- name: create trilio.filters for mount and unmount
   template:
      src: trilio.filters.j2
-     dest: "{{FILTERS_FILE_PATH_DEBIAN}}"
-  when: ansible_os_family == "Debian"
+     dest: "{{TRILIO_FILTER}}trilio.filters"
 
 - name: find location of nova sudoers file
   shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
@@ -27,6 +27,9 @@
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
     output.stdout != ""
+
+- set_fact: 
+      privsep_bin_path: ""
 
 - name: Added nova sudoers file if not exist
   template: src=nova.j2 dest=/etc/sudoers.d/nova mode=644

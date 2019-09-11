@@ -5,7 +5,9 @@ After=tvault-contego.service
 User={{TVAULT_CONTEGO_EXT_USER}}
 Group={{TVAULT_CONTEGO_EXT_USER}}
 Type=simple
-ExecStart={{PYTHON_EXEC}} {{s3_fuse_file}} --config-file={{TVAULT_CONTEGO_CONF}}
+LimitNOFILE=500000
+LimitNPROC=500000
+ExecStart={{TVAULT_CONTEGO_EXT_PYTHON}} {{s3_fuse_file}} --config-file={{TVAULT_CONTEGO_CONF}}
 TimeoutStopSec=20
 KillMode=process
 Restart=on-failure

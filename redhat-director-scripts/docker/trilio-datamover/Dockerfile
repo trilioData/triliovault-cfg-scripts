@@ -34,6 +34,8 @@ RUN mkdir -p /var/triliovault
 RUN chmod 777 /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault
 RUN chmod 777 /var/triliovault
+RUN mkdir -p /var/log/trilio-datamover
+RUN chown nova:nova /var/log/trilio-datamover
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
 ##Clean subscription
