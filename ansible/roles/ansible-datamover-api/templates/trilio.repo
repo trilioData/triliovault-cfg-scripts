@@ -1,5 +1,5 @@
 [trilio]
 name=Trilio Repository
-baseurl={{ RPM_PACKAGE_REPO_URL }}
+baseurl=http://{{IP_ADDRESS}}:8085/yum-repo/queens/
 enabled=1
 gpgcheck=0

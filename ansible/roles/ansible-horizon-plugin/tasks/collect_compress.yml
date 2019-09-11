@@ -1,19 +1,15 @@
 ---
-- name: find location of manage.py 
-  shell: find / -name "*manage.py" | grep -E 'openstack-dashboard|horizon'
-  register: output
-
 - debug:
-    msg: "{{ output.stdout}}"
+    msg: "{{ MANAGE_FILE }}"
 
 - name: Collect static files for horizon
-  command: python "{{ output.stdout}}"  collectstatic --noinput
+  command: "{{ MANAGE_FILE }}  collectstatic --noinput"
   verbosity: 3
   notify:
      - restart webserver
 
 - name: compress the collected files
-  command: python "{{ output.stdout}}" compress --force
+  command: "{{ MANAGE_FILE }} compress --force"
   verbosity: 3
   notify:
      - restart webserver

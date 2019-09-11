@@ -4,7 +4,11 @@ import re
 # This charm's library contains all of the handler code associated with
 # dmapi
 import charm.openstack.dmapi as dmapi
-from subprocess import check_output
+from subprocess import (
+    check_output,
+    check_call,
+)
+
 from charmhelpers.core.hookenv import (
     config,
     log,
@@ -13,6 +17,7 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import (
     apt_update,
+    apt_upgrade,
 )
 
 from charmhelpers.contrib.openstack.utils import (
@@ -25,6 +30,7 @@ from charmhelpers.core.host import (
     add_group,
     add_user_to_group,
     chownr,
+    mkdir,
 )
 
 # Minimal inferfaces required for operation
@@ -92,7 +98,7 @@ def install_packages():
     os.system('sudo cp files/trilio/tvault-datamover-api.service '
               '/etc/systemd/system/')
     chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
-    mkdir('/var/cache/dmapi',DMAPI_USR, DMAPI_GRP, perms=493)
+    mkdir('/var/cache/dmapi', DMAPI_USR, DMAPI_GRP, perms=493)
     os.system('sudo systemctl enable tvault-datamover-api')
     service_restart('tvault-datamover-api')
 
@@ -166,5 +172,24 @@ def cluster_connected(hacluster):
 
 @reactive.hook('upgrade-charm')
 def upgrade_charm():
-    # Remove sate
-    reactive.remove_state('charm.installed')
+    os.system('sudo echo "{}" > '
+              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
+               config('triliovault-pkg-source')))
+
+    new_src = config('openstack-origin')
+    configure_installation_source(new_src)
+
+    apt_update()
+    apt_upgrade(fatal=True, dist=True)
+
+    chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
+
+    check_call(['systemctl', 'daemon-reload'])
+    service_restart('tvault-datamover-api')
+
+    if config('python-version') == 2:
+        dmapi_pkg = 'dmapi'
+    else:
+        dmapi_pkg = 'python3-dmapi'
+
+    application_version_set(get_new_version(dmapi_pkg))
