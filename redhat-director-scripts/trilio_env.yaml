@@ -21,7 +21,8 @@ parameter_defaults:
    ## Default value is 'false'.
    DmApiEnableSSL: false
 
-   ## Dmapi service public interface port, will get configured for haproxy frontend and dmapi public endpoint
+   ## Dmapi service public interface port. It will get configured for dmapi 
+   ## haproxy frontend and dmapi public endpoint in keystone
    DmApiSslPort: 13784
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
