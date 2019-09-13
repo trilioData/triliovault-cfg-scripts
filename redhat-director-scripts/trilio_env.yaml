@@ -17,12 +17,12 @@ parameter_defaults:
    ## Datamover api port, default is 8784
    DmApiPort: 8784
 
-   ## If user wants to enable SSL for datamover api's public endpoint in haproxy
-   ## Default value is 'true'
+   ## If user wants to enable SSL for datamover api's 'internal' endpoint.
+   ## Default value is 'false'
    DmApiEnableSSL: false
 
-   ## If you are enabling ssl for datamover api public endpoint then following parameter is 
-   ## taken into consideration otherwise not
+   ## Dmapi service public interface port. It will get configured for dmapi
+   ## haproxy frontend and dmapi public endpoint   
    DmApiSslPort: 13784
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
