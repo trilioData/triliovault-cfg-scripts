@@ -1,15 +1,9 @@
 [DEFAULT]
 dmapi_workers = 2
 transport_url = <%= @default_transport_url %>
-<% if @dmapi_enable_ssl == true %>
-dmapi_link_prefix = https://<%= @my_ip %>:<%= @dmapi_ssl_port %>
-dmapi_enabled_ssl_apis = dmapi
-dmapi_listen_port = <%= @dmapi_ssl_port %>
-<% else %> 
 dmapi_link_prefix = http://<%= @my_ip %>:<%= @dmapi_port %>
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = <%= @dmapi_port %>
-<% end %>
 dmapi_enabled_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x

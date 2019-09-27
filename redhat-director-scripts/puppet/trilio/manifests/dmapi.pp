@@ -1,7 +1,7 @@
 class trilio::dmapi ( 
   $dmapi_port                      = '8784',
   $dmapi_ssl_port                  = '13784',
-  $dmapi_enable_ssl                = true,
+  $dmapi_enable_ssl                = false,
   $oslomsg_rpc_proto       	   = hiera('messaging_rpc_service_name', 'rabbit'),
   $oslomsg_rpc_hosts       	   = any2array(hiera('rabbitmq_node_names', undef)),
   $oslomsg_rpc_password    	   = hiera('nova::rabbit_password'),
