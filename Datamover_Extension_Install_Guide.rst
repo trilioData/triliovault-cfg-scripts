@@ -13,6 +13,9 @@
   ii)Select which storage type you want to use to store your snapshots.
   TrilioVault supports NFS, Amazon S3 and Ceph S3. This would be your backup target type.
 
+  iii) Make sure that your compute nodes have connectivity to the Internet.
+  This is required because our yum, apt package repos are on cloud.
+
 **Note**: *Perform following steps on all compute nodes.*
 
 **2. Setup Trilio repository**
@@ -23,14 +26,12 @@
     cd triliovault-cfg-scripts
    
   *If platform is RHEL/CentOs*
-  Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+    cp kolla-ansible/trilio-datamover-api/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+    echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover extension package**
 
