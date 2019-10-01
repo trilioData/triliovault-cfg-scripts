@@ -20,14 +20,12 @@ Clone the repository on controller node:
     cd triliovault-cfg-scripts/
    
   *If platform is RHEL/CentOs*
-  Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP(if you have deployed 3 node tvault cluster, provide virtual ip) from your enviornment
   
-      cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+      cp kolla-ansible/trilio-datamover-api/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-      cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+      echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover Api package**
 
@@ -59,7 +57,7 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       [DEFAULT]
     
-      **dmapi_link_prefix = http://<controller_node_ip>:8784**
+      **dmapi_link_prefix = http://<openstack_controller_node_ip>:8784**
     
       dmapi_enabled_ssl_apis =
     
@@ -69,19 +67,6 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       ssl_key_file = 
     
-    **In case of ssl enabled on dmapi endpoint, datamover_url file will look like following:**
-    
-      [DEFAULT]*
-    
-      **dmapi_link_prefix = https://<controller_node_ip>:13784**
-    
-      dmapi_enabled_ssl_apis = dmapi
-    
-      [wsgi]
-    
-      ssl_cert_file = sample_ssl_cert_file
-    
-      ssl_key_file = sample_ssl_key_file
       
   ii) Run 'populate-conf' command, it will populate necessary fields in /etc/dmapi/dmapi.conf. You can verify that.
       populate-conf
