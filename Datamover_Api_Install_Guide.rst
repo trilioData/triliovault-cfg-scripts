@@ -1,9 +1,9 @@
 **Install steps for Trilio Datamover Api (DmApi)**
 
-This triliovault components need to be installed on all controller nodes. Here on-words we will be reffering this component as 'DmApi'.
-Perform all steps starting from step-2 on all of your controller nodes of target OpenStack.
+TrilioVault Datamover Api needs to be installed on all OpenStack nodes where nova-api service is running(controller nodes). Here on-words we will be reffering this component as 'DmApi'.
+Perform following steps on all controller nodes of OpenStack.
 
-**Note**: *Perform following steps on all controller nodes(Starting from step-2).*
+**Note**: *Perform following steps on all controller nodes.*
 
 **1. Pre-requisites**
 
@@ -11,7 +11,7 @@ Perform all steps starting from step-2 on all of your controller nodes of target
   OpenStack compute, controller and horizon nodes.
   Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
 
-**2. Setup Trilio repository**
+**2. Setup Trilio package repository**
 
 Clone the repository on controller node:
 
