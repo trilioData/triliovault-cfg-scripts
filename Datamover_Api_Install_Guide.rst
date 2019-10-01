@@ -11,6 +11,9 @@ Perform following steps on all controller nodes of OpenStack.
   OpenStack compute, controller and horizon nodes.
   Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
 
+  ii) Make sure that your horizon nodes have connectivity to the Internet.
+  This is required because our yum, apt package repos are on cloud.
+
 **2. Setup Trilio package repository**
 
 Clone the repository on controller node:
