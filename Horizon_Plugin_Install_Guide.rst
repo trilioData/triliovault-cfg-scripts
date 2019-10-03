@@ -22,6 +22,8 @@ Clone the repository:
    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
    cd triliovault-cfg-scripts/
+ 
+   git checkout stable/3.4
    
   *If platform is RHEL/CentOs*
 
