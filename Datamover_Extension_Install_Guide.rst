@@ -23,7 +23,9 @@
   Clone the repository:
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
     
-    cd triliovault-cfg-scripts
+    cd triliovault-cfg-scripts/
+   
+    git checkout stable/3.4
    
   *If platform is RHEL/CentOs*
   
@@ -39,17 +41,16 @@
    
     yum makecache
 
-    yum install tvault-contego
+    yum install tvault-contego puppet-triliovault -y
    
    *If platform is Ubuntu*
    
     apt-get update
 
-    apt-get install contego
+    apt-get install tvault-contego-extension
 
     apt-get install tvault-contego
    
-   **Note**: "tvault-contego" is the name of our datamover extension package.
     
 **4. Populate datamover conf file**
      mkdir /etc/tvault-contego
@@ -103,14 +104,18 @@
 
 **9. Create service init files**
   If your compute node using systemd init mechinism:
-  
-    cp conf-files/tvault-contego.service /etc/systemd/system/
-   
-  *If backup target is s3, you need copy object-store service file too. In case of nfs you only need tvault-contego service.*
-  
-    cp conf-files/tvault-object-store.service /etc/systemd/system/  
 
-  **Note**: You need edit python install directory path in above init files as per platform you are using
+  *If backup target is 'NFS'
+  
+    cp conf-files/tvault-contego.service.nfs /etc/systemd/system/tvault-contego.service
+   
+  *If backup target is 'S3'*
+  
+    cp conf-files/tvault-contego.service.s3 /etc/systemd/system/tvault-contego.service    
+
+    cp conf-files/tvault-object-store.service /etc/systemd/system/tvault-object-store.service 
+
+  **Note**: You need validate above init files, executable paths and conf file paths. If necessary you can edit python install directory path in above init files as per platform you are using
 
 
 **10. Start datamover services**
