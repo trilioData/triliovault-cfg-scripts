@@ -56,7 +56,7 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
     Edit this file /tmp/datamover_url and fill controller node fixed ip. This file will be used by populate-conf tool.
     
-    **If you are not using ssl or ssl terminated at haproxy in OpenStack datamover_url file will look like following:**
+    **/tmp/datamover_url file will look like following**
     
       [DEFAULT]
     
@@ -72,7 +72,8 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       
   ii) Run 'populate-conf' command, it will populate necessary fields in /etc/dmapi/dmapi.conf. You can verify that.
-      populate-conf
+
+        populate-conf
 
 **5. Create dmapi log directory:**
         mkdir /var/log/dmapi
