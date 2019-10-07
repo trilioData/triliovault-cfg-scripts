@@ -1,9 +1,9 @@
 **Install steps for Trilio Datamover Api (DmApi)**
 
-This triliovault components need to be installed on all controller nodes. Here on-words we will be reffering this component as 'DmApi'.
-Perform all steps starting from step-2 on all of your controller nodes of target OpenStack.
+TrilioVault Datamover Api needs to be installed on all OpenStack nodes where nova-api service is running(controller nodes). Here on-words we will be reffering this component as 'DmApi'.
+Perform following steps on all controller nodes of OpenStack.
 
-**Note**: *Perform following steps on all controller nodes(Starting from step-2).*
+**Note**: *Perform following steps on all controller nodes.*
 
 **1. Pre-requisites**
 
@@ -11,23 +11,26 @@ Perform all steps starting from step-2 on all of your controller nodes of target
   OpenStack compute, controller and horizon nodes.
   Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
 
-**2. Setup Trilio repository**
+  ii) Make sure that your horizon nodes have connectivity to the Internet.
+  This is required because our yum, apt package repos are on cloud.
+
+**2. Setup Trilio package repository**
 
 Clone the repository on controller node:
 
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
     cd triliovault-cfg-scripts/
+    
+    git checkout stable/3.4
    
   *If platform is RHEL/CentOs*
-  Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP(if you have deployed 3 node tvault cluster, provide virtual ip) from your enviornment
   
-      cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+      cp kolla-ansible/trilio-datamover-api/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-      cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+      echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover Api package**
 
@@ -55,11 +58,11 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
     Edit this file /tmp/datamover_url and fill controller node fixed ip. This file will be used by populate-conf tool.
     
-    **If you are not using ssl or ssl terminated at haproxy in OpenStack datamover_url file will look like following:**
+    **/tmp/datamover_url file will look like following**
     
       [DEFAULT]
     
-      **dmapi_link_prefix = http://<controller_node_ip>:8784**
+      **dmapi_link_prefix = http://<openstack_controller_node_ip>:8784**
     
       dmapi_enabled_ssl_apis =
     
@@ -69,22 +72,10 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
       ssl_key_file = 
     
-    **In case of ssl enabled on dmapi endpoint, datamover_url file will look like following:**
-    
-      [DEFAULT]*
-    
-      **dmapi_link_prefix = https://<controller_node_ip>:13784**
-    
-      dmapi_enabled_ssl_apis = dmapi
-    
-      [wsgi]
-    
-      ssl_cert_file = sample_ssl_cert_file
-    
-      ssl_key_file = sample_ssl_key_file
       
   ii) Run 'populate-conf' command, it will populate necessary fields in /etc/dmapi/dmapi.conf. You can verify that.
-      populate-conf
+
+        populate-conf
 
 **5. Create dmapi log directory:**
         mkdir /var/log/dmapi
