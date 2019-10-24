@@ -1,6 +1,6 @@
 [Unit]
 Description=Tvault contego
-After=openstack-nova-compute.service
+Requires=tvault-object-store.service
 
 [Service]
 User=nova
