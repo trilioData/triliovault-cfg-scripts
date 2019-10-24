@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhosp13/openstack-nova-compute
+FROM registry.redhat.io/rhosp15-rhel8/openstack-nova-compute
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
@@ -14,7 +14,7 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-contego puppet-triliovault -y
+RUN yum install python3-tvault-contego puppet-triliovault -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/

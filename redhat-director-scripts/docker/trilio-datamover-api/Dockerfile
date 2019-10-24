@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhosp13/openstack-nova-api
+FROM registry.redhat.io/rhosp15-rhel8/openstack-nova-api
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="rhosp13/openstack-nova-api-triliodata-plugin" \
@@ -16,7 +16,7 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install dmapi -y
+RUN yum install python3-dmapi -y
 RUN mkdir -p /var/log/dmapi/
 RUN chown -R nova:nova /var/log/dmapi/
 RUN mkdir -p /var/cache/dmapi/
