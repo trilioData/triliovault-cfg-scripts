@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhosp13/openstack-horizon
+FROM registry.redhat.io/rhosp15-rhel8/openstack-horizon
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="rhosp13/openstack-horizon-triliodata-plugin" \
@@ -11,7 +11,7 @@ LABEL name="rhosp13/openstack-horizon-triliodata-plugin" \
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-horizon-plugin python-workloadmgrclient -y
+RUN yum install python3-tvault-horizon-plugin python3-workloadmgrclient -y
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Move necessary files
