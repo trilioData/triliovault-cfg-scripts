@@ -17,8 +17,8 @@ USER root
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install python3-dmapi -y
-RUN mkdir -p /var/log/dmapi/
-RUN chown -R nova:nova /var/log/dmapi/
+RUN mkdir -p /var/log/trilio-datamover-api
+RUN chown -R nova:nova /var/log/trilio-datamover-api/
 RUN mkdir -p /var/cache/dmapi/
 RUN chown nova:nova /var/cache/dmapi/
 RUN rm -f /etc/yum.repos.d/trilio.repo

@@ -4,6 +4,7 @@ Description=Tvault contego
 User={{TVAULT_CONTEGO_EXT_USER}}
 Group={{TVAULT_CONTEGO_EXT_USER}}
 LimitNOFILE={{contego_service_ulimits_count}}
+MemoryMax=10G
 Type=simple
 ExecStart={{PYTHON_EXEC}} {{tvault_contego_bin_path.stdout}} {{CONFIG_FILES}}
 TimeoutStopSec=20
