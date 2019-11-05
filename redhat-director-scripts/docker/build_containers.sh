@@ -34,20 +34,20 @@ cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
 echo -e "Creating trilio-datamover container for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover/
-docker build --no-cache -t trilio/trilio-datamover:${tvault_version} .
+docker build --no-cache -t trilio/trilio-datamover:${tvault_version}-rhosp13 .
 
 #Build trilio_datamover-api containers
 
 echo -e "Creating trilio-datamover container-api for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover-api/
-docker build --no-cache -t trilio/trilio-datamover-api:${tvault_version} .
+docker build --no-cache -t trilio/trilio-datamover-api:${tvault_version}-rhosp13 .
 
 
 ## Build horizon plugin
 
 echo -e "Creating trilio horizon plugin container for rhosp13"
 cd $base_dir/${build_dir}/trilio-horizon-plugin/
-docker build --no-cache -t trilio/trilio-horizon-plugin:${tvault_version} .
+docker build --no-cache -t trilio/trilio-horizon-plugin:${tvault_version}-rhosp13 .
 
 
 
@@ -59,7 +59,7 @@ rm -rf $base_dir/${build_dir}
 ################## Build RHOSP15 containers ####################
 
 ## Work dir preparation for for rhosp15
-build_dir=tmp_docker_rhosp15_${TVAULT_VERSION}
+build_dir=tmp_docker_rhosp15_${tvault_version}
 rm -rf $base_dir/${build_dir}
 mkdir -p $base_dir/${build_dir}
 
@@ -73,8 +73,8 @@ echo -e "Creating trilio-datamover container for rhosp15"
 cd $base_dir/${build_dir}/trilio-datamover/
 rm Dockerfile
 cp Dockerfile_rhosp15 Dockerfile
-buildah bud -t docker.io/trilio/trilio-datamover:${TVAULT_VERSION}-rhosp15 .
-podman push docker.io/trilio/trilio-datamover:${TVAULT_VERSION}-rhosp15
+buildah bud -t docker.io/trilio/trilio-datamover:${tvault_version}-rhosp15 .
+podman push docker.io/trilio/trilio-datamover:${tvault_version}-rhosp15
 
 
 
@@ -84,8 +84,8 @@ echo -e "Creating trilio-datamover container-api for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover-api/
 rm Dockerfile
 cp Dockerfile_rhosp15 Dockerfile
-buildah bud -t docker.io/trilio/trilio-datamover-api:${TVAULT_VERSION}-rhosp15 .
-podman push docker.io/trilio/trilio-datamover-api:${TVAULT_VERSION}-rhosp15
+buildah bud -t docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp15 .
+podman push docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp15
 
 ## Build horizon plugin container for rhosp15
 
@@ -93,8 +93,8 @@ echo -e "Creating trilio horizon plugin container for rhosp13"
 cd $base_dir/${build_dir}/trilio-horizon-plugin/
 rm Dockerfile
 cp Dockerfile_rhosp15 Dockerfile
-buildah bud -t docker.io/trilio/trilio-horizon-plugin:${TVAULT_VERSION}-rhosp15 .
-podman push docker.io/trilio/trilio-horizon-plugin:${TVAULT_VERSION}-rhosp15
+buildah bud -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp15 .
+podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp15
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
