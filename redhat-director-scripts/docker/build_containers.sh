@@ -23,6 +23,94 @@ fi
 
 #declare -a openstack_platforms=("centos" "ubuntu")
 
+################## Build RHOSP14 containers ####################
+
+## Work dir preparation for for rhosp14
+build_dir=tmp_docker_rhosp14_${tvault_version}
+rm -rf $base_dir/${build_dir}
+mkdir -p $base_dir/${build_dir}
+
+cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
+cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
+cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
+
+#Build trilio-datamover containers for rhosp14
+
+echo -e "Creating trilio-datamover container for rhosp14"
+cd $base_dir/${build_dir}/trilio-datamover/
+rm Dockerfile
+cp Dockerfile_rhosp14 Dockerfile
+buildah bud -t docker.io/trilio/trilio-datamover:${tvault_version}-rhosp14 .
+podman push docker.io/trilio/trilio-datamover:${tvault_version}-rhosp14
+
+
+
+#Build trilio_datamover-api containers for rhosp14
+
+echo -e "Creating trilio-datamover-api container for rhosp14"
+cd $base_dir/${build_dir}/trilio-datamover-api/
+rm Dockerfile
+cp Dockerfile_rhosp14 Dockerfile
+buildah bud -t docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp14 .
+podman push docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp14
+
+## Build horizon plugin container for rhosp14
+
+echo -e "Creating trilio horizon plugin container for rhosp14"
+cd $base_dir/${build_dir}/trilio-horizon-plugin/
+rm Dockerfile
+cp Dockerfile_rhosp14 Dockerfile
+buildah bud -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp14 .
+podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp14
+
+# Clean the build_dir
+rm -rf $base_dir/${build_dir}
+
+################## Build TripleO Rocky containers ####################
+
+## Work dir preparation for for tripleorocky
+build_dir=tmp_docker_tripleorocky_${tvault_version}
+rm -rf $base_dir/${build_dir}
+mkdir -p $base_dir/${build_dir}
+
+cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
+cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
+cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
+
+#Build trilio-datamover containers for Tripleo rocky
+
+echo -e "Creating trilio-datamover container for Tripleo rocky"
+cd $base_dir/${build_dir}/trilio-datamover/
+rm Dockerfile
+cp Dockerfile_tripleorocky Dockerfile
+buildah bud -t docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky .
+podman push docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky
+
+
+
+#Build trilio_datamover-api containers for tripleo rocky
+
+echo -e "Creating trilio-datamover-api container for Tripleo rocky"
+cd $base_dir/${build_dir}/trilio-datamover-api/
+rm Dockerfile
+cp Dockerfile_tripleorocky Dockerfile
+buildah bud -t docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky .
+podman push docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky
+
+## Build horizon plugin container for tripleo rocky
+
+echo -e "Creating trilio horizon plugin container for Tripleo rocky"
+cd $base_dir/${build_dir}/trilio-horizon-plugin/
+rm Dockerfile
+cp Dockerfile_tripleorocky Dockerfile
+buildah bud -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky .
+podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky
+
+# Clean the build_dir
+rm -rf $base_dir/${build_dir}
+
+##################### Create containers for rhosp13 ################
+
 build_dir=tmp_docker_${tvault_version}
 rm -rf $base_dir/${build_dir}
 mkdir -p $base_dir/${build_dir}
@@ -30,7 +118,7 @@ cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
 cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
 cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
-#Build trilio-datamover containers
+##Build trilio-datamover containers
 
 echo -e "Creating trilio-datamover container for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover/
@@ -98,3 +186,5 @@ podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp15
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
+
+################# Create containers for RHOSP14 #######################
