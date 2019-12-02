@@ -13,6 +13,9 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
 # switch to root and install a custom RPM, etc.
 USER root
 
+# temporary fix
+RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
+
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
