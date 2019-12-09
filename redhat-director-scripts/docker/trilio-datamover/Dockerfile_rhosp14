@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhosp13/openstack-nova-compute
+FROM registry.redhat.io/rhosp14/openstack-nova-compute
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
