@@ -90,8 +90,8 @@ echo -e "Creating trilio-datamover container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-datamover/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-datamover-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-datamover-tripleo:${tvault_version}-rocky
 
 
 
@@ -101,8 +101,8 @@ echo -e "Creating trilio-datamover-api container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-datamover-api/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-datamover-api-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-datamover-api-tripleo:${tvault_version}-rocky
 
 ## Build horizon plugin container for tripleo rocky
 
@@ -110,8 +110,8 @@ echo -e "Creating trilio horizon plugin container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-horizon-plugin/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-horizon-plugin-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-horizon-plugin-tripleo:${tvault_version}-rocky
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
