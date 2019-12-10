@@ -11,13 +11,13 @@ fi
 
 tvault_version=$1
 
-rhosp13_release_tag="${tvault_version}-rhosp13-stable"
+rhosp13_release_tag="${tvault_version}-rhosp13-copy"
 rhosp13_qa_tag="${tvault_version}-rhosp13"
-rhosp14_release_tag="${tvault_version}-rhosp14-stable"
+rhosp14_release_tag="${tvault_version}-rhosp14-copy"
 rhosp14_qa_tag="${tvault_version}-rhosp14"
-tripleorocky_release_tag="${tvault_version}-rocky-stable"
+tripleorocky_release_tag="${tvault_version}-rocky-copy"
 tripleorocky_qa_tag="${tvault_version}-rocky"
-rhosp15_release_tag="${tvault_version}-rhosp15-stable"
+rhosp15_release_tag="${tvault_version}-rhosp15-copy"
 rhosp15_qa_tag="${tvault_version}-rhosp15"
 
 
