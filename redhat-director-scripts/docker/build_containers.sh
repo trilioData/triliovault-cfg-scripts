@@ -2,8 +2,11 @@
 
 set -e
 
-echo -e "\nPREREQUISITES:\n\tPlease make sure that you logged in to trilio dockerhub account having pull and push permissions."
-echo -e "\tUse the following commands to login using both 'docker' and 'podman' tools to dockerhub.\n\t- docker login docker.io\n\t- podman login docker.io\n"
+echo -e "\nPREREQUISITES:\n\tPlease make sure that you logged in to docker.io and registry.redhat.io"
+echo -e "\tdocker.io should be logged in with user having pull and push permissions to https://hub.docker.com/u/trilio/dashboard/"
+echo -e "\tregistry.redhat.io registry login needs user with only pull permissions"
+echo -e "\tYou can use following commands:"
+echo -e "\n\t- docker login docker.io\n\t- docker login registry.redhat.io\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
 
 
 if [ $# -lt 1 ];then
@@ -87,8 +90,8 @@ echo -e "Creating trilio-datamover container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-datamover/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-datamover:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-datamover-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-datamover-tripleo:${tvault_version}-rocky
 
 
 
@@ -98,8 +101,8 @@ echo -e "Creating trilio-datamover-api container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-datamover-api/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-datamover-api:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-datamover-api-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-datamover-api-tripleo:${tvault_version}-rocky
 
 ## Build horizon plugin container for tripleo rocky
 
@@ -107,8 +110,8 @@ echo -e "Creating trilio horizon plugin container for Tripleo rocky"
 cd $base_dir/${build_dir}/trilio-horizon-plugin/
 rm Dockerfile
 cp Dockerfile_tripleorocky Dockerfile
-docker build --no-cache -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky .
-docker push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-tripleorocky
+docker build --no-cache -t docker.io/trilio/trilio-horizon-plugin-tripleo:${tvault_version}-rocky .
+docker push docker.io/trilio/trilio-horizon-plugin-tripleo:${tvault_version}-rocky
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
