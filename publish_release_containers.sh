@@ -102,11 +102,11 @@ do
 	docker pull trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release}
 								
 				
-	docker tag trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release} trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release}-stable
-	docker tag trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release} trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release}-stable
+	docker tag trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release} trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release}-copy
+	docker tag trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release} trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release}-copy
 								
-	docker push trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release}-stable
-        docker push trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release}-stable
+	docker push trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release}-copy
+        docker push trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release}-copy
 
     done
 done
