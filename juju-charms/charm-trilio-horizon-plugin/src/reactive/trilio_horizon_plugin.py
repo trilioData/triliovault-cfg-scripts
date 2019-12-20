@@ -63,8 +63,9 @@ def copy_template():
             'cp files/trilio/trilio-horizon-plugin.html {}/workloads_admin'
             '/templates/workloads_admin/index.html'.format(dashboard_path))
         os.system(
-            '{0}/manage.py collectstatic;'
-            '{0}/manage.py compress --force'.format(horizon_path))
+            '/usr/bin/python{0} {1}/manage.py collectstatic;'
+            '/usr/bin/python{0} {1}/manage.py compress --force'.format(
+                config('python-version'), horizon_path))
 
 
 def copy_files():
@@ -99,8 +100,8 @@ def copy_files():
 
     # Change the working directory to horizon and excute shell command
     os.system(
-        '{}/manage.py shell < /tmp/sync_static.py &> '
-        '/dev/null'.format(horizon_path))
+        '/usr/bin/python{0} {1}/manage.py shell < /tmp/sync_static.py &> '
+        '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
     os.system('rm /tmp/sync_static.py')
@@ -138,8 +139,8 @@ def delete_files():
 
     # Change the working directory to horizon and excute shell command
     os.system(
-        '{}/manage.py shell < /tmp/sync_static1.py &> '
-        '/dev/null'.format(horizon_path))
+        '/usr/bin/python{0} {1}/manage.py shell < /tmp/sync_static1.py &> '
+        '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
     os.system('rm /tmp/sync_static1.py')
