@@ -313,7 +313,7 @@ def create_service_file():
     """
     usr = config('tvault-datamover-ext-usr')
     grp = config('tvault-datamover-ext-group')
-    cmd = ['python{}'.format(config('python-version')),
+    cmd = ['/usr/bin/python{}'.format(config('python-version')),
            'files/trilio/get_nova_conf.py']
 
     config_files = check_output(cmd).decode('utf-8').split('\n')[0]
