@@ -1,4 +1,4 @@
-FROM kolla/ubuntu-source-nova-api:stein
+FROM kolla/centos-source-nova-api:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
@@ -13,11 +13,12 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-##Install datamover packages
+# temporary fix
+RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
 
-ADD trilio.list /etc/apt/sources.list.d/
-RUN apt-get update -y
-RUN apt-get install -y dmapi --allow-unauthenticated
+##Install datamover packages
+ADD trilio.repo /etc/yum.repos.d/
+RUN yum install dmapi -y
 
 RUN mkdir -p /var/log/dmapi/ \
     /var/cache/dmapi/ \
@@ -27,6 +28,10 @@ RUN mkdir -p /var/log/dmapi/ \
  && chown -R nova:nova /var/log/kolla/dmapi \
  && chown nova:nova /var/cache/dmapi/ \
  && rm /etc/dmapi/dmapi.conf
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Copy license file
 RUN mkdir /licenses

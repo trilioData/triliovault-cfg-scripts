@@ -1,11 +1,11 @@
-FROM kolla/ubuntu-source-nova-compute:stein
+FROM kolla/ubuntu-source-nova-compute:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="3.4.0" \
-      release="3.4" \
+      version="4.0.0" \
+      release="4.0" \
       summary="TrilioData Datamover" \
       description="TrilioData Datamover"
 
@@ -13,11 +13,10 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 ##Install datamover packages
-RUN rm -f /etc/nova/rootwrap.conf \
- && echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list \
- && apt-get update -y \
- && apt-get install -y tvault-contego --allow-unauthenticated
-
+RUN rm -f /etc/nova/rootwrap.conf
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+RUN apt-get install -y tvault-contego --allow-unauthenticated
 
 ##Download virtenv
 RUN mkdir -p /home/tvault \
