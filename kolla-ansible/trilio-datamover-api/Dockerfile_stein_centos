@@ -1,4 +1,4 @@
-FROM kolla/centos-source-nova-api:queens
+FROM kolla/centos-source-nova-api:stein
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \

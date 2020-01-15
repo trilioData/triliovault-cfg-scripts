@@ -15,10 +15,9 @@ USER root
 
 ##Install datamover packages
 
-RUN echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list \
- && apt-get update -y \
- && apt-get install -y dmapi --allow-unauthenticated
-
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+RUN apt-get install -y dmapi --allow-unauthenticated
 
 RUN mkdir -p /var/log/dmapi/ \
     /var/cache/dmapi/ \
