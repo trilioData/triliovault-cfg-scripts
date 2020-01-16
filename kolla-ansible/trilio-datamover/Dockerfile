@@ -1,4 +1,4 @@
-FROM kolla/centos-source-nova-compute:queens
+FROM kolla/ubuntu-source-nova-compute:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
@@ -12,12 +12,17 @@ LABEL name="kolla/trilio-datamover" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-# temporary fix unless upstream openstack repo's not available completely
-RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
-
 ##Install datamover packages
-ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-contego puppet-triliovault -y
+RUN rm -f /etc/nova/rootwrap.conf
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+RUN apt-get install -y tvault-contego --allow-unauthenticated
+
+##Download virtenv
+RUN mkdir -p /home/tvault \
+  && curl -o /home/tvault/tvault-contego-virtenv.tar.gz http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/virtenv/queens/ubuntu/tvault-contego-virtenv.tar.gz \
+  && tar -xzf /home/tvault/tvault-contego-virtenv.tar.gz -C /home/tvault/ \
+  && chown -R nova:nova /home/tvault/
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
@@ -43,9 +48,6 @@ RUN mkdir -p /var/triliovault-mounts \
 
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
-##Clean subscription
-RUN yum clean all
-RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Add license
 RUN mkdir /licenses

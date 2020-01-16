@@ -1,4 +1,4 @@
-FROM kolla/centos-source-nova-compute:queens
+FROM kolla/centos-source-nova-compute:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
@@ -12,7 +12,7 @@ LABEL name="kolla/trilio-datamover" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-# temporary fix unless upstream openstack repo's not available completely
+# temporary fix
 RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Install datamover packages
