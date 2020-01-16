@@ -19,7 +19,7 @@ then
 base_dir="$current_dir"
 fi
 
-declare -a openstack_releases=("queens" "rocky" "stein")
+declare -a openstack_releases=("queens" "rocky" "stein" "train")
 
 declare -a openstack_platforms=("centos" "ubuntu")
 
