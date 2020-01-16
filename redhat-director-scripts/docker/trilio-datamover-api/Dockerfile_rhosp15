@@ -4,10 +4,10 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="rhosp13/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="3.1.0" \
-      release="3.1" \
-      summary="Red Hat OpenStack Platform 13.0 nova-api TrilioData trilio-datamover-api" \
-      description="Red Hat OpenStack Platform 13.0 nova-api TrilioData trilio-datamover-api"
+      version="4.0.0" \
+      release="4.0" \
+      summary="Red Hat OpenStack Platform 14.0 nova-api TrilioData trilio-datamover-api" \
+      description="Red Hat OpenStack Platform 14.0 nova-api TrilioData trilio-datamover-api"
 
 
 # switch to root and install a custom RPM, etc.

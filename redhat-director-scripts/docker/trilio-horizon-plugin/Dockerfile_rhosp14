@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="rhosp14/openstack-horizon-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="3.4.0" \
-      release="3.4" \
+      version="4.0.0" \
+      release="4.0" \
       summary="Red Hat OpenStack Platform 14.0 horizon TrilioData TrilioVault Horizon Plugin" \
       description="Red Hat OpenStack Platform 14.0 horizon TrilioData TrilioVault Horizon Plugin"
 
