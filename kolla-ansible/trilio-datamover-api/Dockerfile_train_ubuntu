@@ -17,7 +17,7 @@ USER root
 
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
-RUN apt-get install -y dmapi --allow-unauthenticated
+RUN apt-get install -y python3-dmapi --allow-unauthenticated
 
 RUN mkdir -p /var/log/dmapi/ \
     /var/cache/dmapi/ \
