@@ -16,7 +16,7 @@ USER root
 RUN rm -f /etc/nova/rootwrap.conf
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
-RUN apt-get install -y tvault-contego --allow-unauthenticated
+RUN apt-get install -y python3-tvault-contego --allow-unauthenticated
 
 ##Download virtenv
 RUN mkdir -p /home/tvault \
