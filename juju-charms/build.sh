@@ -31,7 +31,7 @@ for i in $(ls -1 builds/); do
     (
         set +e
         cd builds/$i
-        charm proof
+#        charm proof
         tox -e pep8
     )
 done

@@ -2,7 +2,7 @@
 options:
   openstack-origin:
     type: string
-    default: distro
+    default: bionic-stein
     description: |
       Repository from which to install. May be one of the following:
       distro (default), ppa:somecustom/ppa, a deb url sources entry or a
@@ -32,7 +32,7 @@ options:
     description: Openstack base python version(2 or 3)
   triliovault-pkg-source:
     type: string
-    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /"
     description: Repository address of triliovault packages
   openstack-pkg-source:
     type: string
