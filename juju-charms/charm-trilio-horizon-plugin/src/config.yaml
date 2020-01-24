@@ -5,7 +5,7 @@ options:
     description: Openstack base python version(2 or 3)
   triliovault-pkg-source:
     type: string
-    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /"
     description: Repository address of triliovault packages
   horizon-path:
     type: string
