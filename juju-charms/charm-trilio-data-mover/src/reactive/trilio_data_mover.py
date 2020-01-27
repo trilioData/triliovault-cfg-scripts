@@ -313,12 +313,17 @@ def create_service_file():
     """
     usr = config('tvault-datamover-ext-usr')
     grp = config('tvault-datamover-ext-group')
-    cmd = ['/usr/bin/python{}'.format(config('python-version')),
-           'files/trilio/get_nova_conf.py']
+    usr_nova_conf = config('nova-config')
 
-    config_files = check_output(cmd).decode('utf-8').split('\n')[0]
-    config_files = '{} --config-file={}'.format(
-        config_files, config('tv-datamover-conf'))
+    if not os.path.isfile(usr_nova_conf):
+        log("Try providing the correct path of nova.conf in config param")
+        status_set(
+            'blocked',
+            'Failed to find nova.conf file"')
+        return False
+
+    config_files = '--config-file={} --config-file={}'.format(
+        usr_nova_conf, config('tv-datamover-conf'))
     if check_presence('/etc/nova/nova.conf.d'):
         config_files = '{} --config-dir=/etc/nova/nova.conf.d'.format(
             config_files)

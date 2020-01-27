@@ -82,7 +82,7 @@ def install_packages():
 
     os.system('sudo echo "{}" > '
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
-               config('triliovault-pkg-source')))
+                  config('triliovault-pkg-source')))
 
     new_src = config('openstack-origin')
     configure_installation_source(new_src)
@@ -174,7 +174,7 @@ def cluster_connected(hacluster):
 def upgrade_charm():
     os.system('sudo echo "{}" > '
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
-               config('triliovault-pkg-source')))
+                  config('triliovault-pkg-source')))
 
     new_src = config('openstack-origin')
     configure_installation_source(new_src)
