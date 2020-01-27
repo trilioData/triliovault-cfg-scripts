@@ -32,7 +32,7 @@ options:
     type: string
     default: /etc/tvault-contego/tvault-contego.conf
     description: Trilio Vault Datamover config file location
-  nova-conf:
+  nova-config:
     type: string
     default: /etc/nova/nova.conf
     description: Nova default configuration file location
