@@ -14,6 +14,7 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
+RUN yum-config-manager --save --setopt=delorean.skip_if_unavailable=true
 RUN yum install tvault-contego puppet-triliovault -y
 
 #Copy executable files
