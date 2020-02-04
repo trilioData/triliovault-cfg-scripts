@@ -16,6 +16,7 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
+RUN yum-config-manager --save --setopt=delorean.skip_if_unavailable=true
 RUN yum install dmapi -y
 RUN mkdir -p /var/log/trilio-datamover-api
 RUN chown -R nova:nova /var/log/trilio-datamover-api/
