@@ -16,17 +16,17 @@ podman login docker.io
 ## Prepare openstack horizon with trilio container
 podman pull docker.io/trilio/trilio-horizon-plugin:${tag}
 podman tag docker.io/trilio/trilio-horizon-plugin:${tag} ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
-podman push ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
+openstack tripleo container image push --local ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
 
 ## Prepare trilio datamover container
 podman pull docker.io/trilio/trilio-datamover:${tag}
 podman tag docker.io/trilio/trilio-datamover:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
-podman push ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
+openstack tripleo container image push --local ${undercloud_ip}:8787/trilio/trilio-datamover:${tag}
 
 ## Prepare trilio datamover api container
 podman pull docker.io/trilio/trilio-datamover-api:${tag}
 podman tag docker.io/trilio/trilio-datamover-api:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
-podman push ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
+openstack tripleo container image push --local ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 
 ## Update image locations in env file
 dm_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover:${tag}"
