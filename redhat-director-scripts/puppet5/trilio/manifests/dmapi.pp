@@ -3,16 +3,17 @@ class trilio::dmapi (
   $dmapi_ssl_port                  = '13784',
   $dmapi_enable_ssl                = false,
   $oslomsg_rpc_proto       	   = lookup('oslo_messaging_rpc_scheme', 'rabbit'),
-  $oslomsg_rpc_hosts       	   = any2array(lookup('rabbitmq_node_names', undef)),
+  $oslomsg_rpc_hosts       	   = any2array(lookup('oslo_messaging_rpc_node_names', undef)),
   $oslomsg_rpc_password    	   = lookup('oslo_messaging_rpc_password'),
   $oslomsg_rpc_port        	   = lookup('oslo_messaging_rpc_port', '5672'),
   $oslomsg_rpc_username    	   = lookup('oslo_messaging_rpc_user_name', 'guest'),
+  $oslomsg_rpc_use_ssl         = hiera('oslo_messaging_rpc_use_ssl', '0'),
   $oslomsg_notify_proto    	   = lookup('oslo_messaging_notify_scheme', 'rabbit'),
-  $oslomsg_notify_hosts    	   = any2array(lookup('rabbitmq_node_names', undef)),
+  $oslomsg_notify_hosts    	   = any2array(lookup('oslo_messaging_notify_node_names', undef)),
   $oslomsg_notify_password 	   = lookup('oslo_messaging_notify_password'),
   $oslomsg_notify_port     	   = lookup('oslo_messaging_notify_port', '5672'),
   $oslomsg_notify_username 	   = lookup('oslo_messaging_notify_user_name', 'guest'),
-  $oslomsg_use_ssl         	   = lookup('oslo_messaging_notify_use_ssl', '0'),
+  $oslomsg_notify_use_ssl      = lookup('oslo_messaging_notify_use_ssl', '0'),
   $memcached_ips                   = lookup('memcached::listen_ip_uri', undef),
   $my_ip                           = lookup('nova::my_ip', undef),	  
   $database_connection             = lookup('nova::database_connection', undef),
@@ -38,7 +39,7 @@ class trilio::dmapi (
         'port'      => $oslomsg_rpc_port,
         'username'  => $oslomsg_rpc_username,
         'password'  => $oslomsg_rpc_password,
-        'ssl'       => $oslomsg_use_ssl,
+        'ssl'       => $oslomsg_rpc_use_ssl,
       })
 
       $notification_transport_url = os_transport_url({
@@ -47,7 +48,7 @@ class trilio::dmapi (
         'port'      => $oslomsg_notify_port,
         'username'  => $oslomsg_notify_username,
         'password'  => $oslomsg_notify_password,
-        'ssl'       => $oslomsg_use_ssl,
+        'ssl'       => $oslomsg_notify_use_ssl,
       })
 
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
