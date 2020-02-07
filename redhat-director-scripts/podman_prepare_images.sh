@@ -11,6 +11,9 @@ fi
 undercloud_ip=$1
 tag=$2
 
+
+source /home/stack/stackrc
+
 ##Login to redhat container registry
 echo -e "Enter Redhat container registry credentials"
 podman login registry.redhat.io
