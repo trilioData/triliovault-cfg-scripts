@@ -9,6 +9,8 @@ fi
 undercloud_ip=$1
 tag=$2
 
+source /home/stack/stackrc
+
 ##Login to redhat container registry
 echo -e "Enter dockerhub account credentials"
 podman login docker.io
