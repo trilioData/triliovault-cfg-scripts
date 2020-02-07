@@ -26,7 +26,6 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.fetch import (
     apt_install,
     apt_update,
-    apt_upgrade,
     apt_purge,
     filter_missing_packages,
 )
@@ -477,7 +476,6 @@ def install_tvault_contego_plugin():
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
                config('triliovault-pkg-source')))
     apt_update()
-    apt_upgrade(fatal=True, dist=True)
 
     # Valildate backup target
     if not validate_backup():
@@ -569,11 +567,18 @@ def stop_tvault_contego_plugin():
 
 @hook('upgrade-charm')
 def upgrade_charm():
-    venv_path = config('tvault-datamover-virtenv-path')
-    # remove old venv if it exists
-    os.system('rm -rf {}'.format(venv_path))
+    # check if installed contego pkg is python 2 or 3
+    if os.system('dpkg -s python3-tvault-contego | grep Status') == 0:
+        pkg_name = 'python3-tvault-contego'
+    else:
+        pkg_name = 'tvault-contego'
 
-    clear_flag('tvault-contego.installed')
+    # Call the script to stop and uninstll TrilioVault Datamover
+    uninst_ret = uninstall_plugin(pkg_name)
+
+    if uninst_ret:
+        # Uninstall was successful, clear flag to re-install
+        clear_flag('tvault-contego.installed')
 
 
 @hook('config-changed')
