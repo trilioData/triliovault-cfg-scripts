@@ -208,7 +208,7 @@ cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
 #Build trilio-datamover containers for rhosp16
 
-echo -e "Creating trilio-datamover container for rhosp15"
+echo -e "Creating trilio-datamover container for rhosp16"
 cd $base_dir/${build_dir}/trilio-datamover/
 rm Dockerfile
 cp Dockerfile_rhosp16 Dockerfile
