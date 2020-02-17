@@ -12,7 +12,7 @@ fi
 tvault_version=$1
 
 
-declare -a openstack_releases=("queens" "rocky" "stein" "train")
+declare -a openstack_releases=("train")
 
 
 ## now loop through the above array
