@@ -1,0 +1,3 @@
+Defaults:nova !requiretty
+nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
+nova ALL = (root) NOPASSWD: {{ privsep_bin_path }} *

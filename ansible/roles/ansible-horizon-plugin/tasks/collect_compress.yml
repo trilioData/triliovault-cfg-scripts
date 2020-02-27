@@ -1,0 +1,15 @@
+---
+- debug:
+    msg: "{{ MANAGE_FILE }}"
+
+- name: Collect static files for horizon
+  command: "{{ MANAGE_FILE }}  collectstatic --noinput"
+  verbosity: 3
+  notify:
+     - restart webserver
+
+- name: compress the collected files
+  command: "{{ MANAGE_FILE }} compress --force"
+  verbosity: 3
+  notify:
+     - restart webserver

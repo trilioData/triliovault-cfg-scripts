@@ -1,0 +1,102 @@
+# *******************************************************************
+# This file was created automatically by the sample environment
+# generator. Developers should use `tox -e genconfig` to update it.
+# Users are recommended to make changes to a copy of the file instead
+# of the original, if any customizations are needed.
+# *******************************************************************
+# title: Deploy Public SSL Endpoints as IP Addresses
+# description: |
+#   Use this environment when deploying an SSL-enabled overcloud where the public
+#   endpoint is an IP address.
+parameter_defaults:
+  # Mapping of service endpoint -> protocol. Typically set via parameter_defaults in the resource registry.
+  # Type: json
+  EndpointMap:
+    AodhAdmin: {protocol: 'http', port: '8042', host: '192.168.122.170'}
+    AodhInternal: {protocol: 'http', port: '8042', host: '192.168.122.170'}
+    AodhPublic: {protocol: 'https', port: '13042', host: '192.168.122.170'}
+    BarbicanAdmin: {protocol: 'http', port: '9311', host: '192.168.122.170'}
+    BarbicanInternal: {protocol: 'http', port: '9311', host: '192.168.122.170'}
+    BarbicanPublic: {protocol: 'https', port: '13311', host: '192.168.122.170'}
+    CeilometerAdmin: {protocol: 'http', port: '8777', host: '192.168.122.170'}
+    CeilometerInternal: {protocol: 'http', port: '8777', host: '192.168.122.170'}
+    CeilometerPublic: {protocol: 'https', port: '13777', host: '192.168.122.170'}
+    CephRgwAdmin: {protocol: 'http', port: '8080', host: '192.168.122.170'}
+    CephRgwInternal: {protocol: 'http', port: '8080', host: '192.168.122.170'}
+    CephRgwPublic: {protocol: 'https', port: '13808', host: '192.168.122.170'}
+    CinderAdmin: {protocol: 'http', port: '8776', host: '192.168.122.170'}
+    CinderInternal: {protocol: 'http', port: '8776', host: '192.168.122.170'}
+    CinderPublic: {protocol: 'https', port: '13776', host: '192.168.122.170'}
+    CongressAdmin: {protocol: 'http', port: '1789', host: '192.168.122.170'}
+    CongressInternal: {protocol: 'http', port: '1789', host: '192.168.122.170'}
+    CongressPublic: {protocol: 'https', port: '13789', host: '192.168.122.170'}
+    DockerRegistryInternal: {protocol: 'https', port: '8787', host: '192.168.122.170'}
+    Ec2ApiAdmin: {protocol: 'http', port: '8788', host: '192.168.122.170'}
+    Ec2ApiInternal: {protocol: 'http', port: '8788', host: '192.168.122.170'}
+    Ec2ApiPublic: {protocol: 'https', port: '13788', host: '192.168.122.170'}
+    GaneshaInternal: {protocol: 'nfs', port: '2049', host: '192.168.122.170'}
+    GlanceAdmin: {protocol: 'http', port: '9292', host: '192.168.122.170'}
+    GlanceInternal: {protocol: 'http', port: '9292', host: '192.168.122.170'}
+    GlancePublic: {protocol: 'https', port: '13292', host: '192.168.122.170'}
+    GnocchiAdmin: {protocol: 'http', port: '8041', host: '192.168.122.170'}
+    GnocchiInternal: {protocol: 'http', port: '8041', host: '192.168.122.170'}
+    GnocchiPublic: {protocol: 'https', port: '13041', host: '192.168.122.170'}
+    HeatAdmin: {protocol: 'http', port: '8004', host: '192.168.122.170'}
+    HeatInternal: {protocol: 'http', port: '8004', host: '192.168.122.170'}
+    HeatPublic: {protocol: 'https', port: '13004', host: '192.168.122.170'}
+    HeatCfnAdmin: {protocol: 'http', port: '8000', host: '192.168.122.170'}
+    HeatCfnInternal: {protocol: 'http', port: '8000', host: '192.168.122.170'}
+    HeatCfnPublic: {protocol: 'https', port: '13005', host: '192.168.122.170'}
+    HorizonPublic: {protocol: 'https', port: '443', host: '192.168.122.170'}
+    IronicAdmin: {protocol: 'http', port: '6385', host: '192.168.122.170'}
+    IronicInternal: {protocol: 'http', port: '6385', host: '192.168.122.170'}
+    IronicPublic: {protocol: 'https', port: '13385', host: '192.168.122.170'}
+    IronicInspectorAdmin: {protocol: 'http', port: '5050', host: '192.168.122.170'}
+    IronicInspectorInternal: {protocol: 'http', port: '5050', host: '192.168.122.170'}
+    IronicInspectorPublic: {protocol: 'https', port: '13050', host: '192.168.122.170'}
+    KeystoneAdmin: {protocol: 'http', port: '35357', host: '192.168.122.170'}
+    KeystoneInternal: {protocol: 'http', port: '5000', host: '192.168.122.170'}
+    KeystonePublic: {protocol: 'https', port: '13000', host: '192.168.122.170'}
+    ManilaAdmin: {protocol: 'http', port: '8786', host: '192.168.122.170'}
+    ManilaInternal: {protocol: 'http', port: '8786', host: '192.168.122.170'}
+    ManilaPublic: {protocol: 'https', port: '13786', host: '192.168.122.170'}
+    MistralAdmin: {protocol: 'http', port: '8989', host: '192.168.122.170'}
+    MistralInternal: {protocol: 'http', port: '8989', host: '192.168.122.170'}
+    MistralPublic: {protocol: 'https', port: '13989', host: '192.168.122.170'}
+    MysqlInternal: {protocol: 'mysql+pymysql', port: '3306', host: '192.168.122.170'}
+    NeutronAdmin: {protocol: 'http', port: '9696', host: '192.168.122.170'}
+    NeutronInternal: {protocol: 'http', port: '9696', host: '192.168.122.170'}
+    NeutronPublic: {protocol: 'https', port: '13696', host: '192.168.122.170'}
+    NovaAdmin: {protocol: 'http', port: '8774', host: '192.168.122.170'}
+    NovaInternal: {protocol: 'http', port: '8774', host: '192.168.122.170'}
+    NovaPublic: {protocol: 'https', port: '13774', host: '192.168.122.170'}
+    NovaPlacementAdmin: {protocol: 'http', port: '8778', host: '192.168.122.170'}
+    NovaPlacementInternal: {protocol: 'http', port: '8778', host: '192.168.122.170'}
+    NovaPlacementPublic: {protocol: 'https', port: '13778', host: '192.168.122.170'}
+    NovaVNCProxyAdmin: {protocol: 'http', port: '6080', host: '192.168.122.170'}
+    NovaVNCProxyInternal: {protocol: 'http', port: '6080', host: '192.168.122.170'}
+    NovaVNCProxyPublic: {protocol: 'https', port: '13080', host: '192.168.122.170'}
+    OctaviaAdmin: {protocol: 'http', port: '9876', host: '192.168.122.170'}
+    OctaviaInternal: {protocol: 'http', port: '9876', host: '192.168.122.170'}
+    OctaviaPublic: {protocol: 'https', port: '13876', host: '192.168.122.170'}
+    OpenDaylightAdmin: {protocol: 'http', port: '8081', host: '192.168.122.170'}
+    OpenDaylightInternal: {protocol: 'http', port: '8081', host: '192.168.122.170'}
+    PankoAdmin: {protocol: 'http', port: '8977', host: '192.168.122.170'}
+    PankoInternal: {protocol: 'http', port: '8977', host: '192.168.122.170'}
+    PankoPublic: {protocol: 'https', port: '13977', host: '192.168.122.170'}
+    SaharaAdmin: {protocol: 'http', port: '8386', host: '192.168.122.170'}
+    SaharaInternal: {protocol: 'http', port: '8386', host: '192.168.122.170'}
+    SaharaPublic: {protocol: 'https', port: '13386', host: '192.168.122.170'}
+    SwiftAdmin: {protocol: 'http', port: '8080', host: '192.168.122.170'}
+    SwiftInternal: {protocol: 'http', port: '8080', host: '192.168.122.170'}
+    SwiftPublic: {protocol: 'https', port: '13808', host: '192.168.122.170'}
+    TackerAdmin: {protocol: 'http', port: '9890', host: '192.168.122.170'}
+    TackerInternal: {protocol: 'http', port: '9890', host: '192.168.122.170'}
+    TackerPublic: {protocol: 'https', port: '13989', host: '192.168.122.170'}
+    ZaqarAdmin: {protocol: 'http', port: '8888', host: '192.168.122.170'}
+    ZaqarInternal: {protocol: 'http', port: '8888', host: '192.168.122.170'}
+    ZaqarPublic: {protocol: 'https', port: '13888', host: '192.168.122.170'}
+    ZaqarWebSocketAdmin: {protocol: 'ws', port: '9000', host: '192.168.122.170'}
+    ZaqarWebSocketInternal: {protocol: 'ws', port: '9000', host: '192.168.122.170'}
+    ZaqarWebSocketPublic: {protocol: 'wss', port: '9000', host: '192.168.122.170'}
+

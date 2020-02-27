@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ $# -lt 2 ];then
    echo "Script takes exacyly 2 argument"
    echo -e "./prepare_trilio_images.sh <undercloud_ip> <container_tag(queens)>"

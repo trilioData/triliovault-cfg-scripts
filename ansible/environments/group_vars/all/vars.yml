@@ -1,10 +1,30 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
-PORT_NO: 8081
+PORT_NO: 8085
+#Need to update python version of openstack setup Example PYTHON_VERSION: python2 or PYTHON_VERSION: python3
+PYTHON_VERSION: python2
+#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
+TVAULT_PACKAGE_VERSION: 3.3.36
+DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
+RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
+
+#Need to add the following statement in nova sudoers file
+#nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
+#These changes require for Datamover, Otherwise Datamover will not work
+#Are you sure? Please set variable to 
+#  UPDATE_NOVA_SUDOERS_FILE: proceed
+#other wise ansible tvault-contego installation will exit
+UPDATE_NOVA_SUDOERS_FILE: notproceed
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
 verbosity_level: 2
+
+#Details for Nova Compute filter
+#specify NOVA_COMPUTE_FILTERS_FILE
+#For Debian: /etc/nova/rootwrap.d/compute.filters
+#For RHEL : /usr/share/nova/rootwrap/compute.filters 
+NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
 
 #Name of web server service that openstack horizon node uses 
 #For Debian: apache2
@@ -46,9 +66,10 @@ VAULT_S3_ACCESS_KEY: sample_s3_access_key
 VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
+VAULT_S3_SIGNATURE_VERSION: default
 #### S3 Specific Backend Configurations
 #### Provide one of follwoing two values in s3_type variable, string's case should be match
-#Amazon/Ceph_S3/
+#Amazon/Other_S3_Compatible
 s3_type: sample_s3_type
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
@@ -100,6 +121,7 @@ status_200: "200"
 status_201: "201"
 xenial: "xenial"
 willy: "willy"
+bionic: "bionic"
 release_13: "13"
 release_2000: "2000"
 release_2016: "2016"
@@ -109,6 +131,7 @@ redhat: "RedHat"
 suse: "Suse"
 SLES: "SLES"
 Amazon: "Amazon"
+Other_S3_Compatible: "Other_S3_Compatible"
 Ceph_S3: "Ceph_S3"
 Minio_S3: "Minio_S3"
 TEMPAUTH: "TEMPAUTH" 
@@ -127,6 +150,3 @@ datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
 release_17: "17"
-
-
-

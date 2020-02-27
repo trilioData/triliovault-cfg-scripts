@@ -1,0 +1,17 @@
+[Unit]
+Description=Tvault contego
+Requires=tvault-object-store.service
+
+[Service]
+User=nova
+Group=nova
+LimitNOFILE=65536
+MemoryMax=10G
+Type=simple
+ExecStart= /usr/bin/python /usr/bin/tvault-contego --config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf --config-file=/etc/tvault-contego/tvault-contego.conf
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

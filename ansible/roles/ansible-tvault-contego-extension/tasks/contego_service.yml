@@ -41,7 +41,7 @@
   when: >
         ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
         (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
-        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))) and (NFS == True)
+        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))) and (NFS == True)
 
 - name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
   template:
@@ -50,29 +50,10 @@
   when: >
         ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
         (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
-        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))) and (object_store == True)
+        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))) and (object_store == True)
  
 - name: create tvault-contego-service-in-systemd ansible_distribution is ubuntu 14
   template:
      src: contego_service_debian.j2
      dest: "{{contego_service_debian_path}}"
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
-
-- name: enable and daemon reload tvault contego service 
-  block:
-    - shell: systemctl daemon-reload
-    - name: enable tvault-contego service and reload it
-      service: name=tvault-contego  state=restarted enabled=yes
-  when: >
-       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution== suse) or (ansible_distribution== SLES) or
-       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))
-
-- name: restart tvault-contego
-  service: name=tvault-contego state=restarted
-  when: >
-       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution== suse) or (ansible_distribution== SLES) or
-       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy))
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)

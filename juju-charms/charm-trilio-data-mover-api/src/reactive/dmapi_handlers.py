@@ -1,20 +1,27 @@
 import charms.reactive as reactive
 import os
-import netaddr
-
+import re
 # This charm's library contains all of the handler code associated with
 # dmapi
 import charm.openstack.dmapi as dmapi
+from subprocess import (
+    check_output,
+    check_call,
+)
+
 from charmhelpers.core.hookenv import (
     config,
     log,
-    status_set,
+    application_version_set,
 )
 
 from charmhelpers.fetch import (
-    add_source,
-    apt_install,
     apt_update,
+    apt_upgrade,
+)
+
+from charmhelpers.contrib.openstack.utils import (
+    configure_installation_source,
 )
 
 from charmhelpers.core.host import (
@@ -23,6 +30,7 @@ from charmhelpers.core.host import (
     add_group,
     add_user_to_group,
     chownr,
+    mkdir,
 )
 
 # Minimal inferfaces required for operation
@@ -36,23 +44,15 @@ DMAPI_USR = 'dmapi'
 DMAPI_GRP = 'dmapi'
 
 
-def validate_ip(ip):
+def get_new_version(pkg_name):
     """
-    Validate triliovault_ip provided by the user
-    triliovault_ip should not be blank
-    triliovault_ip should have a valid IP address and reachable
+    Get the latest version available on the TrilioVault node.
     """
-    if ip and ip.strip():
-        # Not blank
-        if netaddr.valid_ipv4(ip):
-            # Valid IP address, check if it's reachable
-            if os.system("ping -c 1 " + ip):
-                return False
-            return True
-        else:
-            # Invalid IP address
-            return False
-    return False
+    apt_cmd = "apt list {}".format(pkg_name)
+    pkg = check_output(apt_cmd.split()).decode('utf-8')
+    new_ver = re.search(r'\s([\d.]+)', pkg).group().strip()
+
+    return new_ver
 
 
 def add_user():
@@ -76,30 +76,33 @@ def add_user():
 def install_packages():
     # Add TrilioVault repository to install required package
     # and add queens repo to install nova libraries
-    if not validate_ip(config('triliovault-ip')):
-        log("Invalid IP address !")
-        status_set(
-            'blocked',
-            'Invalid IP address, please provide correct IP address')
-        return
-
     if not add_user():
         log("Adding dmapi user failed!")
         return
 
-    add_source('deb http://{}:8085 deb-repo/'.format(
-        config('triliovault-ip')))
-    os.system('sudo add-apt-repository cloud-archive:queens')
+    os.system('sudo echo "{}" > '
+              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
+                  config('triliovault-pkg-source')))
+
+    new_src = config('openstack-origin')
+    configure_installation_source(new_src)
+
+    if config('python-version') == 2:
+        dmapi_pkg = 'dmapi'
+    else:
+        dmapi_pkg = 'python3-dmapi'
+
     apt_update()
     dmapi.install()
-    apt_install(['dmapi'], options=['--allow-unauthenticated'], fatal=True)
     # Placing the service file
     os.system('sudo cp files/trilio/tvault-datamover-api.service '
               '/etc/systemd/system/')
     chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
+    mkdir('/var/cache/dmapi', DMAPI_USR, DMAPI_GRP, perms=493)
     os.system('sudo systemctl enable tvault-datamover-api')
     service_restart('tvault-datamover-api')
 
+    application_version_set(get_new_version(dmapi_pkg))
     reactive.set_state('charm.installed')
 
 
@@ -169,4 +172,24 @@ def cluster_connected(hacluster):
 
 @reactive.hook('upgrade-charm')
 def upgrade_charm():
-    dmapi.install()
+    os.system('sudo echo "{}" > '
+              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
+                  config('triliovault-pkg-source')))
+
+    new_src = config('openstack-origin')
+    configure_installation_source(new_src)
+
+    apt_update()
+    apt_upgrade(fatal=True, dist=True)
+
+    chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
+
+    check_call(['systemctl', 'daemon-reload'])
+    service_restart('tvault-datamover-api')
+
+    if config('python-version') == 2:
+        dmapi_pkg = 'dmapi'
+    else:
+        dmapi_pkg = 'python3-dmapi'
+
+    application_version_set(get_new_version(dmapi_pkg))

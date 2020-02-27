@@ -9,13 +9,23 @@
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
-- name: install tvault-datamover-api rpm package
+- name: install tvault-datamover-api rpm package when using python2
   yum:
     update_cache: yes
     name: dmapi
     state: latest
   notify:
       - restart tvault-datamover-api
+  when: PYTHON_VERSION=="python2"
+      
+- name: install tvault-datamover-api rpm package when using python3
+  yum:
+    update_cache: yes
+    name: python3-dmapi
+    state: latest
+  notify:
+      - restart tvault-datamover-api
+  when: PYTHON_VERSION=="python3"
 
 - name: change permission of datamover log file 
   file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
