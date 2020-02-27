@@ -14,17 +14,6 @@ parameter_defaults:
 
    DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.58-queens
 
-   ## Datamover api port, default is 8784
-   DmApiPort: 8784
-
-   ## If user wants to enable SSL for datamover api's public endpoint in haproxy
-   ## Default value is 'true'
-   DmApiEnableSSL: false
-
-   ## If you are enabling ssl for datamover api public endpoint then following parameter is 
-   ## taken into consideration otherwise not
-   DmApiSslPort: 13784
-
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'
 

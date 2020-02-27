@@ -5,7 +5,31 @@
        - contego
        - contego-extension
        - all-install
-
+       
+- debug:
+    msg:
+        - "You defined 'UPDATE_NOVA_SUDOERS_FILE' as  'notproceed' for updating nova sudoers file,"
+        - "Inside the environments/group_vars/all/vars.yml "
+        - "Exiting the Contego installation"
+        - "Please define varibale  'UPDATE_NOVA_SUDOERS_FILE' as  'proceed' inside the environments/group_vars/all/vars.yml"
+  when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
+  
+- meta: end_play
+  when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
+  
+- import_tasks: roles/ansible-datamover-api/tasks/get_python.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+       
+- name: check if user using custom virtual environment
+  import_tasks: get_venv.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+       
 - name: validate NFS bkp target is reachable
   import_tasks: nfs.yml
   when: NFS == True
@@ -13,7 +37,14 @@
        - contego
        - contego-extension
        - all-install
- 
+       
+- name: create trilio filters
+  import_tasks: create_filter.yml
+  tags:
+       - contego
+       - contego-extension
+       - all-install
+       
 - name: get openstack version
   import_tasks: get_openstack_version.yml
   tags:
@@ -153,3 +184,10 @@
        - contego-uninstall
        - contego-extension-uninstall
        - all-uninstall
+ 
+- name: Remove trilio.filters and trilio.pth files after uninstall
+  import_tasks: remove_trilio_files.yml
+  tags:
+       - contego-uninstall
+       - contego-extension-uninstall
+       - all-uninstall 

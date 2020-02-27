@@ -60,6 +60,33 @@
       register: tvault_contego_version_installed
   when: OPEN_STACK_RELEASE == newton
 
+- name: get privsep-helper binary path
+  shell: which privsep-helper
+  register: privsep_bin_path
+
+- debug: msg="bin path={{privsep_bin_path}}"
+
+- name: find location of nova sudoers file
+  shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
+  ignore_errors: yes
+  register: output
+
+- debug:
+    msg: "{{ output.stdout}}"
+  when: output.stdout != ""
+
+- name: Add privsep-helper to nova sudoers file
+  lineinfile:
+     path: "{{ output.stdout}}"
+     line: "nova ALL = (root) NOPASSWD: {{privsep_bin_path.stdout}} *"
+  when: >
+    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
+    output.stdout != ""
+
+- name: Added nova sudoers file if not exist
+  template: src=nova.j2 dest=/etc/sudoers.d/nova mode=644
+  when: output.stdout == ""
+
 - name: get tvault contego binary path 
   shell: which tvault-contego
   register: tvault_contego_bin_path
@@ -68,10 +95,22 @@
 
 - name: get tvault contego driver file path
   shell: python -c "import contego.nova.extension.driver; print contego.nova.extension.driver.__path__[0]"
-  register: contego_driver_path
+  register: contego_driver_path_python2
+  when: PYTHON_VERSION=="python2"
+  
+- name: get tvault contego driver file path when using python3
+  shell: python3 -c "import contego.nova.extension.driver; print(contego.nova.extension.driver.__path__[0])"
+  register: contego_driver_path_python3
+  when: PYTHON_VERSION=="python3"
 
-- name: append tvault object store s3vaultfuse file path
+- name: append tvault object store s3vaultfuse file path when using python2
   set_fact:
-     s3_fuse_file: "{{contego_driver_path.stdout}}/s3vaultfuse.py"
+     s3_fuse_file: "{{contego_driver_path_python2.stdout}}/s3vaultfuse.py"
+  when: PYTHON_VERSION=="python2"
+  
+- name: append tvault object store s3vaultfuse file path when using python3
+  set_fact:
+     s3_fuse_file: "{{contego_driver_path_python3.stdout}}/s3vaultfuse.py"
+  when: PYTHON_VERSION=="python3"
   
 - debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}

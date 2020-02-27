@@ -1,9 +1,17 @@
 ---
 options:
-  triliovault-ip:
+  python-version:
+    type: int
+    default: 3
+    description: Openstack base python version(2 or 3)
+  triliovault-pkg-source:
+    type: string
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /"
+    description: Repository address of triliovault packages
+  tvault-datamover-virtenv-url:
     type: string
     default:
-    description: TrilioVault IP Address
+    description: Downloadable URL of triliovault contego virtual environment
   tvault-datamover-ext-usr:
     type: string
     default: nova
@@ -24,6 +32,10 @@ options:
     type: string
     default: /etc/tvault-contego/tvault-contego.conf
     description: Trilio Vault Datamover config file location
+  nova-config:
+    type: string
+    default: /etc/nova/nova.conf
+    description: Nova default configuration file location
   backup-target-type:
     type: string
     default: nfs
@@ -68,3 +80,23 @@ options:
     type: string
     default:
     description: S3 endpoint URL
+  tv-datamover-debug:
+    type: boolean
+    default: False
+    description: debug parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-verbose:
+    type: boolean
+    default: True
+    description: verbose parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-max-uploads-pending:
+    type: int
+    default: 3
+    description: max_uploads_pending parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-max-commit-pending:
+    type: int
+    default: 3
+    description: max_commit_pending parameter value in /etc/tvault-contego/tvault-contego.conf
+  tv-datamover-qemu-agent-ping-timeout:
+    type: int
+    default: 600
+    description: qemu_agent_ping_timeout parameter value in /etc/tvault-contego/tvault-contego.conf

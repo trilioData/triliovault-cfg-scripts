@@ -9,14 +9,19 @@
      src: trilio.list
      dest: "{{trilio_apt_repo_file_path}}"
 
-- name: install tvault-datamover-api deb package on ubuntu xenial or above
-  apt:
-     update_cache: yes
-     name: dmapi
-     state: latest
-     allow_unauthenticated: yes
-  notify:
-      - restart tvault-datamover-api
+- name: install tvault-datamover-api deb package when using python2
+  shell: |
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+          apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+  when: PYTHON_VERSION=="python2"
+
+- name: install tvault-datamover-api deb package when using python3
+  shell: |
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          rm -rf python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+  when: PYTHON_VERSION=="python3"
 
 - name: change permission of datamover log file
   file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
@@ -48,7 +53,7 @@
     when: (populate_conf_ubuntu.changed or create_systemd_ubuntu.changed)
     notify:
         - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)
 
 
 ##Ubuntu14
@@ -58,4 +63,4 @@
      dest: "{{datamover_service_debian_path}}"
   notify:
      - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy)
+  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)

@@ -5,12 +5,24 @@
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
-- name: install tvault horizon plugin packages
+- name: install tvault horizon plugin packages when using python2
   yum:
      update_cache: yes
      name:
-        - tvault-horizon-plugin
         - python-workloadmgrclient
+        - tvault-horizon-plugin
      state: latest
   notify:
      - restart webserver
+  when: PYTHON_VERSION=="python2"
+
+- name: install tvault horizon plugin packages when using python3
+  yum:
+     update_cache: yes
+     name:
+        - python3-workloadmgrclient
+        - python3-tvault-horizon-plugin
+     state: latest
+  notify:
+     - restart webserver
+  when: PYTHON_VERSION=="python3"

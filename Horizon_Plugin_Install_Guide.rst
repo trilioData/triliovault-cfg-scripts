@@ -10,7 +10,10 @@ It is supposed to be installed on all horizon nodes.
 
   i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
   OpenStack compute, controller and horizon nodes.
-  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
+  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56.
+
+  ii) Make sure that your horizon nodes have connectivity to the Internet. 
+  This is required because our yum, apt package repos are on cloud. 
   
 **2. Setup Trilio repository**
 
@@ -19,16 +22,16 @@ Clone the repository:
    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
    cd triliovault-cfg-scripts/
+ 
+   git checkout stable/3.4
    
   *If platform is RHEL/CentOs*
-  Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
-  
-    cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+
+    cp kolla-ansible/trilio-datamover-api/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+    echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover extension package**
 

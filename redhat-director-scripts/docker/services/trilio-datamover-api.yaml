@@ -38,10 +38,6 @@ parameters:
     default: '8784'
     description: Trilio Dmapi listen port
     type: string
-  DmApiEnableSSL:
-    default: true
-    description: Need to enable ssl for dmapi endpoints or not
-    type: boolean
   DmApiSslPort:
     default: '13784'
     description: Trilio Dmapi ssl listen port
@@ -54,7 +50,6 @@ outputs:
       service_name: trilio_datamover_api
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
-        trilio::dmapi::dmapi_enable_ssl: {get_param: DmApiEnableSSL}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
         tripleo::trilio_datamover_api::haproxy_endpoints:
             trilio_datamover_api:
@@ -83,7 +78,7 @@ outputs:
               merge: true
               preserve_properties: true
           permissions:
-            - path: /var/log/dmapi
+            - path: /var/log/trilio-datamover-api
               owner: nova:nova
               recurse: true
       docker_config:
@@ -98,6 +93,20 @@ outputs:
               - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
               - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
               - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
             environment:
               - KOLLA_CONFIG_STRATEGY=COPY_ALWAYS
-      upgrade_tasks: ''
+      host_prep_tasks:
+        - name: create trilio datamover api log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks:
+        - when: step|int == 0
+          tags: common
+        - when: step|int == 1
+        - when: step|int == 2
+        - when: step|int == 3

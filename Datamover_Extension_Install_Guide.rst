@@ -13,6 +13,9 @@
   ii)Select which storage type you want to use to store your snapshots.
   TrilioVault supports NFS, Amazon S3 and Ceph S3. This would be your backup target type.
 
+  iii) Make sure that your compute nodes have connectivity to the Internet.
+  This is required because our yum, apt package repos are on cloud.
+
 **Note**: *Perform following steps on all compute nodes.*
 
 **2. Setup Trilio repository**
@@ -20,17 +23,17 @@
   Clone the repository:
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
     
-    cd triliovault-cfg-scripts
+    cd triliovault-cfg-scripts/
+   
+    git checkout stable/3.4
    
   *If platform is RHEL/CentOs*
-  Create /etc/yum.repos.d/trilio.repo file with following content.
-  Make sure, you replace "192.168.14.56" with actual TrilioVault VM IP from your enviornment
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.repo /etc/yum.repos.d/trilio.repo
+    cp kolla-ansible/trilio-datamover-api/trilio.repo /etc/yum.repos.d/trilio.repo
 
   *If platform is Ubuntu*
   
-    cp ansible/roles/ansible-datamover-api/templates/trilio.list /etc/apt/sources.list/trilio.list
+    echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover extension package**
 
@@ -38,17 +41,16 @@
    
     yum makecache
 
-    yum install tvault-contego
+    yum install tvault-contego puppet-triliovault -y
    
    *If platform is Ubuntu*
    
     apt-get update
 
-    apt-get install contego
+    apt-get install tvault-contego-extension
 
     apt-get install tvault-contego
    
-   **Note**: "tvault-contego" is the name of our datamover extension package.
     
 **4. Populate datamover conf file**
      mkdir /etc/tvault-contego
@@ -102,14 +104,18 @@
 
 **9. Create service init files**
   If your compute node using systemd init mechinism:
-  
-    cp conf-files/tvault-contego.service /etc/systemd/system/
-   
-  *If backup target is s3, you need copy object-store service file too. In case of nfs you only need tvault-contego service.*
-  
-    cp conf-files/tvault-object-store.service /etc/systemd/system/  
 
-  **Note**: You need edit python install directory path in above init files as per platform you are using
+  *If backup target is 'NFS'
+  
+    cp conf-files/tvault-contego.service.nfs /etc/systemd/system/tvault-contego.service
+   
+  *If backup target is 'S3'*
+  
+    cp conf-files/tvault-contego.service.s3 /etc/systemd/system/tvault-contego.service    
+
+    cp conf-files/tvault-object-store.service /etc/systemd/system/tvault-object-store.service 
+
+  **Note**: You need validate above init files, executable paths and conf file paths. If necessary you can edit python install directory path in above init files as per platform you are using
 
 
 **10. Start datamover services**
