@@ -26,7 +26,7 @@ connection = <%= @database_connection %>
 connection = <%= @api_database_connection %>
 
 [keystone_authtoken]
-memcached_servers = <%= @memcached_servers %>:11211
+memcached_servers = <%= @memcached_servers %>
 signing_dir = /var/cache/dmapi
 cafile =
 project_domain_name = <%= @project_domain_name %>
