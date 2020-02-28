@@ -1,0 +1,112 @@
+heat_template_version: queens
+
+description: >
+  Trilio Datamover Api containerized service
+
+parameters:
+  DockerTrilioDmApiImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  DmApiPort:
+    default: '8784'
+    description: Trilio Dmapi listen port
+    type: string
+  DmApiSslPort:
+    default: '13784'
+    description: Trilio Dmapi ssl listen port
+    type: string
+
+outputs:
+  role_data:
+    description: Role data for the Trilio Datamover role.
+    value:
+      service_name: trilio_datamover_api
+      config_settings:
+        trilio::dmapi::dmapi_port: {get_param: DmApiPort}
+        trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
+        tripleo::trilio_datamover_api::haproxy_endpoints:
+            trilio_datamover_api:
+                public_virtual_ip: "%{hiera('public_virtual_ip')}"
+                internal_ip: "%{hiera('trilio_datamover_api_vip')}"
+                service_port: {get_param: DmApiPort}
+                public_ssl_port: {get_param: DmApiSslPort}
+                member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
+                haproxy_listen_bind_param: ['transparent']      
+      puppet_config:
+        config_volume: triliodmapi
+        puppet_tags: dmapiconfig
+        step_config: |
+            include ::trilio::dmapi
+        config_image: {get_param: DockerTrilioDmApiImage}
+      kolla_config:
+        /var/lib/kolla/config_files/trilio_dmapi.json:
+          command: /usr/bin/python /usr/bin/dmapi-api
+          config_files:  
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliodmapi/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/trilio-datamover-api
+              owner: nova:nova
+              recurse: true
+      docker_config:
+        step_5:
+          trilio_dmapi:
+            image: {get_param: DockerTrilioDmApiImage}
+            net: host
+            privileged: true
+            user: nova
+            restart: always
+            volumes:
+              - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+              - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
+              - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+            environment:
+               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create trilio datamover api log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks:
+        - when: step|int == 0
+          tags: common
+        - when: step|int == 1
+        - when: step|int == 2
+        - when: step|int == 3
