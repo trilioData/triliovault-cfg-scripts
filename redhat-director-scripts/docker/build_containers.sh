@@ -149,7 +149,7 @@ docker build --no-cache -t trilio/trilio-horizon-plugin:${tvault_version}-rhosp1
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
-
+<<'COMMENT'
 #################################################################################################
 
 ################## Build RHOSP15 containers ####################
@@ -194,6 +194,8 @@ podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp15
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
+
+COMMENT
 #############################################
 
 ################# Create containers for RHOSP16 #######################
