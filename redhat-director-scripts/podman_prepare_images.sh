@@ -2,13 +2,14 @@
 
 set -e
 
-if [ $# -lt 1 ];then
-   echo "Script takes exacyly 1 argument"
-   echo -e "./prepare_trilio_images.sh <CONTAINER_TAG>"
+if [ $# -lt 2 ];then
+   echo "Script takes exacyly 2 argument"
+   echo -e "./prepare_trilio_images.sh <UNDERCLOUD_HOSTNAME> <CONTAINER_TAG>"
    exit 1
 fi
 
-tag=$1
+undercloud_hostname=$1
+tag=$2
 
 
 current_dir=$(pwd)
@@ -89,8 +90,12 @@ rm -rf ${build_dir}
 #openstack tripleo container image push --local ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 
 ## Update image locations in env file
-dm_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover:${tag}"
-dmapi_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover-api:${tag}"
+trilio_dm_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover:${tag}"
+trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover-api:${tag}"
+trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/trilio-horizon-plugin:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" trilio_env.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" trilio_env.yaml
+sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" trilio_env.yaml
+sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" trilio_env.yaml
+sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" trilio_env.yaml
+sed  -i "s/.*ContainerHorizonConfigImage.*/   ContainerHorizonConfigImage: ${trilio_horizon_image}/g" trilio_env.yaml
+
