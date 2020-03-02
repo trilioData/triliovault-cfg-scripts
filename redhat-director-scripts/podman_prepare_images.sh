@@ -4,7 +4,7 @@ set -e
 
 if [ $# -lt 2 ];then
    echo "Script takes exacyly 2 argument"
-   echo -e "./prepare_trilio_images.sh <UNDERCLOUD_HOSTNAME> <CONTAINER_TAG>"
+   echo -e "./prepare_trilio_images.sh <UNDERCLOUD_REGISTRY_HOSTNAME> <CONTAINER_TAG>"
    exit 1
 fi
 
@@ -74,6 +74,7 @@ openstack tripleo container image push --local docker.io/trilio/trilio-horizon-p
 # Clean the build_dir
 rm -rf ${build_dir}
 
+cd ${base_dir}/
 ## Prepare openstack horizon with trilio container
 ###podman pull registry.redhat.io/trilio/trilio-horizon-plugin:${tag}
 ###podman tag registry.redhat.io/trilio/trilio-horizon-plugin:${tag} ${undercloud_ip}:8787/trilio/trilio-horizon-plugin:${tag}
@@ -97,5 +98,3 @@ trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/trilio-horizon-plugin
 sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" trilio_env.yaml
 sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" trilio_env.yaml
 sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" trilio_env.yaml
-sed  -i "s/.*ContainerHorizonConfigImage.*/   ContainerHorizonConfigImage: ${trilio_horizon_image}/g" trilio_env.yaml
-
