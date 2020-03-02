@@ -9,16 +9,12 @@ parameter_defaults:
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
-   ## Container locations
-   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.58-queens
+   ## TrilioVault container pull urls
+   DockerTrilioDatamoverImage: undercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.x-rhosp16
+   DockerTrilioDmApiImage: undercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.x-rhosp16
 
-   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.58-queens
-
-   ## To install TrilioVault's Horizon Plugin, you can uncomment following two lines and provide 
-   ## Trilio's horizon plugin image url from undercloud registry. Find this url using command: 'openstack tripleo container image list | grep trilio-horizon-plugin'
- 
-   #ContainerHorizonImage: 192.168.122.10:8787/trilio/trilio-horizon-plugin:4.0.x-rhosp16
-   #ContainerHorizonConfigImage: 192.168.122.10:8787/trilio/trilio-horizon-plugin:4.0.x-rhosp16
+   ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
+   ContainerHorizonImage: undercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.x-rhosp16
 
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
