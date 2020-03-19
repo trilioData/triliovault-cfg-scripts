@@ -152,13 +152,9 @@ def add_users():
     Adding passwordless sudo access to nova user and adding to required groups
     """
     usr = config('tvault-datamover-ext-usr')
-    path = '/etc/sudoers.d/tvault-nova'
     source = '/usr/lib'
     destination = '/usr/lib64'
-    content = '{} ALL=(ALL) NOPASSWD: ALL'.format(usr)
     try:
-        write_file(path, content, owner='root', group='root', perms=501)
-
         # Adding nova user to system groups
         add_user_to_group(usr, 'kvm')
         add_user_to_group(usr, 'disk')
@@ -198,12 +194,6 @@ def create_virt_env(pkg_name):
 
     # change virtenv dir(/home/tvault) users to nova
     chownr(path, usr, grp)
-
-    # Copy Trilio sudoers and filters files
-    os.system(
-        'cp files/trilio/trilio_sudoers /etc/sudoers.d/')
-    os.system(
-        'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
 
     return True
 
