@@ -11,7 +11,6 @@ from subprocess import (
 
 from charmhelpers.core.hookenv import (
     config,
-    log,
     application_version_set,
 )
 
@@ -26,11 +25,6 @@ from charmhelpers.contrib.openstack.utils import (
 
 from charmhelpers.core.host import (
     service_restart,
-    adduser,
-    add_group,
-    add_user_to_group,
-    chownr,
-    mkdir,
 )
 
 # Minimal inferfaces required for operation
@@ -39,9 +33,6 @@ MINIMAL_INTERFACES = [
     'identity-service.available',
     'amqp.available',
 ]
-
-DMAPI_USR = 'dmapi'
-DMAPI_GRP = 'dmapi'
 
 
 def get_new_version(pkg_name):
@@ -55,31 +46,12 @@ def get_new_version(pkg_name):
     return new_ver
 
 
-def add_user():
-    """
-    Adding passwordless sudo access to nova user and adding to required groups
-    """
-    try:
-        add_group(DMAPI_GRP, system_group=True)
-        adduser(DMAPI_USR, password=None, shell='/bin/bash', system_user=True)
-        add_user_to_group(DMAPI_USR, DMAPI_GRP)
-    except Exception as e:
-        log("Failed while adding user with msg: {}".format(e))
-        return False
-
-    return True
-
-
 # use a synthetic state to ensure that it get it to be installed independent of
 # the install hook.
 @reactive.when_not('charm.installed')
 def install_packages():
     # Add TrilioVault repository to install required package
     # and add queens repo to install nova libraries
-    if not add_user():
-        log("Adding dmapi user failed!")
-        return
-
     os.system('sudo echo "{}" > '
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
                   config('triliovault-pkg-source')))
@@ -94,12 +66,6 @@ def install_packages():
 
     apt_update()
     dmapi.install()
-    # Placing the service file
-    os.system('sudo cp files/trilio/tvault-datamover-api.service '
-              '/etc/systemd/system/')
-    chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
-    mkdir('/var/cache/dmapi', DMAPI_USR, DMAPI_GRP, perms=493)
-    os.system('sudo systemctl enable tvault-datamover-api')
     service_restart('tvault-datamover-api')
 
     application_version_set(get_new_version(dmapi_pkg))
@@ -136,8 +102,6 @@ def setup_endpoint(keystone):
 def render(*args):
     dmapi.render_configs(args)
     reactive.set_state('config.complete')
-    # change the ownership to 'dmapi'
-    chownr('/etc/dmapi', DMAPI_USR, DMAPI_GRP)
     dmapi.assess_status()
 
 
@@ -181,8 +145,6 @@ def upgrade_charm():
 
     apt_update()
     apt_upgrade(fatal=True, dist=True)
-
-    chownr('/var/log/dmapi', DMAPI_USR, DMAPI_GRP)
 
     check_call(['systemctl', 'daemon-reload'])
     service_restart('tvault-datamover-api')
