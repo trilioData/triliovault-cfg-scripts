@@ -78,6 +78,10 @@ parameters:
     default: false
     description: S3 ssl enabled
     type: boolean
+  NovaNfsEnabled:
+    default: false
+    description: Whether to enable or not the NFS backend for Nova
+    type: boolean
  
 conditions:
     nova_nfs_enabled:
@@ -163,7 +167,6 @@ outputs:
                   - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
                   - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
                   - /dev:/dev
-                  - /var/lib/nova:/var/lib/nova:shared,z
                   - /var/run/libvirt/:/var/run/libvirt/
                   - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
                 -
