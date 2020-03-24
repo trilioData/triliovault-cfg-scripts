@@ -78,6 +78,15 @@ parameters:
     default: false
     description: S3 ssl enabled
     type: boolean
+ 
+conditions:
+    nova_nfs_enabled:
+      or:
+        - and:
+          - equals: [{get_param: NovaNfsEnabled}, true]
+          - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, '']
+        - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, true]
+    
 
 outputs:
   role_data:
@@ -146,15 +155,22 @@ outputs:
             user: nova
             restart: always
             volumes:
-              - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
-              - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-              - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
-              - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
-              - /dev:/dev
-              - /var/lib/nova:/var/lib/nova:shared
-              - /var/run/libvirt/:/var/run/libvirt/
-              - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+              list_concat:
+                -
+                  - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+                  - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
+                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+                  - /dev:/dev
+                  - /var/lib/nova:/var/lib/nova:shared,z
+                  - /var/run/libvirt/:/var/run/libvirt/
+                  - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                -
+                  if:
+                  - nova_nfs_enabled
+                  - - /var/lib/nova:/var/lib/nova:shared
+                  - - /var/lib/nova:/var/lib/nova:shared,z  
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
