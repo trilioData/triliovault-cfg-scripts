@@ -69,28 +69,7 @@ def copy_template():
 
 
 def copy_files():
-    """
-    Copy TrilioVault Horizon panel files from files/trilio dir
-    """
     horizon_path = config("horizon-path")
-    os.system(
-        'cp files/trilio/tvault_panel_group.py {}/openstack_dashboard'
-        '/local/enabled/tvault_panel_group.py'.format(horizon_path))
-    os.system(
-        'cp files/trilio/tvault_admin_panel_group.py {}/openstack_dashboard'
-        '/local/enabled/tvault_admin_panel_group.py'.format(horizon_path))
-    os.system(
-        'cp files/trilio/tvault_panel.py {}/openstack_dashboard'
-        '/local/enabled/tvault_panel.py'.format(horizon_path))
-    os.system(
-        'cp files/trilio/tvault_settings_panel.py {}/openstack_dashboard'
-        '/local/enabled/tvault_settings_panel.py'.format(horizon_path))
-    os.system(
-        'cp files/trilio/tvault_admin_panel.py {}/openstack_dashboard'
-        '/local/enabled/tvault_admin_panel.py'.format(horizon_path))
-    os.system(
-        'cp files/trilio/tvault_filter.py {}/openstack_dashboard'
-        '/templatetags/tvault_filter.py'.format(horizon_path))
 
     # Restart webserver apache2
     service_restart("apache2")
@@ -111,28 +90,7 @@ def copy_files():
 
 
 def delete_files():
-    """
-    Delete TrilioVault Horizon panel files
-    """
     horizon_path = config("horizon-path")
-    os.system(
-        'rm {}/openstack_dashboard/local/enabled/'
-        'tvault_panel_group.py*'.format(horizon_path))
-    os.system(
-        'rm {}/openstack_dashboard/local/enabled/'
-        'tvault_admin_panel_group.py*'.format(horizon_path))
-    os.system(
-        'rm {}/openstack_dashboard/local/enabled/'
-        'tvault_panel.py*'.format(horizon_path))
-    os.system(
-        'rm {}/openstack_dashboard/local/enabled/'
-        'tvault_settings_panel.py*'.format(horizon_path))
-    os.system(
-        'rm {}/openstack_dashboard/local/enabled/'
-        'tvault_admin_panel.py*'.format(horizon_path))
-    os.system(
-        'rm {}/openstack_dashboard/templatetags/'
-        'tvault_filter.py*'.format(horizon_path))
 
     # write content into destination file - sync_static1.py
     os.system('cp files/trilio/sync_static1.py /tmp/sync_static1.py')
