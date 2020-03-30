@@ -18,22 +18,19 @@ USER root
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 RUN apt-get install -y python3-dmapi --allow-unauthenticated
+RUN id dmapi
 
-RUN mkdir -p /var/log/dmapi/ \
-    /var/cache/dmapi/ \
-    /etc/nova \
-    /var/log/kolla/dmapi \
- && chown -R nova:nova /var/log/dmapi/ \
- && chown -R nova:nova /var/log/kolla/dmapi \
- && chown nova:nova /var/cache/dmapi/ \
- && rm /etc/dmapi/dmapi.conf
+RUN mkdir -p /etc/nova \
+   /var/log/kolla/dmapi \
+ && chown -R dmapi:dmapi /etc/nova/ \
+ && chown -R dmapi:dmapi /var/log/kolla/dmapi
 
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses
 
 ##Become nova user for further operations
-USER nova
+USER dmapi
 
 ##################
 # REQUIRED MOUNTS#
