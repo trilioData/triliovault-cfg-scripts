@@ -40,6 +40,7 @@ class DmapiCharm(charms_openstack.charm.HAOpenStackCharm):
     # Internal name of charm + keystone endpoint
     service_name = 'dmapi'
     name = 'trilio-dm-api'
+    group = 'dmapi'
 
     # First release supported
     release = 'queens'
