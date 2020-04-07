@@ -17,17 +17,19 @@ ADD trilio.repo /etc/yum.repos.d/
 
 RUN dnf clean all
 RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
-RUN yum install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
+RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
 RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
-ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
+ADD start_datamover_s3 start_datamover_nfs /opt/tvault/
+ADD start_tvault_object_store_rhel8 /opt/tvault/start_tvault_object_store
 RUN chown -R nova:nova /opt/tvault/
-RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store_rhel8
+RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
 ##Copy conf files
 ADD nova-sudoers-rhel8 /etc/sudoers.d/nova-sudoers
+RUN chown root:root /etc/sudoers.d/nova-sudoers
 ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
