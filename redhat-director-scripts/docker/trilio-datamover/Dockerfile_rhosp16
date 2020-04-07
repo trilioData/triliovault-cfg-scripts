@@ -24,10 +24,10 @@ RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable r
 RUN mkdir -p /opt/tvault/
 ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
 RUN chown -R nova:nova /opt/tvault/
-RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
+RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store_rhel8
 
 ##Copy conf files
-ADD nova-sudoers-osp16 /etc/sudoers.d/nova-sudoers
+ADD nova-sudoers-rhel8 /etc/sudoers.d/nova-sudoers
 ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
