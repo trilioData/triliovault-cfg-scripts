@@ -1,0 +1,3 @@
+/usr/bin/python \
+/usr/bin/s3vaultfuse.py \
+--config-file=/etc/tvault-contego/tvault-contego.conf
