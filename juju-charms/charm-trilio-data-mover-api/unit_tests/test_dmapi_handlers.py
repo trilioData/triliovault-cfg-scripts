@@ -129,8 +129,6 @@ class TestDmapiHandlers(unittest.TestCase):
     def test_install_packages(self):
         self.patch(handlers.dmapi, 'install')
         self.patch(handlers.reactive, 'set_state')
-        self.patch(handlers, 'add_user')
-        self.add_user.return_value = True
         self.patch(handlers.os, 'system')
         self.patch(handlers, 'apt_update')
         self.patch(handlers, 'get_new_version')
