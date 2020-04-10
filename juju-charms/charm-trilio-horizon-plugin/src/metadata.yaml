@@ -8,7 +8,7 @@ tags:
   - openstack
   - storage
   - backup
-  - TVMv3.4
+  - TVMv4.0
 subordinate: true
 series:
   - xenial
