@@ -1,7 +1,7 @@
 resource_registry:
   OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover-osp16.yaml
   OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api-osp16.yaml
-
+  OS::TripleO::Services::TrilioHorizonPlugin: docker/services/trilio-horizon-plugin-osp16.yaml
 
 parameter_defaults:
 
