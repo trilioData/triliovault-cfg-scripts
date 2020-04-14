@@ -1,7 +1,8 @@
 class trilio::horizon (
     $horizon_dir                        = '/usr/share/openstack-dashboard/',
 ){
-
+   
+   tag 'triliohorizonconfig'
 
     file_line { 'trilio_enable_custom_module':
         path => '/etc/openstack-dashboard/local_settings',
