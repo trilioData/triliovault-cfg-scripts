@@ -4,7 +4,6 @@ resource_registry:
 
 parameter_defaults:
 
-
    ## Enable TrilioVault's quota functionality on horizon
    ExtraConfig:
      horizon::customization_module: 'dashboards.overrides'
