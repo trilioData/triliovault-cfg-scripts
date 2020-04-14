@@ -2,8 +2,11 @@ resource_registry:
   OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover-osp16.yaml
   OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api-osp16.yaml
 
-
 parameter_defaults:
+
+   ## Enable TrilioVault's quota functionality on horizon
+   ExtraConfig:
+     horizon::customization_module: 'dashboards.overrides'
 
    ## Define network map for trilio datamover api service
    ServiceNetMap:

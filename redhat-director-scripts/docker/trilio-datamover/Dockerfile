@@ -1,20 +1,24 @@
-FROM registry.access.redhat.com/rhosp13/openstack-nova-compute
+FROM registry.redhat.io/rhosp-rhel8/openstack-nova-compute:16.0
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
+LABEL name="rhosp16/openstack-nova-compute-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
       version="4.0.0" \
       release="4.0" \
-      summary="Red Hat OpenStack Platform 14.0 nova-compute TrilioData Datamover" \
-      description="Red Hat OpenStack Platform 14.0 nova-compute TrilioData Datamover"
+      summary="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover" \
+      description="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover"
 
 # switch to root and install a custom RPM, etc.
 USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-contego puppet-triliovault -y
+
+RUN dnf clean all
+RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
+RUN yum install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
+RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
