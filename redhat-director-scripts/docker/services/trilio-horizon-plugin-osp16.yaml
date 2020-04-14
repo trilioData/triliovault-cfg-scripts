@@ -1,0 +1,50 @@
+heat_template_version: queens
+
+description: >
+  Trilio Horizon service configured with Puppet
+
+parameters:
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  HorizonDir:
+    default: '/usr/share/openstack-dashboard/'
+    description: Openstack horizon directory
+    type: string
+
+
+outputs:
+  role_data:
+    description: Role data for the trilio role.
+    value:
+      puppet_config:
+        config_volume: horizon
+        puppet_tags: triliohorizonconfig
+        step_config: |
+            include ::trilio::horizon
+        config_image: {get_param: ContainerHorizonImage}
+      config_settings:
+        trilio::horizon::horizon_dir: {get_param: HorizonDir}
