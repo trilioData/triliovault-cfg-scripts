@@ -4,6 +4,10 @@ description: >
   Trilio Horizon service configured with Puppet
 
 parameters:
+  ContainerHorizonImage:
+    default: ''
+    description: The location of Trilio Horizon Image container image
+    type: string
   ServiceData:
     default: {}
     description: Dictionary packing service data
