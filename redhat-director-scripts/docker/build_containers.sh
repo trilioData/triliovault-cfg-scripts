@@ -130,12 +130,16 @@ cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
 echo -e "Creating trilio-datamover container for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover/
+rm Dockerfile
+cp Dockerfile_rhosp13 Dockerfile
 docker build --no-cache -t trilio/trilio-datamover:${tvault_version}-rhosp13 .
 
 #Build trilio_datamover-api containers
 
 echo -e "Creating trilio-datamover-api container for rhosp13"
 cd $base_dir/${build_dir}/trilio-datamover-api/
+rm Dockerfile
+cp Dockerfile_rhosp13 Dockerfile
 docker build --no-cache -t trilio/trilio-datamover-api:${tvault_version}-rhosp13 .
 
 
@@ -143,6 +147,8 @@ docker build --no-cache -t trilio/trilio-datamover-api:${tvault_version}-rhosp13
 
 echo -e "Creating trilio horizon plugin container for rhosp13"
 cd $base_dir/${build_dir}/trilio-horizon-plugin/
+rm Dockerfile
+cp Dockerfile_rhosp13 Dockerfile
 docker build --no-cache -t trilio/trilio-horizon-plugin:${tvault_version}-rhosp13 .
 
 
