@@ -28,46 +28,6 @@ from charmhelpers.fetch import (
 )
 
 
-def copy_template():
-    """
-    Copy TrilioVault Horizon HTML Template from files/trilio dir
-    """
-    # Find where the dashboard path is for the index to be replaced,
-    # or default to the first path if none found /usr/local/lib
-
-    horizon_path = config("horizon-path")
-    dashboard_paths = ['/usr/local/lib/python2.7/dist-packages/dashboards/',
-                       '/usr/lib/python2.7/dist-packages/dashboards/',
-                       '/usr/local/lib/python3/dist-packages/dashboards/',
-                       '/usr/lib/python3/dist-packages/dashboards/']
-
-    dashboard_path = None
-    for path in dashboard_paths:
-        if os.path.isfile('{}/workloads_admin/templates/'
-                          'workloads_admin/index.html'.format(path)):
-            dashboard_path = path
-            break
-    if dashboard_path is None:
-        dashboard_path = dashboard_paths[0]
-
-    # install and compress new dashboard if it's provided by user
-    if os.path.isfile("files/trilio/trilio-horizon-plugin.html"):
-        old = (
-            '{}/workloads_admin/templates/workloads_admin/index.html'.format(
-                dashboard_path))
-        new = (
-            '{}/workloads_admin/templates/workloads_admin/orig.html'.format(
-                dashboard_path))
-        os.system('cp ' + old + ' ' + new)
-        os.system(
-            'cp files/trilio/trilio-horizon-plugin.html {}/workloads_admin'
-            '/templates/workloads_admin/index.html'.format(dashboard_path))
-        os.system(
-            '/usr/bin/python{0} {1}/manage.py collectstatic;'
-            '/usr/bin/python{0} {1}/manage.py compress --force'.format(
-                config('python-version'), horizon_path))
-
-
 def copy_files():
     horizon_path = config("horizon-path")
 
@@ -85,8 +45,10 @@ def copy_files():
     # Remove temporary file
     os.system('rm /tmp/sync_static.py')
 
-    # Copy Dashboard HTML template if exists
-    copy_template()
+    os.system(
+            '/usr/bin/python{0} {1}/manage.py collectstatic;'
+            '/usr/bin/python{0} {1}/manage.py compress --force'.format(
+             config('python-version'), horizon_path))
 
 
 def delete_files():
