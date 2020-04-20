@@ -47,7 +47,7 @@ cd $base_dir/${build_dir}/trilio-datamover/
 rm Dockerfile
 cp Dockerfile_rhosp16 Dockerfile
 buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-rhosp16 .
-podman push docker.io/trilio/trilio-datamover:${tvault_version}-rhosp16
+podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-rhosp16
 
 
 #Build trilio_datamover-api containers for rhosp16
@@ -57,7 +57,7 @@ cd $base_dir/${build_dir}/trilio-datamover-api/
 rm Dockerfile
 cp Dockerfile_rhosp16 Dockerfile
 buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp16 .
-podman push docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp16
+podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp16
 
 ## Build horizon plugin container for rhosp16
 
@@ -66,7 +66,7 @@ cd $base_dir/${build_dir}/trilio-horizon-plugin/
 rm Dockerfile
 cp Dockerfile_rhosp16 Dockerfile
 buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp16 .
-podman push docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp16
+podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp16
 
 # Clean the build_dir
 rm -rf $base_dir/${build_dir}
