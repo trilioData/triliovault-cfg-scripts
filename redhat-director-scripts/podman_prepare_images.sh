@@ -29,7 +29,7 @@ podman pull registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
 
-openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
+openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 
 openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
 
