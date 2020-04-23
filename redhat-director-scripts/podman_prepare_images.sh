@@ -24,7 +24,7 @@ source /home/stack/stackrc
 
 ##Login to redhat container registry
 echo -e "Enter Redhat container registry credentials (registry.redhat.io)"
-podman login registry.redhat.io
+podman login registry.connect.redhat.com
 podman pull registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
