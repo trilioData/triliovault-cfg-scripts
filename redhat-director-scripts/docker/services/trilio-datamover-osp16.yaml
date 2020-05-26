@@ -155,7 +155,7 @@ outputs:
                 - /dev:/dev
                 - /var/run/libvirt/:/var/run/libvirt/
                 - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
-                - /var/lib/nova:/var/lib/nova:shared,z  
+                - /var/lib/nova:/var/lib/nova:shared  
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
