@@ -30,9 +30,12 @@ podman pull docker.io/trilio/trilio-datamover-api:${tag}
 podman tag docker.io/trilio/trilio-datamover-api:${tag} ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 openstack tripleo container image push --local ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 
-## Update image locations in env file
-dm_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover:${tag}"
-dmapi_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover-api:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" trilio_env.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" trilio_env.yaml
+## Update image locations in env file
+trilio_dm_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover:${tag}"
+trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover-api:${tag}"
+trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/trilio-horizon-plugin:${tag}"
+
+sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" trilio_env_osp16.yaml
+sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" trilio_env_osp16.yaml
+sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" trilio_env_osp16.yaml
