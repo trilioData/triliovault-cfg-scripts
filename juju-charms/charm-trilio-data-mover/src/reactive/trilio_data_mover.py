@@ -598,4 +598,3 @@ def reconfig_charm():
 
     # Reconfig successful
     status_set('active', 'Ready...')
-    
