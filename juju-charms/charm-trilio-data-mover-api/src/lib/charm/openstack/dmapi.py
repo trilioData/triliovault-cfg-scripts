@@ -165,3 +165,4 @@ def configure_ssl():
     """Use the singleton from the DmapiCharm to run configure_ssl
     """
     DmapiCharm.singleton.configure_ssl()
+    
