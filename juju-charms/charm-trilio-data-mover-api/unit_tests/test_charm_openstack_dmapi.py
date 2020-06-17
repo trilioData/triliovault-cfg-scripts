@@ -107,4 +107,3 @@ class TestDmapiCharm(Helper):
         b.install()
         self.configure_source.assert_called_with()
         self.install.assert_called_once_with()
-        
