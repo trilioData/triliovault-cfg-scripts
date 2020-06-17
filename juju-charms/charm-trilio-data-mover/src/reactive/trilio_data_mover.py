@@ -260,11 +260,9 @@ def create_conf():
                   config('tv-datamover-max-commit-pending'))
     tv_config.set('DEFAULT', 'qemu_agent_ping_timeout',
                   config('tv-datamover-qemu-agent-ping-timeout'))
-    tv_config.set('DEFAULT', 'use_virt_qemu', False)
     tv_config.add_section('contego_sys_admin')
     tv_config.set('contego_sys_admin', 'helper_command',
-                  'sudo /usr/bin/nova-rootwrap '
-                  '/etc/nova/rootwrap.conf privsep-helper')
+                  'sudo /usr/bin/privsep-helper')
     tv_config.add_section('conductor')
     tv_config.set('conductor', 'use_local', True)
 
