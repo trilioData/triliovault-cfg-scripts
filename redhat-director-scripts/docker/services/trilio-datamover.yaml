@@ -166,9 +166,5 @@ outputs:
           with_items:
             - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
             - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
-      upgrade_tasks:
-        - when: step|int == 0
-          tags: common
-        - when: step|int == 1
-        - when: step|int == 2
+      upgrade_tasks: []
       
