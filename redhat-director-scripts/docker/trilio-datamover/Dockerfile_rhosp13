@@ -14,7 +14,11 @@ USER root
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
+RUN yum clean all
+RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms --enable rhel-7-server-rpms --enable rhel-7-server-extras-rpms --enable rhel-ha-for-rhel-7-server-rpms
 RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 -y
+
+RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms --disable rhel-7-server-rpms --disable rhel-7-server-extras-rpms --disable rhel-ha-for-rhel-7-server-rpms 
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
