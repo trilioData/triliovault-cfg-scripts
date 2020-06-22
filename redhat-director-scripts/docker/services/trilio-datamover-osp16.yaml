@@ -78,6 +78,9 @@ parameters:
     default: false
     description: S3 ssl enabled
     type: boolean
+  S3SslCert:
+    description: S3 SSL certificate file path
+    type: string  
 
 
 outputs:
@@ -95,7 +98,8 @@ outputs:
         trilio::contego::s3_region_name: {get_param: S3RegionName}
         trilio::contego::s3_bucket: {get_param: S3Bucket}
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
-        trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}            
+        trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled} 
+        trilio::contego::s3_ssl_cert: {get_param: S3SslCert}           
       puppet_config:
         config_volume: triliodm
         puppet_tags: dmconfig
