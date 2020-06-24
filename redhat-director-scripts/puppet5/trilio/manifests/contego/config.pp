@@ -34,4 +34,13 @@ class trilio::contego::config inherits trilio::contego {
          fail("backup_target_type is not valid")
     }
 
+    file { "/etc/tvault-contego/s3-cert.pem":
+        ensure => 'present',
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        source => 'puppet:///modules/trilio/s3-cert.pem',
+    }
+
+
 }
