@@ -43,5 +43,10 @@ parameter_defaults:
    ## If SSL enabled on S3 url, not required for Amazon S3, just keep it as it is
    S3SslEnabled: false
 
+   ## If SSL is enabled on S3 url and S3 uses self signed certificates, user can provide the cert file path here.
+   ## Otherwise keep this parameter value as empty string.
+   S3SslCert: ''
+
+
    ## Don't edit following parameter
    EnablePackageInstall: True
