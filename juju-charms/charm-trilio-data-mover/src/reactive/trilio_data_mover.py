@@ -92,13 +92,15 @@ def validate_nfs():
     # Ensure mount directory exists
     mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
 
-    # check for mountable device
-    if not mount(device, data_dir, options=nfs_options, filesystem='nfs'):
-        log("Unable to mount, please enter valid mount device")
-        return False
-    log("Device mounted successfully")
-    umount(data_dir)
-    log("Device unmounted successfully")
+    # check for mountable device, checking if multiple nfs provided
+    for d in device.split(","):
+        if not mount(d, data_dir, options=nfs_options, filesystem='nfs'):
+            log("Unable to mount, please enter valid mount device")
+            return False
+        log("Device {} mounted successfully".format(d))
+        umount(data_dir)
+        log("Device {} unmounted successfully".format(d))
+
     return True
 
 
@@ -194,6 +196,10 @@ def create_virt_env(pkg_name):
 
     # change virtenv dir(/home/tvault) users to nova
     chownr(path, usr, grp)
+
+    # Copy Trilio filter file
+    os.system(
+        'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
 
     return True
 
@@ -575,8 +581,26 @@ def upgrade_charm():
 
 @hook('config-changed')
 def reconfig_charm():
-
     bkp_type = config('backup-target-type')
+    retry_count = 0
+
+    # Stop the service
+    service_stop('tvault-contego')
+    if bkp_type == 's3':
+        service_stop('tvault-object-store')
+
+    # Get the mount points and un-mount tvault's mount points.
+    mount_points = mounts()
+    sorted_list = [mp[0] for mp in mount_points
+                   if config('tv-data-dir') in mp[0]]
+    # stopping the tvault-object-store service may take time
+    while service_running('tvault-object-store') and retry_count < 3:
+        log('Waiting for tvault-object-store service to stop')
+        retry_count += 1
+        time.sleep(5)
+
+    for sl in sorted_list:
+        umount(sl)
 
     # Valildate backup target
     if not validate_backup():
