@@ -1,4 +1,4 @@
-FROM kolla/centos-source-nova-api:queens
+FROM kolla/ubuntu-source-nova-api:ussuri
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
@@ -13,32 +13,26 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-# temporary fix
-RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
-
 ##Install datamover packages
-ADD trilio.repo /etc/yum.repos.d/
-RUN yum install dmapi -y
 
-RUN mkdir -p /var/log/dmapi/ \
-    /var/cache/dmapi/ \
-    /etc/nova \
-    /var/log/kolla/dmapi \
- && chown -R nova:nova /var/log/dmapi/ \
- && chown -R nova:nova /var/log/kolla/dmapi \
- && chown nova:nova /var/cache/dmapi/ \
- && rm /etc/dmapi/dmapi.conf
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+RUN groupadd -g 42487 dmapi \
+   && useradd -u 42486 -g 42487 dmapi
+RUN apt-get install -y python3-dmapi --allow-unauthenticated
+RUN id dmapi
 
-##Clean subscription
-RUN yum clean all
-RUN rm -f /etc/yum.repos.d/trilio.repo
+RUN mkdir -p /etc/nova \
+   /var/log/kolla/dmapi \
+ && chown -R dmapi:dmapi /etc/nova/ \
+ && chown -R dmapi:dmapi /var/log/kolla/dmapi
 
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses
 
 ##Become nova user for further operations
-USER nova
+USER dmapi
 
 ##################
 # REQUIRED MOUNTS#
