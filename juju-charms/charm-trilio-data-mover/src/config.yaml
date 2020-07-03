@@ -6,7 +6,7 @@ options:
     description: Openstack base python version(2 or 3)
   triliovault-pkg-source:
     type: string
-    default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-0/ /"
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /"
     description: Repository address of triliovault packages
   tvault-datamover-virtenv-url:
     type: string
