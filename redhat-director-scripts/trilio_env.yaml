@@ -40,10 +40,11 @@ parameter_defaults:
    ## S3 endpoint url, not required for Amazon S3, keep it as it is
    S3EndpointUrl: ''
 
-   ## If SSL enabled on S3 url, not required for Amazon S3, just keep it as it is
-   S3SslEnabled: false
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+   S3SslEnabled: False
    
-   ## If SSL is enabled on S3 url, user can provide the cert file path here.
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
+   ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
 
    ## Don't edit following parameter
