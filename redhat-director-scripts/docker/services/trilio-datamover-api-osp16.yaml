@@ -51,7 +51,9 @@ outputs:
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
-        tripleo::trilio_datamover_api::haproxy_endpoints:
+      service_config_settings:
+        haproxy:        
+          tripleo::trilio_datamover_api::haproxy_endpoints:
             trilio_datamover_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
                 internal_ip: "%{hiera('trilio_datamover_api_vip')}"
