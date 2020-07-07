@@ -58,8 +58,8 @@ class TestDmapiDBAdapter(Helper):
     def test_dmapi_uri(self):
         relation = mock.MagicMock()
         a = dmapi.DmapiDBAdapter(relation)
-        self.patch_object(dmapi.DmapiDBAdapter, 'dmapi_url')
-        self.dmapi_url.side_effect = self.fake_get_uri
+        self.patch_object(dmapi.DmapiDBAdapter, 'get_uri')
+        self.get_uri.side_effect = self.fake_get_uri
         self.assertEqual(a.dmapi_nova_uri, 'mysql://uri/dmapinova-database')
         self.assertEqual(a.dmapi_nova_api_uri, 'mysql://uri/dmapinovaapi-database')
 
