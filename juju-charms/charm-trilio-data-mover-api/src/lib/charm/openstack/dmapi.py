@@ -3,7 +3,6 @@ import charmhelpers.contrib.openstack.utils as ch_utils
 import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.ip as os_ip
-import urllib
 
 from charmhelpers.core.hookenv import (
     config
@@ -19,32 +18,12 @@ class DmapiDBAdapter(charms_openstack.adapters.DatabaseRelationAdapter):
     @property
     def dmapi_nova_uri(self):
         """URI for nova DB"""
-        return self.dmapi_url(prefix='dmapinova')
+        return self.get_uri(prefix='dmapinova')
 
     @property
     def dmapi_nova_api_uri(self):
         """URI for nova_api DB"""
-        return self.dmapi_url(prefix='dmapinovaapi')
-
-    def dmapi_url(self, prefix):
-        uri = self.get_uri(prefix=prefix)
-        driver = urllib.parse.urlparse(uri).scheme
-        database = self.relation.database(prefix=prefix)
-        username = self.relation.username(prefix=prefix)
-        password = self.relation.password(prefix=prefix)
-
-        port = ":{}".format(self.port) if self.port else ''
-
-        password = ":{}".format(password) if password else ''
-
-        _url_ = "{}://{}{}@{}{}/{}".format(
-                driver,
-                username,
-                password,
-                self.host,
-                port,
-                database)
-        return _url_
+        return self.get_uri(prefix='dmapinovaapi')
 
 
 class DmapiAdapters(charms_openstack.adapters.OpenStackAPIRelationAdapters):

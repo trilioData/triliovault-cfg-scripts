@@ -106,4 +106,8 @@ outputs:
             setype: "{{ item.setype }}"
           with_items:
             - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+<<<<<<< HEAD
       upgrade_tasks: []
+=======
+      upgrade_tasks:  []
+>>>>>>> ca5ff244ba09455fd238b71ea5f733b710828c55
