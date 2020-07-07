@@ -2,7 +2,6 @@ heat_template_version: queens
 
 description: >
   Trilio Datamover Api containerized service
-
 parameters:
   DockerTrilioDmApiImage:
     default: ''
@@ -52,7 +51,7 @@ outputs:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
       service_config_settings:
-        haproxy:        
+        haproxy:
           tripleo::trilio_datamover_api::haproxy_endpoints:
             trilio_datamover_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
@@ -60,7 +59,7 @@ outputs:
                 service_port: {get_param: DmApiPort}
                 public_ssl_port: {get_param: DmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
-                haproxy_listen_bind_param: ['transparent']      
+                haproxy_listen_bind_param: ['transparent']
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
@@ -70,7 +69,7 @@ outputs:
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
           command: /usr/bin/python /usr/bin/dmapi-api
-          config_files:  
+          config_files:
             - source: "/var/lib/kolla/config_files/src/*"
               dest: "/"
               merge: true
@@ -106,8 +105,4 @@ outputs:
             setype: "{{ item.setype }}"
           with_items:
             - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
-<<<<<<< HEAD
       upgrade_tasks: []
-=======
-      upgrade_tasks:  []
->>>>>>> ca5ff244ba09455fd238b71ea5f733b710828c55
