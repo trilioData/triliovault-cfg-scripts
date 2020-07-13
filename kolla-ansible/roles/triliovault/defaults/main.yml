@@ -1,0 +1,100 @@
+---
+project_name: "triliovault"
+
+triliovault_services:
+  triliovault-datamover-api:
+    container_name: "triliovault_datamover_api"
+    group: "triliovault-api"
+    image: "{{ triliovault_datamover_api_image_full }}"
+    enabled: True
+    privileged: False
+    volumes: "{{ triliovault_datamover_api_default_volumes + nova_api_extra_volumes }}"
+    dimensions: "{{ triliovault_datamover_api_dimensions }}"
+    haproxy:
+      triliovault_datamover_api:
+        enabled: "{{ enable_triliovault }}"
+        mode: "http"
+        external: false
+        port: "{{ triliovault_datamover_api_port }}"
+        listen_port: "{{ triliovault_datamover_api_listen_port }}"
+      triliovault_datamover_api_external:
+        enabled: "{{ enable_triliovault }}"
+        mode: "http"
+        external: true
+        port: "{{ triliovault_datamover_api_port }}"
+        listen_port: "{{ triliovault_datamover_api_listen_port }}"
+  triliovault-datamover:
+    container_name: "triliovault_datamover"
+    group: "triliovault-datamover"
+    image: "{{ triliovault_datamover_image_full }}"
+    enabled: True
+    volumes: "{{ triliovault_datamover_default_volumes }}"
+    dimensions: "{{ triliovault_datamover_dimensions }}"
+
+####################
+# Docker
+####################
+triliovault_tag: "4.0.92-train"
+
+triliovault_datamover_api_image: "docker.io/trilio/{{ kolla_base_distro }}-source-trilio-datamover-api"
+triliovault_datamover_api_tag: "{{ triliovault_tag }}"
+triliovault_datamover_api_image_full: "{{ triliovault_datamover_api_image }}:{{ triliovault_datamover_api_tag }}"
+
+
+
+triliovault_datamover_image: "docker.io/trilio/{{ kolla_base_distro }}-source-trilio-datamover"
+triliovault_datamover_tag: "{{ triliovault_tag }}"
+triliovault_datamover_image_full: "{{ triliovault_datamover_image }}:{{ triliovault_datamover_tag }}"
+
+triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
+triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
+
+
+triliovault_datamover_api_default_volumes:
+  - "{{ triliovault_config_directory }}/triliovault-datamover-api/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
+  - "/lib/modules:/lib/modules:ro"
+  - "kolla_logs:/var/log/kolla/"
+triliovault_datamover_default_volumes:
+  - "{{ triliovault_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
+  - "kolla_logs:/var/log/kolla/"
+
+
+
+
+####################
+# OpenStack
+####################
+
+triliovault_datamover_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
+triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
+triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
+
+#nova_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
+#nova_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
+#nova_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
+
+triliovault_logging_debug: "{{ openstack_logging_debug }}"
+
+openstack_triliovault_auth: "{{ openstack_auth }}"
+
+#nova_safety_upgrade: "no"
+
+#triliovault_services_require_policy_json:
+ # - triliovault-datamover-api
+
+####################
+# Keystone
+####################
+triliovault_ks_services:
+  - name: "dmapi"
+    type: "datamover"
+    description: "TrilioVault Datamover Api Service"
+    endpoints:
+      - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
+      - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
+      - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+
