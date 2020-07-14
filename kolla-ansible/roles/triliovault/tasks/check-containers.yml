@@ -1,5 +1,5 @@
 ---
-- name: Check nova containers
+- name: Check triliovault containers
   become: true
   kolla_docker:
     action: "compare_container"

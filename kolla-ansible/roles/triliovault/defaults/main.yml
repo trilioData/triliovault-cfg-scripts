@@ -4,7 +4,7 @@ project_name: "triliovault"
 triliovault_services:
   triliovault-datamover-api:
     container_name: "triliovault_datamover_api"
-    group: "triliovault-api"
+    group: "triliovault-datamover-api"
     image: "{{ triliovault_datamover_api_image_full }}"
     enabled: True
     privileged: False
@@ -28,6 +28,7 @@ triliovault_services:
     group: "triliovault-datamover"
     image: "{{ triliovault_datamover_image_full }}"
     enabled: True
+    privileged: True
     volumes: "{{ triliovault_datamover_default_volumes }}"
     dimensions: "{{ triliovault_datamover_dimensions }}"
 
@@ -64,7 +65,6 @@ triliovault_datamover_default_volumes:
 
 
 
-
 ####################
 # OpenStack
 ####################
@@ -81,6 +81,9 @@ triliovault_logging_debug: "{{ openstack_logging_debug }}"
 
 openstack_triliovault_auth: "{{ openstack_auth }}"
 
+
+triliovault_datamover_api_port: 8784
+triliovault_datamover_api_listen_port: {{ triliovault_datamover_api_port }}
 #nova_safety_upgrade: "no"
 
 #triliovault_services_require_policy_json:
