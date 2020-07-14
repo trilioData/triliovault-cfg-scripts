@@ -1,8 +1,10 @@
 ---
 - include_tasks: register.yml
-  when: inventory_hostname in groups['nova-api']
+  when: inventory_hostname in groups['triliovault-datamover-api']
 
 - include_tasks: config.yml
+  when: inventory_hostname in groups['triliovault-datamover-api'] or
+        inventory_hostname in groups['triliovault-datamover']
 
 - name: Flush handlers
   meta: flush_handlers
