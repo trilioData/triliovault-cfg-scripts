@@ -4,7 +4,7 @@ project_name: "triliovault"
 triliovault_services:
   triliovault-datamover-api:
     container_name: "triliovault_datamover_api"
-    group: "triliovault-datamover-api"
+    group: {{ triliovault_datamover_api_group }}
     image: "{{ triliovault_datamover_api_image_full }}"
     enabled: True
     privileged: False
@@ -25,7 +25,7 @@ triliovault_services:
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
   triliovault-datamover:
     container_name: "triliovault_datamover"
-    group: "triliovault-datamover"
+    group: {{ triliovault_datamover_group }}
     image: "{{ triliovault_datamover_image_full }}"
     enabled: True
     privileged: True
@@ -35,8 +35,6 @@ triliovault_services:
 ####################
 # Docker
 ####################
-triliovault_tag: "4.0.92-train"
-
 triliovault_datamover_api_image: "docker.io/trilio/{{ kolla_base_distro }}-source-trilio-datamover-api"
 triliovault_datamover_api_tag: "{{ triliovault_tag }}"
 triliovault_datamover_api_image_full: "{{ triliovault_datamover_api_image }}:{{ triliovault_datamover_api_tag }}"
@@ -101,38 +99,47 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
+## TrilioVault Inventory.  Refer kolla ansible inventory.
+## triliovault_datamover_api_group should be assigned with group name of nova-api service
+## triliovault_datamover_group should be assigned with group name of nova-compute service
+triliovault_datamover_api_group: 'nova-api'
+triliovault_datamover_group: 'compute'
+
+
 ############ Following variables are user configurable ##########
 
+## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
+
+## TrilioVault's containers tag
+triliovault_tag: "4.0.92-train"
 
 ## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
 triliovault_backup_target: nfs
+
+### 'NFS' backup target details
 ## Valid for backup target 'nfs' only, provide full NFS share path
 NfsShares: '192.168.122.101:/opt/tvault'
 ## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
 ## Keep default values, unless you have a special need.
 NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
+
+### 'amazon_s3/ceph_s3' backup target details
 ## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 access key
 S3AccessKey: ''
-  
 ## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 secret key
 S3SecretKey: ''
-
 ## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 region
 ## if your s3 does not have any region, just keep the parameter as it is
 S3RegionName: ''
-
 ## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 bucket name
 S3Bucket: ''
-
 ## Valid for 'ceph_s3' backup target only, provide S3 endpoint url
 ## This paramter is not valid for Amazon S3 backup target type, keep it as it is
 S3EndpointUrl: ''
-
 ## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
 S3SslEnabled: False
-   
 ## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed or issued by private authority,
 ## then, user needs to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
 S3SslCert: ''
