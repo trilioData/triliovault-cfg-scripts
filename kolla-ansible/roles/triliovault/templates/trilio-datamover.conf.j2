@@ -1,11 +1,11 @@
 [DEFAULT]
-{% if triliovault-backup-target == "nfs" %}
+{% if triliovault_backup_target == "nfs" %}
 
 vault_storage_type = nfs
 vault_storage_nfs_export = {{ nfs_shares }}
 vault_storage_nfs_options = {{ nfs_options }}
 
-{% elif triliovault-backup-target == "amazon_s3" %}
+{% elif triliovault_backup_target == "amazon_s3" %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
@@ -16,7 +16,7 @@ vault_s3_region_name = {{ s3_region_name }}
 vault_s3_bucket = {{ s3_bucket }}
 vault_s3_ssl_cert = {{ s3_ssl_cert }}
 
-{% elif triliovault-backup-target == "ceph_s3" %}
+{% elif triliovault_backup_target == "ceph_s3" %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
@@ -42,7 +42,7 @@ max_commit_pending = 3
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
 
-{% if triliovault-backup-target == "ceph_s3" or triliovault-backup-target == "amazon_s3" %}
+{% if triliovault_backup_target == "ceph_s3" or triliovault_backup_target == "amazon_s3" %}
 
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper

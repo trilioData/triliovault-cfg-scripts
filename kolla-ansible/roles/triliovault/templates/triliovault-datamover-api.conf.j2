@@ -1,14 +1,14 @@
 [DEFAULT]
 dmapi_workers = 2
-transport_url = {{ default_transport_url }}
-dmapi_link_prefix = http://{{ my_ip }:{{ dmapi_port }}
+transport_url = {{ lookup('ini', 'transport_url section=DEFAULT file={{ node_config_directory }}/nova-api/nova.conf') }}
+dmapi_link_prefix = http://{{ api_interface_address }:{{ dmapi_port }}
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = {{ dmapi_port }}
 dmapi_enabled_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x
-dmapi_listen = {{ my_ip }}
-my_ip = {{ my_ip }}
+dmapi_listen = {{ api_interface_address }}
+my_ip = {{ api_interface_address }}
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = False
 log_file = /var/log/trilio-datamover-api/dmapi.log
@@ -20,28 +20,28 @@ ssl_key_file =
 api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
-connection = {{ database_connection }}
+connection = {{ lookup('ini', 'connection section=database file={{ node_config_directory }}/nova-api/nova.conf') }}
 
 [api_database]
-connection = {{ api_database_connection }}
+connection = {{ lookup('ini', 'connection section=api_database file={{ node_config_directory }}/nova-api/nova.conf') }}
 
 [keystone_authtoken]
-memcached_servers = {{ memcached_servers }}
+memcached_servers = {{ lookup('ini', 'memcached_servers section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 signing_dir = /var/cache/dmapi
 cafile =
-project_domain_name = {{ project_domain_name }}
-project_name = {{ project_name }} 
-user_domain_name = {{ user_domain_name }}
-password = {{ password }}
+project_domain_name = {{ default_project_domain_name }}
+project_name = {{ lookup('ini', 'project_name section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }} 
+user_domain_name = {{ default_user_domain_name }}
+password = {{ lookup('ini', 'password section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 username = nova
-auth_url = {{ auth_url }}
+auth_url = {{ lookup('ini', 'auth_url section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 auth_type = password
-auth_uri = {{ auth_uri }}
+auth_uri = {{ lookup('ini', 'www_authenticate_uri section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 insecure = True
 
 [oslo_messaging_notifications]
-transport_url = {{ default_transport_url }}
-driver = {{ notification_driver }}
+transport_url = {{ lookup('ini', 'transport_url section=oslo_messaging_notifications file={{ node_config_directory }}/nova-api/nova.conf') }}
+driver = {{ lookup('ini', 'driver section=oslo_messaging_notifications file={{ node_config_directory }}/nova-api/nova.conf') }}
 
 [oslo_middleware]
-enable_proxy_headers_parsing = {{ enable_proxy_headers_parsing }
+enable_proxy_headers_parsing = {{ lookup('ini', 'enable_proxy_headers_parsing section=oslo_middleware file={{ node_config_directory }}/nova-api/nova.conf') }}
