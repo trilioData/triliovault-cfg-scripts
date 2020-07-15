@@ -29,38 +29,16 @@
   notify:
     - "Restart {{ item.key }} container"
 
-- name: Copying over dmapi.conf
-  become: true
-  vars:
-    service_name: "{{ item.key }}"
-  merge_configs:
-    sources:
-      - "{{ role_path }}/templates/nova.conf.j2"
-      - "{{ node_custom_config }}/global.conf"
-      - "{{ node_custom_config }}/nova.conf"
-      - "{{ node_custom_config }}/nova/{{ item.key }}.conf"
-      - "{{ node_custom_config }}/nova/{{ inventory_hostname }}/nova.conf"
-    dest: "{{ node_config_directory }}/{{ item.key }}/nova.conf"
-    mode: "0660"
-  when:
-    - inventory_hostname in groups[item.value.group]
-    - item.value.enabled | bool
-  with_dict: "{{ nova_services }}"
-  notify:
-    - "Restart {{ item.key }} container"
-
-- name: Copying over existing policy file
+- name: Copying over triliovault services conf files
   become: true
   template:
-    src: "{{ nova_policy_file_path }}"
-    dest: "{{ node_config_directory }}/{{ item.key }}/{{ nova_policy_file }}"
+    src: "{{ item.key }}.conf.j2"
+    dest: "{{ node_config_directory }}/{{ item.key }}/{{item.key}}.conf"
     mode: "0660"
   when:
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
-    - nova_policy_file is defined
-    - item.key in nova_services_require_policy_json
-  with_dict: "{{ nova_services }}"
+  with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart {{ item.key }} container"
 

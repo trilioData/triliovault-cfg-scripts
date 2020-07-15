@@ -3,5 +3,5 @@
   import_role:
     name: haproxy-config
   vars:
-    project_services: "{{ nova_services }}"
+    project_services: "{{ triliovault_services }}"
   tags: always
