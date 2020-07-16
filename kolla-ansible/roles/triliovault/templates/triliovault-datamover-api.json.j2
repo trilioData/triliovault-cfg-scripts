@@ -1,11 +1,10 @@
 {% set triliovault_datamover_api_cmd = '/var/lib/kolla/venv/bin/python /usr/bin/dmapi-api' %}
-{% set triliovault_datamover_api_dir = 'dmapi' %}
 {
-    "command": "{{ cinder_cmd }} -DFOREGROUND",
+    "command": "{{ triliovault_datamover_api_cmd }} -DFOREGROUND",
     "config_files": [
         {
             "source": "{{ container_config_directory }}/triliovault-datamover-api.conf",
-            "dest": "/etc/{{ triliovault_datamover_api_dir }}/dmapi.conf",
+            "dest": "/etc/dmapi/dmapi.conf",
             "owner": "nova",
             "perm": "0600"
         }
