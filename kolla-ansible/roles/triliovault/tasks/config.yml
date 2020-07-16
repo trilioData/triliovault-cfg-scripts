@@ -27,7 +27,7 @@
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
   notify:
-    - "Restart {{ item.key }} container"
+s    - "Restart {{ item.key }} container"
 
 - name: Copying over triliovault services conf files
   become: true
@@ -41,6 +41,11 @@
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart {{ item.key }} container"
+
+- include_tasks: external_ceph.yml
+  when:
+    - cinder_backend_ceph | bool
+    - inventory_hostname in groups[triliovault_datamover_group]
 
 - include_tasks: check-containers.yml
   when: kolla_action != "config"
