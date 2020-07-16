@@ -14,7 +14,7 @@
 
 - name: Checking free port for TrilioVault Datamover API
   vars:
-    nova_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
+    triliovault_datamover_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
   wait_for:
     host: "{{ api_interface_address }}"
     port: "{{ triliovault_datamover_api_listen_port }}"

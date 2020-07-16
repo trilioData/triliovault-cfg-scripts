@@ -1,9 +1,9 @@
 [DEFAULT]
 dmapi_workers = 2
 transport_url = {{ lookup('ini', 'transport_url section=DEFAULT file={{ node_config_directory }}/nova-api/nova.conf') }}
-dmapi_link_prefix = http://{{ api_interface_address }:{{ dmapi_port }}
+dmapi_link_prefix = http://{{ api_interface_address }:{{ triliovault_datamover_api_port }}
 dmapi_enabled_ssl_apis =
-dmapi_listen_port = {{ dmapi_port }}
+dmapi_listen_port = {{ triliovault_datamover_api_port }}
 dmapi_enabled_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x
@@ -11,8 +11,8 @@ dmapi_listen = {{ api_interface_address }}
 my_ip = {{ api_interface_address }}
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = False
-log_file = /var/log/trilio-datamover-api/dmapi.log
-log_dir = /var/log/trilio-datamover-api
+log_file = /var/log/kolla/triliovault-datamover-api/dmapi.log
+log_dir = /var/log/kolla/triliovault-datamover-api
 
 [wsgi]
 ssl_cert_file = 
