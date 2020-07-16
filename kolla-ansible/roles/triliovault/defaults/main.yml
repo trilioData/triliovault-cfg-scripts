@@ -4,11 +4,11 @@ project_name: "triliovault"
 triliovault_services:
   triliovault-datamover-api:
     container_name: "triliovault_datamover_api"
-    group: {{ triliovault_datamover_api_group }}
+    group: "{{ triliovault_datamover_api_group }}"
     image: "{{ triliovault_datamover_api_image_full }}"
     enabled: True
     privileged: False
-    volumes: "{{ triliovault_datamover_api_default_volumes + nova_api_extra_volumes }}"
+    volumes: "{{ triliovault_datamover_api_default_volumes }}"
     dimensions: "{{ triliovault_datamover_api_dimensions }}"
     haproxy:
       triliovault_datamover_api:
@@ -17,15 +17,17 @@ triliovault_services:
         external: false
         port: "{{ triliovault_datamover_api_port }}"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_datamover_api_external:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
         port: "{{ triliovault_datamover_api_port }}"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
   triliovault-datamover:
     container_name: "triliovault_datamover"
-    group: {{ triliovault_datamover_group }}
+    group: "{{ triliovault_datamover_group }}"
     image: "{{ triliovault_datamover_image_full }}"
     enabled: True
     privileged: True
@@ -50,13 +52,14 @@ triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
 
 
 triliovault_datamover_api_default_volumes:
-  - "{{ triliovault_config_directory }}/triliovault-datamover-api/:{{ container_config_directory }}/:ro"
+  - "{{ node_config_directory }}/triliovault-datamover-api/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "/lib/modules:/lib/modules:ro"
   - "kolla_logs:/var/log/kolla/"
+
 triliovault_datamover_default_volumes:
-  - "{{ triliovault_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
+  - "{{ node_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
@@ -67,25 +70,15 @@ triliovault_datamover_default_volumes:
 # OpenStack
 ####################
 
-triliovault_datamover_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
-triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
-triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2/%(tenant_id)s"
-
-#nova_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
-#nova_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
-#nova_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
+triliovault_datamover_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
+triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
+triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
-
 openstack_triliovault_auth: "{{ openstack_auth }}"
-
-
 triliovault_datamover_api_port: 8784
 triliovault_datamover_api_listen_port: {{ triliovault_datamover_api_port }}
-#nova_safety_upgrade: "no"
 
-#triliovault_services_require_policy_json:
- # - triliovault-datamover-api
 
 ####################
 # Keystone
@@ -99,11 +92,20 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
+
+####################
+# TLS
+####################
+triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
+
+
 ## TrilioVault Inventory.  Refer kolla ansible inventory.
 ## triliovault_datamover_api_group should be assigned with group name of nova-api service
 ## triliovault_datamover_group should be assigned with group name of nova-compute service
 triliovault_datamover_api_group: 'nova-api'
 triliovault_datamover_group: 'compute'
+
+
 
 
 ############ Following variables are user configurable ##########
@@ -115,7 +117,7 @@ enable_triliovault: "yes"
 triliovault_tag: "4.0.92-train"
 
 ## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
-triliovault_backup_target: nfs
+triliovault_backup_target: 'nfs'
 
 ### 'NFS' backup target details
 ## Valid for backup target 'nfs' only, provide full NFS share path
