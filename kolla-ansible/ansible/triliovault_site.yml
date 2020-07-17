@@ -1,0 +1,22 @@
+---
+
+- name: Apply haproxy config for triliovault services
+  include_role:
+    name: triliovault
+    tasks_from: loadbalancer
+  when:
+     - inventory_hostname in groups['nova-api']
+     - enable_haproxy | bool
+     - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
+
+- name: Apply role triliovault
+  gather_facts: false
+  hosts:
+    - nova-api
+    - compute
+    - '&enable_triliovault_True'
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - { role: triliovault,
+        tags: triliovault,
+        when: enable_triliovault | bool }
