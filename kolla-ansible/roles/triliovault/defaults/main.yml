@@ -144,4 +144,4 @@ triliovault_s3_endpoint_url: ''
 triliovault_s3_ssl_enabled: False
 ## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed or issued by private authority,
 ## then, user needs to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
-triliovault_s3_ssl_cert_file_path: ''
+triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
