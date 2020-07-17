@@ -42,7 +42,7 @@ s    - "Restart {{ item.key }} container"
   notify:
     - "Restart {{ item.key }} container"
 
-- include_tasks: external_ceph.yml
+- include_tasks: ceph_cinder.yml
   when:
     - cinder_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
