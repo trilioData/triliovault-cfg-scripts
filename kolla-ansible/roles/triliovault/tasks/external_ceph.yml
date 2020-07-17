@@ -3,12 +3,11 @@
   vars:
     services_need_config:
       - "triliovault-datamover"
-  merge_configs:
-    sources:
-      - "{{ node_custom_config }}/triliovault/ceph.conf"
-      - "{{ node_custom_config }}/triliovault/{{ item.key }}/ceph.conf"
-    dest: "{{ node_config_directory }}/{{ item.key }}/ceph.conf"
+  copy:
+    src: {{ node_config_directory }}/cinder-volume/ceph.conf
+    dest: {{ node_config_directory }}/triliovault-datamover/
     mode: "0660"
+    remote_src: yes
   become: true
   when:
     - item.value.enabled | bool
@@ -20,9 +19,10 @@
 
 - name: Copy over Ceph keyring files for triliovault-datamover
   copy:
-    src: "{{ node_custom_config }}/triliovault/triliovault-datamover/{{ ceph_cinder_keyring }}"
-    dest: "{{ node_config_directory }}/triliovault-datamover/"
+    src: {{ node_config_directory }}/cinder-volume/{{ ceph_cinder_keyring }}
+    dest: {{ node_config_directory }}/triliovault-datamover/
     mode: "0660"
+    remote_src: yes
   become: true
   when:
     - external_ceph_cephx_enabled | bool
