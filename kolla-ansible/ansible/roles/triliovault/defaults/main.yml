@@ -77,7 +77,7 @@ triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_exte
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
 openstack_triliovault_auth: "{{ openstack_auth }}"
 triliovault_datamover_api_port: 8784
-triliovault_datamover_api_listen_port: {{ triliovault_datamover_api_port }}
+triliovault_datamover_api_listen_port: "{{ triliovault_datamover_api_port }}"
 
 
 ####################
@@ -116,15 +116,20 @@ enable_triliovault: "yes"
 ## TrilioVault's containers tag
 triliovault_tag: "4.0.92-train"
 
+## TrilioVault docker credentials
+triliovault_docker_username: ""
+triliovault_docker_password: ""
+triliovault_docker_registry: ""
+
 ## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
 triliovault_backup_target: 'nfs'
 
 ### 'NFS' backup target details
 ## Valid for backup target 'nfs' only, provide full NFS share path
-triliovault_NfsShares: '192.168.122.101:/opt/tvault'
+triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 ## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
 ## Keep default values, unless you have a special need.
-triliovault_NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
+triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
 
 ### 'amazon_s3/ceph_s3' backup target details
