@@ -1,7 +1,7 @@
 [DEFAULT]
 dmapi_workers = 2
 transport_url = {{ lookup('ini', 'transport_url section=DEFAULT file={{ node_config_directory }}/nova-api/nova.conf') }}
-dmapi_link_prefix = http://{{ api_interface_address }:{{ triliovault_datamover_api_port }}
+dmapi_link_prefix = http://{{ api_interface_address }}:{{ triliovault_datamover_api_port }}
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = {{ triliovault_datamover_api_port }}
 dmapi_enabled_apis = dmapi

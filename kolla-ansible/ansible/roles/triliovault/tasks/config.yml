@@ -27,7 +27,7 @@
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
   notify:
-s    - "Restart {{ item.key }} container"
+    - "Restart {{ item.key }} container"
 
 - name: Copying over triliovault services conf files
   become: true
