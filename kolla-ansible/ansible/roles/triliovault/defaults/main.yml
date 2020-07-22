@@ -115,17 +115,17 @@ triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-data
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
 
 ############ Following variables are user configurable ##########
-
+############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
 
 ## TrilioVault's containers tag
 triliovault_tag: "4.0.92-train"
-
-## TrilioVault docker credentials
+## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_docker_username: ""
 triliovault_docker_password: ""
-triliovault_docker_registry: ""
+triliovault_docker_registry: "docker.io"
+
 
 ## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
 triliovault_backup_target: 'nfs'
