@@ -13,11 +13,15 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 # temporary fix
-RUN yum-config-manager --disable opendaylight && yum-config-manager --save --setopt=epel.skip_if_unavailable=true
+RUN dnf -y update && dnf install -y yum-utils
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
-##Install datamover packages
+#RUN dnf config-manager --disable opendaylight && dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Install datamover packages in CentOS 8
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-contego puppet-triliovault -y
+RUN dnf install -y python3-tvault-contego
+RUN dnf install -y puppet-triliovault
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
