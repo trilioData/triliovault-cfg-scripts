@@ -15,6 +15,7 @@
     when:
       - inventory_hostname in groups['nova-api']
       - enable_haproxy | bool
+      - enable_triliovault | bool
       - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
 
 - name: Apply role triliovault

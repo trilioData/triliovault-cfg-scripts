@@ -12,6 +12,21 @@
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
 
+- name: Ensuring log directories exist for triliovault services
+  become: true
+  file:
+    path: "{{triliovault_kolla_log_dir}}/{{ item.key }}"
+    state: "directory"
+    owner: "42436"
+    group: "42436"
+    mode: "0755"
+  when:
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+  with_dict: "{{ triliovault_services }}"
+
+
+
 - include_tasks: copy-certs.yml
   when:
     - kolla_copy_ca_into_containers | bool
@@ -58,7 +73,39 @@
     - inventory_hostname in groups[triliovault_datamover_group]
     - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
-    - Restart triliovault-datamover container    
+    - Restart triliovault-datamover container  
+
+
+- name: Copying over nova.conf for triliovault datamover api service
+  become: true
+  vars:
+    service_name: "triliovault-datamover-api"
+  copy:
+    src: "{{ node_config_directory }}/nova-api/nova.conf"
+    dest: "{{ node_config_directory }}/triliovault-datamover-api/nova.conf"
+    mode: "0660"
+    remote_src: yes
+  when:
+    - inventory_hostname in groups[triliovault_datamover_api_group]
+    - enable_triliovault | bool
+  notify:
+    - "Restart triliovault-datamover-api container"      
+
+- name: Copying over nova.conf for triliovault datamover service
+  become: true
+  vars:
+    service_name: "triliovault-datamover"
+  copy:
+    src: "{{ node_config_directory }}/nova-compute/nova.conf"
+    dest: "{{ node_config_directory }}/triliovault-datamover/nova.conf"
+    mode: "0660"
+    remote_src: yes
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+    - enable_triliovault | bool
+  notify:
+    - "Restart triliovault-datamover container"
+
 
 - include_tasks: check-containers.yml
   when: kolla_action != "config"

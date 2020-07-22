@@ -106,7 +106,10 @@ triliovault_datamover_api_group: 'nova-api'
 triliovault_datamover_group: 'compute'
 
 
-
+## Log directories for triliovault services
+triliovault_kolla_log_dir: "/var/log/kolla"
+triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover"
+triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
 
 ############ Following variables are user configurable ##########
 
