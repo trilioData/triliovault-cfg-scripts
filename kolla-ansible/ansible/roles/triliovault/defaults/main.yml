@@ -63,6 +63,9 @@ triliovault_datamover_default_volumes:
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
+  - "/dev:/dev"
+  - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
+  - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
 
 
 
