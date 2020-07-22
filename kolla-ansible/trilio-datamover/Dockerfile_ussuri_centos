@@ -20,8 +20,7 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Install datamover packages in CentOS 8
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install -y python3-tvault-contego
-RUN dnf install -y puppet-triliovault
+RUN dnf install -y python3-tvault-contego puppet-triliovault python3-s3fuse-plugin
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
