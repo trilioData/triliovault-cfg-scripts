@@ -1,4 +1,4 @@
-FROM kolla/centos-source-nova-compute:ussuri
+FROM kolla/centos-binary-nova-compute:ussuri
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
@@ -12,8 +12,9 @@ LABEL name="kolla/trilio-datamover" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-# temporary fix
-RUN dnf -y update && dnf install -y yum-utils
+#RUN dnf -y update && dnf install -y yum-utils
+
+RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 #RUN dnf config-manager --disable opendaylight && dnf config-manager --save --setopt=epel.skip_if_unavailable=true
@@ -47,7 +48,7 @@ RUN mkdir -p /var/triliovault-mounts \
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
 ##Clean subscription
-RUN yum clean all
+RUN dnf clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Add license
@@ -57,24 +58,4 @@ COPY licensing.txt /licenses
 
 ##Become nova user for further operations
 USER nova
-
-##################
-# REQUIRED MOUNTS#
-##################
-# /etc/kolla/datamover/nova.conf:/etc/nova/nova.conf
-# /etc/kolla/datamover/tvault-contego.conf:/etc/tvault-contego/tvault-contego.conf
-# /etc/kolla/datamova/ceph.conf:/etc/ceph/ceph.conf
-# /etc/kolla/datamova/ceph.client.nova.keyring:/etc/ceph/ceph.client.nova.keyring
-# iscsi_info:/etc/iscsi:rw
-# /dev:/dev:rw
-# nova_compute:/var/lib/nova/:rw
-# /var/run/libvirt
-# /etc/kolla/datamover/start_datamover_nfs:/opt/tvault/start_datamover_nfs
-
-## start_datamover_nfs was needed because it wasn't using NFS correctly
-
-##############
-# RUN COMMAND#
-##############
-# docker run --network host --name trilio_datamover -d -v /etc/kolla/dmapi/nova.conf:/etc/nova/nova.conf -v /etc/kolla/datamover/tvault-contego.conf:/etc/tvault-contego/tvault-contego.conf kolla/ubuntu-source-trilio-datamover:pike
 
