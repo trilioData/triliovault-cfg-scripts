@@ -1,4 +1,4 @@
-FROM kolla/ubuntu-source-nova-api:ussuri
+FROM kolla/ubuntu-binary-nova-api:ussuri
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \

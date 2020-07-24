@@ -1,4 +1,4 @@
-FROM kolla/ubuntu-source-nova-api:pike
+FROM kolla/ubuntu-binary-nova-api:pike
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
