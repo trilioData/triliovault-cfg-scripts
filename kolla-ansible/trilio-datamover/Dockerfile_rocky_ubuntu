@@ -1,4 +1,4 @@
-FROM kolla/ubuntu-source-nova-compute:rocky
+FROM kolla/ubuntu-binary-nova-compute:rocky
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \

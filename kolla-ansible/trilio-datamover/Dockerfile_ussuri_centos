@@ -12,12 +12,8 @@ LABEL name="kolla/trilio-datamover" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-#RUN dnf -y update && dnf install -y yum-utils
-
 RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
-
-#RUN dnf config-manager --disable opendaylight && dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Install datamover packages in CentOS 8
 ADD trilio.repo /etc/yum.repos.d/
@@ -35,8 +31,8 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova \
  && usermod -aG kvm nova
 
-# ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
-# RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
+ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
+RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
 
 RUN mkdir -p /var/triliovault-mounts \
  && chown nova:nova /var/triliovault-mounts \
