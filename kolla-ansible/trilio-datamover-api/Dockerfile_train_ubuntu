@@ -1,4 +1,4 @@
-FROM kolla/ubuntu-source-nova-api:train
+FROM kolla/ubuntu-binary-nova-api:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \

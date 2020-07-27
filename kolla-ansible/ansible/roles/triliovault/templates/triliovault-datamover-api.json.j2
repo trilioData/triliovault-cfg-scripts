@@ -1,0 +1,21 @@
+{
+	"command": "/usr/bin/python3 /usr/bin/dmapi-api",
+	"config_files": [{
+			"source": "{{ container_config_directory }}/triliovault-datamover-api.conf",
+			"dest": "/etc/dmapi/dmapi.conf",
+			"owner": "nova",
+			"perm": "0600"
+		},
+		{
+			"source": "{{ container_config_directory }}/nova.conf",
+			"dest": "/etc/nova/nova.conf",
+			"owner": "nova",
+			"perm": "0600"
+		}
+	],
+	"permissions": [{
+		"path": "/var/log/kolla/triliovault-datamover-api",
+		"owner": "nova:nova",
+		"recurse": true
+	}]
+}
