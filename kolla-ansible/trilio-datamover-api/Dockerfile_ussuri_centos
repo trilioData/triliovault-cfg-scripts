@@ -13,7 +13,7 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
 USER root
 
 # temporary fix
-RUN dnf -y update && dnf install -y yum-utils
+RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Install datamover packages
