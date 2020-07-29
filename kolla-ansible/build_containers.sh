@@ -19,7 +19,7 @@ then
 base_dir="$current_dir"
 fi
 
-declare -a openstack_releases=("train")
+declare -a openstack_releases=("train" "ussuri")
 
 declare -a openstack_platforms=("centos" "ubuntu")
 
@@ -39,14 +39,14 @@ do
 		echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-datamover/
 		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
-		docker build --no-cache -t trilio/${openstack_platform}-source-trilio-datamover:${tvault_version}-${openstack_release} .
+		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover:${tvault_version}-${openstack_release} .
 
 
 		#Build trilio_datamover-api containers
 		echo -e "Creating trilio-datamover container-api for kolla ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-datamover-api/
 		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
-		docker build --no-cache -t trilio/${openstack_platform}-source-trilio-datamover-api:${tvault_version}-${openstack_release} .
+		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} .
 
 		# Clean the build_dir
 		rm -rf $base_dir/${build_dir}
