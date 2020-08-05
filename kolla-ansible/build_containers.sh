@@ -48,6 +48,14 @@ do
 		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
 		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} .
 
+
+		#Build trilio_horizon_plugin containers
+		echo -e "Creating trilio-horizon-plugin container for kolla ${openstack_release} ${openstack_platform}"
+		cd $base_dir/${build_dir}/trilio-horizon-plugin/
+		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
+		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release} .
+
+
 		# Clean the build_dir
 		rm -rf $base_dir/${build_dir}
 
