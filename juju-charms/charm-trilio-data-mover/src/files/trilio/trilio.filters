@@ -1,0 +1,6 @@
+[Filters]
+# trilio filter
+mount: CommandFilter, mount, root
+umount: CommandFilter, umount, root
+qemu-img: CommandFilter, qemu-img, root
+privsep-helper: CommandFilter, privsep-helper, root

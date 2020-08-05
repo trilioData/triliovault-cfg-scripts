@@ -1,11 +1,11 @@
-FROM kolla/ubuntu-source-nova-compute:train
+FROM kolla/ubuntu-binary-nova-compute:train
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="4.0.0" \
-      release="4.0" \
+      version="4.1.0" \
+      release="4.1" \
       summary="TrilioData Datamover" \
       description="TrilioData Datamover"
 
