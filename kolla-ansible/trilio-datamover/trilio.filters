@@ -3,3 +3,5 @@
 mount: CommandFilter, mount, root
 umount: CommandFilter, umount, root
 qemu-img: CommandFilter, qemu-img, root
+chown: CommandFilter, chown, root
+

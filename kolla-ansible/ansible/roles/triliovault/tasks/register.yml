@@ -1,0 +1,10 @@
+---
+- import_role:
+    name: service-ks-register
+  vars:
+    service_ks_register_auth: "{{ openstack_triliovault_auth }}"
+    service_ks_register_services: "{{ triliovault_ks_services }}"
+  tags: always
+
+## TrilioVault service does not need any users
+##service_ks_register_users: "{{ triliovault_ks_users }}"

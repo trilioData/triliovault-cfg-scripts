@@ -1,5 +1,4 @@
-#!/bin/bash
+/usr/bin/python3 /usr/bin/tvault-contego \
+--config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf \
+--config-file=/etc/tvault-contego/tvault-contego.conf
 
-/var/lib/kolla/venv/bin/python /usr/bin/tvault-contego \
-  --config-file=/etc/nova/nova.conf \
-    --config-file=/etc/tvault-contego/tvault-contego.conf
