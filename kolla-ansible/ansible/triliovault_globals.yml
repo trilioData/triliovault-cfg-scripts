@@ -3,6 +3,15 @@
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
 
+triliovault_horizon_image_full: "docker.io/trilio/{{ kolla_base_distro }}-binary-trilio-horizon-plugin:{{ triliovault_tag }}"
+
+## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
+## By default triliovault horizon will not be enabled on openstack horizon
+## NOTE: With this change, openstack horizon container will be replaced by triliovault horizon container.
+## Don't worry, triliovault horizon container image uses upstream kolla horizon container as base image
+
+#horizon_image_full: "{{ triliovault_horizon_image_full }}"
+
 ## TrilioVault's containers tag
 triliovault_tag: "4.0.92-train"
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
