@@ -41,5 +41,5 @@ class trilio::contego::config inherits trilio::contego {
         mode   => '0644',
         source => 'puppet:///modules/trilio/s3-cert.pem',
     }
-
 }
+

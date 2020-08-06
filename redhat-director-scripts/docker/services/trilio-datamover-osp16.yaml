@@ -2,7 +2,6 @@ heat_template_version: queens
 
 description: >
   Trilio Datamover containerized service
-
 parameters:
   DockerTrilioDatamoverImage:
     default: ''
@@ -47,7 +46,7 @@ parameters:
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
   BackupTargetType:
-    description: 
+    description:
     type: string
   NfsShares:
     description: Provide comma separated list of NFS shares to use as backup target
@@ -60,12 +59,12 @@ parameters:
     description: S3 type like Amazon/Ceph/Minio
     type: string
   S3AccessKey:
-    description: S3 access key 
+    description: S3 access key
     type: string
   S3SecretKey:
-    description: S3 secret key 
+    description: S3 secret key
     type: string
-  S3RegionName: 
+  S3RegionName:
     description: S3 region name
     type: string
   S3Bucket:
@@ -80,8 +79,7 @@ parameters:
     type: boolean
   S3SslCert:
     description: S3 SSL certificate file path
-    type: string 
-
+    type: string
 
 
 outputs:
@@ -105,16 +103,16 @@ outputs:
         config_volume: triliodm
         puppet_tags: dmconfig
         step_config: |
-            include ::trilio::contego           
+            include ::trilio::contego
         config_image: {get_param: DockerTrilioDatamoverImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dm.json:
-          command: 
+          command:
                 str_replace:
                     template: /opt/tvault/start_datamover_$backup_target_type
                     params:
                         $backup_target_type: {get_param: BackupTargetType}
-          config_files:  
+          config_files:
             - source: "/var/lib/kolla/config_files/nova_libvirt/*"
               dest: "/"
               merge: true
@@ -160,7 +158,7 @@ outputs:
                 - /dev:/dev
                 - /var/run/libvirt/:/var/run/libvirt/
                 - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
-                - /var/lib/nova:/var/lib/nova:shared 
+                - /var/lib/nova:/var/lib/nova:shared
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
@@ -173,4 +171,3 @@ outputs:
             - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
             - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []
-      
