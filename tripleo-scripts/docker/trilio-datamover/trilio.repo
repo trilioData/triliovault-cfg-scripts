@@ -1,5 +1,5 @@
-[triliovault-3-3]
-name=triliovault-3-3
-baseurl=http://{REPO_HOST}/triliovault-3.3/yum/
+[triliovault-4-1]
+name=triliovault-4-1
+baseurl={REPO_URL}
 gpgcheck=0
 enabled=1

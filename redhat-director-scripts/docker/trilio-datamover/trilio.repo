@@ -1,5 +1,5 @@
-[triliovault-4-0-patch]
-name=triliovault-4-0-patch
-baseurl=http://{REPO_HOST}/triliovault-4.0-patch/yum/
+[triliovault-4-1]
+name=triliovault-4-1
+baseurl={REPO_URL}
 gpgcheck=0
 enabled=1
