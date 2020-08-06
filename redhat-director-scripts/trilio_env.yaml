@@ -47,6 +47,5 @@ parameter_defaults:
    ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
 
-
    ## Don't edit following parameter
    EnablePackageInstall: True
