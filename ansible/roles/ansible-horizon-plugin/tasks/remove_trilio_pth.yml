@@ -1,6 +1,6 @@
 ---
 - name: Found location of trilio.pth file
-  shell: "{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  shell: "{{ virtual_env }} && {{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
   register: VENV_PKGLIB
 
 - set_fact:
@@ -10,3 +10,4 @@
   file:
     path: "{{ TRILIO_FILE }}"
     state: absent
+
