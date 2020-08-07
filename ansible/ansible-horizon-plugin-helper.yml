@@ -1,0 +1,87 @@
+---
+- block:
+  - name: Fetch distribution
+    shell: awk '/ID=/' /etc/os-release | sed 's/ID=//' | sed -r 's/\"|\(|\)//g' | awk '{print $1;exit}'
+    register: result
+
+  - name: Get distro name
+    set_fact: distro={{ result.stdout }}
+    when: result.stdout=="centos"
+
+  - name: Get distro name
+    set_fact: distro=ubuntu
+    when: result.stdout!="centos"
+  - debug: var=distro
+
+  - name: Find horizon container name
+    find:
+      patterns: '*_horizon_*'
+      paths:
+        - /var/lib/lxc
+      file_type: directory
+    register: file_found
+
+  - debug: var=file_found
+
+  - set_fact: horizon_container_name="{{ (file_found.files[0]['path']).split('/')[4] }}"
+
+  - debug: var=horizon_container_name
+
+  - name: Find python version of horizon service
+    shell: lxc-attach -n {{ horizon_container_name }} -- bash -c "cd /openstack/venvs/horizon*/lib/ &&  ls -l | grep python3 | grep -v grep > /dev/null && echo 'python3' || echo 'python2'"
+    register: python_result
+
+  - set_fact: PYTHON_VERSION={{ python_result.stdout }}
+  - debug:
+      msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+
+  - name: install packages on horizon container | curl
+    shell: lxc-attach -n {{ horizon_container_name }} -- bash -c "apt-get install curl -y"
+    when: distro=="ubuntu"
+    retries: 3
+    delay: 3
+    register: result
+    until: result.rc == 0
+
+  - name: Get containers info
+    lxc_container:
+      name: "{{horizon_container_name}}"
+    register: horizon_containers_info
+
+  - set_fact: horizon_container_ip="{{ horizon_containers_info.lxc_container.ips.1 }}"
+
+  - debug:
+      msg: "{{horizon_container_ip}}"
+
+  - name: Register the hosts in the inventory
+    add_host:
+      name:  "{{horizon_container_ip}}"
+      group: "tvault_horizon_container_hosts"
+
+  - name: Find openstack-dashboard path in horizon container
+    find:
+      patterns: 'site-packages'
+      paths:
+        - /var/lib/lxc/{{ horizon_container_name }}/rootfs/openstack/
+      file_type: directory
+      recurse: yes
+    register: file_found
+
+  - set_fact: HORIZON_PATH="{{ (file_found.files[0]['path']).split('rootfs')[1] }}"
+
+  - debug: var=HORIZON_PATH
+
+  - name: Register the variable in Memory for Horizon
+    add_host:
+      name: "{{horizon_container_ip}}"
+      HORIZON_PATH: "{{ HORIZON_PATH }}"
+      PYTHON_VERSION: "{{ PYTHON_VERSION }}"
+      PYPI_PORT: 8081
+  tags:
+    - tvault-horizon
+    - tvault-all-install
+    - tvault-horizon-uninstall
+    - tvault-all-uninstall
+
+
+

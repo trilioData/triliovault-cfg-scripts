@@ -1,42 +1,73 @@
 ---
-- name: copy tvault_panel_group.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel_group.py" 
+
+- name: Found location of trilio.pth file
+  shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  register: VENV_PKGLIB
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    TRILIO_FILE : "{{VENV_PKGLIB.stdout}}/trilio.pth"
+  when: ENV_PATH != "/usr"
+
+- name: Found local packages library
+  shell: . /openstack/venvs/horizon*/bin/activate && echo $(/usr/bin/{{PYTHON_VERSION}} -c "import site, os; from os import path; p = [path_dir for path_dir in site.getsitepackages() if path.exists(os.path.join(path_dir, 'dashboards'))]; print(p[0]+'/')")
+  register: PACKAGELIB
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    PACKAGE_LIB : "{{PACKAGELIB.stdout}}"
+  when: ENV_PATH != "/usr"
+
+- debug:
+    msg: "TRILIO_FILE :{{TRILIO_FILE}} --- PACKAGE_LIB {{PACKAGE_LIB}}"
+
+- name: Create trilio.pth file
+  shell: "echo {{ PACKAGE_LIB }} > {{ TRILIO_FILE }}"
+  when: ENV_PATH != "/usr"
+
+- block:
+  - name: copy tvault_panel_group.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel_group.py"
+    notify:
+       - restart webserver
+
+  - name: copy tvault_admin_panel_group.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_admin_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel_group.py"
+    notify:
+       - restart webserver
+
+  - name: copy tvault_panel.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel.py"
+    notify:
+       - restart webserver
+
+  - name: copy tvault_settings_panel.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_settings_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_settings_panel.py"
+    notify:
+       - restart webserver
+
+  - name: copy tvault_admin_panel.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_admin_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel.py"
+    notify:
+       - restart webserver
+
+  - name: copy tvault_filter.py file to remote location
+    copy: src="{{automation_home}}/files/tvault_filter.py" dest="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py"
+    notify:
+       - restart webserver
+  when: >
+           (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+           (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+           (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+           (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
+- name: Copy Trilio Dashboard Files when Ubuntu
+  shell: |
+      cp -rf /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/*panel*.py {{HORIZON_PATH}}/openstack_dashboard/local/enabled/
+      cp -f /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py {{HORIZON_PATH}}/openstack_dashboard/templatetags/
   notify:
-     - restart webserver
-
-- name: copy tvault_admin_panel_group.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_admin_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel_group.py"
-  notify:
-     - restart webserver
+    - restart webserver
+  when: ansible_distribution=="Ubuntu"
 
 
-- name: copy tvault_panel.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel.py"
-  notify:
-     - restart webserver
 
-- name: copy tvault_settings_panel.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_settings_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_settings_panel.py" 
-  notify:
-     - restart webserver
-
-- name: copy tvault_admin_panel.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_admin_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel.py"
-  notify:
-     - restart webserver
-
-- name: copy tvault_filter.py file to remote location
-  copy: src="{{automation_home}}/files/tvault_filter.py" dest="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py"
-  notify:
-     - restart webserver
-
-- name: write content into destination file - sync_static.py 
-  copy: src="{{automation_home}}/files/sync_static.py" dest="/tmp/sync_static.py" 
- 
-- name: Change the working directory to horizon and excute shell command
-  shell: "{{ MANAGE_FILE }} shell < /tmp/sync_static.py &> /dev/null"
-  args:
-       chdir: "{{HORIZON_PATH}}"
-
-- name: remove temporary file -  sync_static.py
-  file: path=/tmp/sync_static.py state=absent
