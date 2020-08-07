@@ -12,15 +12,29 @@ fi
 tvault_version=$1
 
 
-declare -a openstack_releases=("train")
+declare -a openstack_releases=("train" "ussuri")
 
+declare -a openstack_platforms=("centos" "ubuntu")
 
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
-    docker push trilio/centos-source-trilio-datamover-api:${tvault_version}-${openstack_release}
-    docker push trilio/ubuntu-source-trilio-datamover-api:${tvault_version}-${openstack_release}
-    docker push trilio/centos-source-trilio-datamover:${tvault_version}-${openstack_release}
-    docker push trilio/ubuntu-source-trilio-datamover:${tvault_version}-${openstack_release}
 
+    for openstack_platform in "${openstack_platforms[@]}"
+    do
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
+
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tvault_version}-${openstack_release}
+
+      if [ "$openstack_release" == "ussuri" ]
+      then
+        docker tag trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
+      fi
+    done
 done
