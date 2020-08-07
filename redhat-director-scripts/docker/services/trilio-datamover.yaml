@@ -2,7 +2,6 @@ heat_template_version: queens
 
 description: >
   Trilio Datamover containerized service
-
 parameters:
   DockerTrilioDatamoverImage:
     default: ''
@@ -47,7 +46,7 @@ parameters:
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
   BackupTargetType:
-    description: 
+    description:
     type: string
   NfsShares:
     description: Provide comma separated list of NFS shares to use as backup target
@@ -60,12 +59,12 @@ parameters:
     description: S3 type like Amazon/Ceph/Minio
     type: string
   S3AccessKey:
-    description: S3 access key 
+    description: S3 access key
     type: string
   S3SecretKey:
-    description: S3 secret key 
+    description: S3 secret key
     type: string
-  S3RegionName: 
+  S3RegionName:
     description: S3 region name
     type: string
   S3Bucket:
@@ -80,7 +79,7 @@ parameters:
     type: boolean
   S3SslCert:
     description: S3 SSL certificate file path
-    type: string   
+    type: string
 
 outputs:
   role_data:
@@ -98,21 +97,21 @@ outputs:
         trilio::contego::s3_bucket: {get_param: S3Bucket}
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
-        trilio::contego::s3_ssl_cert: {get_param: S3SslCert}           
+        trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
       puppet_config:
         config_volume: triliodm
         puppet_tags: dmconfig
         step_config: |
-            include ::trilio::contego           
+            include ::trilio::contego
         config_image: {get_param: DockerTrilioDatamoverImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dm.json:
-          command: 
+          command:
                 str_replace:
                     template: /opt/tvault/start_datamover_$backup_target_type
                     params:
                         $backup_target_type: {get_param: BackupTargetType}
-          config_files:  
+          config_files:
             - source: "/var/lib/kolla/config_files/nova_libvirt/*"
               dest: "/"
               merge: true
@@ -171,4 +170,3 @@ outputs:
             - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
             - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []
-      
