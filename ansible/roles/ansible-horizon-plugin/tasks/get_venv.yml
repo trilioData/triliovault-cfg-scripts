@@ -1,0 +1,22 @@
+---
+- set_fact:
+    virtual_env: ". /openstack/venvs/horizon*/bin/activate"
+
+- name: Find ENVPATH
+  shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'import sys; print(sys.prefix)'"
+  register: ENVPATH
+
+- set_fact:
+    ENV_PATH : "{{ENVPATH.stdout}}"
+- debug:
+    msg: "{{ENV_PATH}}"
+
+- set_fact:
+    EXTRA_APT_VAR : "--no-install-recommends"
+  when: ENV_PATH != "/usr"
+
+- set_fact:
+    EXTRA_APT_VAR : ""
+  when: ENV_PATH == "/usr"
+
+

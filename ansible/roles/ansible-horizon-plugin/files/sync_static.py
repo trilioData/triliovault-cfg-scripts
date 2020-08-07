@@ -1,6 +1,7 @@
 import settings
 import subprocess
-ls = settings.openstack_dashboard.settings.INSTALLED_APPS
+ls = settings.INSTALLED_APPS
+
 data = ""
 for app in ls:
     if app != 'dashboards':

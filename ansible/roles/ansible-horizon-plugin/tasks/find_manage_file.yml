@@ -1,14 +1,11 @@
 ---
-- name: find  venv is using or not
-  shell: "{{ PYTHON_VERSION }}  -c 'import sys; print(sys.prefix)'"
-  register: ENVPATH
-
-- set_fact:
-    ENV_PATH : "{{ENVPATH.stdout}}"
 
 - name: find location of manage.py
-  shell: "find {{ ENV_PATH }}  -name '*manage.py' | grep -E 'openstack-dashboard|horizon'"
+  shell: "find {{ ENV_PATH }}  -name '*manage.py' | grep -E 'openstack-dashboard|horizon|bin'"
   register: output
 
 - set_fact:
     MANAGE_FILE : "{{output.stdout}}"
+
+- debug:
+    msg: "manage.py is found at :{{MANAGE_FILE}}"
