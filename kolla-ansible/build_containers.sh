@@ -34,6 +34,7 @@ do
         	mkdir -p $base_dir/${build_dir}
 		cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
 		cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
+                cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
 		#Build trilio-datamover containers
 		echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
@@ -50,11 +51,13 @@ do
 
 
 		#Build trilio_horizon_plugin containers
+             if [ "$openstack_release" == "ussuri" ]
+             then
 		echo -e "Creating trilio-horizon-plugin container for kolla ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-horizon-plugin/
 		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
 		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release} .
-
+             fi
 
 		# Clean the build_dir
 		rm -rf $base_dir/${build_dir}
