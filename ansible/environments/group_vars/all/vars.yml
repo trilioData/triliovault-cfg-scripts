@@ -2,10 +2,12 @@
 #ip address and port no for tvault applicance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8085
-#Need to update python version of openstack setup Example PYTHON_VERSION: python2 or PYTHON_VERSION: python3
-PYTHON_VERSION: python2
+PYPI_PORT: 8081
+
+#Time Zone
+TIME_ZONE: "Etc/UTC"
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
-TVAULT_PACKAGE_VERSION: 3.3.36
+TVAULT_PACKAGE_VERSION: 4.0.115
 DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
 RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
 
@@ -20,6 +22,9 @@ UPDATE_NOVA_SUDOERS_FILE: notproceed
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
 verbosity_level: 2
 
+#Openstack Release
+os_release: "train"
+
 #Details for Nova Compute filter
 #specify NOVA_COMPUTE_FILTERS_FILE
 #For Debian: /etc/nova/rootwrap.d/compute.filters
@@ -30,11 +35,6 @@ NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
 #For Debian: apache2
 #For RHEL: httpd
 WebServer: sample_webservice
-
-#Specify opestack dashboard path based on type of operating system of controller node
-#For Debian/RHEL: /usr/share/openstack-dashboard
-#For SUSE: /srv/www/openstack-dashboard 
-HORIZON_PATH: /usr/share/openstack-dashboard
 
 #specify openstack's nova api service name
 #For Debian: nova-api
@@ -74,6 +74,7 @@ s3_type: sample_s3_type
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
 VAULT_S3_SECURE: False
+VAULT_S3_SSL_CERT: sample_s3_ssl_cert
 
 
 ###details of datamover API
@@ -85,8 +86,11 @@ ssl_key_file:  ""
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
 #******************************************************************************************************************************************************************
+DMAPI_USR: dmapi
+DMAPI_GRP: dmapi
 #tvault contego file path
 TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
+TVAULT_OBJECT_STORE_CONF: /etc/tvault-object-store/tvault-object-store.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
 #Nova distribution specific configuration file path
 NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
