@@ -11,7 +11,7 @@ LABEL name="ubuntu-binary-trilio-horizon-plugin" \
 
 ##Install datamover packages
 ADD trilio.list /etc/apt/sources.list.d/
-RUN apt update 
+RUN apt update -y 
 RUN apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient --allow-unauthenticated
 
 
