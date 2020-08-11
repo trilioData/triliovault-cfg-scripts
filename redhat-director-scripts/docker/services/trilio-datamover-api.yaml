@@ -81,7 +81,7 @@ outputs:
               preserve_properties: true
           permissions:
             - path: /var/log/trilio-datamover-api
-              owner: nova:nova
+              owner: dmapi:dmapi
               recurse: true
       docker_config:
         step_5:
@@ -89,7 +89,7 @@ outputs:
             image: {get_param: DockerTrilioDmApiImage}
             net: host
             privileged: true
-            user: nova
+            user: dmapi
             restart: always
             volumes:
               - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
