@@ -114,6 +114,15 @@ triliovault_kolla_log_dir: "/var/log/kolla"
 triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover"
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
 
+
+## Optional configurable
+triliovault_database_user: "dmapi"
+triliovault_database_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
+triliovault_database_name: "dmapi"
+
+
+
+
 ############ Following variables are user configurable ##########
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
