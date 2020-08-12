@@ -3,7 +3,7 @@
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8085
 PYPI_PORT: 8081
-
+tvault_horizon_hosts: dashboard_hosts
 #Time Zone
 TIME_ZONE: "Etc/UTC"
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
