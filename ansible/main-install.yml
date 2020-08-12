@@ -1,14 +1,12 @@
 ---
 
-- hosts: tvault_horizon_hosts
+- hosts: "{{tvault_horizon_hosts}}"
   tasks:
   - include : ansible-horizon-plugin-helper.yml
-  vars_files: defaults/tvault_vars.yml
 
 - hosts: tvault_horizon_container_hosts
   roles:
     - role: ansible-horizon-plugin
-  vars_files: defaults/tvault_vars.yml
 
 - hosts: controller
   roles:

@@ -1,17 +1,5 @@
 ---
 - block:
-  - name: Fetch distribution
-    shell: awk '/ID=/' /etc/os-release | sed 's/ID=//' | sed -r 's/\"|\(|\)//g' | awk '{print $1;exit}'
-    register: result
-
-  - name: Get distro name
-    set_fact: distro={{ result.stdout }}
-    when: result.stdout=="centos"
-
-  - name: Get distro name
-    set_fact: distro=ubuntu
-    when: result.stdout!="centos"
-  - debug: var=distro
 
   - name: Find horizon container name
     find:
@@ -37,7 +25,7 @@
 
   - name: install packages on horizon container | curl
     shell: lxc-attach -n {{ horizon_container_name }} -- bash -c "apt-get install curl -y"
-    when: distro=="ubuntu"
+    when: ansible_distribution=="Ubuntu"
     retries: 3
     delay: 3
     register: result
@@ -76,7 +64,6 @@
       name: "{{horizon_container_ip}}"
       HORIZON_PATH: "{{ HORIZON_PATH }}"
       PYTHON_VERSION: "{{ PYTHON_VERSION }}"
-      PYPI_PORT: 8081
   tags:
     - tvault-horizon
     - tvault-all-install
