@@ -20,7 +20,8 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install python3-dmapi -y
 
-RUN chown -R dmapi:dmapi /etc/nova/
+RUN mkdir -p /var/cache/dmapi
+RUN chown -R dmapi:dmapi /etc/nova/ && chown -R /var/cache/dmapi
 
 ##Clean subscription
 RUN yum clean all
