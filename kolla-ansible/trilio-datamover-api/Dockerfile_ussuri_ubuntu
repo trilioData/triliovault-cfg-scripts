@@ -19,7 +19,7 @@ ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 RUN apt-get install -y python3-dmapi --allow-unauthenticated
 
-RUN chown -R dmapi:dmapi /etc/nova/ && chown -R dmapi:dmapi /etc/dmapi
+RUN chown -R dmapi:dmapi /etc/nova/
 
 ##Copy license file
 RUN mkdir /licenses
