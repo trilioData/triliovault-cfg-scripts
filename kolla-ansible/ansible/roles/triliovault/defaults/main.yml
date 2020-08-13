@@ -115,11 +115,23 @@ triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-data
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
 
 
-## Optional configurable
+###### Optional configurable
+## TrilioVault database user
 triliovault_database_user: "dmapi"
 triliovault_database_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
 triliovault_database_name: "dmapi"
 
+## TrilioVault rabbitmq user
+triliovault_rpc_user: "dmapi"
+triliovault_rpc_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
+triliovault_rpc_vhost: "/"
+
+
+
+triliovault_rabbitmq_users:
+  - user: "{{ triliovault_rpc_user }}"
+    password: "{{ triliovault_rpc_password }}"
+    vhost: "{{ triliovault_rpc_vhost }}"
 
 
 

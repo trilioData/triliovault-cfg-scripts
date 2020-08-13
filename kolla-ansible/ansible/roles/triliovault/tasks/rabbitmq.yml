@@ -1,0 +1,15 @@
+---
+# Create RabbitMQ users and vhosts.
+- block:
+    - import_role:
+        name: service-rabbitmq
+      vars:
+        service_rabbitmq_users: "{{ triliovault_rabbitmq_users }}"
+        # Create users for cells in parallel.
+        service_rabbitmq_run_once: true
+        service_rabbitmq_when: "{{ inventory_hostname == groups[triliovault_datamover_api_group] }}"
+        # Delegate to a host in the RPC group.
+        service_rabbitmq_delegate_host: "{{ groups[triliovault_datamover_api_group] }}"
+
+  when: om_rpc_transport == 'rabbit'
+  tags: always
