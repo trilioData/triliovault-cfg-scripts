@@ -17,9 +17,7 @@
   file:
     path: "{{triliovault_kolla_log_dir}}/{{ item.key }}"
     state: "directory"
-    owner: "42487"
-    group: "42487"
-    mode: "0755"
+    mode: "0777"
   when:
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
@@ -85,7 +83,6 @@
     src: "{{ node_config_directory }}/nova-api/nova.conf"
     dest: "{{ node_config_directory }}/triliovault-datamover-api/nova.conf"
     mode: "0660"
-    remote_src: yes
   when:
     - inventory_hostname in groups[triliovault_datamover_api_group]
     - enable_triliovault | bool
