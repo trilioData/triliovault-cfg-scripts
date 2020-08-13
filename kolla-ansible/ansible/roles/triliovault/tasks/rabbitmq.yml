@@ -9,7 +9,7 @@
         service_rabbitmq_run_once: true
         service_rabbitmq_when: "{{ inventory_hostname == groups[triliovault_datamover_api_group] }}"
         # Delegate to a host in the RPC group.
-        service_rabbitmq_delegate_host: "{{ groups[triliovault_datamover_api_group] }}"
+        service_rabbitmq_delegate_host: "{{ groups[triliovault_datamover_api_group][0] }}"
 
   when: om_rpc_transport == 'rabbit'
   tags: always
