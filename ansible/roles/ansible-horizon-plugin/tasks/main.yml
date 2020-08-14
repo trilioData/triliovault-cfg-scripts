@@ -52,11 +52,6 @@
     - tvault-all-uninstall
   when: ansible_distribution=="Ubuntu"
 
-- import_tasks: remove_pip_packages.yml
-  tags:
-    - tvault-horizon
-    - tvault-all-install
-
 - name: install horizon plugin on controller node when Centos/RedHat
   import_tasks: install_rhel.yml
   tags:
