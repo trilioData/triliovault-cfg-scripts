@@ -10,6 +10,7 @@
     ENV_PATH : "{{ENVPATH.stdout}}"
 - debug:
     msg: "{{ENV_PATH}}"
+    verbosity: "{{ verbosity_level }}"
 
 - set_fact:
     EXTRA_APT_VAR : "--no-install-recommends"

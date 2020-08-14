@@ -20,7 +20,7 @@ RPM_PACKAGE_REPO_URL: "http://{REPO_HOST}/triliovault-3.3/yum/"
 UPDATE_NOVA_SUDOERS_FILE: notproceed
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
-verbosity_level: 2
+verbosity_level: 3
 
 #Openstack Release
 os_release: "train"

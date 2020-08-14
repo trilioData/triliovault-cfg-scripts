@@ -1,6 +1,5 @@
 ---
 - block:
-
   - name: Find horizon container name
     find:
       patterns: '*_horizon_*'
@@ -9,61 +8,69 @@
       file_type: directory
     register: file_found
 
-  - debug: var=file_found
+  - set_fact:
+      horizon_containers_names: "{{ horizon_containers_names|default([]) + [ item.path.split('/')[4] ]}}"
+    loop: "{{file_found.files}}"
 
-  - set_fact: horizon_container_name="{{ (file_found.files[0]['path']).split('/')[4] }}"
+  - debug:
+      msg: "{{horizon_containers_names}}"
+      verbosity: "{{verbosity_level}}"
 
-  - debug: var=horizon_container_name
+  - name: Get containers info
+    lxc_container:
+      name: "{{item}}"
+    register: horizon_containers_info
+    with_items: "{{ horizon_containers_names }}"
+
+  - set_fact:
+      horizon_container_ips: "{{ horizon_container_ips|default([]) + [ item.lxc_container.ips.1 ]}}"
+    loop: "{{horizon_containers_info.results}}"
+
+  - name: Horizon container Ip-address
+    debug:
+      msg: "{{horizon_container_ips}}"
+      verbosity: "{{verbosity_level}}"
 
   - name: Find python version of horizon service
-    shell: lxc-attach -n {{ horizon_container_name }} -- bash -c "cd /openstack/venvs/horizon*/lib/ &&  ls -l | grep python3 | grep -v grep > /dev/null && echo 'python3' || echo 'python2'"
+    shell: lxc-attach -n {{ horizon_containers_names[0] }} -- bash -c "cd /openstack/venvs/horizon*/lib/ &&  ls -l | grep python3 | grep -v grep > /dev/null && echo 'python3' || echo 'python2'"
     register: python_result
 
   - set_fact: PYTHON_VERSION={{ python_result.stdout }}
   - debug:
       msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+      verbosity: "{{ verbosity_level }}"
 
   - name: install packages on horizon container | curl
-    shell: lxc-attach -n {{ horizon_container_name }} -- bash -c "apt-get install curl -y"
+    shell: lxc-attach -n {{ item }} -- bash -c "apt-get install curl -y"
     when: ansible_distribution=="Ubuntu"
     retries: 3
     delay: 3
     register: result
     until: result.rc == 0
-
-  - name: Get containers info
-    lxc_container:
-      name: "{{horizon_container_name}}"
-    register: horizon_containers_info
-
-  - set_fact: horizon_container_ip="{{ horizon_containers_info.lxc_container.ips.1 }}"
-
-  - debug:
-      msg: "{{horizon_container_ip}}"
-
-  - name: Register the hosts in the inventory
-    add_host:
-      name:  "{{horizon_container_ip}}"
-      group: "tvault_horizon_container_hosts"
+    with_items: "{{horizon_containers_names}}"
 
   - name: Find openstack-dashboard path in horizon container
     find:
       patterns: 'site-packages'
       paths:
-        - /var/lib/lxc/{{ horizon_container_name }}/rootfs/openstack/
+        - /var/lib/lxc/{{ horizon_containers_names[0] }}/rootfs/openstack/
       file_type: directory
       recurse: yes
     register: file_found
 
   - set_fact: HORIZON_PATH="{{ (file_found.files[0]['path']).split('rootfs')[1] }}"
 
-  - debug: var=HORIZON_PATH
+  - debug:
+      msg: "{{HORIZON_PATH}}"
+      verbosity: "{{verbosity_level}}"
 
-  - name: Register the variable in Memory for Horizon
+  - name: Register the hosts and Variable in the inventory
     add_host:
-      name: "{{horizon_container_ip}}"
+      name: "{{item}}"
+      group: "tvault_horizon_container_hosts"
       HORIZON_PATH: "{{ HORIZON_PATH }}"
       PYTHON_VERSION: "{{ PYTHON_VERSION }}"
+    with_items: "{{ horizon_container_ips }}"
   tags:
     - tvault-horizon
     - tvault-all-install

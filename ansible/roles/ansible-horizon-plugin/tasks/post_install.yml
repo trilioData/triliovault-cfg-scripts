@@ -20,6 +20,7 @@
 
 - debug:
     msg: "TRILIO_FILE :{{TRILIO_FILE}} --- PACKAGE_LIB {{PACKAGE_LIB}}"
+    verbosity: "{{ verbosity_level }}"
 
 - name: Create trilio.pth file
   shell: "echo {{ PACKAGE_LIB }} > {{ TRILIO_FILE }}"

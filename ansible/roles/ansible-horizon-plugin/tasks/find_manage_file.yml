@@ -9,3 +9,4 @@
 
 - debug:
     msg: "manage.py is found at :{{MANAGE_FILE}}"
+    verbosity: "{{ verbosity_level }}"
