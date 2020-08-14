@@ -9,7 +9,6 @@
   yum:
      update_cache: yes
      name:
-        - workloadmgrclient
         - tvault-horizon-plugin
      state: latest
   notify:
@@ -31,7 +30,6 @@
   yum:
      update_cache: yes
      name:
-        - python3-workloadmgrclient-el8
         - python3-tvault-horizon-plugin
      state: latest
   notify:
