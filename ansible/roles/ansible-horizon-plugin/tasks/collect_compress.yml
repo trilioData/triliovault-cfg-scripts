@@ -7,6 +7,10 @@
 
 - name: compress the collected files
   shell: "{{virtual_env}} && nohup {{PYTHON_VERSION}} {{ MANAGE_FILE }} compress --force"
+  retries: 3
+  delay: 3
+  register: compress_result
+  until: compress_result.rc == 0
   notify:
      - restart webserver
 
@@ -33,5 +37,6 @@
 
 - debug:
     msg: "\033[33m WARNING: Unable to locate local_settings.d on system. Trilio quota feature on dashboard may not work. \033[0m"
+    verbosity: "{{ verbosity_level }}"
   when: os_local_settings_path == ""
 
