@@ -1,0 +1,69 @@
+---
+
+- name: Find dmapi container
+  find:
+    patterns: '*_dmapi_*'
+    paths:
+      - /var/lib/lxc
+    file_type: directory
+  register: file_found
+  delegate_to: "{{ physical_host }}"
+
+- set_fact:
+    dmapi_containers_names: "{{ dmapi_containers_names|default([]) + [ item.path.split('/')[4] ]}}"
+  loop: "{{file_found.files}}"
+
+- block:
+  - name: install packages on datamover api container | centos-release-openstack-{{ os_release }}
+    yum:
+      update_cache: yes
+      name: "centos-release-openstack-{{ os_release }}"
+      state: latest
+
+  - name: install packages on datamover api container | {{ PYTHON_VERSION }} devel and nova packages
+    yum:
+      update_cache: yes
+      name:
+        - "{{ PYTHON_VERSION }}-devel"
+        - "{{ PYTHON_VERSION }}-nova"
+      state: latest
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+
+- block:
+  - name: install packages on datamover api container | Install Tzdata package
+    shell: "export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata"
+
+  - name: install packages on datamover api container | software-properties-common
+    apt:
+      name: software-properties-common
+      update_cache: yes
+      state: latest
+
+  - name: install packages on datamover api container | Add repo cloud-archive:{{ os_release }}
+    shell: "add-apt-repository cloud-archive:{{ os_release }} -y"
+    retries: 3
+    delay: 3
+    register: result
+    until: result.rc == 0
+
+  - name: install packages on datamover api container | python-dev | python-nova | curl
+    apt:
+      update_cache: yes
+      pkg:
+        - "{{ PYTHON_VERSION }}-dev"
+        - "{{ PYTHON_VERSION }}-nova"
+        - curl
+      state: latest
+  when: ansible_distribution=="Ubuntu"
+
+- name: Copy nova.conf to datamover api container
+  copy:
+    src: /var/lib/lxc/{{ nova_containers_names[0] }}/rootfs/etc/nova/nova.conf
+    dest: /var/lib/lxc/{{ item }}/rootfs/etc/nova/
+    owner: root
+    mode: 0640
+    remote_src: yes
+  with_items: "{{dmapi_containers_names}}"
+  delegate_to: "{{ physical_host }}"

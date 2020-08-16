@@ -1,32 +1,34 @@
 ---
+- name: Set Time Zone
+  file:
+    src: '/usr/share/zoneinfo/{{TIME_ZONE}}'
+    dest: /etc/localtime
+    owner: root
+    group: root
+    state: link
+  ignore_errors: yes
+  when: TIME_ZONE != ""
+  notify:
+    - update timezone
+
 - name: create /tmp/datamover_url
   template:
      src: datamover_url
      dest: /tmp/datamover_url
-   
-- name: create apt repo file in if  ansible_distribution is ubuntu16
-  template:
-     src: trilio.list
-     dest: "{{trilio_apt_repo_file_path}}"
 
 - name: install tvault-datamover-api deb package when using python2
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
           rm -rf dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python2"
 
 - name: install tvault-datamover-api deb package when using python3
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
           rm -rf python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
-
-- name: change permission of datamover log file
-  file: path={{datamover_log_dir}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory recurse=yes
-  notify:
-      - restart tvault-datamover-api
 
 - name: find out path of dmapi bianry
   shell: which dmapi-api
@@ -38,29 +40,6 @@
   notify:
       - restart tvault-datamover-api
 
-##Ubuntu16 and above
-- block:
-  - name: create tvault-datamover-api service in systemd if ansible_distribution is Centos/RHEL/SLES
-    template:
-       src: tvault_datamover_service.j2
-       dest: "{{datamover_service_file_path}}"
-    register: create_systemd_ubuntu
-    notify:
-        - restart tvault-datamover-api
+- name: ensure /tmp/datamover_url file is deleted
+  file: path="/tmp/datamover_url" state=absent
 
-  - name: enable and daemon reload tvault-datamover-api service
-    shell: systemctl daemon-reload
-    when: (populate_conf_ubuntu.changed or create_systemd_ubuntu.changed)
-    notify:
-        - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)
-
-
-##Ubuntu14
-- name: create tvault-datamover-api service in systemd if ansible_distribution is uubuntu16
-  template:
-     src: datamover_service_debian.j2
-     dest: "{{datamover_service_debian_path}}"
-  notify:
-     - restart tvault-datamover-api
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
