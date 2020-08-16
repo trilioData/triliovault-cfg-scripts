@@ -2,14 +2,22 @@
 - name: get python details
   import_tasks: get_python.yml
   tags:
-       - datamover-api
-       - all-install
+    - tvault-datamover-api
+    - tvault-all-install
+    - tvault-datamover-api-uninstall
+    - tvault-all-uninstall
+
+- name: Pre-install task
+  import_tasks: pre_install.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
        
 - name:  install tvault_datamover_api on rhel/centos
   import_tasks: install_rhel.yml
   tags:
-       - datamover-api
-       - all-install
+       - tvault-datamover-api
+       - tvault-all-install
   when: >
        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
@@ -18,12 +26,18 @@
 - name:  install tvault_datamover_api on ubuntu
   import_tasks: install_ubuntu.yml
   tags:
-       - datamover-api
-       - all-install
+       - tvault-datamover-api
+       - tvault-all-install
   when: ansible_distribution=="Ubuntu"
+
+- name: Post Installation
+  import_tasks: post_install.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
 
 - name: uninstall tvault_datamover_api
   import_tasks: uninstall.yml
-  tags: 
-       - datamover-api-uninstall
-       - all-uninstall
+  tags:
+       - tvault-datamover-api-uninstall
+       - tvault-all-uninstall

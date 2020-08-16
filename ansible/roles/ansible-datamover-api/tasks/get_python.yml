@@ -1,10 +1,35 @@
 ---
+- name: Find Nova container name
+  find:
+    patterns: '*_nova_api_*'
+    paths:
+      - /var/lib/lxc
+    file_type: directory
+  register: file_found
+  delegate_to: "{{ physical_host }}"
+
+- set_fact:
+    nova_containers_names: "{{ nova_containers_names|default([]) + [ item.path.split('/')[4] ]}}"
+  loop: "{{file_found.files}}"
+  delegate_to: "{{ physical_host }}"
+
+- name: Find python version of nova service
+  shell: lxc-attach -n {{ nova_containers_names[0] }} -- bash -c "ps -ef | grep python3 | grep -v grep > /dev/null && echo 'python3' || echo 'python2'"
+  register: python_result
+  delegate_to: "{{ physical_host }}"
+
+- set_fact: PYTHON_VERSION={{ python_result.stdout }}
+
+- debug:
+    msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+    verbosity: "{{verbosity_level}}"
+
 - name: find location when using python3
   shell: which python3
   register: python3
   when: PYTHON_VERSION=="python3"
 
-- name: find location when using python3
+- name: find location when using python2
   shell: which python
   register: python2
   when: PYTHON_VERSION=="python2"

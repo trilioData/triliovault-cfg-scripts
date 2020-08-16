@@ -1,12 +1,33 @@
 ---
-- hosts: horizon
-  roles: 
+
+- hosts: "{{tvault_horizon_hosts}}"
+  tasks:
+  - include : ansible-horizon-plugin-helper.yml
+
+- hosts: tvault_horizon_container_hosts
+  roles:
     - role: ansible-horizon-plugin
 
-- hosts: controller
+- name: Installation and setup of dmapi conatiner
+  hosts: dmapi_all
+  gather_facts: "{{ osa_gather_facts | default(True) }}"
+  user: root
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  vars_files:
+    - "defaults/repo_packages/openstack_services.yml"
+    - "defaults/{{ install_method }}_install.yml"
+  pre_tasks:
+    - include_tasks: "common-tasks/os-{{ container_tech | default('lxc') }}-container-setup.yml"
+      when: not is_metal
+
+    - include_tasks: common-tasks/unbound-clients.yml
+      when:
+        - hostvars['localhost']['resolvconf_enabled'] | bool
+
+- hosts: dmapi_container
   roles:
     - role: ansible-datamover-api
 
 - hosts: compute
-  roles:   
+  roles:
     - role: ansible-tvault-contego-extension
