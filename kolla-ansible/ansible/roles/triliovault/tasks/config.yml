@@ -83,6 +83,7 @@
     src: "{{ node_config_directory }}/nova-api/nova.conf"
     dest: "{{ node_config_directory }}/triliovault-datamover-api/nova.conf"
     mode: "0660"
+    remote_src: yes
   when:
     - inventory_hostname in groups[triliovault_datamover_api_group]
     - enable_triliovault | bool
