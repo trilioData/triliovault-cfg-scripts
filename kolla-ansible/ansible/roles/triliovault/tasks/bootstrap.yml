@@ -32,3 +32,5 @@
   delegate_to: "{{ groups[triliovault_datamover_api_group][0] }}"
   when:
     - not use_preconfigured_databases | bool
+
+- include_tasks: bootstrap_service.yml
