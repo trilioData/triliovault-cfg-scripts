@@ -1,6 +1,6 @@
 [DEFAULT]
 dmapi_workers = 2
-transport_url = {{ triliovault_transport_url }}
+transport_url = {{ lookup('ini', 'transport_url section=DEFAULT file={{ node_config_directory }}/nova-api/nova.conf') }}
 dmapi_link_prefix = http://{{ api_interface_address }}:{{ triliovault_datamover_api_port }}
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = {{ triliovault_datamover_api_port }}
@@ -20,33 +20,28 @@ ssl_key_file =
 api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
-connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+connection = {{ lookup('ini', 'connection section=database file={{ node_config_directory }}/nova-api/nova.conf') }}
+
+[api_database]
+connection = {{ lookup('ini', 'connection section=api_database file={{ node_config_directory }}/nova-api/nova.conf') }}
 
 [keystone_authtoken]
-www_authenticate_uri = {{ keystone_internal_url }}
-auth_url = {{ keystone_admin_url }}
-auth_type = password
-project_name = service
-username = {{ triliovault_keystone_user }}
-password = {{ triliovault_keystone_password }}
-cafile = {{ openstack_cacert }}
-memcache_security_strategy = ENCRYPT
-memcache_secret_key = {{ memcache_secret_key }}
-memcached_servers = {% for host in groups['memcached'] %}{{ 'api' | kolla_address(host) | put_address_in_context('memcache') }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}
+memcached_servers = {{ lookup('ini', 'memcached_servers section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 signing_dir = /var/cache/dmapi
+cafile =
 project_domain_name = {{ default_project_domain_name }}
+project_name = {{ lookup('ini', 'project_name section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }} 
 user_domain_name = {{ default_user_domain_name }}
+password = {{ lookup('ini', 'password section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
+username = nova
+auth_url = {{ lookup('ini', 'auth_url section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
+auth_type = password
+auth_uri = {{ lookup('ini', 'www_authenticate_uri section=keystone_authtoken file={{ node_config_directory }}/nova-api/nova.conf') }}
 insecure = True
 
 [oslo_messaging_notifications]
-transport_url = {{ triliovault_notify_transport_url }}
-
-{% if triliovault_enabled_notification_topics %}
-driver = messagingv2
-topics = {{ cinder_enabled_notification_topics | map(attribute='name') | join(',') }}
-{% else %}
-driver = noop
-{% endif %}
+transport_url = {{ lookup('ini', 'transport_url section=oslo_messaging_notifications file={{ node_config_directory }}/nova-api/nova.conf') }}
+driver = {{ lookup('ini', 'driver section=oslo_messaging_notifications file={{ node_config_directory }}/nova-api/nova.conf') }}
 
 [oslo_middleware]
 enable_proxy_headers_parsing = {{ lookup('ini', 'enable_proxy_headers_parsing section=oslo_middleware file={{ node_config_directory }}/nova-api/nova.conf') }}
