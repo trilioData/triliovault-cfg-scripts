@@ -65,7 +65,6 @@
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
     dest: "{{ node_config_directory }}/triliovault-datamover/"
     mode: "0660"
-    remote_src: yes
   become: true
   when:
     - triliovault_copy_ceph_s3_ssl_cert | bool
