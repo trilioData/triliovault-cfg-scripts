@@ -21,6 +21,10 @@ RUN apt-get install -y python3-dmapi --allow-unauthenticated
 
 RUN chown -R dmapi:dmapi /etc/nova/
 
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses

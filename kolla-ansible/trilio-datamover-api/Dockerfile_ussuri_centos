@@ -23,6 +23,12 @@ RUN yum install python3-dmapi -y
 RUN mkdir -p /var/cache/dmapi
 RUN chown -R dmapi:dmapi /etc/nova/ && chown -R dmapi:dmapi /var/cache/dmapi
 
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+COPY dmapi_sudoers /etc/sudoers.d/dmapi
+
+
 ##Clean subscription
 RUN yum clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
