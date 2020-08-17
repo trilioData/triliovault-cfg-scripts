@@ -95,9 +95,6 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
-triliovault_keystone_user: "dmapi"
-triliovault_keystone_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
-
 
 ####################
 # TLS
@@ -116,47 +113,6 @@ triliovault_datamover_group: 'compute'
 triliovault_kolla_log_dir: "/var/log/kolla"
 triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover"
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
-
-
-####################
-# Notification
-####################
-triliovault_notification_topics:
-  - name: notifications
-    enabled: "{{ enable_ceilometer | bool or enable_searchlight | bool }}"
-  - name: vitrage_notifications
-    enabled: "{{ enable_vitrage | bool }}"
-
-triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
-
-
-
-###### Optional configurable
-## TrilioVault database user
-triliovault_database_user: "dmapi"
-triliovault_database_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
-triliovault_database_name: "dmapi"
-triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
-
-## TrilioVault rabbitmq user
-triliovault_rpc_user: "dmapi"
-triliovault_rpc_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
-triliovault_rpc_vhost: "/"
-
-triliovault_transport_url: "{{ om_rpc_transport }}://{% for host in groups[om_rpc_group] %}{{ triliovault_rpc_user }}:{{ triliovault_rpc_password }}@{{ 'api' | kolla_address(host) | put_address_in_context('url') }}:{{ om_rpc_port }}{% if not loop.last %},{% endif %}{% endfor %}/{{ om_rpc_vhost }}"
-
-triliovault_notify_user: "{{ triliovault_rpc_user }}"
-triliovault_notify_password: "{{ triliovault_rpc_password }}"
-triliovault_notify_transport_url: "{{ om_notify_transport }}://{% for host in groups[om_notify_group] %}{{ triliovault_notify_user }}:{{ triliovault_rpc_password }}@{{ 'api' | kolla_address(host) | put_address_in_context('url') }}:{{ om_notify_port }}{% if not loop.last %},{% endif %}{% endfor %}/{{ om_notify_vhost }}"
-
-
-triliovault_rabbitmq_users:
-  - user: "{{ triliovault_rpc_user }}"
-    password: "{{ triliovault_rpc_password }}"
-    vhost: "{{ triliovault_rpc_vhost }}"
-
-
 
 ############ Following variables are user configurable ##########
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
