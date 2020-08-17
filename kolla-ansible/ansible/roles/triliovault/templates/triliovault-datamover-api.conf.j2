@@ -49,4 +49,4 @@ driver = noop
 {% endif %}
 
 [oslo_middleware]
-enable_proxy_headers_parsing = True
+enable_proxy_headers_parsing = {{ lookup('ini', 'enable_proxy_headers_parsing section=oslo_middleware file={{ node_config_directory }}/nova-api/nova.conf') }}
