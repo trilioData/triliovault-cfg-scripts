@@ -1,7 +1,7 @@
 ---
 - name: Running triliovault datamover api bootstrap container
   vars:
-    triliovault_datamover_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
+    cinder_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
   become: true
   kolla_docker:
     action: "start_container"
