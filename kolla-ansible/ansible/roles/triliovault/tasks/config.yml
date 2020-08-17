@@ -17,7 +17,9 @@
   file:
     path: "{{triliovault_kolla_log_dir}}/{{ item.key }}"
     state: "directory"
-    mode: "0777"
+    owner: "42487"
+    group: "42487"
+    mode: "0755"
   when:
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
