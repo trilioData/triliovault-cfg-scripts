@@ -1,0 +1,22 @@
+- name: Get nova venv path
+  shell: echo /openstack/venvs/nova*
+  register: venv_path
+
+- set_fact: virtual_env_path={{venv_path.stdout}}
+
+- set_fact:
+    virtual_env: ". {{virtual_env_path}}/bin/activate"
+
+- set_fact: NOVA_COMPUTE_FILTERS_FILE={{virtual_env_path}}/etc/nova/rootwrap.d/compute.filters
+  when: ansible_distribution=="Ubuntu"
+
+- set_fact: NOVA_COMPUTE_FILTERS_FILE={{virtual_env_path}}/rootwrap/compute.filters
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
+- debug:
+    msg: "NOVA_COMPUTE_FILTERS_FILE: {{NOVA_COMPUTE_FILTERS_FILE}}"
+    verbosity: "{{ verbosity_level }}"

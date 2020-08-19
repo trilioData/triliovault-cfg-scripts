@@ -1,26 +1,25 @@
-- debug: msg="ansible distribution is:{{ansible_distribution}}"
-
+---
 - name: get configuration parameters from {{TVAULT_CONTEGO_CONF}}
   copy: src={{files_path}}/files/get_configs.py dest=/tmp/get_configs.py
 
 - name: run /tmp/get_configs.py
-  shell: "sudo -u {{TVAULT_CONTEGO_EXT_USER}} python /tmp/get_configs.py"
+  shell: "{{virtual_env}} && sudo -u {{TVAULT_CONTEGO_EXT_USER}} python3 /tmp/get_configs.py {{NOVA_CONF_FILE}}"
   register: CONFIG_FILES
 
 - debug: msg=" config file output -{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
 
 - name: run /tmp/get_configs.py with config file
-  shell: "echo '{{CONFIG_FILES.stdout}} --config-file={{TVAULT_CONTEGO_CONF}}'"
+  shell: "{{virtual_env}} && echo '{{CONFIG_FILES.stdout}} --config-file={{TVAULT_CONTEGO_CONF}}'"
   register: CONFIG_FILES
 
-- debug: msg="config file string is:{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}} 
+- debug: msg="config file string is:{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
 
 - name: check if /etc/nova/nova.conf.d is exist or not
   stat: path=/etc/nova/nova.conf.d
   register: is_nova_conf_present
 
 - name: run /tmp/get_configs.py with config file and config directory
-  shell: "echo '{{CONFIG_FILES.stdout}} --config-dir=/etc/nova/nova.conf.d'"
+  shell: "{{virtual_env}} && echo '{{CONFIG_FILES.stdout}} --config-dir=/etc/nova/nova.conf.d'"
   register: CONFIG_FILES_1
 
 - name: remove /tmp/get_configs.py file
@@ -34,26 +33,25 @@
     CONFIG_FILES: "{{CONFIG_FILES_1.stdout}}"
   when: is_nova_conf_present.stat.exists == true
 
-- name: create tvault-contego-service-in-systemd if ansible_distribution is Centos
+- name: Display Config files
+  debug:
+    msg: "{{CONFIG_FILES}}"
+    verbosity: "{{verbosity_level}}"
+
+- name: create tvault-contego-service-in-systemd when NFS is True
   template:
      src: contego_service.j2
      dest: "{{contego_service_file_path}}"
-  when: >
-        ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
-        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))) and (NFS == True)
+  when: NFS == True
 
-- name: create tvault-contego-service-in-systemd if ansible_distribution is Ubuntu 16
+- name: create tvault-contego-service-in-systemd when object_store is True
   template:
      src: contego_service_s3.j2
      dest: "{{contego_service_file_path}}"
-  when: >
-        ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or (ansible_distribution == SLES) or
-        (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))) and (object_store == True)
- 
-- name: create tvault-contego-service-in-systemd ansible_distribution is ubuntu 14
-  template:
-     src: contego_service_debian.j2
-     dest: "{{contego_service_debian_path}}"
-  when: ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
+  when: object_store == True
+
+- block:
+  - shell: systemctl daemon-reload
+  - name: enable tvault-contego service and reload it
+    service: name=tvault-contego.service  state=started enabled=yes
+    ignore_errors: yes
