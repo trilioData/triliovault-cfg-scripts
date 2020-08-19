@@ -11,7 +11,7 @@ max_uploads_pending = 3
 max_commit_pending = 3
 
 [contego_sys_admin]
-helper_command = sudo {{privsep_helper_file}}
+helper_command = sudo {{privsep_bin_path.stdout}}
 
 [conductor]
 use_local = True

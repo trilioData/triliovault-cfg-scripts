@@ -1,12 +1,16 @@
-- name: Adding nova user to system groups
+- name: Adding nova user to system groups if Centos/RedHat
   user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
   with_items:
+   - disk
    - kvm
    - qemu
-   - disk
-  when: ansible_distribution=="CentOS" or ansible_distribution=="Suse" or ansible_distribution=="RedHat" 
+  when: >
+        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+        (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+        (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
-- name: Adding nova user to system groups
+- name: Adding nova user to system groups if Ubuntu
   user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
   with_items:
    - kvm
@@ -22,3 +26,6 @@
 - name: create symlink /usr/lib64/ if /usr/lib64 dir not exist
   file: src=/usr/lib/ dest=/usr/lib64 state=link
   when: lib64_dir.stat.exists != true
+
+- name: Create dir(/home/tvault)
+  file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory

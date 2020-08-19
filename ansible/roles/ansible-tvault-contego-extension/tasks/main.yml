@@ -2,192 +2,176 @@
 - set_fact:
      files_path : "{{playbook_dir}}/roles/ansible-tvault-contego-extension"
   tags:
-       - contego
-       - contego-extension
-       - all-install
-       
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
+
 - debug:
     msg:
         - "You defined 'UPDATE_NOVA_SUDOERS_FILE' as  'notproceed' for updating nova sudoers file,"
         - "Inside the environments/group_vars/all/vars.yml "
         - "Exiting the Contego installation"
         - "Please define varibale  'UPDATE_NOVA_SUDOERS_FILE' as  'proceed' inside the environments/group_vars/all/vars.yml"
+    verbosity: "{{ verbosity_level }}"
   when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
-  
+
 - meta: end_play
   when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
-  
-- import_tasks: roles/ansible-datamover-api/tasks/get_python.yml
+
+- import_tasks: nova_compute_filter_file.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
-       
-- name: check if user using custom virtual environment
-  import_tasks: get_venv.yml
+    - tvault-contego
+    - tvault-contego-extension
+    - tvault-all-install
+    - tvault-all-uninstall
+
+- import_tasks: get_python.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
-       
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
+       - tvault-all-uninstall
+
 - name: validate NFS bkp target is reachable
   import_tasks: nfs.yml
   when: NFS == True
   tags:
-       - contego
-       - contego-extension
-       - all-install
-       
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
+
 - name: create trilio filters
   import_tasks: create_filter.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
-       
-- name: get openstack version
-  import_tasks: get_openstack_version.yml
-  tags:
-       - contego
-       - contego-extension
-       - all-install
-
-- name: setting up swift authentication variables if contego installed with swift as backend 
-  import_tasks: populate_swift_conf.yml
-  when: Swift == True
-  tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: set object_store to false if NFS is true
-  set_fact: 
-      object_store: False 
+  set_fact:
+      object_store: False
   when: NFS == True
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: set object_store to true if NFS is flase
   set_fact:
       object_store: True
   when: NFS == False
   tags:
-       - contego
-       - contego-extension
-       - all-install
-
-- name: validate oject bkp target is reachable
-  import_tasks: validate_obj_bkp.yml
-  when: NFS == False
-  tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: validate virsh version is greater than 1.2.8
   import_tasks: validate_virsh_version.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: add users to nova group
   import_tasks: add_users.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: Install datamover extension
-  import_tasks: install_rhel.yml 
+  import_tasks: install_rhel.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
   when: >
        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
 - name: Install datamover extension
   import_tasks: install_ubuntu.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
   when: ansible_distribution=="Ubuntu"
 
 - name: postinstall datamover extension
   import_tasks: post_install.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: ensure log/nova, bin, contego_conf files are present
   import_tasks: ensure_files.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: create tvault_conteo.conf file
   import_tasks: create_contego_conf.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: ensure data directories and logroatate files are present
   import_tasks: ensure_data_dirs.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: create contego service on host
   import_tasks: contego_service.yml
   tags:
-       - contego
-       - contego-extension
-       - all-install
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
 - name: create object store service on host
   import_tasks: object_store_service.yml
-  tags: 
-       - contego
-       - contego-extension
-       - all-install
+  when: object_store == True
+  tags:
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
 
-- name: uninstall tvault contego extension 
+- name: uninstall tvault contego extension
   import_tasks: uninstall_rhel.yml
   tags:
-       - contego-uninstall
-       - contego-extension-uninstall  
-       - all-uninstall
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
   when: >
        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
 
 - name: uninstall tvault contego extension
   import_tasks: uninstall_ubuntu.yml
   tags:
-       - contego-uninstall
-       - contego-extension-uninstall
-       - all-uninstall
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
   when: ansible_distribution=="Ubuntu"
 
 - name: post uninstall tvault contego extension
   import_tasks: post_uninstall.yml
   tags:
-       - contego-uninstall
-       - contego-extension-uninstall
-       - all-uninstall
- 
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
+
 - name: Remove trilio.filters and trilio.pth files after uninstall
   import_tasks: remove_trilio_files.yml
   tags:
-       - contego-uninstall
-       - contego-extension-uninstall
-       - all-uninstall 
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall

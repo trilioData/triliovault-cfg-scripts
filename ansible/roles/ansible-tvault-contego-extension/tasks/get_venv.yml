@@ -1,22 +1,25 @@
 ---
-
-- name: find  venv is using or not
-  shell: "{{ PYTHON_VERSION }}  -c 'import sys; print(sys.prefix)'"
+- name: Find ENVPATH
+  shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'import sys; print(sys.prefix)'"
   register: ENVPATH
 
 - set_fact:
     ENV_PATH : "{{ENVPATH.stdout}}"
 
+- debug:
+    msg: "{{ENV_PATH}}"
+    verbosity: "{{ verbosity_level }}"
+
 - set_fact:
-    RECOMMENDS_VAR : "no"
+    EXTRA_APT_VAR : "--no-install-recommends"
   when: ENV_PATH != "/usr"
 
 - set_fact:
-    RECOMMENDS_VAR : "yes"
+    EXTRA_APT_VAR : ""
   when: ENV_PATH == "/usr"
 
 - name: Found location of trilio.pth file
-  shell: "{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
   register: VENV_PKGLIB
   when: ENV_PATH != "/usr"
 
@@ -25,7 +28,7 @@
   when: ENV_PATH != "/usr"
 
 - name: Found local packages library
-  shell: "/usr/bin/{{ PYTHON_VERSION }} -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+  shell: . /openstack/venvs/nova*/bin/activate && echo $(/usr/bin/{{PYTHON_VERSION}} -c "import site, os; from os import path; p = [path_dir for path_dir in site.getsitepackages() if path.exists(os.path.join(path_dir, 'contego'))]; print(p[0]+'/')")
   register: PACKAGELIB
   when: ENV_PATH != "/usr"
 
@@ -33,6 +36,12 @@
     PACKAGE_LIB : "{{PACKAGELIB.stdout}}"
   when: ENV_PATH != "/usr"
 
+- debug:
+    msg: "TRILIO_FILE :{{TRILIO_FILE}} --- PACKAGE_LIB {{PACKAGE_LIB}}"
+    verbosity: "{{ verbosity_level }}"
+  when: ENV_PATH != "/usr"
+
 - name: Create trilio.pth file
   shell: "echo {{ PACKAGE_LIB }} > {{ TRILIO_FILE }}"
   when: ENV_PATH != "/usr"
+

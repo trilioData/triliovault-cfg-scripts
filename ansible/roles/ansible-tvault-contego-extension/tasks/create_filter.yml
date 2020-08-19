@@ -1,4 +1,5 @@
 ---
+
 - name: find the trilio filter file name and location
   shell: "echo {{NOVA_COMPUTE_FILTERS_FILE}} | sed 's/compute.filters//'"
   register: TRILIOFILTER
@@ -13,11 +14,11 @@
 
 - name: find location of nova sudoers file
   shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
-  ignore_errors: yes
   register: output
 
 - debug:
     msg: "{{ output.stdout}}"
+    verbosity: "{{ verbosity_level }}"
   when: output.stdout != ""
 
 - name: Add privsep-helper to nova sudoers file
@@ -27,9 +28,6 @@
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
     output.stdout != ""
-
-- set_fact: 
-      privsep_bin_path: ""
 
 - name: Added nova sudoers file if not exist
   template: src=nova.j2 dest=/etc/sudoers.d/nova mode=644

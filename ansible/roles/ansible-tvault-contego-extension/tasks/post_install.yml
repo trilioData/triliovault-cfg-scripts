@@ -1,116 +1,57 @@
 ---
+- name: Removing Contego from virtual environment
+  file: path=/home/tvault/.virtenv/lib/python2.7/site-packages/contego state=absent
+
+- import_tasks: get_venv.yml
+
+- name: Remove tvault-contego-virtenv.tar.gz
+  file: path=tvault-contego-virtenv.tar.gz state=absent
+
 - name: change ownership of virtenv dir(/home/tvault)
   file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory mode=765 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
-- name: set cryptography if openstack release is mitaka
-  shell:   |
-            python -c "import cryptography;print cryptography.__path__[0]"
-            python -c "import Crypto;print Crypto.__path__[0]"
-  register: cryptography_mitaka
-  when: OPEN_STACK_RELEASE == mitaka
+- name: ensure that /var/log/nova file is present
+  file: path="/var/log/nova" state=directory owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
-- name: set cryptography if openstack release is newton
-  shell:   |
-            python -c "import cryptography;print cryptography.__path__[0]"
-            python -c "import libvirtmod;print libvirtmod.__file__"
-            python -c "import cffi;print cffi.__path__[0]"
-            python -c "import _cffi_backend;print _cffi_backend.__file__"
-  register: cryptography
-  when: OPEN_STACK_RELEASE == newton
+- name: get tvault contego binary path
+  shell: "{{virtual_env}} && which tvault-contego"
+  register: tvault_contego_bin_path
 
-- debug: msg="cryptography_path={{cryptography_mitaka}}"  verbosity={{verbosity_level}}
-- debug: msg="cryptography_path={{cryptography}}"  verbosity={{verbosity_level}}
-
-- block:
-    - name: copy set_virenv_premitaka.sh to destination host
-      template:
-         src: set_virt_mitaka.j2
-         dest: "{{virtenv_mitaka_script_path}}"
-
-    - file: path="{{virtenv_mitaka_script_path}}" mode=765
-
-    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
-      shell: '{{virtenv_mitaka_script_path}}'
-      register: tvault_contego_version_installed
-  when: OPEN_STACK_RELEASE == mitaka
-
-- block:
-    - name: copy set_virenv_premitaka.sh to destination host
-      template:
-         src: set_virt_premitaka.j2
-         dest: "{{virtenv_premitaka_script_path}}"
-
-    - file: path="{{virtenv_premitaka_script_path}}" mode=765
-
-    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
-      shell: '{{virtenv_premitaka_script_path}}'
-      register: tvault_contego_version_installed
-  when: OPEN_STACK_RELEASE == premitaka or OPEN_STACK_RELEASE == queens
-
-- block:
-    - name: copy set_virtenv_newton.sh to destination host
-      template:
-         src: set_virt_newton.j2
-         dest: "{{virtenv_newton_script_path}}"
-
-    - file: path="{{virtenv_newton_script_path}}" mode=765 
-
-    - name: activate the virtual environment and set cryptography symlinks when openstack_release is newton
-      shell: '{{virtenv_newton_script_path}}'
-      register: tvault_contego_version_installed
-  when: OPEN_STACK_RELEASE == newton
+- debug: msg="tvault_contego_bin_path={{tvault_contego_bin_path}}" verbosity="{{ verbosity_level }}"
 
 - name: get privsep-helper binary path
-  shell: which privsep-helper
+  shell: "{{virtual_env}} && which privsep-helper"
   register: privsep_bin_path
 
-- debug: msg="bin path={{privsep_bin_path}}"
+- debug: msg="privsep_bin_path={{privsep_bin_path}}" verbosity="{{ verbosity_level }}"
 
-- name: find location of nova sudoers file
-  shell: find /etc/sudoers.d -name "nova*" | grep -Ew  'nova|nova_sudoers'
-  ignore_errors: yes
+- set_fact:
+   trilio_nova_file_path: '/etc/sudoers.d/trilio_nova_sudoers'
+
+- name: find privsep_bin_path exists or not
+  shell: if grep -q {{privsep_bin_path.stdout}} {{trilio_nova_file_path}}; then echo "found"; else echo "not found"; fi
   register: output
 
 - debug:
-    msg: "{{ output.stdout}}"
-  when: output.stdout != ""
+    msg: "{{privsep_bin_path.stdout}} : {{ output.stdout}}"
+    verbosity: "{{ verbosity_level }}"
 
-- name: Add privsep-helper to nova sudoers file
-  lineinfile:
-     path: "{{ output.stdout}}"
-     line: "nova ALL = (root) NOPASSWD: {{privsep_bin_path.stdout}} *"
+- name: Added trilio_nova_sudoers file
+  template: src=trilio_nova_sudoers_j2 dest={{trilio_nova_file_path}} mode=644
   when: >
     UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
-    output.stdout != ""
+    output.stdout == "not found"
 
-- name: Added nova sudoers file if not exist
-  template: src=nova.j2 dest=/etc/sudoers.d/nova mode=644
-  when: output.stdout == ""
+- name: copy nova_compte_extension.sh file to tmp dir
+  template:
+    src: nova_compte_extension.sh
+    dest: /tmp/nova_compte_extension.sh
 
-- name: get tvault contego binary path 
-  shell: which tvault-contego
-  register: tvault_contego_bin_path
+- name: Assign Execute permission /tmp/nova_compte_extension.sh
+  shell: chmod +x /tmp/nova_compte_extension.sh
 
-- debug: msg="bin path={{tvault_contego_bin_path}}"
+- name: Run the script /tmp/nova_compte_extension.sh
+  command: sh /tmp/nova_compte_extension.sh
 
-- name: get tvault contego driver file path
-  shell: python -c "import contego.nova.extension.driver; print contego.nova.extension.driver.__path__[0]"
-  register: contego_driver_path_python2
-  when: PYTHON_VERSION=="python2"
-  
-- name: get tvault contego driver file path when using python3
-  shell: python3 -c "import contego.nova.extension.driver; print(contego.nova.extension.driver.__path__[0])"
-  register: contego_driver_path_python3
-  when: PYTHON_VERSION=="python3"
-
-- name: append tvault object store s3vaultfuse file path when using python2
-  set_fact:
-     s3_fuse_file: "{{contego_driver_path_python2.stdout}}/s3vaultfuse.py"
-  when: PYTHON_VERSION=="python2"
-  
-- name: append tvault object store s3vaultfuse file path when using python3
-  set_fact:
-     s3_fuse_file: "{{contego_driver_path_python3.stdout}}/s3vaultfuse.py"
-  when: PYTHON_VERSION=="python3"
-  
-- debug: msg="tvault_contego_version_installed:{{tvault_contego_version_installed}}" verbosity={{verbosity_level}}
+- name: Remove /tmp/nova_compte_extension.sh
+  file: path="/tmp/nova_compte_extension.sh" state=absent

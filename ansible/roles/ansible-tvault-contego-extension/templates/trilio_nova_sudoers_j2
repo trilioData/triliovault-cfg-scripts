@@ -1,0 +1,1 @@
+nova ALL = (root) NOPASSWD: {{privsep_bin_path.stdout}} *
