@@ -25,8 +25,7 @@ RUN mkdir -p /var/cache/dmapi && chown -R dmapi:dmapi /var/cache/dmapi
 ## Kolla specifc settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
-COPY dmapi_sudoers /etc/sudoers.d/dmapi
-
+RUN usermod -a -G kolla dmapi
 
 ##Clean subscription
 RUN yum clean all
