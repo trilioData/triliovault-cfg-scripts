@@ -1,0 +1,24 @@
+
+- set_fact: PYTHON_VERSION=python3
+
+- debug:
+    msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+    verbosity: "{{verbosity_level}}"
+
+- name: find location when using python3
+  shell: "{{virtual_env}} && which python3"
+  register: python3
+  when: PYTHON_VERSION=="python3"
+
+- name: find location when using python2
+  shell: "{{virtual_env}} && which python"
+  register: python2
+  when: PYTHON_VERSION=="python2"
+
+- set_fact:
+    PYTHON_EXEC : "{{python3.stdout}}"
+  when: PYTHON_VERSION=="python3"
+
+- set_fact:
+    PYTHON_EXEC : "{{python2.stdout}}"
+  when: PYTHON_VERSION=="python2"

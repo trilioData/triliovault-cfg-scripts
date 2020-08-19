@@ -5,12 +5,6 @@
      dest: "{{TVAULT_CONTEGO_CONF}}"
   when: NFS == True
 
-- name: write content into {{TVAULT_CONTEGO_CONF}} if swift is used as backend
-  template:
-     src: swift.conf.j2
-     dest: "{{TVAULT_CONTEGO_CONF}}"
-  when: Swift == True
-
 - name: copy tvault-contego config file to destination and write content into it if s3 AWS used as backend
   template:
      src: s3_amazon.conf.j2
