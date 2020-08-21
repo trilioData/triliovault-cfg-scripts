@@ -37,7 +37,7 @@ class trilio::keystone::auth (
   }
 
   if $configure_user_role {
-    Keystone_user_role["${auth_name}@${tenant}"] -> Anchor['cinder::service::end']
+    Keystone_user_role["${auth_name}@${tenant}"] -> Anchor['trilio::service::end']
   }
 
 }
