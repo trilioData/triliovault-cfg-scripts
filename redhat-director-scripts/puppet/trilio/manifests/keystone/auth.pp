@@ -1,3 +1,78 @@
+# == Class: trilio::keystone::auth
+#
+# Configures trilio user, service and endpoint in Keystone.
+#
+# === Parameters
+#
+# [*password*]
+#   Password for trilio user. Required.
+#
+# [*email*]
+#   Email for trilio user. Optional. Defaults to 'trilio@localhost'.
+#
+#
+# [*auth_name*]
+#   Username for trilio service. Optional. Defaults to 'trilio'.
+#
+#
+# [*configure_endpoint*]
+#   Should trilio endpoint be configured? Optional. Defaults to 'true'.
+#   API v1 endpoint should be enabled in Icehouse for compatibility with Nova.
+#
+#
+# [*configure_user*]
+#   Should the service user be configured? Optional. Defaults to 'true'.
+#
+#
+# [*configure_user_role*]
+#   Should the admin role be configured for the service user?
+#   Optional. Defaults to 'true'.
+#
+#
+# [*service_name*]
+#   (optional) Name of the service.
+#   Defaults to 'trilio'.
+#
+#
+# [*service_type*]
+#    Type of service. Optional. Defaults to 'volume'.
+#
+#
+# [*service_description*]
+#    (optional) Description for keystone service.
+#    Defaults to 'trilio Service'.
+#
+#
+# [*region*]
+#    Region for endpoint. Optional. Defaults to 'RegionOne'.
+#
+# [*tenant*]
+#    Tenant for trilio user. Optional. Defaults to 'services'.
+#
+# [*public_url*]
+#   (optional) The endpoint's public url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   This url should *not* contain any trailing '/'.
+#
+# [*internal_url*]
+#   (optional) The endpoint's internal url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   This url should *not* contain any trailing '/'.
+#
+# [*admin_url*]
+#   (optional) The endpoint's admin url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   This url should *not* contain any trailing '/'.
+#
+
+#
+# === Examples
+#
+#  class { 'trilio::keystone::auth':
+#    public_url   => 'https://10.0.0.10:8784/v2',
+#    internal_url => 'https://10.0.0.20:8784/v2',
+#    admin_url    => 'https://10.0.0.30:8784/v2',
+#  }
+#
+
+
 class trilio::keystone::auth (
   $password,
   $auth_name              = 'trilio',
@@ -14,6 +89,8 @@ class trilio::keystone::auth (
   $service_description    = 'Trilio Datamover Service',
   $region                 = 'RegionOne',
 ) {
+
+  include ::trilio::deps
 
   if $configure_endpoint {
     Keystone_endpoint["${region}/${service_name}::${service_type}"] -> Anchor['trilio::service::end']
