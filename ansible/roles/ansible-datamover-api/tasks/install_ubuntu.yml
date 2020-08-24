@@ -1,4 +1,17 @@
 ---
+- name: install packages on datamover api container | Install Tzdata package
+  shell: "export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata"
+
+- name: install packages on datamover api container | software-properties-common | python-dev | python-nova | curl
+  apt:
+    pkg:
+      - software-properties-common
+      - "{{ PYTHON_VERSION }}-dev"
+      - "{{ PYTHON_VERSION }}-nova"
+      - curl
+    update_cache: yes
+    state: latest
+
 - name: Set Time Zone
   file:
     src: '/usr/share/zoneinfo/{{TIME_ZONE}}'
