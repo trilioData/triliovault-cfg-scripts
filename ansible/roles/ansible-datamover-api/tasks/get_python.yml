@@ -1,24 +1,9 @@
 ---
-- name: Find Nova container name
-  find:
-    patterns: '*_nova_api_*'
-    paths:
-      - /var/lib/lxc
-    file_type: directory
-  register: file_found
-  delegate_to: "{{ physical_host }}"
+- set_fact: PYTHON_VERSION=python3
+  when: openstack_venv_python_executable == "python3"
 
-- set_fact:
-    nova_containers_names: "{{ nova_containers_names|default([]) + [ item.path.split('/')[4] ]}}"
-  loop: "{{file_found.files}}"
-  delegate_to: "{{ physical_host }}"
-
-- name: Find python version of nova service
-  shell: lxc-attach -n {{ nova_containers_names[0] }} -- bash -c "ps -ef | grep python3 | grep -v grep > /dev/null && echo 'python3' || echo 'python2'"
-  register: python_result
-  delegate_to: "{{ physical_host }}"
-
-- set_fact: PYTHON_VERSION={{ python_result.stdout }}
+- set_fact: PYTHON_VERSION=python2
+  when: openstack_venv_python_executable == "python2"
 
 - debug:
     msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"

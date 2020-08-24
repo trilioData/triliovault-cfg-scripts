@@ -1,8 +1,37 @@
 [DEFAULT]
-dmapi_link_prefix = {{datamover_url}}
+dmapi_link_prefix = {{dmapi_service_publicurl}}
 dmapi_enabled_ssl_apis = {{dmapi_enabled_ssl_apis}}
+my_ip = {{internal_lb_vip_address}}
+transport_url = rabbit://{{dmapi_oslomsg_rpc_userid}}:{{dmapi_oslomsg_rpc_password}}@{{internal_lb_vip_address}}:5672/
+
+[database]
+connection = mysql+pymysql://dmapi:{{dmapi_service_password}}@{{internal_lb_vip_address}}/dmapi
+
+[keystone_authtoken]
+signing_dir =
+cafile =
+project_name = {{dmapi_service_project_name}}
+user_domain_id = {{dmapi_service_user_domain_id}}
+project_domain_id = {{dmapi_service_project_domain_id}}
+password = {{dmapi_service_password}}
+username = {{dmapi_service_user_name}}
+auth_url = {{keystone_service_adminuri}}
+auth_uri = {{keystone_service_adminuri}}
+auth_type = {{dmapi_keystone_auth_plugin}}
+memcached_servers =
+
+[oslo_messaging_notifications]
+transport_url = rabbit://{{dmapi_oslomsg_rpc_userid}}:{{dmapi_oslomsg_rpc_password}}@{{internal_lb_vip_address}}:5672/
+driver =
+
+[oslo_middleware]
+enable_proxy_headers_parsing = false
+
+[oslo_messaging_rabbit]
+ssl = False
 
 [wsgi]
 ssl_cert_file = {{ssl_cert_file}}
 ssl_key_file = {{ssl_key_file}}
+
 
