@@ -26,7 +26,7 @@ then
 base_dir="$current_dir"
 fi
 
-declare -a openstack_releases=("rhosp16" "rhosp16_1")
+declare -a openstack_releases=("rhosp16" "rhosp16.1")
 
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
