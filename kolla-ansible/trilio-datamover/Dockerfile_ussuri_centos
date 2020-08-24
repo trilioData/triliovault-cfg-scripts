@@ -19,6 +19,10 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tvault-contego puppet-triliovault python3-s3fuse-plugin
 
+## Kolla settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+
+
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
 ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
