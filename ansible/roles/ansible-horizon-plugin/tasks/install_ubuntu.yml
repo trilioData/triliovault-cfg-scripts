@@ -15,6 +15,12 @@
   notify:
     - update timezone
 
+- name: Install Curl Package
+  apt:
+    name: curl
+    state: latest
+    update_cache: yes
+
 - name: install tvault-horizon-plugin and python-workloadmgrclient deb packages when using python2
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
