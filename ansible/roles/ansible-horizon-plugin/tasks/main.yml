@@ -7,6 +7,13 @@
     - tvault-horizon-uninstall
     - tvault-all-uninstall
 
+- import_tasks: pre_tasks.yml
+  tags:
+    - tvault-horizon
+    - tvault-all-install
+    - tvault-horizon-uninstall
+    - tvault-all-uninstall
+
 - import_tasks: get_venv.yml
   tags:
     - tvault-horizon
