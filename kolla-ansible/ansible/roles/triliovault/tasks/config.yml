@@ -12,19 +12,6 @@
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
 
-- name: Ensuring log directories exist for triliovault services
-  become: true
-  file:
-    path: "{{triliovault_kolla_log_dir}}/{{ item.key }}"
-    state: "directory"
-    mode: "0777"
-  when:
-    - inventory_hostname in groups[item.value.group]
-    - item.value.enabled | bool
-  with_dict: "{{ triliovault_services }}"
-
-
-
 - include_tasks: copy-certs.yml
   when:
     - kolla_copy_ca_into_containers | bool
