@@ -1,4 +1,12 @@
 ---
+- name: install packages on datamover api container | {{ PYTHON_VERSION }} devel and nova packages
+  yum:
+    update_cache: yes
+    name:
+      - "{{ PYTHON_VERSION }}-devel"
+      - "{{ PYTHON_VERSION }}-nova"
+    state: latest
+
 - name: create /tmp/datamover_url
   template:
      src: datamover_url
