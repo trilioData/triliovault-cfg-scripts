@@ -18,11 +18,16 @@ ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 RUN apt-get install -y python3-tvault-contego --allow-unauthenticated
 
+
+
 ##Download virtenv
 RUN mkdir -p /home/tvault \
   && curl -o /home/tvault/tvault-contego-virtenv.tar.gz http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/virtenv/queens/ubuntu/tvault-contego-virtenv.tar.gz \
   && tar -xzf /home/tvault/tvault-contego-virtenv.tar.gz -C /home/tvault/ \
   && chown -R nova:nova /home/tvault/
+
+## Kolla settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
