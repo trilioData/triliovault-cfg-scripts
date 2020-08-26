@@ -31,36 +31,36 @@ declare -a openstack_releases=("rhosp16" "rhosp16.1")
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
-
-		build_dir=tmp_docker_${openstack_release}
+      build_dir=tmp_docker_${openstack_release}
       rm -rf $base_dir/${build_dir}
       mkdir -p $base_dir/${build_dir}
-		cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
-		cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
+      cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
+      cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
       cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
-		#Build trilio-datamover containers
-		echo -e "Creating trilio-datamover container for ${openstack_release}"
-		cd $base_dir/${build_dir}/trilio-datamover/
+      #Build trilio-datamover containers
+      echo -e "Creating trilio-datamover container for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-datamover/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release} .
       podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release}
 
 
-		#Build trilio_datamover-api containers
-		echo -e "Creating trilio-datamover container-api for ${openstack_release}"
-		cd $base_dir/${build_dir}/trilio-datamover-api/
+      #Build trilio_datamover-api containers
+      echo -e "Creating trilio-datamover container-api for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-datamover-api/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release} .
       podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
 
-		#Build trilio_horizon_plugin containers
-		echo -e "Creating trilio-horizon-plugin container for ${openstack_release}"
-		cd $base_dir/${build_dir}/trilio-horizon-plugin/
+      #Build trilio_horizon_plugin containers
+      echo -e "Creating trilio-horizon-plugin container for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-horizon-plugin/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release} .
       podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release}
 
-		# Clean the build_dir
-		rm -rf $base_dir/${build_dir}
+      # Clean the build_dir
+      rm -rf $base_dir/${build_dir}
+
 done
