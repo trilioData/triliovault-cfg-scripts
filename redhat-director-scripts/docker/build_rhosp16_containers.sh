@@ -6,7 +6,7 @@ echo -e "\nPREREQUISITES:\n\tPlease make sure that you logged in to docker.io an
 echo -e "\tdocker.io should be logged in with user having pull and push permissions to https://hub.docker.com/u/trilio/dashboard/"
 echo -e "\tregistry.redhat.io registry login needs user with only pull permissions"
 echo -e "\tYou can use following commands:"
-echo -e "\n\t- docker login docker.io\n\t- docker login registry.redhat.io\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
+echo -e "\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
 
 
 if [ $# -lt 1 ];then
@@ -52,7 +52,7 @@ do
 		cd $base_dir/${build_dir}/trilio-datamover-api/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release} .
-      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}_${openstack_release}
+      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
 
 		#Build trilio_horizon_plugin containers
 		echo -e "Creating trilio-horizon-plugin container for ${openstack_release}"
