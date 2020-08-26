@@ -32,7 +32,7 @@ vault_s3_ssl_cert = /etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}
 {% endif %}
 
 vault_data_directory_old = /var/triliovault
-vault_data_directory = /var/triliovault-mounts
+vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
 log_file = /var/log/kolla/triliovault-datamover/tvault-contego.log
 debug = False
 verbose = True
