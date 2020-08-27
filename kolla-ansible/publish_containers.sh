@@ -14,7 +14,7 @@ tvault_version=$1
 
 declare -a openstack_releases=("train" "ussuri")
 
-declare -a openstack_platforms=("centos" "ubuntu")
+declare -a openstack_platforms=("ubuntu")
 
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
