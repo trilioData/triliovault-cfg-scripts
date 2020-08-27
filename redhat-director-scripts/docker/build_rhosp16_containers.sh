@@ -6,7 +6,7 @@ echo -e "\nPREREQUISITES:\n\tPlease make sure that you logged in to docker.io an
 echo -e "\tdocker.io should be logged in with user having pull and push permissions to https://hub.docker.com/u/trilio/dashboard/"
 echo -e "\tregistry.redhat.io registry login needs user with only pull permissions"
 echo -e "\tYou can use following commands:"
-echo -e "\n\t- docker login docker.io\n\t- docker login registry.redhat.io\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
+echo -e "\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
 
 
 if [ $# -lt 1 ];then
@@ -26,53 +26,41 @@ then
 base_dir="$current_dir"
 fi
 
-#declare -a openstack_releases=("rhosp13")
+declare -a openstack_releases=("rhosp16" "rhosp16.1")
 
-#declare -a openstack_platforms=("centos" "ubuntu")
+## now loop through the above array
+for openstack_release in "${openstack_releases[@]}"
+do
+      build_dir=tmp_docker_${openstack_release}
+      rm -rf $base_dir/${build_dir}
+      mkdir -p $base_dir/${build_dir}
+      cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
+      cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
+      cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
-################# Create containers for RHOSP16 #######################
-## Work dir preparation for for rhosp16
-build_dir=tmp_docker_rhosp16_${tvault_version}
-rm -rf $base_dir/${build_dir}
-mkdir -p $base_dir/${build_dir}
-
-cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
-cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
-cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
-
-#Build trilio-datamover containers for rhosp16
-
-echo -e "Creating trilio-datamover container for rhosp16"
-cd $base_dir/${build_dir}/trilio-datamover/
-rm Dockerfile
-cp Dockerfile_rhosp16 Dockerfile
-buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-rhosp16 .
-podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-rhosp16
+      #Build trilio-datamover containers
+      echo -e "Creating trilio-datamover container for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-datamover/
+      cp Dockerfile_${openstack_release} Dockerfile
+      buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release} .
+      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release}
 
 
-#Build trilio_datamover-api containers for rhosp16
+      #Build trilio_datamover-api containers
+      echo -e "Creating trilio-datamover container-api for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-datamover-api/
+      cp Dockerfile_${openstack_release} Dockerfile
+      buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release} .
+      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
 
-echo -e "Creating trilio-datamover-api container for rhosp16"
-cd $base_dir/${build_dir}/trilio-datamover-api/
-rm Dockerfile
-cp Dockerfile_rhosp16 Dockerfile
-buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp16 .
-podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-rhosp16
+      #Build trilio_horizon_plugin containers
+      echo -e "Creating trilio-horizon-plugin container for ${openstack_release}"
+      cd $base_dir/${build_dir}/trilio-horizon-plugin/
+      cp Dockerfile_${openstack_release} Dockerfile
+      buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release} .
+      podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release}
 
-## Build horizon plugin container for rhosp16
+      # Clean the build_dir
+      rm -rf $base_dir/${build_dir}
 
-echo -e "Creating trilio horizon plugin container for rhosp16"
-cd $base_dir/${build_dir}/trilio-horizon-plugin/
-rm Dockerfile
-cp Dockerfile_rhosp16 Dockerfile
-buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp16 .
-podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-rhosp16
-
-# Clean the build_dir
-rm -rf $base_dir/${build_dir}
-#########################################################################
-
-
-
-
-
+done
