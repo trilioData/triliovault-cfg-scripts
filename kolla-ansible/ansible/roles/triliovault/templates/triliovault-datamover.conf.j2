@@ -32,12 +32,23 @@ vault_s3_ssl_cert = /etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}
 {% endif %}
 
 vault_data_directory_old = /var/triliovault
-vault_data_directory = /var/triliovault-mounts
+vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
 log_file = /var/log/kolla/triliovault-datamover/tvault-contego.log
 debug = False
 verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
+
+{% if cinder_backend_ceph == "yes" %}
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = {{ ceph_cinder_user }}
+
+[ceph]
+keyring_ext = .{{ ceph_cinder_user }}.keyring
+
+{% endif %}
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
