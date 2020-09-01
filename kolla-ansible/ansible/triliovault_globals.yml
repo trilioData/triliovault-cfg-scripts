@@ -15,8 +15,8 @@ triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kol
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_tag: "4.1.5-ussuri"
-triliovault_docker_username: "triliodocker"
-triliovault_docker_password: "triliopassword"
+triliovault_docker_username: ""
+triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
 
 
