@@ -9,6 +9,18 @@ parameter_defaults:
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
+   ## TrilioVault Datamover Endpoint Map
+   #EndpointMap:
+   #  TrilioDatamoverPublic:
+   #    uri: https://192.168.122.25:13784/v2
+   #  TrilioDatamoverInternal:
+   #    uri: http://192.168.122.25:8784/v2
+   #  TrilioDatamoverAdmin:
+   #    uri: http://192.168.122.25:8784/v2
+
+   ## TrilioVault Datamover Password for keystone and database
+   TrilioDatamoverPassword: "test1234"
+
    ## Container locations
    DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.58-queens
 
