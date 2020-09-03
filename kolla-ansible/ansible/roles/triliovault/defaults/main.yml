@@ -37,13 +37,13 @@ triliovault_services:
 ####################
 # Docker
 ####################
-triliovault_datamover_api_image: "docker.io/trilio/{{ kolla_base_distro }}-binary-trilio-datamover-api"
+triliovault_datamover_api_image: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover-api"
 triliovault_datamover_api_tag: "{{ triliovault_tag }}"
 triliovault_datamover_api_image_full: "{{ triliovault_datamover_api_image }}:{{ triliovault_datamover_api_tag }}"
 
 
 
-triliovault_datamover_image: "docker.io/trilio/{{ kolla_base_distro }}-binary-trilio-datamover"
+triliovault_datamover_image: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover"
 triliovault_datamover_tag: "{{ triliovault_tag }}"
 triliovault_datamover_image_full: "{{ triliovault_datamover_image }}:{{ triliovault_datamover_tag }}"
 
@@ -120,7 +120,7 @@ triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-
 enable_triliovault: "yes"
 
 ## TrilioVault's containers tag
-triliovault_tag: "4.0.92-train"
+triliovault_tag: "4.1.6-ussuri"
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_docker_username: ""
 triliovault_docker_password: ""
