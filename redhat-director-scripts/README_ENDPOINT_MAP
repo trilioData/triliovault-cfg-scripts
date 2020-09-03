@@ -1,0 +1,7 @@
+User needs to create endpoint map for trilio
+
+cat trilio_endpoint_data.yaml >> /usr/share/openstack-tripleo-heat-templates/network/endpoints/endpoint_data.yaml
+cd /usr/share/openstack-tripleo-heat-templates/network/endpoints/
+python build_endpoint_map.py
+
+## Verify that TrilioDatamover endpoint entries got added to 'endpoint_map.yaml' in the same directory
