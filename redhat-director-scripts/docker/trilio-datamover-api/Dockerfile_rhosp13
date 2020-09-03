@@ -19,8 +19,8 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN yum install dmapi -y
 
 
-RUN  rm -f /etc/yum.repos.d/trilio.repo && mkdir -p /var/cache/dmapi/
-RUN chown -R dmapi:dmapi /etc/nova/ && chown -R dmapi:dmapi /etc/dmapi && chown -R dmapi:dmapi /var/cache/dmapi/
+RUN  rm -f /etc/yum.repos.d/trilio.repo
+RUN usermod -a -G kolla dmapi
 
 ##Copy license file
 RUN mkdir /licenses
