@@ -75,7 +75,7 @@
 
 class trilio::keystone::auth (
   $password,
-  $auth_name              = 'trilio',
+  $auth_name              = 'dmapi',
   $tenant                 = 'services',
   $email                  = 'trilio@localhost',
   $public_url             = 'http://127.0.0.1:8784/v2',
@@ -90,11 +90,6 @@ class trilio::keystone::auth (
   $region                 = 'RegionOne',
 ) {
 
-  include ::trilio::deps
-
-  if $configure_endpoint {
-    Keystone_endpoint["${region}/${service_name}::${service_type}"] -> Anchor['trilio::service::end']
-  }
 
   keystone::resource::service_identity { 'dmapi':
     configure_user      => $configure_user,
@@ -111,10 +106,6 @@ class trilio::keystone::auth (
     public_url          => $public_url,
     admin_url           => $admin_url,
     internal_url        => $internal_url,
-  }
-
-  if $configure_user_role {
-    Keystone_user_role["${auth_name}@${tenant}"] -> Anchor['trilio::service::end']
   }
 
 }
