@@ -11,8 +11,8 @@ dmapi_listen = <%= @my_ip %>
 my_ip = <%= @my_ip %>
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = False
-log_file = /var/log/trilio-datamover-api/dmapi.log
-log_dir = /var/log/trilio-datamover-api
+log_file = /var/log/kolla/triliovault-datamover-api/dmapi.log
+log_dir = /var/log/kolla/triliovault-datamover-api
 
 [wsgi]
 ssl_cert_file = 
@@ -21,9 +21,6 @@ api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
 connection = <%= @database_connection %>
-
-[api_database]
-connection = <%= @api_database_connection %>
 
 [keystone_authtoken]
 memcached_servers = <%= @memcached_servers %>
