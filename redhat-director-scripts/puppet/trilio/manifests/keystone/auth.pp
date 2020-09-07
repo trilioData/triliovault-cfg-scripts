@@ -50,15 +50,15 @@
 #    Tenant for trilio user. Optional. Defaults to 'services'.
 #
 # [*public_url*]
-#   (optional) The endpoint's public url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   (optional) The endpoint's public url. (Defaults to 'http://127.0.0.1:8784/v2')
 #   This url should *not* contain any trailing '/'.
 #
 # [*internal_url*]
-#   (optional) The endpoint's internal url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   (optional) The endpoint's internal url. (Defaults to 'http://127.0.0.1:8784/v2')
 #   This url should *not* contain any trailing '/'.
 #
 # [*admin_url*]
-#   (optional) The endpoint's admin url. (Defaults to 'http://127.0.0.1:8776/v1/%(tenant_id)s')
+#   (optional) The endpoint's admin url. (Defaults to 'http://127.0.0.1:8784/v2')
 #   This url should *not* contain any trailing '/'.
 #
 

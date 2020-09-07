@@ -85,7 +85,7 @@ outputs:
             query:
               read_default_file: /etc/my.cnf.d/tripleo.cnf
               read_default_group: tripleo
-        trilio::my_ip:
+        trilio::dmapi::my_ip:
             str_replace:
               template:
                 "%{hiera('$NETWORK')}"
@@ -112,11 +112,11 @@ outputs:
           trilio::keystone::auth::password: {get_param: TrilioDatamoverPassword}
           trilio::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
-          aodh::db::mysql::user: dmapi
-          aodh::db::mysql::password: {get_param: TrilioDatamoverPassword}
-          aodh::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
-          aodh::db::mysql::dbname: dmapi
-          aodh::db::mysql::allowed_hosts:
+          trilio::db::mysql::user: dmapi
+          trilio::db::mysql::password: {get_param: TrilioDatamoverPassword}
+          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::db::mysql::dbname: dmapi
+          trilio::db::mysql::allowed_hosts:
             - '%'
             - "%{hiera('mysql_bind_host')}"          
       puppet_config:
