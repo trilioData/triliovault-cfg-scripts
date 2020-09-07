@@ -51,7 +51,11 @@ parameters:
   TrilioDatamoverPassword:
     description: The password for the trilio service and db account
     type: string
-    hidden: true    
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications.     
 
 
 outputs:
@@ -62,6 +66,31 @@ outputs:
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
+        trilio::dmapi::password: {get_param: TrilioDatamoverPassword}
+        trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::dmapi::enable_proxy_headers_parsing: true
+        trilio::dmapi::project_name: 'service'
+        trilio::dmapi::region_name: {get_param: KeystoneRegion}
+        trilio::dmapi::user_domain_name: 'Default'
+        trilio::dmapi::project_domain_name: 'Default'
+        trilio::dmapi::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: dmapi
+            password: {get_param: TrilioDatamoverPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /dmapi
+            query:
+              read_default_file: /etc/my.cnf.d/tripleo.cnf
+              read_default_group: tripleo
+        trilio::my_ip:
+            str_replace:
+              template:
+                "%{hiera('$NETWORK')}"
+              params:
+                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}              
       service_config_settings:
         haproxy:
           tripleo::trilio_datamover_api::haproxy_endpoints:
@@ -81,7 +110,15 @@ outputs:
           trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
           trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
           trilio::keystone::auth::password: {get_param: TrilioDatamoverPassword}
-          trilio::keystone::auth::region: {get_param: KeystoneRegion}                   
+          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+        mysql:
+          aodh::db::mysql::user: dmapi
+          aodh::db::mysql::password: {get_param: TrilioDatamoverPassword}
+          aodh::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          aodh::db::mysql::dbname: dmapi
+          aodh::db::mysql::allowed_hosts:
+            - '%'
+            - "%{hiera('mysql_bind_host')}"          
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
