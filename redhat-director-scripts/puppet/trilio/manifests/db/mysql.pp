@@ -45,7 +45,7 @@ class trilio::db::mysql(
 
   ::openstacklib::db::mysql { 'dmapi':
     user          => $user,
-    password_hash => mysql::password($password),
+    password_hash => mysql_password($password),
     dbname        => $dbname,
     host          => $host,
     charset       => $charset,
