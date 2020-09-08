@@ -90,7 +90,8 @@ class trilio::keystone::auth (
   $region                 = 'RegionOne',
 ) {
 
-
+  tag 'dmapiconfig'
+  
   keystone::resource::service_identity { 'dmapi':
     configure_user      => $configure_user,
     configure_user_role => $configure_user_role,

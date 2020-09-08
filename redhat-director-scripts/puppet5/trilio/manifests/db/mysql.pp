@@ -42,6 +42,8 @@ class trilio::db::mysql(
   $collate       = 'utf8_general_ci',
   $allowed_hosts = undef
 ) {
+  
+  tag 'dmapiconfig'
 
   ::openstacklib::db::mysql { 'dmapi':
     user          => $user,
