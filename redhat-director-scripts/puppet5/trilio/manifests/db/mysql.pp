@@ -43,8 +43,6 @@ class trilio::db::mysql(
   $allowed_hosts = undef
 ) {
   
-  tag 'dmapiconfig'
-
   ::openstacklib::db::mysql { 'dmapi':
     user          => $user,
     password_hash => mysql::password($password),
