@@ -42,21 +42,17 @@ dmapi_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_py
 dmapi_keystone_auth_plugin: password
 dmapi_service_project_domain_id: default
 dmapi_service_user_domain_id: default
-dmapi_service_project_name: service
+dmapi_service_project_name: "service"
 
 
 ## Service Type and Data
-dmapi_service_name: dmapi
-dmapi_service_user_name: dmapi
+dmapi_service_name: "dmapi"
+dmapi_service_user_name: "dmapi"
 dmapi_service_type: datamover
 dmapi_service_description: "Trilio Datamover"
-dmapi_default_role_names:
-  - admin
-
-dmapi_service_role_names:
-  - admin
+dmapi_service_role_name: "admin"
 dmapi_service_password: "{{DMAPI_SERVICE_PASSWORD}}"
-dmapi_service_region: RegionOne
+dmapi_service_region: "{{nova_service_region}}"
 dmapi_service_host: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
 dmapi_service_port: 8784
 dmapi_service_proto: http

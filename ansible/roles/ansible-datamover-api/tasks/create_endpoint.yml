@@ -6,7 +6,10 @@
     _service_setup_host_python_interpreter: "{{ dmapi_service_setup_host_python_interpreter }}"
     _service_project_name: "{{dmapi_service_project_name}}"
     _service_region: "{{ dmapi_service_region }}"
-    _service_users: "{{ dmapi_service_users }}"
+    _service_users:
+      - name: "{{ dmapi_service_user_name }}"
+        password: "{{ dmapi_service_password }}"
+        role: "{{ dmapi_service_role_name }}"
     _service_endpoints:
       - service: "{{ dmapi_service_name }}"
         interface: "public"

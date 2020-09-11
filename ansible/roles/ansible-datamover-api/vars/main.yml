@@ -1,20 +1,4 @@
 ---
-####IP address of Tvault appliance###
-dmapi_service_users: |-
-  {% set users = [{
-    'name': dmapi_service_user_name,
-    'password': dmapi_service_password
-    }]
-  %}
-  {% for role in dmapi_default_role_names %}
-  {%   set _ = users.append({'role': role}) %}
-  {% endfor %}
-  {% for user_role in dmapi_service_role_names %}
-  {%   set _ = users.append({
-         'name': dmapi_service_user_name,
-         'role': user_role
-       })
-  %}
-  {% endfor %}
-  {{ users }}
+
+
 
