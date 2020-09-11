@@ -89,8 +89,6 @@ class trilio::keystone::auth (
   $service_description    = 'Trilio Datamover Service',
   $region                 = 'RegionOne',
 ) {
-
-  tag 'dmapiconfig'
   
   keystone::resource::service_identity { 'dmapi':
     configure_user      => $configure_user,

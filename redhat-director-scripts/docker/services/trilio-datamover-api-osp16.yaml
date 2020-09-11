@@ -63,6 +63,17 @@ outputs:
     description: Role data for the Trilio Datamover role.
     value:
       service_name: trilio_datamover_api
+      keystone_resources:
+        dmapi:
+          endpoints:
+            public: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
+            internal: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
+            admin: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
+          users:
+            dmapi:
+              password: {get_param: TrilioDatamoverPassword}
+          region: {get_param: KeystoneRegion}
+          service: 'datamover'      
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
@@ -82,15 +93,12 @@ outputs:
             password: {get_param: TrilioDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
-            query:
-              read_default_file: /etc/my.cnf.d/tripleo.cnf
-              read_default_group: tripleo
         trilio::dmapi::my_ip:
             str_replace:
               template:
                 "%{hiera('$NETWORK')}"
               params:
-                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}              
+                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}                                
       service_config_settings:
         haproxy:
           tripleo::trilio_datamover_api::haproxy_endpoints:
@@ -118,7 +126,7 @@ outputs:
           trilio::db::mysql::dbname: dmapi
           trilio::db::mysql::allowed_hosts:
             - '%'
-            - "%{hiera('mysql_bind_host')}"          
+            - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig

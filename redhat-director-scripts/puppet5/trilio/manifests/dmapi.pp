@@ -28,8 +28,6 @@ class trilio::dmapi (
   $enable_proxy_headers_parsing    = false,
 ) {
     tag 'dmapiconfig'
-
-      class {'trilio::db::mysql': } ->
-      class {'trilio::keystone::auth': } ->
+    
       class {'trilio::dmapi::config':}
 }

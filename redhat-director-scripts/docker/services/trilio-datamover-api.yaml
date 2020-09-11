@@ -84,9 +84,6 @@ outputs:
             password: {get_param: TrilioDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
-            query:
-              read_default_file: /etc/my.cnf.d/tripleo.cnf
-              read_default_group: tripleo
         trilio::dmapi::my_ip:
             str_replace:
               template:
