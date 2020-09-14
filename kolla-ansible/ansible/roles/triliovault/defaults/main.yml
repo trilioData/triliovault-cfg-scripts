@@ -50,6 +50,16 @@ triliovault_datamover_image_full: "{{ triliovault_datamover_image }}:{{ triliova
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
 
+## Under this directory, triliovault datamover will mount the backup target.
+## This directory will get created on all compute hosts
+## This directory will get mounted inside triliovault datamover container as bind mount
+## This is needed to support 'snapshot mount' feature of triliovault
+## User needs to mount this directory on 'nova_compute' and 'nova_libvirt' container.
+
+triliovault_parent_data_directory: "/var/trilio" 
+
+triliovault_datamover_user_id: "42436"
+triliovault_datamover_group_id: "42436"
 
 triliovault_datamover_api_default_volumes:
   - "{{ node_config_directory }}/triliovault-datamover-api/:{{ container_config_directory }}/:ro"
@@ -66,7 +76,7 @@ triliovault_datamover_default_volumes:
   - "/dev:/dev"
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
-
+  - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
 
 ####################
