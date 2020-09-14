@@ -1,8 +1,5 @@
 ---
 
-- include_tasks: rabbitmq.yml
-  when: inventory_hostname in groups[triliovault_datamover_api_group]
-
 - include_tasks: register.yml
   when: inventory_hostname in groups[triliovault_datamover_api_group]
 
