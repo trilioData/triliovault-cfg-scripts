@@ -1,6 +1,5 @@
 - import_tasks: db_setup.yml
-  when:
-    - inventory_hostname == groups['dmapi_all'][0]
+  run_once: True
   vars:
     _oslodb_setup_host: "{{ dmapi_db_setup_host }}"
     _oslodb_databases:
@@ -10,8 +9,7 @@
             password: "{{ dmapi_galera_password }}"
 
 - import_tasks: mq_setup.yml
-  when:
-    - inventory_hostname == groups['dmapi_all'][0]
+  run_once: True
   vars:
     _oslomsg_rpc_setup_host: "{{ dmapi_oslomsg_rpc_setup_host }}"
     _oslomsg_rpc_userid: "{{ dmapi_oslomsg_rpc_userid }}"
