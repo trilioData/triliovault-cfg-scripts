@@ -1,10 +1,18 @@
 ---
+
+- include_tasks: rabbitmq.yml
+  when: inventory_hostname in groups[triliovault_datamover_api_group]
+
 - include_tasks: register.yml
   when: inventory_hostname in groups[triliovault_datamover_api_group]
 
 - include_tasks: config.yml
   when: inventory_hostname in groups[triliovault_datamover_api_group] or
         inventory_hostname in groups[triliovault_datamover_group]
+
+- include_tasks: bootstrap.yml
+  when: inventory_hostname in groups[triliovault_datamover_api_group]
+
 
 - name: Flush handlers
   meta: flush_handlers
