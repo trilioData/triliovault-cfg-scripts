@@ -53,6 +53,4 @@ class trilio::db::mysql(
     allowed_hosts => $allowed_hosts,
   }
 
-  class {'trilio::db::sync': }
-
 }
