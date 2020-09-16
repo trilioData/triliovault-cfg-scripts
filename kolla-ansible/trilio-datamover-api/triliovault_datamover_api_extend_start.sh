@@ -14,5 +14,3 @@ if [[ "${!KOLLA_UPGRADE[@]}" ]]; then
     dmapi-dbsync
     exit 0
 fi
-
-ls /etc/dmapi
