@@ -150,6 +150,37 @@ outputs:
               owner: dmapi:dmapi
               recurse: true
       docker_config:
+        step_2:
+          mysql_init_bundle:
+            start_order: 0
+            detach: false
+            net: host
+            ipc: host
+            user: root
+            command: # '/container_puppet_apply.sh "STEP" "TAGS" "CONFIG" "DEBUG"'
+              list_concat:
+                - - '/container_puppet_apply.sh'
+                  - '2'
+                  - 'file,file_line,concat,augeas,pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation,galera_ready,mysql_database,mysql_grant,mysql_user'
+                  - 'include ::tripleo::profile::base::pacemaker;include ::tripleo::profile::pacemaker::database::mysql_bundle'
+                - if:
+                  - puppet_debug_enabled
+                  - - '--debug'
+                  - - ''
+            image: {get_param: ContainerMysqlImage}
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, container_puppet_apply_volumes]}
+                - - /var/lib/mysql:/var/lib/mysql:rw,z
+                  - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
+                - if:
+                  - docker_enabled
+                  - - /etc/corosync/corosync.conf:/etc/corosync/corosync.conf:ro
+                  - null
+            environment:
+              # NOTE: this should force this container to re-run on each
+              # update (scale-out, etc.)
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}      
         step_5:
           trilio_dmapi:
             image: {get_param: DockerTrilioDmApiImage}
