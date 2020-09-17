@@ -55,7 +55,10 @@ parameters:
   NotificationDriver:
     type: string
     default: 'messagingv2'
-    description: Driver or drivers to handle sending notifications.     
+    description: Driver or drivers to handle sending notifications. 
+  ContainerMysqlImage:
+    description: image
+    type: string      
 
 
 outputs:
