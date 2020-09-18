@@ -14,7 +14,7 @@
 #
 #
 class trilio::tripleo::mysql (
-  $bootstrap_node                = hiera('mysql_short_bootstrap_node_name', undef)
+  $bootstrap_node                = hiera('mysql_short_bootstrap_node_name', undef),
   $step                          = Integer(hiera('step')),
 ) {
 
