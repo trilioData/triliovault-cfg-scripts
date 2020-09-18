@@ -208,14 +208,14 @@ outputs:
         step_2:
           trilio_datamover_api_init_log:
             image: &trilio_datamover_api_image {get_param: DockerTrilioDmApiImage}
+            start_order: 0
             net: none
             user: root
             volumes:
               - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
             command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/trilio-datamover-api']
-        step_2:
           trilio_datamover_api_mysql_init_bundle:
-            start_order: 0
+            start_order: 1
             detach: false
             net: host
             ipc: host
