@@ -52,6 +52,4 @@ class trilio::db::mysql(
     collate       => $collate,
     allowed_hosts => $allowed_hosts,
   }
-
-  class {'trilio::db::sync': }
 }
