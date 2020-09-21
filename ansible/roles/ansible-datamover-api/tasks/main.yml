@@ -37,11 +37,15 @@
        (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
        (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
-
 - name:  install tvault_datamover_api on ubuntu
   import_tasks: install_ubuntu.yml
   tags:
        - tvault-datamover-api
        - tvault-all-install
   when: ansible_distribution=="Ubuntu"
+
+- name: Synchronize the Dmapi schema
+  import_tasks: synchronize_dmapi_db.yml
+
+
 
