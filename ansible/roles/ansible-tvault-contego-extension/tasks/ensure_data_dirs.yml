@@ -10,6 +10,10 @@
     shell: rm -rf {{TVAULT_DATA_DIR_OLD}}/*
     when: tvault_data_dir_old.stat.exists == True
 
+  - name: Ensure TVAULT_DATA_DIR_OLD directory has permission
+    file: name="{{TVAULT_DATA_DIR_OLD}}" owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}}
+    when: tvault_data_dir_old.stat.exists == True
+
   - name: ensure that {{TVAULT_DATA_DIR_OLD}} is present
     file: name="{{TVAULT_DATA_DIR_OLD}}" mode={{TVAULT_DATA_DIR_MODE}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
   when: NFS != True

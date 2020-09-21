@@ -7,6 +7,9 @@
   debug: msg="{{ virsh_v.stdout is version(virsh_version, '>=')}}" verbosity={{ verbosity_level }}
   register: is_condition_satisefied
 
+- debug:
+    msg: "virsh version :{{is_condition_satisefied}}"
+
 - debug: msg="virsh version found {{virsh_v.stdout}} ,condition satisfied" verbosity={{verbosity_level}}
   when: is_condition_satisefied.msg == True
 

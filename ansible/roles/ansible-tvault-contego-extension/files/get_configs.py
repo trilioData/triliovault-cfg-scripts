@@ -21,3 +21,4 @@ else:
     config_files = ' '.join(list(set(config_files)))
 
 print('{}'.format(config_files))
+

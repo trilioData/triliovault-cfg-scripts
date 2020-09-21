@@ -1,8 +1,10 @@
 #!/bin/sh
 
-"{{virtual_env}}"
 xtrace=$(set +o | grep xtrace)
 set +o xtrace
+
+. {{virtual_env_path}}/bin/activate
+
 file="{{NOVA_COMPUTE_FILTERS_FILE}}"
 section="Filters"
 option="qemu-img: EnvFilter"

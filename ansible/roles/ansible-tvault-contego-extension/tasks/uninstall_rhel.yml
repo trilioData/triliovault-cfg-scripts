@@ -10,6 +10,7 @@
 - name: uninstall tvault contego extension packages when using python2
   yum:
      name:
+        - python-s3fuse-plugin-cent7
         - tvault-contego
         - puppet-triliovault
      state: absent

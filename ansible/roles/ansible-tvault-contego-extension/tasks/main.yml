@@ -24,12 +24,46 @@
     - tvault-contego-extension
     - tvault-all-install
     - tvault-all-uninstall
-
+-
 - import_tasks: get_python.yml
   tags:
        - tvault-contego
        - tvault-contego-extension
        - tvault-all-install
+       - tvault-all-uninstall
+
+- name: uninstall tvault contego extension
+  import_tasks: uninstall_rhel.yml
+  tags:
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
+  when: >
+       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS")
+
+- name: uninstall tvault contego extension
+  import_tasks: uninstall_ubuntu.yml
+  tags:
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
+  when: ansible_distribution=="Ubuntu"
+
+- name: post uninstall tvault contego extension
+  import_tasks: post_uninstall.yml
+  tags:
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
+       - tvault-all-uninstall
+
+- name: Remove trilio.filters and trilio.pth files after uninstall
+  import_tasks: remove_trilio_files.yml
+  tags:
+       - tvault-contego-uninstall
+       - tvault-contego-extension-uninstall
        - tvault-all-uninstall
 
 - name: validate NFS bkp target is reachable
@@ -141,37 +175,3 @@
        - tvault-contego
        - tvault-contego-extension
        - tvault-all-install
-
-- name: uninstall tvault contego extension
-  import_tasks: uninstall_rhel.yml
-  tags:
-       - tvault-contego-uninstall
-       - tvault-contego-extension-uninstall
-       - tvault-all-uninstall
-  when: >
-       (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
-       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
-
-- name: uninstall tvault contego extension
-  import_tasks: uninstall_ubuntu.yml
-  tags:
-       - tvault-contego-uninstall
-       - tvault-contego-extension-uninstall
-       - tvault-all-uninstall
-  when: ansible_distribution=="Ubuntu"
-
-- name: post uninstall tvault contego extension
-  import_tasks: post_uninstall.yml
-  tags:
-       - tvault-contego-uninstall
-       - tvault-contego-extension-uninstall
-       - tvault-all-uninstall
-
-- name: Remove trilio.filters and trilio.pth files after uninstall
-  import_tasks: remove_trilio_files.yml
-  tags:
-       - tvault-contego-uninstall
-       - tvault-contego-extension-uninstall
-       - tvault-all-uninstall
