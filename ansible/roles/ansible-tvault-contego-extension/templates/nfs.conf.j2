@@ -4,14 +4,21 @@ vault_storage_nfs_options = {{NFS_OPTIONS}}
 vault_storage_type = nfs
 vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
 vault_data_directory = {{TVAULT_DATA_DIR}}
-log_file = /var/log/nova/tvault-contego.log
+log_file = /var/log/tvault-contego/tvault-contego.log
 debug = False
 verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
+dmapi_transport_url = rabbit://dmapi:{{RABBITMQ_PASSWORD}}@{{internal_lb_vip_address}}:5672/
+
+[dmapi_database]
+connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_user }}
 
 [contego_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}
 
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = False

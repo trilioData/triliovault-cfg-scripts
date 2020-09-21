@@ -3,7 +3,7 @@ vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
 vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
 vault_data_directory = {{TVAULT_DATA_DIR}}
-log_file = /var/log/nova/tvault-contego.log
+log_file = /var/log/tvault-contego/tvault-contego.log
 debug = False
 verbose = True
 max_uploads_pending = 3
@@ -14,9 +14,16 @@ vault_s3_secret_access_key = {{VAULT_S3_SECRET_ACCESS_KEY}}
 vault_s3_region_name = {{VAULT_S3_REGION_NAME}}
 vault_s3_bucket = {{VAULT_S3_BUCKET}}
 vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
+dmapi_transport_url = rabbit://dmapi:{{RABBITMQ_PASSWORD}}@{{internal_lb_vip_address}}:5672/
+
+[dmapi_database]
+connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_user }}
 
 [contego_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}
 
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = False

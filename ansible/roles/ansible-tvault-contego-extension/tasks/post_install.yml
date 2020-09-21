@@ -10,8 +10,8 @@
 - name: change ownership of virtenv dir(/home/tvault)
   file: path={{TVAULT_CONTEGO_VIRTENV}} state=directory mode=765 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
-- name: ensure that /var/log/nova file is present
-  file: path="/var/log/nova" state=directory owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
+- name: ensure that /var/log/tvault-contego file is present
+  file: path="/var/log/tvault-contego" state=directory mode=750 owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
 
 - name: get tvault contego binary path
   shell: "{{virtual_env}} && which tvault-contego"
