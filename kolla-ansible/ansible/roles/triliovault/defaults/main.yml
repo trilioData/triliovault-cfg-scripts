@@ -109,6 +109,12 @@ triliovault_keystone_user: "dmapi"
 triliovault_keystone_password: "NSqfUIUseG9U23j7ae3ZjiVg43mrnlOll0osgrIc"
 
 
+triliovault_ks_users:
+  - project: "service"
+    user: "{{ triliovault_keystone_user }}"
+    password: "{{ triliovault_keystone_password }}"
+    role: "admin"
+
 
 ####################
 # Notification
@@ -147,10 +153,6 @@ triliovault_rabbitmq_users:
   - user: "{{ triliovault_rpc_user }}"
     password: "{{ triliovault_rpc_password }}"
     vhost: "{{ triliovault_rpc_vhost }}"
-
-
-
-
 
 
 
