@@ -1,4 +1,10 @@
 ---
+- name: Include vars of /etc/openstack_deploy/user_tvault_vars.yml into the 'tvault_password' variable (2.2).
+  include_vars:
+     file: /tmp/connection_string
+     name: tvault_vars
+  delegate_to: localhost
+
 - name: write content into {{TVAULT_CONTEGO_CONF}} if nfs is used as backend
   template:
      src: nfs.conf.j2

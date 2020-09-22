@@ -17,10 +17,10 @@ vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
 vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
 vault_s3_ssl = {{VAULT_S3_SECURE}}
 vault_s3_ssl_cert = {{VAULT_S3_SSL_CERT}}
-dmapi_transport_url = rabbit://dmapi:{{RABBITMQ_PASSWORD}}@{{internal_lb_vip_address}}:5672/
+dmapi_transport_url = {{tvault_vars.dmapi_transport_url}}
 
 [dmapi_database]
-connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_user }}
+connection = {{tvault_vars.dmapi_database_connection}}
 
 [contego_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}
