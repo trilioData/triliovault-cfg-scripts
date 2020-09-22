@@ -9,10 +9,10 @@ debug = False
 verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
-dmapi_transport_url = rabbit://dmapi:{{RABBITMQ_PASSWORD}}@{{internal_lb_vip_address}}:5672/
+dmapi_transport_url = {{tvault_vars.dmapi_transport_url}}
 
 [dmapi_database]
-connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_user }}
+connection = {{tvault_vars.dmapi_database_connection}}
 
 [contego_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}

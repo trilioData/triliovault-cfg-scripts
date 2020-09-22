@@ -1,8 +1,0 @@
-# Database vars
-dmapi_db_setup_host: "{{ ('galera_all' in groups) | ternary(groups['galera_all'][0], 'localhost') }}"
-dmapi_galera_address: "{{ galera_address | default('127.0.0.1') }}"
-dmapi_galera_database: dmapi
-dmapi_galera_user: dmapi
-dmapi_galera_password: "{{DMAPI_MYSQL_PASSWORD}}"
-
-# Rabbitmq
