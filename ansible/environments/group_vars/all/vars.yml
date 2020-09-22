@@ -1,5 +1,5 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
-#ip address and port no for tvault applicanc
+#ip address and port no for tvault appliance
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8085
 PYPI_PORT: 8081
@@ -10,18 +10,13 @@ TIME_ZONE: "Etc/UTC"
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
 TVAULT_PACKAGE_VERSION: 4.1.4
 
-#Password
-RABBITMQ_PASSWORD: rabbit_pass
-DMAPI_SERVICE_PASSWORD: dmapi_service_pass
-DMAPI_MYSQL_PASSWORD: dmpai_mysql_pass
-
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
 #These changes require for Datamover, Otherwise Datamover will not work
 #Are you sure? Please set variable to 
 #  UPDATE_NOVA_SUDOERS_FILE: proceed
 #other wise ansible tvault-contego installation will exit
-UPDATE_NOVA_SUDOERS_FILE: notproceed
+UPDATE_NOVA_SUDOERS_FILE: proceed
 
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
