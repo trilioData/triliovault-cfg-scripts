@@ -12,6 +12,7 @@
       mysql_user:
         name: "{{ item.1.username }}"
         password: "{{ item.1.password }}"
+        update_password: always
         host: "{{ item.1.host | default('%') }}"
         priv: "{{ item.0.name }}.*:{{ item.1.priv | default('ALL') }}"
         append_privs: yes

@@ -2,10 +2,10 @@
 dmapi_link_prefix = {{dmapi_service_publicurl}}
 dmapi_enabled_ssl_apis = {{dmapi_enabled_ssl_apis}}
 my_ip = {{internal_lb_vip_address}}
-transport_url = rabbit://{{dmapi_oslomsg_rpc_userid}}:{{dmapi_oslomsg_rpc_password}}@{{internal_lb_vip_address}}:5672/
+transport_url = {{ dmapi_oslomsg_rpc_transport }}://{% for host in dmapi_oslomsg_rpc_servers.split(',') %}{{ dmapi_oslomsg_rpc_userid }}:{{ dmapi_oslomsg_rpc_password }}@{{ host }}:{{ dmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ dmapi_oslomsg_rpc_vhost }}{% if dmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
 [database]
-connection = mysql+pymysql://dmapi:{{dmapi_service_password}}@{{internal_lb_vip_address}}/dmapi
+connection = mysql+pymysql://{{dmapi_galera_user}}:{{dmapi_galera_password}}@{{dmapi_galera_address}}/{{dmapi_galera_database}}
 
 [keystone_authtoken]
 signing_dir =
@@ -23,8 +23,9 @@ auth_type = {{dmapi_keystone_auth_plugin}}
 memcached_servers =
 
 [oslo_messaging_notifications]
-transport_url = rabbit://{{dmapi_oslomsg_rpc_userid}}:{{dmapi_oslomsg_rpc_password}}@{{internal_lb_vip_address}}:5672/
 driver =
+transport_url = {{ dmapi_oslomsg_notify_transport }}://{% for host in dmapi_oslomsg_notify_servers.split(',') %}{{ dmapi_oslomsg_notify_userid }}:{{ dmapi_oslomsg_notify_password }}@{{ host }}:{{ dmapi_oslomsg_notify_port }}{% if not loop.last %},{% else %}/{{ dmapi_oslomsg_notify_vhost }}{% if dmapi_oslomsg_notify_use_ssl | bool %}?ssl=1{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
 
 [oslo_middleware]
 enable_proxy_headers_parsing = false
