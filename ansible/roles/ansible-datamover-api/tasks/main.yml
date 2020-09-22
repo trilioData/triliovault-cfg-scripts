@@ -8,6 +8,12 @@
     - tvault-datamover-api-uninstall
     - tvault-all-uninstall
 
+- name: generate password
+  import_tasks: generate_password.yml
+  tags:
+      - tvault-datamover-api
+      - tvault-all-install
+
 - name: uninstall tvault_datamover_api
   import_tasks: uninstall.yml
   tags:
@@ -44,7 +50,7 @@
        - tvault-all-install
   when: ansible_distribution=="Ubuntu"
 
-- name: Synchronize the Dmapi schema
+- name: Synchronize the Dmapi schema and generate connection string
   import_tasks: synchronize_dmapi_db.yml
 
 

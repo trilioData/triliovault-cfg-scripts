@@ -1,5 +1,10 @@
 ---
-- name: Synup dmapi database
+- name: Syncup dmapi database
   shell: dmapi-dbsync
 
+- name: connection string
+  template:
+    src: connection_string.j2
+    dest: /tmp/connection_string
+  delegate_to: localhost
 
