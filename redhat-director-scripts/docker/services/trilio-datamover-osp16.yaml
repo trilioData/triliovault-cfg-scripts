@@ -159,7 +159,6 @@ outputs:
                 - /var/run/libvirt/:/var/run/libvirt/
                 - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
                 - /var/lib/nova:/var/lib/nova:shared
-                - /var/trilio:/var/trilio:shared
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
@@ -169,6 +168,6 @@ outputs:
             state: directory
             setype: "{{ item.setype }}"
           with_items:
-            - { 'path': /var/trilio, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
             - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []

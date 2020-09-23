@@ -156,7 +156,6 @@ outputs:
               - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
               - /dev:/dev
               - /var/lib/nova:/var/lib/nova:shared
-              - /var/trilio:/var/trilio:shared
               - /var/run/libvirt/:/var/run/libvirt/
               - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
             environment:
@@ -168,6 +167,6 @@ outputs:
             state: directory
             setype: "{{ item.setype }}"
           with_items:
-            - { 'path': /var/trilio, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
             - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []
