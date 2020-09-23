@@ -207,14 +207,17 @@ outputs:
               owner: dmapi:dmapi
               recurse: true
       container_puppet_tasks:
-        # Trilio keystone endpoint creation occurs only on single node
+        step_3:
+          config_volume: 'trilio_datamover_api_mysql_init_bundle'
+          puppet_tags: 'file,file_line,concat,augeas,pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation,galera_ready,mysql_database,mysql_grant,mysql_user'
+          step_config: 'include ::trilio::tripleo::mysql'
+          config_image: {get_param: ContainerMysqlConfigImage}
         step_4:
           config_volume: 'trilio_datamover_api_keystone_init_tasks'
           puppet_tags: 'keystone_config'
           step_config: 'include ::trilio::tripleo::keystone'
           config_image: {get_param: ContainerKeystoneConfigImage}              
       docker_config:
-              # db sync runs before permissions set by kolla_config
         step_2:
           trilio_datamover_api_init_log:
             image: &trilio_datamover_api_image {get_param: DockerTrilioDmApiImage}
@@ -224,37 +227,7 @@ outputs:
             volumes:
               - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
             command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/trilio-datamover-api']
-          trilio_datamover_api_mysql_init_bundle:
-            start_order: 1
-            detach: false
-            net: host
-            ipc: host
-            user: root
-            command: # '/container_puppet_apply.sh "STEP" "TAGS" "CONFIG" "DEBUG"'
-              list_concat:
-                - - '/container_puppet_apply.sh'
-                  - '2'
-                  - 'file,file_line,concat,augeas,pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation,galera_ready,mysql_database,mysql_grant,mysql_user'
-                  - 'include ::trilio::tripleo::mysql'
-                - if:
-                  - puppet_debug_enabled
-                  - - '--debug'
-                  - - ''
-            image: {get_param: ContainerMysqlConfigImage}
-            volumes:
-              list_concat:
-                - {get_attr: [ContainersCommon, container_puppet_apply_volumes]}
-                - - /var/lib/mysql:/var/lib/mysql:rw,z
-                  - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
-                - if:
-                  - docker_enabled
-                  - - /etc/corosync/corosync.conf:/etc/corosync/corosync.conf:ro
-                  - null
-            environment:
-              # NOTE: this should force this container to re-run on each
-              # update (scale-out, etc.)
-              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
-        step_3:
+        step_4:
           trilio_datamover_api_db_sync:
             image: *trilio_datamover_api_image
             net: host
@@ -271,7 +244,7 @@ outputs:
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
-        step_4:
+        step_5:
           trilio_dmapi:
             image: {get_param: DockerTrilioDmApiImage}
             net: host
