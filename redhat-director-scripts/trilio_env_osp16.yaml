@@ -12,6 +12,24 @@ parameter_defaults:
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
+EndpointMapOverride:
+  TrilioDatamover:
+      Internal:
+          net_param: TrilioDatamoverApi
+          uri_suffixes:
+              '': /v2
+      Public:
+          net_param: Public
+          uri_suffixes:
+              '': /v2
+      Admin:
+          net_param: TrilioDatamoverApi
+          uri_suffixes:
+            '': /v2
+      port: 8784
+
+
+
    ## TrilioVault Datamover Password for keystone and database
    TrilioDatamoverPassword: "test1234"
 
