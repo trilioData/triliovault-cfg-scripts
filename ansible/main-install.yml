@@ -1,3 +1,4 @@
+---
 - hosts: horizon_all
   roles:
     - role: ansible-horizon-plugin
@@ -20,6 +21,6 @@
   roles:
     - role: ansible-datamover-api
 
-- hosts: tvault_compute_host
+- hosts: tvault_compute_hosts
   roles:
     - role: ansible-tvault-contego-extension
