@@ -1,10 +1,8 @@
-##common editable parameters required for installing horizon,contego,tvault-config
-#ip address and port no for tvault appliance
+##common editable parameters required for installing tvault-horizon-plugin, tvault-contego and tvault-datamover-api
+#ip address of TVM
 IP_ADDRESS: sample_tvault_ip_address
-PORT_NO: 8085
-PYPI_PORT: 8081
 
-#Time Zone
+##Time Zone
 TIME_ZONE: "Etc/UTC"
 
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
@@ -24,6 +22,8 @@ NFS: False
 NFS_SHARES: 
           - sample_nfs_server_ip1:sample_share_path
           - sample_nfs_server_ip2:sample_share_path
+
+#if NFS_OPTS is empty then default value will be "nolock,soft,timeo=180,intr,lookupcache=none"
 NFS_OPTS: ""
 
 #### Details for S3 as snapshot storage
@@ -43,29 +43,22 @@ VAULT_S3_SECURE: False
 VAULT_S3_SSL_CERT: sample_s3_ssl_cert
 
 ###details of datamover API
+##If SSL is enabled "dmapi_enabled_ssl_apis" value should be dmapi.
+##dmapi_enabled_ssl_apis: dmapi
+##If SSL is disabled "dmapi_enabled_ssl_apis" value should be empty.
 dmapi_enabled_ssl_apis: ""
 ssl_cert_file: ""
 ssl_key_file:  ""
 
-#TVAULT_DATA_DIR mount path
-#Uncomment following line as per the Openstack distribution
-##For RHOSP
-#TVAULT_DATA_DIR: /var/lib/nova/triliovault-mounts
-
-##For Kolla-Ansible
-#TVAULT_DATA_DIR: /var/trilio/triliovault-mounts
-
-##For others(Packstack, Openstack-Ansible etc)
-TVAULT_DATA_DIR: /var/triliovault-mounts
-
-#Set verbisity level and run playbooks with -vvv option to display custom debug messages
+#Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
 
 
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
 #******************************************************************************************************************************************************************
-
+PORT_NO: 8085
+PYPI_PORT: 8081
 DMAPI_USR: dmapi
 DMAPI_GRP: dmapi
 #tvault contego file path
@@ -78,6 +71,7 @@ TVAULT_CONTEGO_EXT_USER: nova
 TVAULT_CONTEGO_EXT_GROUP: nova
 TVAULT_DATA_DIR_MODE: 0775
 TVAULT_DATA_DIR_OLD: /var/triliovault
+TVAULT_DATA_DIR: /var/triliovault-mounts
 TVAULT_CONTEGO_VIRTENV: /home/tvault
 TVAULT_CONTEGO_VIRTENV_PATH: "{{TVAULT_CONTEGO_VIRTENV}}/.virtenv"
 TVAULT_CONTEGO_EXT_BIN: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/bin/tvault-contego"
