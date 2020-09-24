@@ -7,5 +7,5 @@ for app in ls:
     if app != 'dashboards':
         data += "-i "+str(app)+" "
 
-subprocess.call("./manage.py collectstatic --noinput "+data, shell=True)
+subprocess.call("{{PYTHON_VERSION}} {{MANAGE_FILE}} collectstatic --noinput "+data, shell=True)
 
