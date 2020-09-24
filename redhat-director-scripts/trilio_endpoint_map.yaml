@@ -1,0 +1,246 @@
+      TrilioDatamoverAdmin:
+        host:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+        port:
+          get_param: [EndpointMap, TrilioDatamoverAdmin, port]
+        protocol:
+          get_param: [EndpointMap, TrilioDatamoverAdmin, protocol]
+        uri:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverAdmin, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, port]
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverAdmin, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverAdmin, port]
+      TrilioDatamoverInternal:
+        host:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverInternal, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverInternal, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+        port:
+          get_param: [EndpointMap, TrilioDatamoverInternal, port]
+        protocol:
+          get_param: [EndpointMap, TrilioDatamoverInternal, protocol]
+        uri:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverInternal, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverInternal, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverInternal, port]
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverInternal, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverInternal, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverInternal, port]
+      TrilioDatamoverPublic:
+        host:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverPublic, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, PublicNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param: [ServiceNetMap, PublicNetwork]
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param: [EndpointMap, TrilioDatamoverPublic, host]
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param: [ServiceNetMap, PublicNetwork]
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param: [ServiceNetMap, PublicNetwork]
+        port:
+          get_param: [EndpointMap, TrilioDatamoverPublic, port]
+        protocol:
+          get_param: [EndpointMap, TrilioDatamoverPublic, protocol]
+        uri:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverPublic, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverPublic, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, PublicNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, PublicNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverPublic, port]
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param: [EndpointMap, TrilioDatamoverPublic, protocol]
+            host:
+              str_replace:
+                template:
+                  get_param: [EndpointMap, TrilioDatamoverPublic, host]
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param: [ServiceNetMap, PublicNetwork]
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param: [ServiceNetMap, PublicNetwork]
+                        template: NETWORK_uri
+            port:
+              get_param: [EndpointMap, TrilioDatamoverPublic, port]
