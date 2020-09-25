@@ -105,6 +105,35 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
+triliovault_keystone_user: "dmapi"	
+
+
+
+triliovault_ks_users:
+  - project: "service"
+    user: "{{ triliovault_keystone_user }}"
+    password: "{{ triliovault_keystone_password }}"
+    role: "admin"
+
+
+####################
+# Notification
+####################
+triliovault_notification_topics:
+  - name: notifications
+    enabled: "{{ enable_ceilometer | bool or enable_searchlight | bool }}"
+  - name: vitrage_notifications
+    enabled: "{{ enable_vitrage | bool }}"
+
+triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
+
+
+
+###### Optional configurable
+## TrilioVault database user
+triliovault_database_user: "dmapi"
+triliovault_database_name: "dmapi"
+triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 ####################
 # TLS

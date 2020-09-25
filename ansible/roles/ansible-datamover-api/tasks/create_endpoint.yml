@@ -1,0 +1,28 @@
+---
+- import_tasks: service_setup.yml
+  run_once: True
+  vars:
+    _service_adminuri_insecure: "{{ keystone_service_adminuri_insecure }}"
+    _service_setup_host: "{{ dmapi_service_setup_host }}"
+    _service_setup_host_python_interpreter: "{{ dmapi_service_setup_host_python_interpreter }}"
+    _service_project_name: "{{dmapi_service_project_name}}"
+    _service_region: "{{ dmapi_service_region }}"
+    _service_users:
+      - name: "{{ dmapi_service_user_name }}"
+        password: "{{ dmapi_service_password }}"
+        role: "{{ dmapi_service_role_name }}"
+    _service_endpoints:
+      - service: "{{ dmapi_service_name }}"
+        interface: "public"
+        url: "{{ dmapi_service_publicurl }}"
+      - service: "{{ dmapi_service_name }}"
+        interface: "internal"
+        url: "{{ dmapi_service_internalurl }}"
+      - service: "{{ dmapi_service_name }}"
+        interface: "admin"
+        url: "{{ dmapi_service_adminurl }}"
+    _service_catalog:
+      - name: "{{ dmapi_service_name }}"
+        type: "{{ dmapi_service_type }}"
+        description: "{{ dmapi_service_description }}"
+
