@@ -1,6 +1,11 @@
 [Unit]
 Description=Tvault contego
+{%if NFS == True %}
 After=openstack-nova-compute.service
+{% elif object_store == True %}
+Requires=tvault-object-store.service
+{%endif%}
+
 [Service]
 User={{TVAULT_CONTEGO_EXT_USER}}
 Group={{TVAULT_CONTEGO_EXT_USER}}
@@ -14,3 +19,4 @@ Restart=on-failure
 CPUShares=2
 [Install]
 WantedBy=multi-user.target
+

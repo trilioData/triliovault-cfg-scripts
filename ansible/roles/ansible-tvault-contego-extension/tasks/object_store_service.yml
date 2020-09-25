@@ -21,29 +21,22 @@
   - name: Install tvault-object-store layer on Ubuntu if Python2
     shell: |
       curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-      dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y {{EXTRA_APT_VAR}}
+      dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
       rm -rf s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
     when: PYTHON_VERSION=="python2"
 
   - name: Install tvault-object-store layer on Ubuntu if python3
     shell: |
         curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-        dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y {{EXTRA_APT_VAR}}
+        dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
         rm -rf python3-s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
     when: PYTHON_VERSION=="python3"
   when: ansible_distribution == ubuntu
 
-- name: populate_object_store_parameters if s3 others compatible
+- name: populate object store parameters in conf file
   template:
-    src: s3_others_compatible.conf.j2
+    src: tvault-object-store.conf.j2
     dest: "{{TVAULT_OBJECT_STORE_CONF}}"
-  when: s3_type == "Other_S3_Compatible"
-
-- name: populate_object_store_parameters if Amazon
-  template:
-    src: amazon_conf.j2
-    dest: "{{TVAULT_OBJECT_STORE_CONF}}"
-  when: s3_type == "Amazon"
 
 - block:
   - shell: systemctl daemon-reload
