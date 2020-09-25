@@ -23,24 +23,7 @@
   shell: "{{virtual_env}} && which privsep-helper"
   register: privsep_bin_path
 
-- debug: msg="privsep_bin_path={{privsep_bin_path}}" verbosity="{{ verbosity_level }}"
-
-- set_fact:
-   trilio_nova_file_path: '/etc/sudoers.d/trilio_nova_sudoers'
-
-- name: find privsep_bin_path exists or not
-  shell: if grep -q {{privsep_bin_path.stdout}} {{trilio_nova_file_path}}; then echo "found"; else echo "not found"; fi
-  register: output
-
-- debug:
-    msg: "{{privsep_bin_path.stdout}} : {{ output.stdout}}"
-    verbosity: "{{ verbosity_level }}"
-
-- name: Added trilio_nova_sudoers file
-  template: src=trilio_nova_sudoers_j2 dest={{trilio_nova_file_path}} mode=644
-  when: >
-    UPDATE_NOVA_SUDOERS_FILE  == "proceed" and
-    output.stdout == "not found"
+- debug: msg="privsep_bin_path={{privsep_bin_path.stdout}}" verbosity="{{ verbosity_level }}"
 
 - name: copy nova_compte_extension.sh file to tmp dir
   template:

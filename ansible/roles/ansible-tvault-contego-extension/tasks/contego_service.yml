@@ -3,7 +3,7 @@
   copy: src={{files_path}}/files/get_configs.py dest=/tmp/get_configs.py
 
 - name: run /tmp/get_configs.py
-  shell: "{{virtual_env}} && sudo -u {{TVAULT_CONTEGO_EXT_USER}} python3 /tmp/get_configs.py {{NOVA_CONF_FILE}}"
+  shell: "{{virtual_env}} && sudo -u {{TVAULT_CONTEGO_EXT_USER}} {{PYTHON_VERSION}} /tmp/get_configs.py {{NOVA_CONF_FILE}}"
   register: CONFIG_FILES
 
 - debug: msg=" config file output -{{CONFIG_FILES.stdout}}" verbosity={{verbosity_level}}
@@ -38,17 +38,10 @@
     msg: "{{CONFIG_FILES}}"
     verbosity: "{{verbosity_level}}"
 
-- name: create tvault-contego-service-in-systemd when NFS is True
+- name: create tvault-contego-service-in-systemd
   template:
      src: contego_service.j2
      dest: "{{contego_service_file_path}}"
-  when: NFS == True
-
-- name: create tvault-contego-service-in-systemd when object_store is True
-  template:
-     src: contego_service_s3.j2
-     dest: "{{contego_service_file_path}}"
-  when: object_store == True
 
 - block:
   - shell: systemctl daemon-reload
