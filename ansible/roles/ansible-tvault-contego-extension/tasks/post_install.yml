@@ -24,17 +24,3 @@
   register: privsep_bin_path
 
 - debug: msg="privsep_bin_path={{privsep_bin_path.stdout}}" verbosity="{{ verbosity_level }}"
-
-- name: copy nova_compte_extension.sh file to tmp dir
-  template:
-    src: nova_compte_extension.sh
-    dest: /tmp/nova_compte_extension.sh
-
-- name: Assign Execute permission /tmp/nova_compte_extension.sh
-  shell: chmod +x /tmp/nova_compte_extension.sh
-
-- name: Run the script /tmp/nova_compte_extension.sh
-  command: sh /tmp/nova_compte_extension.sh
-
-- name: Remove /tmp/nova_compte_extension.sh
-  file: path="/tmp/nova_compte_extension.sh" state=absent
