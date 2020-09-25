@@ -1,3 +1,5 @@
+# Trilio endpoint map file
+
 TrilioDatamover:
     Internal:
         net_param: TrilioDatamoverApi

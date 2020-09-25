@@ -1,0 +1,7 @@
+# This environment file is used when enabling tls-endpoints-public-ip
+parameter_defaults:
+  EndpointMapOverride:
+    TrilioDatamoverPublic:
+      protocol: 'https'
+      port: '13784'
+      host: 'IP_ADDRESS'

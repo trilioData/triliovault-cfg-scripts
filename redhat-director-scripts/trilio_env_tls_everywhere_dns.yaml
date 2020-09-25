@@ -1,0 +1,15 @@
+# This environment file is used when enabling tls-everywhere-endpoints-dns
+parameter_defaults:
+  EndpointMapOverride:
+    TrilioDatamoverAdmin:
+      protocol: 'https'
+      port: '13784'
+      host: 'CLOUDNAME'
+    TrilioDatamoverInternal:
+      protocol: 'https'
+      port: '13784'
+      host: 'CLOUDNAME'
+    TrilioDatamoverPublic:
+      protocol: 'https'
+      port: '13784'
+      host: 'CLOUDNAME'
