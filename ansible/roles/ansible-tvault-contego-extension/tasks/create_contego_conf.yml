@@ -1,6 +1,5 @@
 ---
-- name: Include vars of /etc/openstack_deploy/user_tvault_vars.yml into the 'tvault_password' variable (2.2).
-  include_vars:
+- name: Include vars of /tmp/connection_string into the 'tvault_vars' variable.
      file: /tmp/connection_string
      name: tvault_vars
   delegate_to: localhost
