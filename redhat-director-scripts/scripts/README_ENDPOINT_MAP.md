@@ -11,10 +11,10 @@ Change the location of the templates if a custom path is being used that
 contains an updated network/endpoints/
 
 ```
-bash generate_trilio_endpoint_map.sh /usr/share/openstack-tripleo-heat-templates
+bash generate_endpoint_map.sh /usr/share/openstack-tripleo-heat-templates
 ```
 
-This script outputs a trilio_endpoint_map.yaml file. If you need to use a
+This script outputs a endpoint_map.yaml file. If you need to use a
 generated one, be sure to update the OS::TripleO::EndpointMap value in the
 included trilio_env*.yaml file.
 
@@ -34,7 +34,7 @@ endpoint configuration
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e trilio_env_tls_everywhere_dns.yaml
+   -e $PATH_TO/trilio_env_tls_everywhere_dns.yaml
 ```
 
 TLS Public DNS
@@ -46,7 +46,7 @@ the public endpoints
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e trilio_env_tls_public_dns.yaml
+   -e $PATH_TO/trilio_env_tls_public_dns.yaml
 ```
 
 TLS Public IP
@@ -58,7 +58,7 @@ the public endpoints with IP addresses
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e trilio_env_tls_public_ip.yaml
+   -e $PATH_TO/trilio_env_tls_public_ip.yaml
 ```
 
 
