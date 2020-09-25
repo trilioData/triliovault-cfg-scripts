@@ -1,6 +1,12 @@
 ---
-- name: ensure that /var/log/nova file is present
-  file: path="/var/log/nova" state=directory owner="{{TVAULT_CONTEGO_EXT_USER}}" group="{{TVAULT_CONTEGO_EXT_GROUP}}"
+
+- name: check if Nova conf file is present or not
+  stat: path="{{NOVA_CONF_FILE}}"
+  register: nova_conf_file
+
+- name: Fail if Nova conf file is not present
+  fail: msg="{{NOVA_CONF_FILE}} is not present"
+  when: nova_conf_file.stat.exists != true
 
 - name: check if tvault contego external bin is present or not
   stat: path="{{TVAULT_CONTEGO_EXT_BIN}}"
@@ -12,7 +18,7 @@
   fail: msg="vault_contego_external_bin directory is not present"
   when: tvault_contego_ext_bin.stat.exists != true
 
-- name: check if tvault contego external bin is present or not
+- name: check if tvault contego conf file is present or not
   stat: path="{{TVAULT_CONTEGO_CONF}}"
   register: tvault_contego_conf
 
