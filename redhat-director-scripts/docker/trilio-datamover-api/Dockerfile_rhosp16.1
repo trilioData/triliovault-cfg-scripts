@@ -18,6 +18,9 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf install python3-dmapi -y
 
+RUN  rm -f /etc/yum.repos.d/trilio.repo
+RUN usermod -a -G kolla dmapi
+
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses

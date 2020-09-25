@@ -1,15 +1,42 @@
 ---
-- debug:
-    msg: "{{ MANAGE_FILE }}"
 
 - name: Collect static files for horizon
-  command: "{{ MANAGE_FILE }}  collectstatic --noinput"
-  verbosity: 3
+  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }}  collectstatic --noinput"
   notify:
      - restart webserver
 
 - name: compress the collected files
-  command: "{{ MANAGE_FILE }} compress --force"
-  verbosity: 3
+  shell: "{{virtual_env}} && nohup {{PYTHON_VERSION}} {{ MANAGE_FILE }} compress --force"
+  retries: 3
+  delay: 3
+  register: compress_result
+  until: compress_result.rc == 0
   notify:
      - restart webserver
+
+- name: write content into destination file - sync_static.py
+  template: src="sync_static.py" dest="/tmp/sync_static.py"
+
+- name: Change the working directory to horizon and excute shell command
+  shell: "{{virtual_env}} && {PYTHON_VERSION}} {{ MANAGE_FILE }} shell < /tmp/sync_static.py &> /dev/null"
+  args:
+       chdir: "{{HORIZON_PATH}}"
+  notify:
+    - restart webserver
+
+- name: remove temporary file -  sync_static.py
+  file: path=/tmp/sync_static.py state=absent
+
+- name: Get os_local_settings_path
+  shell: find / -type d -path /sys -prune -o -name "*local_settings.d" 2>/dev/null | grep -E 'openstack_dashboard|horizon'
+  register: os_local_settings_path
+
+- name: HORIZON_CONFIG
+  shell: . /openstack/venvs/horizon*/bin/activate && echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo $os_local_settings_path | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
+  when: os_local_settings_path != ""
+
+- debug:
+    msg: "\033[33m WARNING: Unable to locate local_settings.d on system. Trilio quota feature on dashboard may not work. \033[0m"
+    verbosity: "{{ verbosity_level }}"
+  when: os_local_settings_path == ""
+

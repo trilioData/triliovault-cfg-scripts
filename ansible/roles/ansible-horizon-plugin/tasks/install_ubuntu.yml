@@ -1,26 +1,42 @@
 ---
-- name: create apt repo file
-  template:
-     src: trilio.list
-     dest: "{{trilio_apt_repo_file_path}}"
 
+- name: Install Tzdata package
+  shell: export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata
+
+- name: Set Time Zone
+  file:
+    src: '/usr/share/zoneinfo/{{TIME_ZONE}}'
+    dest: /etc/localtime
+    owner: root
+    group: root
+    state: link
+  ignore_errors: yes
+  when: TIME_ZONE != ""
+  notify:
+    - update timezone
+
+- name: Install Curl Package
+  apt:
+    name: curl
+    state: latest
+    update_cache: yes
 
 - name: install tvault-horizon-plugin and python-workloadmgrclient deb packages when using python2
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
           rm -rf python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
           rm -rf tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python2"
 
 - name: install python3-tvault-horizon-plugin and python3-workloadmgrclient deb packages when using python3
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
           rm -rf python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          apt-get install ./python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
           rm -rf python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
