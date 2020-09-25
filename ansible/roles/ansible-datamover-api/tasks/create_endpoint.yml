@@ -14,13 +14,13 @@
     _service_endpoints:
       - service: "{{ dmapi_service_name }}"
         interface: "public"
-        url: "{{ dmapi_service_publicurl }}"
+        url: "{{ dmapi_service_publicurl }}/v2"
       - service: "{{ dmapi_service_name }}"
         interface: "internal"
-        url: "{{ dmapi_service_internalurl }}"
+        url: "{{ dmapi_service_internalurl }}/v2"
       - service: "{{ dmapi_service_name }}"
         interface: "admin"
-        url: "{{ dmapi_service_adminurl }}"
+        url: "{{ dmapi_service_adminurl }}/v2"
     _service_catalog:
       - name: "{{ dmapi_service_name }}"
         type: "{{ dmapi_service_type }}"

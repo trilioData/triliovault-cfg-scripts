@@ -1,4 +1,4 @@
-/var/log/nova/tvault-contego.log {
+/var/log/tvault-contego/tvault-contego.log {
     daily
         missingok
         notifempty
