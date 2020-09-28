@@ -270,7 +270,6 @@ outputs:
             restart: always
             volumes:
               - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
               - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
               - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
             environment:
