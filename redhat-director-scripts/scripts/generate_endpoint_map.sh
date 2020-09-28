@@ -13,8 +13,8 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TEMPLATES=$1
 THT_ENDPOINT_DATA=$TEMPLATES/network/endpoints/endpoint_data.yaml
-TRILIO_ENDPOINT_DATA=$SCRIPT_DIR/trilio_endpoint_data.yaml
-OUTPUT_FILE=$SCRIPT_DIR/endpoint_map.yaml
+TRILIO_ENDPOINT_DATA=$SCRIPT_DIR/../templates/trilio_endpoint_data.yaml
+OUTPUT_FILE=$SCRIPT_DIR/../templates/endpoint_map.yaml
 
 echo "Generate endpoint map from ${THT_ENDPOINT_DATA} and ${TRILIO_ENDPOINT_DATA}"
 $TEMPLATES/network/endpoints/build_endpoint_map.py \
