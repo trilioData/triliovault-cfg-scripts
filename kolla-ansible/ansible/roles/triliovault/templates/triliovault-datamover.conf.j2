@@ -39,7 +39,7 @@ verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
 
-dmapi_transport_url = rabbit://{{ triliovault_keystone_user }}:{{triliovault_keystone_password }}@{{ api_interface_address }}:{{ rabbit_port }}//
+dmapi_transport_url = rabbit://{{ triliovault_keystone_user }}:{{triliovault_keystone_password }}@{{ api_interface_address }}:{{ rabbitmq_port }}//
 
 
 [dmapi_database]
