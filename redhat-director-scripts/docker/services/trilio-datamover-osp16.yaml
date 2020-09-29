@@ -111,8 +111,8 @@ outputs:
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
-        trilio::contego::cinder_backend_ceph: {get_parama: CinderEnableRbdBackend}
-        trilio::contego::ceph_cinder_user: {get_parama: CephClientUserName}
+        trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
+        trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::contego::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
