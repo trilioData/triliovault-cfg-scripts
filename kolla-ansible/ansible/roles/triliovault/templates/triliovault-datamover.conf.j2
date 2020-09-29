@@ -43,8 +43,7 @@ dmapi_transport_url = rabbit://{{ triliovault_keystone_user }}:{{triliovault_key
 
 
 [dmapi_database]
-connection = mysql+pymysql://{{ triliovault_keystone_user }}:{{triliovault_keystone_password }}@{{ kolla_internal_vip_address }}/{{ triliovault_keystone_user }}
-
+connection = {{ rpc_transport_url }}
 
 
 {% if cinder_backend_ceph == "yes" %}
