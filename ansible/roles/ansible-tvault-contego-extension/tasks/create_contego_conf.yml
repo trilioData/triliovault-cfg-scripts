@@ -1,7 +1,8 @@
 ---
 - name: Include vars of /tmp/connection_string into the 'tvault_vars' variable.
-     file: /tmp/connection_string
-     name: tvault_vars
+  include_vars:
+    file: /tmp/connection_string
+    name: tvault_vars
   delegate_to: localhost
 
 - name: Create tvault-contego.conf file
