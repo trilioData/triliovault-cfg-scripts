@@ -39,6 +39,14 @@ verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
 
+dmapi_transport_url = rabbit://{{ triliovault_keystone_user }}:{{triliovault_keystone_password }}@localhost:{{ rabbit_port }}//
+
+
+[dmapi_database]
+connection = mysql+pymysql://{{ triliovault_keystone_user }}:{{triliovault_keystone_password }}@{{ kolla_internal_vip_address }}/{{ triliovault_keystone_user }}
+
+
+
 {% if cinder_backend_ceph == "yes" %}
 
 [libvirt]
@@ -62,3 +70,6 @@ helper_command = sudo /usr/bin/privsep-helper
 
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = False
