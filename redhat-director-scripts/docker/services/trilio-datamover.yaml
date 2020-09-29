@@ -80,6 +80,14 @@ parameters:
   S3SslCert:
     description: S3 SSL certificate file path
     type: string
+  CinderEnableRbdBackend:
+    default: false
+    description: Whether ceph cinder backend enabled or not
+    type: boolean	
+  CephClientUserName: 
+    default: 'openstack'	
+    description: Cinder ceph backend user name
+    type: string      
 
 outputs:
   role_data:
@@ -98,6 +106,15 @@ outputs:
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
+        trilio::contego::cinder_backend_ceph: {get_parama: CinderEnableRbdBackend}
+        trilio::contego::ceph_cinder_user: {get_parama: CephClientUserName}
+        trilio::contego::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: dmapi
+            password: {get_param: TrilioDatamoverPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /dmapi        
       puppet_config:
         config_volume: triliodm
         puppet_tags: dmconfig
