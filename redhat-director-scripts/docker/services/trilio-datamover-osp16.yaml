@@ -87,7 +87,11 @@ parameters:
   CephClientUserName: 
     default: 'openstack'	
     description: Cinder ceph backend user name
-    type: string    
+    type: string
+  TrilioDatamoverPassword:
+    description: The password for the trilio service and db account
+    type: string
+    hidden: true
 
 
 outputs:
