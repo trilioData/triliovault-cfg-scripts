@@ -92,7 +92,11 @@ parameters:
     description: The password for the trilio service and db account
     type: string
     hidden: true
-
+  RpcUseSSL:
+    default: false
+    description: >
+        Messaging client subscriber parameter to specify
+        an SSL connection to the messaging host.
 
 outputs:
   role_data:
@@ -113,6 +117,7 @@ outputs:
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
+        trilio::contego::rpc_use_ssl: {get_param: RpcUseSSL}
         trilio::contego::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
