@@ -96,7 +96,8 @@ parameters:
     default: false
     description: >
         Messaging client subscriber parameter to specify
-        an SSL connection to the messaging host.  
+        an SSL connection to the messaging host.
+    type: string    
 
 outputs:
   role_data:
