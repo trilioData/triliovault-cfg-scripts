@@ -41,3 +41,6 @@ helper_command = sudo /usr/bin/privsep-helper
 
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = <%= @rpc_use_ssl %>
