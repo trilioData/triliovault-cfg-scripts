@@ -1,7 +1,7 @@
 class trilio::contego (
     $backup_target_type                   = 'nfs',
-    $nfs_shares                           = undef,
-    $nfs_options                          = 'nolock,soft,timeo=180,intr',
+    $nfs_shares				  = undef,
+    $nfs_options			  = 'nolock,soft,timeo=180,intr',
     $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
@@ -10,16 +10,6 @@ class trilio::contego (
     $s3_endpoint_url                      = undef,
     $s3_ssl_enabled                       = 'False',
     $s3_ssl_cert                          = undef,
-    $database_connection                  = undef,
-    $oslomsg_rpc_proto                    = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
-    $oslomsg_rpc_hosts                    = any2array(hiera('oslo_messaging_rpc_node_names', undef)),
-    $oslomsg_rpc_password                 = hiera('oslo_messaging_rpc_password'),
-    $oslomsg_rpc_port                     = hiera('oslo_messaging_rpc_port', '5672'),
-    $oslomsg_rpc_username                 = hiera('oslo_messaging_rpc_user_name', 'guest'),
-    $oslomsg_rpc_use_ssl                  = hiera('oslo_messaging_rpc_use_ssl', '0'),
-    $cinder_backend_ceph                  = false,
-    $ceph_cinder_user                     = 'openstack',
-    $rpc_use_ssl                          = false,
 ) {
 
 
@@ -55,6 +45,10 @@ class trilio::contego (
 
     }
 
+    #class {'trilio::contego::install': }
+    #class {'trilio::contego::postinstall': }
+    #class {'trilio::contego::cgroup': }
+    #class {'trilio::contego::service': }
     class {'trilio::contego::config': }
 
 }

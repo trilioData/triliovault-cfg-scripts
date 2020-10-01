@@ -1,27 +1,24 @@
 resource_registry:
-  OS::TripleO::Services::TrilioDatamover: ../docker/services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: ../docker/services/trilio-datamover-api.yaml
-  # NOTE: If there are addition customizations to the endpoint map (e.g. for
-  # other integratiosn), this will need to be regenerated.
-  OS::TripleO::EndpointMap: endpoint_map_osp13.yaml
-
-
+  OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover-osp16.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api-osp16.yaml
 
 parameter_defaults:
+
+   ## Enable TrilioVault's quota functionality on horizon
+   ExtraConfig:
+     horizon::customization_module: 'dashboards.overrides'
 
    ## Define network map for trilio datamover api service
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
-   ## TrilioVault Datamover Password for keystone and database
-   TrilioDatamoverPassword: "test1234"
+   ## TrilioVault container pull urls
+   DockerTrilioDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
+   DockerTrilioDmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
 
-   ## Container locations
-   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.58-queens
+   ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
+   ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
 
-   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.58-queens
-
-   DockerHorizonImage: 192.168.122.10:8787/trilio/trilio-horizon-plugin:3.1.62-queens
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'

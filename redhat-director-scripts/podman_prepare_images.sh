@@ -11,7 +11,6 @@ fi
 undercloud_hostname=$1
 tag=$2
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 current_dir=$(pwd)
 base_dir="$(dirname $0)"
@@ -42,6 +41,6 @@ trilio_dm_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover:${tag}"
 trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover-api:${tag}"
 trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/trilio-horizon-plugin:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" $SCRIPT_DIR/../templates/trilio_env_osp16.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" $SCRIPT_DIR/../templates/trilio_env_osp16.yaml
-sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" $SCRIPT_DIR/../templates/trilio_env_osp16.yaml
+sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" trilio_env_osp16.yaml
+sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" trilio_env_osp16.yaml
+sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" trilio_env_osp16.yaml
