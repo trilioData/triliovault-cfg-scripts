@@ -9,8 +9,6 @@ fi
 undercloud_ip=$1
 tag=$2
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
 ##Login to redhat container registry
 #echo -e "Enter Redhat container registry credentials"
 #docker login docker.io
@@ -33,8 +31,6 @@ docker push ${undercloud_ip}:8787/trilio/trilio-datamover-api:${tag}
 ## Update image locations in env file
 dm_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover:${tag}"
 dmapi_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover-api:${tag}"
-trilio_horizon_image="${undercloud_ip}:8787\/trilio\/trilio-horizon-plugin:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" $SCRIPT_DIR/../templates/trilio_env_osp13.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" $SCRIPT_DIR/../templates/trilio_env_osp13.yaml
-sed  -i "s/.*DockerHorizonImage.*/   DockerHorizonImage: ${trilio_horizon_image}/g" $SCRIPT_DIR/../templates/trilio_env_osp13.yaml
+sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" trilio_env.yaml
+sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" trilio_env.yaml
