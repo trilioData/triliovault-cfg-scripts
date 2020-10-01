@@ -34,6 +34,9 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
+  DefaultPasswords:
+    default: {}
+    type: json    
   DmApiPort:
     default: '8784'
     description: Trilio Dmapi listen port
@@ -42,6 +45,42 @@ parameters:
     default: '13784'
     description: Trilio Dmapi ssl listen port
     type: string
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  TrilioDatamoverPassword:
+    description: The password for the trilio service and db account
+    type: string
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications.
+  DockerMysqlConfigImage:
+    description: The container image to use for the mysql config_volume
+    type: string
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for services in the internal network.
+  DockerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string       
+
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
+
+  MySQLClient:
+    type: /usr/share/openstack-tripleo-heat-templates/puppet/services/database/database/mysql-client.yaml
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
 
 outputs:
   role_data:
@@ -51,6 +90,28 @@ outputs:
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
+        trilio::dmapi::password: {get_param: TrilioDatamoverPassword}
+        trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::dmapi::enable_proxy_headers_parsing: true
+        trilio::dmapi::project_name: 'service'
+        trilio::dmapi::region_name: {get_param: KeystoneRegion}
+        trilio::dmapi::user_domain_name: 'Default'
+        trilio::dmapi::project_domain_name: 'Default'
+        trilio::dmapi::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: dmapi
+            password: {get_param: TrilioDatamoverPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /dmapi
+        trilio::dmapi::my_ip:
+            str_replace:
+              template:
+                "%{hiera('$NETWORK')}"
+              params:
+                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}
       service_config_settings:
         haproxy:
           tripleo::trilio_datamover_api::haproxy_endpoints:
@@ -60,7 +121,25 @@ outputs:
                 service_port: {get_param: DmApiPort}
                 public_ssl_port: {get_param: DmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
-                haproxy_listen_bind_param: ['transparent']      
+                haproxy_listen_bind_param: ['transparent']
+        keystone:
+          trilio::keystone::auth::tenant: 'service'
+          trilio::keystone::auth::service_name: 'dmapi'
+          trilio::keystone::auth::service_type: 'datamover'
+          trilio::keystone::auth::service_description: 'TrilioVault Datamover Service'
+          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
+          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
+          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
+          trilio::keystone::auth::password: {get_param: TrilioDatamoverPassword}
+          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+        mysql:
+          trilio::db::mysql::user: dmapi
+          trilio::db::mysql::password: {get_param: TrilioDatamoverPassword}
+          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::db::mysql::dbname: dmapi
+          trilio::db::mysql::allowed_hosts:
+            - '%'
+            - "%{hiera('mysql_bind_host')}"                    
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
@@ -83,6 +162,35 @@ outputs:
             - path: /var/log/trilio-datamover-api
               owner: dmapi:dmapi
               recurse: true
+      docker_puppet_tasks:
+        # Trilio Datamover Api MySQL database initialization occurs only on single node
+        step_3:
+          config_volume: 'trilio_datamover_api_mysql_init_tasks'
+          puppet_tags: 'mysql_database,mysql_grant,mysql_user'
+          step_config: 'include ::trilio::tripleo::mysql'
+          config_image: {get_param: DockerMysqlConfigImage}
+          volumes:
+            list_concat:
+            -
+              - /var/lib/mysql:/var/lib/mysql/:rw
+              - /var/log/containers/mysql:/var/log/mariadb
+              - /var/lib/config-data/puppet-generated/mysql/root:/root:rw #provides .my.cnf for puppet, changed on password update
+            - if:
+              - internal_tls_enabled
+              -
+                - list_join:
+                  - ':'
+                  - - {get_param: InternalTLSCAFile}
+                    - {get_param: InternalTLSCAFile}
+                    - 'ro'
+                - /etc/pki/tls/certs/mysql.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/mysql.crt:ro
+                - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
+              - null
+        step_4:
+          config_volume: 'trilio_datamover_api_keystone_init_tasks'
+          puppet_tags: 'keystone_config,keystone_domain_config,keystone_endpoint,keystone_identity_provider,keystone_paste_ini,keystone_role,keystone_service,keystone_tenant,keystone_user,keystone_user_role,keystone_domain'
+          step_config: 'include ::trilio::tripleo::keystone'
+          config_image: {get_param: DockerKeystoneConfigImage}                            
       docker_config:
         step_5:
           trilio_dmapi:
