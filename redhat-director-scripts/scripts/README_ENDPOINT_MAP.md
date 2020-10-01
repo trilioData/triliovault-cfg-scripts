@@ -31,11 +31,20 @@ TLS Everywhere
 Use the following as part of the deployment command to enable the tls everywhere
 endpoint configuration
 
+
+- For OSP13:
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e $PATH_TO/trilio_env_tls_everywhere_dns.yaml
+   -e $PATH_TO/trilio_env_tls_everywhere_dns_osp13.yaml
 ```
+- FOR OSP16:
+```
+openstack overcloud deploy \
+   ...SNIP...
+   -e $PATH_TO/trilio_env_tls_everywhere_dns_osp16.yaml
+```
+
 
 TLS Public DNS
 --------------
@@ -43,11 +52,20 @@ TLS Public DNS
 Use the following as part of the deployment command to enable the tls only on
 the public endpoints
 
+
+- For OSP13:
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e $PATH_TO/trilio_env_tls_public_dns.yaml
+   -e $PATH_TO/trilio_env_tls_endpoints_public_dns_osp13.yaml
 ```
+- FOR OSP16:
+```
+openstack overcloud deploy \
+   ...SNIP...
+   -e $PATH_TO/trilio_env_tls_endpoints_public_dns_osp16.yaml
+```
+
 
 TLS Public IP
 -------------
@@ -55,10 +73,17 @@ TLS Public IP
 Use the following as part of the deployment command to enable the tls only on
 the public endpoints with IP addresses
 
+- For OSP13:
 ```
 openstack overcloud deploy \
    ...SNIP...
-   -e $PATH_TO/trilio_env_tls_public_ip.yaml
+   -e $PATH_TO/trilio_env_tls_endpoints_public_ip_osp13.yaml
+```
+- FOR OSP16:
+```
+openstack overcloud deploy \
+   ...SNIP...
+   -e $PATH_TO/trilio_env_tls_endpoints_public_ip_osp16.yaml
 ```
 
 

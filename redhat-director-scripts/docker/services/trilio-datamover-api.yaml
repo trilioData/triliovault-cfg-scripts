@@ -33,10 +33,7 @@ parameters:
     default: {}
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
-    type: json
-  DefaultPasswords:
-    default: {}
-    type: json    
+    type: json   
   DmApiPort:
     default: '8784'
     description: Trilio Dmapi listen port
@@ -60,13 +57,23 @@ parameters:
   DockerMysqlConfigImage:
     description: The container image to use for the mysql config_volume
     type: string
+  DockerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string
+  EnableInternalTLS:
+    type: boolean
+    default: false
   InternalTLSCAFile:
     default: '/etc/ipa/ca.crt'
     type: string
-    description: Specifies the default CA cert to use if TLS is used for services in the internal network.
-  DockerKeystoneConfigImage:
-    description: The container image to use for the keystone config_volume
-    type: string       
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
 
 
 resources:
@@ -75,7 +82,7 @@ resources:
     type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
 
   MySQLClient:
-    type: /usr/share/openstack-tripleo-heat-templates/puppet/services/database/database/mysql-client.yaml
+    type: /usr/share/openstack-tripleo-heat-templates/puppet/services/database/mysql-client.yaml
 
 conditions:
 
@@ -143,17 +150,16 @@ outputs:
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
-        step_config: |
-            include ::trilio::dmapi
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::trilio::dmapi"
+              - {get_attr: [MySQLClient, role_data, step_config]}  
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
           command: /usr/bin/python /usr/bin/dmapi-api
           config_files:  
-            - source: "/var/lib/kolla/config_files/src/*"
-              dest: "/"
-              merge: true
-              preserve_properties: true
             - source: "/var/lib/kolla/config_files/triliodmapi/*"
               dest: "/"
               merge: true
@@ -192,6 +198,32 @@ outputs:
           step_config: 'include ::trilio::tripleo::keystone'
           config_image: {get_param: DockerKeystoneConfigImage}                            
       docker_config:
+        step_2:
+          trilio_datamover_api_init_log:
+            image: &trilio_datamover_api_image {get_param: DockerTrilioDmApiImage}
+            start_order: 0
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/trilio-datamover-api']
+        step_4:
+          trilio_datamover_api_db_sync:
+            image: *trilio_datamover_api_image
+            net: host
+            privileged: false
+            detach: false            
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi/:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api
+            command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
         step_5:
           trilio_dmapi:
             image: {get_param: DockerTrilioDmApiImage}
@@ -201,7 +233,6 @@ outputs:
             restart: always
             volumes:
               - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
               - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
               - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
             environment:
