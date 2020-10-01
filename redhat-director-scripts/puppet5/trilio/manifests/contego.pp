@@ -17,7 +17,7 @@ class trilio::contego (
     $oslomsg_rpc_port                     = hiera('oslo_messaging_rpc_port', '5672'),
     $oslomsg_rpc_username                 = hiera('oslo_messaging_rpc_user_name', 'guest'),
     $oslomsg_rpc_use_ssl                  = hiera('oslo_messaging_rpc_use_ssl', '0'),
-    $cinder_backend_ceph                  = 'false',
+    $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
     $rpc_use_ssl                          = false,
 ) {
