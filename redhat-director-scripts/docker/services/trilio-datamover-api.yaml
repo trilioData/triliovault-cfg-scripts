@@ -54,6 +54,24 @@ parameters:
     type: string
     default: 'messagingv2'
     description: Driver or drivers to handle sending notifications.
+  RabbitPassword:
+    description: The password for RabbitMQ
+    type: string
+    hidden: true
+  RabbitUserName:
+    default: guest
+    description: The username for RabbitMQ
+    type: string
+  RabbitClientUseSSL:
+    default: false
+    description: >
+        Rabbit client subscriber parameter to specify
+        an SSL connection to the RabbitMQ host.
+    type: string
+  RabbitClientPort:
+    default: 5672
+    description: Set rabbit subscriber port, change this if using SSL
+    type: number  
   DockerMysqlConfigImage:
     description: The container image to use for the mysql config_volume
     type: string
@@ -101,6 +119,10 @@ outputs:
         trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::rabbit_userid: {get_param: RabbitUserName}
+        trilio::rabbit_password: {get_param: RabbitPassword}
+        trilio::rabbit_use_ssl: {get_param: RabbitClientUseSSL}
+        trilio::rabbit_port: {get_param: RabbitClientPort}
         trilio::dmapi::enable_proxy_headers_parsing: true
         trilio::dmapi::project_name: 'service'
         trilio::dmapi::region_name: {get_param: KeystoneRegion}
