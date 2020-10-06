@@ -8,6 +8,9 @@ TIME_ZONE: "Etc/UTC"
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
 TVAULT_PACKAGE_VERSION: 4.1.4
 
+# Update Openstack dist code name like ussuri etc.
+opensatck_dist: ussuri
+
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
 #These changes require for Datamover, Otherwise Datamover will not work
