@@ -9,7 +9,7 @@ TIME_ZONE: "Etc/UTC"
 TVAULT_PACKAGE_VERSION: 4.1.4
 
 # Update Openstack dist code name like ussuri etc.
-opensatck_dist: ussuri
+OPENSTACK_DIST: ussuri
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
