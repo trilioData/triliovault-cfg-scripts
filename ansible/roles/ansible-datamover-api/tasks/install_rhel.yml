@@ -1,4 +1,11 @@
 ---
+- name: Install packages on datamover api container | centos-release-openstack-ussuri
+  yum:
+    update_cache: yes
+    name:
+      - "centos-release-openstack-ussuri"
+    state: latest
+
 - name: install packages on datamover api container | {{ PYTHON_VERSION }} devel and nova packages
   yum:
     update_cache: yes
