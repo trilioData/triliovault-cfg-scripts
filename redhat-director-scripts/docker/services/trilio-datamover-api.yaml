@@ -218,7 +218,9 @@ outputs:
           config_volume: 'trilio_datamover_api_keystone_init_tasks'
           puppet_tags: 'keystone_config,keystone_domain_config,keystone_endpoint,keystone_identity_provider,keystone_paste_ini,keystone_role,keystone_service,keystone_tenant,keystone_user,keystone_user_role,keystone_domain'
           step_config: 'include ::trilio::tripleo::keystone'
-          config_image: {get_param: DockerKeystoneConfigImage}                            
+          config_image: {get_param: DockerKeystoneConfigImage}
+          volumes:
+              - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
       docker_config:
         step_2:
           trilio_datamover_api_init_log:
