@@ -1,13 +1,14 @@
 class trilio::contego::config inherits trilio::contego {
     tag 'dmconfig'
 
+    $oslomsg_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_use_ssl)))
     $default_transport_url = os_transport_url({
         'transport' => $oslomsg_rpc_proto,
         'hosts'     => $oslomsg_rpc_hosts,
         'port'      => $oslomsg_rpc_port,
         'username'  => $oslomsg_rpc_username,
         'password'  => $oslomsg_rpc_password,
-        'ssl'       => $oslomsg_rpc_use_ssl,
+        'ssl'       => $oslomsg_use_ssl_real,
       })
 
 
