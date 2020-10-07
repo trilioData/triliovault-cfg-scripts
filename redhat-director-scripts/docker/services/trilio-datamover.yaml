@@ -92,12 +92,24 @@ parameters:
     description: The password for the trilio service and db account
     type: string
     hidden: true
-  RpcUseSSL:
+  RabbitPassword:
+    description: The password for RabbitMQ
+    type: string
+    hidden: true
+  RabbitUserName:
+    default: guest
+    description: The username for RabbitMQ
+    type: string
+  RabbitClientUseSSL:
     default: false
     description: >
-        Messaging client subscriber parameter to specify
-        an SSL connection to the messaging host.
-    type: string    
+        Rabbit client subscriber parameter to specify
+        an SSL connection to the RabbitMQ host.
+    type: string
+  RabbitClientPort:
+    default: 5672
+    description: Set rabbit subscriber port, change this if using SSL
+    type: number
 
 outputs:
   role_data:
@@ -105,6 +117,10 @@ outputs:
     value:
       service_name: tvault-contego
       config_settings:
+        trilio::rabbit_userid: {get_param: RabbitUserName}
+        trilio::rabbit_password: {get_param: RabbitPassword}
+        trilio::rabbit_use_ssl: {get_param: RabbitClientUseSSL}
+        trilio::rabbit_port: {get_param: RabbitClientPort}
         trilio::contego::backup_target_type: {get_param: BackupTargetType}
         trilio::contego::nfs_shares: {get_param: NfsShares}
         trilio::contego::nfs_options: {get_param: NfsOptions}
@@ -118,7 +134,6 @@ outputs:
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
-        trilio::contego::rpc_use_ssl: {get_param: RpcUseSSL}
         trilio::contego::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
