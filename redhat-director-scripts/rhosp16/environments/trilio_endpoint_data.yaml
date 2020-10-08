@@ -1,0 +1,16 @@
+# Trilio endpoint map file
+
+TrilioDatamover:
+    Internal:
+        net_param: TrilioDatamoverApi
+        uri_suffixes:
+            '': /v2
+    Public:
+        net_param: Public
+        uri_suffixes:
+            '': /v2
+    Admin:
+        net_param: TrilioDatamoverApi
+        uri_suffixes:
+            '': /v2
+    port: 8784
