@@ -35,6 +35,6 @@ dm_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover:${tag}"
 dmapi_image_name="${undercloud_ip}:8787\/trilio\/trilio-datamover-api:${tag}"
 trilio_horizon_image="${undercloud_ip}:8787\/trilio\/trilio-horizon-plugin:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" $SCRIPT_DIR/../environments/trilio_env_osp13.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" $SCRIPT_DIR/../environments/trilio_env_osp13.yaml
-sed  -i "s/.*DockerHorizonImage.*/   DockerHorizonImage: ${trilio_horizon_image}/g" $SCRIPT_DIR/../environments/trilio_env_osp13.yaml
+sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${dm_image_name}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
+sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${dmapi_image_name}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
+sed  -i "s/.*DockerHorizonImage.*/   DockerHorizonImage: ${trilio_horizon_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
