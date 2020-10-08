@@ -1,0 +1,38 @@
+[DEFAULT]
+vault_storage_nfs_export = <%= @nfs_shares %>
+vault_storage_nfs_options = <%= @nfs_options %>
+vault_storage_type = nfs
+vault_data_directory_old = <%= @vault_data_dir_old %>
+vault_data_directory = <%= @vault_data_dir %>
+log_file = /var/log/trilio-datamover/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+dmapi_transport_url = <%= @default_transport_url %>
+
+
+<% if @cinder_backend_ceph == true -%>
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = <%= @ceph_cinder_user %>
+
+[ceph]
+keyring_ext = .<%= @ceph_cinder_user %>.keyring
+
+<% end -%>
+
+
+[dmapi_database]
+connection = <%= @database_connection %>
+
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
+
+[oslo_messaging_rabbit]
+ssl = <%= @oslomsg_rpc_use_ssl %>
