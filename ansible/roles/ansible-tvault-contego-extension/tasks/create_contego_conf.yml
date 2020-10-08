@@ -5,6 +5,10 @@
     name: tvault_vars
   delegate_to: localhost
 
+- name: Get Rabbitmq ssl certs and Key file
+  import_tasks: /opt/openstack-ansible/playbooks/roles/ansible-datamover-api/tasks/get_rabbitmq_ssl_cert.yml
+  when: tvault_vars.rabbit_ssl == true
+
 - name: Create tvault-contego.conf file
   template:
      src: tvault-contego.conf.j2

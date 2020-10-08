@@ -33,6 +33,18 @@ enable_proxy_headers_parsing = false
 [oslo_messaging_rabbit]
 ssl = {{dmapi_oslomsg_rpc_use_ssl}}
 
+{%if dmapi_oslomsg_rpc_use_ssl == true%}
+{%if rabbitmq_user_ssl_key is defined %}
+ssl_key_file = {{rabbitmq_user_ssl_key_path}}
+{%endif%}
+{%if rabbitmq_user_ssl_cert is defined %}
+ssl_cert_file = {{rabbitmq_user_ssl_cert_path}}
+{%endif%}
+{%if rabbitmq_user_ssl_ca_cert is defined %}
+ssl_ca_file = {{rabbitmq_user_ssl_ca_cert_path}}
+{%endif%}
+{%endif%}
+
 [wsgi]
 ssl_cert_file = {{ssl_cert_file}}
 ssl_key_file = {{ssl_key_file}}
