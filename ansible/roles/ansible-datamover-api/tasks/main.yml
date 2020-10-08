@@ -14,6 +14,13 @@
       - tvault-datamover-api
       - tvault-all-install
 
+- name: Get Rabbitmq ssl certs and Key file
+  import_tasks: get_rabbitmq_ssl_cert.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+  when: dmapi_oslomsg_rpc_use_ssl == true
+
 - name: uninstall tvault_datamover_api
   import_tasks: uninstall.yml
   tags:
