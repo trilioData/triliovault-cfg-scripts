@@ -16,9 +16,9 @@ THT_ENDPOINT_DATA=$TEMPLATES/network/endpoints/endpoint_data.yaml
 TRILIO_ENDPOINT_DATA=$SCRIPT_DIR/../environments/trilio_endpoint_data.yaml
 OUTPUT_FILE=$SCRIPT_DIR/../environments/endpoint_map.yaml
 
-echo "Generate endpoint map from ${THT_ENDPOINT_DATA} and ${TRILIO_ENDPOINT_DATA}"
+echo -e "\nGenerating endpoint map from ${THT_ENDPOINT_DATA} and ${TRILIO_ENDPOINT_DATA}"
 $TEMPLATES/network/endpoints/build_endpoint_map.py \
     -i <(cat $THT_ENDPOINT_DATA $TRILIO_ENDPOINT_DATA) \
     -o $OUTPUT_FILE
 
-echo "Generated new endpoint map file at ${OUTPUT_FILE}"
+echo -e "\nGenerated new endpoint map file at ${OUTPUT_FILE}"
