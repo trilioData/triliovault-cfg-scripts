@@ -5,6 +5,13 @@
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
+- name: Install packages on horizon container | centos-release-openstack-{{OPENSTACK_DIST}}
+  yum:
+    update_cache: yes
+    name:
+      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+    state: latest
+
 - name: install tvault horizon plugin packages when using python2
   yum:
      update_cache: yes
@@ -30,7 +37,7 @@
   yum:
      update_cache: yes
      name:
-        - python3-tvault-horizon-plugin
+        - python3-tvault-horizon-plugin-el8
      state: latest
   notify:
      - restart webserver
