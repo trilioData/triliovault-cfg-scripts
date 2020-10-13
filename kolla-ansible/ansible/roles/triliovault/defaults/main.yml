@@ -141,11 +141,9 @@ triliovault_database_address: "{{ database_address | put_address_in_context('url
 triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
 
 
-## TrilioVault Inventory.  Refer kolla ansible inventory.
-## triliovault_datamover_api_group should be assigned with group name of nova-api service
-## triliovault_datamover_group should be assigned with group name of nova-compute service
-triliovault_datamover_api_group: 'nova-api'
-triliovault_datamover_group: 'compute'
+## TrilioVault Inventory.  Refer triliovault_inventory file. 
+triliovault_datamover_api_group: 'triliovault-datamover-api'
+triliovault_datamover_group: 'triliovault-datamover'
 
 
 ## Log directories for triliovault services
