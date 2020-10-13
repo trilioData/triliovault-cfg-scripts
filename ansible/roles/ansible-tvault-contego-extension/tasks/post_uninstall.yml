@@ -8,8 +8,11 @@
 - name: ensure tvault contego conf file is deleted
   file: path={{TVAULT_CONTEGO_CONF}} state=absent
 
-- name: ensure tvault contego log file  is deleted
+- name: ensure tvault contego log file is deleted
   file: path=/var/log/tvault-contego/tvault-contego.log state=absent
+
+- name: ensure tvault-object-store.log file is deleted
+  file: path=/var/log/tvault-object-store/tvault-object-store.log state=absent
 
 - name: ensure tvault-contego service file is deleted if os release is rhel7
   file: path=/etc/systemd/system/tvault-contego.service state=absent

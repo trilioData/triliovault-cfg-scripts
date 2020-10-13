@@ -1,0 +1,25 @@
+---
+- name: Create {{DMAPI_SSL_CERT_DIR}} directory
+  file: name="{{DMAPI_SSL_CERT_DIR}}"  state=directory
+
+- name: check {{DMAPI_SSL_CERT}} is present or not
+  stat: path="{{DMAPI_SSL_CERT}}"
+  register: dmapi_ssl_cert_output
+  delegate_to: localhost
+
+- name: check {{DMAPI_SSL_KEY}} is present or not
+  stat: path="{{DMAPI_SSL_KEY}}"
+  register: dmapi_ssl_key_output
+  delegate_to: localhost
+
+- name: Deploy user provided Dmapi ssl cert {{DMAPI_SSL_CERT}}
+  copy:
+    src: "{{DMAPI_SSL_CERT}}"
+    dest: "{{DMAPI_SSL_CERT_PATH}}"
+  when: dmapi_ssl_cert_output.stat.exists == true
+
+- name: Deploy user provided Dmapi ssl key {{DMAPI_SSL_KEY}}
+  copy:
+    src: "{{DMAPI_SSL_KEY}}"
+    dest: "{{DMAPI_SSL_KEY_PATH}}"
+  when: dmapi_ssl_key_output.stat.exists == true
