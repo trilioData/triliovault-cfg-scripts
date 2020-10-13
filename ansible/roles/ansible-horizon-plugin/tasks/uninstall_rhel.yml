@@ -24,7 +24,7 @@
   yum:
      update_cache: yes
      name:
-        - python3-tvault-horizon-plugin
+        - python3-tvault-horizon-plugin-el8
      state: absent
   notify:
      - restart webserver
