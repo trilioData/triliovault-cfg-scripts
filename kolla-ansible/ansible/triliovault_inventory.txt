@@ -1,0 +1,5 @@
+[triliovault-datamover-api:children]
+control
+
+[triliovault-datamover:children]
+compute
