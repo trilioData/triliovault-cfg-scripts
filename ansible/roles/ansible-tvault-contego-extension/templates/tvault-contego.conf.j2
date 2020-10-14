@@ -62,3 +62,13 @@ ssl_cert_file = {{RABBITMQ_SSL_CERT_PATH}}
 ssl_ca_file = {{RABBITMQ_SSL_CA_CERT_PATH}}
 {%endif%}
 {%endif%}
+
+{% if nova_libvirt_images_rbd_pool is defined %}
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = {{cinder_ceph_client}}
+
+[ceph]
+keyring_ext = .{{cinder_ceph_client}}.keyring
+{%endif%}
+
