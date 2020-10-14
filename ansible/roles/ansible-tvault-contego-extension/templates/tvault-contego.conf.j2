@@ -3,7 +3,7 @@
 vault_storage_nfs_export = {{ NFS_SHARES|join(",") }}
 vault_storage_nfs_options = {{NFS_OPTIONS}}
 vault_storage_type = nfs
-{%elif S3 == True and s3_type == Amazon %}
+{%elif S3|bool == True and s3_type == Amazon %}
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
 vault_s3_auth_version = DEFAULT
@@ -12,7 +12,7 @@ vault_s3_secret_access_key = {{VAULT_S3_SECRET_ACCESS_KEY}}
 vault_s3_region_name = {{VAULT_S3_REGION_NAME}}
 vault_s3_bucket = {{VAULT_S3_BUCKET}}
 vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
-{%elif S3 == True and s3_type == Other_S3_Compatible %}
+{%elif S3|bool == True and s3_type == Other_S3_Compatible %}
 vault_storage_nfs_export = TrilioVault
 vault_storage_type = s3
 vault_s3_auth_version = DEFAULT
@@ -23,7 +23,11 @@ vault_s3_bucket = {{VAULT_S3_BUCKET}}
 vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
 vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
 vault_s3_ssl = {{VAULT_S3_SECURE}}
-vault_s3_ssl_cert = {{VAULT_S3_SSL_CERT}}
+{% if VAULT_S3_SSL_CERT != "" %}
+vault_s3_ssl_cert = {{VAULT_S3_SSL_CERT_PATH}}
+{%else%}
+vault_s3_ssl_cert =
+{%endif%}
 {%endif%}
 
 vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
@@ -49,12 +53,22 @@ ssl = {{tvault_vars.rabbit_ssl}}
 
 {%if tvault_vars.rabbit_ssl == true%}
 {%if rabbitmq_user_ssl_key is defined %}
-ssl_key_file = {{rabbitmq_user_ssl_key_path}}
+ssl_key_file = {{RABBITMQ_SSL_KEY_PATH}}
 {%endif%}
 {%if rabbitmq_user_ssl_cert is defined %}
-ssl_cert_file = {{rabbitmq_user_ssl_cert_path}}
+ssl_cert_file = {{RABBITMQ_SSL_CERT_PATH}}
 {%endif%}
 {%if rabbitmq_user_ssl_ca_cert is defined %}
-ssl_ca_file = {{rabbitmq_user_ssl_ca_cert_path}}
+ssl_ca_file = {{RABBITMQ_SSL_CA_CERT_PATH}}
 {%endif%}
 {%endif%}
+
+{% if nova_libvirt_images_rbd_pool is defined %}
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = {{cinder_ceph_client}}
+
+[ceph]
+keyring_ext = .{{cinder_ceph_client}}.keyring
+{%endif%}
+

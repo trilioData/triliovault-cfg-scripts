@@ -1,29 +1,24 @@
 ---
 
-- name: copy the Rabbitmq User ssl Cert file
+- name: Create {{RABBITMQ_SSL_DIR}} directory
+  file: name="{{RABBITMQ_SSL_DIR}}"  state=directory
+
+- name: Deploy user provided Rabbitmq ssl cert
   copy:
     src: "{{rabbitmq_user_ssl_cert}}"
-    dest: "/opt/cert/ssl/"
-  register: rabbitmq_user_ssl_cert_output
+    dest: "{{RABBITMQ_SSL_CERT_PATH}}"
   when: rabbitmq_user_ssl_cert is defined
 
-- name: copy the Rabbitmq User ssl Key file
+- name: Deploy user provided Rabbitmq ssl Key
   copy:
     src: "{{rabbitmq_user_ssl_key}}"
-    dest: "/opt/cert/ssl/"
-  register: rabbitmq_user_ssl_key_output
+    dest: "{{RABBITMQ_SSL_KEY_PATH}}"
   when: rabbitmq_user_ssl_key is defined
 
-- name: copy the Rabbitmq User ssl Ca-Cert file
+- name: Deploy user provided Rabbitmq Ca-Cert
   copy:
     src: "{{rabbitmq_user_ssl_ca_cert}}"
-    dest: "/opt/cert/ssl/"
-  register: rabbitmq_user_ssl_ca_cert_output
+    dest: "{{RABBITMQ_SSL_CA_CERT_PATH}}"
   when: rabbitmq_user_ssl_ca_cert is defined
 
-- set_fact: rabbitmq_user_ssl_cert_path="{{rabbitmq_user_ssl_cert_output.dest}}"
-- set_fact: rabbitmq_user_ssl_key_path="{{rabbitmq_user_ssl_key_output.dest}}"
-- set_fact: rabbitmq_user_ssl_ca_cert_path="{{rabbitmq_user_ssl_ca_cert_output.dest}}"
 
-- debug:
-    msg: "rabbitmq_user_ssl_cert: {{rabbitmq_user_ssl_cert_path}} rabbitmq_user_ssl_key:{{rabbitmq_user_ssl_key_path}} rabbitmq_user_ssl_ca_cert: {{rabbitmq_user_ssl_ca_cert_path}}"
