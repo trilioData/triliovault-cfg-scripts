@@ -33,6 +33,28 @@
     when: PYTHON_VERSION=="python3"
   when: ansible_distribution == ubuntu
 
+- block:
+  - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+    file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+
+  - name: check {{VAULT_S3_SSL_CERT}} is present or not
+    stat: path="{{VAULT_S3_SSL_CERT}}"
+    register: tvault_ssl_cert_output
+    delegate_to: localhost
+
+  - name: Deploy user provided Tvault s3 {{VAULT_S3_SSL_CERT}}
+    copy:
+      src: "{{VAULT_S3_SSL_CERT}}"
+      dest: "{{VAULT_S3_SSL_CERT_PATH}}"
+    when:
+      - tvault_ssl_cert_output.stat.exists == true
+
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+
+
 - name: populate object store parameters in conf file
   template:
     src: tvault-object-store.conf.j2
