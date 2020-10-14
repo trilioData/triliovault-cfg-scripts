@@ -12,3 +12,27 @@
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
+  tags: triliovault
+
+- name: Pulling triliovault horizon image
+  become: true
+  kolla_docker:
+    action: "pull_image"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ triliovault_horizon_image_full  }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+   - inventory_hostname in groups['horizon']
+  tags: triliovault
+
+- name: Log into triliovault docker registry
+  docker_login:
+    registry: "{{ triliovault_docker_registry }}"
+    username: "{{ triliovault_docker_username }}"
+    password: "{{ triliovault_docker_password }}"
+    reauthorize: yes
+  when:
+   - inventory_hostname in groups['horizon']
+  tags: triliovault
