@@ -140,6 +140,11 @@ outputs:
         trilio::dmapi::region_name: {get_param: KeystoneRegion}
         trilio::dmapi::user_domain_name: 'Default'
         trilio::dmapi::project_domain_name: 'Default'
+        tripleo::trilio_datamover_api::firewall_rules:
+              '240 trilio-datamover-api':
+                dport:
+                  - 8784
+                  - 13784
         trilio::dmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
