@@ -31,8 +31,11 @@
           rm -rf tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python2"
 
-- name: install python3-tvault-horizon-plugin and python3-workloadmgrclient deb packages when using python3
+- name: install python3-tvault-horizon-plugin | python3-workloadmgrclient | python3-contegoclient deb packages when using python3
   shell: |
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          apt-get install ./python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+          rm -rf python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           apt-get install ./python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
           rm -rf python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
