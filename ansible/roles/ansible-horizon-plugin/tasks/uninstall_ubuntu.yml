@@ -24,6 +24,7 @@
     horizon_packages:
     - python3-tvault-horizon-plugin
     - python3-workloadmgrclient
+    - python3-contegoclient
   notify:
       - restart webserver
   when: PYTHON_VERSION=="python3"
