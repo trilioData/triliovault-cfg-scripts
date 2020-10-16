@@ -11,6 +11,7 @@ LABEL name="centos-binary-trilio-horizon-plugin" \
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
+RUN dnf config-manager --set-enabled epel 
 RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
 
