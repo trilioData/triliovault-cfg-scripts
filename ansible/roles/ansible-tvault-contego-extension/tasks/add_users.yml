@@ -1,5 +1,5 @@
 - name: Adding nova user to system groups if Centos/RedHat
-  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
+  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present append=yes
   with_items:
    - disk
    - kvm
@@ -11,7 +11,7 @@
         (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
 - name: Adding nova user to system groups if Ubuntu
-  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present
+  user: name={{TVAULT_CONTEGO_EXT_USER}} groups="{{item}}" state=present append=yes
   with_items:
    - kvm
    - disk
