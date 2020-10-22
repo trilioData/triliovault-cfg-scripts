@@ -11,7 +11,7 @@ LABEL name="trilio/openstack-horizon-triliodata-plugin" \
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install python3-tvault-horizon-plugin python3-workloadmgrclient-el8 -y
+RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Move necessary files
