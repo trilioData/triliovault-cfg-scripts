@@ -56,9 +56,12 @@ DMAPI_ENABLED_SSL_APIS: ""
 DMAPI_SSL_CERT: ""
 DMAPI_SSL_KEY: ""
 
+#### Any service is using Ceph Backend then set ceph_backend_enabled value to True
+#True/False
+ceph_backend_enabled: False
+
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
-
 
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables

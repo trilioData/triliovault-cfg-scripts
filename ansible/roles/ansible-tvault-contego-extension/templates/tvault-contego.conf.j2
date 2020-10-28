@@ -63,7 +63,7 @@ ssl_ca_file = {{RABBITMQ_SSL_CA_CERT_PATH}}
 {%endif%}
 {%endif%}
 
-{% if nova_libvirt_images_rbd_pool is defined %}
+{% if ceph_backend_enabled | bool == True %}
 [libvirt]
 images_rbd_ceph_conf = /etc/ceph/ceph.conf
 rbd_user = {{cinder_ceph_client}}
