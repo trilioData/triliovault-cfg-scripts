@@ -5,17 +5,13 @@
 - name: Ensure {{nfsmount}} directory exists
   action: file path={{nfsmount}} state=directory
 
-- shell: if [ -z "$NFS_OPTS" ]; then  echo nolock,soft,timeo=180,intr,lookupcache=none; else echo $NFS_OPTS; fi
-  register: _nfsopts
-  connection: local
-
-- set_fact:
-      NFS_OPTIONS: "{{_nfsopts.stdout}}"
-  when: _nfsopts.stdout != ""
-
 - set_fact:
       NFS_OPTIONS: "{{NFS_OPTS}}"
-  when: _nfsopts.stdout == ""
+  when: NFS_OPTS != ""
+
+- set_fact:
+      NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none"
+  when: NFS_OPTS == ""
 
 - debug: msg="value of NFS_SHARES is:{{NFS_OPTIONS}}" verbosity={{ verbosity_level }}
 
