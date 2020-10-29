@@ -12,10 +12,31 @@
       - python-s3fuse-plugin-cent7
     state: latest
   when: >
-      ((ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat" and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat" and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat" and PYTHON_VERSION=="python2"))
+      ((ansible_distribution_major_version=="7" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="7" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2"))
+
+- name: Install packages on compute node | centos-release-openstack-{{OPENSTACK_DIST}}
+  yum:
+    update_cache: yes
+    name:
+      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+    state: latest
+  when: >
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
+
+
+- name: Install tvault-object-store layer on centos/RedHat-8 if Python3
+  yum:
+    update_cache: yes
+    name:
+      - python3-s3fuse-plugin
+    state: latest
+  when: >
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
 
 - block:
   - name: Install tvault-object-store layer on Ubuntu if Python2
