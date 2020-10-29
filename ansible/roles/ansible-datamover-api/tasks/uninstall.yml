@@ -3,6 +3,14 @@
   service: name=tvault-datamover-api  state=stopped enabled=no
   ignore_errors: yes
 
+- name: Remove trilio yum repo
+  file: path="{{trilio_yum_repo_file_path}}" state=absent
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
 - name: uninstall dmapi deb package when using python2
   apt: name=dmapi state=absent purge=yes allow_unauthenticated=yes
   when: ansible_distribution==ubuntu and PYTHON_VERSION=="python2"
@@ -12,7 +20,7 @@
   when: ansible_distribution==ubuntu and PYTHON_VERSION=="python3"
         
 - name: uninstall dmapi rpm package when using python2
-  yum: name=dmapi state=absent update_cache=yes
+  yum: name=dmapi state=absent
   when: >
         (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python2") or
         (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python2") or
@@ -20,7 +28,7 @@
         (ansible_distribution_major_version=="8" and ansible_distribution== redhat and PYTHON_VERSION=="python2")
 
 - name: uninstall dmapi rpm package when using python3
-  yum: name=python3-dmapi state=absent update_cache=yes
+  yum: name=python3-dmapi state=absent
   when: >
         (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python3") or
         (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python3") or
