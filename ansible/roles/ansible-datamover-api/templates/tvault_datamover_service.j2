@@ -1,13 +1,14 @@
 [Unit]
-Description=Tvault contego
-After=openstack-nova-compute.service
+Description=TrilioData DataMover API service
+After=tvault-datamover-api.service
 [Service]
-User={{TVAULT_CONTEGO_EXT_USER}}
-Group={{TVAULT_CONTEGO_EXT_USER}}
+User={{DMAPI_USR}}
+Group={{DMAPI_GRP}}
 Type=simple
 ExecStart={{PYTHON_EXEC}} {{dmapi_bin.stdout}}
-TimeoutStopSec=20
 KillMode=process
 Restart=on-failure
+WorkingDirectory=/var/run
+
 [Install]
 WantedBy=multi-user.target

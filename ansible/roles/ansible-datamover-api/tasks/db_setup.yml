@@ -1,0 +1,19 @@
+---
+- name: Setup Database Service (MariaDB)
+  delegate_to: "{{_oslodb_setup_host }}"
+  block:
+    - name: Create database for service
+      mysql_db:
+        name: "{{ item.name }}"
+      loop: "{{ _oslodb_databases }}"
+      no_log: true
+
+    - name: Grant access to the database for the service
+      mysql_user:
+        name: "{{ item.1.username }}"
+        password: "{{ item.1.password }}"
+        host: "{{ item.1.host | default('%') }}"
+        priv: "{{ item.0.name }}.*:{{ item.1.priv | default('ALL') }}"
+        append_privs: yes
+      loop: "{{ _oslodb_databases | subelements('users') }}"
+      no_log: true
