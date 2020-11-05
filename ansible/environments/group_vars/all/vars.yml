@@ -1,13 +1,19 @@
 ##common editable parameters required for installing horizon,contego,tvault-config
 #ip address and port no for tvault applicance
+
+RABBITMQ_PASSWORD: rabbit_pass
+DMAPI_SERVICE_PASSWORD: dmapi_service_pass
+DMAPI_MYSQL_PASSWORD: dmpai_mysql_pass
+
 IP_ADDRESS: sample_tvault_ip_address
 PORT_NO: 8085
-#Need to update python version of openstack setup Example PYTHON_VERSION: python2 or PYTHON_VERSION: python3
-PYTHON_VERSION: python2
+PYPI_PORT: 8081
+
+#Time Zone
+TIME_ZONE: "Etc/UTC"
+
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
-TVAULT_PACKAGE_VERSION: 3.3.36
-DEBIAN_PACKAGE_REPO_URL: "deb [trusted=yes] https://apt.fury.io/triliodata-3-3/ /"
-RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-3.3/yum/"
+TVAULT_PACKAGE_VERSION: 4.1.4
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
@@ -18,30 +24,8 @@ RPM_PACKAGE_REPO_URL: "http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovau
 UPDATE_NOVA_SUDOERS_FILE: notproceed
 
 #Set verbisity level and run playbooks with -vv option to display custom debug messages
-verbosity_level: 2
+verbosity_level: 3
 
-#Details for Nova Compute filter
-#specify NOVA_COMPUTE_FILTERS_FILE
-#For Debian: /etc/nova/rootwrap.d/compute.filters
-#For RHEL : /usr/share/nova/rootwrap/compute.filters 
-NOVA_COMPUTE_FILTERS_FILE: /usr/share/nova/rootwrap/compute.filters
-
-#Name of web server service that openstack horizon node uses 
-#For Debian: apache2
-#For RHEL: httpd
-WebServer: sample_webservice
-
-#Specify opestack dashboard path based on type of operating system of controller node
-#For Debian/RHEL: /usr/share/openstack-dashboard
-#For SUSE: /srv/www/openstack-dashboard 
-HORIZON_PATH: /usr/share/openstack-dashboard
-
-#specify openstack's nova api service name
-#For Debian: nova-api
-#For RHEL : openstack-nova-api 
-nova_api_service: sample_name_of_nova_api_service
-vault_keystone_swift_username: sample_swift_username
-vault_keystone_swift_password: sample_swift_password
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
 NFS: False
@@ -49,16 +33,6 @@ NFS_SHARES:
           - sample_nfs_server_ip1:sample_share_path
           - sample_nfs_server_ip2:sample_share_path
 NFS_OPTS: ""
-
-#### Details for Swift as snapshot storage
-Swift: False
-VAULT_SWIFT_AUTH_URL: sample_vault_swift_url
-VAULT_SWIFT_TENANT:   sample_vault_swift_tenant
-VAULT_SWIFT_USERNAME: sample_vault_swift_username
-VAULT_SWIFT_PASSWORD: sample_vault_swift_password
-VAULT_SWIFT_DOMAIN_ID:  sample_swift_domain_id
-### TEMPAUTH / KEYSTONEV2/ KEYSTONEV3(Provide one of them value in VAULT_SWIFT_AUTH_VERSION1 variable) 
-VAULT_SWIFT_AUTH_VERSION1: sample_auth_version
 
 #### Details for S3 as snapshot storage
 S3: False
@@ -74,10 +48,10 @@ s3_type: sample_s3_type
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: sample_s3_endpoint_url
 VAULT_S3_SECURE: False
+VAULT_S3_SSL_CERT: sample_s3_ssl_cert
 
 
 ###details of datamover API
-datamover_url: sample_datamover_url
 dmapi_enabled_ssl_apis: ""
 ssl_cert_file: ""
 ssl_key_file:  ""
@@ -85,8 +59,11 @@ ssl_key_file:  ""
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
 #******************************************************************************************************************************************************************
+DMAPI_USR: dmapi
+DMAPI_GRP: dmapi
 #tvault contego file path
 TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
+TVAULT_OBJECT_STORE_CONF: /etc/tvault-object-store/tvault-object-store.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
 #Nova distribution specific configuration file path
 NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
@@ -104,7 +81,6 @@ TVAULT_CONTEGO_EXT_BACKEND_TYPE: ""
 TVAULT_CONTEGO_EXT_SWIFT: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/lib/python2.7/site-packages/contego/nova/extension/driver/vaultfuse.py"
 TVAULT_CONTEGO_EXT_S3: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/lib/python2.7/site-packages/contego/nova/extension/driver/s3vaultfuse.py"
 privsep_helper_file: /home/tvault/.virtenv/bin/privsep-helper
-python_path: /usr/bin/python
 pip_version: 7.1.2
 virsh_version: "1.2.8"
 contego_service_file_path: /etc/systemd/system/tvault-contego.service
@@ -112,41 +88,15 @@ contego_service_ulimits_count: 65536
 contego_service_debian_path: /etc/init/tvault-contego.conf
 objstore_service_file_path:  /etc/systemd/system/tvault-object-store.service
 objstore_service_debian_path: /etc/init/tvault-object-store.conf
-mitaka: "mitaka"
-newton: "newton"
-premitaka: "premitaka"
-queens: "queens"
-gtliberty: "gtliberty"
-status_200: "200"
-status_201: "201"
-xenial: "xenial"
-willy: "willy"
-bionic: "bionic"
-release_13: "13"
-release_2000: "2000"
-release_2016: "2016"
 ubuntu: "Ubuntu"
 centos: "CentOS"
 redhat: "RedHat"
-suse: "Suse"
-SLES: "SLES"
 Amazon: "Amazon"
 Other_S3_Compatible: "Other_S3_Compatible"
-Ceph_S3: "Ceph_S3"
-Minio_S3: "Minio_S3"
-TEMPAUTH: "TEMPAUTH" 
-KEYSTONEV2: "KEYSTONEV2" 
-KEYSTONEV3: "KEYSTONEV3"
-KEYSTONE: "KEYSTONE"       
-virtenv_newton_script_path: /tmp/set_virtenv_newton.sh 
-virtenv_mitaka_script_path: /tmp/set_virtenv_mitaka.sh
-virtenv_premitaka_script_path: /tmp/set_virtenv_premitaka.sh
 tvault_datamover_api: tvault-datamover-api
-release_16: "16"
 datamover_service_file_path: /etc/systemd/system/tvault-datamover-api.service
-tvault_datmover_python: /usr/bin/python
 datamover_service_debian_path: /etc/init/tvault-datamover.conf
 datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
-trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
-release_17: "17"
+
+
