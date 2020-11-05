@@ -1,4 +1,10 @@
 ---
+
+- name: create yum repo file if ansible_distribution is Centos/RHEL
+  template:
+     src: trilio.repo
+     dest: "{{trilio_yum_repo_file_path}}"
+
 - name: Install packages on datamover api container | centos-release-openstack-{{OPENSTACK_DIST}}
   yum:
     update_cache: yes
@@ -18,11 +24,6 @@
   template:
      src: datamover_url
      dest: /tmp/datamover_url
-   
-- name: create yum repo file in if  ansible_distribution is Centos/RHEL
-  template:
-     src: trilio.repo
-     dest: "{{trilio_yum_repo_file_path}}"
 
 - name: install tvault-datamover-api rpm package when using python2
   yum:
