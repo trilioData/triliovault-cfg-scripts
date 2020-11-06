@@ -70,23 +70,7 @@
     - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
     - Restart triliovault-datamover container  
-
-
-- name: Copying over nova.conf for triliovault datamover api service
-  become: true
-  vars:
-    service_name: "triliovault-datamover-api"
-  copy:
-    src: "{{ node_config_directory }}/nova-api/nova.conf"
-    dest: "{{ node_config_directory }}/triliovault-datamover-api/nova.conf"
-    mode: "0660"
-    remote_src: yes
-  when:
-    - inventory_hostname in groups[triliovault_datamover_api_group]
-    - enable_triliovault | bool
-  notify:
-    - "Restart triliovault-datamover-api container"      
-
+    
 - name: Copying over nova.conf for triliovault datamover service
   become: true
   vars:

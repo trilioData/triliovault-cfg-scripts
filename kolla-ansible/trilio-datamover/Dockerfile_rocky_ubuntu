@@ -13,7 +13,6 @@ LABEL name="kolla/trilio-datamover" \
 USER root
 
 ##Install datamover packages
-RUN rm -f /etc/nova/rootwrap.conf
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 RUN apt-get install -y tvault-contego --allow-unauthenticated

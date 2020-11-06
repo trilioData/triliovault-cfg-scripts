@@ -1,0 +1,60 @@
+resource_registry:
+<<<<<<< HEAD:redhat-director-scripts/trilio_env.yaml
+  OS::TripleO::Services::TrilioDatamover: docker/services/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: docker/services/trilio-datamover-api.yaml
+=======
+  OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
+  # NOTE: If there are addition customizations to the endpoint map (e.g. for
+  # other integratiosn), this will need to be regenerated.
+  OS::TripleO::EndpointMap: endpoint_map.yaml
+
+>>>>>>> upstream/4.1OSI:redhat-director-scripts/rhosp13/environments/trilio_env.yaml
+
+
+parameter_defaults:
+
+   ## Define network map for trilio datamover api service
+   ServiceNetMap:
+       TrilioDatamoverApiNetwork: internal_api
+
+   ## Container locations
+   DockerTrilioDatamoverImage: 192.168.122.10:8787/trilio/trilio-datamover:3.1.58-queens
+
+   DockerTrilioDmApiImage: 192.168.122.10:8787/trilio/trilio-datamover-api:3.1.58-queens
+
+   ## Backup target type nfs/s3, used to store snapshots taken by triliovault
+   BackupTargetType: 'nfs'
+
+   ## For backup target 'nfs'
+   NfsShares: '192.168.122.101:/opt/tvault'
+   NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
+
+   ## For backup target 's3'
+   ## S3 type: amazon_s3/ceph_s3
+   S3Type: 'amazon_s3'
+
+   ## S3 access key
+   S3AccessKey: ''
+  
+   ## S3 secret key
+   S3SecretKey: ''
+
+   ## S3 region, if your s3 does not have any region, just keep the parameter as it is
+   S3RegionName: ''
+
+   ## S3 bucket name
+   S3Bucket: ''
+
+   ## S3 endpoint url, not required for Amazon S3, keep it as it is
+   S3EndpointUrl: ''
+
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+   S3SslEnabled: False
+   
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
+   ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
+   S3SslCert: ''
+
+   ## Don't edit following parameter
+   EnablePackageInstall: True
