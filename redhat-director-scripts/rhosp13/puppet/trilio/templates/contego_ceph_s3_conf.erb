@@ -16,21 +16,7 @@ vault_s3_bucket = <%= @s3_bucket %>
 vault_s3_endpoint_url = <%= @s3_endpoint_url %>
 vault_s3_ssl = <%= @s3_ssl_enabled %>
 vault_s3_ssl_cert = <%= @s3_ssl_cert %>
-dmapi_transport_url = <%= @default_transport_url %>
 
-<% if @cinder_backend_ceph == true -%>
-
-[libvirt]
-images_rbd_ceph_conf = /etc/ceph/ceph.conf
-rbd_user = <%= @ceph_cinder_user %>
-
-[ceph]
-keyring_ext = .<%= @ceph_cinder_user %>.keyring
-
-<% end -%>
-
-[dmapi_database]
-connection = <%= @database_connection %>
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper

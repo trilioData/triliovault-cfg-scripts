@@ -80,6 +80,7 @@ parameters:
   S3SslCert:
     description: S3 SSL certificate file path
     type: string
+<<<<<<< HEAD:redhat-director-scripts/rhosp13/services/trilio-datamover.yaml
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
@@ -110,6 +111,8 @@ parameters:
     default: 5672
     description: Set rabbit subscriber port, change this if using SSL
     type: number
+=======
+>>>>>>> trilio-master:redhat-director-scripts/docker/services/trilio-datamover.yaml
 
 outputs:
   role_data:
@@ -132,6 +135,7 @@ outputs:
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
+<<<<<<< HEAD:redhat-director-scripts/rhosp13/services/trilio-datamover.yaml
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::contego::database_connection:
@@ -141,6 +145,8 @@ outputs:
             password: {get_param: TrilioDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi        
+=======
+>>>>>>> trilio-master:redhat-director-scripts/docker/services/trilio-datamover.yaml
       puppet_config:
         config_volume: triliodm
         puppet_tags: dmconfig

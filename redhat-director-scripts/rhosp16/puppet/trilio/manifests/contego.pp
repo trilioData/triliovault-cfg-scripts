@@ -54,6 +54,10 @@ class trilio::contego (
 
     }
 
+    #class {'trilio::contego::install': }
+    #class {'trilio::contego::postinstall': }
+    #class {'trilio::contego::cgroup': }
+    #class {'trilio::contego::service': }
     class {'trilio::contego::config': }
 
 }
