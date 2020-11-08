@@ -1,8 +1,20 @@
 ---
+
+- name: Stop tvault-objetc-store service if running
+  service: name=tvault-object-store state=stopped
+  ignore_errors: yes
+
+- name: Stop tvault-contego service if running
+  service: name=tvault-contego state=stopped
+  ignore_errors: yes
+
 - name: Setup trilio yum repo for queens
   template:
      src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
+
+- name: Reload Daemon
+  shell: systemctl daemon-reload
 
 - name: install contego extension packages when using python2
   yum:

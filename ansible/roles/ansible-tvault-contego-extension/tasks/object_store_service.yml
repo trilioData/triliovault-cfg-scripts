@@ -3,63 +3,87 @@
        TVAULT_CONTEGO_EXT_OBJECT_STORE: "{{TVAULT_CONTEGO_EXT_S3}}"
   when: object_store == True and S3 == True
 
-- name: set external object store to tvault_contego_swift if swift is true
-  set_fact:
-       TVAULT_CONTEGO_EXT_OBJECT_STORE: "{{TVAULT_CONTEGO_EXT_SWIFT}}"
-  when: object_store == True and Swift == True
-
 - debug: msg="external s3:{{TVAULT_CONTEGO_EXT_S3}}" verbosity={{verbosity_level}}
-- debug: msg="object store:{{TVAULT_CONTEGO_EXT_SWIFT}}" verbosity={{verbosity_level}}
+
+- name: Install tvault-object-store layer on centos/RedHat if Python2
+  yum:
+    update_cache: yes
+    name:
+      - python-s3fuse-plugin-cent7
+    state: latest
+  when: >
+      ((ansible_distribution_major_version=="7" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="7" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
+      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2"))
+
+- name: Install packages on compute node | centos-release-openstack-{{OPENSTACK_DIST}}
+  yum:
+    update_cache: yes
+    name:
+      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+    state: latest
+  when: >
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
+
+
+- name: Install tvault-object-store layer on centos/RedHat-8 if Python3
+  yum:
+    update_cache: yes
+    name:
+      - python3-s3fuse-plugin
+    state: latest
+  when: >
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
+    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
 
 - block:
-    - name: create object-store-service in systemd if ansible_distribution is Centos
-      template:
-         src: objstore_service.j2
-         dest: "{{objstore_service_file_path}}"
-      when: >
-           (ansible_distribution_major_version=="7" and ansible_distribution == centos) or 
-           (ansible_distribution_major_version=="7" and ansible_distribution == "RedHat") or (ansible_distribution == SLES)
+  - name: Install tvault-object-store layer on Ubuntu if Python2
+    shell: |
+      curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+      dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
+      rm -rf s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
+    when: PYTHON_VERSION=="python2"
 
-    - name: create object-store-service in-systemd if ansible_distribution is Ubuntu 16
-      template:
-         src: objstore_service.j2
-         dest: "{{objstore_service_file_path}}"
-      when: ansible_distribution == ubuntu and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)
+  - name: Install tvault-object-store layer on Ubuntu if python3
+    shell: |
+        curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+        dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
+        rm -rf python3-s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
+    when: PYTHON_VERSION=="python3"
+  when: ansible_distribution == ubuntu
 
-    - name: create object-store-service in-systemd if ansible_distribution is ubuntu 14
-      template:
-         src: objstore_service_debian.j2
-         dest: "{{objstore_service_debian_path}}"
-      when: ansible_distribution == ubuntu and (ansible_lsb.codename != xenial and ansible_lsb.codename != willy and ansible_lsb.codename != bionic)
-  when: (object_store == True)
+- block:
+  - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+    file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
 
-- name: enable and daemon reload tvault contego service
-  block:
-    - shell: systemctl daemon-reload
-    - name: enable tvault-contego service and reload it
-      service: name=tvault-contego  state=restarted enabled=yes
-  when: >
-       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution== suse) or (ansible_distribution== SLES) or
-       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))
+  - name: check {{VAULT_S3_SSL_CERT}} is present or not
+    stat: path="{{VAULT_S3_SSL_CERT}}"
+    register: tvault_ssl_cert_output
+    delegate_to: localhost
 
-- name: restart tvault-contego
-  service: name=tvault-contego state=restarted
-  when: >
-       (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution== suse) or (ansible_distribution== SLES) or
-       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic))
+  - name: Deploy user provided Tvault s3 {{VAULT_S3_SSL_CERT}}
+    copy:
+      src: "{{VAULT_S3_SSL_CERT}}"
+      dest: "{{VAULT_S3_SSL_CERT_PATH}}"
+    when:
+      - tvault_ssl_cert_output.stat.exists == true
 
-- name: copy object store service file , write content , enable and daemon reload service if object restore is True
-  block:
-    - shell: systemctl daemon-reload
-    - name: enable tvault-object-store service and reload it
-      service: name=tvault-object-store  state=started enabled=yes
-  when: >
-          (object_store == True) and
-          ((ansible_distribution_major_version=="7" and ansible_distribution== centos) or
-          (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-          (ansible_distribution== suse) or
-          (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)))
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+
+
+- name: populate object store parameters in conf file
+  template:
+    src: tvault-object-store.conf.j2
+    dest: "{{TVAULT_OBJECT_STORE_CONF}}"
+
+- block:
+  - shell: systemctl daemon-reload
+  - name: enable tvault-object-store service and reload it
+    service: name=tvault-object-store.service  state=started enabled=yes
+  ignore_errors: yes
+

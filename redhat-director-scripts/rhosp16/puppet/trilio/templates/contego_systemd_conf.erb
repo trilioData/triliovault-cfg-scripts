@@ -1,0 +1,16 @@
+[Unit]
+Description=Tvault contego
+After=openstack-nova-compute.service
+
+[Service]
+User=nova
+Group=nova
+LimitNOFILE=65536
+MemoryMax=10G
+Type=simple
+ExecStart=<%= @contego_python+" "+@contego_bin+" "+@config_files %>
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
