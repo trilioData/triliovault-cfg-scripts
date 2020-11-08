@@ -1,8 +1,57 @@
 [DEFAULT]
-dmapi_link_prefix = {{datamover_url}}
-dmapi_enabled_ssl_apis = {{dmapi_enabled_ssl_apis}}
+dmapi_link_prefix = {{dmapi_service_publicurl}}
+dmapi_enabled_ssl_apis = {{DMAPI_ENABLED_SSL_APIS}}
+my_ip = {{container_address}}
+transport_url = {{ dmapi_oslomsg_rpc_transport }}://{% for host in dmapi_oslomsg_rpc_servers.split(',') %}{{ dmapi_oslomsg_rpc_userid }}:{{ dmapi_oslomsg_rpc_password }}@{{ host }}:{{ dmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ dmapi_oslomsg_rpc_vhost }}{% if dmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
+[database]
+connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_database }}?charset=utf8{% if dmapi_galera_use_ssl | bool %}&ssl_ca={{ dmapi_galera_ssl_ca_cert }}{% endif %}
+
+[keystone_authtoken]
+signing_dir =
+cafile =
+project_name = {{dmapi_service_project_name}}
+user_domain_id = {{dmapi_service_user_domain_id}}
+project_domain_id = {{dmapi_service_project_domain_id}}
+project_domain_name = Default
+user_domain_name = Default
+password = {{dmapi_service_password}}
+username = {{dmapi_service_user_name}}
+auth_url = {{keystone_service_adminuri}}
+auth_uri = {{keystone_service_adminuri}}
+auth_type = {{dmapi_keystone_auth_plugin}}
+memcached_servers =
+
+[oslo_messaging_notifications]
+driver =
+transport_url = {{ dmapi_oslomsg_notify_transport }}://{% for host in dmapi_oslomsg_notify_servers.split(',') %}{{ dmapi_oslomsg_notify_userid }}:{{ dmapi_oslomsg_notify_password }}@{{ host }}:{{ dmapi_oslomsg_notify_port }}{% if not loop.last %},{% else %}/{{ dmapi_oslomsg_notify_vhost }}{% if dmapi_oslomsg_notify_use_ssl | bool %}?ssl=1{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
+
+[oslo_middleware]
+enable_proxy_headers_parsing = false
+
+[oslo_messaging_rabbit]
+ssl = {{dmapi_oslomsg_rpc_use_ssl}}
+
+{%if dmapi_oslomsg_rpc_use_ssl == true%}
+{%if rabbitmq_user_ssl_key is defined %}
+ssl_key_file = {{RABBITMQ_SSL_KEY_PATH}}
+{%endif%}
+{%if rabbitmq_user_ssl_cert is defined %}
+ssl_cert_file = {{RABBITMQ_SSL_CERT_PATH}}
+{%endif%}
+{%if rabbitmq_user_ssl_ca_cert is defined %}
+ssl_ca_file = {{RABBITMQ_SSL_CA_CERT_PATH}}
+{%endif%}
+{%endif%}
 
 [wsgi]
-ssl_cert_file = {{ssl_cert_file}}
-ssl_key_file = {{ssl_key_file}}
+{% if DMAPI_SSL_CERT != "" and DMAPI_SSL_KEY != "" %}
+ssl_cert_file = {{DMAPI_SSL_CERT_PATH}}
+ssl_key_file = {{DMAPI_SSL_KEY_PATH}}
+{%else%}
+ssl_cert_file =
+ssl_key_file =
+{%endif%}
+
 

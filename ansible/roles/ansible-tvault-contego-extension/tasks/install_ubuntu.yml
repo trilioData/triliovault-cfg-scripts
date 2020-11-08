@@ -1,30 +1,38 @@
 ---
-- name: create apt repo file
-  template:
-     src: trilio.list
-     dest: "{{trilio_apt_repo_file_path}}"
+- name: Stop tvault-objetc-store service if running
+  service: name=tvault-object-store state=stopped
+  ignore_errors: yes
 
+- name: Stop tvault-contego service if running
+  service: name=tvault-contego state=stopped
+  ignore_errors: yes
 
-- name: install contego virtenv deb package 
+- name: Reload Daemon
+  shell: systemctl daemon-reload
+
+- name: Download contego virtenv deb package
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb -y 
-          rm -rf ./tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb           
-  register: tvault_conf
+          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb -y
+          rm -rf ./tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
 
-- debug : msg="{{tvault_conf.stdout}}"
-- debug : msg="curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb"
-  
+- debug : msg="curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb" verbosity="{{ verbosity_level }}"
+
 - name: install tvault-contego deb package when using python2
-  shell: | 
+  shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
-          rm -rf tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb   
+          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
+          rm -rf tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python2"
 
 - name: install python3-tvault-contego deb package when using python3
   shell: |
-          curl -Og6 http://{{ IP_ADDRESS }} :{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y $EXTRA_APT_VAR
+          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
           rm -rf python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
   when: PYTHON_VERSION=="python3"
+
+
+
+
+

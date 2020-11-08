@@ -1,0 +1,14 @@
+- name: Get nova venv path
+  shell: echo /openstack/venvs/nova*
+  register: venv_path
+
+- set_fact: virtual_env_path={{venv_path.stdout}}
+
+- set_fact:
+    virtual_env: ". {{virtual_env_path}}/bin/activate"
+
+- set_fact: NOVA_COMPUTE_FILTERS_FILE={{virtual_env_path}}/etc/nova/rootwrap.d/compute.filters
+
+- debug:
+    msg: "NOVA_COMPUTE_FILTERS_FILE: {{NOVA_COMPUTE_FILTERS_FILE}}"
+    verbosity: "{{ verbosity_level }}"

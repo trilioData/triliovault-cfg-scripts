@@ -1,8 +1,4 @@
 ---
-- name: create apt repo file
-  template:
-     src: trilio.list
-     dest: "{{trilio_apt_repo_file_path}}"
 
 - name: uninstall tvault-horizon-plugin deb packages when using python2
   apt:
@@ -28,6 +24,7 @@
     horizon_packages:
     - python3-tvault-horizon-plugin
     - python3-workloadmgrclient
+    - python3-contegoclient
   notify:
       - restart webserver
   when: PYTHON_VERSION=="python3"
