@@ -1,0 +1,6 @@
+- name: Make sure tvault-object-store service in running state
+  service: name=tvault-object-store  state=restarted enabled=yes
+  when: object_store == True
+
+- name: Make sure tvault-contego service in running state
+  service: name=tvault-contego state=restarted enabled=yes
