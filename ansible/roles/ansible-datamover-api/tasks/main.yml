@@ -1,29 +1,71 @@
 ---
+
 - name: get python details
   import_tasks: get_python.yml
   tags:
-       - datamover-api
-       - all-install
-       
+    - tvault-datamover-api
+    - tvault-all-install
+    - tvault-datamover-api-uninstall
+    - tvault-all-uninstall
+
+- name: generate password
+  import_tasks: generate_password.yml
+  tags:
+      - tvault-datamover-api
+      - tvault-all-install
+
+- name: Deploy Rabbitmq ssl certs and Key file
+  import_tasks: get_rabbitmq_ssl_cert.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+  when: dmapi_oslomsg_rpc_use_ssl == true
+
+- name: Deploy DMAPI ssl certs and Key file
+  import_tasks: get_dmapi_ssl_cert.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+  when: (DMAPI_SSL_CERT != "" and DMAPI_SSL_KEY != "")
+
+- name: uninstall tvault_datamover_api
+  import_tasks: uninstall.yml
+  tags:
+   - tvault-datamover-api-uninstall
+   - tvault-all-uninstall
+
+- name: Database and RabbitMQ
+  import_tasks: create_dmapi_db.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+
+- name: Create Opensatck Endpoints
+  import_tasks: create_endpoint.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+
 - name:  install tvault_datamover_api on rhel/centos
   import_tasks: install_rhel.yml
   tags:
-       - datamover-api
-       - all-install
+       - tvault-datamover-api
+       - tvault-all-install
   when: >
        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
-       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat")
-
+       (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
 - name:  install tvault_datamover_api on ubuntu
   import_tasks: install_ubuntu.yml
   tags:
-       - datamover-api
-       - all-install
+       - tvault-datamover-api
+       - tvault-all-install
   when: ansible_distribution=="Ubuntu"
 
-- name: uninstall tvault_datamover_api
-  import_tasks: uninstall.yml
-  tags: 
-       - datamover-api-uninstall
-       - all-uninstall
+- name: Synchronize the Dmapi schema and generate connection string
+  import_tasks: synchronize_dmapi_db.yml
+
+
+

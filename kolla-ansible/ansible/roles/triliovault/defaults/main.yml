@@ -105,6 +105,35 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
+triliovault_keystone_user: "dmapi"	
+
+
+
+triliovault_ks_users:
+  - project: "service"
+    user: "{{ triliovault_keystone_user }}"
+    password: "{{ triliovault_keystone_password }}"
+    role: "admin"
+
+
+####################
+# Notification
+####################
+triliovault_notification_topics:
+  - name: notifications
+    enabled: "{{ enable_ceilometer | bool or enable_searchlight | bool }}"
+  - name: vitrage_notifications
+    enabled: "{{ enable_vitrage | bool }}"
+
+triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
+
+
+
+###### Optional configurable
+## TrilioVault database user
+triliovault_database_user: "dmapi"
+triliovault_database_name: "dmapi"
+triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 ####################
 # TLS
@@ -112,11 +141,9 @@ triliovault_ks_services:
 triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
 
 
-## TrilioVault Inventory.  Refer kolla ansible inventory.
-## triliovault_datamover_api_group should be assigned with group name of nova-api service
-## triliovault_datamover_group should be assigned with group name of nova-compute service
-triliovault_datamover_api_group: 'nova-api'
-triliovault_datamover_group: 'compute'
+## TrilioVault Inventory.  Refer triliovault_inventory file. 
+triliovault_datamover_api_group: 'triliovault-datamover-api'
+triliovault_datamover_group: 'triliovault-datamover'
 
 
 ## Log directories for triliovault services

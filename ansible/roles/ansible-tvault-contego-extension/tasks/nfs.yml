@@ -5,24 +5,33 @@
 - name: Ensure {{nfsmount}} directory exists
   action: file path={{nfsmount}} state=directory
 
-- shell: if [ -z "$NFS_OPTS" ]; then  echo nolock,soft,timeo=180,intr,lookupcache=none; else echo $NFS_OPTS; fi
-  register: _nfsopts
-  sudo: false
-  connection: local
-
-- set_fact:
-      NFS_OPTIONS: "{{_nfsopts.stdout}}"
-  when: _nfsopts.stdout != ""
-
 - set_fact:
       NFS_OPTIONS: "{{NFS_OPTS}}"
-  when: _nfsopts.stdout == ""
+  when: NFS_OPTS != ""
 
-- debug: msg="value of NFS_SHARES is:{{NFS_OPTIONS}}"
+- set_fact:
+      NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none"
+  when: NFS_OPTS == ""
+
+- debug: msg="value of NFS_SHARES is:{{NFS_OPTIONS}}" verbosity={{ verbosity_level }}
 
 - debug: msg="value of NFS_SHARES is:{{NFS_SHARES}}" verbosity={{verbosity_level}}
 
-- block:     
-    - include_tasks: validate_nfs.yml item1="{{item}}"
+- name: Ensure NFS common is installed when Ubuntu
+  apt: name=nfs-common state=present update_cache=yes
+  when: ansible_distribution=="Ubuntu"
+
+- name: Ensure NFS Utils is installed when Centos/RedHat
+  yum: name=nfs-utils state=present update_cache=yes
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
+- block:
+    - include_tasks: validate_nfs.yml
+      vars:
+        item1: "{{item}}"
       with_items: "{{NFS_SHARES}}"
   when: NFS == True

@@ -1,36 +1,44 @@
 ---
-- name: disable and stopp tvault-datamover-api service
+- name: disable and stop tvault-datamover-api service
   service: name=tvault-datamover-api  state=stopped enabled=no
   ignore_errors: yes
 
+- name: Remove trilio yum repo
+  file: path="{{trilio_yum_repo_file_path}}" state=absent
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
 - name: uninstall dmapi deb package when using python2
-  apt: name=dmapi state=absent purge=yes
+  apt: name=dmapi state=absent purge=yes allow_unauthenticated=yes
   when: ansible_distribution==ubuntu and PYTHON_VERSION=="python2"
   
 - name: uninstall dmapi deb package when using python3
-  apt: name=python3-dmapi state=absent purge=yes
+  apt: name=python3-dmapi state=absent purge=yes allow_unauthenticated=yes
   when: ansible_distribution==ubuntu and PYTHON_VERSION=="python3"
         
 - name: uninstall dmapi rpm package when using python2
   yum: name=dmapi state=absent
   when: >
-        (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python2" ) or
-        (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python2")
-        
+        (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python2") or
+        (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python2") or
+        (ansible_distribution_major_version=="8" and ansible_distribution== centos and PYTHON_VERSION=="python2") or
+        (ansible_distribution_major_version=="8" and ansible_distribution== redhat and PYTHON_VERSION=="python2")
+
 - name: uninstall dmapi rpm package when using python3
   yum: name=python3-dmapi state=absent
   when: >
-        (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python3" ) or
-        (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python3")
+        (ansible_distribution_major_version=="7" and ansible_distribution== centos and PYTHON_VERSION=="python3") or
+        (ansible_distribution_major_version=="7" and ansible_distribution== redhat and PYTHON_VERSION=="python3") or
+        (ansible_distribution_major_version=="8" and ansible_distribution== centos and PYTHON_VERSION=="python2") or
+        (ansible_distribution_major_version=="8" and ansible_distribution== redhat and PYTHON_VERSION=="python2")
 
-- name: ensure datamover service file is deleted if os release is rhel7
+- name: ensure datamover service file is deleted if os release is Centos/RedHat
   file: path={{datamover_service_file_path}} state=absent
   when: > 
        (ansible_distribution_major_version=="7" and ansible_distribution== centos) or
        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-       (ansible_distribution== SLES) or (ansible_distribution== suse) or
-       (ansible_distribution=="Ubuntu" and (ansible_lsb.codename == xenial or ansible_lsb.codename == willy or ansible_lsb.codename == bionic)) 
-
-- name: ensure datamover service file is deleted if os release is ubuntu
-  file: path={{datamover_service_debian_path}} state=absent
-  when: (ansible_distribution=="Ubuntu" and (ansible_lsb.codename != xenial or ansible_lsb.codename != willy or ansible_lsb.codename != bionic))
+       (ansible_distribution_major_version=="8" and ansible_distribution== centos) or
+       (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")

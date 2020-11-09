@@ -1,0 +1,24 @@
+---
+
+- name: Create {{RABBITMQ_SSL_DIR}} directory
+  file: name="{{RABBITMQ_SSL_DIR}}"  state=directory
+
+- name: Deploy user provided Rabbitmq ssl cert
+  copy:
+    src: "{{rabbitmq_user_ssl_cert}}"
+    dest: "{{RABBITMQ_SSL_CERT_PATH}}"
+  when: rabbitmq_user_ssl_cert is defined
+
+- name: Deploy user provided Rabbitmq ssl Key
+  copy:
+    src: "{{rabbitmq_user_ssl_key}}"
+    dest: "{{RABBITMQ_SSL_KEY_PATH}}"
+  when: rabbitmq_user_ssl_key is defined
+
+- name: Deploy user provided Rabbitmq Ca-Cert
+  copy:
+    src: "{{rabbitmq_user_ssl_ca_cert}}"
+    dest: "{{RABBITMQ_SSL_CA_CERT_PATH}}"
+  when: rabbitmq_user_ssl_ca_cert is defined
+
+
