@@ -11,8 +11,10 @@ LABEL name="centos-binary-trilio-horizon-plugin" \
 
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install python3-tvault-horizon-plugin python3-workloadmgrclient-el8 -y
+RUN dnf config-manager --set-enabled epel 
+RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
+RUN dnf config-manager --set-disabled epel
 
 ##Move necessary files
 ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/

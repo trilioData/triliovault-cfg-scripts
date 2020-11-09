@@ -1,0 +1,46 @@
+#Name of web server service that openstack horizon node uses
+#For Debian: apache2
+#For RHEL: httpd
+
+- set_fact: WebServer=apache2
+  when: ansible_distribution=="Ubuntu"
+
+- set_fact: WebServer=httpd
+  when: >
+    (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
+
+- debug:
+    msg: "WebServer :{{WebServer}}"
+    verbosity: "{{verbosity_level}}"
+
+- set_fact: PYTHON_VERSION=python3
+  when: openstack_venv_python_executable == "python3"
+
+- set_fact: PYTHON_VERSION=python2
+  when: openstack_venv_python_executable == "python2"
+
+- debug:
+    msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+    verbosity: "{{verbosity_level}}"
+
+- name: Find openstack-dashboard path in horizon container
+  find:
+    patterns: 'site-packages'
+    paths:
+      - /openstack/
+    file_type: directory
+    recurse: yes
+  register: file_found
+
+- set_fact: HORIZON_PATH="{{file_found.files[0]['path']}}"
+
+- debug:
+    msg: "{{HORIZON_PATH}}"
+    verbosity: "{{verbosity_level}}"
+
+
+
+

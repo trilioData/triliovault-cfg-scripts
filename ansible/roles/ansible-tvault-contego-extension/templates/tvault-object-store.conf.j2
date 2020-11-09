@@ -1,0 +1,27 @@
+[DEFAULT]
+vault_storage_type = s3
+vault_s3_access_key_id = {{VAULT_S3_ACCESS_KEY}}
+vault_s3_secret_access_key = {{VAULT_S3_SECRET_ACCESS_KEY}}
+vault_s3_region_name = {{VAULT_S3_REGION_NAME}}
+vault_s3_bucket = {{VAULT_S3_BUCKET}}
+
+{% if s3_type == "Other_S3_Compatible" %}
+vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
+vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
+vault_s3_auth_version = DEFAULT
+vault_s3_ssl = {{VAULT_S3_SECURE}}
+{% if VAULT_S3_SSL_CERT != "" %}
+vault_s3_ssl_cert = {{VAULT_S3_SSL_CERT_PATH}}
+{%else%}
+vault_s3_ssl_cert =
+{%endif%}
+{% endif %}
+
+vault_data_directory_old = {{TVAULT_DATA_DIR_OLD}}
+vault_data_directory = {{TVAULT_DATA_DIR}}
+log_file = /var/log/tvault-object-store/tvault-object-store.log
+debug = False
+verbose = True
+
+[s3fuse_sys_admin]
+helper_command = sudo {{privsep_bin_path.stdout}}

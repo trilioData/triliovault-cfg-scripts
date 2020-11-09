@@ -39,6 +39,11 @@ verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
 
+dmapi_transport_url = {{ rpc_transport_url }}
+
+[dmapi_database]
+connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+
 {% if cinder_backend_ceph == "yes" %}
 
 [libvirt]
@@ -62,3 +67,6 @@ helper_command = sudo /usr/bin/privsep-helper
 
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = false

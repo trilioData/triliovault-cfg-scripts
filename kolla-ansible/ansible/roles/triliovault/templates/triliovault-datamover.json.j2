@@ -4,11 +4,17 @@
     "command": "/opt/tvault/start_datamover_{{ triliovault_backup_target_type }}",
     "config_files": [
         {
+            "source": "{{ container_config_directory }}/nova.conf",
+            "dest": "/etc/nova/nova.conf",
+            "owner": "nova",
+            "perm": "0600"
+        },
+		{
             "source": "{{ container_config_directory }}/triliovault-datamover.conf",
             "dest": "/etc/tvault-contego/tvault-contego.conf",
             "owner": "nova",
             "perm": "0600"
-        },
+        }{% if cinder_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/{{ ceph_cinder_keyring }}",
             "dest": "/etc/ceph/{{ ceph_cinder_keyring }}",
@@ -16,26 +22,19 @@
             "perm": "0600",
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
         },
-        {
-            "source": "{{ container_config_directory }}/nova.conf",
-            "dest": "/etc/nova/nova.conf",
-            "owner": "nova",
-            "perm": "0600"
-        },
-        {
+		{
             "source": "{{ container_config_directory }}/ceph.conf",
             "dest": "/etc/ceph/ceph.conf",
             "owner": "nova",
             "perm": "0600",
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
-        },
+        }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
             "dest": "/etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}",
             "owner": "nova",
-            "perm": "0600" ,
-            "optional": {{ (not triliovault_copy_ceph_s3_ssl_cert | bool) | string | lower }}
-        }
+            "perm": "0600"
+        }{% endif %}
     ],
     "permissions": [
         {
