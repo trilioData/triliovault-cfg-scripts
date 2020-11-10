@@ -175,3 +175,10 @@
        - tvault-contego
        - tvault-contego-extension
        - tvault-all-install
+
+- name: Manage Service
+  import_tasks: manage_service.yml
+  tags:
+       - tvault-contego
+       - tvault-contego-extension
+       - tvault-all-install
