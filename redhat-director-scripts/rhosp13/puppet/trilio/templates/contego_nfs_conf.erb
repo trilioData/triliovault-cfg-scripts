@@ -9,6 +9,22 @@ debug = False
 verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
+dmapi_transport_url = <%= @default_transport_url %>
+
+
+<% if @cinder_backend_ceph == true -%>
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = <%= @ceph_cinder_user %>
+
+[ceph]
+keyring_ext = .<%= @ceph_cinder_user %>.keyring
+
+<% end -%>
+
+[dmapi_database]
+connection = <%= @database_connection %>
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper

@@ -41,6 +41,9 @@ parameters:
     default: '13784'
     description: Trilio Dmapi ssl listen port
     type: string
+  DefaultPasswords:
+    default: {}
+    type: json 
   KeystoneRegion:
     type: string
     default: 'regionOne'
@@ -52,13 +55,13 @@ parameters:
   NotificationDriver:
     type: string
     default: 'messagingv2'
-    description: Driver or drivers to handle sending notifications.
+    description: Driver or drivers to handle sending notifications. 
   ContainerMysqlConfigImage:
     description: image
     type: string
   ContainerKeystoneConfigImage:
     description: The container image to use for the keystone config_volume
-    type: string
+    type: string  
   EnableInternalTLS:
     type: boolean
     default: false
@@ -90,7 +93,8 @@ parameters:
                  e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
                  set to true, the service uses a floating prefix as
                  well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
-    type: boolean
+    type: boolean            
+
 
 
 resources:
@@ -123,7 +127,7 @@ outputs:
             dmapi:
               password: {get_param: TrilioDatamoverPassword}
           region: {get_param: KeystoneRegion}
-          service: 'datamover'
+          service: 'datamover'      
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
@@ -181,7 +185,7 @@ outputs:
           trilio::db::mysql::dbname: dmapi
           trilio::db::mysql::allowed_hosts:
             - '%'
-            - "%{hiera('mysql_bind_host')}"
+            - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
@@ -189,7 +193,7 @@ outputs:
           list_join:
             - "\n"
             - - "include ::trilio::dmapi"
-              - {get_attr: [MySQLClient, role_data, step_config]}
+              - {get_attr: [MySQLClient, role_data, step_config]}        
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
@@ -259,7 +263,7 @@ outputs:
                   - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
             environment:
-              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
           trilio_dmapi:
             image: {get_param: DockerTrilioDmApiImage}

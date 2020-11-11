@@ -173,7 +173,7 @@ outputs:
           trilio::db::mysql::dbname: dmapi
           trilio::db::mysql::allowed_hosts:
             - '%'
-            - "%{hiera('mysql_bind_host')}"
+            - "%{hiera('mysql_bind_host')}"                    
       puppet_config:
         config_volume: triliodmapi
         puppet_tags: dmapiconfig
