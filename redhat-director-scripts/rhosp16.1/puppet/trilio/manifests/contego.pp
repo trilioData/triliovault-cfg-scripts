@@ -1,7 +1,7 @@
 class trilio::contego (
     $backup_target_type                   = 'nfs',
-    $nfs_shares				  = undef,
-    $nfs_options			  = 'nolock,soft,timeo=180,intr',
+    $nfs_shares				              = undef,
+    $nfs_options			              = 'nolock,soft,timeo=180,intr',
     $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
@@ -54,10 +54,6 @@ class trilio::contego (
 
     }
 
-    #class {'trilio::contego::install': }
-    #class {'trilio::contego::postinstall': }
-    #class {'trilio::contego::cgroup': }
-    #class {'trilio::contego::service': }
     class {'trilio::contego::config': }
 
 }

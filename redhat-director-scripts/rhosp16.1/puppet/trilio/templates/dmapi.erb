@@ -14,6 +14,7 @@ debug = False
 log_file = /var/log/trilio-datamover-api/dmapi.log
 log_dir = /var/log/trilio-datamover-api
 
+
 [wsgi]
 ssl_cert_file = 
 ssl_key_file =
@@ -21,9 +22,6 @@ api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
 connection = <%= @database_connection %>
-
-[api_database]
-connection = <%= @api_database_connection %>
 
 [keystone_authtoken]
 memcached_servers = <%= @memcached_servers %>
@@ -33,7 +31,7 @@ project_domain_name = <%= @project_domain_name %>
 project_name = <%= @project_name %> 
 user_domain_name = <%= @user_domain_name %>
 password = <%= @password %>
-username = nova
+username = dmapi
 auth_url = <%= @auth_url %>
 auth_type = password
 auth_uri = <%= @auth_uri %>
