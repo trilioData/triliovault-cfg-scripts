@@ -6,4 +6,4 @@ secret_key = sys.argv[2]
 
 conn = S3Connection(access_key, secret_key)
 response = conn.get_all_buckets()
-print response
+print(response)

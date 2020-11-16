@@ -1,12 +1,14 @@
 import charms.reactive as reactive
 import os
 import re
+import shutil
 # This charm's library contains all of the handler code associated with
 # dmapi
 import charm.openstack.dmapi as dmapi
 from subprocess import (
     check_output,
     check_call,
+    call,
 )
 
 from charmhelpers.core.hookenv import (
@@ -52,9 +54,8 @@ def get_new_version(pkg_name):
 def install_packages():
     # Add TrilioVault repository to install required package
     # and add queens repo to install nova libraries
-    os.system('sudo echo "{}" > '
-              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
-                  config('triliovault-pkg-source')))
+    call([shutil.which('sudo'), 'echo', config('triliovault-pkg-source'), '>', 
+              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'])
 
     new_src = config('openstack-origin')
     configure_installation_source(new_src)
@@ -136,9 +137,8 @@ def cluster_connected(hacluster):
 
 @reactive.hook('upgrade-charm')
 def upgrade_charm():
-    os.system('sudo echo "{}" > '
-              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
-                  config('triliovault-pkg-source')))
+    call([shutil.which('sudo'), 'echo', config('triliovault-pkg-source'), '>', 
+              '/etc/apt/sources.list.d/trilio-gemfury-sources.list'])
 
     new_src = config('openstack-origin')
     configure_installation_source(new_src)
@@ -146,7 +146,7 @@ def upgrade_charm():
     apt_update()
     apt_upgrade(fatal=True, dist=True)
 
-    check_call(['systemctl', 'daemon-reload'])
+    check_call([shutil.which('systemctl'), 'daemon-reload'])
     service_restart('tvault-datamover-api')
 
     if config('python-version') == 2:

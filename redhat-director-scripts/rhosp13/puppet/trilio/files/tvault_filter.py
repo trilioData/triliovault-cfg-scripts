@@ -4,7 +4,13 @@ from openstack_dashboard import policy
 from datetime import datetime
 from django.template.defaultfilters import stringfilter
 import pytz
+from django.utils.translation import ugettext_lazy as _
+import logging
+
 register = template.Library()
+
+LOG = logging.getLogger(__name__)
+
 @register.filter(name='getusername')
 def get_user_name(user_id, request):
     user_name = user_id
@@ -13,11 +19,13 @@ def get_user_name(user_id, request):
             user = api.keystone.user_get(request, user_id)
             if user:
                 user_name = user.username
-        except Exception:
+        except Exception as ex:
+            LOG.exception(ex)
             pass
     else:
-        LOG.debug("Insufficient privilege level to view user information.")
+        LOG.debug(_("Insufficient privilege level to view user information."))
     return user_name
+
 @register.filter(name='getprojectname')
 def get_project_name(project_id, request):
     project_name = project_id
@@ -25,9 +33,11 @@ def get_project_name(project_id, request):
         project_info = api.keystone.tenant_get(request, project_id, admin = True)
         if project_info:
             project_name = project_info.name
-    except Exception:
+    except Exception as ex:
+        LOG.exception(ex)
         pass
     return project_name
+
 def get_time_zone(request):
     tz = 'UTC'
     try:
@@ -35,9 +45,12 @@ def get_time_zone(request):
     except:
         try:
             tz = request.COOKIES['django_timezone']
-        except:
+        except Exception as ex:
+            LOG.exception(ex)
             pass
+
     return tz
+
 def get_local_time(record_time, input_format, output_format, tz):
         """
         Convert and return the date and time - from GMT to local time
@@ -54,6 +67,7 @@ def get_local_time(record_time, input_format, output_format, tz):
                         or output_format == None \
                         or output_format == '':
                     output_format = "%m/%d/%Y %I:%M:%S %p";
+
                 local_time = datetime.strptime(
                                 record_time, input_format)
                 local_tz = pytz.timezone(tz)
@@ -64,8 +78,10 @@ def get_local_time(record_time, input_format, output_format, tz):
                                 local_time, output_format)
                 return local_time
         except Exception as ex:
+            LOG.exception(ex)
             pass
             return record_time
+
 @register.filter(name='gettime')
 def get_time_for_audit(time_stamp, request):
     display_time = time_stamp
@@ -73,8 +89,10 @@ def get_time_for_audit(time_stamp, request):
         time_zone_of_ui = get_time_zone(request)
         display_time = get_local_time(time_stamp, '%I:%M:%S.%f %p - %m/%d/%Y','%I:%M:%S %p - %m/%d/%Y', time_zone_of_ui)
     except Exception as ex:
+        LOG.exception(ex)
         pass
     return display_time
+
 @register.filter(name='getsnapshotquantifier')
 def display_time_quantifier(seconds):
     intervals = (
@@ -84,6 +102,7 @@ def display_time_quantifier(seconds):
     ('minutes', 60),
     ('seconds', 1),
     )
+
     result = []
     granularity = 4
     for name, count in intervals:
@@ -98,6 +117,7 @@ def display_time_quantifier(seconds):
             if len(result) > 0:
                 result.append(None)
     return ', '.join([x for x in result[:granularity] if x is not None])
+
 @register.filter(name='custom_split')
 @stringfilter
 def custom_split(value, key):

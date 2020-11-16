@@ -2,6 +2,7 @@ import os
 import re
 import configparser
 import time
+import shutil
 
 from subprocess import (
     check_output,
@@ -64,7 +65,7 @@ def check_presence(tv_file):
     """
     Just a wrpper of 'ls' command
     """
-    if os.system('ls {}'.format(tv_file)):
+    if call('ls {}'.format(tv_file)):
         return False
     return True
 
@@ -198,8 +199,8 @@ def create_virt_env(pkg_name):
     chownr(path, usr, grp)
 
     # Copy Trilio filter file
-    os.system(
-        'cp files/trilio/trilio.filters /etc/nova/rootwrap.d/')
+    call([shutil.which('cp'), 'files/trilio/trilio.filters',
+        '/etc/nova/rootwrap.d/'])
 
     return True
 
@@ -292,14 +293,14 @@ def ensure_data_dir():
     # ensure that data_dir is present
     mkdir(data_dir, owner=usr, group=grp, perms=501, force=True)
     # remove data_dir_old
-    os.system('rm -rf {}'.format(data_dir_old))
+    call('rm -rf {}'.format(data_dir_old))
     # recreate the data_dir_old
     mkdir(data_dir_old, owner=usr, group=grp, perms=501, force=True)
 
     # create logrotate file for tvault-contego.log
     src = 'files/trilio/tvault-contego'
     dest = '/etc/logrotate.d/tvault-contego'
-    os.system('cp {} {}'.format(src, dest))
+    call('cp {} {}'.format(src, dest))
 
     return True
 
@@ -423,16 +424,18 @@ def uninstall_plugin(pkg_name):
     bkp_type = config('backup-target-type')
     try:
         service_stop('tvault-contego')
-        os.system('sudo systemctl disable tvault-contego')
-        os.system('rm -rf /etc/systemd/system/tvault-contego.service')
+        call(shutil.which('sudo')+' systemctl disable tvault-contego')
+        call(shutil.which('rm')+
+                ' -rf /etc/systemd/system/tvault-contego.service')
         if bkp_type == 's3':
             service_stop('tvault-object-store')
-            os.system('systemctl disable tvault-object-store')
-            os.system('rm -rf /etc/systemd/system/tvault-object-store.service')
-        os.system('sudo systemctl daemon-reload')
-        os.system('rm -rf /etc/logrotate.d/tvault-contego')
-        os.system('rm -rf {}'.format(config('tv-datamover-conf')))
-        os.system('rm -rf /var/log/nova/tvault-contego.log')
+            call(shutil.which('systemctl')+' disable tvault-object-store')
+            call(shutil.which('rm')+
+                    ' -rf /etc/systemd/system/tvault-object-store.service')
+        call(shutil.which('sudo')+' systemctl daemon-reload')
+        call(shutil.which('rm')+' -rf /etc/logrotate.d/tvault-contego')
+        call(shutil.which('rm')+' -rf {}'.format(config('tv-datamover-conf')))
+        call(shutil.which('rm')+' -rf /var/log/nova/tvault-contego.log')
         # Get the mount points and un-mount tvault's mount points.
         mount_points = mounts()
         sorted_list = [mp[0] for mp in mount_points
@@ -470,7 +473,7 @@ def install_tvault_contego_plugin():
         pkg_name = 'python3-tvault-contego'
 
     # add triliovault package repo
-    os.system('sudo echo "{}" > '
+    call('sudo echo "{}" > '
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
                config('triliovault-pkg-source')))
     apt_update()
@@ -520,13 +523,13 @@ def install_tvault_contego_plugin():
         status_set('blocked', 'Failed while creating ObjectStore service file')
         return
 
-    os.system('sudo systemctl daemon-reload')
+    call(shutil.which('sudo')+' systemctl daemon-reload')
     # Enable and start the object-store service
     if bkp_type == 's3':
-        os.system('sudo systemctl enable tvault-object-store')
+        call(shutil.which('sudo')+' systemctl enable tvault-object-store')
         service_restart('tvault-object-store')
     # Enable and start the datamover service
-    os.system('sudo systemctl enable tvault-contego')
+    call(shutil.which('sudo')+' systemctl enable tvault-contego')
     service_restart('tvault-contego')
 
     # Install was successful
@@ -566,7 +569,8 @@ def stop_tvault_contego_plugin():
 @hook('upgrade-charm')
 def upgrade_charm():
     # check if installed contego pkg is python 2 or 3
-    if os.system('dpkg -s python3-tvault-contego | grep Status') == 0:
+    if call(shutil.which('dpkg')+
+            ' -s python3-tvault-contego | grep Status') == 0:
         pkg_name = 'python3-tvault-contego'
     else:
         pkg_name = 'tvault-contego'

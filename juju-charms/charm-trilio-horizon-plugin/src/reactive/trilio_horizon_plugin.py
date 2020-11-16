@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from charms.reactive import (
     when,
     when_not,
@@ -20,6 +21,7 @@ from charmhelpers.core.host import (
 )
 from subprocess import (
     check_output,
+    call,
 )
 from charmhelpers.fetch import (
     apt_install,
@@ -35,17 +37,17 @@ def copy_files():
     service_restart("apache2")
 
     # write content into destination file - sync_static.py
-    os.system('cp files/trilio/sync_static.py /tmp/sync_static.py')
+    call(shutil.which('cp')+' files/trilio/sync_static.py /tmp/sync_static.py')
 
     # Change the working directory to horizon and excute shell command
-    os.system(
+    call(
         '/usr/bin/python{0} {1}/manage.py shell < /tmp/sync_static.py &> '
         '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
-    os.system('rm /tmp/sync_static.py')
+    call(shutil.which('rm')+' /tmp/sync_static.py')
 
-    os.system(
+    call(
             '/usr/bin/python{0} {1}/manage.py collectstatic;'
             '/usr/bin/python{0} {1}/manage.py compress --force'.format(
              config('python-version'), horizon_path))
@@ -55,15 +57,16 @@ def delete_files():
     horizon_path = config("horizon-path")
 
     # write content into destination file - sync_static1.py
-    os.system('cp files/trilio/sync_static1.py /tmp/sync_static1.py')
+    call(shutil.which('cp')+
+            ' files/trilio/sync_static1.py /tmp/sync_static1.py')
 
     # Change the working directory to horizon and excute shell command
-    os.system(
+    call(
         '/usr/bin/python{0} {1}/manage.py shell < /tmp/sync_static1.py &> '
         '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
-    os.system('rm /tmp/sync_static1.py')
+    call(shutil.which('rm')+' /tmp/sync_static1.py')
 
 
 def get_new_version(pkg):
@@ -82,7 +85,7 @@ def install_plugin(pkg_source):
     from TVAULT_IPADDRESS provided by the user
     """
     # add triliovault package repo
-    os.system('sudo echo "{}" > '
+    call('sudo echo "{}" > '
               '/etc/apt/sources.list.d/trilio-gemfury-sources.list'.format(
                config('triliovault-pkg-source')))
     if config('python-version') == 3:
