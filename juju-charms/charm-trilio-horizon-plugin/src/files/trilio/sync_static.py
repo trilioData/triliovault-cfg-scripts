@@ -12,4 +12,4 @@ for app in ls:
 cmd = "{} /usr/share/openstack-dashboard/manage.py collectstatic"\
       " --noinput {}".format(sys.executable, data)
 
-subprocess.call(cmd, shell=True)
+subprocess.call(cmd)
