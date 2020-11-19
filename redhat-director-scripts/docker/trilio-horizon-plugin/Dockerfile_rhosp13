@@ -17,6 +17,10 @@ RUN rm /etc/yum.repos.d/trilio.repo
 ##Move necessary files
 ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
 ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/share/openstack-dashboard/manage.py compress --force
+
+
 
 ## Add license
 RUN mkdir /licenses
