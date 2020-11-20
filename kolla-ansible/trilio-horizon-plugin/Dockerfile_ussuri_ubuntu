@@ -18,8 +18,8 @@ RUN apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient -
 ##Move necessary files
 ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
 ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
-RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
-RUN /usr/share/openstack-dashboard/manage.py compress --force
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
 
 
 ## Add license
