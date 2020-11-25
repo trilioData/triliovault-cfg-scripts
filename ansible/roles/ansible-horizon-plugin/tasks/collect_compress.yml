@@ -17,14 +17,22 @@
 - name: write content into destination file - sync_static.py
   template: src="sync_static.py" dest="/tmp/sync_static.py"
 
-- name: Change the working directory to horizon and excute shell command
-  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }} shell < /tmp/sync_static.py &> /dev/null"
+- name: Change the working directory to horizon and execute shell command
+  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }} shell < /tmp/sync_static.py"
   args:
        chdir: "{{HORIZON_PATH}}"
+  register: data
   notify:
     - restart webserver
 
-- name: remove temporary file -  sync_static.py
+- name: Change the working directory to horizon and execute collectstatic --noinput with data
+  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }}  collectstatic --noinput {{data.stdout}}"
+  args:
+    chdir: "{{HORIZON_PATH}}"
+  notify:
+     - restart webserver
+
+- name: remove temporary file - sync_static.py
   file: path=/tmp/sync_static.py state=absent
 
 - name: Get os_local_settings_path
