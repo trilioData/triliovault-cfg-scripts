@@ -92,6 +92,20 @@ parameters:
     description: The password for the trilio service and db account
     type: string
     hidden: true
+  EnableInternalTLS:
+    type: boolean
+    default: false
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+
 
 outputs:
   role_data:

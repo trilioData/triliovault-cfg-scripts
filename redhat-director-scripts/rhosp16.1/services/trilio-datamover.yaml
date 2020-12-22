@@ -92,6 +92,18 @@ parameters:
     description: The password for the trilio service and db account
     type: string
     hidden: true
+  EnableInternalTLS:
+    type: boolean
+    default: false
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
 
 outputs:
   role_data:
@@ -170,15 +182,18 @@ outputs:
             user: nova
             restart: always
             volumes:
-                - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
-                - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
-                - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-                - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
-                - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
-                - /dev:/dev
-                - /var/run/libvirt/:/var/run/libvirt/
-                - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
-                - /var/lib/nova:/var/lib/nova:shared
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+                  - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
+                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+                  - /dev:/dev
+                  - /var/run/libvirt/:/var/run/libvirt/
+                  - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                  - /var/lib/nova:/var/lib/nova:shared
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
