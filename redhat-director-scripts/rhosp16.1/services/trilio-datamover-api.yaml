@@ -168,6 +168,7 @@ outputs:
                 public_ssl_port: {get_param: DmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
+                service_network: "%{hiera('trilio_datamover_api_network')}"
         keystone:
           trilio::keystone::auth::tenant: 'service'
           trilio::keystone::auth::service_name: 'dmapi'
@@ -272,9 +273,20 @@ outputs:
             user: dmapi
             restart: always
             volumes:
-              - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
-              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                    - []
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                    - []
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
