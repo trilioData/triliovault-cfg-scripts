@@ -121,7 +121,7 @@ conditions:
 resources:
 
   ContainersCommon:
-    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+    type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
 
 outputs:
   role_data:
