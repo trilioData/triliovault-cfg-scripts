@@ -43,6 +43,7 @@ done
 chown -R $user_name:$user_name /home/nova
 chown -R $user_name:$user_name /var/log/workloadmgr
 chown -R $user_name:$user_name /var/cache/workloadmgr
+chown  root:$user_name /etc/workloadmgr/tvault_key.pem
 if [ -d /var/triliovault-mounts ]; then
     chown -R $user_name:$user_name /var/triliovault-mounts
 fi
