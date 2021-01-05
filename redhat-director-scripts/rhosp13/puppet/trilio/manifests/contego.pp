@@ -8,6 +8,7 @@ class trilio::contego (
     $s3_region_name                       = undef,
     $s3_bucket                            = undef,
     $s3_endpoint_url                      = undef,
+    $s3_signature_version                 = 'default',
     $s3_ssl_enabled                       = 'False',
     $s3_ssl_cert                          = undef,
     $database_connection                  = undef,
