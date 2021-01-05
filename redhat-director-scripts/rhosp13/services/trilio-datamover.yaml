@@ -77,6 +77,10 @@ parameters:
     default: 'default'
     description: S3 Signature Version
     type: string
+  S3AuthVersion:
+    default: 'DEFAULT'
+    description: S3 Auth Version
+    type: string
   S3SslEnabled:
     default: false
     description: S3 ssl enabled
@@ -147,6 +151,7 @@ outputs:
         trilio::contego::s3_bucket: {get_param: S3Bucket}
         trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
         trilio::contego::s3_signature_version: {get_param: S3SignatureVersion}
+        trilio::contego::s3_auth_version: {get_param: S3AuthVersion}
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
