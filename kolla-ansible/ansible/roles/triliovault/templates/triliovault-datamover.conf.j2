@@ -14,6 +14,7 @@ vault_s3_access_key_id = {{ triliovault_s3_access_key }}
 vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
 vault_s3_region_name = {{ triliovault_s3_region_name }}
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
+vault_s3_signature_version = {{ triliovault_s3_version }}
 vault_s3_ssl_cert =
 
 {% elif triliovault_backup_target == "ceph_s3" %}
@@ -26,6 +27,7 @@ vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
 vault_s3_region_name = {{ triliovault_s3_region_name }}
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
 vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
+vault_s3_signature_version = {{ triliovault_s3_version }}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
 vault_s3_ssl_cert = /etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}
 
