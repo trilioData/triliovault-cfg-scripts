@@ -45,6 +45,13 @@ triliovault_s3_bucket_name: ''
 ## Valid for 'ceph_s3' backup target only, provide S3 endpoint url
 ## This paramter is not valid for Amazon S3 backup target type, keep it as it is
 triliovault_s3_endpoint_url: ''
+
+## S3 signature version
+triliovault_s3_version: 'default'
+
+## S3 Auth version
+triliovault_s3_auth_version: 'DEFAULT'
+
 ## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
 triliovault_s3_ssl_enabled: False
 ## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed
