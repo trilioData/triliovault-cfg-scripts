@@ -92,6 +92,6 @@ parameter_defaults:
     ZaqarWebSocketInternal: {protocol: 'wss', port: '9000', host: 'CLOUDNAME'}
     ZaqarWebSocketPublic: {protocol: 'wss', port: '9000', host: 'CLOUDNAME'}
     # ADDED FOR TRILIO
-    TrilioDatamoverAdmin: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
-    TrilioDatamoverInternal: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
+    TrilioDatamoverAdmin: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
+    TrilioDatamoverInternal: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
     TrilioDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
