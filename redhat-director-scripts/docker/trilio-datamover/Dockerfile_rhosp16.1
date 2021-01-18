@@ -19,6 +19,8 @@ RUN dnf clean all
 RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
 RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
