@@ -5,7 +5,7 @@ User={{DMAPI_USR}}
 Group={{DMAPI_GRP}}
 Type=simple
 ExecStart={{PYTHON_EXEC}} {{dmapi_bin.stdout}}
-KillMode=process
+KillMode=control-group
 Restart=on-failure
 WorkingDirectory=/var/run
 
