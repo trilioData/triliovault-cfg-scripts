@@ -12,6 +12,7 @@ LABEL name="rhosp13/openstack-horizon-triliodata-plugin" \
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum install tvault-horizon-plugin workloadmgrclient -y
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Move necessary files
