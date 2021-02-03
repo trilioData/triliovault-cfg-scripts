@@ -64,7 +64,7 @@ parameter_defaults:
 
 
    ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
-   DmApiWorkers: '2'
+   DmApiWorkers: 2
 
    ## Don't edit following parameter
    EnablePackageInstall: True
