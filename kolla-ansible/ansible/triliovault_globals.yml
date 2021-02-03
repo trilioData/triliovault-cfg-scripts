@@ -12,6 +12,10 @@ triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kol
 
 #horizon_image_full: "{{ triliovault_horizon_image_full }}"
 
+## Triliovault dmapi_workers count
+## Default value of dmapi_workers is 2
+dmapi_workers: '2'
+
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_tag: "4.1.5-ussuri"
