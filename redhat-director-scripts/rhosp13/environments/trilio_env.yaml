@@ -61,6 +61,9 @@ parameter_defaults:
    ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
    ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
+   
+   ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
+   DmApiWorkers: 2
 
    ## Don't edit following parameter
    EnablePackageInstall: True
