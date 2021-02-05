@@ -1,4 +1,5 @@
 [DEFAULT]
+dmapi_workers = {{ dmapi_workers }}
 dmapi_link_prefix = {{dmapi_service_publicurl}}
 dmapi_enabled_ssl_apis = {{DMAPI_ENABLED_SSL_APIS}}
 my_ip = {{container_address}}
