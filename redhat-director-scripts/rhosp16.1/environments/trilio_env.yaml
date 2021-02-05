@@ -71,6 +71,8 @@ parameter_defaults:
    ####################################################
    ## DON't EDIT FOLLOWING PARAMETERS ##################
    EnablePackageInstall: True
-   NovaLibvirtOptVolumes: ["/var/lib/trilio"]
-   NovaComputeOptVolumes: ["/var/lib/trilio"]
+   NovaLibvirtOptVolumes:
+      - /var/lib/trilio:/var/lib/trilio:shared
+   NovaComputeOptVolumes:
+      - /var/lib/trilio:/var/lib/trilio:shared
    #########################################################   
