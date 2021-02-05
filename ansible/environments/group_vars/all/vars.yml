@@ -56,6 +56,10 @@ DMAPI_ENABLED_SSL_APIS: ""
 DMAPI_SSL_CERT: ""
 DMAPI_SSL_KEY: ""
 
+## Triliovault dmapi_workers count
+## Default value of dmapi_workers is 2
+dmapi_workers: 2
+
 #### Any service is using Ceph Backend then set ceph_backend_enabled value to True
 #True/False
 ceph_backend_enabled: False
