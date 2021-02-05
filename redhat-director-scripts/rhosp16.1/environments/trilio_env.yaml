@@ -67,5 +67,11 @@ parameter_defaults:
    ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
    DmApiWorkers: 2
    
-   ## Don't edit following parameter
+   ####################################################
+   ## DON't EDIT FOLLOWING PARAMETERS ##################
    EnablePackageInstall: True
+   NovaLibvirtOptVolumes:
+      - /var/lib/trilio:/var/lib/trilio:shared
+   NovaComputeOptVolumes:
+      - /var/lib/trilio:/var/lib/trilio:shared
+   #########################################################
