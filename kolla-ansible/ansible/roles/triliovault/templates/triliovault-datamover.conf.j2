@@ -62,7 +62,7 @@ keyring_ext = .{{ ceph_cinder_user }}.keyring
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
 
-{% if triliovault_backup_target == "ceph_s3" or triliovault_backup_target == "other_s3_compatible" %}
+{% if triliovault_backup_target == "other_s3_compatible" or triliovault_backup_target == "amazon_s3" %}
 
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
