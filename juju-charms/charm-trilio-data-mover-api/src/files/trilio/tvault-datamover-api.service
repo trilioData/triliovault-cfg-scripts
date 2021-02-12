@@ -6,7 +6,7 @@ User = dmapi
 Group = dmapi
 Type = Simple
 ExecStart=/usr/bin/dmapi-api
-KillMode=process
+KillMode=control-group
 Restart=on-failure
 
 [Install]
