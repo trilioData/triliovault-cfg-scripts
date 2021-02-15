@@ -34,3 +34,6 @@
   template:
      src: tvault-contego.conf.j2
      dest: "{{TVAULT_CONTEGO_CONF}}"
+
+- name: Ensure /etc/tvault-contego/tvault-contego.conf has root:nova with 640
+  file: name="/etc/tvault-contego/tvault-contego.conf" owner=root group=nova mode=0640
