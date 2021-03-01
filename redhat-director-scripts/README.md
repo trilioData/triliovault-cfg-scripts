@@ -135,7 +135,7 @@ parameter_defaults:
    NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
    ## For backup target 's3'
-   ## S3 type: amazon_s3/ceph_s3
+   ## S3 type: amazon_s3/other_s3_compatible
    S3Type: 'amazon_s3'
 
    ## S3 access key

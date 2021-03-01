@@ -88,6 +88,7 @@ parameters:
   S3SslCert:
     description: S3 SSL certificate file path
     type: string
+    default: '/etc/tvault-contego/s3-cert.pem'
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
