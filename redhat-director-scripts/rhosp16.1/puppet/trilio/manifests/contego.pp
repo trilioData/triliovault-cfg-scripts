@@ -11,7 +11,7 @@ class trilio::contego (
     $s3_signature_version                 = 'default',
     $s3_auth_version                      = 'DEFAULT',
     $s3_ssl_enabled                       = 'False',
-    $s3_ssl_cert                          = undef,
+    $s3_ssl_cert                          = '/etc/tvault-contego/s3-cert.pem',
     $database_connection                  = undef,
     $oslomsg_rpc_proto                    = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
     $oslomsg_rpc_hosts                    = any2array(hiera('oslo_messaging_rpc_node_names', undef)),

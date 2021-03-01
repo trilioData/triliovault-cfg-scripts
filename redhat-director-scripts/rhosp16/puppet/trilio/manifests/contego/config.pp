@@ -30,10 +30,10 @@ class trilio::contego::config inherits trilio::contego {
                 content => template('trilio/contego_amazon_s3_conf.erb'),
             }    
         }
-        elsif $s3_type == 'ceph_s3' {
+        elsif $s3_type == 'other_s3_compatible' {
             file { "/etc/tvault-contego/tvault-contego.conf":
                 ensure  => present,
-                content => template('trilio/contego_ceph_s3_conf.erb'),
+                content => template('trilio/contego_other_s3_compatible_conf.erb'),
             }    
         }
         else {
