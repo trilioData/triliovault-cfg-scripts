@@ -1,0 +1,48 @@
+[DEFAULT]
+vault_storage_type = s3
+vault_storage_nfs_export = TrilioVault
+vault_data_directory_old = <%= @vault_data_dir_old %>
+vault_data_directory = <%= @vault_data_dir %>
+log_file = /var/log/trilio-datamover/tvault-contego.log
+debug = False
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+vault_s3_auth_version = DEFAULT
+vault_s3_access_key_id = <%= @s3_accesskey %>
+vault_s3_secret_access_key = <%= @s3_secretkey %>
+vault_s3_region_name = us-east-1
+vault_s3_bucket = <%= @s3_bucket %>
+vault_s3_endpoint_url = <%= @s3_endpoint_url %>
+vault_s3_signature_version = <%= @s3_signature_version %>
+vault_s3_auth_version = <%= @s3_auth_version %>
+vault_s3_ssl = <%= @s3_ssl_enabled %>
+vault_s3_ssl_cert = <%= @s3_ssl_cert %>
+dmapi_transport_url = <%= @default_transport_url %>
+
+
+<% if @cinder_backend_ceph == true -%>
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = <%= @ceph_cinder_user %>
+
+[ceph]
+keyring_ext = .<%= @ceph_cinder_user %>.keyring
+
+<% end -%>
+
+[dmapi_database]
+connection = <%= @database_connection %>
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
+
+[oslo_messaging_rabbit]
+ssl = <%= @oslomsg_rpc_use_ssl %>

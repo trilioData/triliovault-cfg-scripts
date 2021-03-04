@@ -1,0 +1,55 @@
+FROM docker.io/tripleotrain/centos-binary-nova-compute:current-tripleo-rdo
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="rhosp16/openstack-nova-compute-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="4.0.0" \
+      release="4.0" \
+      summary="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover" \
+      description="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+##Install datamover packages
+ADD trilio.repo /etc/yum.repos.d/
+
+RUN yum clean all
+RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 -y
+
+#Copy executable files
+RUN mkdir -p /opt/tvault/
+ADD start_datamover_s3 start_datamover_nfs /opt/tvault/
+ADD start_tvault_object_store_rhel8 /opt/tvault/start_tvault_object_store
+RUN chown -R nova:nova /opt/tvault/
+RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
+
+##Copy conf files
+ADD nova-sudoers-rhel8 /etc/sudoers.d/nova-sudoers
+RUN chown root:root /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+RUN usermod -aG disk nova
+ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
+RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
+RUN mkdir -p /var/triliovault-mounts
+RUN chown nova:nova /var/triliovault-mounts
+RUN mkdir -p /var/triliovault
+RUN chmod 777 /var/triliovault-mounts
+RUN chown nova:nova /var/triliovault
+RUN chmod 777 /var/triliovault
+RUN mkdir -p /var/log/trilio-datamover
+RUN chown nova:nova /var/log/trilio-datamover
+ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
+##Become nova user for further operations
+USER nova

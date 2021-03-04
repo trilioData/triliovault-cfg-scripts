@@ -1,0 +1,217 @@
+heat_template_version: rocky
+
+description: >
+  Trilio Datamover containerized service
+parameters:
+  DockerTrilioDatamoverImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  CephClientUserName:
+    default: openstack
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  BackupTargetType:
+    description:
+    type: string
+  NfsShares:
+    description: Provide comma separated list of NFS shares to use as backup target
+    type: string
+  NfsOptions:
+    default: 'nolock,soft,timeo=180,intr'
+    description: NFS mount otpions
+    type: string
+  S3Type:
+    description: S3 type like Amazon/Ceph/Minio
+    type: string
+  S3AccessKey:
+    description: S3 access key
+    type: string
+  S3SecretKey:
+    description: S3 secret key
+    type: string
+  S3RegionName:
+    description: S3 region name
+    type: string
+  S3Bucket:
+    description: S3 bucket name
+    type: string
+  S3EndpointUrl:
+    description: S3 endpoint url
+    type: string
+  S3SignatureVersion:
+    default: 'default'
+    description: S3 Signature Version
+    type: string
+  S3AuthVersion:
+    default: 'DEFAULT'
+    description: S3 Auth Version
+    type: string
+  S3SslEnabled:
+    default: false
+    description: S3 ssl enabled
+    type: boolean
+  S3SslCert:
+    description: S3 SSL certificate file path
+    type: string
+  CinderEnableRbdBackend:
+    default: false
+    description: Whether ceph cinder backend enabled or not
+    type: boolean	
+  CephClientUserName: 
+    default: 'openstack'	
+    description: Cinder ceph backend user name
+    type: string
+  TrilioDatamoverPassword:
+    description: The password for the trilio service and db account
+    type: string
+    hidden: true
+  EnableInternalTLS:
+    type: boolean
+    default: false
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+
+
+outputs:
+  role_data:
+    description: Role data for the Trilio Datamover role.
+    value:
+      service_name: tvault-contego
+      config_settings:
+        trilio::contego::backup_target_type: {get_param: BackupTargetType}
+        trilio::contego::nfs_shares: {get_param: NfsShares}
+        trilio::contego::nfs_options: {get_param: NfsOptions}
+        trilio::contego::s3_type: {get_param: S3Type}
+        trilio::contego::s3_accesskey: {get_param: S3AccessKey}
+        trilio::contego::s3_secretkey: {get_param: S3SecretKey}
+        trilio::contego::s3_region_name: {get_param: S3RegionName}
+        trilio::contego::s3_bucket: {get_param: S3Bucket}
+        trilio::contego::s3_endpoint_url: {get_param: S3EndpointUrl}
+        trilio::contego::s3_signature_version: {get_param: S3SignatureVersion}
+        trilio::contego::s3_auth_version: {get_param: S3AuthVersion}
+        trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
+        trilio::contego::s3_ssl_cert: {get_param: S3SslCert}
+        trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
+        trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
+        trilio::contego::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: dmapi
+            password: {get_param: TrilioDatamoverPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /dmapi        
+      puppet_config:
+        config_volume: triliodm
+        puppet_tags: dmconfig
+        step_config: |
+            include ::trilio::contego
+        config_image: {get_param: DockerTrilioDatamoverImage}
+      kolla_config:
+        /var/lib/kolla/config_files/trilio_dm.json:
+          command:
+                str_replace:
+                    template: /opt/tvault/start_datamover_$backup_target_type
+                    params:
+                        $backup_target_type: {get_param: BackupTargetType}
+          config_files:
+            - source: "/var/lib/kolla/config_files/nova_libvirt/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliodm/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-iscsid/*"
+              dest: "/etc/iscsi/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-ceph/"
+              dest: "/etc/ceph/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/trilio-datamover
+              owner: nova:nova
+              recurse: true
+            - path:
+                str_replace:
+                  template: /etc/ceph/CLUSTER.client.USER.keyring
+                  params:
+                    CLUSTER: {get_param: CephClusterName}
+                    USER: {get_param: CephClientUserName}
+              owner: nova:nova
+              perm: '0600'
+      docker_config:
+        step_5:
+          trilio_datamover:
+            image: {get_param: DockerTrilioDatamoverImage}
+            net: host
+            privileged: true
+            user: nova
+            restart: always
+            volumes:
+                - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
+                - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+                - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
+                - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+                - /dev:/dev
+                - /var/run/libvirt/:/var/run/libvirt/
+                - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                - /var/lib/nova:/var/lib/nova:shared
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create trilio mounts directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks: []

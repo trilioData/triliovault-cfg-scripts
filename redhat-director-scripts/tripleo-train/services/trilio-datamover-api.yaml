@@ -1,0 +1,303 @@
+heat_template_version: rocky
+
+description: >
+  Trilio Datamover Api containerized service
+parameters:
+  DockerTrilioDmApiImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  DmApiPort:
+    default: '8784'
+    description: Trilio Dmapi listen port
+    type: string
+  DmApiSslPort:
+    default: '13784'
+    description: Trilio Dmapi ssl listen port
+    type: string
+  DefaultPasswords:
+    default: {}
+    type: json 
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  TrilioDatamoverPassword:
+    description: The password for the trilio service and db account
+    type: string
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications. 
+  ContainerMysqlConfigImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string  
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  ConfigDebug:
+    default: false
+    description: Whether to run config management (e.g. Puppet) in debug mode.
+    type: boolean
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  ContainerCli:
+    type: string
+    default: 'podman'
+    description: CLI tool used to manage containers.
+    constraints:
+      - allowed_values: ['docker', 'podman']
+  ClusterCommonTag:
+    default: false
+    description: When set to false, a pacemaker service is configured
+                 to use a floating tag for its container image name,
+                 e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
+                 set to true, the service uses a floating prefix as
+                 well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
+    type: boolean
+  DmApiWorkers:
+    default: 2
+    description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
+    type: number
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+  MySQLClient:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
+
+conditions:
+  puppet_debug_enabled: {get_param: ConfigDebug}
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
+  common_tag_enabled: {equals: [{get_param: ClusterCommonTag}, true]}
+
+
+outputs:
+  role_data:
+    description: Role data for the Trilio Datamover role.
+    value:
+      service_name: trilio_datamover_api
+      keystone_resources:
+        dmapi:
+          endpoints:
+            public: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
+            internal: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
+            admin: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
+          users:
+            dmapi:
+              password: {get_param: TrilioDatamoverPassword}
+          region: {get_param: KeystoneRegion}
+          service: 'datamover'      
+      config_settings:
+        trilio::dmapi::dmapi_port: {get_param: DmApiPort}
+        trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
+        trilio::dmapi::password: {get_param: TrilioDatamoverPassword}
+        trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::dmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::dmapi::enable_proxy_headers_parsing: true
+        trilio::dmapi::project_name: 'service'
+        trilio::dmapi::region_name: {get_param: KeystoneRegion}
+        trilio::dmapi::user_domain_name: 'Default'
+        trilio::dmapi::project_domain_name: 'Default'
+        trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
+        tripleo::trilio_datamover_api::firewall_rules:
+              '240 trilio-datamover-api':
+                dport:
+                  - 8784
+                  - 13784
+        trilio::dmapi::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: dmapi
+            password: {get_param: TrilioDatamoverPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /dmapi
+        trilio::dmapi::my_ip:
+            str_replace:
+              template:
+                "%{hiera('$NETWORK')}"
+              params:
+                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}                                
+      service_config_settings:
+        haproxy:
+          tripleo::trilio_datamover_api::haproxy_endpoints:
+            trilio_datamover_api:
+                public_virtual_ip: "%{hiera('public_virtual_ip')}"
+                internal_ip: "%{hiera('trilio_datamover_api_vip')}"
+                service_port: {get_param: DmApiPort}
+                public_ssl_port: {get_param: DmApiSslPort}
+                member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
+                haproxy_listen_bind_param: ['transparent']
+                service_network: "%{hiera('trilio_datamover_api_network')}"
+        keystone:
+          trilio::keystone::auth::tenant: 'service'
+          trilio::keystone::auth::service_name: 'dmapi'
+          trilio::keystone::auth::service_type: 'datamover'
+          trilio::keystone::auth::service_description: 'TrilioVault Datamover Service'
+          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
+          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
+          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
+          trilio::keystone::auth::password: {get_param: TrilioDatamoverPassword}
+          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+        mysql:
+          trilio::db::mysql::user: dmapi
+          trilio::db::mysql::password: {get_param: TrilioDatamoverPassword}
+          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::db::mysql::dbname: dmapi
+          trilio::db::mysql::allowed_hosts:
+            - '%'
+            - "%{hiera('mysql_bind_host')}"                         
+      puppet_config:
+        config_volume: triliodmapi
+        puppet_tags: dmapiconfig
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::trilio::dmapi"
+              - {get_attr: [MySQLClient, role_data, step_config]}        
+        config_image: {get_param: DockerTrilioDmApiImage}
+      kolla_config:
+        /var/lib/kolla/config_files/trilio_dmapi.json:
+          command: /usr/bin/python /usr/bin/dmapi-api
+          config_files:
+            - source: "/var/lib/kolla/config_files/triliodmapi/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/trilio-datamover-api
+              owner: dmapi:dmapi
+              recurse: true
+      container_puppet_tasks:
+        step_3:
+          config_volume: 'trilio_datamover_api_mysql_init_bundle'
+          puppet_tags: 'mysql_database,mysql_grant,mysql_user'
+          step_config: 'include ::trilio::tripleo::mysql'
+          config_image: {get_param: ContainerMysqlConfigImage}
+          volumes:
+            list_concat:
+            -
+              - /var/lib/mysql:/var/lib/mysql/:rw
+              - /var/log/containers/mysql:/var/log/mariadb
+              - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
+            - if:
+              - internal_tls_enabled
+              -
+                - list_join:
+                  - ':'
+                  - - {get_param: InternalTLSCAFile}
+                    - {get_param: InternalTLSCAFile}
+                    - 'ro'
+                - /etc/pki/tls/certs/mysql.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/mysql.crt:ro
+                - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
+              - null          
+        step_4:
+          config_volume: 'trilio_datamover_api_keystone_init_tasks'
+          puppet_tags: 'keystone_config'
+          step_config: 'include ::trilio::tripleo::keystone'
+          config_image: {get_param: ContainerKeystoneConfigImage}
+          volumes:
+              - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
+      docker_config:
+        step_2:
+          trilio_datamover_api_init_log:
+            image: &trilio_datamover_api_image {get_param: DockerTrilioDmApiImage}
+            start_order: 0
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/trilio-datamover-api']
+        step_4:
+          trilio_datamover_api_db_sync:
+            image: *trilio_datamover_api_image
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi/:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api
+            command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
+        step_5:
+          trilio_dmapi:
+            image: {get_param: DockerTrilioDmApiImage}
+            net: host
+            privileged: true
+            user: dmapi
+            restart: always
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                    - []
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                    - []
+            environment:
+               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create trilio datamover api log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks: []

@@ -1,0 +1,71 @@
+resource_registry:
+  OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
+  # NOTE: If there are addition customizations to the endpoint map (e.g. for
+  # other integratiosn), this will need to be regenerated.
+  OS::TripleO::EndpointMap: endpoint_map.yaml
+
+parameter_defaults:
+
+   ## Enable TrilioVault's quota functionality on horizon
+   ExtraConfig:
+     horizon::customization_module: 'dashboards.overrides'
+
+   ## Define network map for trilio datamover api service
+   ServiceNetMap:
+       TrilioDatamoverApiNetwork: internal_api
+
+   ## TrilioVault Datamover Password for keystone and database
+   TrilioDatamoverPassword: "test1234"
+
+   ## TrilioVault container pull urls
+   DockerTrilioDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
+   DockerTrilioDmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+
+   ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
+   ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
+
+   ## Backup target type nfs/s3, used to store snapshots taken by triliovault
+   BackupTargetType: 'nfs'
+
+   ## For backup target 'nfs'
+   NfsShares: '192.168.122.101:/opt/tvault'
+   NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
+
+   ## For backup target 's3'
+   ## S3 type: amazon_s3/ceph_s3
+   S3Type: 'amazon_s3'
+
+   ## S3 access key
+   S3AccessKey: ''
+
+   ## S3 secret key
+   S3SecretKey: ''
+
+   ## S3 region, if your s3 does not have any region, just keep the parameter as it is
+   S3RegionName: ''
+
+   ## S3 bucket name
+   S3Bucket: ''
+
+   ## S3 endpoint url, not required for Amazon S3, keep it as it is
+   S3EndpointUrl: ''
+
+   ## S3 signature version
+   S3SignatureVersion: 'default'
+
+   ## S3 Auth version
+   S3AuthVersion: 'DEFAULT'
+
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+   S3SslEnabled: False
+
+   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
+   ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
+   S3SslCert: ''
+
+   ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
+   DmApiWorkers: 2
+
+   ## Don't edit following parameter
+   EnablePackageInstall: True
