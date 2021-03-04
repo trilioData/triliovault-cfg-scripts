@@ -17,7 +17,7 @@ USER root
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf install python3-dmapi -y
-
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN  rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
 

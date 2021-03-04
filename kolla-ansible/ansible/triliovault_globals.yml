@@ -12,6 +12,10 @@ triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kol
 
 #horizon_image_full: "{{ triliovault_horizon_image_full }}"
 
+## Triliovault dmapi_workers count
+## Default value of dmapi_workers is 2
+dmapi_workers: '2'
+
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_tag: "4.1.5-ussuri"
@@ -21,7 +25,7 @@ triliovault_docker_registry: "docker.io"
 
 
 
-## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
+## triliovault backup target possible values: 'nfs'/'amazon_s3'/'other_s3_compatible'
 triliovault_backup_target: 'nfs'
 
 ### 'NFS' backup target details
@@ -32,17 +36,17 @@ triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
 
-### 'amazon_s3/ceph_s3' backup target details
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 access key
+### 'amazon_s3/other_s3_compatible' backup target details
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
 triliovault_s3_access_key: ''
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 secret key
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 secret key
 triliovault_s3_secret_key: ''
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 region
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 region
 ## if your s3 does not have any region, just keep the parameter as it is
 triliovault_s3_region_name: 'us-east-1'
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 bucket name
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 bucket name
 triliovault_s3_bucket_name: ''
-## Valid for 'ceph_s3' backup target only, provide S3 endpoint url
+## Valid for 'other_s3_compatible' backup target only, provide S3 endpoint url
 ## This paramter is not valid for Amazon S3 backup target type, keep it as it is
 triliovault_s3_endpoint_url: ''
 
@@ -52,7 +56,7 @@ triliovault_s3_version: 'default'
 ## S3 Auth version
 triliovault_s3_auth_version: 'DEFAULT'
 
-## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+## Valid for 'other_s3_compatible' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
 triliovault_s3_ssl_enabled: False
 ## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed
 # OR issued by a private authority then, user needs to copy the 'ceph s3 ca chain file' to "/etc/kolla/config/triliovault/" 

@@ -93,9 +93,11 @@ parameters:
                  e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
                  set to true, the service uses a floating prefix as
                  well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
-    type: boolean            
-
-
+    type: boolean
+  DmApiWorkers:
+    default: 2
+    description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
+    type: number
 
 resources:
 
@@ -140,6 +142,7 @@ outputs:
         trilio::dmapi::region_name: {get_param: KeystoneRegion}
         trilio::dmapi::user_domain_name: 'Default'
         trilio::dmapi::project_domain_name: 'Default'
+        trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
         tripleo::trilio_datamover_api::firewall_rules:
               '240 trilio-datamover-api':
                 dport:
