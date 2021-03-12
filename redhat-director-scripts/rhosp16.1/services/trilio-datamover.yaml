@@ -103,6 +103,10 @@ parameters:
   EnableInternalTLS:
     type: boolean
     default: false
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
 
 conditions:
 
@@ -204,6 +208,12 @@ outputs:
                   - /var/run/libvirt/:/var/run/libvirt/
                   - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
                   - /var/lib/nova:/var/lib/nova:shared
+                -
+                  if:
+                  - {equals: [{get_param: MultipathdEnable}, true]}
+                  - - /etc/multipath:/etc/multipath:z
+                    - /etc/multipath.conf:/etc/multipath.conf:ro
+                  - []
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
