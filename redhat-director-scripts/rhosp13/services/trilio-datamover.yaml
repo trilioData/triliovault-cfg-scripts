@@ -231,6 +231,13 @@ outputs:
                   - /var/lib/nova:/var/lib/nova:shared
                   - /var/run/libvirt/:/var/run/libvirt/
                   - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                  - /lib/modules:/lib/modules:ro
+                  - /run:/run
+                  - /var/lib/iscsi:/var/lib/iscsi
+                  - /var/lib/libvirt:/var/lib/libvirt
+                  - /sys/class/net:/sys/class/net
+                  - /sys/bus/pci:/sys/bus/pci
+                  - /boot:/boot:ro
             environment:
               - KOLLA_CONFIG_STRATEGY=COPY_ALWAYS
       host_prep_tasks:
