@@ -211,7 +211,7 @@ outputs:
                   - /var/run/libvirt/:/var/run/libvirt/
                   - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
                   - /var/lib/nova:/var/lib/nova:shared
-				          - /lib/modules:/lib/modules:ro
+                  - /lib/modules:/lib/modules:ro
                   - /run:/run
                   - /var/lib/iscsi:/var/lib/iscsi:z
                   - /var/lib/libvirt:/var/lib/libvirt:shared
