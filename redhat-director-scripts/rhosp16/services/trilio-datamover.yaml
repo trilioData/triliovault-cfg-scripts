@@ -103,6 +103,14 @@ parameters:
   EnableInternalTLS:
     type: boolean
     default: false
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
+  NovaComputeOptVolumes:
+    default: []
+    description: list of optional vo
+    type: comma_delimited_list
 
 conditions:
 
@@ -194,15 +202,32 @@ outputs:
             user: nova
             restart: always
             volumes:
-                - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
-                - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
-                - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-                - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
-                - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
-                - /dev:/dev
-                - /var/run/libvirt/:/var/run/libvirt/
-                - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
-                - /var/lib/nova:/var/lib/nova:shared
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_param: NovaComputeOptVolumes}
+                -
+                  - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+                  - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
+                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+                  - /dev:/dev
+                  - /var/run/libvirt/:/var/run/libvirt/
+                  - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                  - /var/lib/nova:/var/lib/nova:shared
+                  - /lib/modules:/lib/modules:ro
+                  - /run:/run
+                  - /var/lib/iscsi:/var/lib/iscsi:z
+                  - /var/lib/libvirt:/var/lib/libvirt:shared
+                  - /sys/class/net:/sys/class/net
+                  - /sys/bus/pci:/sys/bus/pci
+                  - /boot:/boot:ro
+                -
+                  if:
+                  - {equals: [{get_param: MultipathdEnable}, true]}
+                  - - /etc/multipath:/etc/multipath:z
+                    - /etc/multipath.conf:/etc/multipath.conf:ro
+                  - []
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
