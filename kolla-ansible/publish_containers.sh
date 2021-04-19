@@ -30,11 +30,9 @@ do
         docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
         docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tvault_version}-${openstack_release}
 
-      if [ "$openstack_release" == "ussuri" ]
-      then
         docker tag trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release} \
         docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
         docker push docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
-      fi
+ 
     done
 done
