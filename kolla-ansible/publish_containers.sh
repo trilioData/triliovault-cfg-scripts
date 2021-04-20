@@ -12,7 +12,7 @@ fi
 tvault_version=$1
 
 
-declare -a openstack_releases=("ussuri")
+declare -a openstack_releases=("ussuri" "victoria")
 
 declare -a openstack_platforms=("centos" "ubuntu")
 
