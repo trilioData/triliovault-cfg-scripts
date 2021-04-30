@@ -68,3 +68,15 @@ triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
 ## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
 ## Type: Boolean
 triliovault_copy_ceph_s3_ssl_cert: False
+
+
+## Set haproxy timout for triliovault dmapi
+
+haproxy_http_request_timeout: '10m'
+haproxy_queue_timeout: '10m'
+haproxy_connect_timeout: '10m'
+haproxy_client_timeout: '10m'
+haproxy_server_timeout: '10m'
+haproxy_check_timeout: '10m'
+haproxy_defaults_balance: 'roundrobin'
+haproxy_defaults_max_connections: '50000'
