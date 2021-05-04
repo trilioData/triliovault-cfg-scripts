@@ -1,6 +1,6 @@
 {    
-    {% set triliovault_backup_target_type = 's3' if triliovault_backup_target in ['amazon_s3', 'ceph_s3'] else 'nfs' %}	
-
+    {% set triliovault_backup_target_type = 's3' if triliovault_backup_target in ['amazon_s3', 'other_s3_compatible'] else 'nfs' %}	
+    
     "command": "/opt/tvault/start_datamover_{{ triliovault_backup_target_type }}",
     "config_files": [
         {
