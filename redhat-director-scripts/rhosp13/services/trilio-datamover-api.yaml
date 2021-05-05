@@ -133,6 +133,16 @@ outputs:
         trilio::dmapi::user_domain_name: 'Default'
         trilio::dmapi::project_domain_name: 'Default'
         trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
+        tripleo::haproxy::trilio_datamover_api::options:
+           'retries': '5'
+           'maxconn': '50000'
+           'balance': 'roundrobin'
+           'timeout http-request': '10m'
+           'timeout queue': '10m'
+           'timeout connect': '10m'
+           'timeout client': '10m'
+           'timeout server': '10m'
+           'timeout check': '10m'
         tripleo.trilio_datamover_api.firewall_rules:
             '240 trilio_datamover_api':
               dport:
