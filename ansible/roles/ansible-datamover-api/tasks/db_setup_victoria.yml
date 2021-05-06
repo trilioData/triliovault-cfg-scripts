@@ -1,0 +1,26 @@
+---
+- name: Setup Database Service (MariaDB)
+  delegate_to: "{{_oslodb_setup_host }}"
+  vars:
+    ansible_python_interpreter: "{{ _oslodb_ansible_python_interpreter }}"
+  block:
+    - name: Victoria | Create database for service
+      mysql_db:
+        name: "{{ item.name }}"
+        login_host: "{{ _oslodb_setup_endpoint | default(omit) }}"
+        login_port: "{{ _oslodb_setup_port | default(omit) }}"
+      loop: "{{ _oslodb_databases }}"
+      no_log: true
+
+    - name: Victoria | Grant access to the database for the service
+      mysql_user:
+        name: "{{ item.1.username }}"
+        password: "{{ item.1.password }}"
+        update_password: always
+        host: "{{ item.1.host | default('%') }}"
+        priv: "{{ item.0.name }}.*:{{ item.1.priv | default('ALL') }}"
+        login_host: "{{ _oslodb_setup_endpoint | default(omit) }}"
+        login_port: "{{ _oslodb_setup_port | default(omit) }}"
+        append_privs: yes
+      loop: "{{ _oslodb_databases | subelements('users') }}"
+      no_log: true

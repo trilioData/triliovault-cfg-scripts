@@ -1,5 +1,13 @@
 ---
 
+- name: Set dmapi database variables
+  import_tasks: set_database_variables.yml
+  tags:
+    - tvault-datamover-api
+    - tvault-all-install
+    - tvault-datamover-api-uninstall
+    - tvault-all-uninstall
+
 - name: get python details
   import_tasks: get_python.yml
   tags:
