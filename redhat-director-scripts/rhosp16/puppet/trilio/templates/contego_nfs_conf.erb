@@ -36,3 +36,6 @@ use_local = True
 
 [oslo_messaging_rabbit]
 ssl = <%= @oslomsg_rpc_use_ssl %>
+
+[cinder]
+http_retries = 10
