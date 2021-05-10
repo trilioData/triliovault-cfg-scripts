@@ -16,6 +16,17 @@ triliovault_services:
         mode: "http"
         external: false
         port: "{{ triliovault_datamover_api_port }}"
+        frontend_http_extra:
+          - "retries 5"
+          - "timeout http-request 10m"
+          - "timeout queue 10m"
+          - "timeout connect 10m"
+          - "timeout client 10m"
+          - "timeout check 10m"
+          - "balance roundrobin"
+          - "maxconn 50000"
+        backend_http_extra:
+          - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_datamover_api_external:
@@ -23,6 +34,17 @@ triliovault_services:
         mode: "http"
         external: true
         port: "{{ triliovault_datamover_api_port }}"
+        frontend_http_extra:
+          - "retries 5"
+          - "timeout http-request 10m"
+          - "timeout queue 10m"
+          - "timeout connect 10m"
+          - "timeout client 10m"
+          - "timeout check 10m"
+          - "balance roundrobin"
+          - "maxconn 50000"
+        backend_http_extra:
+          - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
   triliovault-datamover:
