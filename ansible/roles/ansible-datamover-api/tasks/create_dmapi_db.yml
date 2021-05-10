@@ -1,4 +1,19 @@
-- import_tasks: db_setup.yml
+- import_tasks: db_setup_victoria.yml
+  run_once: True
+  vars:
+    _oslodb_setup_host: "{{ dmapi_db_setup_host }}"
+    _oslodb_ansible_python_interpreter: "{{ dmapi_db_setup_python_interpreter }}"
+    _oslodb_setup_endpoint: "{{ dmapi_galera_address }}"
+    _oslodb_setup_port: "{{ dmapi_galera_port }}"
+    _oslodb_databases:
+      - name: "{{ dmapi_galera_database }}"
+        users:
+          - username: "{{ dmapi_galera_user }}"
+            password: "{{ dmapi_galera_password }}"
+  when:
+    OPENSTACK_DIST | upper  != "USSURI"
+
+- import_tasks: db_setup_ussuri.yml
   run_once: True
   vars:
     _oslodb_setup_host: "{{ dmapi_db_setup_host }}"
@@ -7,6 +22,8 @@
         users:
           - username: "{{ dmapi_galera_user }}"
             password: "{{ dmapi_galera_password }}"
+  when:
+    OPENSTACK_DIST | upper  == "USSURI"
 
 - import_tasks: mq_setup.yml
   run_once: True
