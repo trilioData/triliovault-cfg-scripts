@@ -222,3 +222,7 @@ triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
 ## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
 ## Type: Boolean
 triliovault_copy_ceph_s3_ssl_cert: False
+
+## cinder
+## cinder http retries default value
+cinder_http_retries: '10'
