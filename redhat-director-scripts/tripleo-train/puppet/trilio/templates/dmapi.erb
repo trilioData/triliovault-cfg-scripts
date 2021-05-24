@@ -1,0 +1,45 @@
+[DEFAULT]
+dmapi_workers = <%= @dmapi_workers %>
+transport_url = <%= @default_transport_url %>
+dmapi_link_prefix = http://<%= @my_ip %>:<%= @dmapi_port %>
+dmapi_enabled_ssl_apis =
+dmapi_listen_port = <%= @dmapi_port %>
+dmapi_enabled_apis = dmapi
+bindir = /usr/bin
+instance_name_template = instance-%08x
+dmapi_listen = <%= @my_ip %>
+my_ip = <%= @my_ip %>
+rootwrap_config = /etc/dmapi/rootwrap.conf
+debug = False
+log_file = /var/log/trilio-datamover-api/dmapi.log
+log_dir = /var/log/trilio-datamover-api
+
+
+[wsgi]
+ssl_cert_file = 
+ssl_key_file =
+api_paste_config = /etc/dmapi/api-paste.ini
+
+[database]
+connection = <%= @database_connection %>
+
+[keystone_authtoken]
+memcached_servers = <%= @memcached_servers %>
+signing_dir = /var/cache/dmapi
+cafile =
+project_domain_name = <%= @project_domain_name %>
+project_name = <%= @project_name %> 
+user_domain_name = <%= @user_domain_name %>
+password = <%= @password %>
+username = dmapi
+auth_url = <%= @auth_url %>
+auth_type = password
+auth_uri = <%= @auth_uri %>
+insecure = True
+
+[oslo_messaging_notifications]
+transport_url = <%= @default_transport_url %>
+driver = <%= @notification_driver %>
+
+[oslo_middleware]
+enable_proxy_headers_parsing = <%= @enable_proxy_headers_parsing %>
