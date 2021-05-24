@@ -1,0 +1,28 @@
+FROM docker.io/tripleotrain/centos-binary-horizon:current-tripleo-rdo
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="rhosp16/openstack-horizon-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="4.0.0" \
+      release="4.0" \
+      summary="Red Hat OpenStack Platform 16.0 horizon TrilioData TrilioVault Horizon Plugin" \
+      description="Red Hat OpenStack Platform 16.0 horizon TrilioData TrilioVault Horizon Plugin"
+
+##Install datamover packages
+RUN yum clean all
+ADD trilio.repo /etc/yum.repos.d/
+RUN yum install tvault-horizon-plugin workloadmgrclient -y
+RUN rm /etc/yum.repos.d/trilio.repo
+RUN yum clean all
+
+##Move necessary files
+ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/share/openstack-dashboard/manage.py compress --force
+
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
