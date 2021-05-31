@@ -43,21 +43,21 @@ do
 		echo -e "Creating trilio-datamover container for tripleo ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-datamover/
 		mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
-		docker build --no-cache -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover:${tvault_version} .
+		buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover:${tvault_version} .
 
 
 		#Build trilio_datamover-api containers
 		echo -e "Creating trilio-datamover container-api for tripleo ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-datamover-api/
 		mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
-		docker build --no-cache -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover-api:${tvault_version} .
+		buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover-api:${tvault_version} .
 
 
 		#Build trilio_horizon_plugin containers
 		echo -e "Creating trilio-horizon-plugin container for tripleo ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-horizon-plugin/
 		mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
-		docker build --no-cache -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-horizon-plugin:${tvault_version} .
+		buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-horizon-plugin:${tvault_version} .
 
 		# Clean the build_dir
 		rm -rf $base_dir/${build_dir}
