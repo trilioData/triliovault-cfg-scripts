@@ -25,16 +25,16 @@ do
     for openstack_platform in "${openstack_platforms[@]}"
     do
         container_prefix="${openstack_distro}-${openstack_release}-${openstack_platform}"
-        docker tag trilio/${container_prefix}-trilio-datamover-api:${tvault_version} \
+        podman tag trilio/${container_prefix}-trilio-datamover-api:${tvault_version} \
         docker.io/trilio/${container_prefix}-trilio-datamover-api:${tvault_version}
-        docker push docker.io/trilio/${container_prefix}-trilio-datamover-api:${tvault_version}
+        podman push docker.io/trilio/${container_prefix}-trilio-datamover-api:${tvault_version}
 
-        docker tag trilio/${container_prefix}-trilio-datamover:${tvault_version} \
+        podman tag trilio/${container_prefix}-trilio-datamover:${tvault_version} \
         docker.io/trilio/${container_prefix}-trilio-datamover:${tvault_version}
-        docker push docker.io/trilio/${container_prefix}-trilio-datamover:${tvault_version}
+        podman push docker.io/trilio/${container_prefix}-trilio-datamover:${tvault_version}
 
-        docker tag trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version} \
+        podman tag trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version} \
         docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}
-        docker push docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}
+        podman push docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}
     done
 done
