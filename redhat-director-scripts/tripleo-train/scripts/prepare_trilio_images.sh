@@ -35,7 +35,7 @@ ${container_tool} login docker.io
 container_prefix="tripleo-train-${os_platform}"
 ## Prepare openstack horizon with trilio container
 ${container_tool} pull docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tag}
-${container_tool} tag docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tag} ${undercloud_hostname}:8787/trilio/trilio-horizon-plugin:${tag}
+${container_tool} tag docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tag} ${undercloud_hostname}:8787/trilio/${container_prefix}-trilio-horizon-plugin:${tag}
 openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/${container_prefix}-trilio-horizon-plugin:${tag}
 
 ## Prepare trilio datamover container
