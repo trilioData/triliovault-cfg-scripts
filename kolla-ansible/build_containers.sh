@@ -36,6 +36,10 @@ do
 		cp -R $base_dir/trilio-datamover-api $base_dir/${build_dir}/
                 cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
+                docker pull kolla/${openstack_platform}-binary-nova-compute:${openstack_release}
+                docker pull kolla/${openstack_platform}-binary-horizon:${openstack_release}
+                docker pull kolla/${openstack_platform}-binary-nova-api:${openstack_release}
+ 
 		#Build trilio-datamover containers
 		echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
 		cd $base_dir/${build_dir}/trilio-datamover/
