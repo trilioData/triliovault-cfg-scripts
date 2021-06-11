@@ -31,6 +31,11 @@ fi
 #declare -a openstack_platforms=("centos" "ubuntu")
 
 ##################### Create containers for rhosp13 ################
+declare -a repositories=("registry.access.redhat.com/rhosp13/openstack-nova-compute" "registry.access.redhat.com/rhosp13/openstack-nova-api" "registry.access.redhat.com/rhosp13/openstack-horizon")
+for repository in "${repositories[@]}"
+do
+    docker pull ${repository}:latest
+done
 
 build_dir=tmp_docker_${tvault_version}
 rm -rf $base_dir/${build_dir}
