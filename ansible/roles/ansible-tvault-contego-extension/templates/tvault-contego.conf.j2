@@ -72,3 +72,6 @@ rbd_user = {{cinder_ceph_client}}
 keyring_ext = .{{cinder_ceph_client}}.keyring
 {%endif%}
 
+[cinder]
+http_retries = 10
+
