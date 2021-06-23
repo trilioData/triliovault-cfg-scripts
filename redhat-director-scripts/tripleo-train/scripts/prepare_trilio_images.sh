@@ -4,9 +4,9 @@ set -e
 
 if [ $# -lt 3 ];then
    echo "Script takes exacyly 3 arguments"
-   echo -e "./prepare_trilio_images.sh <undercloud_hostname> <OS_platform> <container_tag>"
+   echo -e "./prepare_trilio_images.sh <undercloud_registry_hostname_or_ip> <OS_platform> <container_tag>"
    echo -e "For example:"
-   echo -e "./prepare_trilio_images.sh prod1-undercloud.demo centos7 4.1.124"
+   echo -e "./prepare_trilio_images.sh undercloud.ctlplane.ooo.prod1 centos7 4.1.124"
    echo -e "Valid values for <OS_platform> are 'centos7' and 'centos8'"
    exit 1
 fi
