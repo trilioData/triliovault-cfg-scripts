@@ -32,4 +32,5 @@ do
         docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release}
         docker push docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release}
     done
+    let count=count+1
 done
