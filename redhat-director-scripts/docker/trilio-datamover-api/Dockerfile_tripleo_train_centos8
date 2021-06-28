@@ -26,6 +26,13 @@ RUN  rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
 RUN dnf clean all
 
+#Copy executable files
+RUN mkdir -p /opt/tvault/
+ADD start_datamover_api_tripleo_centos8  /opt/tvault/start_datamover_api
+RUN chown -R nova:nova /opt/tvault/
+RUN chmod 755 /opt/tvault/start_datamover_api
+
+
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses
