@@ -31,7 +31,7 @@ declare -a base_containers=("docker.io/tripleotrain/centos-binary-nova-compute:c
 for base_container in "${base_containers[@]}"
 do
         docker pull --auth /home/docker-auth.json ${base_container}
-
+done
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
