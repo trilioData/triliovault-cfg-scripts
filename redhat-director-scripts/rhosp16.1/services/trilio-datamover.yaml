@@ -183,6 +183,9 @@ outputs:
             - path: /var/log/trilio-datamover
               owner: nova:nova
               recurse: true
+            - path: /var/lib/nova/triliovault-mounts
+              owner: nova:nova
+              recurse: false              
             - path:
                 str_replace:
                   template: /etc/ceph/CLUSTER.client.USER.keyring
