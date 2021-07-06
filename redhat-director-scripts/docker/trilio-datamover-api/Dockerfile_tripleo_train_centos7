@@ -6,7 +6,7 @@ LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
       vendor="TrilioData" \
       version="4.1.0" \
       release="4.1" \
-      summary="TripleO Train nova-api TrilioData trilio-datamover-apir" \
+      summary="TripleO Train nova-api TrilioData trilio-datamover-api" \
       description="TripleO Train nova-api TrilioData trilio-datamover-api"
 
 

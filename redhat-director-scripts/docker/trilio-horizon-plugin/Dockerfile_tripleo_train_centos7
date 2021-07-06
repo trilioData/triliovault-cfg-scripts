@@ -7,7 +7,7 @@ LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
       version="4.1.0" \
       release="4.1" \
       summary="TripleO Train Horizon plugin TrilioVault Horizon Plugin" \
-      description="TripleO Train Horizon plugin TrilioVault Horizon Pluginr"
+      description="TripleO Train Horizon plugin TrilioVault Horizon Plugin"
 
 ##Install datamover packages
 RUN yum clean all
