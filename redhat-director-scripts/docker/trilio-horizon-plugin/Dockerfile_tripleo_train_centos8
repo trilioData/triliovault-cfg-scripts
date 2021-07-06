@@ -6,8 +6,8 @@ LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
       vendor="TrilioData" \
       version="4.1.0" \
       release="4.1" \
-      summary="TripleO Train nova-compute plugin TrilioData Datamover" \
-      description="TripleO Train nova-compute plugin TrilioData Datamover"
+      summary="TripleO Train Horizon plugin TrilioData Datamover" \
+      description="TripleO Train Horizon plugin TrilioData Datamover"
 
 ##Install datamover packages
 RUN dnf clean all
