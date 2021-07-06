@@ -3,6 +3,9 @@
 # This file should be used instead of tls-endpoints-public-ip.yaml when
 # deploying Trilio
 parameter_defaults:
+  # Whether to enable TLS on the public interface or not.
+  # Type: boolean
+  EnablePublicTLS: False
   EndpointMap:
     AodhAdmin: {protocol: 'http', port: '8042', host: 'IP_ADDRESS'}
     AodhInternal: {protocol: 'http', port: '8042', host: 'IP_ADDRESS'}
