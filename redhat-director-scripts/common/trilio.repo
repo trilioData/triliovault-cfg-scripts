@@ -1,0 +1,5 @@
+[triliovault-4-1]
+name=triliovault-4-1
+baseurl={REPO_URL}
+gpgcheck=0
+enabled=1
