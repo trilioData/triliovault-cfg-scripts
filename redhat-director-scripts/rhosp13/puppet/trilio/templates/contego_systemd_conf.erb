@@ -1,6 +1,9 @@
 [Unit]
 Description=Tvault contego
 After=openstack-nova-compute.service
+StartLimitIntervalSec=120
+StartLimitInterval=120
+StartLimitBurst=3
 
 [Service]
 User=nova
