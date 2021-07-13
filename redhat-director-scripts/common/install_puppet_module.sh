@@ -2,15 +2,19 @@
 
 set -e
 
-if [ $# -lt 1 ];then
+if [ $# -lt 3 ];then
    echo "Script takes exacyly 1 argument"
-   echo -e "./install_puppet_module.sh <overcloud_full_image_path>"
-   echo -e "Example"
-   echo -e "./install_puppet_module.sh /home/stack/images/overcloud-full.qcow2"
+   echo -e "./install_puppet_module.sh <OVERCLOUD_FULL_IMAGE_PATH> <TRILIO_RPM_REPO_USERNAME> <TRILIO_RPM_REPO_PASSWORD>"
+   echo -e "Example: [Get rpm repo username nad password from trilio team]"
+   echo -e "./install_puppet_module.sh /home/stack/images/overcloud-full.qcow2 test_user test_password"
    exit 1
 fi
 
+
 overcloud_full_image_path=$1
+rpm_repo_user=$2
+rpm_repo_password=$3
+
 tmp_working_dir="/tmp/triliovault"
 overcloud_full_image_name=`basename $overcloud_full_image_path`
 
@@ -18,13 +22,26 @@ overcloud_full_image_name=`basename $overcloud_full_image_path`
 rm -rf $tmp_working_dir
 mkdir -p $tmp_working_dir
 cp $overcloud_full_image_path ${tmp_working_dir}/
-cp trilio.repo ${tmp_working_dir}/
 
-cd ${tmp_working_dir}/
-virt-customize --selinux-relabel -a ${overcloud_full_image_name} --upload trilio.repo:/etc/yum.repos.d/
-virt-customize --selinux-relabel -a ${overcloud_full_image_name} --install puppet-triliovault
+cat > trilio.repo <<EOF
+[triliovault-4-1]
+name=triliovault-4-1
+baseurl=http://${rpm_repo_user}:${rpm_repo_password}@repos.trilio.io:8283/triliovault-4.1-dev/yum/
+gpgcheck=0
+enabled=1
+EOF
+
+cp trilio.repo virt_commands ${tmp_working_dir}/
+
+
+
+export LIBGUESTFS_BACKEND=direct
+
+virt-customize --selinux-relabel -a ${overcloud_full_image_name} --commands-from-file ./virt_commands
+
 virt-customize --selinux-relabel -a ${overcloud_full_image_name} --run-command  'ln -s /usr/share/openstack-puppet/modules/trilio /etc/puppet/modules/trilio && rm -f /etc/yum.repos.d/trilio.repo'
 
+virt-sysprep --operation machine-id -a ${overcloud_full_image_name}
 
 echo -e "Updated overcloud full image path is: ${tmp_working_dir}/${overcloud_full_image_name}"
 echo -e "TrilioVault puppet module is installed in the overcloud image"
