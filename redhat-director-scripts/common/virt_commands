@@ -1,0 +1,2 @@
+upload trilio.repo:/etc/yum.repos.d/
+install puppet-triliovault
