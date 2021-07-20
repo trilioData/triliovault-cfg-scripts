@@ -15,14 +15,6 @@ overcloud_full_image_path=$1
 rpm_repo_user=$2
 rpm_repo_password=$3
 
-tmp_working_dir="/tmp/triliovault"
-overcloud_full_image_name=`basename $overcloud_full_image_path`
-
-
-rm -rf $tmp_working_dir
-mkdir -p $tmp_working_dir
-cp $overcloud_full_image_path ${tmp_working_dir}/
-
 cat > trilio.repo <<EOF
 [triliovault-4-1]
 name=triliovault-4-1
@@ -31,24 +23,16 @@ gpgcheck=0
 enabled=1
 EOF
 
-cp trilio.repo virt_commands ${tmp_working_dir}/
-
-
 
 export LIBGUESTFS_BACKEND=direct
 
-virt-customize --selinux-relabel -a ${overcloud_full_image_name} --commands-from-file ./virt_commands
+virt-customize --selinux-relabel -a ${overcloud_full_image_path} --commands-from-file ./virt_commands
 
-virt-customize --selinux-relabel -a ${overcloud_full_image_name} --run-command  'ln -s /usr/share/openstack-puppet/modules/trilio /etc/puppet/modules/trilio && rm -f /etc/yum.repos.d/trilio.repo'
+virt-customize --selinux-relabel -a ${overcloud_full_image_path} --run-command  'ln -s /usr/share/openstack-puppet/modules/trilio /etc/puppet/modules/trilio && rm -f /etc/yum.repos.d/trilio.repo'
 
-virt-sysprep --operation machine-id -a ${overcloud_full_image_name}
+virt-sysprep --operation machine-id -a ${overcloud_full_image_path}
 
-echo -e "Updated overcloud full image path is: ${tmp_working_dir}/${overcloud_full_image_name}"
+echo -e "Updated overcloud full image path is: ${overcloud_full_image_path}"
 echo -e "TrilioVault puppet module is installed in the overcloud image"
-echo -e "You need to copy(overwrite) this image to your overcloud images location. Default location is /home/stack/images"
-echo -e "Then you need to upload updated images to undercloud glance using following command"
-echo -e "openstack overcloud image upload --image-path /home/stack/images/"
-
-## To verify the changes, use following steps
-# mkdir /tmp/mnt
-# guestmount -a /home/stack/test/overcloud-full.qcow2 -m /dev/sda /tmp/mnt
+echo -e "You need to upload updated images to undercloud glance using following command"
+echo -e "openstack overcloud image upload --image-path --update-existing /home/stack/images/"
