@@ -1,0 +1,17 @@
+
+- set_fact:
+     dmapi_db_setup_host="{{ ('galera_all' in groups) | ternary(groups['galera_all'][0], 'localhost') }}"
+  when:
+    OPENSTACK_DIST | upper  == "USSURI"
+
+- set_fact:
+     dmapi_db_setup_host="{{ openstack_db_setup_host | default('localhost') }}"
+  when:
+    OPENSTACK_DIST | upper  != "USSURI"
+
+- set_fact:
+     dmapi_db_setup_python_interpreter="{{ openstack_db_setup_python_interpreter | default((dmapi_db_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
+  when:
+    OPENSTACK_DIST | upper  != "USSURI"
+
+  
