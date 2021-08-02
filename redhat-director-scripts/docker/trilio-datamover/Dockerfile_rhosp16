@@ -15,7 +15,6 @@ USER root
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 
-RUN dnf clean all
 RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
 RUN dnf -y install microdnf \
