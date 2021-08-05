@@ -4,7 +4,7 @@
 vault_storage_type = nfs
 
 {% if is_multi_ip_nfs == "yes" %}
-vault_storage_nfs_export = "{{ triliovault_nfs_shares[inventory_hostname] }}"
+vault_storage_nfs_export = "{{ triliovault_nfs_mapping[inventory_hostname] }}"
 {% else %}
 vault_storage_nfs_export = {{ triliovault_nfs_shares }}
 {% endif %}
