@@ -35,6 +35,11 @@ triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 ## Keep default values, unless you have a special need.
 triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
+## Valid for 'nfs' backup target only.
+## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then 
+## set 'is_multi_ip_nfs' paremeter to 'yes'. Otherwise it's value should be 'no'
+is_multi_ip_nfs: 'no'
+
 
 ### 'amazon_s3/other_s3_compatible' backup target details
 ## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
