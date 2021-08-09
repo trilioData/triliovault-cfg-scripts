@@ -1,0 +1,7 @@
+triliovault_nfs_mapping:
+  "192.168.1.34:/var/share": ['compute[01:10].trilio.demo', 'compute_bare01.trilio.demo']
+  "192.168.1.35:/var/share": ['compute[11:20].trilio.demo', 'compute_virtual_01']
+  "192.168.1.33:/var/share": ['compute[21:30].trilio.demo']
+  
+  
+triliovault_default_nfs_share: "192.168.1.34:/var/share"

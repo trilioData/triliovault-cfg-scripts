@@ -31,3 +31,4 @@ triliovault_nfs_mapping:
   compute28.trilio.demo: 192.168.1.33:/var/share
   compute29.trilio.demo: 192.168.1.33:/var/share
   compute30.trilio.demo: 192.168.1.33:/var/share
+  triliovault_default_nfs_share: 192.168.1.33:/var/share
