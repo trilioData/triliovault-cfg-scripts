@@ -1,5 +1,11 @@
 [DEFAULT]
+
+<% if @multi_ip_nfs_enabled == true -%>
+vault_storage_nfs_export = <%= @nfs_map[datamover_node_name] %>
+<% else -%>
 vault_storage_nfs_export = <%= @nfs_shares %>
+<% end -%>
+
 vault_storage_nfs_options = <%= @nfs_options %>
 vault_storage_type = nfs
 vault_data_directory_old = <%= @vault_data_dir_old %>
