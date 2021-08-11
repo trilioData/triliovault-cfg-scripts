@@ -1,0 +1,12 @@
+# TrilioDatamoverNfsMap represents datamover node (compute node) and it's NFS share mapping.
+# NFS share is a backup target of TrilioVault
+parameter_defaults:
+  ## If user wants to configure multiple endpoints/ip based NFS as backup target of TrilioVault, 
+  ## in that case keep this parameter 'multi_ip_nfs_enabled' value to 'true'. Otherwise make it false.
+  MultiIPNfsEnabled: 'true'
+  TrilioDatamoverNfsMap:
+    compute1.trilio.demo: 192.168.1.34:/var/share
+    compute2.trilio.demo: 192.168.1.35:/var/share
+    compute3.trilio.demo: 192.168.1.35:/var/share
+    compute4.trilio.demo: 192.168.1.36:/var/share
+    compute5.trilio.demo: 192.168.1.36:/var/share

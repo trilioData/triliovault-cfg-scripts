@@ -27,7 +27,6 @@ parameter_defaults:
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'
-
    ## For backup target 'nfs'
    NfsShares: '192.168.122.101:/opt/tvault'
    NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
