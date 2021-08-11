@@ -1,3 +1,0 @@
-triliovault_nfs_mapping:
-  "192.168.1.34:/var/share": ['compute1', 'compute2', 'compute3']
-  "192.168.1.35:/var/share": ['compute4', 'compute5', 'compute6']
