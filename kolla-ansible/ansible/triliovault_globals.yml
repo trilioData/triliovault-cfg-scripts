@@ -39,7 +39,7 @@ triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 ## Valid for 'nfs' backup target only.
 ## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then 
 ## set 'is_multi_ip_nfs' paremeter to 'yes'. Otherwise it's value should be 'no'
-is_multi_ip_nfs: 'no'
+multi_ip_nfs_enabled: 'no'
 
 
 ### 'amazon_s3/other_s3_compatible' backup target details
