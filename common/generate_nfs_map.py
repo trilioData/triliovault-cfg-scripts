@@ -67,7 +67,10 @@ def create_compute_nfs_map():
     # For multi-ip nfs shares map, first map only.
     # Discovers all compute node names and assignes first nfs share. Creates a
     # dictionary.
-    nfs_share_map = input_data['multi_ip_nfs_shares'][0]
+    if input_data['multi_ip_nfs_shares']:
+        nfs_share_map = input_data['multi_ip_nfs_shares'][0]
+    else:
+        nfs_share_map = []
     for nfs_share in nfs_share_map:
         for compute_host_name in nfs_share_map[nfs_share]:
             #nfs_share_full_path = nfs_ip+":"+nfs_share_name
@@ -100,15 +103,13 @@ def create_compute_nfs_map():
 
     # append above single ip nfs share string against all compute nodes in
     # output dictionary
-    updated_output_data = {}
-    updated_output_data['triliovault_nfs_map'] = {}
     if single_ip_nfs_shares_string:
         for compute_host, nfs_share in output_data['triliovault_nfs_map'].items():
-            updated_output_data['triliovault_nfs_map'][compute_host] = nfs_share + single_ip_nfs_shares_string
+            output_data['triliovault_nfs_map'][compute_host] = nfs_share + single_ip_nfs_shares_string
 
     # Write output dictionary to a yaml file
     with open(OUTPUT_FILE_NAME, 'w') as output_data_stream:
-        yaml.dump(updated_output_data, output_data_stream, sort_keys=False)
+        yaml.dump(output_data, output_data_stream, sort_keys=False, indent=4)
 
 
 def main():
