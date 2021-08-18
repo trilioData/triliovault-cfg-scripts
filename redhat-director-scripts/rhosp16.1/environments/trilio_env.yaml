@@ -29,6 +29,7 @@ parameter_defaults:
    BackupTargetType: 'nfs'
 
    ## If backup target NFS share support multiple IPs and you want to use those IPs(more than one) then
+   ## set this parameter to True. Otherwise keep it False.
    MultiIPNfsEnabled: False
 
    ## For backup target 'nfs'

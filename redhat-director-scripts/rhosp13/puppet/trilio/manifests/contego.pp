@@ -21,6 +21,8 @@ class trilio::contego (
     $oslomsg_rpc_use_ssl                  = hiera('trilio::rabbit_use_ssl', '0'),
     $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
+    $multi_ip_nfs_enabled                 = false,
+    $datamover_node_name                  = hiera('tvault-contego_short_bootstrap_node_name'),
 ) {
 
 
