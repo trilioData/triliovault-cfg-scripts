@@ -12,6 +12,10 @@ single_ip_nfs_shares:
   - "192.168.3.98:/var/share3"
   - "192.168.4.102:/var/share4"
 
+##  Example format for enviornments where there is no single ip nfs share.
+#single_ip_nfs_shares: []
+
+
 ###### Supported range(compact) host name formats
 ## foo[1:10], foo[21:40]     --- compute-suffix is empty string here
 ## foo[1:10].bar, foo[21:40].bar    --- compute-prefix and compute-suffix are not empty
