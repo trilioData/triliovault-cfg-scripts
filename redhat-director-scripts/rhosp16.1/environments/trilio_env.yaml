@@ -27,6 +27,11 @@ parameter_defaults:
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'
+
+   ## If backup target NFS share support multiple IPs and you want to use those IPs(more than one) then
+   ## set this parameter to True. Otherwise keep it False.
+   MultiIPNfsEnabled: False
+
    ## For backup target 'nfs'
    NfsShares: '192.168.122.101:/opt/tvault'
    NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
