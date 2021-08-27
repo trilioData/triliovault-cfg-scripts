@@ -1,6 +1,9 @@
 [Unit]
 Description=Tvault contego
 Requires=tvault-object-store.service
+StartLimitIntervalSec=120
+StartLimitInterval=120
+StartLimitBurst=3
 
 [Service]
 User=nova
