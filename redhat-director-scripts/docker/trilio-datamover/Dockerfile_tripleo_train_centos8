@@ -16,7 +16,7 @@ USER root
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
-RUN tripleo-repos -b train --no-stream current && tripleo-repos -b train --no-stream current ceph
+RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
 
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
 
