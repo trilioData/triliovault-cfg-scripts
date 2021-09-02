@@ -245,6 +245,8 @@ outputs:
           file:
             path: "{{ item.path }}"
             state: directory
+            owner: 42436
+            group: 42436
             setype: "{{ item.setype }}"
           with_items:
             - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
