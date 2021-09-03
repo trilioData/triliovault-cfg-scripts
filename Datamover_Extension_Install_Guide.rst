@@ -1,22 +1,17 @@
 
- **Install steps for Trilio Datamover Extension**
+ **Install steps for Trilio Datamover Service**
  
- This trilio component sits on compute node and performs backups and recovery.
- User should install this plugin all compute nodes.
+ This trilio component should be installed on all compute nodes.
 
 **1. Pre-requisites**
 
-  i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
-  OpenStack compute, controller and horizon nodes.
-  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
-
-  ii)Select which storage type you want to use to store your snapshots.
+  i)Select which storage type you want to use to store your snapshots.
   TrilioVault supports NFS, Amazon S3 and Ceph S3. This would be your backup target type.
 
-  iii) Make sure that your compute nodes have connectivity to the Internet.
+  ii) Make sure that your compute nodes have connectivity to the Internet.
   This is required because our yum, apt package repos are on cloud.
 
-**Note**: *Perform following steps on all compute nodes.*
+**Note**: *Perform following steps on all compute nodes*
 
 **2. Setup Trilio repository**
 
@@ -41,34 +36,58 @@
    
     yum makecache
 
+    - Python 2
     yum install tvault-contego puppet-triliovault -y
+   
+    - Python3
+    dnf install -y python3-tvault-contego puppet-triliovault python3-s3fuse-plugin
    
    *If platform is Ubuntu*
    
     apt-get update
 
-    apt-get install tvault-contego-extension
+    - Python2
+    apt-get install -y tvault-contego --allow-unauthenticated
+    
+    - Python3
+    apt-get install -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated
 
-    apt-get install tvault-contego
-   
     
 **4. Populate datamover conf file**
      mkdir /etc/tvault-contego
      
      chown -R nova:nova /etc/tvault-contego/
      
-     cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+     
      
   i)If backup target is NFS, You will need a NFS share: for ex: 192.168.16.14:/var/share1
-     Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
-     NFS share value
+  Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
+  NFS share value
+     
+  cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
 
   ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and 
   bucket_name.
   Edit /etc/tvault-contego/tvault-contego.conf for the same
   
-  iii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, endpoint_url, bucket_name and if ssl     enabled on s3 endpoint
+  cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
+
+  iii)If backup target is any other supported S3 storage:
+  
+  cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+
   Edit /etc/tvault-contego/tvault-contego.conf for the same
+  
+  You will need four values:
+  
+  - acess_key
+  - secret_key
+  - endpoint_url
+  - bucket_name
+  - if ssl     enabled on s3 endpoint
+  
+
+ 
 
 **5. Setup password-less sudo access for nova user**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery.
