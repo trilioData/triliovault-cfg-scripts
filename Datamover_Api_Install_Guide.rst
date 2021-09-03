@@ -11,11 +11,7 @@ Node where we are installing dmapi service, we will call it as datamover api nod
 
 **1. Pre-requisites**
 
-  <<< i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
-  OpenStack compute, controller and horizon nodes.
-  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. >>>
-
-  ii) Make sure that your horizon nodes have connectivity to the Internet.
+  i) Make sure that your datamover api nodes(planned) have connectivity to the Internet.
   This is required because our yum, apt package repos are on cloud.
 
 **2. Setup Trilio package repository**
