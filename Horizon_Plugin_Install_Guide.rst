@@ -7,12 +7,7 @@ It is supposed to be installed on all horizon nodes.
 
 
 **1. Pre-requisites**
-
-  i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
-  OpenStack compute, controller and horizon nodes.
-  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56.
-
-  ii) Make sure that your horizon nodes have connectivity to the Internet. 
+  i) Make sure that your horizon nodes have connectivity to the Internet. 
   This is required because our yum, apt package repos are on cloud. 
   
 **2. Setup Trilio repository**
@@ -35,19 +30,27 @@ Clone the repository:
 
 **3. Install Trilio Datamover extension package**
 
+Note: workloadmgrclient package gets installed as a dependency of the triliovault horizon package.
+
    *If platform is RHEL/CentOS*
    
       yum makecache
 
+      - Python2
       yum install tvault-horizon-plugin python-workloadmgrclient
    
+      - Python3
+      dnf install python3-tvault-horizon-plugin-el8
+      
    *If platform is Ubuntu*
    
       apt-get update
 
+      - Python2
       apt-get install tvault-horizon-plugin
-    
-      apt-get install python-workloadmgrclient
+      
+      - Python3
+      apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient --allow-unauthenticated
     
 **4. Copy config files to OpenStack dashboard directory**
 
