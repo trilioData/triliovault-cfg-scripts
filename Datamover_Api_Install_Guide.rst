@@ -1,15 +1,19 @@
-**Install steps for Trilio Datamover Api (DmApi)**
+**Install Trilio Datamover Api Service**
 
-TrilioVault Datamover Api needs to be installed on all OpenStack nodes where nova-api service is running(controller nodes). Here on-words we will be reffering this component as 'DmApi'.
-Perform following steps on all controller nodes of OpenStack.
+TrilioVault Datamover Api is a control plane of TrilioVault datamover service.
+Typically user needs to install this service on controller nodes. But tecnically you can install this service on any 
+node like any other openstack service.
 
-**Note**: *Perform following steps on all controller nodes.*
+Node where we are installing dmapi service, we will call it as datamover api nodes. 
+
+
+**Note**: *Perform following steps on all datamover api nodes*
 
 **1. Pre-requisites**
 
-  i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
+  <<< i)You should have launched at-least one TrilioVault VM and this VM should have l3 connectivity with
   OpenStack compute, controller and horizon nodes.
-  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. 
+  Get IP address of TrilioVault VM. For example, we assume it's 192.168.14.56. >>>
 
   ii) Make sure that your horizon nodes have connectivity to the Internet.
   This is required because our yum, apt package repos are on cloud.
@@ -32,7 +36,7 @@ Clone the repository on controller node:
   
       echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
 
-**3. Install Trilio Datamover Api package**
+**3. Install and configure Trilio Datamover Api Service**
 
    *If platform is RHEL/CentOS*
    
@@ -46,36 +50,15 @@ Clone the repository on controller node:
 
       apt-get install dmapi
     
-**4. Populate DmApi conf file (/etc/dmapi/dmapi.conf)**
-You can either manually edit "/etc/dmapi/dmapi.conf" and fill all the configuration values OR
-You can use our command line tool named 'populate-conf', to automatically populate all values.
-This tool will be automatically installed with "dmapi" package[step-2].
+**4. Populate triliovault datamover api service configuration file - '/etc/dmapi/dmapi.conf' **
+After installing datamover api rpm/debian package, a sample conf file gets create at location:
+/etc/dmapi/dmapi.conf
 
-Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
- i) Create /tmp/datamover_url 
- 
-          cp ansible/roles/ansible-datamover-api/templates/datamover_url /tmp/datamover_url
-    
-    Edit this file /tmp/datamover_url and fill controller node fixed ip. This file will be used by populate-conf tool.
-    
-    **/tmp/datamover_url file will look like following**
-    
-      [DEFAULT]
-    
-      **dmapi_link_prefix = http://<openstack_controller_node_ip>:8784**
-    
-      dmapi_enabled_ssl_apis =
-    
-      [wsgi]
-    
-      ssl_cert_file = 
-    
-      ssl_key_file = 
-    
-      
-  ii) Run 'populate-conf' command, it will populate necessary fields in /etc/dmapi/dmapi.conf. You can verify that.
+User needs to edit it and fill all necessary parameters.
 
-        populate-conf
+Here are the details of all parameters.
+
+<<<<<<<<<<<<< TODO: ADD ALL PARAMETERS AND IT's DETAILS HERE in TABULAR FORMAT >>>>>>>>>>>>>>>>>>>>>>>>>
 
 **5. Create dmapi log directory:**
         mkdir /var/log/dmapi
@@ -83,6 +66,7 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
         chown -R nova:nova /var/log/dmapi
     
 **6. Create service init file: /etc/systemd/system/tvault-datamover-api.service**
+
 
         cp conf-files/tvault-datamover-api.service /etc/systemd/system/   
     
@@ -100,5 +84,4 @@ Steps to use 'populate-conf' command line tool to populate dmapi.conf file:
     
           systemctl status tvault-datamover-api
           
-    ii) Verify that no error appears in /var/log/dmapi/dmapi.log file
-      
+    ii) Verify that no error appears in log file - '/var/log/dmapi/dmapi.log'     
