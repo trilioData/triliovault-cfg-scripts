@@ -41,14 +41,22 @@ Clone the repository on controller node:
    *If platform is RHEL/CentOS*
    
       yum makecache
-
-      yum install dmapi
+      
+      - Python2
+      yum install dmapi -y
+      
+      - Python3
+      yum install python3-dmapi -y
    
    *If platform is Ubuntu*
    
       apt-get update
 
+      - Python2
       apt-get install dmapi
+      
+      - Python3
+      apt-get install -y python3-dmapi --allow-unauthenticated
     
 **4. Populate triliovault datamover api service configuration file - /etc/dmapi/dmapi.conf**
 
