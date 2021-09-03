@@ -66,11 +66,17 @@
      
   cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
 
-  ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and 
-  bucket_name.
-  Edit /etc/tvault-contego/tvault-contego.conf for the same
-  
+  ii)If backup target is amazon S3 
+ 
   cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
+  
+  Edit file /etc/tvault-contego/tvault-contego.conf and set values of following parameters.
+  
+  - S3_ACCESS_KEY
+  - S3_SECRET_KEY
+  - S3_REGION_NAME
+  - S3_BUCKET
+  
 
   iii)If backup target is any other supported S3 storage:
   
@@ -80,15 +86,13 @@
   
   You will need four values:
   
-  - acess_key
-  - secret_key
-  - endpoint_url
-  - bucket_name
-  - if ssl     enabled on s3 endpoint
+  - S3_ACCESS_KEY
+  - S3_SECRET_KEY
+  - S3_REGION_NAME
+  - S3_BUCKET
+  - S3_ENDPOINT_URL
+  - S3_SSL_ENABLED
   
-
- 
-
 **5. Setup password-less sudo access for nova user**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery.
   To perform backups and recovery, sometimes it needs previlaged access. For that we need to add this user to suoders
