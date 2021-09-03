@@ -50,7 +50,7 @@ Clone the repository on controller node:
 
       apt-get install dmapi
     
-**4. Populate triliovault datamover api service configuration file - '/etc/dmapi/dmapi.conf' **
+**4. Populate triliovault datamover api service configuration file - /etc/dmapi/dmapi.conf**
 After installing datamover api rpm/debian package, a sample conf file gets create at location:
 /etc/dmapi/dmapi.conf
 
@@ -59,6 +59,54 @@ User needs to edit it and fill all necessary parameters.
 Here are the details of all parameters.
 
 <<<<<<<<<<<<< TODO: ADD ALL PARAMETERS AND IT's DETAILS HERE in TABULAR FORMAT >>>>>>>>>>>>>>>>>>>>>>>>>
+
+| Parameter   | Description | Default Value |
+| :---        |    :----:   |          ---: |
+| [DEFAULT]     |        |    |
+| dmapi_workers     | Title       | 16   |
+| transport_url   | Text        | And more      |
+| dmapi_link_prefix   | Text        | And more      |
+| dmapi_enabled_ssl_apis   | Text        | And more      |
+| dmapi_listen_port   | Text        | And more      |
+| dmapi_enabled_apis   | Text        | And more      |
+| bindir   | Text        | And more      |
+| instance_name_template   | Text        | And more      |
+| dmapi_listen  | Text        | And more      |
+| my_ip   | Text        | And more      |
+| rootwrap_config   | Text        | And more      |
+| debug   | Text        | And more      |
+| log_file   | Text        | And more      |
+| log_dir   | Text        | And more      |
+|           |             |                       |
+| [wsgi]                 |           |            |
+| ssl_cert_file   | Text        | And more      |
+| ssl_key_file   | Text        | And more      |
+| api_paste_config   | Text        | And more      |
+|           |             |                       |
+| [database]   |         |       |
+| connection   | Text        | And more      |
+|           |             |                       |
+| [keystone_authtoken]   | Text        | And more      |
+| memcached_servers   | Text        | And more      |
+| signing_dir   | Text        | And more      |
+| cafile   | Text        | And more      |
+| project_domain_name   | Text        | And more      |
+| project_name   | Text        | And more      |
+| user_domain_name   | Text        | And more      |
+| password   | Text        | And more      |
+| transport_url   | Text        | And more      |
+| auth_url   | Text        | And more      |
+| auth_type   | Text        | And more      |
+| auth_uri   | Text        | And more      |
+| insecure   | Text        | And more      |
+|           |             |                       |
+| [oslo_messaging_notifications]   | Text        | And more      |
+| transport_url   | Text        | And more      |
+| driver   | Text        | And more      |
+|           |             |                       |
+| [oslo_middleware]   | Text        | And more      |
+| enable_proxy_headers_parsing   | Text        | And more      |
+
 
 **5. Create dmapi log directory:**
         mkdir /var/log/dmapi
