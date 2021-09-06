@@ -66,7 +66,7 @@ Here are the details of all parameters
 
 
 | Parameter   | Description | Default Value |
-| :---        |    :----:   |          ---: |
+| :---        |    :----:   |          :--- |
 | [DEFAULT]     |        |    |
 | dmapi_workers     | Number of dmapi process workers       | 16   |
 | transport_url   | message queue url        | And more      |
@@ -89,23 +89,23 @@ Here are the details of all parameters
 | api_paste_config   | Text        | /etc/dmapi/api-paste.ini      |
 |           |             |                       |
 | [database]   |         |       |
-| connection   | Text        | mysql+pymysql://root:project1@127.0.0.1/dmapi?charset=utf8      |
+| connection   | Database connection of dmapi user        | mysql+pymysql://root:project1@127.0.0.1/dmapi?charset=utf8      |
 |           |             |                       |
 | [keystone_authtoken]   |        |      |
 | memcached_servers   | Text        | Empty      |
 | signing_dir   | Text        | /var/cache/dmapi      |
 | cafile   | Text        | /opt/stack/data/ca-bundle.pem      |
-| project_domain_name   | Text        | Default      |
-| project_name   | Text        | service      |
-| user_domain_name   | Text        | Default      |
-| username   |    |  nova   |
-| password   | Text        |   project1    |
-| auth_url   | Text        | https://controller/identity      |
-| auth_type   | Text        | password      |
-| auth_uri   | Text        | http://controller:5000      |
+| project_domain_name   | 'dmapi' user's project domain name        | Default      |
+| project_name   | 'dmapi' user's project name        | service      |
+| user_domain_name   | 'dmapi' user domain name       | Default      |
+| username   |  USE_DEFAULT_VALUE  |   dmapi  |
+| password   | password        |   project1    |
+| auth_url   | Keystone auth url        | https://controller/identity      |
+| auth_type   | Keystone auth type        | password      |
+| auth_uri   | Keystone Auth uri        | http://controller:5000      |
 | project_domain_id | |  default |
 | www_authenticate_uri | |  http://controller:5000 |
-| insecure   | Text        | True      |
+| insecure   |  USE_DEFAULT_VALUE       | True      |
 |           |             |                       |
 | [oslo_messaging_notifications]   |       |       |
 | transport_url   | Text        | rabbit://dmapi:password@localhost:5672      |
