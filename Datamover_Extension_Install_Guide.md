@@ -64,12 +64,17 @@
   Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
   NFS share value
      
+<<<<<<< HEAD:Datamover_Extension_Install_Guide.md
      cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+=======
+  cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+>>>>>>> upstream/master:Datamover_Extension_Install_Guide.rst
 
   ii)If backup target is amazon S3 
  
      cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
   
+<<<<<<< HEAD:Datamover_Extension_Install_Guide.md
   Edit file /etc/tvault-contego/tvault-contego.conf and set values of following parameters.
   
   - S3_ACCESS_KEY
@@ -81,6 +86,26 @@
   iii)If backup target is any other supported S3 storage:
   
      cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+=======
+  cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
+
+  iii)If backup target is any other supported S3 storage:
+  
+  cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+
+  Edit /etc/tvault-contego/tvault-contego.conf for the same
+  
+  You will need four values:
+  
+  - acess_key
+  - secret_key
+  - endpoint_url
+  - bucket_name
+  - if ssl     enabled on s3 endpoint
+  
+
+ 
+>>>>>>> upstream/master:Datamover_Extension_Install_Guide.rst
 
   Edit /etc/tvault-contego/tvault-contego.conf for the same
   You will need set following parameters:
