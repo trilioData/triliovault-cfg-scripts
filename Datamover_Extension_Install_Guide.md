@@ -64,11 +64,11 @@
   Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
   NFS share value
      
-  cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+     cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
 
   ii)If backup target is amazon S3 
  
-  cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
+     cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
   
   Edit file /etc/tvault-contego/tvault-contego.conf and set values of following parameters.
   
@@ -80,11 +80,10 @@
 
   iii)If backup target is any other supported S3 storage:
   
-  cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+     cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
 
   Edit /etc/tvault-contego/tvault-contego.conf for the same
-  
-  You will need four values:
+  You will need set following parameters:
   
   - S3_ACCESS_KEY
   - S3_SECRET_KEY
@@ -98,28 +97,28 @@
   To perform backups and recovery, sometimes it needs previlaged access. For that we need to add this user to suoders
   with passwordless access.
 
-    cp redhat-director-scripts/docker/trilio-datamover/nova-sudoers /etc/sudoers.d/nova-trilio
+     cp redhat-director-scripts/docker/trilio-datamover/nova-sudoers /etc/sudoers.d/nova-trilio
 
 **6. Add 'nova' user to necessary groups**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery .
   For this, 'nova' user needs to be added to approrpriate system groups to get access to hypervisor and storage.
   
-   usermod -a -G kvm,qemu,libvirt,disk,nova nova
+     usermod -a -G kvm,qemu,libvirt,disk,nova nova
 
 **7. Create necessary directories**
   These directories will be used by Trilio datamover to mount the backup target and related work.
   
-   mkdir -p /var/triliovault-mounts
+     mkdir -p /var/triliovault-mounts
   
-   chown nova:nova /var/triliovault-mounts
+     chown nova:nova /var/triliovault-mounts
   
-   mkdir -p /var/triliovault
+     mkdir -p /var/triliovault
   
-   chown nova:nova /var/triliovault
+     chown nova:nova /var/triliovault
   
-   chmod 777 /var/triliovault-mounts
+     chmod 777 /var/triliovault-mounts
   
-   chmod 777 /var/triliovault
+     chmod 777 /var/triliovault
 
 **8. Configure log rotation for datamover logs**
 
