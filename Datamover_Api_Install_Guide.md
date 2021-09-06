@@ -76,41 +76,43 @@ Here are the details of all parameters
 | dmapi_enabled_apis   | USE_DEFAULT_VALUE        | dmapi      |
 | bindir   | USE_DEFAULT_VALUE         | /usr/bin      |
 | instance_name_template   | USE_DEFAULT_VALUE         | instance-%08x      |
-| dmapi_listen  | Text        | And more      |
-| my_ip   | Text        | And more      |
-| rootwrap_config   | Text        | And more      |
-| debug   | Text        | And more      |
-| log_file   | Text        | And more      |
-| log_dir   | Text        | And more      |
+| dmapi_listen  | IP address on which dmapi service listens        | empty      |
+| my_ip   | IP address on which dmapi service listens       | empty     |
+| rootwrap_config   | USE_DEFAULT_VALUE       | /etc/dmapi/rootwrap.conf      |
+| debug   | If you don't want debug logs, make it False        | Ttrue      |
+| log_file   | You can use customize this     | /var/log/dmapi/dmapi.log     |
+| log_dir   |  You can use customize this       | /var/log/dmapi      |
 |           |             |                       |
 | [wsgi]                 |           |            |
-| ssl_cert_file   | Text        | And more      |
-| ssl_key_file   | Text        | And more      |
-| api_paste_config   | Text        | And more      |
+| ssl_cert_file   | TLS cert file path        | /opt/stack/data/CA/int-ca/devstack-cert.crt      |
+| ssl_key_file   | TLS key file path       | /opt/stack/data/CA/int-ca/private/devstack-cert.key      |
+| api_paste_config   | Text        | /etc/dmapi/api-paste.ini      |
 |           |             |                       |
 | [database]   |         |       |
-| connection   | Text        | And more      |
+| connection   | Text        | mysql+pymysql://root:project1@127.0.0.1/dmapi?charset=utf8      |
 |           |             |                       |
-| [keystone_authtoken]   | Text        | And more      |
-| memcached_servers   | Text        | And more      |
-| signing_dir   | Text        | And more      |
-| cafile   | Text        | And more      |
-| project_domain_name   | Text        | And more      |
-| project_name   | Text        | And more      |
-| user_domain_name   | Text        | And more      |
-| password   | Text        | And more      |
-| transport_url   | Text        | And more      |
-| auth_url   | Text        | And more      |
-| auth_type   | Text        | And more      |
-| auth_uri   | Text        | And more      |
-| insecure   | Text        | And more      |
+| [keystone_authtoken]   |        |      |
+| memcached_servers   | Text        | Empty      |
+| signing_dir   | Text        | /var/cache/dmapi      |
+| cafile   | Text        | /opt/stack/data/ca-bundle.pem      |
+| project_domain_name   | Text        | Default      |
+| project_name   | Text        | service      |
+| user_domain_name   | Text        | Default      |
+| username   |    |  nova   |
+| password   | Text        |   project1    |
+| auth_url   | Text        | https://controller/identity      |
+| auth_type   | Text        | password      |
+| auth_uri   | Text        | http://controller:5000      |
+| project_domain_id | |  default |
+| www_authenticate_uri | |  http://controller:5000 |
+| insecure   | Text        | True      |
 |           |             |                       |
-| [oslo_messaging_notifications]   | Text        | And more      |
-| transport_url   | Text        | And more      |
-| driver   | Text        | And more      |
+| [oslo_messaging_notifications]   |       |       |
+| transport_url   | Text        | rabbit://dmapi:password@localhost:5672      |
+| driver   | Text        | messagingv2     |
 |           |             |                       |
-| [oslo_middleware]   | Text        | And more      |
-| enable_proxy_headers_parsing   | Text        | And more      |
+| [oslo_middleware]   |        |       |
+| enable_proxy_headers_parsing   | USE_DEFAULT_VALUE        | True      |
 
 
 **5. Create dmapi log directory:**
