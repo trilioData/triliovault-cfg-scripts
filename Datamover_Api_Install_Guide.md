@@ -68,14 +68,14 @@ Here are the details of all parameters
 | Parameter   | Description | Default Value |
 | :---        |    :----:   |          ---: |
 | [DEFAULT]     |        |    |
-| dmapi_workers     | Title       | 16   |
-| transport_url   | Text        | And more      |
+| dmapi_workers     | Number of dmapi process workers       | 16   |
+| transport_url   | message queue url        | And more      |
 | dmapi_link_prefix   | Text        | And more      |
-| dmapi_enabled_ssl_apis   | Text        | And more      |
-| dmapi_listen_port   | Text        | And more      |
-| dmapi_enabled_apis   | Text        | And more      |
-| bindir   | Text        | And more      |
-| instance_name_template   | Text        | And more      |
+| dmapi_enabled_ssl_apis   | Keep this empty        | Empty      |
+| dmapi_listen_port   | dmapi service listen port        | 8784      |
+| dmapi_enabled_apis   | USE_DEFAULT_VALUE        | dmapi      |
+| bindir   | USE_DEFAULT_VALUE         | /usr/bin      |
+| instance_name_template   | USE_DEFAULT_VALUE         | instance-%08x      |
 | dmapi_listen  | Text        | And more      |
 | my_ip   | Text        | And more      |
 | rootwrap_config   | Text        | And more      |
