@@ -54,9 +54,13 @@ Note: workloadmgrclient package gets installed as a dependency of the triliovaul
     
 **4. Copy config files to OpenStack dashboard directory**
 
-    cd ansible/roles/ansible-horizon-plugin/files/
+    git clone https://github.com/trilioData/horizon-tvault-plugin.git
+    
+    cd horizon-tvault-plugin/usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
     cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+    
+    cd ../../templatetags/
     
     cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
     
