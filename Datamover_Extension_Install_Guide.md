@@ -130,12 +130,16 @@
   *If backup target is 'NFS'
   
     cp conf-files/tvault-contego.service.nfs /etc/systemd/system/tvault-contego.service
+    
+    # Update python path (In line ExecStart=) in above service file with correct value as per your enviornment.
    
   *If backup target is 'S3'*
   
     cp conf-files/tvault-contego.service.s3 /etc/systemd/system/tvault-contego.service    
 
     cp conf-files/tvault-object-store.service /etc/systemd/system/tvault-object-store.service 
+
+    # Update python path (In line ExecStart=) in above service file with correct value as per your enviornment. 
 
   **Note**: You need validate above init files, executable paths and conf file paths. If necessary you can edit python install directory path in above init files as per platform you are using
 
