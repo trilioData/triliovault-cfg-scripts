@@ -20,7 +20,7 @@
     
     cd triliovault-cfg-scripts/
    
-    git checkout stable/3.4
+    git checkout stable/4.2
    
   *If platform is RHEL/CentOs*
   
@@ -28,7 +28,7 @@
 
   *If platform is Ubuntu*
   
-    echo "deb [trusted=yes] https://apt.fury.io/triliodata-3-4/ /" >> /etc/apt/sources.list.d/trilio.list
+    echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover extension package**
 
@@ -64,12 +64,29 @@
   Edit /etc/tvault-contego/tvault-contego.conf file and replace 'NFS_SHARE' string with your actual
   NFS share value
      
+<<<<<<< HEAD:Datamover_Extension_Install_Guide.md
+     cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+=======
   cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
+>>>>>>> upstream/master:Datamover_Extension_Install_Guide.rst
 
-  ii)If backup target is amazon S3, you will need four values:  acess_key, secret_key, region_name and 
-  bucket_name.
-  Edit /etc/tvault-contego/tvault-contego.conf for the same
+  ii)If backup target is amazon S3 
+ 
+     cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
   
+<<<<<<< HEAD:Datamover_Extension_Install_Guide.md
+  Edit file /etc/tvault-contego/tvault-contego.conf and set values of following parameters.
+  
+  - S3_ACCESS_KEY
+  - S3_SECRET_KEY
+  - S3_REGION_NAME
+  - S3_BUCKET
+  
+
+  iii)If backup target is any other supported S3 storage:
+  
+     cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+=======
   cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
 
   iii)If backup target is any other supported S3 storage:
@@ -88,34 +105,45 @@
   
 
  
+>>>>>>> upstream/master:Datamover_Extension_Install_Guide.rst
 
+  Edit /etc/tvault-contego/tvault-contego.conf for the same
+  You will need set following parameters:
+  
+  - S3_ACCESS_KEY
+  - S3_SECRET_KEY
+  - S3_REGION_NAME
+  - S3_BUCKET
+  - S3_ENDPOINT_URL
+  - S3_SSL_ENABLED
+  
 **5. Setup password-less sudo access for nova user**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery.
   To perform backups and recovery, sometimes it needs previlaged access. For that we need to add this user to suoders
   with passwordless access.
 
-    cp redhat-director-scripts/docker/trilio-datamover/nova-sudoers /etc/sudoers.d/nova-trilio
+     cp redhat-director-scripts/docker/trilio-datamover/nova-sudoers /etc/sudoers.d/nova-trilio
 
 **6. Add 'nova' user to necessary groups**
   Trilio datamover process runs with 'nova' user and datamover process is repsonsible to perform backup and recovery .
   For this, 'nova' user needs to be added to approrpriate system groups to get access to hypervisor and storage.
   
-   usermod -a -G kvm,qemu,libvirt,disk,nova nova
+     usermod -a -G kvm,qemu,libvirt,disk,nova nova
 
 **7. Create necessary directories**
   These directories will be used by Trilio datamover to mount the backup target and related work.
   
-   mkdir -p /var/triliovault-mounts
+     mkdir -p /var/triliovault-mounts
   
-   chown nova:nova /var/triliovault-mounts
+     chown nova:nova /var/triliovault-mounts
   
-   mkdir -p /var/triliovault
+     mkdir -p /var/triliovault
   
-   chown nova:nova /var/triliovault
+     chown nova:nova /var/triliovault
   
-   chmod 777 /var/triliovault-mounts
+     chmod 777 /var/triliovault-mounts
   
-   chmod 777 /var/triliovault
+     chmod 777 /var/triliovault
 
 **8. Configure log rotation for datamover logs**
 
@@ -127,12 +155,16 @@
   *If backup target is 'NFS'
   
     cp conf-files/tvault-contego.service.nfs /etc/systemd/system/tvault-contego.service
+    
+    # Update python path (In line ExecStart=) in above service file with correct value as per your enviornment.
    
   *If backup target is 'S3'*
   
     cp conf-files/tvault-contego.service.s3 /etc/systemd/system/tvault-contego.service    
 
     cp conf-files/tvault-object-store.service /etc/systemd/system/tvault-object-store.service 
+
+    # Update python path (In line ExecStart=) in above service file with correct value as per your enviornment. 
 
   **Note**: You need validate above init files, executable paths and conf file paths. If necessary you can edit python install directory path in above init files as per platform you are using
 
