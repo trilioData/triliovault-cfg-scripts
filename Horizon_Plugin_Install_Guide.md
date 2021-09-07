@@ -18,7 +18,7 @@ Clone the repository:
    
    cd triliovault-cfg-scripts/
  
-   git checkout stable/4.2
+   git checkout hotfix/4.1
    
   *If platform is RHEL/CentOs*
 
@@ -26,7 +26,7 @@ Clone the repository:
 
   *If platform is Ubuntu*
   
-    echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /" >> /etc/apt/sources.list.d/trilio.list
+    echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /" >> /etc/apt/sources.list.d/trilio.list
 
 **3. Install Trilio Datamover extension package**
 
