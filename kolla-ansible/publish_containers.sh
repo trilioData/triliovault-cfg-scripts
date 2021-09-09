@@ -9,32 +9,28 @@ if [ $# -lt 1 ];then
    exit 1
 fi
 
-tvault_version=$1
+tvault_version=($(echo $1| tr "," " "))
 
-
-declare -a openstack_releases=("ussuri")
-
+declare -a openstack_releases=($(echo $2| tr "," " "))
 declare -a openstack_platforms=("centos" "ubuntu")
-
+count=0
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
-
+    tag=${tvault_version[$count]}
     for openstack_platform in "${openstack_platforms[@]}"
     do
-        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} \
-        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
-        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
 
-        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release} \
-        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tvault_version}-${openstack_release}
-        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tvault_version}-${openstack_release}
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tag}-${openstack_release}
 
-      if [ "$openstack_release" == "ussuri" ]
-      then
-        docker tag trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release} \
-        docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
-        docker push docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tvault_version}-${openstack_release}
-      fi
+        docker tag trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release}
     done
+    let count=count+1
 done
