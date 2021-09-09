@@ -29,11 +29,17 @@ triliovault_docker_registry: "docker.io"
 triliovault_backup_target: 'nfs'
 
 ### 'NFS' backup target details
-## Valid for backup target 'nfs' only, provide full NFS share path
+## Valid for backup target 'nfs' only, provide full NFS share path.
+## If you want to use multiple nfs shares, then you can provide comma delimated list of shares to the following parameter
 triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 ## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
 ## Keep default values, unless you have a special need.
 triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
+
+## Valid for 'nfs' backup target only.
+## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then 
+## set 'is_multi_ip_nfs' paremeter to 'yes'. Otherwise it's value should be 'no'
+multi_ip_nfs_enabled: 'no'
 
 
 ### 'amazon_s3/other_s3_compatible' backup target details

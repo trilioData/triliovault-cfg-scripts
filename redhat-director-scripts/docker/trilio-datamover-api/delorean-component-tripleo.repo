@@ -1,0 +1,6 @@
+[delorean-component-tripleo]
+name=delorean-puppet-apache-e44f1001e4b822767fced91afe7e216aa1b647a0
+baseurl=https://trunk.rdoproject.org/centos8/component/tripleo/e4/4f/e44f1001e4b822767fced91afe7e216aa1b647a0_642db7af
+enabled=1
+gpgcheck=0
+priority=1

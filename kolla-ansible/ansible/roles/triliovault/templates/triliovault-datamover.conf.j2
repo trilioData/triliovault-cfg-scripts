@@ -2,7 +2,13 @@
 {% if triliovault_backup_target == "nfs" %}
 
 vault_storage_type = nfs
+
+{% if multi_ip_nfs_enabled == "yes" %}
+vault_storage_nfs_export = "{{ triliovault_nfs_map[inventory_hostname] }}"
+{% else %}
 vault_storage_nfs_export = {{ triliovault_nfs_shares }}
+{% endif %}
+
 vault_storage_nfs_options = {{ triliovault_nfs_options }}
 
 {% elif triliovault_backup_target == "amazon_s3" %}
