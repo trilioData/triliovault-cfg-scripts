@@ -1,13 +1,13 @@
 FROM docker.io/tripleotrain/centos-binary-nova-compute:current-tripleo-rdo
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="rhosp16/openstack-nova-compute-triliodata-plugin" \
+LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="4.0.0" \
-      release="4.0" \
-      summary="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover" \
-      description="Red Hat OpenStack Platform 16.0 nova-compute TrilioData Datamover"
+      version="4.1.0" \
+      release="4.1" \
+      summary="TripleO Train nova-compute plugin TrilioData Datamover" \
+      description="TripleO Train nova-compute plugin TrilioData Datamover"
 
 # switch to root and install a custom RPM, etc.
 USER root

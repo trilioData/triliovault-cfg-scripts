@@ -1,12 +1,11 @@
 # Database vars
-dmapi_db_setup_host: "{{ ('galera_all' in groups) | ternary(groups['galera_all'][0], 'localhost') }}"
 dmapi_galera_address: "{{ galera_address | default('127.0.0.1') }}"
 dmapi_galera_database: dmapi
 dmapi_galera_user: dmapi
 dmapi_galera_use_ssl: "{{ galera_use_ssl | default(False) }}"
 dmapi_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-ca.pem') }}"
 dmapi_galera_password: "{{DMAPI_MYSQL_PASSWORD}}"
-
+dmapi_galera_port: 3306
 
 # RPC
 dmapi_oslomsg_rpc_host_group: "{{ oslomsg_rpc_host_group | default('rabbitmq_all') }}"
@@ -19,7 +18,6 @@ dmapi_oslomsg_rpc_userid: dmapi
 dmapi_oslomsg_rpc_vhost: /dmapi
 dmapi_oslomsg_rpc_password: "{{RABBITMQ_PASSWORD}}"
 
-
 # Notify
 dmapi_oslomsg_notify_host_group: "{{ oslomsg_notify_host_group | default('rabbitmq_all') }}"
 dmapi_oslomsg_notify_setup_host: "{{ (dmapi_oslomsg_notify_host_group in groups) | ternary(groups[dmapi_oslomsg_notify_host_group][0], 'localhost') }}"
@@ -31,10 +29,10 @@ dmapi_oslomsg_notify_userid: "{{ dmapi_oslomsg_rpc_userid }}"
 dmapi_oslomsg_notify_password: "{{ dmapi_oslomsg_rpc_password }}"
 dmapi_oslomsg_notify_vhost: "{{ dmapi_oslomsg_rpc_vhost }}"
 
-
 # Set the host which will execute the shade modules
 # for the service setup. The host must already have
 # clouds.yaml properly configured.
+
 dmapi_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
 dmapi_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_python_interpreter | default((dmapi_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
 

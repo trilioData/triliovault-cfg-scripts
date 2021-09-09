@@ -1,19 +1,19 @@
 FROM docker.io/tripleotraincentos8/centos-binary-horizon:current-tripleo-rdo
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="rhosp16/openstack-horizon-triliodata-plugin" \
+LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="4.0.0" \
-      release="4.0" \
-      summary="Red Hat OpenStack Platform 16.0 horizon TrilioData TrilioVault Horizon Plugin" \
-      description="Red Hat OpenStack Platform 16.0 horizon TrilioData TrilioVault Horizon Plugin"
+      version="4.1.0" \
+      release="4.1" \
+      summary="TripleO Train nova-compute plugin TrilioData Datamover" \
+      description="TripleO Train nova-compute plugin TrilioData Datamover"
 
 ##Install datamover packages
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
-RUN tripleo-repos -b train --no-stream current && tripleo-repos -b train --no-stream current ceph
+RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
 
 RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
