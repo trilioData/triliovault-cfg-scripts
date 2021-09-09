@@ -1,5 +1,5 @@
 [triliovault-4-1]
 name=triliovault-4-1
-baseurl=http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-4.1-dev/yum/
+baseurl=http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliovault-4.1/yum/
 gpgcheck=0
 enabled=1
