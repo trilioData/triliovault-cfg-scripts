@@ -93,7 +93,7 @@ parameters:
       Setting this to a unique value will re-run any deployment tasks which
       perform configuration on a Heat stack-update.
   DmApiWorkers:
-    default: 2
+    default: 16
     description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
     type: number
 

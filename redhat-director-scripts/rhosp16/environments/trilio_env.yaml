@@ -68,7 +68,7 @@ parameter_defaults:
    ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
    ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
-   DmApiWorkers: 2
-   
+   DmApiWorkers: 16
+
    ## Don't edit following parameter
    EnablePackageInstall: True

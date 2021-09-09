@@ -1,26 +1,26 @@
-FROM docker.io/tripleotrain/centos-binary-horizon:current-tripleo-rdo
+FROM kolla/centos-binary-horizon:victoria
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="tripleo/centos-binary-nova-compute-triliodata" \
+LABEL name="centos-binary-trilio-horizon-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
       version="4.1.0" \
       release="4.1" \
-      summary="TripleO Train horizon TrilioData TrilioVault Horizon Plugin" \
-      description="TripleO Train horizon TrilioData TrilioVault Horizon Plugin"
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on centos platform"
 
 ##Install datamover packages
-RUN yum clean all
 ADD trilio.repo /etc/yum.repos.d/
-RUN yum install tvault-horizon-plugin workloadmgrclient -y
+RUN dnf config-manager --set-enabled epel 
+RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
-RUN yum clean all
+RUN dnf config-manager --set-disabled epel
 
 ##Move necessary files
 ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
 ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
-RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
-RUN /usr/share/openstack-dashboard/manage.py compress --force
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
 
 
 ## Add license
