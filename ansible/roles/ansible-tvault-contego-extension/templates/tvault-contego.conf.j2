@@ -1,6 +1,10 @@
 [DEFAULT]
-{%if NFS == True%}
-vault_storage_nfs_export = {{ NFS_SHARES|join(",") }}
+{% if NFS == True %}
+{% if multi_ip_nfs_enabled == True %}
+vault_storage_nfs_export = {{triliovault_nfs_map[inventory_hostname]}}
+{% elif multi_ip_nfs_enabled == False %}
+vault_storage_nfs_export = {{ triliovault_storage_nfs_export|join(",") }}
+{% endif %}
 vault_storage_nfs_options = {{NFS_OPTIONS}}
 vault_storage_type = nfs
 {%elif S3|bool == True and s3_type == Amazon %}

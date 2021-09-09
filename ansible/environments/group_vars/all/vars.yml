@@ -30,6 +30,11 @@ NFS_SHARES:
 #if NFS_OPTS is empty then default value will be "nolock,soft,timeo=180,intr,lookupcache=none"
 NFS_OPTS: ""
 
+## Valid for 'nfs' backup target only.
+## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then
+## set 'multi_ip_nfs_enabled' parameter to 'True'. Otherwise it's value should be 'False'
+multi_ip_nfs_enabled: False
+
 #### Details for S3 as snapshot storage
 ##True/False
 S3: False
