@@ -121,7 +121,6 @@ parameters:
     description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
     type: boolean
 
-
 conditions:
 
   internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
@@ -197,7 +196,7 @@ outputs:
               recurse: true
             - path: /var/lib/nova/triliovault-mounts
               owner: nova:nova
-              recurse: false              
+              recurse: false
             - path:
                 str_replace:
                   template: /etc/ceph/CLUSTER.client.USER.keyring
