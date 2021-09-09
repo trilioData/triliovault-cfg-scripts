@@ -95,7 +95,7 @@ parameters:
                  well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
     type: boolean
   DmApiWorkers:
-    default: 2
+    default: 16
     description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
     type: number
 

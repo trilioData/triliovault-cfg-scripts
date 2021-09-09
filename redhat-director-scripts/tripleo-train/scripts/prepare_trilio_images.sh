@@ -2,29 +2,22 @@
 
 set -e
 
-if [ $# -lt 3 ];then
-   echo "Script takes exacyly 3 arguments"
-   echo -e "./prepare_trilio_images.sh <undercloud_registry_hostname_or_ip> <OS_platform> <container_tag>"
+if [ $# -lt 4 ];then
+   echo "Script takes exacyly 4 arguments"
+   echo -e "./prepare_trilio_images.sh <undercloud_registry_hostname_or_ip> <OS_platform> <container_tag> <container_tool_available_on_undercloud>"
    echo -e "For example:"
-   echo -e "./prepare_trilio_images.sh undercloud.ctlplane.ooo.prod1 centos7 4.1.124"
+   echo -e "./prepare_trilio_images.sh undercloud.ctlplane.ooo.prod1 centos7 4.1.124 podman"
    echo -e "Valid values for <OS_platform> are 'centos7' and 'centos8'"
+   echo -e "Valid values for <container_tool> are 'docker' and 'podman'"
    exit 1
 fi
 
 undercloud_hostname=$1
 os_platform=$2
 tag=$3
+container_tool=$4
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-container_tool="docker"
-
-if [ "$os_platform" == "centos7" ]
-then
-   container_tool="docker"
-else
-   container_tool="podman"
-fi
 
 source /home/stack/stackrc
 
