@@ -1,7 +1,7 @@
 class trilio::contego (
     $backup_target_type                   = 'nfs',
-    $nfs_shares				              = undef,
-    $nfs_options			              = 'nolock,soft,timeo=180,intr',
+    $nfs_shares                           = undef,
+    $nfs_options                          = 'nolock,soft,timeo=180,intr',
     $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
@@ -22,6 +22,9 @@ class trilio::contego (
     $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
     $cinder_http_retries                  = 10,
+    $nfs_map                              = {},
+    $multi_ip_nfs_enabled                 = false,
+    $datamover_node_name                  = hiera('tvault-contego_short_bootstrap_node_name'),
 ) {
 
 
