@@ -53,6 +53,7 @@
 
     
 **4. Populate datamover conf file**
+
      mkdir -p /etc/tvault-contego
      
      chown -R nova:nova /etc/tvault-contego/
