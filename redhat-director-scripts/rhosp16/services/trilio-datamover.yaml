@@ -221,7 +221,7 @@ outputs:
                   - /var/lib/libvirt:/var/lib/libvirt:shared
                   - /sys/class/net:/sys/class/net
                   - /sys/bus/pci:/sys/bus/pci
-                  - /boot:/boot:ro
+                  - /boot:/boot:ro                  
                 -
                   if:
                   - {equals: [{get_param: MultipathdEnable}, true]}

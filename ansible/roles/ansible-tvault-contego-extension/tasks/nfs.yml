@@ -2,6 +2,14 @@
 - set_fact:
     nfsmount: "{{TVAULT_DATA_DIR}}"
 
+- set_fact:
+    triliovault_storage_nfs_export: "{{triliovault_nfs_map[inventory_hostname].split(',')}}"
+  when: multi_ip_nfs_enabled == True
+
+- set_fact:
+    triliovault_storage_nfs_export: "{{NFS_SHARES}}"
+  when: multi_ip_nfs_enabled == False
+
 - name: Ensure {{nfsmount}} directory exists
   action: file path={{nfsmount}} state=directory
 
@@ -13,9 +21,9 @@
       NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none"
   when: NFS_OPTS == ""
 
-- debug: msg="value of NFS_SHARES is:{{NFS_OPTIONS}}" verbosity={{ verbosity_level }}
+- debug: msg="value of NFS_OPTIONS is:{{NFS_OPTIONS}}" verbosity={{ verbosity_level }}
 
-- debug: msg="value of NFS_SHARES is:{{NFS_SHARES}}" verbosity={{verbosity_level}}
+- debug: msg="value of NFS_SHARES is:{{triliovault_storage_nfs_export}}" verbosity={{verbosity_level}}
 
 - name: Ensure NFS common is installed when Ubuntu
   apt: name=nfs-common state=present update_cache=yes
@@ -33,5 +41,5 @@
     - include_tasks: validate_nfs.yml
       vars:
         item1: "{{item}}"
-      with_items: "{{NFS_SHARES}}"
+      with_items: "{{triliovault_storage_nfs_export}}"
   when: NFS == True
