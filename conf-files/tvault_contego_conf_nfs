@@ -1,17 +1,43 @@
 [DEFAULT]
-vault_storage_nfs_export = <NFS_SHARE>
-vault_storage_nfs_options = nolock,soft,timeo=180,intr,lookupcache=none
+
 vault_storage_type = nfs
+vault_storage_nfs_export = <NFS_SHARE_PATH>
+vault_storage_nfs_options = nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3
 vault_data_directory_old = /var/triliovault
-vault_data_directory = /var/triliovault-mounts
+vault_data_directory = /var/trilio/triliovault-mounts
 log_file = /var/log/nova/tvault-contego.log
 debug = False
 verbose = True
 max_uploads_pending = 3
 max_commit_pending = 3
 
+dmapi_transport_url = rabbit://openstack:o1euLtfEyB9fpZuiuBZC4TSp7oJaD1To0fGiEHzT@10.10.10.122:5672//
+
+[dmapi_database]
+connection = mysql+pymysql://dmapi:<DMAPI_DATABASE_USER_PASSWORD>@<DATABASE_HOST>:3306/dmapi
+## Example:
+# connection = mysql+pymysql://dmapi:121324384470491AVUFIDADXJAXNLKJOWIDFWUGDC@kollaauto-internal-ussuricentos.triliodata.demo:3306/dmapi
+
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = <RBD_USER_NAME_IF_CINDER_BACKEND_IS_CEPH>
+## Example
+## rbd_user = cinder
+
+[ceph]
+keyring_ext = .<RBD_USER_NAME_IF_CINDER_BACKEND_IS_CEPH>.keyring
+
+
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
 
+
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = false
+
+[cinder]
+http_retries = 10

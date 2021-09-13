@@ -17,8 +17,6 @@ Clone the repository:
    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
    cd triliovault-cfg-scripts/
- 
-   git checkout hotfix/4.1
    
   *If platform is RHEL/CentOs*
 
