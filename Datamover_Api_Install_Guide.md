@@ -117,7 +117,8 @@ Here are the details of all parameters
 
 
 **5. Create dmapi log directory:**
-        mkdir /var/log/dmapi
+
+        mkdir -p /var/log/dmapi
      
         chown -R nova:nova /var/log/dmapi
     
