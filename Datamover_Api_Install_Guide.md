@@ -126,6 +126,11 @@ Here are the details of all parameters
 
 
         cp conf-files/tvault-dmapi.service /etc/systemd/system/
+
+
+- Update service file with correct python executable path at line - "ExecStart=/usr/bin/python /usr/bin/dmapi-api"
+
+        vi /etc/systemd/system/tvault-dmapi.service     
     
 **7. Start dmapi service**
 
