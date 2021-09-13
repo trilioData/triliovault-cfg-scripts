@@ -126,6 +126,8 @@
   
      chmod 777 /var/triliovault
 
+     cp kolla-ansible/trilio-datamover/trilio.filters /usr/share/nova/rootwrap/trilio.filters
+
 **8. Configure log rotation for datamover logs**
 
     cp redhat-director-scripts/docker/trilio-datamover/log-rotate-conf /etc/logrotate.d/tvault-contego
