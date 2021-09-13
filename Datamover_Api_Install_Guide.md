@@ -125,20 +125,20 @@ Here are the details of all parameters
 **6. Create service init file: /etc/systemd/system/tvault-datamover-api.service**
 
 
-        cp conf-files/tvault-datamover-api.service /etc/systemd/system/   
+        cp conf-files/tvault_dmapi.service /etc/systemd/system/   
     
 **7. Start dmapi service**
 
         systemctl daemon-reload
     
-        systemctl enable tvault-datamover-api.service
+        systemctl enable tvault_dmapi.service
           
-        systemctl restart tvault-datamover-api.service
+        systemctl restart tvault_dmapi.service
     
 **8. Verify Installation**
 
-    i) Verify that dmapi service is started
+    i) Verify that tvault_dmapi service is started
     
-          systemctl status tvault-datamover-api
+          systemctl status tvault_dmapi
           
     ii) Verify that no error appears in log file - '/var/log/dmapi/dmapi.log'     
