@@ -56,9 +56,10 @@ Clone the repository on controller node:
     
 **4. Populate triliovault datamover api service configuration file - /etc/dmapi/dmapi.conf**
 
-
 After installing datamover api rpm/debian package, a sample conf file gets create at location:
 /etc/dmapi/dmapi.conf
+
+      vi /etc/dmapi/dmapi.conf
 
 User needs to edit it and fill all necessary parameters.
 
