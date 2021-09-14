@@ -14,11 +14,10 @@ It is supposed to be installed on all horizon nodes.
 
 Clone the repository:
 
-   git clone https://github.com/trilioData/triliovault-cfg-scripts.git
+
+    git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
-   cd triliovault-cfg-scripts/
- 
-   git checkout hotfix/4.1
+    cd triliovault-cfg-scripts/
    
   *If platform is RHEL/CentOs*
 
@@ -28,7 +27,7 @@ Clone the repository:
   
     echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /" >> /etc/apt/sources.list.d/trilio.list
 
-**3. Install Trilio Datamover extension package**
+**3. Install TrilioVault Horizon plugin package**
 
 Note: workloadmgrclient package gets installed as a dependency of the triliovault horizon package.
 
@@ -54,17 +53,36 @@ Note: workloadmgrclient package gets installed as a dependency of the triliovaul
     
 **4. Copy config files to OpenStack dashboard directory**
 
-    git clone https://github.com/trilioData/horizon-tvault-plugin.git
+Clone the horizon-tvault-plugin repository. This is a private github repository of TrilioVault, you can ask for credentials(username and personal access token) to sales/support contact person.
+
+      cd ../
+
+      git clone https://github.com/trilioData/horizon-tvault-plugin.git
     
-    cd horizon-tvault-plugin/usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+      cd horizon-tvault-plugin/usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
-    cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+      cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
-    cd ../../templatetags/
+      cd ../../templatetags/
     
-    cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
+      cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
     
-**5. Restart webserver**
+     
+**5. Run collectstatic**
+
+  
+    - If it's python2
+
+      /usr/bin/python /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+      /usr/bin/python /usr/share/openstack-dashboard/manage.py compress --force
+
+    - If it's python3
+    
+      /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+      /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
+    
+
+**6. Restart webserver**
    We need to restart webserver(used by horizon) to reflect changes.
    
   *On RHLE/CentOS based OpenStack*
@@ -74,20 +92,7 @@ Note: workloadmgrclient package gets installed as a dependency of the triliovaul
   *On Ubuntu based OpenStack*
      
      systemctl restart apache2
-     
-**6. Copy sync_static.py to /tmp**
 
-    cd ansible/roles/ansible-horizon-plugin/files/
-    
-    cp sync_static.py /tmp
-    
-  Execute following commands.
-
-    cd /usr/share/openstack-dashboard
-    
-    ./manage.py shell < /tmp/sync_static.py &> /dev/null
-    
-    rm -rf /tmp/sync_static.py
 
 **7. Verify Installation**
     

@@ -16,11 +16,10 @@
 **2. Setup Trilio repository**
 
   Clone the repository:
+
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
     
     cd triliovault-cfg-scripts/
-   
-    git checkout hotfix/4.1
    
   *If platform is RHEL/CentOs*
   
@@ -54,7 +53,8 @@
 
     
 **4. Populate datamover conf file**
-     mkdir /etc/tvault-contego
+
+     mkdir -p /etc/tvault-contego
      
      chown -R nova:nova /etc/tvault-contego/
      
@@ -66,9 +66,13 @@
      
      cp conf-files/tvault_contego_conf_nfs /etc/tvault-contego/tvault-contego.conf
 
+     vi /etc/tvault-contego/tvault-contego.conf
+
   ii)If backup target is amazon S3 
  
      cp conf-files/tvault_contego_conf_amazon_s3 /etc/tvault-contego/tvault-contego.conf
+
+     vi /etc/tvault-contego/tvault-contego.conf
   
   Edit file /etc/tvault-contego/tvault-contego.conf and set values of following parameters.
   
@@ -81,6 +85,8 @@
   iii)If backup target is any other supported S3 storage:
   
      cp conf-files/tvault_contego_conf_ceph_s3 /etc/tvault-contego/tvault-contego.conf
+
+     vi /etc/tvault-contego/tvault-contego.conf
 
   Edit /etc/tvault-contego/tvault-contego.conf for the same
   You will need set following parameters:
@@ -119,6 +125,8 @@
      chmod 777 /var/triliovault-mounts
   
      chmod 777 /var/triliovault
+
+     cp kolla-ansible/trilio-datamover/trilio.filters /usr/share/nova/rootwrap/trilio.filters
 
 **8. Configure log rotation for datamover logs**
 
