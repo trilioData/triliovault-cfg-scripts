@@ -16,8 +16,35 @@ vault_s3_bucket = <S3_BUCKET>
 vault_s3_endpoint_url = <S3_ENDPOINT_URL>
 vault_s3_ssl = <S3_SSL_ENABLED>
 
+dmapi_transport_url = <TRANSPORT_URL>
+## Example:
+#dmapi_transport_url = rabbit://openstack:o1euLtfEyB9fpZuiuBZC4TSp7oJaD1To0fGiEHzT@10.10.10.122:5672//
+
+[dmapi_database]
+connection = mysql+pymysql://dmapi:<DMAPI_DATABASE_USER_PASSWORD>@<DATABASE_HOST>:3306/dmapi
+## Example:
+# connection = mysql+pymysql://dmapi:121324384470491AVUFIDADXJAXNLKJOWIDFWUGDC@kollaauto-internal-ussuricentos.triliodata.demo:3306/dmapi
+
+
+[libvirt]
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = <RBD_USER_NAME_IF_CINDER_BACKEND_IS_CEPH>
+## Example
+## rbd_user = cinder
+
+[ceph]
+keyring_ext = .<RBD_USER_NAME_IF_CINDER_BACKEND_IS_CEPH>.keyring
+
+
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
 
+
 [conductor]
 use_local = True
+
+[oslo_messaging_rabbit]
+ssl = false
+
+[cinder]
+http_retries = 10
