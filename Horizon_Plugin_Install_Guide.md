@@ -53,32 +53,33 @@ Note: workloadmgrclient package gets installed as a dependency of the triliovaul
     
 **4. Copy config files to OpenStack dashboard directory**
 
-  - Clone the horizon-tvault-plugin repository. This is a private github repository of TrilioVault, you can ask for credentials(username and personal access token) to sales/support contact person.
+Clone the horizon-tvault-plugin repository. This is a private github repository of TrilioVault, you can ask for credentials(username and personal access token) to sales/support contact person.
 
-    cd ../
+      cd ../
 
-    git clone https://github.com/trilioData/horizon-tvault-plugin.git
+      git clone https://github.com/trilioData/horizon-tvault-plugin.git
     
-    cd horizon-tvault-plugin/usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+      cd horizon-tvault-plugin/usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
-    cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+      cp tvault_panel_group.py tvault_admin_panel_group.py tvault_panel.py tvault_settings_panel.py tvault_admin_panel.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
     
-    cd ../../templatetags/
+      cd ../../templatetags/
     
-    cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
+      cp tvault_filter.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py
     
      
 **5. Run collectstatic**
 
   
-- If it's python2
+    - If it's python2
 
-    /usr/bin/python /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
-    /usr/bin/python /usr/share/openstack-dashboard/manage.py compress --force
+      /usr/bin/python /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+      /usr/bin/python /usr/share/openstack-dashboard/manage.py compress --force
 
-- If it's python3
-    /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
-    /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
+    - If it's python3
+    
+      /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+      /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
     
 
 **6. Restart webserver**
