@@ -1,13 +1,13 @@
-## This doc explains steps to integrate installation steps of TrilioVault components into your devops framework.
+#### This doc explains steps to integrate installation steps of TrilioVault components into your devops framework.
 
 
-#### TrilioVault has following three components that needs to be installed on existing OpenStack cloud.
+#### 1. TrilioVault has following three components that needs to be installed on existing OpenStack cloud.
 1. TrilioVault Datamover Api
 2. TrilioVault Datamover
 3. TrilioVault Horizon Plugin
 
 
-#### We have already completed devops integration with following OpenStack deployment tools/distributions.
+#### 2. We have already completed devops integration with following OpenStack deployment tools/distributions.
 1. Redhat Director  - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/redhat-director-scripts
 2. Kolla-ansible  - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/kolla-ansible
 3. OpenStack ansible - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/ansible
@@ -18,7 +18,7 @@ If you are using a deployment tool/ditribution not mentioned in above list then 
 
 
 
-#### As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef etc.
+#### 3. As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef etc.
 
 1. Go through manual install steps for above three triliovault components.
 
@@ -30,9 +30,9 @@ If you are using a deployment tool/ditribution not mentioned in above list then 
 
 
 
-### Above steps explained in detail.
+#### 4. Above steps explained in detail.
 
-1. Go through manual install steps for above three triliovault components.
+4.1 Go through manual install steps for above three triliovault components.
 
 Here are the document links. Please go through each document and understand all steps to install triliovault
 components. These steps are using rpm/debian package format.
@@ -43,21 +43,21 @@ These steps will need to performed during container image creation process.
  - TrilioVault Datamover Document: https://github.com/trilioData/triliovault-cfg-scripts/blob/master/Datamover_Extension_Install_Guide.md
  - TrilioVault Horizon Plugin Document: https://github.com/trilioData/triliovault-cfg-scripts/blob/master/Horizon_Plugin_Install_Guide.md
 
- 2. Create new three separate container images for three triliovault components using install steps defined in step1.
+ 4.2 Create new three separate container images for three triliovault components using install steps defined in step1.
 
 Create following three container images:
-2.1 TrilioVault Datamover Api container image creation
+4.2.1 TrilioVault Datamover Api container image creation
 - For 'TrilioVault Datamover Api' image use respective 'nova api' image as base image
 - Example Dockerfile: https://github.com/trilioData/triliovault-cfg-scripts/blob/master/kolla-ansible/trilio-datamover-api/Dockerfile_victoria_centos
 
 
-2.2 'TrilioVault Datamover' container image creation
+4.2.2 'TrilioVault Datamover' container image creation
 - For 'TrilioVault Datamover' image use respective 'nova-compute' image as base image.
 - Example Dockerfile:
 https://github.com/trilioData/triliovault-cfg-scripts/blob/master/kolla-ansible/trilio-datamover/Dockerfile_victoria_centos
 
 
-2.3 'TrilioVault Horizon Plugin' container image creation
+4.2.3 'TrilioVault Horizon Plugin' container image creation
 - For 'TrilioVault Horizon Plugin' image, use respective 'Horizon' image as base image
 - Example Dockerfile:
 https://github.com/trilioData/triliovault-cfg-scripts/blob/master/kolla-ansible/trilio-horizon-plugin/Dockerfile_victoria_centos
@@ -65,23 +65,23 @@ https://github.com/trilioData/triliovault-cfg-scripts/blob/master/kolla-ansible/
 All necessary steps and it's required files are available in above github repository(https://github.com/trilioData/triliovault-cfg-scripts).
 
 
-3. Publish these three container images to a centralized container registry/repository.
+4.3 Publish these three container images to a centralized container registry/repository.
 
 You can publish these three triliovault component images to your preffered container registry.
 Example registries: dockerhub - docker.io, quay.io, on-premise container registry etc.
 
 
 
-4. Write necessary devops code to pull these images and launch them during your cloud update/deploy process.
+4.4 Write necessary devops code to pull these images and launch them during your cloud update/deploy process.
 
 Now, we have three container images created and published. We need to write devops code in our existing devops framework, to launch these three container images.
 
-  4.1 TrilioVault Datamover Api contianer:
+  4.4.1 TrilioVault Datamover Api contianer:
 
 
-    4.1.1 This should get installed on control plane nodes.
+    4.4.1.1 This should get installed on control plane nodes.
 
-    4.1.2 Following directories/volumes needs to get mounted from host to container
+    4.4.1.2 Following directories/volumes needs to get mounted from host to container
 
     
       - /etc/dmapi/                 [or equivalent directory/volume]
@@ -90,7 +90,7 @@ Now, we have three container images created and published. We need to write devo
         If TLS enabled on all endpoints of of datamover api service
 
 
-    4.1.3 Creating required keystone resoures
+    4.4.1.3 Creating required keystone resoures
      - Create keystone user named 'dmapi', set password
      - Register service in keystone. 
        Service name: 'dmapi', Type: 'datamover', Description: "TrilioVault Datamover Api Service",
@@ -98,16 +98,16 @@ Now, we have three container images created and published. We need to write devo
      - Assign 'admin' role to 'dmapi' user on project 'service' or 'services'
 
 
-    4.1.4 Creating required database resources
+    4.4.1.4 Creating required database resources
      - A new database needs to be created named 'dmapi'
      - Database user named 'dmapi' needs to be created
      - Need to grant permissions to 'dmapi' user on all hosts.
 
-    4.1.5 Database sync
+    4.4.1.5 Database sync
      - Run database sync command
-     ```
+  
      /bin/bash -c /usr/bin/dmapi-dbsync
-     ``` 
+   
 
   Use following commands for the same.
 
@@ -150,11 +150,11 @@ MariaDB [mysql]> select Host, User from user where User='dmapi';
    
 ```   
 
-4.2 TrilioVault Datamover container 
+4.4.2 TrilioVault Datamover container 
 
-  4.2.1 This should get installed on all compute nodes
+  4.4.2.1 This should get installed on all compute nodes
 
-  4.2.2 Following diretcories/volumes needs to get mounted from host to triliovault datamover container
+  4.4.2.2 Following diretcories/volumes needs to get mounted from host to triliovault datamover container
 
 ```
   - /etc/ceph/                        [or equivalent directory/volume]  
@@ -179,7 +179,8 @@ MariaDB [mysql]> select Host, User from user where User='dmapi';
 
 
 
-4.3 TrilioVault Horizon Plugin container
-  4.3.1 This should replace existing OpenStack horizon container image (Provided you used same horizon image as base     image for triliovault horizon plugin image creation).
+4.4.3 TrilioVault Horizon Plugin container
 
-  4.3.2 Following diretcories/volumes needs to get mounted from host to container
+  4.4.3.1 This should replace existing OpenStack horizon container image (Provided you used same horizon image as base     image for triliovault horizon plugin image creation).
+
+  4.4.3.2 Following diretcories/volumes needs to get mounted from host to container
