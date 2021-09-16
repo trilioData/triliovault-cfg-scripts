@@ -1,24 +1,24 @@
 ## This doc explains steps to integrate installation steps of TrilioVault components into your devops framework.
 
 
-### TrilioVault has following three components that needs to be installed on existing OpenStack cloud.
+#### TrilioVault has following three components that needs to be installed on existing OpenStack cloud.
 1. TrilioVault Datamover Api
 2. TrilioVault Datamover
 3. TrilioVault Horizon Plugin
 
 
-## We have already completed devops integration with following OpenStack deployment tools/distributions.
+#### We have already completed devops integration with following OpenStack deployment tools/distributions.
 1. Redhat Director  - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/redhat-director-scripts
 2. Kolla-ansible  - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/kolla-ansible
 3. OpenStack ansible - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/ansible
 4. TripleO  - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/redhat-director-scripts/tripleo-train
 5. Canonical OpenStack - juju charms - https://github.com/trilioData/triliovault-cfg-scripts/tree/master/juju-charms
 
-## If you are using a deployment tool/ditribution not mentioned in above list then only you need to use this document to integrate the TrilioVault components into your devops framework.
+If you are using a deployment tool/ditribution not mentioned in above list then only you need to use this document to integrate the TrilioVault components into your devops framework.
 
 
 
-### As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef etc.
+#### As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef etc.
 
 1. Go through manual install steps for above three triliovault components.
 
@@ -30,7 +30,7 @@
 
 
 
-## Above steps explained in detail.
+### Above steps explained in detail.
 
 1. Go through manual install steps for above three triliovault components.
 
