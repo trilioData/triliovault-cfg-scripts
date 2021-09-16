@@ -18,7 +18,7 @@ If you are using a deployment tool/ditribution not mentioned in above list then 
 
 
 
-#### 3. As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef etc.
+#### 3. As most of the OpenStack cloud distributions are containerized in their latest releases, following are the high level steps to integrate TrilioVault components into user's existing devops framework like ansible/puppet/chef with containerization.
 
 1. Go through manual install steps for above three triliovault components.
 
