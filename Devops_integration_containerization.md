@@ -115,17 +115,17 @@ Now, we have three container images created and published. We need to write devo
 ```
 ## If SSL enabled on public interface of dmapi
 listen trilio_datamover_api
-  bind <Keystone_virtual_ip>:8784  ssl crt /etc/haproxy/haproxy.pem
-  server <controller_hostname_1> <controller_IP1>:8784 check inter 2000 rise 2 fall 5
-  server <controller_hostname_2> <controller_IP2>:8784 check inter 2000 rise 2 fall 5
-  server <controller_hostname_3> <controller_IP3>:8784 check inter 2000 rise 2 fall 5
+  bind <KEYSTONE_VIRTUAL_IP>:8784  ssl crt /etc/haproxy/haproxy.pem
+  server <CONTROLLER_HOSTNAME_1> <CONTROLLER_IP1>:8784 check inter 2000 rise 2 fall 5
+  server <CONTROLLER_HOSTNAME_2> <CONTROLLER_IP2>:8784 check inter 2000 rise 2 fall 5
+  server <CONTROLLER_HOSTNAME_3> <CONTROLLER_IP3>:8784 check inter 2000 rise 2 fall 5
 
 ## If SSL is not enabled on any interface
 listen trilio_datamover_api
-  bind <Keystone_virtual_ip>:8784
-  server <controller_hostname_1> <controller_IP1>:8784 check inter 2000 rise 2 fall 5
-  server <controller_hostname_2> <controller_IP2>:8784 check inter 2000 rise 2 fall 5 
-  server <controller_hostname_3> <controller_IP3>:8784 check inter 2000 rise 2 fall 5
+  bind <KEYSTONE_VIRTUAL_IP>:8784
+  server <CONTROLLER_HOSTNAME_1> <CONTROLLER_IP1>:8784 check inter 2000 rise 2 fall 5
+  server <CONTROLLER_HOSTNAME_2> <CONTROLLER_IP2>:8784 check inter 2000 rise 2 fall 5 
+  server <CONTROLLER_HOSTNAME_3> <CONTROLLER_IP3>:8784 check inter 2000 rise 2 fall 5
 
 ``` 
    
