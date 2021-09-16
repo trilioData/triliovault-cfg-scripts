@@ -76,12 +76,12 @@ Example registries: dockerhub - docker.io, quay.io, on-premise container registr
 
 Now, we have three container images created and published. We need to write devops code in our existing devops framework, to launch these three container images.
 
-  4.4.1 TrilioVault Datamover Api contianer:
+4.4.1 TrilioVault Datamover Api contianer:
 
 
-    4.4.1.1 This should get installed on control plane nodes.
+4.4.1.1 This should get installed on control plane nodes.
 
-    4.4.1.2 Following directories/volumes needs to get mounted from host to container
+4.4.1.2 Following directories/volumes needs to get mounted from host to container
 
     
       - /etc/dmapi/                 [or equivalent directory/volume]
@@ -90,23 +90,44 @@ Now, we have three container images created and published. We need to write devo
         If TLS enabled on all endpoints of of datamover api service
 
 
-    4.4.1.3 Creating required keystone resoures
-     - Create keystone user named 'dmapi', set password
+4.4.1.3 Creating required keystone resoures
+- Create keystone user named 'dmapi', set password
      - Register service in keystone. 
        Service name: 'dmapi', Type: 'datamover', Description: "TrilioVault Datamover Api Service",
        Endpoints: public, internal and admin
      - Assign 'admin' role to 'dmapi' user on project 'service' or 'services'
 
 
-    4.4.1.4 Creating required database resources
-     - A new database needs to be created named 'dmapi'
-     - Database user named 'dmapi' needs to be created
-     - Need to grant permissions to 'dmapi' user on all hosts.
+4.4.1.4 Creating required database resources
+- A new database needs to be created named 'dmapi'
+- Database user named 'dmapi' needs to be created
+- Need to grant permissions to 'dmapi' user on all hosts.
 
-    4.4.1.5 Database sync
-     - Run database sync command
-  
-     /bin/bash -c /usr/bin/dmapi-dbsync
+4.4.1.5 Database sync
+- Run database sync command
+
+```  
+/bin/bash -c /usr/bin/dmapi-dbsync
+
+```
+
+4.4.1.6 Add haproxy entry for triliovault datamover api service
+```
+## If SSL enabled on public interface of dmapi
+listen trilio_datamover_api
+  bind <Keystone_virtual_ip>:8784  ssl crt /etc/haproxy/haproxy.pem
+  server <controller_hostname_1> <controller_IP1>:8784 check inter 2000 rise 2 fall 5
+  server <controller_hostname_2> <controller_IP2>:8784 check inter 2000 rise 2 fall 5
+  server <controller_hostname_3> <controller_IP3>:8784 check inter 2000 rise 2 fall 5
+
+## If SSL is not enabled on any interface
+listen trilio_datamover_api
+  bind <Keystone_virtual_ip>:8784
+  server <controller_hostname_1> <controller_IP1>:8784 check inter 2000 rise 2 fall 5
+  server <controller_hostname_2> <controller_IP2>:8784 check inter 2000 rise 2 fall 5 
+  server <controller_hostname_3> <controller_IP3>:8784 check inter 2000 rise 2 fall 5
+
+``` 
    
 
   Use following commands for the same.
@@ -152,9 +173,9 @@ MariaDB [mysql]> select Host, User from user where User='dmapi';
 
 4.4.2 TrilioVault Datamover container 
 
-  4.4.2.1 This should get installed on all compute nodes
+4.4.2.1 This should get installed on all compute nodes
 
-  4.4.2.2 Following diretcories/volumes needs to get mounted from host to triliovault datamover container
+4.4.2.2 Following diretcories/volumes needs to get mounted from host to triliovault datamover container
 
 ```
   - /etc/ceph/                        [or equivalent directory/volume]  
@@ -181,6 +202,4 @@ MariaDB [mysql]> select Host, User from user where User='dmapi';
 
 4.4.3 TrilioVault Horizon Plugin container
 
-  4.4.3.1 This should replace existing OpenStack horizon container image (Provided you used same horizon image as base     image for triliovault horizon plugin image creation).
-
-  4.4.3.2 Following diretcories/volumes needs to get mounted from host to container
+4.4.3.1 This should replace existing OpenStack horizon container image (Provided you used same horizon image as base     image for triliovault horizon plugin image creation).
