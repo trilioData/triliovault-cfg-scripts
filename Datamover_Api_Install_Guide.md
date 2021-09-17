@@ -29,6 +29,8 @@ Clone the repository on controller node:
   *If platform is Ubuntu*
   
       echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /" >> /etc/apt/sources.list.d/trilio.list
+      
+      apt-get update
 
 **3. Install and configure Trilio Datamover Api Service**
 
@@ -140,7 +142,7 @@ Here are the details of all parameters
     
 **8. Verify Installation**
 
-    i) Verify that tvault_dmapi service is started
+    i) Verify that tvault-dmapi service is started
     
           systemctl status tvault-dmapi
           

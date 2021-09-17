@@ -29,6 +29,8 @@
   
     echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /" >> /etc/apt/sources.list.d/trilio.list
 
+    apt-get update
+
 **3. Install Trilio Datamover extension package**
 
    *If platform is RHEL/CentOS*
