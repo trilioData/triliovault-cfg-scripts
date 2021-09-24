@@ -39,9 +39,33 @@
   shell: find / -type d -path /sys -prune -o -name "*local_settings.d" 2>/dev/null | grep -E 'openstack_dashboard|horizon'
   register: os_local_settings_path
 
+- name: Set file names
+  set_fact:
+    file_names: "{{ os_local_settings_path.stdout.split('\n')}}"
+  when: os_local_settings_path.stdout != ""
+
+- set_fact:
+    os_local_settings_path_length: "{{ file_names|length }}"
+  when: os_local_settings_path.stdout != ""
+
 - name: HORIZON_CONFIG
   shell: . /openstack/venvs/horizon*/bin/activate && echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo $os_local_settings_path | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
-  when: os_local_settings_path != ""
+  when:
+    - os_local_settings_path != ""
+    - os_local_settings_path_length == 1
+
+- name: Display local_settings.d path
+  debug:
+    msg: "local_settings.d path: {{file_names}}"
+  when:
+    - os_local_settings_path != ""
+
+- name: Give the notification to run command manually inside horizon container
+  debug:
+    msg: ". /openstack/venvs/horizon*/bin/activate && echo \"HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'\" > `echo /openstack/venvs/horizon*/lib/python3.6/site-packages/<find relative local_settings.d directory path inside openstack-dashboards> | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`"
+  when:
+    - os_local_settings_path != ""
+    - os_local_settings_path_length > "1"
 
 - debug:
     msg: "\033[33m WARNING: Unable to locate local_settings.d on system. Trilio quota feature on dashboard may not work. \033[0m"
