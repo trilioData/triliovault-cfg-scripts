@@ -1,7 +1,4 @@
 ---
-- hosts: horizon_all
-  roles:
-    - role: ansible-horizon-plugin
 
 - name: Installation and setup of dmapi conatiner
   hosts: dmapi_all
@@ -24,3 +21,7 @@
 - hosts: tvault_compute_hosts
   roles:
     - role: ansible-tvault-contego-extension
+
+- hosts: horizon_all
+  roles:
+    - role: ansible-horizon-plugin
