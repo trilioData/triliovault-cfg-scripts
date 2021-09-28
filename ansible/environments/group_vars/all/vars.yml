@@ -67,6 +67,10 @@ ceph_backend_enabled: False
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
 
+## Provide Horizon Container Virtual Env path
+horizon_virtual_env: sample_virtual_env
+
+
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
 #******************************************************************************************************************************************************************
