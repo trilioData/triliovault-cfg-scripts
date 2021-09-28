@@ -43,7 +43,7 @@
   shell: echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo {{os_local_settings_path.stdout}} | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
   when:
     - os_local_settings_path != ""
-    -
+    
 - name: Display local_settings.d path
   debug:
     msg: "local_settings.d path: {{os_local_settings_path.stdout}}"
