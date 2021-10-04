@@ -16,6 +16,13 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
+- name: Install packages on compute node to install tvault-contego-extension | centos-release-openstack-{{OPENSTACK_DIST}}
+  yum:
+     update_cache: yes
+     name:
+        - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+     state: latest
+
 - name: install contego extension packages when using python2
   yum:
      update_cache: yes
@@ -33,3 +40,11 @@
         - python3-tvault-contego
      state: latest
   when: PYTHON_VERSION=="python3"
+
+
+- name: Uninstall packages on compute node used to install tvault-contego-extension | centos-release-openstack-{{OPENSTACK_DIST}}
+  yum:
+     update_cache: yes
+     name:
+        - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+     state: absent
