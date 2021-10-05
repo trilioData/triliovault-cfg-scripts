@@ -16,18 +16,13 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
-- name: Check if centos-release-openstack-{{OPENSTACK_DIST}} is installed
-  command: rpm -q centos-release-openstack-{{OPENSTACK_DIST}}
-  register: rpm_check
-  ignore_errors: yes
-
 - name: Install packages on compute node to install tvault-contego-extension | centos-release-openstack-{{OPENSTACK_DIST}}
   yum:
      update_cache: yes
      name:
         - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
      state: latest
-  when: rpm_check.stdout.find('is not installed') != -1
+  register: result
 
 - name: install contego extension packages when using python2
   yum:
@@ -47,11 +42,10 @@
      state: latest
   when: PYTHON_VERSION=="python3"
 
-
 - name: Uninstall centos-release-openstack-{{OPENSTACK_DIST}} from compute node used to install tvault-contego-extension
   yum:
      update_cache: yes
      name:
         - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
      state: absent
-  when: rpm_check.stdout.find('is not installed') != -1
+  when: result is succeeded
