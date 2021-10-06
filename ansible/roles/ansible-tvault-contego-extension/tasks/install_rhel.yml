@@ -40,8 +40,8 @@
      state: latest
   when: PYTHON_VERSION=="python3"
 
-- name: Removed recently installed openstack-{{OPENSTACK_DIST}} repo
+- name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
   ansible.builtin.package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
     state: absent
-  when: (inst_pckg.results|length>0)
+  when: (inst_pckg.changed == 'True')
