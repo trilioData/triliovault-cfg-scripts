@@ -17,7 +17,7 @@
   shell: systemctl daemon-reload
 
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
-  ansible.builtin.package:
+  package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
     state: latest
   register: inst_pckg
@@ -41,7 +41,7 @@
   when: PYTHON_VERSION=="python3"
 
 - name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
-  ansible.builtin.package:
+  package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
     state: absent
   when: (inst_pckg.changed == 'True')
