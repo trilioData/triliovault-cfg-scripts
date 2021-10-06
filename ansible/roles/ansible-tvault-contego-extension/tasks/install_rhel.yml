@@ -16,13 +16,11 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
-- name: Install packages on compute node to install tvault-contego-extension | centos-release-openstack-{{OPENSTACK_DIST}}
-  yum:
-     update_cache: yes
-     name:
-        - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
-     state: latest
-  register: result
+- name: Install centos-release-openstack-{{OPENSTACK_DIST}} repo if is not installed
+  ansible.builtin.package:
+    name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
+    state: latest
+  register: inst_pckg
 
 - name: install contego extension packages when using python2
   yum:
@@ -42,10 +40,9 @@
      state: latest
   when: PYTHON_VERSION=="python3"
 
-- name: Uninstall centos-release-openstack-{{OPENSTACK_DIST}} from compute node used to install tvault-contego-extension
-  yum:
-     update_cache: yes
-     name:
-        - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
-     state: absent
-  when: result is succeeded
+- name: Removed recently installed centos-release-openstack-{{OPENSTACK_DIST}} repo
+  ansible.builtin.package:
+    name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
+    state: absent
+  register: uni_pckg
+  when: (inst_pckg.results|length>0)
