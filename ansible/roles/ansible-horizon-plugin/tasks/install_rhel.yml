@@ -37,6 +37,7 @@
   yum:
      update_cache: yes
      name:
+        - python3-workloadmgrclient-el8
         - python3-tvault-horizon-plugin-el8
      state: latest
   notify:
