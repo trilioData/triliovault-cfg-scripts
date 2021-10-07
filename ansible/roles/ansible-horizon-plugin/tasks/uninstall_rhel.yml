@@ -17,6 +17,7 @@
      name:
         - python3-tvault-horizon-plugin
         - python3-workloadmgrclient-el7
+        - python3-contegoclient-el7
      state: absent
   notify:
      - restart webserver
@@ -26,6 +27,8 @@
   yum:
      name:
         - python3-tvault-horizon-plugin-el8
+        - python3-workloadmgrclient-el8
+        - python3-contegoclient-el8
      state: absent
   notify:
      - restart webserver
