@@ -23,8 +23,8 @@ RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable r
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
-ADD start_datamover_s3 start_datamover_nfs /opt/tvault/
-ADD start_tvault_object_store_rhel8 /opt/tvault/start_tvault_object_store
+ADD start_datamover_s3 start_datamover_nfs_python3 /opt/tvault/
+ADD start_tvault_object_store_python3 /opt/tvault/start_tvault_object_store
 RUN chown -R nova:nova /opt/tvault/
 RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
