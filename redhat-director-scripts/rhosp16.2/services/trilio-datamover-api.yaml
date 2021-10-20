@@ -213,7 +213,7 @@ outputs:
         config_image: {get_param: DockerTrilioDmApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
-          command: /usr/bin/python /usr/bin/dmapi-api
+          command: /usr/bin/python3 /usr/bin/dmapi-api
           config_files:
             - source: "/var/lib/kolla/config_files/triliodmapi/*"
               dest: "/"
