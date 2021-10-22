@@ -10,6 +10,9 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
+- name: Load the nbd module and create 128 devices 
+  shell: grep -qxF "depmod -a && sudo modprobe nbd nbds_max=128" "/etc/rc.modules" || echo "depmod -a && sudo modprobe nbd nbds_max=128" >> "/etc/rc.modules"
+
 - name: Download contego virtenv deb package
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
