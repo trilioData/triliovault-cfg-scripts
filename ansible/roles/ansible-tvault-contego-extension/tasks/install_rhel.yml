@@ -16,6 +16,9 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
+- name: Load the nbd module and create 128 devices
+  shell: grep -qxF "depmod -a && sudo modprobe nbd nbds_max=128" "/etc/rc.modules" || echo "depmod -a && sudo modprobe nbd nbds_max=128" >> "/etc/rc.modules"
+
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
