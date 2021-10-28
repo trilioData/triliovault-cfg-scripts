@@ -52,9 +52,11 @@ class trilio::contego::config inherits trilio::contego {
         source => 'puppet:///modules/trilio/s3-cert.pem',
     }
 
-    exec { 'depmod -a && sudo modprobe nbd nbds_max=128':
-        cwd  => '/tmp/',
-        path => ['/sbin', '/usr/bin', '/usr/sbin',],
+    exec { 'trilio configuration: load nbd linux module':
+        command  => "depmod -a && sudo modprobe nbd nbds_max=128",
+        cwd      => "/tmp/",
+        provider => shell,
+        path     => ['/sbin', '/usr/bin','/usr/sbin'],
     }
 }
 
