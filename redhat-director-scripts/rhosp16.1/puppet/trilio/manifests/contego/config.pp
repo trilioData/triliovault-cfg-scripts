@@ -53,7 +53,7 @@ class trilio::contego::config inherits trilio::contego {
     }
 
     exec { 'trilio configuration: load nbd linux module':
-        command  => "depmod -a && sudo modprobe nbd nbds_max=128",
+        command  => "/sbin/depmod -a && sudo /sbin/modprobe nbd nbds_max=128",
         cwd      => "/tmp/",
         provider => shell,
         path     => ['/sbin', '/usr/bin','/usr/sbin'],
