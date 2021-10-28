@@ -16,15 +16,35 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
-- name: Load nbd and create 128 devices
+- name: Generate modules.dep and map files
+  shell: depmod -a
+  register: depmod_reg
+  ignore_errors: yes
+
+- debug:
+    msg: "{{ depmod_reg }}"
+  when: depmod_reg.rc != 0
+
+- name: Create nbd 128 devices
+  shell: sudo modprobe nbd nbds_max=128
+  register: crt_nbd
+  ignore_errors: yes
+
+- debug:
+    msg: "{{ crt_nbd }}"
+  when: crt_nbd.rc != 0
+
+- name: Load nbd 128 devices
   lineinfile:
     path: /etc/rc.modules
     line: 'depmod -a && sudo modprobe nbd nbds_max=128'
     create: yes
   register: chk_nbd
+  ignore_errors: yes
 
 - debug:
     msg: "{{ chk_nbd }}"
+  when: crt_nbd.rc != 0
 
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
