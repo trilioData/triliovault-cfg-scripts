@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    virtual_env: ". /openstack/venvs/horizon*/bin/activate"
+    virtual_env: ". {{horizon_virtual_env}}/bin/activate"
 
 - name: Find ENVPATH
   shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'import sys; print(sys.prefix)'"
