@@ -26,6 +26,7 @@ RUN mkdir -p /opt/tvault/
 ADD start_datamover_s3  /opt/tvault/
 ADD start_tvault_object_store_python3 /opt/tvault/start_tvault_object_store
 ADD start_datamover_nfs_python3 /opt/tvault/start_datamover_nfs
+RUN sed  -i '0,/^/s//sudo \/usr\/sbin\/modprobe nbd nbds_max=128\n\n/' /opt/tvault/start_datamover_nfs
 RUN chown -R nova:nova /opt/tvault/
 RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
