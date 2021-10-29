@@ -17,6 +17,15 @@
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
+- name: triliovault - load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+    state: "present"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - name: Ensuring config directories exist
   become: true
   file:
