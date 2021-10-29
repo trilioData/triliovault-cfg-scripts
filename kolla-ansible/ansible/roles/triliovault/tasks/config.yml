@@ -1,19 +1,18 @@
 ---
 
-- name: triliovault - Load and persist nbd module
-  include_role:
-    name: module-load
-  vars:
-    modules:
-      - { name: "nbd", params: "nbds_max=128" }
+- name: triliovault - set nbd module options in modprobe conf
+  become: true
+  template:
+    src: modprobe-nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
-- name: triliovault - set nbd module options
+- name: triliovault - set module-load conf for nbd module
   become: true
   template:
-    src: nbd.conf.j2
-    dest: "/etc/modprobe.d/nbd.conf"
+    src: module-load-nbd.conf.j2
+    dest: ""/etc/modules-load.d/nbd.conf""
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
