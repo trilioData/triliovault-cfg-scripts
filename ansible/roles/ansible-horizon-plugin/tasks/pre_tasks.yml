@@ -30,7 +30,7 @@
   find:
     patterns: 'site-packages'
     paths:
-      - "{{virtual_env}}"
+      - "{{horizon_virtual_env}}"
     file_type: directory
     recurse: yes
   register: file_found
