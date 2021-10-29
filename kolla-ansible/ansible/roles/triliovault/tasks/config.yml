@@ -12,7 +12,7 @@
   become: true
   template:
     src: module-load-nbd.conf.j2
-    dest: ""/etc/modules-load.d/nbd.conf""
+    dest: "/etc/modules-load.d/nbd.conf"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
