@@ -1,6 +1,6 @@
 [DEFAULT]
 <% if @multi_ip_nfs_enabled -%>
-vault_storage_nfs_export = <%= @nfs_map[@datamover_node_name] %>
+vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
 <% else -%>
 vault_storage_nfs_export = <%= @nfs_shares %>
 <% end -%>
