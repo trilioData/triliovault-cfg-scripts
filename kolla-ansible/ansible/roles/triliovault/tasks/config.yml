@@ -9,6 +9,14 @@
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
+- name: triliovault - set nbd module options
+  become: true
+  template:
+    src: nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - name: Ensuring config directories exist
   become: true
   file:
