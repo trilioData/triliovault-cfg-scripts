@@ -63,22 +63,9 @@
            (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
 
 - name: Copy Trilio Dashboard Files when Ubuntu
-  copy: src={{ item }} dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/"
-  with_items:
-  - tvault_panel_group.py
-  - tvault_admin_panel_group.py
-  - tvault_panel.py
-  - tvault_settings_panel.py
-  - tvault_admin_panel.py
+  shell: |
+      cp -rf /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/*panel*.py {{HORIZON_PATH}}/openstack_dashboard/local/enabled/
+      cp -f /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py {{HORIZON_PATH}}/openstack_dashboard/templatetags/
   notify:
-  - restart webserver
+    - restart webserver
   when: ansible_distribution=="Ubuntu"
-
-- name: Copy Tvault Filter Trilio Dashboard File when Ubuntu
-  copy:
-   src: tvault_filter.py
-   dest: "{{HORIZON_PATH}}/openstack_dashboard/templatetags/"
-  notify:
-  - restart webserver
-  when: ansible_distribution=="Ubuntu"
-
