@@ -21,8 +21,6 @@ Clone the repository on controller node:
     git clone https://github.com/trilioData/triliovault-cfg-scripts.git
    
     cd triliovault-cfg-scripts/
-    
-    git checkout hotfix/4.1
    
   *If platform is RHEL/CentOs*
   
@@ -31,6 +29,8 @@ Clone the repository on controller node:
   *If platform is Ubuntu*
   
       echo "deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /" >> /etc/apt/sources.list.d/trilio.list
+      
+      apt-get update
 
 **3. Install and configure Trilio Datamover Api Service**
 
@@ -56,9 +56,10 @@ Clone the repository on controller node:
     
 **4. Populate triliovault datamover api service configuration file - /etc/dmapi/dmapi.conf**
 
-
 After installing datamover api rpm/debian package, a sample conf file gets create at location:
 /etc/dmapi/dmapi.conf
+
+      vi /etc/dmapi/dmapi.conf
 
 User needs to edit it and fill all necessary parameters.
 
@@ -116,27 +117,33 @@ Here are the details of all parameters
 
 
 **5. Create dmapi log directory:**
-        mkdir /var/log/dmapi
+
+        mkdir -p /var/log/dmapi
      
         chown -R nova:nova /var/log/dmapi
     
 **6. Create service init file: /etc/systemd/system/tvault-datamover-api.service**
 
 
-        cp conf-files/tvault-datamover-api.service /etc/systemd/system/   
+        cp conf-files/tvault-dmapi.service /etc/systemd/system/
+
+
+- Update service file with correct python executable path at line - "ExecStart=/usr/bin/python /usr/bin/dmapi-api"
+
+        vi /etc/systemd/system/tvault-dmapi.service     
     
 **7. Start dmapi service**
 
         systemctl daemon-reload
     
-        systemctl enable tvault-datamover-api.service
+        systemctl enable tvault-dmapi.service
           
-        systemctl restart tvault-datamover-api.service
+        systemctl restart tvault-dmapi.service
     
 **8. Verify Installation**
 
-    i) Verify that dmapi service is started
+    i) Verify that tvault-dmapi service is started
     
-          systemctl status tvault-datamover-api
+          systemctl status tvault-dmapi
           
     ii) Verify that no error appears in log file - '/var/log/dmapi/dmapi.log'     

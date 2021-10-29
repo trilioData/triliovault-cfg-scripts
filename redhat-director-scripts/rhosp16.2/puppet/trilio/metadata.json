@@ -1,0 +1,55 @@
+{
+    "author": "TrilioData",
+    "dependencies": [
+        {
+            "name": "puppetlabs/inifile",
+            "version_requirement": ">=2.0.0 <3.0.0"
+        },
+        {
+            "name": "puppetlabs/stdlib",
+            "version_requirement": ">= 5.0.0 <6.0.0"
+        },
+        {
+            "name": "puppet/rabbitmq",
+            "version_requirement": ">=8.4.0 <9.0.0"
+        },
+        {
+            "name": "puppetlabs/mysql",
+            "version_requirement": ">=6.0.0 <9.0.0"
+        },
+        {
+            "name": "openstack/keystone",
+            "version_requirement": ">=15.4.0 <16.0.0"
+        },
+        {
+            "name": "openstack/openstacklib",
+            "version_requirement": ">=15.4.0 <16.0.0"
+        },
+        {
+            "name": "openstack/oslo",
+            "version_requirement": ">=15.4.0 <16.0.0"
+        }
+    ],
+    "description": "Installs and configures Trilio Datamover",
+    "issues_url": "https://www.trilio.io/",
+    "license": "proprietary",
+    "name": "trilio",
+    "operatingsystem_support": [
+        {
+            "operatingsystem": "RedHat",
+            "operatingsystemrelease": [
+                "7"
+            ]
+        }
+    ],
+    "project_page": "https://github.com/trilioData/triliovault-cfg-scripts/tree/master/redhat-director-scripts",
+    "requirements": [
+        {
+            "name": "puppet",
+            "version_requirement": "5.x"
+        }
+    ],
+    "source": "git@github.com:trilioData/triliovault-cfg-scripts.git",
+    "summary": "Puppet module for Trilio Datamover",
+    "version": "4.1.0"
+}
