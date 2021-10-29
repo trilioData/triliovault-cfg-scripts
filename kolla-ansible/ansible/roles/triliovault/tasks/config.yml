@@ -1,4 +1,13 @@
 ---
+- name: triliovault - Load and persist nbd module
+  include_role:
+    name: module-load
+  vars:
+    modules:
+      - { name: "nbd", params: "nbds_max=128" }
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - name: Ensuring config directories exist
   become: true
   file:
