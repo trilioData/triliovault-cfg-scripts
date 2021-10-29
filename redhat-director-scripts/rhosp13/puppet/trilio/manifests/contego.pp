@@ -23,7 +23,6 @@ class trilio::contego (
     $ceph_cinder_user                     = 'openstack',
     $cinder_http_retries                  = 10,
     $multi_ip_nfs_enabled                 = false,
-    $datamover_node_name                  = hiera('tvault-contego_short_bootstrap_node_name'),
     $nfs_map                              = {},
 ) {
 
