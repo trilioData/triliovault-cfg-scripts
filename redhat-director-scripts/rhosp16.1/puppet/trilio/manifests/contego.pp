@@ -24,7 +24,6 @@ class trilio::contego (
     $cinder_http_retries                  = 10,
     $nfs_map                              = {},
     $multi_ip_nfs_enabled                 = false,
-    $datamover_node_name                  = hiera('tvault-contego_short_bootstrap_node_name'),
 ) {
 
 
