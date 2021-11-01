@@ -81,3 +81,9 @@ parameter_defaults:
 
    ## Don't edit following parameter
    EnablePackageInstall: True
+
+
+   ## Load 'rbd' kernel module on all compute nodes
+   ComputeParameters:
+     ExtraKernelModules:
+       rbd: {}
