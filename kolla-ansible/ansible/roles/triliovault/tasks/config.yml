@@ -1,4 +1,12 @@
 ---
+- name: triliovault - Load rbd module
+  include_role:
+    name: module-load
+  vars:
+    modules:
+      - { name: rbd }
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
 
 - name: triliovault - set nbd module options in modprobe conf
   become: true
