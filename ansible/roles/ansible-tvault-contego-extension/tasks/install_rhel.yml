@@ -16,35 +16,24 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
-- name: Generate modules.dep and map files
-  shell: depmod -a
-  register: depmod_reg
-  ignore_errors: yes
+- name: Triliovault - set nbd module options in modprobe conf
+  become: true
+  template:
+    src: modprobe-nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
 
-- debug:
-    msg: "{{ depmod_reg }}"
-  when: depmod_reg.rc != 0
+- name: Triliovault - set module-load conf for nbd module
+  become: true
+  template:
+    src: module-load-nbd.conf.j2
+    dest: "/etc/modules-load.d/nbd.conf"
 
-- name: Create nbd 128 devices
-  shell: sudo modprobe nbd nbds_max=128
-  register: crt_nbd
-  ignore_errors: yes
-
-- debug:
-    msg: "{{ crt_nbd }}"
-  when: crt_nbd.rc != 0
-
-- name: Load nbd 128 devices
-  lineinfile:
-    path: /etc/rc.modules
-    line: 'depmod -a && sudo modprobe nbd nbds_max=128'
-    create: yes
-  register: chk_nbd
-  ignore_errors: yes
-
-- debug:
-    msg: "{{ chk_nbd }}"
-  when: crt_nbd.rc != 0
+- name: Triliovault - load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+    state: "present"
 
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
