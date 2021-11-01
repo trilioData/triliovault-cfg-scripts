@@ -10,47 +10,53 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
-- name: Generate modules.dep and map files
-  shell: depmod -a
-  register: depmod_reg
-  ignore_errors: yes
-
-- debug:
-    msg: "{{ depmod_reg }}"
-  when: depmod_reg.rc != 0
-
-- name: Create nbd 128 devices
+- name: Run cmd to create nbd 128 devices
   shell: sudo modprobe nbd nbds_max=128
-  register: crt_nbd
+  register: cmd_nbd
   ignore_errors: yes
 
 - debug:
-    msg: "{{ crt_nbd }}"
-  when: crt_nbd.rc != 0
+    msg: "{{ cmd_nbd }}"
+  when: cmd_nbd.changed == False
+  ignore_errors: yes
 
 - name: Create nbd config file
   lineinfile:
     path: /etc/modprobe.d/nbd.conf
     line: 'options nbd nbds_max=128'
     create: yes
-  register: chk_nbd
   ignore_errors: yes
-
-- debug:
-    msg: "{{ chk_nbd }}"
-  when: crt_nbd.changed == False
-
+  
 - name: Load nbd module into Linux Kernel
   lineinfile:
     path: /etc/modules-load.d/modules.conf
     line: 'nbd'
     create: no
-  register: loa_nbd
   ignore_errors: yes
 
+- name: Run cmd to create rbd
+  shell: sudo modprobe rbd
+  register: cmd_rbd
+  ignore_errors: yes
+ 
 - debug:
-    msg: "{{ loa_nbd }}"
-  when: loa_nbd.changed == False
+    msg: "{{ cmd_rbd }}"
+  when: cmd_rbd.changed == False
+  ignore_errors: yes
+
+- name: Create rbd config file
+  lineinfile:
+    path: /etc/modprobe.d/rbd.conf
+    line: 'options rbd'
+    create: yes
+  ignore_errors: yes
+
+- name: Load rbd module into Linux Kernel
+  lineinfile:
+    path: /etc/modules-load.d/modules.conf
+    line: 'rbd'
+    create: no
+  ignore_errors: yes
 
 - name: Download contego virtenv deb package
   shell: |
