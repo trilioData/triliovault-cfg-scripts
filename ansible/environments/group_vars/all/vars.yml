@@ -70,8 +70,8 @@ dmapi_workers: 16
 ceph_backend_enabled: False
 
 ## Provide Horizon Container Virtual Env path
-### e.g. sample_virtual_env /openstack/venvs/<horizon_version>
-horizon_virtual_env: sample_virtual_env
+## Default value of horizon_virtual_env is ' /openstack/venvs/horizon*'
+horizon_virtual_env: ' /openstack/venvs/horizon*'
 
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
