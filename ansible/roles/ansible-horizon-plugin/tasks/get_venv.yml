@@ -1,15 +1,15 @@
 ---
 - set_fact:
-    virtual_env: ". {{horizon_virtual_env}}/bin/activate"
+    virtual_env: ". {{ horizon_virtual_env }}/bin/activate"
 
 - name: Find ENVPATH
-  shell: "{{virtual_env}} && {{ PYTHON_VERSION }} -c 'import sys; print(sys.prefix)'"
+  shell: "{{ virtual_env }} && {{ PYTHON_VERSION }} -c 'import sys; print(sys.prefix)'"
   register: ENVPATH
 
 - set_fact:
-    ENV_PATH : "{{ENVPATH.stdout}}"
+    ENV_PATH : "{{ ENVPATH.stdout }}"
 - debug:
-    msg: "{{ENV_PATH}}"
+    msg: "{{ ENV_PATH }}"
     verbosity: "{{ verbosity_level }}"
 
 - set_fact:
