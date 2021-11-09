@@ -30,7 +30,7 @@
   find:
     patterns: 'site-packages'
     paths:
-      - "{{horizon_virtual_env}}"
+      - /openstack/
     file_type: directory
     recurse: yes
   register: file_found
@@ -40,7 +40,4 @@
 - debug:
     msg: "{{HORIZON_PATH}}"
     verbosity: "{{verbosity_level}}"
-
-
-
 
