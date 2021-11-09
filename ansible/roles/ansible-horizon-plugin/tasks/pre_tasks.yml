@@ -30,9 +30,6 @@
   shell: "find {{ horizon_virtual_env }} -name 'site-packages'"
   register: file_found
 
-- debug:
-    msg: "{{ file_found }}"
-
 - set_fact: HORIZON_PATH="{{file_found.stdout_lines[0]}}"
 
 - debug:
