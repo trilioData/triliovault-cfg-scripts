@@ -27,20 +27,15 @@
     verbosity: "{{verbosity_level}}"
 
 - name: Find openstack-dashboard path in horizon container
-  find:
-    patterns: 'site-packages'
-    paths:
-      - "{{horizon_virtual_env}}"
-    file_type: directory
-    recurse: yes
+  shell: "find {{ horizon_virtual_env }} -name 'site-packages'"
   register: file_found
 
-- set_fact: HORIZON_PATH="{{file_found.files[0]['path']}}"
+- debug:
+    msg: "{{ file_found }}"
+
+- set_fact: HORIZON_PATH="{{file_found.stdout_lines[0]}}"
 
 - debug:
     msg: "{{HORIZON_PATH}}"
     verbosity: "{{verbosity_level}}"
-
-
-
 
