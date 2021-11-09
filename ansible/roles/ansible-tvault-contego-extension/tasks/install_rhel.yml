@@ -16,6 +16,31 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
+- name: Triliovault - set nbd module options in modprobe conf
+  become: true
+  template:
+    src: modprobe-nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
+
+- name: Triliovault - set module-load conf for nbd module
+  become: true
+  template:
+    src: module-load-nbd.conf.j2
+    dest: "/etc/modules-load.d/nbd.conf"
+
+- name: Triliovault - load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+    state: "present"
+
+- name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
+  package:
+    name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
+    state: latest
+  register: inst_pckg
+
 - name: install contego extension packages when using python2
   yum:
      update_cache: yes
@@ -33,3 +58,9 @@
         - python3-tvault-contego
      state: latest
   when: PYTHON_VERSION=="python3"
+
+- name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
+  package:
+    name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
+    state: absent
+  when: (inst_pckg.changed == 'True')
