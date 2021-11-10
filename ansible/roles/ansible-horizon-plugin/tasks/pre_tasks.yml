@@ -27,10 +27,13 @@
     verbosity: "{{verbosity_level}}"
 
 - name: Find openstack-dashboard path in horizon container
-  shell: "find {{ horizon_virtual_env }} -name 'site-packages'"
-  register: file_found
+  shell: |
+         . {{ horizon_virtual_env }}/bin/activate &&
+         {{ PYTHON_VERSION }} -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+  register: HORIZONPATH
 
-- set_fact: HORIZON_PATH="{{file_found.stdout_lines[0]}}"
+- set_fact:
+    HORIZON_PATH: "{{ HORIZONPATH.stdout }}"
 
 - debug:
     msg: "{{HORIZON_PATH}}"
