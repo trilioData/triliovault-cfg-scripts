@@ -36,7 +36,7 @@
   file: path=/tmp/sync_static.py state=absent
 
 - name: Get os_local_settings_path
-  shell: find "{{virtual_env}}" -type d -path /sys -prune -o -name "*local_settings.d" 2>/dev/null | grep -E 'openstack_dashboard|horizon'
+  shell: "find {{ horizon_virtual_env }} -type d -path /sys -prune -o -name '*local_settings.d' 2>/dev/null | grep -E 'openstack_dashboard|horizon'"
   register: os_local_settings_path
 
 - name: HORIZON_CONFIG
