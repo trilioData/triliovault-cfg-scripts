@@ -10,7 +10,8 @@
   when: ENV_PATH != "/usr"
 
 - name: Found local packages library
-  shell: "{{virtual_env}} && echo $(/usr/bin/{{PYTHON_VERSION}} -c 'import site, os; from os import path; p = [path_dir for path_dir in site.getsitepackages() if path.exists(os.path.join(path_dir, 'dashboards'))]; print(p[0]+'/')')" 
+  shell: |
+         {{ PYTHON_VERSION }} -c "import site, os; from os import path; p = [path_dir for path_dir in site.getsitepackages() if path.exists(os.path.join(path_dir, 'dashboards'))]; print(p[0]+'/')"
   register: PACKAGELIB
   when: ENV_PATH != "/usr"
 
