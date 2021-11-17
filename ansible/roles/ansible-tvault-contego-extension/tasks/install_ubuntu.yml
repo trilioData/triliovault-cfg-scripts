@@ -27,6 +27,17 @@
   modprobe:
     name: "nbd"
     params: "nbds_max=128"
+
+- name: Triliovault - set module-load conf for rbd module
+  become: true
+  template:
+    src: module-load-rbd.conf.j2
+    dest: "/etc/modules-load.d/rbd.conf"
+
+- name: Triliovault - load rbd module
+  become: true
+  modprobe:
+    name: "rbd"
     state: "present"
 
 - name: Download contego virtenv deb package

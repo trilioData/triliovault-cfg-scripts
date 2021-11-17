@@ -1,8 +1,4 @@
 ---
-- hosts: horizon_all
-  roles:
-    - role: ansible-horizon-plugin
-
 - name: Installation and setup of dmapi conatiner
   hosts: dmapi_all
   gather_facts: "{{ osa_gather_facts | default(True) }}"
@@ -24,3 +20,7 @@
 - hosts: tvault_compute_hosts
   roles:
     - role: ansible-tvault-contego-extension
+
+- hosts: horizon_all
+  roles:
+    - role: ansible-horizon-plugin
