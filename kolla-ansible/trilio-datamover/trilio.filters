@@ -5,3 +5,6 @@ umount: CommandFilter, umount, root
 rescan-scsi-bus.sh: CommandFilter, /usr/bin/rescan-scsi-bus.sh, root
 multipath: CommandFilter, multipath, root
 qemu-img: CommandFilter, qemu-img, root
+qemu-nbd: CommandFilter, qemu-nbd, root
+rbd: CommandFilter, rbd, root
+
