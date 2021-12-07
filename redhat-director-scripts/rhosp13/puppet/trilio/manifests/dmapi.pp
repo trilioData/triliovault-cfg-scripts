@@ -59,6 +59,10 @@ class trilio::dmapi (
         content => template('trilio/dmapi.erb'),
     }
 
+
+    file { '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d':
+        ensure => 'directory',
+    }->
     file { "Create trilio dashboard file":
         path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
         ensure => present,
