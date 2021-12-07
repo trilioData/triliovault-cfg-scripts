@@ -43,7 +43,25 @@
   shell: echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo {{os_local_settings_path.stdout}} | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
   when:
     - os_local_settings_path != ""
-    
+
+- name: Enable OPENSTACK_ENCRYPTION_SUPPORT
+  lineinfile:
+    path: "{{os_local_settings_path.stdout}}/_001_trilio_dashboard.py"
+    regexp: 'OPENSTACK_ENCRYPTION_SUPPORT = False'
+    line: OPENSTACK_ENCRYPTION_SUPPORT = True
+  when:
+   - ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0))
+   - os_local_settings_path != ""
+
+- name: Enable TRILIO_ENCRYPTION_SUPPORT
+  lineinfile:
+    path: "{{os_local_settings_path.stdout}}/_001_trilio_dashboard.py"
+    regexp: 'TRILIO_ENCRYPTION_SUPPORT = False'
+    line: TRILIO_ENCRYPTION_SUPPORT = True
+  when:
+   - os_local_settings_path != ""
+   - (ansible_distribution_major_version != "7" and ansible_distribution == "CentOS")
+
 - name: Display local_settings.d path
   debug:
     msg: "local_settings.d path: {{os_local_settings_path.stdout}}"
