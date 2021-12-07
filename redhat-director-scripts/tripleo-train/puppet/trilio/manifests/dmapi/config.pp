@@ -33,4 +33,35 @@ class trilio::dmapi::config inherits trilio::dmapi {
           content => template('trilio/dmapi.erb'),
       }
 
+    if $barbican_api_enabled  == True {
+        file_line { 'set variable OPENSTACK_ENCRYPTION_SUPPORT':
+            ensure => present,
+            path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+            line   => 'OPENSTACK_ENCRYPTION_SUPPORT = True', 
+        }
+    }
+    else {
+        file_line { 'set variable OPENSTACK_ENCRYPTION_SUPPORT':
+            ensure => present,
+            path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+            line   => 'OPENSTACK_ENCRYPTION_SUPPORT = False',
+        }
+    }
+
+    if $facts['os']['release']['major'] == '7' {
+        file_line { 'set variable TRILIO_ENCRYPTION_SUPPORT':
+            ensure => present,
+            path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+            line   => 'TRILIO_ENCRYPTION_SUPPORT = False',
+        }
+    }
+    else {
+        file_line { 'set variable TRILIO_ENCRYPTION_SUPPORT':
+            ensure => present,
+            path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+            line   => 'TRILIO_ENCRYPTION_SUPPORT = False',
+        }
+    }
+
+
 }      
