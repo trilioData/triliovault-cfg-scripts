@@ -59,11 +59,15 @@ class trilio::dmapi (
         content => template('trilio/dmapi.erb'),
     }
 
-    if $barbican_api_enabled  == True {
+    file { "Create trilio dashboard file":
+        path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+        ensure => present,
+    }->
+    if $barbican_api_enabled  == 'true' {
         file_line { 'set variable OPENSTACK_ENCRYPTION_SUPPORT':
             ensure => present,
             path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
-            line   => 'OPENSTACK_ENCRYPTION_SUPPORT = True', 
+            line   => 'OPENSTACK_ENCRYPTION_SUPPORT = True',
         }
     }
     else {
@@ -72,5 +76,10 @@ class trilio::dmapi (
             path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
             line   => 'OPENSTACK_ENCRYPTION_SUPPORT = False',
         }
-    }    
+    }->
+    file_line { 'set variable TRILIO_ENCRYPTION_SUPPORT':
+        ensure => present,
+        path   => '/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.d/_001_trilio_dashboard.py',
+        line   => 'TRILIO_ENCRYPTION_SUPPORT = False',
+    }
 }
