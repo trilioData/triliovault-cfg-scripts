@@ -3,6 +3,10 @@ heat_template_version: queens
 description: >
   Trilio Horizon service
 parameters:
+  DockerHorizonImage:
+    default: ''
+    description: Trilio Horizon Plugin Image
+    type: string
   ServiceData:
     default: {}
     description: Dictionary packing service data
@@ -55,7 +59,4 @@ outputs:
         step_config: |
             include ::trilio::horizon
         config_image: {get_param: DockerHorizonImage}
-      kolla_config: []
-      docker_config: []
-      host_prep_tasks: []
       upgrade_tasks: []
