@@ -60,8 +60,7 @@
     line: TRILIO_ENCRYPTION_SUPPORT = True
   when:
    - os_local_settings_path != ""
-   - (ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "CentOS")
-   - (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] != "7")
+   - (ansible_distribution_major_version != "7")
 
 - name: Display local_settings.d path
   debug:
@@ -73,5 +72,3 @@
 - debug:
     msg: "\033[33m WARNING: Unable to locate local_settings.d on system. Trilio quota feature on dashboard may not work. \033[0m"
     verbosity: "{{ verbosity_level }}"
-  when: os_local_settings_path == ""
-
