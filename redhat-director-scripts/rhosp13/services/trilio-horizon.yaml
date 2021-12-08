@@ -1,0 +1,61 @@
+heat_template_version: queens
+
+description: >
+  Trilio Horizon service
+parameters:
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  HorizonDir:
+    default: '/etc/openstack-dashboard'
+    description: Openstack horizon directory
+    type: string
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Trilio Datamover role.
+    value:
+      service_name: trilio-horizon
+      config_settings:
+        trilio::horizon::horizon_dir: {get_param: HorizonDir}
+      puppet_config:
+        config_volume: triliohorizon
+        puppet_tags: triliohorizonconfig
+        step_config: |
+            include ::trilio::horizon
+        config_image: {get_param: DockerHorizonImage}
+      kolla_config: []
+      docker_config: []
+      host_prep_tasks: []
+      upgrade_tasks: []
