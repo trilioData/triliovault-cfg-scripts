@@ -44,23 +44,33 @@
   when:
     - os_local_settings_path != ""
 
+- set_fact: OPENSTACK_ENCRYPTION={{'True' | default('False')}}
+  when: > 
+    ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0)) and
+    (os_local_settings_path != "")
+
 - name: Enable OPENSTACK_ENCRYPTION_SUPPORT
   lineinfile:
     path: "{{os_local_settings_path.stdout}}/_001_trilio_dashboard.py"
     regexp: 'OPENSTACK_ENCRYPTION_SUPPORT'
-    line: OPENSTACK_ENCRYPTION_SUPPORT = True
+    line: OPENSTACK_ENCRYPTION_SUPPORT = {{ OPENSTACK_ENCRYPTION }}
   when:
-   - ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0))
-   - os_local_settings_path != ""
+    - "{{ OPENSTACK_ENCRYPTION }}==True"
+
+- set_fact: TRILIO_ENCRYPTION={{'True' | default('False')}}
+  when: >
+    (ansible_distribution_major_version != "7" and ansible_distribution == "CentOS") or
+    (ansible_distribution_major_version != "7" and ansible_distribution == "RedHat") or
+    (ansible_distribution == "Debian" or ansible_distribution == "Ubuntu") and
+    (os_local_settings_path != "")
 
 - name: Enable TRILIO_ENCRYPTION_SUPPORT
   lineinfile:
     path: "{{os_local_settings_path.stdout}}/_001_trilio_dashboard.py"
     regexp: 'TRILIO_ENCRYPTION_SUPPORT'
-    line: TRILIO_ENCRYPTION_SUPPORT = True
+    line: TRILIO_ENCRYPTION_SUPPORT = {{ TRILIO_ENCRYPTION }}
   when:
-   - os_local_settings_path != ""
-   - (ansible_distribution_major_version != "7")
+    - "{{ TRILIO_ENCRYPTION }}==True"
 
 - name: Display local_settings.d path
   debug:
