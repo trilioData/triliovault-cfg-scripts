@@ -44,7 +44,7 @@
   when:
     - os_local_settings_path != ""
 
-- set_fact: OPENSTACK_ENCRYPTION={{'True' | default('False')}}
+- set_fact: OPENSTACK_ENCRYPTION=True
   when: > 
     ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0)) and
     (os_local_settings_path != "")
@@ -57,12 +57,10 @@
   when:
     - "{{ OPENSTACK_ENCRYPTION }}==True"
 
-- set_fact: TRILIO_ENCRYPTION={{'True' | default('False')}}
+- set_fact: TRILIO_ENCRYPTION=True
   when: >
-    (ansible_distribution_major_version != "7" and ansible_distribution == "CentOS") or
-    (ansible_distribution_major_version != "7" and ansible_distribution == "RedHat") or
-    (ansible_distribution == "Debian" or ansible_distribution == "Ubuntu") and
-    (os_local_settings_path != "")
+    (ansible_distribution == "CentOS" and ansible_distribution_major_version|int != 7) or
+    (ansible_distribution == "RedHat" and ansible_distribution_major_version|int != 7)  
 
 - name: Enable TRILIO_ENCRYPTION_SUPPORT
   lineinfile:
