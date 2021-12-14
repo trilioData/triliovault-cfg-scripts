@@ -1,4 +1,44 @@
 ---
+
+- name: Set OPENSTACK_ENCRYPTION_SUPPORT to True
+  lineinfile:
+    path: "{{ container_config_directory }}/custom_local_settings"
+    regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
+    line: OPENSTACK_ENCRYPTION_SUPPORT = True
+  when:
+    - (enable_barbican is defined) and (enable_barbican == "yes")
+    - horizon.enabled | bool
+    - inventory_hostname in groups[horizon.group]
+
+- name: Set OPENSTACK_ENCRYPTION_SUPPORT to False
+  lineinfile:
+    path: "{{ container_config_directory }}/custom_local_settings"
+    regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
+    line: OPENSTACK_ENCRYPTION_SUPPORT = False
+  when:
+    - (enable_barbican is not defined) or (enable_barbican == "no")
+    - horizon.enabled | bool
+    - inventory_hostname in groups[horizon.group]
+
+- name: Set TRILIO_ENCRYPTION_SUPPORT to True - default value
+  lineinfile:
+    path: "{{ container_config_directory }}/custom_local_settings"
+    regexp: '^TRILIO_ENCRYPTION_SUPPORT'
+    line: TRILIO_ENCRYPTION_SUPPORT = True
+  when:
+    - horizon.enabled | bool
+    - inventory_hostname in groups[horizon.group]
+
+- name: Set TRILIO_ENCRYPTION_SUPPORT to False if OS is <=centos7 or <=rhel7
+  lineinfile:
+    path: "{{ container_config_directory }}/custom_local_settings"
+    regexp: '^TRILIO_ENCRYPTION_SUPPORT'
+    line: TRILIO_ENCRYPTION_SUPPORT = False
+  when:
+    - (ansible_distribution == "CentOS" and ansible_distribution_major_version <= 7) or (ansible_distribution == "RedHat" and ansible_distribution_major_version <= 7)
+    - horizon.enabled | bool
+    - inventory_hostname in groups[horizon.group]
+
 - name: triliovault - Load rbd module
   include_role:
     name: module-load
