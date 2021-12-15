@@ -54,7 +54,7 @@ outputs:
       config_settings:
         trilio::horizon::horizon_dir: {get_param: HorizonDir}
       puppet_config:
-        config_volume: triliohorizon
+        config_volume: horizon
         puppet_tags: triliohorizonconfig
         step_config: |
             include ::trilio::horizon
