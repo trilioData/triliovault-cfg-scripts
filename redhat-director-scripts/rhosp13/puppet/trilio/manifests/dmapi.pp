@@ -58,4 +58,5 @@ class trilio::dmapi (
         ensure  => present,
         content => template('trilio/dmapi.erb'),
     }
+
 }

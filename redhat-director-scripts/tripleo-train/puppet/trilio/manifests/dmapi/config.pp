@@ -32,5 +32,4 @@ class trilio::dmapi::config inherits trilio::dmapi {
           ensure  => present,
           content => template('trilio/dmapi.erb'),
       }
-
 }      
