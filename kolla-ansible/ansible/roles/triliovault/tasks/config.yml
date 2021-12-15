@@ -9,6 +9,8 @@
     - (enable_barbican is defined) and (enable_barbican == "yes")
     - (enable_horizon is defined) and (enable_horizon | bool)
     - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
 
 - name: Set OPENSTACK_ENCRYPTION_SUPPORT to False
   lineinfile:
@@ -19,6 +21,8 @@
     - (enable_barbican is not defined) or (enable_barbican == "no")
     - (enable_horizon is defined) and (enable_horizon | bool)
     - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
 
 - name: Set TRILIO_ENCRYPTION_SUPPORT to True - default value
   lineinfile:
@@ -28,6 +32,8 @@
   when:
     - (enable_horizon is defined) and (enable_horizon | bool)
     - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
 
 - name: Set TRILIO_ENCRYPTION_SUPPORT to False if OS is <=centos7 or <=rhel7
   lineinfile:
@@ -38,6 +44,8 @@
     - (ansible_distribution == "CentOS" and ansible_distribution_major_version | int <= 7) or (ansible_distribution == "RedHat" and ansible_distribution_major_version | int <= 7)
     - (enable_horizon is defined) and (enable_horizon | bool)
     - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
 
 - name: triliovault - Load rbd module
   include_role:
