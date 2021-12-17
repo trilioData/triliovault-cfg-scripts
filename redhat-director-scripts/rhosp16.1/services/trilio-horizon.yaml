@@ -3,7 +3,7 @@ heat_template_version: rocky
 description: >
   Trilio Horizon service
 parameters:
-  DockerHorizonImage:
+  ContainerHorizonImage:
     default: ''
     description: Trilio Horizon Plugin Image
     type: string
@@ -58,5 +58,5 @@ outputs:
         puppet_tags: triliohorizonconfig
         step_config: |
             include ::trilio::horizon
-        config_image: {get_param: DockerHorizonImage}
+        config_image: {get_param: ContainerHorizonImage}
       upgrade_tasks: []
