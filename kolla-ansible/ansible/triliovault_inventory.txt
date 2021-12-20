@@ -3,3 +3,6 @@ control
 
 [triliovault-datamover:children]
 compute
+
+[triliovault-horizon:children]
+horizon
