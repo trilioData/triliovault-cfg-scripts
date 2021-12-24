@@ -4,12 +4,12 @@ class trilio::horizon (
 
   tag 'triliohorizonconfig'
 
-    file { "${horizon_dir}/local_settings.d":
+    file { "${horizon_dir}/":
         ensure => 'directory',
     }->
-    file { "${horizon_dir}/local_settings.d/_002_trilio_dashboard.py":
+    file { "${horizon_dir}/local_settings":
         ensure  => present,
-        content => template('trilio/_002_trilio_dashboard.py.erb'),
+        content => template('trilio/local_settings.erb'),
     }   
 
 }
