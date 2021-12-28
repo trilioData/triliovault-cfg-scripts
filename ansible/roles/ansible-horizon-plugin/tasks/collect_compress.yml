@@ -51,10 +51,9 @@
 
 - name: SET OPENSTACK_ENCRYPTION_SUPPORT
   lineinfile:
-    path: "{{os_local_settings_path.stdout}}/_002_trilio_dashboard.py"
-    regexp: "^HORIZON_CONFIG\\['OPENSTACK_ENCRYPTION_SUPPORT'\\] "
-    line: HORIZON_CONFIG['OPENSTACK_ENCRYPTION_SUPPORT'] = {{ OPENSTACK_ENCRYPTION }}
-    create: yes
+    path: "/etc/horizon/local_settings.py"
+    regexp: "^OPENSTACK_ENCRYPTION_SUPPORT ="
+    line: OPENSTACK_ENCRYPTION_SUPPORT = {{ OPENSTACK_ENCRYPTION }}
 
 - set_fact: 
     TRILIO_ENCRYPTION: >
@@ -63,9 +62,9 @@
 
 - name: SET TRILIO_ENCRYPTION_SUPPORT
   lineinfile:
-    path: "{{os_local_settings_path.stdout}}/_002_trilio_dashboard.py"
-    regexp: "^HORIZON_CONFIG\\['TRILIO_ENCRYPTION_SUPPORT'\\] "
-    line: HORIZON_CONFIG['TRILIO_ENCRYPTION_SUPPORT'] = {{ TRILIO_ENCRYPTION }}
+    path: "/etc/horizon/local_settings.py"
+    regexp: "^TRILIO_ENCRYPTION_SUPPORT ="
+    line: TRILIO_ENCRYPTION_SUPPORT = {{ TRILIO_ENCRYPTION }}
 
 - name: Display local_settings.d path
   debug:
