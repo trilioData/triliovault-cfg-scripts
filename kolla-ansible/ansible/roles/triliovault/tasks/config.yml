@@ -2,7 +2,7 @@
 
 - name: Set OPENSTACK_ENCRYPTION_SUPPORT to True
   lineinfile:
-    path: "{{ node_config_directory }}/horizon/custom_local_settings"
+    path: "{{ node_config_directory }}/horizon/local_settings"
     regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
     line: OPENSTACK_ENCRYPTION_SUPPORT = True
   when:
@@ -14,7 +14,7 @@
 
 - name: Set OPENSTACK_ENCRYPTION_SUPPORT to False
   lineinfile:
-    path: "{{ node_config_directory }}/horizon/custom_local_settings"
+    path: "{{ node_config_directory }}/horizon/local_settings"
     regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
     line: OPENSTACK_ENCRYPTION_SUPPORT = False
   when:
@@ -26,7 +26,7 @@
 
 - name: Set TRILIO_ENCRYPTION_SUPPORT to True - default value
   lineinfile:
-    path: "{{ node_config_directory }}/horizon/custom_local_settings"
+    path: "{{ node_config_directory }}/horizon/local_settings"
     regexp: '^TRILIO_ENCRYPTION_SUPPORT'
     line: TRILIO_ENCRYPTION_SUPPORT = True
   when:
@@ -37,7 +37,7 @@
 
 - name: Set TRILIO_ENCRYPTION_SUPPORT to False if OS is <=centos7 or <=rhel7
   lineinfile:
-    path: "{{ node_config_directory }}/horizon/custom_local_settings"
+    path: "{{ node_config_directory }}/horizon/local_settings"
     regexp: '^TRILIO_ENCRYPTION_SUPPORT'
     line: TRILIO_ENCRYPTION_SUPPORT = False
   when:
