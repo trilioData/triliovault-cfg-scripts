@@ -1,10 +1,11 @@
 class trilio::horizon (
     $horizon_dir                        = '/etc/openstack-dashboard',
+    $barbican_api_enabled               = hiera('barbican_api_enabled'), 
 ){
 
   tag 'triliohorizonconfig'
 
-   if $barbican_api_enabled == 'true' {
+   if $barbican_api_enabled {
        file_line { "ENABLE OPENSTACK_ENCRYPTION_SUPPORT":
            ensure  => present,
            path   => "${horizon_dir}/local_settings",
