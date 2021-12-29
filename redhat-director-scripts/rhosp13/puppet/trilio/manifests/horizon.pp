@@ -5,24 +5,24 @@ class trilio::horizon (
   tag 'triliohorizonconfig'
 
    if $barbican_api_enabled == 'true' {
-       file_line { "Set $line in ${horizon_dir}/local_settings":  
+       file_line { "ENABLE OPENSTACK_ENCRYPTION_SUPPORT":  
            ensure  => present,
            path   => "${horizon_dir}/local_settings",
 	   line   => 'OPENSTACK_ENCRYPTION_SUPPORT = True',
 	   match  => '^OPENSTACK_ENCRYPTION_SUPPORT',
-        }
+       }
    }    
    else {
-       file_line { "Set $line in ${horizon_dir}/local_settings":  
+       file_line { "DISABLE OPENSTACK_ENCRYPTION_SUPPORT":  
            ensure  => present,
            path   => "${horizon_dir}/local_settings",
 	   line   => 'OPENSTACK_ENCRYPTION_SUPPORT = False',
 	   match  => '^OPENSTACK_ENCRYPTION_SUPPORT',
-        }
+       }
    }
  
 
-    file_line { "Set $line in ${horizon_dir}/local_settings":
+    file_line { "DISABLE TRILIO_ENCRYPTION_SUPPORT":
         ensure => present,
         path   => "${horizon_dir}/local_settings",
         line   => 'TRILIO_ENCRYPTION_SUPPORT = False',
