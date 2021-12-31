@@ -12,7 +12,7 @@ for pid in pids:
                     if value == '--config-file':
                         config_files.append(value + '=' + fields[index + 1])
                     elif value.startswith(b'--config-file='):
-                        config_files.append(value)
+                        config_files.append(value.decode('utf-8'))
     except IOError: # proc has already terminated
         continue
 if not config_files:
