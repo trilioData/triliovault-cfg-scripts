@@ -210,6 +210,7 @@ outputs:
           trilio_datamover:
             image: {get_param: DockerTrilioDatamoverImage}
             net: host
+            ipc: host
             privileged: true
             user: nova
             restart: always
