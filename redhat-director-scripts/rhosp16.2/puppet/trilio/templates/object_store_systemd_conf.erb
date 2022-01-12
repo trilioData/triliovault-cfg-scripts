@@ -1,0 +1,15 @@
+[Unit]
+Description=Tvault Object Store
+After=tvault-contego.service
+[Service]
+User= <%= @contego_user %>
+Group= <%= @contego_group %>
+Type=simple
+LimitNOFILE=500000
+LimitNPROC=500000
+ExecStart=<%= @contego_python+" "+@contego_ext_object_store+" "+"--config-file="+@contego_conf_file %>
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
