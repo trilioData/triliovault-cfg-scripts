@@ -14,7 +14,7 @@ RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
-
+RUN sed -i 's#baseurl.*#baseurl=http://mirror.centos.org/centos-8/8/storage/x86_64/ceph-nautilus/#g' /etc/yum.repos.d/tripleo-centos-ceph-nautilus.repo
 RUN dnf install python3-tvault-horizon-plugin-el8 -y
 RUN rm /etc/yum.repos.d/trilio.repo
 RUN dnf clean all
