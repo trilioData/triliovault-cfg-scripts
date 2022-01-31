@@ -1,5 +1,5 @@
-[triliovault-4-1]
-name=triliovault-4-1
-baseurl=http://{REPO_HOST}/triliovault-4.1/yum/
+[triliovault-4-2]
+name=triliovault-4-2
+baseurl=http://{REPO_HOST}/triliodata-dev-stable-4-2/yum/
 gpgcheck=0
 enabled=1

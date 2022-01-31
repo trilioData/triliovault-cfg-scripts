@@ -1,6 +1,6 @@
 [Unit]
 Description=TrilioData DataMover API service
-After=tvault-datamover-api.service
+After=tvault-dmapi.service
 
 [Service]
 User=nova
