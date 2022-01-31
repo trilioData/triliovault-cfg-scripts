@@ -43,7 +43,7 @@ insecure = True
 transport_url = {{ notify_transport_url }}
 {% if triliovault_enabled_notification_topics %}
 driver = messagingv2
-topics = {{ cinder_enabled_notification_topics | map(attribute='name') | join(',') }}
+topics = {{ triliovault_enabled_notification_topics | map(attribute='name') | join(',') }}
 {% else %}
 driver = noop
 {% endif %}

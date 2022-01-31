@@ -169,6 +169,7 @@ triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
 ## TrilioVault Inventory.  Refer triliovault_inventory file. 
 triliovault_datamover_api_group: 'triliovault-datamover-api'
 triliovault_datamover_group: 'triliovault-datamover'
+triliovault_horizon_group: "horizon"
 
 
 ## Log directories for triliovault services

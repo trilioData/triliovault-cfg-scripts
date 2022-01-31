@@ -26,9 +26,9 @@ then
 base_dir="$current_dir"
 fi
 
-declare -a openstack_releases=("rhosp16" "rhosp16.1")
+declare -a openstack_releases=("rhosp16.1" "rhosp16.2")
 
-declare -a rhosp_releases=("16.0" "16.1")
+declare -a rhosp_releases=("16.1" "16.2")
 
 declare -a repositories=("registry.redhat.io/rhosp-rhel8/openstack-nova-compute" "registry.redhat.io/rhosp-rhel8/openstack-nova-api" "registry.redhat.io/rhosp-rhel8/openstack-horizon")
 
