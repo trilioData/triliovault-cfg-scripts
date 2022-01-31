@@ -29,6 +29,4 @@ class trilio::horizon (
         line   => 'TRILIO_ENCRYPTION_SUPPORT = True',
         match  => '^TRILIO_ENCRYPTION_SUPPORT',
     }
-
-
 }
