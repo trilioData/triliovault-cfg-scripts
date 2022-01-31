@@ -1,10 +1,11 @@
 resource_registry:
   OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
   OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
+  OS::TripleO::Services::TrilioHorizon: ../services/trilio-horizon.yaml
   # NOTE: If there are addition customizations to the endpoint map (e.g. for
   # other integratiosn), this will need to be regenerated.
   OS::TripleO::EndpointMap: endpoint_map.yaml
-
+  
 
 
 parameter_defaults:
@@ -81,7 +82,6 @@ parameter_defaults:
 
    ## Don't edit following parameter
    EnablePackageInstall: True
-
 
    ## Load 'rbd' kernel module on all compute nodes
    ComputeParameters:
