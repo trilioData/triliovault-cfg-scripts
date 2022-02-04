@@ -10,12 +10,12 @@
     verbosity: "{{verbosity_level}}"
 
 - name: find location when using python3
-  shell: which python3
+  shell: type -p python3
   register: python3
   when: PYTHON_VERSION=="python3"
 
 - name: find location when using python2
-  shell: which python
+  shell: type -p python
   register: python2
   when: PYTHON_VERSION=="python2"
 
