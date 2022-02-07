@@ -24,7 +24,7 @@ openstack_distro="tripleo"
 
 declare -a openstack_releases=("train")
 
-declare -a openstack_platforms=("centos7" "centos8")
+declare -a openstack_platforms=("centos7")
 
 declare -a base_containers=("docker.io/tripleotrain/centos-binary-nova-compute:current-tripleo-rdo" "docker.io/tripleotrain/centos-binary-nova-api:current-tripleo-rdo" "docker.io/tripleotrain/centos-binary-horizon:current-tripleo-rdo" "docker.io/tripleotraincentos8/centos-binary-nova-compute:current-tripleo-rdo" "docker.io/tripleotraincentos8/centos-binary-nova-api:current-tripleo-rdo" "docker.io/tripleotraincentos8/centos-binary-horizon:current-tripleo-rdo")
 
