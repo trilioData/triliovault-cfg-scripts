@@ -41,7 +41,7 @@
     file_type: directory
     use_regex: yes
     patterns:
-      - '^.*local_settings.d$'
+      - '^.*?local_settings.(?:d)$'
     recurse: yes
   register: os_local_settings_path
 
