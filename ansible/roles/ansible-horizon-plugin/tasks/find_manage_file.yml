@@ -5,7 +5,7 @@
     paths: "{{ ENV_PATH }}"
     file_type: file
     use_regex: yes
-    patterns: "^.*?manage.(?:py)$"
+    patterns: "^.*manage.py$"
     recurse: yes
   register: output
 
