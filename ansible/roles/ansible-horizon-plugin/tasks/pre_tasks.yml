@@ -38,9 +38,3 @@
 - debug:
     msg: "{{HORIZON_PATH}}"
     verbosity: "{{verbosity_level}}"
-
-- name: Install the latest version of findutils
-  dnf:
-    name:
-      - findutils
-    state: latest
