@@ -16,7 +16,11 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum clean all
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms --enable rhel-7-server-rpms --enable rhel-7-server-extras-rpms --enable rhel-ha-for-rhel-7-server-rpms
-RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 -y
+RUN yum install python3 -y
+RUN python3 -m venv /home/tvault/.s3venv
+RUN /home/tvault/.s3venv/bin/pip install --upgrade pip
+RUN /home/tvault/.s3venv/bin/pip install --extra-index-url "https://pypi.fury.io/triliodata-stable-4-2/" s3fuse --upgrade --no-cache-dir
+RUN yum install tvault-contego puppet-triliovault -y
 RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN yum-config-manager --disable rhel-7-server-openstack-13-rpms --disable rhel-7-server-rpms --disable rhel-7-server-extras-rpms --disable rhel-ha-for-rhel-7-server-rpms 
 
