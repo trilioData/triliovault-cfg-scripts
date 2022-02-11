@@ -36,11 +36,17 @@
   file: path=/tmp/sync_static.py state=absent
 
 - name: Get os_local_settings_path
-  shell: "find {{ horizon_virtual_env }} -type d -path /sys -prune -o -name '*local_settings.d' 2>/dev/null | grep -E 'openstack_dashboard|horizon'"
+  find:
+    paths: /openstack/venvs/
+    file_type: directory
+    use_regex: yes
+    patterns:
+      - '^.*?local_settings.d'
+    recurse: yes
   register: os_local_settings_path
 
 - name: HORIZON_CONFIG
-  shell: echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo {{os_local_settings_path.stdout}} | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
+  shell: echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo {{os_local_settings_path.files[0].path}} | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
   when:
     - os_local_settings_path != ""
 
@@ -68,7 +74,7 @@
 
 - name: Display local_settings.d path
   debug:
-    msg: "local_settings.d path: {{os_local_settings_path.stdout}}"
+    msg: "local_settings.d path: {{os_local_settings_path.files | map(attribute='path')}}"
     verbosity: "{{ verbosity_level }}"
   when:
     - os_local_settings_path != ""
