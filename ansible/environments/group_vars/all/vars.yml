@@ -71,6 +71,8 @@ ceph_backend_enabled: False
 
 ## Provide Horizon Container Virtual Env path
 ## Default value of horizon_virtual_env is ' /openstack/venvs/horizon*'
+## If specific the horizon_virtual_env needs to specify, mention as shown in below example
+### e.g. horizon_virtual_env: ' /openstack/vens/horizon-23.1.0'
 horizon_virtual_env: ' /openstack/venvs/horizon*'
 
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
