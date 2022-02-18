@@ -16,7 +16,7 @@ openstack_distro="tripleo"
 
 declare -a openstack_releases=("train")
 
-declare -a openstack_platforms=("centos7" "centos8")
+declare -a openstack_platforms=("centos7")
 
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
