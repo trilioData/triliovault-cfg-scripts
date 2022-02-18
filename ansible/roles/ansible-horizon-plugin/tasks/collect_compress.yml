@@ -37,7 +37,7 @@
 
 - name: Get os_local_settings_path
   find:
-    paths: /openstack/venvs/
+    paths: "{{ horizon_virtual_env }}/"
     file_type: directory
     use_regex: yes
     patterns: 
@@ -50,9 +50,9 @@
     loc_sett_path: "{{ os_local_settings_path.files| map(attribute='path')| list|join(',')}}"
     loc_sett_path_len: "{{ os_local_settings_path.files| map(attribute='path')| list|length}}"
 
-- name: Stop playbook execution when local_settings.d are multiples or not present
+- name: Stop playbook execution when local_settings.d not found or multiples
   fail:
-    msg: "Didn't found local_settings.d dir or more than one locals_settings.d directories are present."
+    msg: "Didn't find local_settings.d dir or more than one locals_settings.d directories found."
   when: (loc_sett_path_len|int == 0) or
         (loc_sett_path_len|int > 1)
 
