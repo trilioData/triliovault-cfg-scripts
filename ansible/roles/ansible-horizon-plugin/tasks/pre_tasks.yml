@@ -2,6 +2,27 @@
 #For Debian: apache2
 #For RHEL: httpd
 
+- name: Find out Horizon path
+  find:
+    paths: "{{ horizon_virtual_env[:17]}}"
+    file_type: directory
+    use_regex: yes
+    patterns:
+      - '^.*?horizon*'
+    recurse: no
+  register: horizon_path
+
+- name: Find Horizon directory path & count
+  set_fact:
+    horizon_dir_path: "{{ horizon_path.files| map(attribute='path')| list|join(',') }}"
+    horizon_dir_cnt: "{{ horizon_path.files| map(attribute='path')| list|length }}"
+
+- name: Stop playbook execution when Horizon directory not found or multiples
+  fail:
+          msg: "Please update the correct value of horizon_virtual_env present in /etc/openstack_deploy/user_tvault_vars.yml file"
+  when: (horizon_dir_cnt|int == 0) or
+        (horizon_dir_cnt|int > 1)
+
 - set_fact: WebServer=apache2
   when: ansible_distribution=="Ubuntu"
 
@@ -38,3 +59,4 @@
 - debug:
     msg: "{{HORIZON_PATH}}"
     verbosity: "{{verbosity_level}}"
+
