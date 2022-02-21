@@ -2,9 +2,9 @@
 #For Debian: apache2
 #For RHEL: httpd
 
-- name: Find out Horizon path
-  find:
-    paths: "{{ horizon_virtual_env[:17]}}"
+- name: Find Horizon directory path
+  find: 
+    paths: "{{ horizon_virtual_env | dirname }}/"
     file_type: directory
     use_regex: yes
     patterns:
@@ -19,7 +19,7 @@
 
 - name: Stop playbook execution when Horizon directory not found or multiples
   fail:
-          msg: "Please update the correct value of horizon_virtual_env present in /etc/openstack_deploy/user_tvault_vars.yml file"
+    msg: "Please update the correct value of horizon_virtual_env present in user_tvault_vars.yml file"
   when: (horizon_dir_cnt|int == 0) or
         (horizon_dir_cnt|int > 1)
 
