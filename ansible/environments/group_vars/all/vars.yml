@@ -71,7 +71,7 @@ ceph_backend_enabled: False
 
 ## Provide Horizon Virtual Env path from Horizon_container
 ## e.g. '/openstack/venvs/horizon-23.1.0'
-horizon_virtual_env: ''
+horizon_virtual_env: '/openstack/venvs/horizon*'
 
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
