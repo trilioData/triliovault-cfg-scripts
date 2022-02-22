@@ -37,7 +37,7 @@
 
 - name: Get os_local_settings_path
   find:
-    paths: "{{ horizon_virtual_env }}/"
+    paths: "{{ horizon_virtual_env | dirname }}/"
     file_type: directory
     use_regex: yes
     patterns: 
