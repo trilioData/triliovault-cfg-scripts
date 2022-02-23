@@ -12,14 +12,10 @@
     recurse: no
   register: horizon_path
 
-- name: Find Horizon directory match count
-  set_fact:
-    horizon_dir_cnt: "{{ horizon_path.matched|int }}"
-
 - name: Stop playbook execution when Horizon directory not found or multiples
   fail:
     msg: "Pass full path of Horizon directory to horizon_virtual_env present in user_tvault_vars.yml file"
-  when: (horizon_dir_cnt != '1')
+  when: ({{ horizon_path.matched|int }} != 1)
 
 - set_fact: WebServer=apache2
   when: ansible_distribution=="Ubuntu"
