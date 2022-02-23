@@ -2,6 +2,21 @@
 #For Debian: apache2
 #For RHEL: httpd
 
+- name: Find Horizon directory path
+  find:
+    paths: "{{ horizon_virtual_env | dirname }}/"
+    file_type: directory
+    use_regex: no
+    patterns:
+      - "{{ horizon_virtual_env | basename }}"
+    recurse: no
+  register: horizon_path
+
+- name: Stop playbook execution when Horizon directory not found or multiples
+  fail:
+    msg: "Pass full path of Horizon directory to horizon_virtual_env present in user_tvault_vars.yml file"
+  when: ({{ horizon_path.matched|int }} != 1)
+
 - set_fact: WebServer=apache2
   when: ansible_distribution=="Ubuntu"
 
