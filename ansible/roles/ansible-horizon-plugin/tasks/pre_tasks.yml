@@ -6,7 +6,7 @@
   find:
     paths: "{{ horizon_virtual_env | dirname }}/"
     file_type: directory
-    use_regex: yes
+    use_regex: no
     patterns:
       - "{{ horizon_virtual_env | basename }}"
     recurse: no
