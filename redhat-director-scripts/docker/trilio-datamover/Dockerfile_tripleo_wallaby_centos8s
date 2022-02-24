@@ -15,6 +15,8 @@ USER root
 ##Install datamover packages
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
+RUN rpm -ivh centos-stream-repos-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
+RUN rm -f centos-gpg-keys-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b wallaby current ceph
 
