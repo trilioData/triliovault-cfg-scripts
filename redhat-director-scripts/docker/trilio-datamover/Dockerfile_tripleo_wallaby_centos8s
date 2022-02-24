@@ -6,8 +6,8 @@ LABEL name="tripleo/openstack-nova-compute-triliodata" \
       vendor="TrilioData" \
       version="4.2.0" \
       release="4.2" \
-      summary="TripleO Train nova-compute plugin TrilioData Datamover" \
-      description="TripleO Train nova-compute plugin TrilioData Datamover"
+      summary="TripleO Wallaby nova-compute plugin TrilioData Datamover" \
+      description="TripleO Wallaby nova-compute plugin TrilioData Datamover"
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -15,8 +15,10 @@ USER root
 ##Install datamover packages
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
+RUN rpm -ivh centos-stream-repos-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
+RUN rm -f centos-gpg-keys-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
 RUN dnf install -y python3-tripleo-repos
-RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
+RUN tripleo-repos -b wallaby current ceph
 
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
 
