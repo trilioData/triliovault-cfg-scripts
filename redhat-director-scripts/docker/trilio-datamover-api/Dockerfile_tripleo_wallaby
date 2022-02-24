@@ -6,8 +6,8 @@ LABEL name="tripleo/openstack-nova-api-triliodata" \
       vendor="TrilioData" \
       version="4.2.0" \
       release="4.2" \
-      summary="TripleO Train nova-api TrilioData trilio-datamover-api" \
-      description="TripleO Train nova-api TrilioData trilio-datamover-api"
+      summary="TripleO Wallaby nova-api TrilioData trilio-datamover-api" \
+      description="TripleO Wallaby nova-api TrilioData trilio-datamover-api"
 
 
 # switch to root and install a custom RPM, etc.
@@ -18,7 +18,7 @@ USER root
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
-RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
+RUN tripleo-repos -b wallaby current ceph
 
 
 RUN dnf install python3-dmapi -y
