@@ -13,7 +13,7 @@ LABEL name="tripleo/openstack-nova-compute-triliodata" \
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 ADD centos-gpg-keys-8-4.el8.noarch.rpm centos-stream-repos-8-4.el8.noarch.rpm /root/
-RUN rpm -ivh centos-stream-repos-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
+RUN rpm -ivh /root/centos-stream-repos-8-4.el8.noarch.rpm /root/centos-gpg-keys-8-4.el8.noarch.rpm
 RUN rm -f centos-gpg-keys-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b wallaby current ceph
