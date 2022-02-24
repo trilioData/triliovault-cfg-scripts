@@ -14,17 +14,16 @@ tvault_version=$1
 
 openstack_distro="tripleo"
 
-declare -a openstack_releases=("train")
+declare -a openstack_releases=("train" "wallaby")
 
-declare -a openstack_platforms=("centos7")
+declare -a openstack_platforms=("centos7" "centos8s")
 
+count=0
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
 
-    for openstack_platform in "${openstack_platforms[@]}"
-    do
-        container_prefix="${openstack_distro}-${openstack_release}-${openstack_platform}"
+        container_prefix="${openstack_distro}-${openstack_releases[$count]}-${openstack_platforms[$count]}"
         podman tag trilio/${container_prefix}-trilio-datamover-api:${tvault_version}-${openstack_distro} \
         docker.io/trilio/${container_prefix}-trilio-datamover-api:${tvault_version}-${openstack_distro}
         podman push --authfile /root/auth.json docker.io/trilio/${container_prefix}-trilio-datamover-api:${tvault_version}-${openstack_distro}
@@ -36,5 +35,5 @@ do
         podman tag trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}-${openstack_distro} \
         docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}-${openstack_distro}
         podman push --authfile /root/auth.json docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tvault_version}-${openstack_distro}
-    done
+        let count=count+1
 done
