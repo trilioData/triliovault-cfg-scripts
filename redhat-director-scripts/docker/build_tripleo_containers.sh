@@ -32,12 +32,11 @@ for base_container in "${base_containers[@]}"
 do
         podman pull ${base_container}
 done
+count=0
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
 do
-    for openstack_platform in "${openstack_platforms[@]}"
-    do
-	build_dir=tmp_docker_${openstack_distro}_${openstack_release}_${openstack_platform}
+	build_dir=tmp_docker_${openstack_distro}_${openstack_releases[$count]}_${openstack_platforms[$count]}
         rm -rf $base_dir/${build_dir}
         mkdir -p $base_dir/${build_dir}
 	cp -R $base_dir/trilio-datamover $base_dir/${build_dir}/
@@ -45,36 +44,35 @@ do
         cp -R $base_dir/trilio-horizon-plugin $base_dir/${build_dir}/
 
 	#Build trilio-datamover containers
-	echo -e "Creating trilio-datamover container for tripleo ${openstack_release} ${openstack_platform}"
+	echo -e "Creating trilio-datamover container for tripleo ${openstack_releases[$count]} ${openstack_platforms[$count]}"
 	cd $base_dir/${build_dir}/trilio-datamover/
-	mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
+	mv Dockerfile_${openstack_distro}_${openstack_releases[$count]}_${openstack_platforms[$count]} Dockerfile
 	curl https://trunk.rdoproject.org/centos8/component/tripleo/current/delorean.repo > delorean-component-tripleo.repo
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-gpg-keys-8-4.el8.noarch.rpm
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-stream-repos-8-4.el8.noarch.rpm
-	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover:${tvault_version}-${openstack_distro} .
+	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_releases[$count]}-${openstack_platforms[$count]}-trilio-datamover:${tvault_version}-${openstack_distro} .
 
 
 	#Build trilio_datamover-api containers
-	echo -e "Creating trilio-datamover container-api for tripleo ${openstack_release} ${openstack_platform}"
+	echo -e "Creating trilio-datamover container-api for tripleo ${openstack_releases[$count]} ${openstack_platforms[$count]}"
 	cd $base_dir/${build_dir}/trilio-datamover-api/
-	mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
+	mv Dockerfile_${openstack_distro}_${openstack_releases[$count]}_${openstack_platforms[$count]} Dockerfile
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-gpg-keys-8-4.el8.noarch.rpm
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-stream-repos-8-4.el8.noarch.rpm
 	curl https://trunk.rdoproject.org/centos8/component/tripleo/current/delorean.repo > delorean-component-tripleo.repo
-	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-datamover-api:${tvault_version}-${openstack_distro} .
+	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_releases[$count]}-${openstack_platforms[$count]}-trilio-datamover-api:${tvault_version}-${openstack_distro} .
 
 
 	#Build trilio_horizon_plugin containers
-	echo -e "Creating trilio-horizon-plugin container for tripleo ${openstack_release} ${openstack_platform}"
+	echo -e "Creating trilio-horizon-plugin container for tripleo ${openstack_releases[$count]} ${openstack_platforms[$count]}"
 	cd $base_dir/${build_dir}/trilio-horizon-plugin/
-	mv Dockerfile_${openstack_distro}_${openstack_release}_${openstack_platform} Dockerfile
+	mv Dockerfile_${openstack_distro}_${openstack_releases[$count]}_${openstack_platforms[$count]} Dockerfile
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-gpg-keys-8-4.el8.noarch.rpm
 	curl -O http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-stream-repos-8-4.el8.noarch.rpm
 	curl https://trunk.rdoproject.org/centos8/component/tripleo/current/delorean.repo > delorean-component-tripleo.repo
-	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_release}-${openstack_platform}-trilio-horizon-plugin:${tvault_version}-${openstack_distro} .
+	buildah bud --format docker -t trilio/${openstack_distro}-${openstack_releases[$count]}-${openstack_platforms[$count]}-trilio-horizon-plugin:${tvault_version}-${openstack_distro} .
 
 	# Clean the build_dir
 	rm -rf $base_dir/${build_dir}
-
-    done
+        let count=count+1
 done
