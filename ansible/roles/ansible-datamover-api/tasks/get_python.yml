@@ -10,12 +10,12 @@
     verbosity: "{{verbosity_level}}"
 
 - name: find location when using python3
-  shell: type -p python3
+  command: /bin/bash -c "type -p python3"
   register: python3
   when: PYTHON_VERSION=="python3"
 
 - name: find location when using python2
-  shell: type -p python
+  command: /bin/bash -c "type -p python"
   register: python2
   when: PYTHON_VERSION=="python2"
 
