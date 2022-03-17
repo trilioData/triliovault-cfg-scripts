@@ -12,7 +12,12 @@ LABEL name="rhosp16/openstack-horizon-triliodata-plugin" \
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf install python3-tvault-horizon-plugin-el8 -y
-RUN yum -y --skip-broken --nobest update-minimal --security --sec-severity=Important --sec-severity=Critical
+RUN dnf -y install microdnf \
+  && microdnf install yum \
+  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
+  && yum clean all \
+  && microdnf remove yum \
+  && microdnf clean all
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Move necessary files

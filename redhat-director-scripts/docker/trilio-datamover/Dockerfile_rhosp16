@@ -15,10 +15,14 @@ USER root
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 
-RUN dnf clean all
 RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
-RUN yum -y --skip-broken --nobest update-minimal --security --sec-severity=Important --sec-severity=Critical
+RUN dnf -y install microdnf \
+  && microdnf install yum \
+  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
+  && yum clean all \
+  && microdnf remove yum \
+  && microdnf clean all
 RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms
 
 #Copy executable files
@@ -46,7 +50,6 @@ RUN chown nova:nova /var/log/trilio-datamover
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
 ##Clean subscription
-RUN yum clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Add license
