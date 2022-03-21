@@ -25,7 +25,7 @@ source /home/stack/stackrc
 echo -e "Enter dockerhub account credentials"
 ${container_tool} login docker.io
 
-container_prefix="tripleo-train-${os_platform}"
+container_prefix="tripleo-wallaby-${os_platform}"
 ## Prepare openstack horizon with trilio container
 ${container_tool} pull docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tag}
 ${container_tool} tag docker.io/trilio/${container_prefix}-trilio-horizon-plugin:${tag} ${undercloud_hostname}:8787/trilio/${container_prefix}-trilio-horizon-plugin:${tag}
@@ -43,9 +43,9 @@ openstack tripleo container image push --local ${undercloud_hostname}:8787/trili
 
 
 ## Update image locations in env file
-trilio_dm_image="${undercloud_hostname}:8787\/trilio\/tripleo-train-${os_platform}-trilio-datamover:${tag}"
-trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/tripleo-train-${os_platform}-trilio-datamover-api:${tag}"
-trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/tripleo-train-${os_platform}-trilio-horizon-plugin:${tag}"
+trilio_dm_image="${undercloud_hostname}:8787\/trilio\/tripleo-wallaby-${os_platform}-trilio-datamover:${tag}"
+trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/tripleo-wallaby-${os_platform}-trilio-datamover-api:${tag}"
+trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/tripleo-wallaby-${os_platform}-trilio-horizon-plugin:${tag}"
 
 sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
 sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
