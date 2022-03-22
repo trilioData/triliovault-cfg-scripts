@@ -96,9 +96,9 @@ parameters:
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
-    type: boolean	
-  CephClientUserName: 
-    default: 'openstack'	
+    type: boolean
+  CephClientUserName:
+    default: 'openstack'
     description: Cinder ceph backend user name
     type: string
   TrilioDatamoverPassword:
@@ -227,7 +227,7 @@ outputs:
                   - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
                   - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-                  -/var/lib/config-data/puppet-generated/iscsid/etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /var/lib/config-data/puppet-generated/iscsid/etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
                   - list_join:
                     - ':'
                     - - {get_param: CephConfigPath}
