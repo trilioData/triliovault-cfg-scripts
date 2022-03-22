@@ -1,0 +1,225 @@
+# This example bundle is based on cs:openstack-base for a dev/test
+# environment where openstack is deployed on top of openstack using
+# the Juju openstack provider.  It is different than cs:openstack-base
+# in that every principle application unit has a dedicated machine
+# allocated, and none of the applications are placed into lxd units.
+#
+# This bundle is not intended for production use, and is not intended
+# for use with the Juju MAAS provider.  See cs:openstack-base for a
+# baseline example for use with MAAS and adapt from there as needed.
+series: xenial
+applications:
+  ntp:
+    charm: 'cs:ntp-24'
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+  neutron-gateway:
+    charm: 'cs:neutron-gateway-247'
+    num_units: 1
+    options:
+      bridge-mappings: 'physnet1:br-ex'
+      data-port: 'br-ex:ens192'
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '0'
+  cinder-ceph:
+    charm: 'cs:cinder-ceph-231'
+    annotations:
+      gui-x: '1456.6666870117188'
+      gui-y: '347.77777099609375'
+  cinder:
+    charm: 'cs:cinder-268'
+    num_units: 1
+    options:
+      block-device: None
+      glance-api-version: 2
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '750'
+      gui-y: '0'
+  neutron-openvswitch:
+    charm: 'cs:neutron-openvswitch-249'
+    annotations:
+      gui-x: '250'
+      gui-y: '500'
+  neutron-api:
+    charm: 'cs:neutron-api-258'
+    num_units: 1
+    options:
+      flat-network-providers: physnet1
+      neutron-security-groups: true
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '500'
+  glance:
+    charm: 'cs:glance-263'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '250'
+      gui-y: '0'
+  ceph-radosgw:
+    charm: 'cs:ceph-radosgw-256'
+    num_units: 1
+    options:
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+  ceph-osd:
+    charm: 'cs:ceph-osd-257'
+    num_units: 3
+    options:
+      osd-devices: /dev/sdb /dev/vdb
+      osd-reformat: 'yes'
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '500'
+  ceph-mon:
+    charm: 'cs:ceph-mon-23'
+    num_units: 3
+    options:
+      expected-osd-count: 3
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '750'
+      gui-y: '500'
+  nova-cloud-controller:
+    charm: 'cs:nova-cloud-controller-306'
+    num_units: 1
+    options:
+      network-manager: Neutron
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '500'
+  openstack-dashboard:
+    charm: 'cs:openstack-dashboard-257'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '500'
+      gui-y: '-250'
+  nova-compute:
+    charm: 'cs:nova-compute-282'
+    num_units: 3
+    options:
+      config-flags: default_ephemeral_format=ext4
+      enable-live-migration: true
+      enable-resize: true
+      openstack-origin: 'cloud:xenial-queens'
+      virt-type: qemu
+    annotations:
+      gui-x: '250'
+      gui-y: '250'
+  rabbitmq-server:
+    charm: 'cs:rabbitmq-server-72'
+    num_units: 1
+    annotations:
+      gui-x: '500'
+      gui-y: '250'
+  keystone:
+    charm: 'cs:keystone'
+    num_units: 1
+    options:
+      admin-password: openstack
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '0'
+  mysql:
+    charm: 'cs:percona-cluster-259'
+    num_units: 1
+    options:
+      innodb-buffer-pool-size: 256M
+      max-connections: 1000
+    annotations:
+      gui-x: '1071.1110534667969'
+      gui-y: '949.9999694824219'
+relations:
+  - - 'neutron-api:shared-db'
+    - 'mysql:shared-db'
+  - - 'neutron-gateway:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'keystone:shared-db'
+    - 'mysql:shared-db'
+  - - 'neutron-openvswitch:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'ntp:juju-info'
+    - 'neutron-gateway:juju-info'
+  - - 'nova-compute:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:identity-service'
+    - 'keystone:identity-service'
+  - - 'neutron-openvswitch:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'neutron-api:identity-service'
+    - 'keystone:identity-service'
+  - - 'glance:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-compute:ceph-access'
+    - 'cinder-ceph:ceph-access'
+  - - 'glance:shared-db'
+    - 'mysql:shared-db'
+  - - 'cinder-ceph:storage-backend'
+    - 'cinder:storage-backend'
+  - - 'neutron-api:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:image-service'
+    - 'glance:image-service'
+  - - 'cinder:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-compute:image-service'
+    - 'glance:image-service'
+  - - 'glance:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'ceph-radosgw:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-cloud-controller:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'cinder:image-service'
+    - 'glance:image-service'
+  - - 'cinder:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'ceph-mon:client'
+    - 'glance:ceph'
+  - - 'ceph-mon:client'
+    - 'nova-compute:ceph'
+  - - 'ceph-osd:mon'
+    - 'ceph-mon:osd'
+  - - 'ceph-radosgw:mon'
+    - 'ceph-mon:radosgw'
+  - - 'nova-cloud-controller:cloud-compute'
+    - 'nova-compute:cloud-compute'
+  - - 'ceph-mon:client'
+    - 'cinder-ceph:ceph'
+  - - 'nova-cloud-controller:shared-db'
+    - 'mysql:shared-db'
+  - - 'nova-cloud-controller:quantum-network-service'
+    - 'neutron-gateway:quantum-network-service'
+  - - 'neutron-gateway:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'nova-compute:neutron-plugin'
+    - 'neutron-openvswitch:neutron-plugin'
+  - - 'cinder:cinder-volume-service'
+    - 'nova-cloud-controller:cinder-volume-service'
+  - - 'ntp:juju-info'
+    - 'nova-compute:juju-info'
+  - - 'nova-cloud-controller:neutron-api'
+    - 'neutron-api:neutron-api'
+  - - 'cinder:shared-db'
+    - 'mysql:shared-db'
+  - - 'openstack-dashboard:identity-service'
+    - 'keystone:identity-service'
