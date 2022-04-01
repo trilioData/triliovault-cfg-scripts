@@ -1,5 +1,14 @@
+
+# Licensed under the TrilioVault License, Version 5.0
+
 apiVersion: v1
-appVersion: "1.0"
-description: A Helm chart for Kubernetes
+appVersion: v5.0.0
+description: OpenStack-Helm TrilioVault Chart
 name: triliovault
-version: 0.1.0
+version: 5.0.0
+home: https://docs.trilio.io/trilio-data/
+icon: <TBD>
+sources:
+  - https://github.com/trilioData/triliovault-cfg-scripts.git
+maintainers:
+  - name: TrilioVault Authors
