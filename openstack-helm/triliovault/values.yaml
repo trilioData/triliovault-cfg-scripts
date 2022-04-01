@@ -7,26 +7,11 @@
 storage: ceph
 
 labels:
-  trilio-datamover-api:
+  datamover_api:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  trilio-datamover:
+  datamover:
     node_selector_key: openstack-compute-node
-    node_selector_value: enabled
-  trilio-horizon-plugin:
-    node_selector_key: openstack-control-plane
-    node_selector_value: enabled
-  trilio-workloadmgr-api:
-    node_selector_key: openstack-control-plane
-    node_selector_value: enabled
-  trilio-workloadmgr-scheduler:
-    node_selector_key: openstack-control-plane
-    node_selector_value: enabled
-  trilio-workloadmgr-cron:
-    node_selector_key: openstack-control-plane
-    node_selector_value: enabled
-  trilio-workloadmgr-workloads:
-    node_selector_key: openstack-control-plane
     node_selector_value: enabled
 
 release_group: null
@@ -75,17 +60,17 @@ pod:
         cinder_volume_usage_audit:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
-    cinder_api:
+    datamover_api:
       pod:
-        runAsUser: 42426
+        runAsUser: 42424
       container:
         ceph_coordination_volume_perms:
           runAsUser: 0
           readOnlyRootFilesystem: true
-        cinder_api:
+        datamover_api:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
-    cinder_backup:
+    datamover:
       pod:
         runAsUser: 42426
       container:
@@ -107,41 +92,6 @@ pod:
               - SYS_ADMIN
           readOnlyRootFilesystem: true
           runAsUser: 0
-    cinder_scheduler:
-      pod:
-        runAsUser: 42424
-      container:
-        ceph_coordination_volume_perms:
-          runAsUser: 0
-          readOnlyRootFilesystem: true
-        cinder_scheduler:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-    cinder_volume:
-      pod:
-        runAsUser: 42424
-      container:
-        ceph_keyring_placement:
-          runAsUser: 0
-          readOnlyRootFilesystem: true
-        ceph_coordination_volume_perms:
-          runAsUser: 0
-          readOnlyRootFilesystem: true
-        init_cinder_conf:
-          runAsUser: 0
-          readOnlyRootFilesystem: true
-        cinder_volume:
-          readOnlyRootFilesystem: true
-    storage_init:
-      pod:
-        runAsUser: 42424
-      container:
-        ceph_keyring_placement:
-          runAsUser: 0
-          readOnlyRootFilesystem: true
-        cinder_backup_storage_init:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
     clean:
       pod:
         runAsUser: 42424
@@ -180,7 +130,7 @@ pod:
         volumes:
     datamover_tests:
       init_container: null
-      cinder_tests:
+      datamover_tests:
         volumeMounts:
         volumes:
     datamover_db_sync:
@@ -188,9 +138,7 @@ pod:
         volumeMounts:
         volumes:
   replicas:
-    datamover_
-    
-    api: 1
+    datamover_api: 1
     datamover: 1
   lifecycle:
     upgrades:
@@ -201,28 +149,21 @@ pod:
           max_unavailable: 1
           max_surge: 3
     disruption_budget:
-      api:
+      datamover_api:
         min_available: 0
     termination_grace_period:
-      api:
+      datamover_api:
         timeout: 30
   resources:
     enabled: false
-    api:
+    datamover_api:
       requests:
         memory: "128Mi"
         cpu: "100m"
       limits:
         memory: "1024Mi"
         cpu: "2000m"
-    scheduler:
-      requests:
-        memory: "128Mi"
-        cpu: "100m"
-      limits:
-        memory: "1024Mi"
-        cpu: "2000m"
-    volume:
+    datamover:
       requests:
         memory: "128Mi"
         cpu: "100m"
@@ -351,7 +292,7 @@ bootstrap:
   #       - volume_type_2
 
 network:
-  api:
+  datamover_api:
     ingress:
       public: true
       classes:
@@ -833,7 +774,63 @@ conf:
         crush_rule: replicated_rule
         chunk_size: 8
         app_name: cinder-volume
-  cinder:
+  datamover-api:
+    DEFAULT:
+      volume_usage_audit_period: hour
+      resource_query_filters_file: /etc/cinder/resource_filters.json
+      log_config_append: /etc/cinder/logging.conf
+      use_syslog: false
+      use_stderr: true
+      enable_v1_api: false
+      volume_name_template: "%s"
+      osapi_volume_workers: 1
+      glance_api_version: 2
+      os_region_name: RegionOne
+      host: cinder-volume-worker
+      # NOTE(portdirect): the bind port should not be defined, and is manipulated
+      # via the endpoints section.
+      osapi_volume_listen_port: null
+      enabled_backends: "rbd1"
+      default_volume_type: "rbd1"
+      # NOTE(portdirect): "cinder.backup.drivers.ceph"  and
+      # "cinder.backup.drivers.posix" also supported
+      # NOTE(rchurch): As of Stein, drivers by class name are required
+      # - cinder.backup.drivers.swift.SwiftBackupDriver
+      # - cinder.backup.drivers.ceph.CephBackupDriver
+      # - cinder.backup.drivers.posix.PosixBackupDriver
+      backup_driver: "cinder.backup.drivers.swift.SwiftBackupDriver"
+      # Backup: Ceph RBD options
+      backup_ceph_conf: "/etc/ceph/ceph.conf"
+      backup_ceph_user: cinderbackup
+      backup_ceph_pool: cinder.backups
+      # Backup: Posix options
+      backup_posix_path: /var/lib/cinder/backup
+      auth_strategy: keystone
+      # Internal tenant id
+      internal_project_name: internal_cinder
+      internal_user_name: internal_cinder
+    database:
+      max_retries: -1
+    keystone_authtoken:
+      auth_version: v3
+      auth_type: password
+      memcache_security_strategy: ENCRYPT
+    oslo_policy:
+      policy_file: /etc/cinder/policy.yaml
+    oslo_concurrency:
+      lock_path: "/var/lib/cinder/tmp"
+    oslo_messaging_notifications:
+      driver: messagingv2
+    oslo_middleware:
+      enable_proxy_headers_parsing: true
+    oslo_messaging_rabbit:
+      rabbit_ha_queues: true
+    coordination:
+      backend_url: file:///var/lib/cinder/coordination
+    service_user:
+      auth_type: password
+      send_service_user_token: false
+  datamover:
     DEFAULT:
       volume_usage_audit_period: hour
       resource_query_filters_file: /etc/cinder/resource_filters.json
