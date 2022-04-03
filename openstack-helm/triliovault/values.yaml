@@ -22,7 +22,7 @@ images:
   tags:
     test: docker.io/xrally/xrally-openstack:2.0.0
     db_init: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
-    trilio_db_sync: docker.io/openstackhelm/cinder:ussuri-ubuntu_bionic
+    trilio_db_sync: docker.io/trilio/triliovault-helm:victoria-ubuntu_bionic
     db_drop: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
     rabbit_init: docker.io/rabbitmq:3.7-management
     ks_user: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
@@ -1209,13 +1209,13 @@ secrets:
     volume: cinder-volume-rbd-keyring
     volume_external: cinder-volume-external-rbd-keyring
   oslo_messaging:
-    admin: cinder-rabbitmq-admin
-    cinder: cinder-rabbitmq-user
+    admin: triliovault-rabbitmq-admin
+    cinder: triliovault-rabbitmq-user
   tls:
-    volumev3:
-      api:
-        public: cinder-tls-public
-        internal: cinder-tls-api
+    datamover:
+      datamover_api:
+        public: triliovault-tls-public
+        internal: triliovault-tls-api
 # We use a different layout of the endpoints here to account for versioning
 # this swaps the service name and type, and should be rolled out to other
 # services.
@@ -1243,10 +1243,10 @@ endpoints:
         project_name: admin
         user_domain_name: default
         project_domain_name: default
-      cinder:
+      triliovault:
         role: admin
         region_name: RegionOne
-        username: cinder
+        username: triliovault
         password: password
         project_name: service
         user_domain_name: service
@@ -1254,7 +1254,7 @@ endpoints:
       test:
         role: admin
         region_name: RegionOne
-        username: cinder-test
+        username: triliovault-test
         password: password
         project_name: test
         user_domain_name: service
@@ -1288,10 +1288,10 @@ endpoints:
         default: 9292
         public: 80
   volumev3:
-    name: cinder
+    name: triliovault
     hosts:
-      default: cinder-api
-      public: cinder
+      default: triliovault-api
+      public: triliovault
     host_fqdn_override:
       default: null
       # NOTE(portdirect): this chart supports TLS for fqdn over-ridden public
@@ -1317,14 +1317,14 @@ endpoints:
         secret:
           tls:
             internal: mariadb-tls-direct
-      cinder:
-        username: cinder
+      triliovault:
+        username: triliovault
         password: password
     hosts:
       default: mariadb
     host_fqdn_override:
       default: null
-    path: /cinder
+    path: /triliovault
     scheme: mysql+pymysql
     port:
       mysql:
@@ -1337,8 +1337,8 @@ endpoints:
         secret:
           tls:
             internal: rabbitmq-tls-direct
-      cinder:
-        username: cinder
+      triliovault:
+        username: triliovault
         password: password
     statefulset:
       replicas: 2
@@ -1347,7 +1347,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /cinder
+    path: /triliovault
     scheme: rabbit
     port:
       amqp:
@@ -1408,7 +1408,7 @@ endpoints:
         default: 80
 
 network_policy:
-  cinder:
+  triliovault:
     ingress:
       - {}
     egress:

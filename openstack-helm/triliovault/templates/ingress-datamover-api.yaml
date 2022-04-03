@@ -1,0 +1,13 @@
+{{/*
+Licensed under the TrilioVault License
+*/}}
+
+{{- if and .Values.manifests.ingress_datamover_api .Values.network.datamover_api.ingress.public }}
+{{- $envAll := . -}}
+{{- $ingressOpts := dict "envAll" $envAll "backendServiceType" "datamover" "backendPort" "td-api" -}}
+{{- $secretName := $envAll.Values.secrets.tls.datamover.datamover_api.internal -}}
+{{- if and .Values.manifests.certificates $secretName -}}
+{{- $_ := set $ingressOpts "certIssuer" .Values.endpoints.datamover.host_fqdn_override.default.tls.issuerRef.name -}}
+{{- end -}}
+{{ $ingressOpts | include "helm-toolkit.manifests.ingress" }}
+{{- end }}

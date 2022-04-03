@@ -5,16 +5,16 @@ Licensed under TrilioVault License
 {{- if .Values.manifests.deployment_datamover_api }}
 {{- $envAll := . }}
 
-{{- $mounts_datamover_api := .Values.pod.mounts.datamover_api.datamover_api }}
-{{- $mounts_datamover_api_init := .Values.pod.mounts.datamover_api.init_container }}
+{{- $mounts_triliovault_datamover_api := .Values.pod.mounts.triliovault_datamover_api.triliovault_datamover_api }}
+{{- $mounts_triliovault_datamover_api_init := .Values.pod.mounts.triliovault_datamover_api.init_container }}
 
-{{- $serviceAccountName := "datamover-api" }}
+{{- $serviceAccountName := "triliovault-api" }}
 {{ tuple $envAll "api" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: datamover-api
+  name: triliovault-datamover-api
   annotations:
     {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
   labels:
@@ -43,20 +43,20 @@ spec:
         {{ .Values.labels.datamover_api.node_selector_key }}: {{ .Values.labels.datamover_api.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.datamover_api.timeout | default "30" }}
       initContainers:
-{{ tuple $envAll "datamover-api" $mounts_datamover_api_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+{{ tuple $envAll "datamover-api" $mounts_triliovault_datamover_api_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
-        - name: datamover-api
+        - name: triliovault-datamover-api
 {{ tuple $envAll "datamover_api" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
-{{ dict "envAll" $envAll "application" "triliovault-datamover" "container" "datamover-api" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault_datamover_api" "container" "triliovault_datamover_api" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
           command:
-            - /tmp/datamover-api.sh
+            - /tmp/triliovault-datamover-api.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
-                  - /tmp/datamover-api.sh
+                  - /tmp/triliovault-datamover-api.sh
                   - stop
           ports:
             - name: td-api
@@ -66,18 +66,18 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: datamover-api-bin
-              mountPath: /tmp/nova-api.sh
-              subPath: datamover-api.sh
+            - name: triliovault-bin
+              mountPath: /tmp/triliovault-datamover-api.sh
+              subPath: triliovault-datamover-api.sh
               readOnly: true
-            - name: datamover-api-etc
+            - name: triliovault-etc
               mountPath: /etc/dmapi/dmapi.conf
               subPath: dmapi.conf
               readOnly: true
-            {{- if .Values.conf.datamover-api.DEFAULT.log_config_append }}
-            - name: datamover-api-etc
-              mountPath: {{ .Values.conf.datamover-api.DEFAULT.log_config_append }}
-              subPath: {{ base .Values.conf.datamover-api.DEFAULT.log_config_append }}
+            {{- if .Values.conf.triliovault.DEFAULT.log_config_append }}
+            - name: triliovault-etc
+              mountPath: {{ .Values.conf.triliovault.DEFAULT.log_config_append }}
+              subPath: {{ base .Values.conf.triliovault.DEFAULT.log_config_append }}
               readOnly: true
             {{- end }}
 
@@ -85,23 +85,23 @@ spec:
 Certificate blocks were here. Check if it is required for us
 */}}
 
-{{ if $mounts_datamover_api.volumeMounts }}{{ toYaml $mounts_datamover_api.volumeMounts | indent 12 }}{{ end }}
+{{ if $mounts_triliovault_datamover_api.volumeMounts }}{{ toYaml $mounts_triliovault_datamover_api.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp
           emptyDir: {}
         {{- if .Values.manifests.certificates }}
-        - name: wsgi-datamover-api
+        - name: wsgi-triliovault
           emptyDir: {}
         {{- end }}
         - name: pod-var-nova
           emptyDir: {}
-        - name: datamover-api-bin
+        - name: triliovault-bin
           configMap:
-            name: datamover-api-bin
+            name: triliovault-bin
             defaultMode: 0555
-        - name: datamover-api-etc
+        - name: triliovault-etc
           secret:
-            secretName: datamover-api-etc
+            secretName: triliovault-etc
             defaultMode: 0444
 {{- dict "enabled" .Values.manifests.certificates "name" .Values.endpoints.oslo_db.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" .Values.manifests.certificates "name" .Values.secrets.tls.compute.osapi.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
