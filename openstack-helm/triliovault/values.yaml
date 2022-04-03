@@ -10,9 +10,11 @@ labels:
   datamover_api:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  datamover:
-    node_selector_key: openstack-compute-node
-    node_selector_value: enabled
+  agent:
+    datamover:
+      node_selector_key: openstack-compute-node
+      node_selector_value: enabled
+
 
 release_group: null
 
@@ -778,7 +780,7 @@ conf:
     DEFAULT:
       volume_usage_audit_period: hour
       resource_query_filters_file: /etc/cinder/resource_filters.json
-      log_config_append: /etc/cinder/logging.conf
+      log_config_append: /etc/dmapi/logging.conf
       use_syslog: false
       use_stderr: true
       enable_v1_api: false
@@ -834,7 +836,7 @@ conf:
     DEFAULT:
       volume_usage_audit_period: hour
       resource_query_filters_file: /etc/cinder/resource_filters.json
-      log_config_append: /etc/cinder/logging.conf
+      log_config_append: /etc/tvault-contego/logging.conf
       use_syslog: false
       use_stderr: true
       enable_v1_api: false

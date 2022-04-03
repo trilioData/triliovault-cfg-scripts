@@ -18,17 +18,17 @@ metadata:
   annotations:
     {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
   labels:
-{{ tuple $envAll "triliovault-datamover" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+{{ tuple $envAll "triliovault" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
   replicas: {{ .Values.pod.replicas.datamover_api }}
   selector:
     matchLabels:
-{{ tuple $envAll "triliovault-datamover" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll "triliovault" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
 {{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
   template:
     metadata:
       labels:
-{{ tuple $envAll "triliovault-datamover" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+{{ tuple $envAll "triliovault" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
         configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
@@ -36,9 +36,9 @@ spec:
 {{ dict "envAll" $envAll "podName" "datamover-api" "containerNames" (list "datamover-api" "init") | include "helm-toolkit.snippets.kubernetes_mandatory_access_control_annotation" | indent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
-{{ dict "envAll" $envAll "application" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
+{{ dict "envAll" $envAll "application" "triliovault" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
       affinity:
-{{ tuple $envAll "triliovault-datamover" "datamover-api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+{{ tuple $envAll "triliovault" "datamover-api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
       nodeSelector:
         {{ .Values.labels.datamover_api.node_selector_key }}: {{ .Values.labels.datamover_api.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.datamover_api.timeout | default "30" }}
@@ -60,75 +60,51 @@ spec:
                   - stop
           ports:
             - name: td-api
-              containerPort: {{ tuple "compute" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-{{ dict "envAll" $envAll "component" "api-osapi" "container" "default" "type" "liveness" "probeTemplate" (include "novaApiOsapiLivenessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
-{{ dict "envAll" $envAll "component" "api-osapi" "container" "default" "type" "readiness" "probeTemplate" (include "novaApiOsapiReadinessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
+              containerPort: {{ tuple "datamover" "internal" "datamover-api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+{{ dict "envAll" $envAll "component" "datamover-api" "container" "default" "type" "liveness" "probeTemplate" (include "datamoverApiLivenessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
+{{ dict "envAll" $envAll "component" "datamover-api" "container" "default" "type" "readiness" "probeTemplate" (include "datamoverApiReadinessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: pod-var-nova
-              mountPath: /var/lib/nova
-            - name: nova-bin
+            - name: datamover-api-bin
               mountPath: /tmp/nova-api.sh
-              subPath: nova-api.sh
+              subPath: datamover-api.sh
               readOnly: true
-            - name: nova-etc
-              mountPath: /etc/nova/nova.conf
-              subPath: nova.conf
+            - name: datamover-api-etc
+              mountPath: /etc/dmapi/dmapi.conf
+              subPath: dmapi.conf
               readOnly: true
-            {{- if .Values.conf.nova.DEFAULT.log_config_append }}
-            - name: nova-etc
-              mountPath: {{ .Values.conf.nova.DEFAULT.log_config_append }}
-              subPath: {{ base .Values.conf.nova.DEFAULT.log_config_append }}
-              readOnly: true
-            {{- end }}
-            - name: nova-etc
-              mountPath: /etc/nova/api-paste.ini
-              subPath: api-paste.ini
-              readOnly: true
-            - name: nova-etc
-              mountPath: /etc/nova/policy.yaml
-              subPath: policy.yaml
-              readOnly: true
-            - name: nova-etc
-              mountPath: /etc/nova/api_audit_map.conf
-              subPath: api_audit_map.conf
-              readOnly: true
-            {{- if .Values.manifests.certificates }}
-            - name: wsgi-nova
-              mountPath: /var/www/cgi-bin/nova
-            - name: nova-etc
-              mountPath: {{ .Values.conf.software.apache2.conf_dir }}/wsgi-api.conf
-              subPath: wsgi-api.conf
-              readOnly: true
-            - name: nova-etc
-              mountPath: {{ .Values.conf.software.apache2.mods_dir }}/mpm_event.conf
-              subPath: mpm_event.conf
+            {{- if .Values.conf.datamover-api.DEFAULT.log_config_append }}
+            - name: datamover-api-etc
+              mountPath: {{ .Values.conf.datamover-api.DEFAULT.log_config_append }}
+              subPath: {{ base .Values.conf.datamover-api.DEFAULT.log_config_append }}
               readOnly: true
             {{- end }}
-{{- dict "enabled" .Values.manifests.certificates "name" .Values.endpoints.oslo_db.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
-{{- dict "enabled" .Values.manifests.certificates "name" .Values.secrets.tls.compute.osapi.internal "path" "/etc/nova/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
-{{ if $mounts_nova_api_osapi.volumeMounts }}{{ toYaml $mounts_nova_api_osapi.volumeMounts | indent 12 }}{{ end }}
+
+{{/* 
+Certificate blocks were here. Check if it is required for us
+*/}}
+
+{{ if $mounts_datamover_api.volumeMounts }}{{ toYaml $mounts_datamover_api.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp
           emptyDir: {}
         {{- if .Values.manifests.certificates }}
-        - name: wsgi-nova
+        - name: wsgi-datamover-api
           emptyDir: {}
         {{- end }}
         - name: pod-var-nova
           emptyDir: {}
-        - name: nova-bin
+        - name: datamover-api-bin
           configMap:
-            name: nova-bin
+            name: datamover-api-bin
             defaultMode: 0555
-        - name: nova-etc
+        - name: datamover-api-etc
           secret:
-            secretName: nova-etc
+            secretName: datamover-api-etc
             defaultMode: 0444
 {{- dict "enabled" .Values.manifests.certificates "name" .Values.endpoints.oslo_db.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" .Values.manifests.certificates "name" .Values.secrets.tls.compute.osapi.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
-{{ if $mounts_nova_api_osapi.volumes}}{{ toYaml $mounts_nova_api_osapi.volumes | indent 8 }}{{ end }}
+{{ if $mounts_datamover_api.volumes}}{{ toYaml $mounts_datamover_api.volumes | indent 8 }}{{ end }}
 {{- end }}
