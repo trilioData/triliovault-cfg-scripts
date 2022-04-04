@@ -22,7 +22,7 @@ images:
   tags:
     test: docker.io/xrally/xrally-openstack:2.0.0
     db_init: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
-    trilio_db_sync: docker.io/trilio/triliovault-helm:victoria-ubuntu_bionic
+    triliovault_db_sync: docker.io/trilio/triliovault-helm:victoria-ubuntu_bionic
     db_drop: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
     rabbit_init: docker.io/rabbitmq:3.7-management
     ks_user: docker.io/openstackhelm/heat:ussuri-ubuntu_bionic
@@ -59,7 +59,7 @@ pod:
       pod:
         runAsUser: 42424
       container:
-        cinder_volume_usage_audit:
+        triliovault_volume_usage_audit:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
     datamover_api:
@@ -88,7 +88,7 @@ pod:
         ceph_coordination_volume_perms:
           runAsUser: 0
           readOnlyRootFilesystem: true
-        cinder_backup:
+        triliovault_backup:
           capabilities:
             add:
               - SYS_ADMIN
@@ -98,7 +98,7 @@ pod:
       pod:
         runAsUser: 42424
       container:
-        cinder_volume_rbd_secret_clean:
+        triliovault_volume_rbd_secret_clean:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
     create_internal_tenant:
@@ -120,23 +120,23 @@ pod:
     volume: false
     backup: false
   mounts:
-    datamover_api:
+    triliovault_datamover_api:
       init_container: null
       datamover_api:
         volumeMounts:
         volumes:
-    datamover:
+    triliovault_datamover:
       init_container: null
       datamover:
         volumeMounts:
         volumes:
-    datamover_tests:
+    triliovault_datamover_tests:
       init_container: null
       datamover_tests:
         volumeMounts:
         volumes:
-    datamover_db_sync:
-      datamover_db_sync:
+    triliovault_db_sync:
+      triliovault_db_sync:
         volumeMounts:
         volumes:
   replicas:
@@ -294,7 +294,7 @@ bootstrap:
   #       - volume_type_2
 
 network:
-  datamover_api:
+  datamover_datamover_api:
     ingress:
       public: true
       classes:
@@ -325,574 +325,128 @@ ceph_client:
       global: null
       osd: null
 conf:
-  paste:
-    composite:osapi_volume:
-      use: call:cinder.api:root_app_factory
-      /: apiversions
-      /v3: openstack_volume_api_v3
-    composite:openstack_volume_api_v3:
-      use: call:cinder.api.middleware.auth:pipeline_factory
-      noauth: cors http_proxy_to_wsgi request_id faultwrap sizelimit osprofiler noauth apiv3
-      keystone: cors http_proxy_to_wsgi request_id faultwrap sizelimit osprofiler authtoken audit keystonecontext apiv3
-      keystone_nolimit: cors http_proxy_to_wsgi request_id faultwrap sizelimit osprofiler authtoken audit keystonecontext apiv3
-    filter:request_id:
-      paste.filter_factory: oslo_middleware.request_id:RequestId.factory
-    filter:http_proxy_to_wsgi:
-      paste.filter_factory: oslo_middleware.http_proxy_to_wsgi:HTTPProxyToWSGI.factory
-    filter:cors:
-      paste.filter_factory: oslo_middleware.cors:filter_factory
-      oslo_config_project: cinder
-    filter:faultwrap:
-      paste.filter_factory: cinder.api.middleware.fault:FaultWrapper.factory
-    filter:osprofiler:
-      paste.filter_factory: osprofiler.web:WsgiMiddleware.factory
-    filter:noauth:
-      paste.filter_factory: cinder.api.middleware.auth:NoAuthMiddleware.factory
-    filter:sizelimit:
-      paste.filter_factory: oslo_middleware.sizelimit:RequestBodySizeLimiter.factory
-    app:apiv3:
-      paste.app_factory: cinder.api.v3.router:APIRouter.factory
-    pipeline:apiversions:
-      pipeline: cors http_proxy_to_wsgi faultwrap osvolumeversionapp
-    app:osvolumeversionapp:
-      paste.app_factory: cinder.api.versions:Versions.factory
-    filter:keystonecontext:
-      paste.filter_factory: cinder.api.middleware.auth:CinderKeystoneContext.factory
-    filter:authtoken:
-      paste.filter_factory: keystonemiddleware.auth_token:filter_factory
-    filter:audit:
-      paste.filter_factory: keystonemiddleware.audit:filter_factory
-      audit_map_file: /etc/cinder/api_audit_map.conf
-  policy:
-    context_is_admin: role:admin
-    admin_or_owner: is_admin:True or project_id:%(project_id)s
-    default: rule:admin_or_owner
-    admin_api: is_admin:True
-    volume:create: ''
-    volume:delete: rule:admin_or_owner
-    volume:get: rule:admin_or_owner
-    volume:get_all: rule:admin_or_owner
-    volume:get_volume_metadata: rule:admin_or_owner
-    volume:create_volume_metadata: rule:admin_or_owner
-    volume:delete_volume_metadata: rule:admin_or_owner
-    volume:update_volume_metadata: rule:admin_or_owner
-    volume:get_volume_admin_metadata: rule:admin_api
-    volume:update_volume_admin_metadata: rule:admin_api
-    volume:get_snapshot: rule:admin_or_owner
-    volume:get_all_snapshots: rule:admin_or_owner
-    volume:create_snapshot: rule:admin_or_owner
-    volume:delete_snapshot: rule:admin_or_owner
-    volume:update_snapshot: rule:admin_or_owner
-    volume:get_snapshot_metadata: rule:admin_or_owner
-    volume:delete_snapshot_metadata: rule:admin_or_owner
-    volume:update_snapshot_metadata: rule:admin_or_owner
-    volume:extend: rule:admin_or_owner
-    volume:update_readonly_flag: rule:admin_or_owner
-    volume:retype: rule:admin_or_owner
-    volume:update: rule:admin_or_owner
-    volume_extension:types_manage: rule:admin_api
-    volume_extension:types_extra_specs: rule:admin_api
-    volume_extension:access_types_qos_specs_id: rule:admin_api
-    volume_extension:access_types_extra_specs: rule:admin_api
-    volume_extension:volume_type_access: rule:admin_or_owner
-    volume_extension:volume_type_access:addProjectAccess: rule:admin_api
-    volume_extension:volume_type_access:removeProjectAccess: rule:admin_api
-    volume_extension:volume_type_encryption: rule:admin_api
-    volume_extension:volume_encryption_metadata: rule:admin_or_owner
-    volume_extension:extended_snapshot_attributes: rule:admin_or_owner
-    volume_extension:volume_image_metadata: rule:admin_or_owner
-    volume_extension:quotas:show: ''
-    volume_extension:quotas:update: rule:admin_api
-    volume_extension:quotas:delete: rule:admin_api
-    volume_extension:quota_classes: rule:admin_api
-    volume_extension:quota_classes:validate_setup_for_nested_quota_use: rule:admin_api
-    volume_extension:volume_admin_actions:reset_status: rule:admin_api
-    volume_extension:snapshot_admin_actions:reset_status: rule:admin_api
-    volume_extension:backup_admin_actions:reset_status: rule:admin_api
-    volume_extension:volume_admin_actions:force_delete: rule:admin_api
-    volume_extension:volume_admin_actions:force_detach: rule:admin_api
-    volume_extension:snapshot_admin_actions:force_delete: rule:admin_api
-    volume_extension:backup_admin_actions:force_delete: rule:admin_api
-    volume_extension:volume_admin_actions:migrate_volume: rule:admin_api
-    volume_extension:volume_admin_actions:migrate_volume_completion: rule:admin_api
-    volume_extension:volume_actions:upload_public: rule:admin_api
-    volume_extension:volume_actions:upload_image: rule:admin_or_owner
-    volume_extension:volume_host_attribute: rule:admin_api
-    volume_extension:volume_tenant_attribute: rule:admin_or_owner
-    volume_extension:volume_mig_status_attribute: rule:admin_api
-    volume_extension:hosts: rule:admin_api
-    volume_extension:services:index: rule:admin_api
-    volume_extension:services:update: rule:admin_api
-    volume_extension:volume_manage: rule:admin_api
-    volume_extension:volume_unmanage: rule:admin_api
-    volume_extension:list_manageable: rule:admin_api
-    volume_extension:capabilities: rule:admin_api
-    volume:create_transfer: rule:admin_or_owner
-    volume:accept_transfer: ''
-    volume:delete_transfer: rule:admin_or_owner
-    volume:get_transfer: rule:admin_or_owner
-    volume:get_all_transfers: rule:admin_or_owner
-    volume_extension:replication:promote: rule:admin_api
-    volume_extension:replication:reenable: rule:admin_api
-    volume:failover_host: rule:admin_api
-    volume:freeze_host: rule:admin_api
-    volume:thaw_host: rule:admin_api
-    backup:create: ''
-    backup:delete: rule:admin_or_owner
-    backup:get: rule:admin_or_owner
-    backup:get_all: rule:admin_or_owner
-    backup:restore: rule:admin_or_owner
-    backup:backup-import: rule:admin_api
-    backup:backup-export: rule:admin_api
-    backup:update: rule:admin_or_owner
-    snapshot_extension:snapshot_actions:update_snapshot_status: ''
-    snapshot_extension:snapshot_manage: rule:admin_api
-    snapshot_extension:snapshot_unmanage: rule:admin_api
-    snapshot_extension:list_manageable: rule:admin_api
-    consistencygroup:create: group:nobody
-    consistencygroup:delete: group:nobody
-    consistencygroup:update: group:nobody
-    consistencygroup:get: group:nobody
-    consistencygroup:get_all: group:nobody
-    consistencygroup:create_cgsnapshot: group:nobody
-    consistencygroup:delete_cgsnapshot: group:nobody
-    consistencygroup:get_cgsnapshot: group:nobody
-    consistencygroup:get_all_cgsnapshots: group:nobody
-    group:group_types_manage: rule:admin_api
-    group:group_types_specs: rule:admin_api
-    group:access_group_types_specs: rule:admin_api
-    group:group_type_access: rule:admin_or_owner
-    group:create: ''
-    group:delete: rule:admin_or_owner
-    group:update: rule:admin_or_owner
-    group:get: rule:admin_or_owner
-    group:get_all: rule:admin_or_owner
-    group:create_group_snapshot: ''
-    group:delete_group_snapshot: rule:admin_or_owner
-    group:update_group_snapshot: rule:admin_or_owner
-    group:get_group_snapshot: rule:admin_or_owner
-    group:get_all_group_snapshots: rule:admin_or_owner
-    scheduler_extension:scheduler_stats:get_pools: rule:admin_api
-    message:delete: rule:admin_or_owner
-    message:get: rule:admin_or_owner
-    message:get_all: rule:admin_or_owner
-    clusters:get: rule:admin_api
-    clusters:get_all: rule:admin_api
-    clusters:update: rule:admin_api
-  api_audit_map:
-    DEFAULT:
-      target_endpoint_type: None
-    custom_actions:
-      associate: update/associate
-      disassociate: update/disassociate_all
-      disassociate_all: update/disassociate_all
-      associations: read/list/associations
-    path_keywords:
-      defaults: None
-      detail: None
-      limits: None
-      os-quota-specs: project
-      qos-specs: qos-spec
-      snapshots: snapshot
-      types: type
-      volumes: volume
-    service_endpoints:
-      volumev3: service/storage/block
-  cinder_sudoers: |
+  triliovault_sudoers: |
     # This sudoers file supports rootwrap for both Kolla and LOCI Images.
     Defaults !requiretty
     Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/var/lib/openstack/bin:/var/lib/kolla/venv/bin"
-    cinder ALL = (root) NOPASSWD: /var/lib/kolla/venv/bin/cinder-rootwrap /etc/cinder/rootwrap.conf *, /var/lib/openstack/bin/cinder-rootwrap /etc/cinder/rootwrap.conf *
-  rootwrap: |
-    # Configuration for cinder-rootwrap
-    # This file should be owned by (and only-writeable by) the root user
-
-    [DEFAULT]
-    # List of directories to load filter definitions from (separated by ',').
-    # These directories MUST all be only writeable by root !
-    filters_path=/etc/cinder/rootwrap.d
-
-    # List of directories to search executables in, in case filters do not
-    # explicitely specify a full path (separated by ',')
-    # If not specified, defaults to system PATH environment variable.
-    # These directories MUST all be only writeable by root !
-    exec_dirs=/sbin,/usr/sbin,/bin,/usr/bin,/usr/local/bin,/usr/local/sbin,/var/lib/openstack/bin,/var/lib/kolla/venv/bin
-
-    # Enable logging to syslog
-    # Default value is False
-    use_syslog=False
-
-    # Which syslog facility to use.
-    # Valid values include auth, authpriv, syslog, local0, local1...
-    # Default value is 'syslog'
-    syslog_log_facility=syslog
-
-    # Which messages to log.
-    # INFO means log all usage
-    # ERROR means only log unsuccessful attempts
-    syslog_log_level=ERROR
-  rootwrap_filters:
-    volume:
-      pods:
-        - volume
-      content: |
-        # cinder-rootwrap command filters for volume nodes
-        # This file should be owned by (and only-writeable by) the root user
-
-        [Filters]
-        # cinder/volume/iscsi.py: iscsi_helper '--op' ...
-        ietadm: CommandFilter, ietadm, root
-        tgtadm: CommandFilter, tgtadm, root
-        iscsictl: CommandFilter, iscsictl, root
-        tgt-admin: CommandFilter, tgt-admin, root
-        cinder-rtstool: CommandFilter, cinder-rtstool, root
-        scstadmin: CommandFilter, scstadmin, root
-
-        # LVM related show commands
-        pvs: EnvFilter, env, root, LC_ALL=C, pvs
-        vgs: EnvFilter, env, root, LC_ALL=C, vgs
-        lvs: EnvFilter, env, root, LC_ALL=C, lvs
-        lvdisplay: EnvFilter, env, root, LC_ALL=C, lvdisplay
-
-        # -LVM related show commands with suppress fd warnings
-        pvs_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, pvs
-        vgs_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, vgs
-        lvs_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvs
-        lvdisplay_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvdisplay
-
-
-        # -LVM related show commands conf var
-        pvs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, pvs
-        vgs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, vgs
-        lvs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, lvs
-        lvdisplay_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, lvdisplay
-
-        # -LVM conf var with suppress fd_warnings
-        pvs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, pvs
-        vgs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, vgs
-        lvs_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvs
-        lvdisplay_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvdisplay
-
-        # os-brick library commands
-        # os_brick.privileged.run_as_root oslo.privsep context
-        # This line ties the superuser privs with the config files, context name,
-        # and (implicitly) the actual python code invoked.
-        privsep-rootwrap: RegExpFilter, privsep-helper, root, privsep-helper, --config-file, /etc/(?!\.\.).*, --privsep_context, os_brick.privileged.default, --privsep_sock_path, /tmp/.*
-        # The following and any cinder/brick/* entries should all be obsoleted
-        # by privsep, and may be removed once the os-brick version requirement
-        # is updated appropriately.
-        scsi_id: CommandFilter, /lib/udev/scsi_id, root
-        drbdadm: CommandFilter, drbdadm, root
-
-        # cinder/brick/local_dev/lvm.py: 'vgcreate', vg_name, pv_list
-        vgcreate: CommandFilter, vgcreate, root
-
-        # cinder/brick/local_dev/lvm.py: 'lvcreate', '-L', sizestr, '-n', volume_name,..
-        # cinder/brick/local_dev/lvm.py: 'lvcreate', '-L', ...
-        lvcreate: EnvFilter, env, root, LC_ALL=C, lvcreate
-        lvcreate_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, lvcreate
-        lvcreate_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvcreate
-        lvcreate_lvmconf_fdwarn: EnvFilter, env, root, LVM_SYSTEM_DIR=, LVM_SUPPRESS_FD_WARNINGS=, LC_ALL=C, lvcreate
-
-        # cinder/volume/driver.py: 'dd', 'if=%s' % srcstr, 'of=%s' % deststr,...
-        dd: CommandFilter, dd, root
-
-        # cinder/volume/driver.py: 'lvremove', '-f', %s/%s % ...
-        lvremove: CommandFilter, lvremove, root
-
-        # cinder/volume/driver.py: 'lvrename', '%(vg)s', '%(orig)s' '(new)s'...
-        lvrename: CommandFilter, lvrename, root
-
-        # cinder/brick/local_dev/lvm.py: 'lvextend', '-L' '%(new_size)s', '%(lv_name)s' ...
-        # cinder/brick/local_dev/lvm.py: 'lvextend', '-L' '%(new_size)s', '%(thin_pool)s' ...
-        lvextend: EnvFilter, env, root, LC_ALL=C, lvextend
-        lvextend_lvmconf: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, lvextend
-        lvextend_fdwarn: EnvFilter, env, root, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvextend
-        lvextend_lvmconf_fdwarn: EnvFilter, env, root, LVM_SYSTEM_DIR=, LC_ALL=C, LVM_SUPPRESS_FD_WARNINGS=, lvextend
-
-        # cinder/brick/local_dev/lvm.py: 'lvchange -a y -K <lv>'
-        lvchange: CommandFilter, lvchange, root
-
-        # cinder/brick/local_dev/lvm.py: 'lvconvert', '--merge', snapshot_name
-        lvconvert: CommandFilter, lvconvert, root
-
-        # cinder/volume/driver.py: 'iscsiadm', '-m', 'discovery', '-t',...
-        # cinder/volume/driver.py: 'iscsiadm', '-m', 'node', '-T', ...
-        iscsiadm: CommandFilter, iscsiadm, root
-
-        # cinder/volume/utils.py: utils.temporary_chown(path, 0)
-        chown: CommandFilter, chown, root
-
-        # cinder/volume/utils.py: copy_volume(..., ionice='...')
-        ionice_1: ChainingRegExpFilter, ionice, root, ionice, -c[0-3], -n[0-7]
-        ionice_2: ChainingRegExpFilter, ionice, root, ionice, -c[0-3]
-
-        # cinder/volume/utils.py: setup_blkio_cgroup()
-        cgcreate: CommandFilter, cgcreate, root
-        cgset: CommandFilter, cgset, root
-        cgexec: ChainingRegExpFilter, cgexec, root, cgexec, -g, blkio:\S+
-
-        # cinder/volume/driver.py
-        dmsetup: CommandFilter, dmsetup, root
-        ln: CommandFilter, ln, root
-
-        # cinder/image/image_utils.py
-        qemu-img: EnvFilter, env, root, LC_ALL=C, qemu-img
-        qemu-img_convert: CommandFilter, qemu-img, root
-
-        udevadm: CommandFilter, udevadm, root
-
-        # cinder/volume/driver.py: utils.read_file_as_root()
-        cat: CommandFilter, cat, root
-
-        # cinder/volume/nfs.py
-        stat: CommandFilter, stat, root
-        mount: CommandFilter, mount, root
-        df: CommandFilter, df, root
-        du: CommandFilter, du, root
-        truncate: CommandFilter, truncate, root
-        chmod: CommandFilter, chmod, root
-        rm: CommandFilter, rm, root
-
-        # cinder/volume/drivers/remotefs.py
-        mkdir: CommandFilter, mkdir, root
-
-        # cinder/volume/drivers/netapp/nfs.py:
-        netapp_nfs_find: RegExpFilter, find, root, find, ^[/]*([^/\0]+(/+)?)*$, -maxdepth, \d+, -name, img-cache.*, -amin, \+\d+
-
-        # cinder/volume/drivers/glusterfs.py
-        chgrp: CommandFilter, chgrp, root
-        umount: CommandFilter, umount, root
-        fallocate: CommandFilter, fallocate, root
-
-        # cinder/volumes/drivers/hds/hds.py:
-        hus-cmd: CommandFilter, hus-cmd, root
-        hus-cmd_local: CommandFilter, /usr/local/bin/hus-cmd, root
-
-        # cinder/volumes/drivers/hds/hnas_backend.py
-        ssc: CommandFilter, ssc, root
-
-        # cinder/brick/initiator/connector.py:
-        ls: CommandFilter, ls, root
-        tee: CommandFilter, tee, root
-        multipath: CommandFilter, multipath, root
-        multipathd: CommandFilter, multipathd, root
-        systool: CommandFilter, systool, root
-
-        # cinder/volume/drivers/block_device.py
-        blockdev: CommandFilter, blockdev, root
-
-        # cinder/volume/drivers/ibm/gpfs.py
-        # cinder/volume/drivers/tintri.py
-        mv: CommandFilter, mv, root
-
-        # cinder/volume/drivers/ibm/gpfs.py
-        cp: CommandFilter, cp, root
-        mmgetstate: CommandFilter, /usr/lpp/mmfs/bin/mmgetstate, root
-        mmclone: CommandFilter, /usr/lpp/mmfs/bin/mmclone, root
-        mmlsattr: CommandFilter, /usr/lpp/mmfs/bin/mmlsattr, root
-        mmchattr: CommandFilter, /usr/lpp/mmfs/bin/mmchattr, root
-        mmlsconfig: CommandFilter, /usr/lpp/mmfs/bin/mmlsconfig, root
-        mmlsfs: CommandFilter, /usr/lpp/mmfs/bin/mmlsfs, root
-        mmlspool: CommandFilter, /usr/lpp/mmfs/bin/mmlspool, root
-        mkfs: CommandFilter, mkfs, root
-        mmcrfileset: CommandFilter, /usr/lpp/mmfs/bin/mmcrfileset, root
-        mmlinkfileset: CommandFilter, /usr/lpp/mmfs/bin/mmlinkfileset, root
-        mmunlinkfileset: CommandFilter, /usr/lpp/mmfs/bin/mmunlinkfileset, root
-        mmdelfileset: CommandFilter, /usr/lpp/mmfs/bin/mmdelfileset, root
-        mmcrsnapshot: CommandFilter, /usr/lpp/mmfs/bin/mmcrsnapshot, root
-        mmdelsnapshot: CommandFilter, /usr/lpp/mmfs/bin/mmdelsnapshot, root
-
-        # cinder/volume/drivers/ibm/gpfs.py
-        # cinder/volume/drivers/ibm/ibmnas.py
-        find_maxdepth_inum: RegExpFilter, find, root, find, ^[/]*([^/\0]+(/+)?)*$, -maxdepth, \d+, -ignore_readdir_race, -inum, \d+, -print0, -quit
-
-        # cinder/brick/initiator/connector.py:
-        aoe-revalidate: CommandFilter, aoe-revalidate, root
-        aoe-discover: CommandFilter, aoe-discover, root
-        aoe-flush: CommandFilter, aoe-flush, root
-
-        # cinder/brick/initiator/linuxscsi.py:
-        sg_scan: CommandFilter, sg_scan, root
-
-        #cinder/backup/services/tsm.py
-        dsmc:CommandFilter,/usr/bin/dsmc,root
-
-        # cinder/volume/drivers/hitachi/hbsd_horcm.py
-        raidqry: CommandFilter, raidqry, root
-        raidcom: CommandFilter, raidcom, root
-        pairsplit: CommandFilter, pairsplit, root
-        paircreate: CommandFilter, paircreate, root
-        pairdisplay: CommandFilter, pairdisplay, root
-        pairevtwait: CommandFilter, pairevtwait, root
-        horcmstart.sh: CommandFilter, horcmstart.sh, root
-        horcmshutdown.sh: CommandFilter, horcmshutdown.sh, root
-        horcmgr: EnvFilter, env, root, HORCMINST=, /etc/horcmgr
-
-        # cinder/volume/drivers/hitachi/hbsd_snm2.py
-        auman: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auman
-        auluref: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auluref
-        auhgdef: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auhgdef
-        aufibre1: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/aufibre1
-        auhgwwn: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auhgwwn
-        auhgmap: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auhgmap
-        autargetmap: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/autargetmap
-        aureplicationvvol: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/aureplicationvvol
-        auluadd: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auluadd
-        auludel: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auludel
-        auluchgsize: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auluchgsize
-        auchapuser: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auchapuser
-        autargetdef: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/autargetdef
-        autargetopt: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/autargetopt
-        autargetini: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/autargetini
-        auiscsi: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/auiscsi
-        audppool: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/audppool
-        aureplicationlocal: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/aureplicationlocal
-        aureplicationmon: EnvFilter, env, root, LANG=, STONAVM_HOME=, LD_LIBRARY_PATH=, STONAVM_RSP_PASS=, STONAVM_ACT=, /usr/stonavm/aureplicationmon
-
-        # cinder/volume/drivers/hgst.py
-        vgc-cluster: CommandFilter, vgc-cluster, root
-
-        # cinder/volume/drivers/vzstorage.py
-        pstorage-mount: CommandFilter, pstorage-mount, root
-        pstorage: CommandFilter, pstorage, root
-        ploop: CommandFilter, ploop, root
-
-        # initiator/connector.py:
-        drv_cfg: CommandFilter, /opt/emc/scaleio/sdc/bin/drv_cfg, root, /opt/emc/scaleio/sdc/bin/drv_cfg, --query_guid
-  ceph:
-    override:
-    append:
-    monitors: []
-    admin_keyring: null
-    pools:
-      backup:
-        replication: 3
-        crush_rule: replicated_rule
-        chunk_size: 8
-        app_name: cinder-backup
-      cinder.volumes:
-        replication: 3
-        crush_rule: replicated_rule
-        chunk_size: 8
-        app_name: cinder-volume
+    triliovault ALL = (root) NOPASSWD: /var/lib/kolla/venv/bin/triliovault-rootwrap /etc/triliovault/rootwrap.conf *, /var/lib/openstack/bin/triliovault-rootwrap /etc/triliovault/rootwrap.conf *
   datamover-api:
     DEFAULT:
-      volume_usage_audit_period: hour
-      resource_query_filters_file: /etc/cinder/resource_filters.json
-      log_config_append: /etc/dmapi/logging.conf
-      use_syslog: false
-      use_stderr: true
-      enable_v1_api: false
-      volume_name_template: "%s"
-      osapi_volume_workers: 1
-      glance_api_version: 2
-      os_region_name: RegionOne
-      host: cinder-volume-worker
-      # NOTE(portdirect): the bind port should not be defined, and is manipulated
-      # via the endpoints section.
-      osapi_volume_listen_port: null
-      enabled_backends: "rbd1"
-      default_volume_type: "rbd1"
-      # NOTE(portdirect): "cinder.backup.drivers.ceph"  and
-      # "cinder.backup.drivers.posix" also supported
-      # NOTE(rchurch): As of Stein, drivers by class name are required
-      # - cinder.backup.drivers.swift.SwiftBackupDriver
-      # - cinder.backup.drivers.ceph.CephBackupDriver
-      # - cinder.backup.drivers.posix.PosixBackupDriver
-      backup_driver: "cinder.backup.drivers.swift.SwiftBackupDriver"
-      # Backup: Ceph RBD options
-      backup_ceph_conf: "/etc/ceph/ceph.conf"
-      backup_ceph_user: cinderbackup
-      backup_ceph_pool: cinder.backups
-      # Backup: Posix options
-      backup_posix_path: /var/lib/cinder/backup
-      auth_strategy: keystone
-      # Internal tenant id
-      internal_project_name: internal_cinder
-      internal_user_name: internal_cinder
+      dmapi_workers = {{ dmapi_workers }}
+      transport_url = {{ rpc_transport_url }}
+      dmapi_link_prefix = http://{{ api_interface_address }}:{{ triliovault_datamover_api_port }}
+      dmapi_enabled_ssl_apis =
+      dmapi_listen_port = {{ triliovault_datamover_api_port }}
+      dmapi_enabled_apis = dmapi
+      bindir = /usr/bin
+      instance_name_template = instance-%08x
+      dmapi_listen = {{ api_interface_address }}
+      my_ip = {{ api_interface_address }}
+      rootwrap_config = /etc/dmapi/rootwrap.conf
+      debug = False
+      log_file = /var/log/kolla/triliovault-datamover-api/dmapi.log
+      log_dir = /var/log/kolla/triliovault-datamover-api
+    wsgi:
+      ssl_cert_file = 
+      ssl_key_file =
+      api_paste_config = /etc/dmapi/api-paste.ini
     database:
-      max_retries: -1
+      connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
     keystone_authtoken:
-      auth_version: v3
-      auth_type: password
-      memcache_security_strategy: ENCRYPT
-    oslo_policy:
-      policy_file: /etc/cinder/policy.yaml
-    oslo_concurrency:
-      lock_path: "/var/lib/cinder/tmp"
+      www_authenticate_uri = {{ keystone_internal_url }}
+      auth_url = {{ keystone_admin_url }}
+      auth_type = password
+      project_name = service
+      username = {{ triliovault_keystone_user }}
+      password = {{ triliovault_keystone_password }}
+      cafile = {{ openstack_cacert }}
+      memcache_security_strategy = ENCRYPT
+      memcache_secret_key = {{ memcache_secret_key }}
+      memcached_servers = {% for host in groups['memcached'] %}{{ 'api' | kolla_address(host) | put_address_in_context('memcache') }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}
+      signing_dir = /var/cache/dmapi
+      project_domain_name = {{ default_project_domain_name }}
+      user_domain_name = {{ default_user_domain_name }}
+      insecure = True
     oslo_messaging_notifications:
-      driver: messagingv2
+      transport_url = {{ notify_transport_url }}
+      {% if triliovault_enabled_notification_topics %}
+      driver = messagingv2
+      topics = {{ triliovault_enabled_notification_topics | map(attribute='name') | join(',') }}
+      {% else %}
+      driver = noop
+      {% endif %}
     oslo_middleware:
-      enable_proxy_headers_parsing: true
-    oslo_messaging_rabbit:
-      rabbit_ha_queues: true
-    coordination:
-      backend_url: file:///var/lib/cinder/coordination
-    service_user:
-      auth_type: password
-      send_service_user_token: false
+      enable_proxy_headers_parsing = True
   datamover:
     DEFAULT:
-      volume_usage_audit_period: hour
-      resource_query_filters_file: /etc/cinder/resource_filters.json
-      log_config_append: /etc/tvault-contego/logging.conf
-      use_syslog: false
-      use_stderr: true
-      enable_v1_api: false
-      volume_name_template: "%s"
-      osapi_volume_workers: 1
-      glance_api_version: 2
-      os_region_name: RegionOne
-      host: cinder-volume-worker
-      # NOTE(portdirect): the bind port should not be defined, and is manipulated
-      # via the endpoints section.
-      osapi_volume_listen_port: null
-      enabled_backends: "rbd1"
-      default_volume_type: "rbd1"
-      # NOTE(portdirect): "cinder.backup.drivers.ceph"  and
-      # "cinder.backup.drivers.posix" also supported
-      # NOTE(rchurch): As of Stein, drivers by class name are required
-      # - cinder.backup.drivers.swift.SwiftBackupDriver
-      # - cinder.backup.drivers.ceph.CephBackupDriver
-      # - cinder.backup.drivers.posix.PosixBackupDriver
-      backup_driver: "cinder.backup.drivers.swift.SwiftBackupDriver"
-      # Backup: Ceph RBD options
-      backup_ceph_conf: "/etc/ceph/ceph.conf"
-      backup_ceph_user: cinderbackup
-      backup_ceph_pool: cinder.backups
-      # Backup: Posix options
-      backup_posix_path: /var/lib/cinder/backup
-      auth_strategy: keystone
-      # Internal tenant id
-      internal_project_name: internal_cinder
-      internal_user_name: internal_cinder
-    database:
-      max_retries: -1
-    keystone_authtoken:
-      auth_version: v3
-      auth_type: password
-      memcache_security_strategy: ENCRYPT
-    oslo_policy:
-      policy_file: /etc/cinder/policy.yaml
-    oslo_concurrency:
-      lock_path: "/var/lib/cinder/tmp"
-    oslo_messaging_notifications:
-      driver: messagingv2
-    oslo_middleware:
-      enable_proxy_headers_parsing: true
+      {% if triliovault_backup_target == "nfs" %}
+      vault_storage_type = nfs
+      {% if multi_ip_nfs_enabled == "yes" %}
+      vault_storage_nfs_export = "{{ triliovault_nfs_map[inventory_hostname] }}"
+      {% else %}
+      vault_storage_nfs_export = {{ triliovault_nfs_shares }}
+      {% endif %}
+      vault_storage_nfs_options = {{ triliovault_nfs_options }}
+      {% elif triliovault_backup_target == "amazon_s3" %}
+      vault_storage_type = s3
+      vault_storage_nfs_export = TrilioVault
+      vault_s3_auth_version = DEFAULT
+      vault_s3_access_key_id = {{ triliovault_s3_access_key }}
+      vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
+      vault_s3_region_name = {{ triliovault_s3_region_name }}
+      vault_s3_bucket = {{ triliovault_s3_bucket_name }}
+      vault_s3_signature_version = {{ triliovault_s3_version }}
+      vault_s3_auth_version = {{ triliovault_s3_auth_version }}
+      vault_s3_ssl_cert =
+      {% elif triliovault_backup_target == "other_s3_compatible" %}
+      vault_storage_type = s3
+      vault_storage_nfs_export = TrilioVault
+      vault_s3_auth_version = DEFAULT
+      vault_s3_access_key_id = {{ triliovault_s3_access_key }}
+      vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
+      vault_s3_region_name = {{ triliovault_s3_region_name }}
+      vault_s3_bucket = {{ triliovault_s3_bucket_name }}
+      vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
+      vault_s3_signature_version = {{ triliovault_s3_version }}
+      vault_s3_auth_version = {{ triliovault_s3_auth_version }}
+      vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
+      vault_s3_ssl_cert = /etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}
+      {% endif %}
+      vault_data_directory_old = /var/triliovault
+      vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
+      log_file = /var/log/kolla/triliovault-datamover/tvault-contego.log
+      debug = False
+      verbose = True
+      max_uploads_pending = 3
+      max_commit_pending = 3
+      dmapi_transport_url = {{ rpc_transport_url }}
+    dmapi_database:
+      connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+    {% if cinder_backend_ceph == "yes" %}
+    libvirt:
+      images_rbd_ceph_conf = /etc/ceph/ceph.conf
+      rbd_user = {{ ceph_cinder_user }}
+    ceph:
+      keyring_ext = .{{ ceph_cinder_user }}.keyring
+    {% endif %}
+    contego_sys_admin:
+      helper_command = sudo /usr/bin/privsep-helper
+    {% if triliovault_backup_target == "other_s3_compatible" or triliovault_backup_target == "amazon_s3" %}
+    s3fuse_sys_admin:
+      helper_command = sudo /usr/bin/privsep-helper
+    {% endif %}
+    conductor:
+      use_local = True
     oslo_messaging_rabbit:
-      rabbit_ha_queues: true
-    coordination:
-      backend_url: file:///var/lib/cinder/coordination
-    service_user:
-      auth_type: password
-      send_service_user_token: false
+      ssl = false
+    cinder:
+      http_retries = {{ cinder_http_retries }}
+
   logging:
     loggers:
       keys:
         - root
-        - cinder
+        - triliovault
     handlers:
       keys:
         - stdout
@@ -905,11 +459,11 @@ conf:
     logger_root:
       level: WARNING
       handlers: 'null'
-    logger_cinder:
+    logger_triliovault:
       level: INFO
       handlers:
         - stdout
-      qualname: cinder
+      qualname: triliovault
     logger_amqp:
       level: WARNING
       handlers: stderr
@@ -951,8 +505,8 @@ conf:
   rabbitmq:
     # NOTE(rk760n): adding rmq policy to mirror messages from notification queues and set expiration time for the ones
     policies:
-      - vhost: "cinder"
-        name: "ha_ttl_cinder"
+      - vhost: "triliovault"
+        name: "ha_ttl_triliovault"
         definition:
           # mirror messges to other nodes in rmq cluster
           ha-mode: "all"
@@ -966,16 +520,16 @@ conf:
   backends:
     # Those options will be written to backends.conf as-is.
     rbd1:
-      volume_driver: cinder.volume.drivers.rbd.RBDDriver
+      volume_driver: triliovault.volume.drivers.rbd.RBDDriver
       volume_backend_name: rbd1
-      rbd_pool: cinder.volumes
+      rbd_pool: triliovault.volumes
       rbd_ceph_conf: "/etc/ceph/ceph.conf"
       rbd_flatten_volume_from_snapshot: false
       report_discard_supported: true
       rbd_max_clone_depth: 5
       rbd_store_chunk_size: 4
       rados_connect_timeout: -1
-      rbd_user: cinder
+      rbd_user: triliovault
       rbd_secret_uuid: 457eb676-33da-42ec-9a8c-9293d545c337
       image_volume_cache_enabled: True
       image_volume_cache_max_size_gb: 200
@@ -988,7 +542,7 @@ conf:
         echo $VOLUMES | xargs openstack volume delete
       fi
     tests:
-      CinderVolumes.create_and_delete_volume:
+      triliovaultVolumes.create_and_delete_volume:
         - args:
             size: 1
           runner:
@@ -1065,18 +619,18 @@ dependencies:
     common:
       local_image_registry:
         jobs:
-          - cinder-image-repo-sync
+          - triliovault-image-repo-sync
         services:
           - endpoint: node
             service: local_image_registry
   static:
     api:
       jobs:
-        - cinder-db-sync
-        - cinder-ks-user
-        - cinder-ks-endpoints
-        - cinder-rabbit-init
-        - cinder-storage-init
+        - triliovault-db-sync
+        - triliovault-ks-user
+        - triliovault-ks-endpoints
+        - triliovault-rabbit-init
+        - triliovault-storage-init
       services:
         - endpoint: internal
           service: oslo_db
@@ -1084,12 +638,12 @@ dependencies:
           service: identity
     backup:
       jobs:
-        - cinder-db-sync
-        - cinder-ks-user
-        - cinder-ks-endpoints
-        - cinder-rabbit-init
-        - cinder-storage-init
-        - cinder-backup-storage-init
+        - triliovault-db-sync
+        - triliovault-ks-user
+        - triliovault-ks-endpoints
+        - triliovault-rabbit-init
+        - triliovault-storage-init
+        - triliovault-backup-storage-init
       services:
         - endpoint: internal
           service: identity
@@ -1106,7 +660,7 @@ dependencies:
       pod:
         - requireSameNode: false
           labels:
-            application: cinder
+            application: triliovault
             component: volume
     clean:
       jobs: null
@@ -1120,13 +674,13 @@ dependencies:
           service: oslo_db
     db_sync:
       jobs:
-        - cinder-db-init
+        - triliovault-db-init
       services:
         - endpoint: internal
           service: oslo_db
     ks_endpoints:
       jobs:
-        - cinder-ks-service
+        - triliovault-ks-service
       services:
         - endpoint: internal
           service: identity
@@ -1144,11 +698,11 @@ dependencies:
           endpoint: internal
     scheduler:
       jobs:
-        - cinder-db-sync
-        - cinder-ks-user
-        - cinder-ks-endpoints
-        - cinder-rabbit-init
-        - cinder-storage-init
+        - triliovault-db-sync
+        - triliovault-ks-user
+        - triliovault-ks-endpoints
+        - triliovault-rabbit-init
+        - triliovault-storage-init
       services:
         - endpoint: internal
           service: identity
@@ -1164,11 +718,11 @@ dependencies:
           service: volumev3
     volume:
       jobs:
-        - cinder-db-sync
-        - cinder-ks-user
-        - cinder-ks-endpoints
-        - cinder-rabbit-init
-        - cinder-storage-init
+        - triliovault-db-sync
+        - triliovault-ks-user
+        - triliovault-ks-endpoints
+        - triliovault-rabbit-init
+        - triliovault-storage-init
       services:
         - endpoint: internal
           service: identity
@@ -1176,11 +730,11 @@ dependencies:
           service: volumev3
     volume_usage_audit:
       jobs:
-        - cinder-db-sync
-        - cinder-ks-user
-        - cinder-ks-endpoints
-        - cinder-rabbit-init
-        - cinder-storage-init
+        - triliovault-db-sync
+        - triliovault-ks-user
+        - triliovault-ks-endpoints
+        - triliovault-rabbit-init
+        - triliovault-storage-init
       services:
         - endpoint: internal
           service: identity
@@ -1198,19 +752,19 @@ dependencies:
 # Names of secrets used by bootstrap and environmental checks
 secrets:
   identity:
-    admin: cinder-keystone-admin
-    cinder: cinder-keystone-user
-    test: cinder-keystone-test
+    admin: triliovault-keystone-admin
+    triliovault: triliovault-keystone-user
+    test: triliovault-keystone-test
   oslo_db:
-    admin: cinder-db-admin
-    cinder: cinder-db-user
+    admin: triliovault-db-admin
+    triliovault: triliovault-db-user
   rbd:
-    backup: cinder-backup-rbd-keyring
-    volume: cinder-volume-rbd-keyring
-    volume_external: cinder-volume-external-rbd-keyring
+    backup: triliovault-backup-rbd-keyring
+    volume: triliovault-volume-rbd-keyring
+    volume_external: triliovault-volume-external-rbd-keyring
   oslo_messaging:
     admin: triliovault-rabbitmq-admin
-    cinder: triliovault-rabbitmq-user
+    triliovault: triliovault-rabbitmq-user
   tls:
     datamover:
       datamover_api:
@@ -1246,7 +800,7 @@ endpoints:
       triliovault:
         role: admin
         region_name: RegionOne
-        username: triliovault
+        username: dmapi
         password: password
         project_name: service
         user_domain_name: service
@@ -1318,13 +872,13 @@ endpoints:
           tls:
             internal: mariadb-tls-direct
       triliovault:
-        username: triliovault
+        username: dmapi
         password: password
     hosts:
       default: mariadb
     host_fqdn_override:
       default: null
-    path: /triliovault
+    path: /dmapi
     scheme: mysql+pymysql
     port:
       mysql:
@@ -1338,7 +892,7 @@ endpoints:
           tls:
             internal: rabbitmq-tls-direct
       triliovault:
-        username: triliovault
+        username: dmapi
         password: password
     statefulset:
       replicas: 2
@@ -1347,7 +901,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /triliovault
+    path: /dmapi
     scheme: rabbit
     port:
       amqp:
