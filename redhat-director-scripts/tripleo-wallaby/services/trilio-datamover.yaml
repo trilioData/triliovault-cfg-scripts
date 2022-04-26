@@ -45,6 +45,11 @@ parameters:
       description: >
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
+  CephConfigPath:
+    type: string
+    default: "/var/lib/tripleo-config/ceph"
+    description: |
+      The path where the Ceph Cluster config files are stored on the host.
   BackupTargetType:
     description:
     type: string
@@ -91,9 +96,9 @@ parameters:
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
-    type: boolean	
-  CephClientUserName: 
-    default: 'openstack'	
+    type: boolean
+  CephClientUserName:
+    default: 'openstack'
     description: Cinder ceph backend user name
     type: string
   TrilioDatamoverPassword:
@@ -210,6 +215,7 @@ outputs:
           trilio_datamover:
             image: {get_param: DockerTrilioDatamoverImage}
             net: host
+            ipc: host
             privileged: true
             user: nova
             restart: always
@@ -221,8 +227,12 @@ outputs:
                   - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
                   - /var/lib/config-data/puppet-generated/triliodm/:/var/lib/kolla/config_files/triliodm:ro
-                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
-                  - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
+                  - /var/lib/config-data/puppet-generated/iscsid/etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - list_join:
+                    - ':'
+                    - - {get_param: CephConfigPath}
+                    - - '/var/lib/kolla/config_files/src-ceph'
+                    - - 'ro'
                   - /dev:/dev
                   - /var/run/libvirt/:/var/run/libvirt/
                   - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z

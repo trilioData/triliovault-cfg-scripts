@@ -1,6 +1,6 @@
 class trilio::horizon (
     $horizon_dir                        = '/etc/openstack-dashboard',
-    $barbican_api_enabled               = hiera('barbican_api_enabled'),
+    $barbican_api_enabled               = hiera('barbican_api_enabled', false),
 ){
 
   tag 'triliohorizonconfig'
