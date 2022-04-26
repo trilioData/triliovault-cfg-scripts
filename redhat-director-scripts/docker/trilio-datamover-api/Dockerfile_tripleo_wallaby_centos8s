@@ -6,8 +6,8 @@ LABEL name="tripleo/openstack-nova-api-triliodata" \
       vendor="TrilioData" \
       version="4.2.0" \
       release="4.2" \
-      summary="TripleO Train nova-api TrilioData trilio-datamover-api" \
-      description="TripleO Train nova-api TrilioData trilio-datamover-api"
+      summary="TripleO Wallaby nova-api TrilioData trilio-datamover-api" \
+      description="TripleO Wallaby nova-api TrilioData trilio-datamover-api"
 
 
 # switch to root and install a custom RPM, etc.
@@ -17,8 +17,11 @@ USER root
 ##Install datamover packages
 RUN dnf clean all
 ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
+ADD centos-gpg-keys-8-4.el8.noarch.rpm centos-stream-repos-8-4.el8.noarch.rpm /root/
+RUN rpm -ivh /root/centos-stream-repos-8-4.el8.noarch.rpm /root/centos-gpg-keys-8-4.el8.noarch.rpm
+RUN rm -f centos-gpg-keys-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
 RUN dnf install -y python3-tripleo-repos
-RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
+RUN tripleo-repos -b wallaby current ceph
 
 
 RUN dnf install python3-dmapi -y
