@@ -16,12 +16,16 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 
 RUN yum clean all
+RUN yum install python3 -y
 RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 -y
+RUN python3 -m venv /home/tvault/.s3venv
+RUN /home/tvault/.s3venv/bin/pip install --upgrade pip
+RUN /home/tvault/.s3venv/bin/pip install --extra-index-url "https://pypi.fury.io/triliodata-4-1/" s3fuse --upgrade --no-cache-dir
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
 ADD start_datamover_s3 start_datamover_nfs /opt/tvault/
-ADD start_tvault_object_store_rhel8 /opt/tvault/start_tvault_object_store
+ADD start_tvault_object_store /opt/tvault/start_tvault_object_store
 RUN chown -R nova:nova /opt/tvault/
 RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
