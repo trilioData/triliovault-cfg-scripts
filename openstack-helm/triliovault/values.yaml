@@ -1,0 +1,1110 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# Default values for triliovault.
+#
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+labels:
+  wlm_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_cron:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_scheduler:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_workloads:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  datamover_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  datamover:
+    node_selector_key: openstack-compute-node
+    node_selector_value: enabled
+  job:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  test:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+
+images:
+  tags:
+    bootstrap: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    db_init: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    db_drop: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    rabbit_init: docker.io/rabbitmq:3.7-management
+    ks_user: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    ks_service: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    ks_endpoints: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
+    image_repo_sync: docker.io/docker:17.07.0
+    triliovault_wlm_cloud_trust: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_api: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_cron: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_scheduler: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_workloads: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_datamover: docker.io/trilio/triliovault-datamover-helm:5.0.0-train-ubuntu_bionic
+    triliovault_datamover_api: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
+    triliovault_datamover_db_sync: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_db_sync: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_horizon: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
+  pull_policy: "IfNotPresent"
+  local_registry:
+    active: false
+    exclude:
+      - dep_check
+      - image_repo_sync
+
+release_group: null
+helm3_hook: true
+
+multipathd_enabled: false
+
+ceph:
+  enabled: true
+  rbd_user: "nova"
+  keyring: null
+
+pod:
+  security_context:
+    triliovault:
+      pod:
+        runAsUser: 42424
+        image_pull_secrets:
+          default:
+            - name: triliovault-image-registry
+      container:
+        triliovault_datamover_api:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          runAsUser: 63630
+        triliovault_datamover:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_wlm_api:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_wlm_scheduler:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_wlm_cron:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_wlm_workloads:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_wlm_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 42424
+        triliovault_datamover_api_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 63630
+          runAsGroup: 63630
+        triliovault_datamover_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 42424
+        wlm_cloud_trust_creation:
+          readOnlyRootFilesystem: false
+          runAsUser: 42424
+          runAsGroup: 42424
+        ceph_keyring_placement_triliovault:
+          readOnlyRootFilesystem: false
+          runAsUser: 42424
+          runAsGroup: 42424
+
+  affinity:
+    anti:
+      type:
+        default: preferredDuringSchedulingIgnoredDuringExecution
+      topologyKey:
+        default: kubernetes.io/hostname
+      weight:
+        default: 10
+  mounts:
+    triliovault_wlm_api:
+      init_container: null
+      triliovault_wlm_api:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_cron:
+      init_container: null
+      triliovault_wlm_cron:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_scheduler:
+      init_container: null
+      triliovault_wlm_scheduler:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_workloads:
+      init_container: null
+      triliovault_wlm_workloads:
+        volumeMounts:
+        volumes:
+    triliovault_datamover_api:
+      init_container: null
+      triliovault_datamover_api:
+        volumeMounts:
+        volumes:
+    triliovault_datamover:
+      init_container: null
+      triliovault_datamover:
+        volumeMounts:
+        volumes:
+    triliovault_tests:
+      init_container: null
+      triliovault_tests:
+        volumeMounts:
+        volumes:
+    triliovault_datamover_db_sync:
+      triliovault_wlm_db_sync:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_db_sync:
+      triliovault_wlm_db_sync:
+        volumeMounts:
+        volumes:
+  lifecycle:
+    upgrades:
+      deployments:
+        revision_history: 3
+        pod_replacement_strategy: RollingUpdate
+        rolling_update:
+          max_unavailable: 1
+          max_surge: 3
+      daemonsets:
+        pod_replacement_strategy: RollingUpdate
+        datamover:
+          enabled: true
+          min_ready_seconds: 0
+          max_unavailable: 1
+    disruption_budget:
+      datamover_api:
+        min_available: 0
+      wlm_api:
+        min_available: 0
+    termination_grace_period:
+      wlm_api:
+        timeout: 30
+      wlm_cron:
+        timeout: 30
+      wlm_scheduler:
+        timeout: 30
+      wlm_workloads:
+        timeout: 30
+      datamover_api:
+        timeout: 30
+      datamover:
+        timeout: 30
+  replicas:
+    triliovault_wlm_api: 3
+    triliovault_datamover_api: 3
+    triliovault_wlm_workloads: 3
+    triliovault_wlm_cron: 1
+    triliovault_wlm_scheduler: 1
+  resources:
+    enabled: false
+    wlm_api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_cron:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_scheduler:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_workloads:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    datamover_api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    datamover:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    jobs:
+      bootstrap:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      rabbit_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_endpoints:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_service:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_user:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_drop:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      tests:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      image_repo_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+
+network_policy:
+  triliovault_wlm:
+    ingress:
+      - {}
+    egress:
+      - {}
+  triliovault_datamover:
+    ingress:
+      - {}
+    egress:
+      - {}
+
+manifests:
+  deployment_wlm_api: true
+  deployment_wlm_cron: true
+  deployment_wlm_scheduler: true
+  deployment_wlm_workloads: true
+  deployment_datamover_api: true
+  daemonset_datamover: true
+  ingress_wlm_api: true
+  ingress_datamover_api: true
+  job_bootstrap: false
+  job_wlm_cloud_trust: true
+  job_datamover_db_drop: false
+  job_wlm_db_drop: false
+  job_datamover_db_init: true
+  job_wlm_db_init: true
+  job_datamover_db_sync: true
+  job_wlm_db_sync: true
+  job_wlm_rabbit_init: true
+  job_datamover_ks_endpoints: true
+  job_datamover_ks_service: true
+  job_datamover_ks_user: true
+  job_wlm_ks_endpoints: true
+  job_wlm_ks_service: true
+  job_wlm_ks_user: true
+  job_image_repo_sync: true
+  pdb_datamover_api: true
+  pdb_wlm_api: true
+  certificates: false
+  configmap_bin: true
+  configmap_etc: true
+  ingress_api: true
+  job_bootstrap: true
+  pdb_datamover_api: true
+  pdb_wlm_api: true
+  network_policy_wlm: false
+  network_policy_datamover: false
+  secret_db_datamover: true
+  secret_db_wlm: true
+  secret_ingress_tls_datamover: true
+  secret_ingress_tls_wlm: true
+  secret_keystone: true
+  secret_rabbitmq_wlm: true
+  service_datamover_api: true
+  service_wlm_api: true
+  service_ingress_datamover_api: true
+  service_ingress_wlm_api: true
+  nfs_pv: true
+  nfs_pvc: true
+
+network:
+  wlm_api:
+    ingress:
+      public: true
+      classes:
+        namespace: "nginx"
+        cluster: "nginx-cluster"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    external_policy_local: false
+    node_port:
+      enabled: false
+      port: 30901
+  datamover_api:
+    ingress:
+      public: true
+      classes:
+        namespace: "nginx"
+        cluster: "nginx-cluster"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    external_policy_local: false
+    node_port:
+      enabled: false
+      port: 30902
+
+# Names of secrets used by bootstrap and environmental checks
+secrets:
+  identity:
+    admin: triliovault-keystone-admin
+    triliovault_datamover: triliovault-datamover-keystone-user
+    triliovault_wlm: triliovault-wlm-keystone-user
+    test: triliovault-keystone-test
+  oslo_db:
+    admin: triliovault-db-admin
+    triliovault_datamover: triliovault-datamover-db-user
+    triliovault_wlm: triliovault-wlm-db-user
+  oslo_messaging:
+    admin: triliovault-rabbitmq-admin
+    triliovault_wlm: triliovault-wlm-rabbitmq-user
+  tls:
+    datamover:
+      datamover_api:
+        public: triliovault-datamover-tls-public
+        internal: triliovault-datamover-tls-api
+    workloads:
+      wlm_api:
+        public: triliovault-wlm-tls-public
+        internal: triliovault-wlm-tls-api
+
+# We use a different layout of the endpoints here to account for versioning
+# this swaps the service name and type, and should be rolled out to other
+# services.
+endpoints:
+  cluster_domain_suffix: cluster.local
+  local_image_registry:
+    name: docker-registry
+    namespace: docker-registry
+    hosts:
+      default: localhost
+      internal: docker-registry
+      node: localhost
+    host_fqdn_override:
+      default: null
+    port:
+      registry:
+        node: 5000
+  identity:
+    name: keystone
+    auth:
+      admin:
+        region_name: RegionOne
+        username: admin
+        password: password
+        project_name: admin
+        user_domain_name: default
+        project_domain_name: default
+      triliovault_datamover:
+        role: admin
+        region_name: RegionOne
+        username: dmapi
+        password: password
+        project_name: service
+        user_domain_name: service
+        project_domain_name: service
+      triliovault_wlm:
+        role: admin
+        region_name: RegionOne
+        username: triliovault
+        password: password
+        project_name: service
+        user_domain_name: service
+        project_domain_name: service
+      test:
+        role: admin
+        region_name: RegionOne
+        username: triliovault-test
+        password: password
+        project_name: test
+        user_domain_name: service
+        project_domain_name: service
+    hosts:
+      default: keystone
+      internal: keystone-api
+    host_fqdn_override:
+      default: null
+    path:
+      default: /v3
+    scheme:
+      default: http
+    port:
+      api:
+        default: 80
+        internal: 5000
+  image:
+    name: glance
+    hosts:
+      default: glance-api
+      public: glance
+    host_fqdn_override:
+      default: null
+    path:
+      default: null
+    scheme:
+      default: http
+    port:
+      api:
+        default: 9292
+        public: 80
+  volumev3:
+    name: cinder
+    hosts:
+      default: cinder-api
+      public: cinder
+    host_fqdn_override:
+      default: null
+      # NOTE(portdirect): this chart supports TLS for fqdn over-ridden public
+      # endpoints using the following format:
+      # public:
+      #   host: null
+      #   tls:
+      #     crt: null
+      #     key: null
+    path:
+      default: '/v3/%(tenant_id)s'
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 8776
+        public: 80
+  network:
+    name: neutron
+    hosts:
+      default: neutron-server
+      public: neutron
+    host_fqdn_override:
+      default: null
+    path:
+      default: null
+    scheme:
+      default: http
+    port:
+      api:
+        default: 9696
+        public: 80
+  compute:
+    name: nova
+    hosts:
+      default: nova-api
+      public: nova
+    host_fqdn_override:
+      default: null
+    path:
+      default: "/v2.1/%(tenant_id)s"
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 8774
+        public: 80
+  oslo_cache:
+    auth:
+      # NOTE: this is used to define the value for keystone
+      # authtoken cache encryption key, if not set it will be populated
+      # automatically with a random value, but to take advantage of
+      # this feature all services should be set to use the same key,
+      # and memcache service.
+      memcache_secret_key: null
+    hosts:
+      default: memcached
+    host_fqdn_override:
+      default: null
+    port:
+      memcache:
+        default: 11211
+  oslo_messaging:
+    auth:
+      admin:
+        username: rabbitmq
+        password: password
+        secret:
+          tls:
+            internal: rabbitmq-tls-direct
+      triliovault_wlm:
+        username: triliovault
+        password: password
+    statefulset:
+      replicas: 2
+      name: rabbitmq-rabbitmq
+    hosts:
+      default: rabbitmq
+    host_fqdn_override:
+      default: null
+    path: /triliovault
+    scheme: rabbit
+    port:
+      amqp:
+        default: 5672
+      http:
+        default: 15672
+  oslo_messaging_nova:
+    auth:
+      admin:
+        username: rabbitmq
+        password: password
+        secret:
+          tls:
+            internal: rabbitmq-tls-direct
+      nova:
+        username: nova
+        password: password
+    statefulset:
+      replicas: 2
+      name: rabbitmq-rabbitmq
+    hosts:
+      default: rabbitmq
+    host_fqdn_override:
+      default: null
+    path: /nova
+    scheme: rabbit
+    port:
+      amqp:
+        default: 5672
+      http:
+        default: 15672
+  datamover:
+    name: dmapi
+    hosts:
+      default: triliovault-datamover-api
+      public: triliovault-datamover
+    host_fqdn_override:
+      default: null
+      # NOTE: this chart supports TLS for fqdn over-ridden public
+      # endpoints using the following format:
+      # public:
+      #   host: null
+      #   tls:
+      #     crt: null
+      #     key: null
+    path:
+      default: /v2
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 8784
+        public: 80
+  workloads:
+    name: workloadmgr
+    hosts:
+      default: triliovault-wlm-api
+      public: triliovault-wlm
+    host_fqdn_override:
+      default: null
+      # NOTE: this chart supports TLS for fqdn over-ridden public
+      # endpoints using the following format:
+      # public:
+      #   host: null
+      #   tls:
+      #     crt: null
+      #     key: null
+    path:
+      default: /v1/$(tenant_id)s
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 8780
+        public: 80
+  oslo_db_triliovault_datamover:
+    auth:
+      admin:
+        username: root
+        password: password
+        secret:
+          tls:
+            internal: mariadb-tls-direct
+      triliovault_datamover:
+        username: dmapi
+        password: password
+    hosts:
+      default: mariadb
+    host_fqdn_override:
+      default: null
+    path: /dmapi
+    scheme: mysql+pymysql
+    port:
+      mysql:
+        default: 3306
+  oslo_db_triliovault_wlm:
+    auth:
+      admin:
+        username: root
+        password: password
+        secret:
+          tls:
+            internal: mariadb-tls-direct
+      triliovault_wlm:
+        username: workloadmgr
+        password: password
+    hosts:
+      default: mariadb
+    host_fqdn_override:
+      default: null
+    path: /workloadmgr
+    scheme: mysql+pymysql
+    port:
+      mysql:
+        default: 3306
+conf:
+  policy: {}
+  triliovault:
+    backup_target_type: "nfs"
+    ## Valid values are "nfs" and "s3"
+    nfs:
+      nfs_shares: 
+      - path: /opt/share1
+        ip: "192.168.122.101"
+        node_selector_key: openstack-compute-node
+        node_selector_value: enabled
+      nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
+      storage_class_name: nfs
+    s3:
+      access_key: ''
+      secret_key: ''
+      ## S3 region, if your s3 does not have any region, just keep the parameter as it is
+      region_name: ''
+      bucket: ''
+      endpoint_url: ''
+      signature_version: 'default'
+      auth_version: 'DEFAULT'
+      ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+      ## And, copy S3's ca cert file in triliovault/files/s3-cert.pem file in triliovault helm chart code directory.
+      ssl_enabled: False
+
+    ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
+    ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
+    ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
+    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
+    datamover_api_workers: 16
+    cloud_admin_user_name: ""
+    cloud_admin_project_name: ""
+    cloud_admin_domain_name: ""
+    ## Provide any role name as your preference. 
+    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+    trustee_role: "creator"
+    ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+    ## Valid values: internal, public, admin
+    interface: "internal"
+    ## If triliovault docker images are used from a authentication enabled registry, then make this variable value to 'true'
+    ## Otherwise set it to 'false'
+    docker_registry_auth_enabled: true
+  fuse: |
+    # /etc/fuse.conf - Configuration file for Filesystem in Userspace (FUSE)
+
+    # Set the maximum number of FUSE mounts allowed to non-root users.
+    # The default is 1000.
+    mount_max = 2000
+
+    # Allow non-root users to specify the allow_other or allow_root mount options.
+    user_allow_other
+  triliovault_object_store_wlm_api:
+    DEFAULT:
+      verbose: true
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: TrilioVault
+      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_file: /var/log/triliovault/wlm-api/triliovault-object-store.log
+      debug: true
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_wlm_scheduler:
+    DEFAULT:
+      verbose: true
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: TrilioVault
+      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_file: /var/log/triliovault/wlm-scheduler/triliovault-object-store.log
+      debug: true
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_wlm_workloads:
+    DEFAULT:
+      verbose: true
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: TrilioVault
+      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_file: /var/log/triliovault/wlm-workloads/triliovault-object-store.log
+      debug: true
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_datamover:
+    DEFAULT:
+      verbose: true
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-datamover/s3-cert.pem"
+      vault_storage_nfs_export: TrilioVault
+      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_file: /var/log/triliovault/datamover/triliovault-object-store.log
+      debug: true
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/privsep-helper
+  datamover_api:
+    DEFAULT:
+      log_config_append: /etc/triliovault-datamover/logging.conf
+      ## Don't delete this parameter. Keep it empty
+      dmapi_enabled_ssl_apis: ""
+      dmapi_listen_port: 8784
+      dmapi_enabled_apis: dmapi
+      bindir: /usr/bin
+      instance_name_template: instance-%08x
+      rootwrap_config: /etc/triliovault-datamover/rootwrap.conf
+      debug: False
+    wsgi:
+      ## Don't delete these entries. We need to keep them with empty values
+      ssl_cert_file: ""
+      ssl_key_file: ""
+      api_paste_config: /etc/triliovault-datamover/api-paste.ini
+    database:
+      connection_recycle_time: 300
+      max_overflow: 30
+      max_pool_size: 10
+      max_retries: -1
+    keystone_authtoken:
+      auth_type: password
+      project_name: service
+      memcache_security_strategy: ENCRYPT
+      signing_dir: /var/cache/dmapi
+      insecure: True
+    oslo_messaging_notifications:
+      driver: messagingv2
+      topics: notifications,stacklight_notifications
+    oslo_middleware:
+      enable_proxy_headers_parsing: True
+    oslo_messaging_rabbit:
+      rabbit_qos_prefetch_count: 64
+  my_ip:
+    # my_ip and other related parameters can be set automatically through this interface name.
+    # If this parameter is not set, then script will find interface name through default route.
+    host_interface:
+  datamover:
+    DEFAULT:
+      log_config_append: /etc/triliovault-datamover/logging.conf
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-datamover/s3-cert.pem"
+      vault_data_directory_old: "/var/triliovault"
+      vault_data_directory: "/var/trilio/triliovault-mounts"
+      debug: False
+      verbose: True
+      max_uploads_pending: 3
+      max_commit_pending: 3
+    dmapi_database:
+      connection_recycle_time: 300
+      max_overflow: 30
+      max_pool_size: 10
+      max_retries: -1
+    libvirt:
+      images_rbd_ceph_conf: /etc/ceph/ceph.conf
+    ceph:
+      keyring_ext: .nova.keyring
+    contego_sys_admin:
+      helper_command: sudo /usr/bin/privsep-helper
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/privsep-helper
+    conductor:
+      use_local: True
+    oslo_messaging_rabbit:
+      ssl: false
+    cinder:
+      http_retries: 10
+  wlm:
+    DEFAULT:
+      api_workers: 4
+      osapi_workloads_listen_port: 8780
+      log_config_append: /etc/triliovault-wlm/logging.conf
+      workloads_workers: 4
+      global_job_scheduler_override: False
+      api_paste_config: /etc/triliovault-wlm/api-paste.ini
+      rootwrap_config: /etc/triliovault-wlm/rootwrap.conf
+      cloud_admin_role: admin
+      compute_driver: libvirt.LibvirtDriver
+      config_status: configured
+      verbose: True
+      debug: False
+      keystone_auth_version: 3
+      glance_api_version: 2
+      neutron_api_insecure: False
+      state_path: /opt/stack/data/workloadmgr
+      use_syslog: False
+      vault_storage_das_device: none
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_data_directory_old: "/var/triliovault"
+      vault_data_directory: "/var/trilio/triliovault-mounts"
+      #The amount of time(in hrs) that snapshot upload operation should wait for the upload
+      max_wait_for_upload: 48
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+    clients:
+      client_retry_limit: 3
+      insecure: False
+    global_job_scheduler:
+      misfire_grace_time: 600
+    keystone_authtoken:
+      auth_version: v3
+      auth_type: password
+      auth_plugin: password
+      username: triliovault
+      admin_user: triliovault
+      signing_dir: /var/cache/workloadmgr
+      insecure: False
+      service_token_roles_required: True
+      cafile: ""
+    alembic:
+      script_location: /usr/share/workloadmgr/migrate_repo
+      version_locations: /usr/share/workloadmgr/migrate_repo/versions
+    filesearch:
+      process_timeout: 300
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  nova_compute:
+  logging:
+    loggers:
+      keys:
+        - root
+        - datamover
+        - os.brick
+    handlers:
+      keys:
+        - stdout
+        - stderr
+        - "null"
+    formatters:
+      keys:
+        - context
+        - default
+    logger_root:
+      level: WARNING
+      handlers: stdout
+    logger_datamover:
+      level: INFO
+      handlers: ""
+      qualname: datamover
+    logger_os.brick:
+      level: INFO
+      handlers: ""
+      qualname: os.brick
+    logger_amqp:
+      level: WARNING
+      handlers: ""
+      qualname: amqp
+    logger_amqplib:
+      level: WARNING
+      handlers: ""
+      qualname: amqplib
+    logger_eventletwsgi:
+      level: WARNING
+      handlers: ""
+      qualname: eventlet.wsgi.server
+    logger_sqlalchemy:
+      level: WARNING
+      handlers: ""
+      qualname: sqlalchemy
+    logger_boto:
+      level: WARNING
+      handlers: ""
+      qualname: boto
+    handler_null:
+      class: logging.NullHandler
+      formatter: default
+      args: ()
+    handler_stdout:
+      class: StreamHandler
+      args: (sys.stdout,)
+      formatter: context
+    handler_stderr:
+      class: StreamHandler
+      args: (sys.stderr,)
+      formatter: context
+    formatter_context:
+      class: oslo_log.formatters.ContextFormatter
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    formatter_default:
+      format: "%(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+
+bootstrap:
+  enabled: false
+  ks_user: triliovault
+  script: |
+    openstack token issue
+
+dependencies:
+  dynamic:
+    common:
+      local_image_registry:
+        jobs:
+          - triliovault-image-repo-sync
+        services:
+          - endpoint: node
+            service: local_image_registry
+  static:
+    datamover_api:
+      jobs:
+        - triliovault-datamover-db-sync
+        - triliovault-datamover-ks-user
+        - triliovault-datamover-ks-endpoints
+    datamover:
+      jobs:
+        - triliovault-datamover-db-sync
+        - triliovault-datamover-ks-user
+        - triliovault-datamover-ks-endpoints
+      services:
+        - endpoint: internal
+          service: datamover
+    wlm_api:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
+    wlm_scheduler:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
+      services:
+        - endpoint: internal
+          service: workloads
+    wlm_workloads:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
+      services:
+        - endpoint: internal
+          service: workloads
+    wlm_cron:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
+      services:
+        - endpoint: internal
+          service: workloads
+    wlm_cloud_trust:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
+      services:
+        - endpoint: internal
+          service: workloads
+    db_sync:
+      jobs:
+        - triliovault-wlm-db-init
+        - triliovault-datamover-db-init
+    ks_endpoints:
+      jobs:
+        - triliovault-wlm-ks-service
+        - triliovault-datamover-ks-service
+    tests:
+      jobs:
+        - triliovault-wlm-db-sync
+...
