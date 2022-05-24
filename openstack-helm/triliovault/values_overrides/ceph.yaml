@@ -1,0 +1,4 @@
+ceph:
+  enabled: true
+  rbd_user: nova
+  keyring: AQAD+WhigJHWExAwtzIxdHVFbWlDCnl4MQAdrw==
