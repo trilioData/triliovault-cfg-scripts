@@ -833,7 +833,7 @@ conf:
       verbose: true
       vault_storage_type: s3
       vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: "/etc/triliovault-datamover/s3-cert.pem"
+      vault_s3_ssl_cert: ''
       vault_storage_nfs_export: TrilioVault
       vault_data_directory: /var/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
@@ -884,7 +884,7 @@ conf:
     DEFAULT:
       log_config_append: /etc/triliovault-datamover/logging.conf
       vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: "/etc/triliovault-datamover/s3-cert.pem"
+      vault_s3_ssl_cert: ''
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: "/var/trilio/triliovault-mounts"
       debug: False
