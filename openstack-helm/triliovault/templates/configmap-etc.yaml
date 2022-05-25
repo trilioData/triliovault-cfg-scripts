@@ -139,6 +139,10 @@ limitations under the License.
 {{- $_ := set .Values.conf.datamover.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
+{{- if .Values.conf.triliovault.s3.ssl_enabled -}}
+{{- $_ := set .Values.conf.datamover.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-datamover/s3-cert.pem" -}}
+{{- end -}}
+
 
 {{- if empty .Values.conf.datamover.DEFAULT.dmapi_transport_url -}}
 {{- $_ := tuple "oslo_messaging_nova" "internal" "nova" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.datamover.DEFAULT "dmapi_transport_url" -}}
@@ -320,6 +324,9 @@ limitations under the License.
 {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
+{{- if .Values.conf.triliovault.s3.ssl_enabled -}}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-datamover/s3-cert.pem" -}}
+{{- end -}}
 
 
 
