@@ -1,13 +1,13 @@
 ---
 images:
   tags:
-    bootstrap: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
-    db_init: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
-    db_drop: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
+    bootstrap: docker.io/openstackhelm/heat:victoria-ubuntu_focal
+    db_init: docker.io/openstackhelm/heat:victoria-ubuntu_focal
+    db_drop: docker.io/openstackhelm/heat:victoria-ubuntu_focal
     rabbit_init: docker.io/rabbitmq:3.7-management
-    ks_user: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
-    ks_service: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
-    ks_endpoints: docker.io/openstackhelm/heat:victoria-ubuntu_xenial
+    ks_user: docker.io/openstackhelm/heat:victoria-ubuntu_focal
+    ks_service: docker.io/openstackhelm/heat:victoria-ubuntu_focal
+    ks_endpoints: docker.io/openstackhelm/heat:victoria-ubuntu_focal
     dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
     image_repo_sync: docker.io/docker:17.07.0
     triliovault_wlm_cloud_trust: docker.io/trilio/triliovault-wlm-helm:dev14-victoria-ubuntu_focal
