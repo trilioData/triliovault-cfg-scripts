@@ -1,0 +1,9 @@
+network:
+  wlm_api:
+    ingress:
+      classes:
+        namespace: "openstack-ingress-nginx"
+  datamover_api:
+    ingress:
+      classes:
+        namespace: "openstack-ingress-nginx"
