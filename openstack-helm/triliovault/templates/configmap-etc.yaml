@@ -504,6 +504,9 @@ limitations under the License.
 {{- end -}}
 
 
+{{- $_ := set .Values.conf.wlm.barbican "barbican_endpoint_type" .Values.conf.triliovault.interface -}}
+
+
 
 {{/* **********************************************************************
      set logging.conf conf parameters
