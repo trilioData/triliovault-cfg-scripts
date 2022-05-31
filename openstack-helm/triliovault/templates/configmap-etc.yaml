@@ -167,6 +167,7 @@ limitations under the License.
 {{- $_ := printf ".%s.keyring" .Values.ceph.rbd_user  | set .Values.conf.datamover.ceph "keyring_ext" -}}
 
 
+{{- $_ := set .Values.conf.datamover.barbican "barbican_endpoint_type" .Values.conf.triliovault.interface -}}
 
 {{/* **********************************************************************
      set triliovault_object_store.conf services conf parameters wlm-api
@@ -502,10 +503,6 @@ limitations under the License.
 {{- if empty .Values.conf.wlm.DEFAULT.trustee_role -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "trustee_role " .Values.conf.triliovault.trustee_role  -}}
 {{- end -}}
-
-
-{{- $_ := set .Values.conf.wlm.barbican "barbican_endpoint_type" .Values.conf.triliovault.interface -}}
-
 
 
 {{/* **********************************************************************
