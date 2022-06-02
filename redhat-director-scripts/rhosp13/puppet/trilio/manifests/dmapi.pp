@@ -25,6 +25,7 @@ class trilio::dmapi (
   $region_name                     = 'regionOne',
   $notification_driver             = 'messagingv2',
   $enable_proxy_headers_parsing    = false,
+  $dmapi_workers                   = 16,
 ) {
     tag 'dmapiconfig'
 
@@ -57,4 +58,5 @@ class trilio::dmapi (
         ensure  => present,
         content => template('trilio/dmapi.erb'),
     }
+
 }

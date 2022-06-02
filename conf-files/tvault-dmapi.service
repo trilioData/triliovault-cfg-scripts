@@ -1,0 +1,15 @@
+[Unit]
+Description=TrilioData DataMover API service
+After=tvault-dmapi.service
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+ExecStart=/usr/bin/python /usr/bin/dmapi-api
+KillMode=control-group
+Restart=on-failure
+WorkingDirectory=/var/run
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,86 @@
 ---
+
+- name: Set OPENSTACK_ENCRYPTION_SUPPORT to True
+  lineinfile:
+    path: "{{ node_config_directory }}/horizon/local_settings"
+    regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
+    line: OPENSTACK_ENCRYPTION_SUPPORT = True
+  when:
+    - (enable_barbican is defined) and (enable_barbican == "yes")
+    - (enable_horizon is defined) and (enable_horizon | bool)
+    - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
+
+- name: Set OPENSTACK_ENCRYPTION_SUPPORT to False
+  lineinfile:
+    path: "{{ node_config_directory }}/horizon/local_settings"
+    regexp: '^OPENSTACK_ENCRYPTION_SUPPORT'
+    line: OPENSTACK_ENCRYPTION_SUPPORT = False
+  when:
+    - (enable_barbican is not defined) or (enable_barbican == "no")
+    - (enable_horizon is defined) and (enable_horizon | bool)
+    - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
+
+- name: Set TRILIO_ENCRYPTION_SUPPORT to True - default value
+  lineinfile:
+    path: "{{ node_config_directory }}/horizon/local_settings"
+    regexp: '^TRILIO_ENCRYPTION_SUPPORT'
+    line: TRILIO_ENCRYPTION_SUPPORT = True
+  when:
+    - (enable_horizon is defined) and (enable_horizon | bool)
+    - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
+
+- name: Set TRILIO_ENCRYPTION_SUPPORT to False if OS is <=centos7 or <=rhel7
+  lineinfile:
+    path: "{{ node_config_directory }}/horizon/local_settings"
+    regexp: '^TRILIO_ENCRYPTION_SUPPORT'
+    line: TRILIO_ENCRYPTION_SUPPORT = False
+  when:
+    - (ansible_distribution == "CentOS" and ansible_distribution_major_version | int <= 7) or (ansible_distribution == "RedHat" and ansible_distribution_major_version | int <= 7)
+    - (enable_horizon is defined) and (enable_horizon | bool)
+    - inventory_hostname in groups[triliovault_horizon_group]
+  notify:
+    - Restart horizon container
+
+- name: triliovault - Load rbd module
+  include_role:
+    name: module-load
+  vars:
+    modules:
+      - { name: rbd }
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
+- name: triliovault - set nbd module options in modprobe conf
+  become: true
+  template:
+    src: modprobe-nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
+- name: triliovault - set module-load conf for nbd module
+  become: true
+  template:
+    src: module-load-nbd.conf.j2
+    dest: "/etc/modules-load.d/nbd.conf"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
+- name: triliovault - load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+    state: "present"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - name: Ensuring config directories exist
   become: true
   file:

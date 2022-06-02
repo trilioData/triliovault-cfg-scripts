@@ -2,7 +2,7 @@ import os
 import re
 import configparser
 import time
-import shutil
+from distutils.spawn import find_executable
 
 from subprocess import (
     check_output,
@@ -199,7 +199,7 @@ def create_virt_env(pkg_name):
     chownr(path, usr, grp)
 
     # Copy Trilio filter file
-    call([shutil.which('cp'), 'files/trilio/trilio.filters',
+    call([find_executable('cp'), 'files/trilio/trilio.filters',
         '/etc/nova/rootwrap.d/'])
 
     return True
@@ -424,18 +424,18 @@ def uninstall_plugin(pkg_name):
     bkp_type = config('backup-target-type')
     try:
         service_stop('tvault-contego')
-        call(shutil.which('sudo')+' systemctl disable tvault-contego')
-        call(shutil.which('rm')+
+        call(find_executable('sudo')+' systemctl disable tvault-contego')
+        call(find_executable('rm')+
                 ' -rf /etc/systemd/system/tvault-contego.service')
         if bkp_type == 's3':
             service_stop('tvault-object-store')
-            call(shutil.which('systemctl')+' disable tvault-object-store')
-            call(shutil.which('rm')+
+            call(find_executable('systemctl')+' disable tvault-object-store')
+            call(find_executable('rm')+
                     ' -rf /etc/systemd/system/tvault-object-store.service')
-        call(shutil.which('sudo')+' systemctl daemon-reload')
-        call(shutil.which('rm')+' -rf /etc/logrotate.d/tvault-contego')
-        call(shutil.which('rm')+' -rf {}'.format(config('tv-datamover-conf')))
-        call(shutil.which('rm')+' -rf /var/log/nova/tvault-contego.log')
+        call(find_executable('sudo')+' systemctl daemon-reload')
+        call(find_executable('rm')+' -rf /etc/logrotate.d/tvault-contego')
+        call(find_executable('rm')+' -rf {}'.format(config('tv-datamover-conf')))
+        call(find_executable('rm')+' -rf /var/log/nova/tvault-contego.log')
         # Get the mount points and un-mount tvault's mount points.
         mount_points = mounts()
         sorted_list = [mp[0] for mp in mount_points
@@ -523,13 +523,13 @@ def install_tvault_contego_plugin():
         status_set('blocked', 'Failed while creating ObjectStore service file')
         return
 
-    call(shutil.which('sudo')+' systemctl daemon-reload')
+    call(find_executable('sudo')+' systemctl daemon-reload')
     # Enable and start the object-store service
     if bkp_type == 's3':
-        call(shutil.which('sudo')+' systemctl enable tvault-object-store')
+        call(find_executable('sudo')+' systemctl enable tvault-object-store')
         service_restart('tvault-object-store')
     # Enable and start the datamover service
-    call(shutil.which('sudo')+' systemctl enable tvault-contego')
+    call(find_executable('sudo')+' systemctl enable tvault-contego')
     service_restart('tvault-contego')
 
     # Install was successful
@@ -569,7 +569,7 @@ def stop_tvault_contego_plugin():
 @hook('upgrade-charm')
 def upgrade_charm():
     # check if installed contego pkg is python 2 or 3
-    if call(shutil.which('dpkg')+
+    if call(find_executable('dpkg')+
             ' -s python3-tvault-contego | grep Status') == 0:
         pkg_name = 'python3-tvault-contego'
     else:

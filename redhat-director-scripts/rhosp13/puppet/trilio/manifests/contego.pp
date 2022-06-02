@@ -8,6 +8,8 @@ class trilio::contego (
     $s3_region_name                       = undef,
     $s3_bucket                            = undef,
     $s3_endpoint_url                      = undef,
+    $s3_signature_version                 = 'default',
+    $s3_auth_version                      = 'DEFAULT',
     $s3_ssl_enabled                       = 'False',
     $s3_ssl_cert                          = undef,
     $database_connection                  = undef,
@@ -19,6 +21,9 @@ class trilio::contego (
     $oslomsg_rpc_use_ssl                  = hiera('trilio::rabbit_use_ssl', '0'),
     $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
+    $cinder_http_retries                  = 10,
+    $multi_ip_nfs_enabled                 = false,
+    $nfs_map                              = {},
 ) {
 
 

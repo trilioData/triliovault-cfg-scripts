@@ -1,6 +1,7 @@
 import os
 import re
-import shutil
+from distutils.spawn import find_executable
+
 from charms.reactive import (
     when,
     when_not,
@@ -37,7 +38,7 @@ def copy_files():
     service_restart("apache2")
 
     # write content into destination file - sync_static.py
-    call(shutil.which('cp')+' files/trilio/sync_static.py /tmp/sync_static.py')
+    call(find_executable('cp')+' files/trilio/sync_static.py /tmp/sync_static.py')
 
     # Change the working directory to horizon and excute shell command
     call(
@@ -45,7 +46,7 @@ def copy_files():
         '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
-    call(shutil.which('rm')+' /tmp/sync_static.py')
+    call(find_executable('rm')+' /tmp/sync_static.py')
 
     call(
             '/usr/bin/python{0} {1}/manage.py collectstatic;'
@@ -57,7 +58,7 @@ def delete_files():
     horizon_path = config("horizon-path")
 
     # write content into destination file - sync_static1.py
-    call(shutil.which('cp')+
+    call(find_executable('cp')+
             ' files/trilio/sync_static1.py /tmp/sync_static1.py')
 
     # Change the working directory to horizon and excute shell command
@@ -66,7 +67,7 @@ def delete_files():
         '/dev/null'.format(config('python-version'), horizon_path))
 
     # Remove temporary file
-    call(shutil.which('rm')+' /tmp/sync_static1.py')
+    call(find_executable('rm')+' /tmp/sync_static1.py')
 
 
 def get_new_version(pkg):

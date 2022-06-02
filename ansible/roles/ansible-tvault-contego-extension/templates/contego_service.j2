@@ -5,6 +5,9 @@ After=openstack-nova-compute.service
 {% elif object_store == True %}
 Requires=tvault-object-store.service
 {%endif%}
+StartLimitIntervalSec=120
+StartLimitInterval=120
+StartLimitBurst=3
 
 [Service]
 User={{TVAULT_CONTEGO_EXT_USER}}
