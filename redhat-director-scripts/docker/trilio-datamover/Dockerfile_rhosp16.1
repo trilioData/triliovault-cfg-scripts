@@ -18,11 +18,13 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN dnf clean all
 RUN dnf config-manager --enable openstack-16-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-baseos-rpms
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN dnf config-manager --disable openstack-16-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
 ADD start_datamover_s3 start_datamover_nfs /opt/tvault/
+RUN sed  -i '0,/^/s//sudo \/usr\/sbin\/modprobe nbd nbds_max=128\n\n/' /opt/tvault/start_datamover_nfs
 ADD start_tvault_object_store_rhel8 /opt/tvault/start_tvault_object_store
 RUN chown -R nova:nova /opt/tvault/
 RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store

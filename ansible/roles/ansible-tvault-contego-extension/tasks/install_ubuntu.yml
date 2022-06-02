@@ -10,13 +10,43 @@
 - name: Reload Daemon
   shell: systemctl daemon-reload
 
+- name: Triliovault - set nbd module options in modprobe conf
+  become: true
+  template:
+    src: modprobe-nbd.conf.j2
+    dest: "/etc/modprobe.d/nbd.conf"
+
+- name: Triliovault - set module-load conf for nbd module
+  become: true
+  template:
+    src: module-load-nbd.conf.j2
+    dest: "/etc/modules-load.d/nbd.conf"
+
+- name: Triliovault - load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+
+- name: Triliovault - set module-load conf for rbd module
+  become: true
+  template:
+    src: module-load-rbd.conf.j2
+    dest: "/etc/modules-load.d/rbd.conf"
+
+- name: Triliovault - load rbd module
+  become: true
+  modprobe:
+    name: "rbd"
+    state: "present"
+
 - name: Download contego virtenv deb package
   shell: |
           curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
           dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb -y
           rm -rf ./tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
 
-- debug : msg="curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb" verbosity="{{ verbosity_level }}"
+- debug : msg="curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb" verbosity={{ verbosity_level }}
 
 - name: install tvault-contego deb package when using python2
   shell: |

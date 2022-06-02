@@ -30,6 +30,11 @@ NFS_SHARES:
 #if NFS_OPTS is empty then default value will be "nolock,soft,timeo=180,intr,lookupcache=none"
 NFS_OPTS: ""
 
+## Valid for 'nfs' backup target only.
+## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then
+## set 'multi_ip_nfs_enabled' parameter to 'True'. Otherwise it's value should be 'False'
+multi_ip_nfs_enabled: False
+
 #### Details for S3 as snapshot storage
 ##True/False
 S3: False
@@ -56,9 +61,17 @@ DMAPI_ENABLED_SSL_APIS: ""
 DMAPI_SSL_CERT: ""
 DMAPI_SSL_KEY: ""
 
+## Triliovault dmapi_workers count
+## Default value of dmapi_workers is 16
+dmapi_workers: 16
+
 #### Any service is using Ceph Backend then set ceph_backend_enabled value to True
 #True/False
 ceph_backend_enabled: False
+
+## Provide Horizon Virtual Env path from Horizon_container
+## e.g. '/openstack/venvs/horizon-23.1.0'
+horizon_virtual_env: '/openstack/venvs/horizon*'
 
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3

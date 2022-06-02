@@ -26,7 +26,19 @@ then
 base_dir="$current_dir"
 fi
 
-declare -a openstack_releases=("rhosp16" "rhosp16.1")
+declare -a openstack_releases=("rhosp16.1" "rhosp16.2")
+
+declare -a rhosp_releases=("16.1" "16.2")
+
+declare -a repositories=("registry.redhat.io/rhosp-rhel8/openstack-nova-compute" "registry.redhat.io/rhosp-rhel8/openstack-nova-api" "registry.redhat.io/rhosp-rhel8/openstack-horizon")
+
+for rhosp_release in "${rhosp_releases[@]}"
+do
+      for repository in "${repositories[@]}"
+      do
+    	     podman pull --authfile /root/redhat-auth.json ${repository}:${rhosp_release}
+      done
+done
 
 ## now loop through the above array
 for openstack_release in "${openstack_releases[@]}"
@@ -64,3 +76,4 @@ do
       rm -rf $base_dir/${build_dir}
 
 done
+

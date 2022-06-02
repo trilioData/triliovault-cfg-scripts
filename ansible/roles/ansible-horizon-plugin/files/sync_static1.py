@@ -1,6 +1,6 @@
 import settings
 import os
 import subprocess
-import shutil
+from distutils.spawn import find_executable
 root = settings.STATIC_ROOT+os.sep+"dashboards"
-subprocess.call([shutil.which("rm"), '-rf', root])
+subprocess.call([find_executable("rm"), '-rf', root])

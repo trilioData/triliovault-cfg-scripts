@@ -2,6 +2,21 @@
 #For Debian: apache2
 #For RHEL: httpd
 
+- name: Find Horizon directory path
+  find:
+    paths: "{{ horizon_virtual_env | dirname }}/"
+    file_type: directory
+    use_regex: no
+    patterns:
+      - "{{ horizon_virtual_env | basename }}"
+    recurse: no
+  register: horizon_path
+
+- name: Stop playbook execution when Horizon directory not found or multiples
+  fail:
+    msg: "Pass full path of Horizon directory to horizon_virtual_env present in user_tvault_vars.yml file"
+  when: ({{ horizon_path.matched|int }} != 1)
+
 - set_fact: WebServer=apache2
   when: ansible_distribution=="Ubuntu"
 
@@ -27,20 +42,15 @@
     verbosity: "{{verbosity_level}}"
 
 - name: Find openstack-dashboard path in horizon container
-  find:
-    patterns: 'site-packages'
-    paths:
-      - /openstack/
-    file_type: directory
-    recurse: yes
-  register: file_found
+  shell: |
+         . {{ horizon_virtual_env }}/bin/activate &&
+         {{ PYTHON_VERSION }} -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+  register: HORIZONPATH
 
-- set_fact: HORIZON_PATH="{{file_found.files[0]['path']}}"
+- set_fact:
+    HORIZON_PATH: "{{ HORIZONPATH.stdout }}"
 
 - debug:
     msg: "{{HORIZON_PATH}}"
     verbosity: "{{verbosity_level}}"
-
-
-
 

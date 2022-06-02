@@ -1,5 +1,9 @@
 [DEFAULT]
+<% if @multi_ip_nfs_enabled -%>
+vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
+<% else -%>
 vault_storage_nfs_export = <%= @nfs_shares %>
+<% end -%>
 vault_storage_nfs_options = <%= @nfs_options %>
 vault_storage_type = nfs
 vault_data_directory_old = <%= @vault_data_dir_old %>
@@ -34,3 +38,6 @@ use_local = True
 
 [oslo_messaging_rabbit]
 ssl = <%= @oslomsg_rpc_use_ssl %>
+
+[cinder]
+http_retries = <%= @cinder_http_retries %>

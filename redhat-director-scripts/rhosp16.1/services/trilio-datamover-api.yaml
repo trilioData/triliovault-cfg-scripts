@@ -93,7 +93,11 @@ parameters:
                  e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
                  set to true, the service uses a floating prefix as
                  well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
-    type: boolean            
+    type: boolean
+  DmApiWorkers:
+    default: 16
+    description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
+    type: number
 
 
 
@@ -140,6 +144,7 @@ outputs:
         trilio::dmapi::region_name: {get_param: KeystoneRegion}
         trilio::dmapi::user_domain_name: 'Default'
         trilio::dmapi::project_domain_name: 'Default'
+        trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
         tripleo::trilio_datamover_api::firewall_rules:
               '240 trilio-datamover-api':
                 dport:
@@ -168,6 +173,17 @@ outputs:
                 public_ssl_port: {get_param: DmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
+                service_network: "%{hiera('trilio_datamover_api_network')}"
+          tripleo::haproxy::trilio_datamover_api::options:
+             'retries': '5'
+             'maxconn': '50000'
+             'balance': 'roundrobin'
+             'timeout http-request': '10m'
+             'timeout queue': '10m'
+             'timeout connect': '10m'
+             'timeout client': '10m'
+             'timeout server': '10m'
+             'timeout check': '10m'
         keystone:
           trilio::keystone::auth::tenant: 'service'
           trilio::keystone::auth::service_name: 'dmapi'
@@ -272,9 +288,20 @@ outputs:
             user: dmapi
             restart: always
             volumes:
-              - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-              - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
-              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                    - []
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                    - []
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:

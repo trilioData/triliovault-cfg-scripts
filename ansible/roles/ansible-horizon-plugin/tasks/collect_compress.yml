@@ -17,26 +17,80 @@
 - name: write content into destination file - sync_static.py
   template: src="sync_static.py" dest="/tmp/sync_static.py"
 
-- name: Change the working directory to horizon and excute shell command
-  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }} shell < /tmp/sync_static.py &> /dev/null"
+- name: Change the working directory to horizon and execute shell command
+  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }} shell < /tmp/sync_static.py"
   args:
        chdir: "{{HORIZON_PATH}}"
+  register: data
   notify:
     - restart webserver
 
-- name: remove temporary file -  sync_static.py
+- name: Change the working directory to horizon and execute collectstatic --noinput with data
+  shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }}  collectstatic --noinput {{data.stdout}}"
+  args:
+    chdir: "{{HORIZON_PATH}}"
+  notify:
+     - restart webserver
+
+- name: remove temporary file - sync_static.py
   file: path=/tmp/sync_static.py state=absent
 
 - name: Get os_local_settings_path
-  shell: find / -type d -path /sys -prune -o -name "*local_settings.d" 2>/dev/null | grep -E 'openstack_dashboard|horizon'
+  find:
+    paths: "{{ horizon_virtual_env | dirname }}/"
+    file_type: directory
+    use_regex: yes
+    patterns: 
+      - '^.*?local_settings.(?:d)$'
+    recurse: yes
   register: os_local_settings_path
 
+- name: Find path & count of local_settings.d
+  set_fact:
+    loc_sett_path: "{{ os_local_settings_path.files| map(attribute='path')| list|join(',')}}"
+    loc_sett_path_len: "{{ os_local_settings_path.files| map(attribute='path')| list|length}}"
+
+- name: Stop playbook execution when local_settings.d not found or multiples
+  fail:
+    msg: "Didn't find local_settings.d dir or more than one locals_settings.d directories found."
+  when: (loc_sett_path_len|int == 0) or
+        (loc_sett_path_len|int > 1)
+
 - name: HORIZON_CONFIG
-  shell: . /openstack/venvs/horizon*/bin/activate && echo "HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'" > `echo $os_local_settings_path | cut -d ' ' -f1 |{ read trilio_setting_path ; echo $trilio_setting_path/_001_trilio_dashboard.py ; }`
-  when: os_local_settings_path != ""
+  shell: "echo 'HORIZON_CONFIG['customization_module'] = 'dashboards.overrides'' > {{ loc_sett_path }}/_001_trilio_dashboard.py ;"
+  when:
+    - (os_local_settings_path != '')
+    - (loc_sett_path_len|int == 1)
+
+- set_fact: 
+    OPENSTACK_ENCRYPTION: >
+      {{ 'True' if ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0)) and
+      (os_local_settings_path != "") else 'False' }}
+
+- name: SET OPENSTACK_ENCRYPTION_SUPPORT
+  lineinfile:
+    path: "/etc/horizon/local_settings.py"
+    regexp: "^OPENSTACK_ENCRYPTION_SUPPORT ="
+    line: OPENSTACK_ENCRYPTION_SUPPORT = {{ OPENSTACK_ENCRYPTION }}
+
+- set_fact: 
+    TRILIO_ENCRYPTION: >
+      {{ 'False' if (ansible_distribution == 'CentOS' and ansible_distribution_major_version | int <= 7) or
+      (ansible_distribution == 'RedHat' and ansible_distribution_major_version | int <= 7) else 'True' }}
+
+- name: SET TRILIO_ENCRYPTION_SUPPORT
+  lineinfile:
+    path: "/etc/horizon/local_settings.py"
+    regexp: "^TRILIO_ENCRYPTION_SUPPORT ="
+    line: TRILIO_ENCRYPTION_SUPPORT = {{ TRILIO_ENCRYPTION }}
+
+- name: Display local_settings.d path
+  debug:
+    msg: "local_settings.d path: {{ os_local_settings_path.files | map(attribute='path') }}"
+    verbosity: "{{ verbosity_level }}"
+  when:
+    - os_local_settings_path != ""
 
 - debug:
     msg: "\033[33m WARNING: Unable to locate local_settings.d on system. Trilio quota feature on dashboard may not work. \033[0m"
     verbosity: "{{ verbosity_level }}"
-  when: os_local_settings_path == ""
-

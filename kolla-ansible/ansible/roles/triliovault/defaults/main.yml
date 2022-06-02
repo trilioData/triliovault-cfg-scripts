@@ -16,6 +16,17 @@ triliovault_services:
         mode: "http"
         external: false
         port: "{{ triliovault_datamover_api_port }}"
+        frontend_http_extra:
+          - "retries 5"
+          - "timeout http-request 10m"
+          - "timeout queue 10m"
+          - "timeout connect 10m"
+          - "timeout client 10m"
+          - "timeout check 10m"
+          - "balance roundrobin"
+          - "maxconn 50000"
+        backend_http_extra:
+          - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_datamover_api_external:
@@ -23,6 +34,17 @@ triliovault_services:
         mode: "http"
         external: true
         port: "{{ triliovault_datamover_api_port }}"
+        frontend_http_extra:
+          - "retries 5"
+          - "timeout http-request 10m"
+          - "timeout queue 10m"
+          - "timeout connect 10m"
+          - "timeout client 10m"
+          - "timeout check 10m"
+          - "balance roundrobin"
+          - "maxconn 50000"
+        backend_http_extra:
+          - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
   triliovault-datamover:
@@ -74,6 +96,9 @@ triliovault_datamover_default_volumes:
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
   - "/dev:/dev"
+  - "/lib/modules:/lib/modules:ro"
+  - "/run:/run:shared"
+  - "libvirtd:/var/lib/libvirt"
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
@@ -121,7 +146,7 @@ triliovault_ks_users:
 ####################
 triliovault_notification_topics:
   - name: notifications
-    enabled: "{{ enable_ceilometer | bool or enable_searchlight | bool }}"
+    enabled: "{{ enable_ceilometer | bool }}"
   - name: vitrage_notifications
     enabled: "{{ enable_vitrage | bool }}"
 
@@ -144,6 +169,7 @@ triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
 ## TrilioVault Inventory.  Refer triliovault_inventory file. 
 triliovault_datamover_api_group: 'triliovault-datamover-api'
 triliovault_datamover_group: 'triliovault-datamover'
+triliovault_horizon_group: "horizon"
 
 
 ## Log directories for triliovault services
@@ -164,7 +190,7 @@ triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
 
 
-## triliovault backup target possible values: 'nfs'/'amazon_s3'/'ceph_s3'
+## triliovault backup target possible values: 'nfs'/'amazon_s3'/'other_s3_compatible'
 triliovault_backup_target: 'nfs'
 
 ### 'NFS' backup target details
@@ -175,17 +201,17 @@ triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
 
-### 'amazon_s3/ceph_s3' backup target details
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 access key
+### 'amazon_s3/other_s3_compatible' backup target details
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
 triliovault_s3_access_key: ''
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 secret key
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 secret key
 triliovault_s3_secret_key: ''
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 region
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 region
 ## if your s3 does not have any region, just keep the parameter as it is
 triliovault_s3_region_name: 'us-east-1'
-## Valid for 'amazon_s3'/'ceph_s3' backup target, provide S3 bucket name
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 bucket name
 triliovault_s3_bucket_name: ''
-## Valid for 'ceph_s3' backup target only, provide S3 endpoint url
+## Valid for 'other_s3_compatible' backup target only, provide S3 endpoint url
 ## This paramter is not valid for Amazon S3 backup target type, keep it as it is
 triliovault_s3_endpoint_url: ''
 ## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
@@ -200,3 +226,7 @@ triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
 ## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
 ## Type: Boolean
 triliovault_copy_ceph_s3_ssl_cert: False
+
+## cinder
+## cinder http retries default value
+cinder_http_retries: '10'
