@@ -395,6 +395,7 @@ manifests:
   secret_db_wlm: true
   secret_ingress_tls_datamover: true
   secret_ingress_tls_wlm: true
+  secret_ca_bundle: true
   secret_keystone: true
   secret_rabbitmq_wlm: true
   service_datamover_api: true
