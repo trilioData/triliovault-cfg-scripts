@@ -34,6 +34,12 @@ NOVA_TRANSPORT_URL=$(kubectl -n openstack get secret nova-rabbitmq-user --templa
 
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
 
+CRT=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')
+KEY=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.key']}" | base64 -d | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}')
+CA=$(kubectl -n openstack get secrets/keystone-ca-bundle -o "jsonpath={.data['ca_bundle']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /') 
+
+
+
 cd ../
 
 tee > values_overrides/admin_creds.yaml  << EOF
@@ -112,12 +118,25 @@ endpoints:
         host: triliovault-datamover-api.triliovault.svc.$INTERNAL_DOMAIN_NAME
       public:
         host: triliovault-datamover.$PUBLIC_DOMAIN_NAME
+        tls:
+          crt: |
+$CRT
+          key: "$KEY"
+          ca: |
+$CA
   workloads:
     host_fqdn_override:
       default:
         host: triliovault-wlm-api.triliovault.svc.$INTERNAL_DOMAIN_NAME
       public:
         host: triliovault-wlm.$PUBLIC_DOMAIN_NAME
+        tls:
+          crt: |
+$CRT
+          key: "$KEY"
+          ca: |
+$CA
+
   image:
     host_fqdn_override:
       default:
