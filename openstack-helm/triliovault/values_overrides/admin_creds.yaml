@@ -1,7 +1,10 @@
 conf:
   datamover:
     DEFAULT:
-      dmapi_transport_url: rabbit://novagD3Q:LDA4DP41yRX3UNjFimFvb4dHIDWpPtZc@openstack-rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672/nova
+      dmapi_transport_url: rabbit://nova87db:Vg6dSuqV2j3Z9wlgjd5YaXGl8xiHkMme@openstack-rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672/nova
+  datamover_api:
+    DEFAULT:
+      transport_url: rabbit://nova87db:Vg6dSuqV2j3Z9wlgjd5YaXGl8xiHkMme@openstack-rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672/nova
 endpoints:
   identity:
     name: keystone
@@ -9,7 +12,7 @@ endpoints:
       admin:
         region_name: RegionOne
         username: admin
-        password: yCuwgphpVJA96fwjpEZBvb3TYdhnDVAG
+        password: cIALVpYXu73fEn98BSvaz6WpKN7tq0kT
         project_name: admin
         user_domain_name: default
         project_domain_name: default
@@ -19,12 +22,12 @@ endpoints:
       internal:
         host: keystone-api.openstack.svc.cluster.local
       public:
-        host: keystone.setup1.triliodata.demo
+        host: keystone.triliodata.demo
   oslo_messaging:
     auth:
       admin:
         username: rabbitmq
-        password: FsA8hhAetDWGabSH7JyTdRwIH2Z3hiFF
+        password: gGWw71GK1FfbDVyF4ZLw9bW4DpIIPGg8
         secret:
           tls:
             internal: rabbitmq-tls-direct
@@ -35,7 +38,7 @@ endpoints:
     auth:
       admin:
         username: rabbitmq
-        password: FsA8hhAetDWGabSH7JyTdRwIH2Z3hiFF
+        password: gGWw71GK1FfbDVyF4ZLw9bW4DpIIPGg8
         secret:
           tls:
             internal: rabbitmq-tls-direct
@@ -46,7 +49,7 @@ endpoints:
     auth:
       admin:
         username: root
-        password: G1VGjBcjTzskktvbJjc10hhrmKksRTJD
+        password: Hz6m1RdKhQXBPvsfCzYVbGwHSUTfhPE6
         secret:
           tls:
             internal: mariadb-tls-direct
@@ -57,7 +60,7 @@ endpoints:
     auth:
       admin:
         username: root
-        password: G1VGjBcjTzskktvbJjc10hhrmKksRTJD
+        password: Hz6m1RdKhQXBPvsfCzYVbGwHSUTfhPE6
         secret:
           tls:
             internal: mariadb-tls-direct
@@ -67,39 +70,186 @@ endpoints:
   datamover:
     host_fqdn_override:
       default:
-        host: triliovault-datamover-api.openstack.svc.cluster.local
+        host: triliovault-datamover-api.triliovault.svc.cluster.local
       public:
-        host: triliovault-datamover.setup1.triliodata.demo
+        host: triliovault-datamover.triliodata.demo
+        tls:
+          crt: |
+            -----BEGIN CERTIFICATE-----
+            MIIF9TCCA92gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
+            MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
+            CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
+            9w0BCQEWHHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wHhcNMTkwNjEzMDkx
+            NDE5WhcNMjkwNjEwMDkxNDE5WjCBgTELMAkGA1UEBhMCSU4xCzAJBgNVBAgMAk1I
+            MQ8wDQYDVQQKDAZUUklMSU8xCzAJBgNVBAsMAklUMRowGAYDVQQDDBEqLnRyaWxp
+            b2RhdGEuZGVtbzErMCkGCSqGSIb3DQEJARYccHJhc2hhbnQuc2FraGFya2FyQHRy
+            aWxpby5pbzCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK0NE9RKKcaI
+            Ky/2vI5AaKXITNU/UvSI9bQtwpNM2Pg0k3k0osM3FajJpjpNhQBh4ulheYWRdTPU
+            EtMwOyALXOew9dq60k48fBRhnowal6Aan/afuJjaNEhRleiL0H9j0/io/fAnDl5N
+            B7oYC/W8LGoqUjmoUe5fZIIADNOHbuD7K2YsR9Z3hQogDTp5u4azrla9/zQZAL4J
+            s2xbDdjpz5fhdCs14nVH/EJAA1Yu9CI41L5C2VDrT2ieOCkt/FrN+FN1Edjm1KHZ
+            qm70TCcQLEljrioKBMRnjNsnOfw+xuqr4CD0UBfGlpEQPt3+gagEIkJkzPQZppsz
+            60MMX0cidVhLToz2dpVXwuqTJyvXpN0uMtPo5QoAtH/kVQwdNO48V57MWQgllrfQ
+            ISKn2nZ3uLSq4R7EyzEQIlAUlFaJw5UJDNFpI6R3faShUG+kJXdXibjey2JjpdN3
+            1/CHJ3C2yVQR4zoBMPR7r5tlexdGUa228e+/gadFl/aY4ESAbXiJpG4jZGc7lAmd
+            1Y4JHhjayiJhtKj8cgO0KDuna+Pxh+RkWAyO7nOUMfRqY7QuDMapM6d/dMetZbz4
+            yMTPZWQi317HZ1racD0omr/siCS0JCbjjedpyz85yYnqKLE08gW9uB3p6gzdVtxN
+            n8BaVyPtjbuezFUNFfkGS5MRuVYc6B9LAgMBAAGjZjBkMB0GA1UdDgQWBBS9u6Ea
+            2J0Z3PKsZ6CLETBxMQV8jjAfBgNVHSMEGDAWgBTMI6hSlcDMBNJZH9huHeUWWU2s
+            9jASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjANBgkqhkiG9w0B
+            AQsFAAOCAgEAjb0+EdZFnNHKvo0LhFHGqncCzv+O0X8uWtgHAx0p304sMWyOV2qe
+            tHFiZtJ47M8Ru3jE82kL6Wxieich7N9s+CrdXJXR2Eh6loJDtNBP8nQIUTTIGSqe
+            Wnf4sqn2bw2puIA6C0D0PKPvq4BFt7Br/pxfRJ4fN3ksr9LtBqhy0qcfMmhC6qsb
+            jhWCROZwBnTXHcd65d1Np9mRnFTXemARX8x5EX7uNVq3wT93emfi37OkxZMRq9xK
+            CMzZKuKZ2TGAprfAftba9upZmEN9rlWXT4mgEA29qebt2/Vn+QAA06BLY4dyPIgn
+            rrRx5ogdRRsw3uStksc0ef1Nk/nGQEI+NcG/ZTV0fltf6c4SIMysQ/qDIshCUe5P
+            tfypBO/kzNcseiZA6jGyVSGrKmSwjoyRdH7aT2PnymOMZ5Joce8jxD2TjrnieG0W
+            63/p02qR48w2qkd3We+W1S4o2cZaS//o4xr4mxG6+/p9f8ubIDzfctS53hprQpmu
+            EFxzSP2PPURazefDXy9nmxjHv3QjrBDc9qqI6KhnegGETB+Aio+EEKA/0npLDtF1
+            SPHgaFG27p1UqRJNS+H7S9C0jXCEjZPNIfn4P42JGiCl8tFAXRBcHI5+7FiRGaGz
+            rwg2KJfv9Rg3Z32y7lrIdgbqEsyYove0d6TpQACp2VRRXjn+H0l1yc8=
+            -----END CERTIFICATE-----
+          key: "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----   \n"
+          ca: |
+            -----BEGIN CERTIFICATE-----
+            MIIGCDCCA/CgAwIBAgIJAIKsMAZuH8qDMA0GCSqGSIb3DQEBCwUAMIGQMQswCQYD
+            VQQGEwJJTjELMAkGA1UECAwCTUgxDTALBgNVBAcMBFBVTkUxDzANBgNVBAoMBlRS
+            SUxJTzELMAkGA1UECwwCSVQxGjAYBgNVBAMMESoudHJpbGlvZGF0YS5kZW1vMSsw
+            KQYJKoZIhvcNAQkBFhxwcmFzaGFudC5zYWtoYXJrYXJAdHJpbGlvLmlvMB4XDTE5
+            MDYxMzA4NTQyOFoXDTM5MDYwODA4NTQyOFowgZAxCzAJBgNVBAYTAklOMQswCQYD
+            VQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQswCQYDVQQL
+            DAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG9w0BCQEW
+            HHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wggIiMA0GCSqGSIb3DQEBAQUA
+            A4ICDwAwggIKAoICAQDUQzq9ki4L5/QhgJtyUQXTli/WyYlXF6TqYbVUkl/N4AE0
+            QkfwAPFz+wWW3WDY1xAUIuQMkmf8V4SnCA+zD9cQvTCsB4ScBejknvQiV275o9TH
+            DCyUxRuuVDTQ9q0tLQUOLa4RH/ytbVwdQ9+G1jU3elqQfGCpQwO9ZCHSXwypmVJW
+            plgRqrq1FGx2fjgchTawSIrE0E2Wtd4rUaYG+jx6gD3TnrzDuapsTSaBjyc9bJRm
+            eEJvkde/q8G94qaxuAk+UQelYoR+Pk1JSS8OILloG6R5TQJQf5o4DEmvZbv/kaCi
+            AA7e6kyYhZ8dT1gi8ux965c1fIDZH1e4Qm30KCbJ6pGYfaQq9UlzZLggH+EFbXQM
+            rGZwWomckCIIKumWNFFtJ9BpirMjm4TjhNZnS9EmjUQC41eBX/3bvj5QnG1PnnPA
+            87CnKJEXlTEWVtdz3G+XuH4qvbeW/pmV4hpQ/lmkidVMNIfYtnTcW0Qd7HG4oczb
+            BETjCibFyMJndyIhJDTmvhrEEfLmJbm4P2OZ6Yjb+yd+eqJJhcCvfS31J6Ex2kMb
+            xJD9MOygDrtdjLUSlpVdJTA6eSEHgbGUDoBv5wPe/bxot8ccdGyWj5Ch5EGUxJRQ
+            3ZvsmNq2e8y0rIa/MDh4MICNSNM+lVoEYeaeuqLN+Ml18yZQLy/mf44C2A5OxQID
+            AQABo2MwYTAdBgNVHQ4EFgQUzCOoUpXAzATSWR/Ybh3lFllNrPYwHwYDVR0jBBgw
+            FoAUzCOoUpXAzATSWR/Ybh3lFllNrPYwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8B
+            Af8EBAMCAYYwDQYJKoZIhvcNAQELBQADggIBAMX4TVDmrT9NzkmKh6Pnn6jX7lft
+            lpU+WewMMs97Vdwd8lnAn9lpBP9q0xyAVtJpmcPVHc6NlQBazf5nqhx2u9/LUPNP
+            zdYRz7X/xu71ePzX7UCh+s4kftf/Hokwi4jF/QtnmRvFRp7Y8+OIEf0sz6jkW552
+            hj43UTFDLpYWdfCNeBH+j9RjzWJHKdvRwEPzpmYp/KbgBagerp8BSQqEBc7sQMXw
+            r0Wyip3FaKEon+NMMavrFnNcQALMG68IZf4CnF9X2MSUMTfZj86KiPcpwbbfSRwU
+            RFL7Ia7uX9+UxewAJdcjNVpERhTHu0ucFA5Ea56sLK/nd5kg5Or1d5noeTODhAFu
+            SAcT3yblzxoXoV1+pvm7PslMVWd+P/zxwucaLb4ll5BZWml7xZAgc/KIwnkyU+Yg
+            yX//RN8REGUAPYsi0LkrOAJubmI1Tbr8cgmsxG2kCPMyoyKpM3AociW7mHneu6EX
+            PIiLWm87o+dbeoPNibTkNBqN6uGpHGxspEma/r87fUiMsjj75NxvGw8D+NpynOIf
+            D6tmcLSXaJrZ+PXkX2iqss+iM4Y5FHWHlTVcqZ4kcrqNcOtO0SUtpZKCk7uZVJpa
+            mQiHr3IX9CMfGAgHOZUchA9gzz5vihg5ASrCLShdwifWrFqqSWMHEFVU+A+84Yg4
+            +BWLC6oxhDE+OEjS
+            -----END CERTIFICATE-----
   workloads:
     host_fqdn_override:
       default:
-        host: triliovault-wlm-api.openstack.svc.cluster.local
+        host: triliovault-wlm-api.triliovault.svc.cluster.local
       public:
-        host: triliovault-wlm.setup1.triliodata.demo
+        host: triliovault-wlm.triliodata.demo
+        tls:
+          crt: |
+            -----BEGIN CERTIFICATE-----
+            MIIF9TCCA92gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
+            MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
+            CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
+            9w0BCQEWHHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wHhcNMTkwNjEzMDkx
+            NDE5WhcNMjkwNjEwMDkxNDE5WjCBgTELMAkGA1UEBhMCSU4xCzAJBgNVBAgMAk1I
+            MQ8wDQYDVQQKDAZUUklMSU8xCzAJBgNVBAsMAklUMRowGAYDVQQDDBEqLnRyaWxp
+            b2RhdGEuZGVtbzErMCkGCSqGSIb3DQEJARYccHJhc2hhbnQuc2FraGFya2FyQHRy
+            aWxpby5pbzCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK0NE9RKKcaI
+            Ky/2vI5AaKXITNU/UvSI9bQtwpNM2Pg0k3k0osM3FajJpjpNhQBh4ulheYWRdTPU
+            EtMwOyALXOew9dq60k48fBRhnowal6Aan/afuJjaNEhRleiL0H9j0/io/fAnDl5N
+            B7oYC/W8LGoqUjmoUe5fZIIADNOHbuD7K2YsR9Z3hQogDTp5u4azrla9/zQZAL4J
+            s2xbDdjpz5fhdCs14nVH/EJAA1Yu9CI41L5C2VDrT2ieOCkt/FrN+FN1Edjm1KHZ
+            qm70TCcQLEljrioKBMRnjNsnOfw+xuqr4CD0UBfGlpEQPt3+gagEIkJkzPQZppsz
+            60MMX0cidVhLToz2dpVXwuqTJyvXpN0uMtPo5QoAtH/kVQwdNO48V57MWQgllrfQ
+            ISKn2nZ3uLSq4R7EyzEQIlAUlFaJw5UJDNFpI6R3faShUG+kJXdXibjey2JjpdN3
+            1/CHJ3C2yVQR4zoBMPR7r5tlexdGUa228e+/gadFl/aY4ESAbXiJpG4jZGc7lAmd
+            1Y4JHhjayiJhtKj8cgO0KDuna+Pxh+RkWAyO7nOUMfRqY7QuDMapM6d/dMetZbz4
+            yMTPZWQi317HZ1racD0omr/siCS0JCbjjedpyz85yYnqKLE08gW9uB3p6gzdVtxN
+            n8BaVyPtjbuezFUNFfkGS5MRuVYc6B9LAgMBAAGjZjBkMB0GA1UdDgQWBBS9u6Ea
+            2J0Z3PKsZ6CLETBxMQV8jjAfBgNVHSMEGDAWgBTMI6hSlcDMBNJZH9huHeUWWU2s
+            9jASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjANBgkqhkiG9w0B
+            AQsFAAOCAgEAjb0+EdZFnNHKvo0LhFHGqncCzv+O0X8uWtgHAx0p304sMWyOV2qe
+            tHFiZtJ47M8Ru3jE82kL6Wxieich7N9s+CrdXJXR2Eh6loJDtNBP8nQIUTTIGSqe
+            Wnf4sqn2bw2puIA6C0D0PKPvq4BFt7Br/pxfRJ4fN3ksr9LtBqhy0qcfMmhC6qsb
+            jhWCROZwBnTXHcd65d1Np9mRnFTXemARX8x5EX7uNVq3wT93emfi37OkxZMRq9xK
+            CMzZKuKZ2TGAprfAftba9upZmEN9rlWXT4mgEA29qebt2/Vn+QAA06BLY4dyPIgn
+            rrRx5ogdRRsw3uStksc0ef1Nk/nGQEI+NcG/ZTV0fltf6c4SIMysQ/qDIshCUe5P
+            tfypBO/kzNcseiZA6jGyVSGrKmSwjoyRdH7aT2PnymOMZ5Joce8jxD2TjrnieG0W
+            63/p02qR48w2qkd3We+W1S4o2cZaS//o4xr4mxG6+/p9f8ubIDzfctS53hprQpmu
+            EFxzSP2PPURazefDXy9nmxjHv3QjrBDc9qqI6KhnegGETB+Aio+EEKA/0npLDtF1
+            SPHgaFG27p1UqRJNS+H7S9C0jXCEjZPNIfn4P42JGiCl8tFAXRBcHI5+7FiRGaGz
+            rwg2KJfv9Rg3Z32y7lrIdgbqEsyYove0d6TpQACp2VRRXjn+H0l1yc8=
+            -----END CERTIFICATE-----
+          key: "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----   \n"
+          ca: | 
+            -----BEGIN CERTIFICATE-----
+            MIIGCDCCA/CgAwIBAgIJAIKsMAZuH8qDMA0GCSqGSIb3DQEBCwUAMIGQMQswCQYD
+            VQQGEwJJTjELMAkGA1UECAwCTUgxDTALBgNVBAcMBFBVTkUxDzANBgNVBAoMBlRS
+            SUxJTzELMAkGA1UECwwCSVQxGjAYBgNVBAMMESoudHJpbGlvZGF0YS5kZW1vMSsw
+            KQYJKoZIhvcNAQkBFhxwcmFzaGFudC5zYWtoYXJrYXJAdHJpbGlvLmlvMB4XDTE5
+            MDYxMzA4NTQyOFoXDTM5MDYwODA4NTQyOFowgZAxCzAJBgNVBAYTAklOMQswCQYD
+            VQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQswCQYDVQQL
+            DAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG9w0BCQEW
+            HHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wggIiMA0GCSqGSIb3DQEBAQUA
+            A4ICDwAwggIKAoICAQDUQzq9ki4L5/QhgJtyUQXTli/WyYlXF6TqYbVUkl/N4AE0
+            QkfwAPFz+wWW3WDY1xAUIuQMkmf8V4SnCA+zD9cQvTCsB4ScBejknvQiV275o9TH
+            DCyUxRuuVDTQ9q0tLQUOLa4RH/ytbVwdQ9+G1jU3elqQfGCpQwO9ZCHSXwypmVJW
+            plgRqrq1FGx2fjgchTawSIrE0E2Wtd4rUaYG+jx6gD3TnrzDuapsTSaBjyc9bJRm
+            eEJvkde/q8G94qaxuAk+UQelYoR+Pk1JSS8OILloG6R5TQJQf5o4DEmvZbv/kaCi
+            AA7e6kyYhZ8dT1gi8ux965c1fIDZH1e4Qm30KCbJ6pGYfaQq9UlzZLggH+EFbXQM
+            rGZwWomckCIIKumWNFFtJ9BpirMjm4TjhNZnS9EmjUQC41eBX/3bvj5QnG1PnnPA
+            87CnKJEXlTEWVtdz3G+XuH4qvbeW/pmV4hpQ/lmkidVMNIfYtnTcW0Qd7HG4oczb
+            BETjCibFyMJndyIhJDTmvhrEEfLmJbm4P2OZ6Yjb+yd+eqJJhcCvfS31J6Ex2kMb
+            xJD9MOygDrtdjLUSlpVdJTA6eSEHgbGUDoBv5wPe/bxot8ccdGyWj5Ch5EGUxJRQ
+            3ZvsmNq2e8y0rIa/MDh4MICNSNM+lVoEYeaeuqLN+Ml18yZQLy/mf44C2A5OxQID
+            AQABo2MwYTAdBgNVHQ4EFgQUzCOoUpXAzATSWR/Ybh3lFllNrPYwHwYDVR0jBBgw
+            FoAUzCOoUpXAzATSWR/Ybh3lFllNrPYwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8B
+            Af8EBAMCAYYwDQYJKoZIhvcNAQELBQADggIBAMX4TVDmrT9NzkmKh6Pnn6jX7lft
+            lpU+WewMMs97Vdwd8lnAn9lpBP9q0xyAVtJpmcPVHc6NlQBazf5nqhx2u9/LUPNP
+            zdYRz7X/xu71ePzX7UCh+s4kftf/Hokwi4jF/QtnmRvFRp7Y8+OIEf0sz6jkW552
+            hj43UTFDLpYWdfCNeBH+j9RjzWJHKdvRwEPzpmYp/KbgBagerp8BSQqEBc7sQMXw
+            r0Wyip3FaKEon+NMMavrFnNcQALMG68IZf4CnF9X2MSUMTfZj86KiPcpwbbfSRwU
+            RFL7Ia7uX9+UxewAJdcjNVpERhTHu0ucFA5Ea56sLK/nd5kg5Or1d5noeTODhAFu
+            SAcT3yblzxoXoV1+pvm7PslMVWd+P/zxwucaLb4ll5BZWml7xZAgc/KIwnkyU+Yg
+            yX//RN8REGUAPYsi0LkrOAJubmI1Tbr8cgmsxG2kCPMyoyKpM3AociW7mHneu6EX
+            PIiLWm87o+dbeoPNibTkNBqN6uGpHGxspEma/r87fUiMsjj75NxvGw8D+NpynOIf
+            D6tmcLSXaJrZ+PXkX2iqss+iM4Y5FHWHlTVcqZ4kcrqNcOtO0SUtpZKCk7uZVJpa
+            mQiHr3IX9CMfGAgHOZUchA9gzz5vihg5ASrCLShdwifWrFqqSWMHEFVU+A+84Yg4
+            +BWLC6oxhDE+OEjS
+            -----END CERTIFICATE-----
+
   image:
     host_fqdn_override:
       default:
         host: glance-api.openstack.svc.cluster.local
       public:
-        host: glance.setup1.triliodata.demo
+        host: glance.triliodata.demo
   network:
     host_fqdn_override:
       default:
         host: neutron-server.openstack.svc.cluster.local
       public:
-        host: neutron.setup1.triliodata.demo
+        host: neutron.triliodata.demo
   compute:
     host_fqdn_override:
       default:
         host: nova-api.openstack.svc.cluster.local
       public:
-        host: nova.setup1.triliodata.demo
+        host: nova.triliodata.demo
   volumev3:
     host_fqdn_override:
       default:
         host: cinder-api.openstack.svc.cluster.local
       public:
-        host: cinder.setup1.triliodata.demo
+        host: cinder.triliodata.demo
   oslo_cache:
     host_fqdn_override:
       default:
