@@ -15,8 +15,12 @@ tvault_version=$1
 openstack_distro="tripleo"
 
 declare -a openstack_releases=("train")
+#Commenting for 4.2.HF2 only
+#declare -a openstack_releases=("train" "wallaby")
 
 declare -a openstack_platforms=("centos7")
+#Commenting for 4.2.HF2 only
+#declare -a openstack_platforms=("centos7" "centos8s")
 
 count=0
 ## now loop through the above array
