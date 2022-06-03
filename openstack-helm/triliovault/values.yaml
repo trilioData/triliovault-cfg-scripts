@@ -95,27 +95,22 @@ pod:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_api:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_scheduler:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_cron:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_workloads:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
