@@ -27,7 +27,7 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-OpenStack-*
 RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-OpenStack-*
 RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-OpsTools.repo
 RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-OpsTools.repo
-RUN dnf install -y python3-tvault-contego puppet-triliovault python3-s3fuse-plugin
+RUN dnf install -y python3-tvault-contego python3-s3fuse-plugin
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
