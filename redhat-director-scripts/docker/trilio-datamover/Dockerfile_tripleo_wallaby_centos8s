@@ -21,7 +21,7 @@ RUN rm -f centos-gpg-keys-8-4.el8.noarch.rpm centos-gpg-keys-8-4.el8.noarch.rpm
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b wallaby current ceph
 
-RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
+RUN dnf install python3-tvault-contego python3-s3fuse-plugin -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
