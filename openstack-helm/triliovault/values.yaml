@@ -200,9 +200,9 @@ pod:
           max_unavailable: 1
     disruption_budget:
       datamover_api:
-        min_available: 0
+        min_available: 2
       wlm_api:
-        min_available: 0
+        min_available: 2
     termination_grace_period:
       wlm_api:
         timeout: 30
