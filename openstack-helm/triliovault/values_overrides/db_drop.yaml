@@ -1,0 +1,3 @@
+manifests:
+  job_datamover_db_drop: true
+  job_wlm_db_drop: true
