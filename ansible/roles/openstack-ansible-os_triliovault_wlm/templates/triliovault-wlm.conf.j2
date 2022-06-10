@@ -1,0 +1,134 @@
+[DEFAULT]
+api_paste_config = {{ wlmapi_api_paste }}
+api_workers = 4
+
+cloud_admin_role = {{ wlmapi_service_role_name }}
+
+compute_driver = libvirt.LibvirtDriver
+config_status = configured
+
+debug = false
+glance_api_version = {{ glance_api_version }}
+
+glance_production_host = {{ internal_lb_vip_address }}
+glance_production_api_servers = {{ wlmapi_glance_api_servers }} 
+
+global_job_scheduler_override = false
+helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+
+keystone_auth_version = 3
+keystone_endpoint_url = {{ keystone_service_adminurl }}
+
+log_dir = {{ log_dir }}
+max_wait_for_upload = {{ max_wait_upload }}
+
+neutron_api_insecure = false
+
+neutron_admin_auth_url = {{ keystone_service_adminurl }} 
+nova_admin_auth_url = {{ keystone_service_adminurl }}
+
+neutron_production_url =  < wlmapi_neutron_api_servers >
+nova_production_endpoint_template = <nova_endpoint_url>
+
+
+osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
+
+region_name_for_services = {{ wlmapi_service_region }}
+rootwrap_config = {{ rootwrap_config }}
+
+sql_connection = mysql+pymysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+
+state_path = {{ state_path }}
+
+transport_url = {{ wlmapi_oslomsg_rpc_transport }}://{% for host in wlmapi_oslomsg_rpc_servers.split(',') %}{{ wlmapi_oslomsg_rpc_userid }}:{{ wlmapi_oslomsg_rpc_password }}@{{ host }}:{{ wlmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlmapi_oslomsg_rpc_vhost }}{% if wlmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlmapi_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlmapi_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
+trustee_role  = {{ trustee_role }}
+
+use_syslog = false
+
+
+{% if NFS == True %}
+vault_storage_type = nfs
+vault_storage_das_device = none
+
+vault_data_directory = {{ triliovault_mnt_dir }}
+vault_data_directory_old = /var/triliovault
+
+vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
+vault_storage_nfs_options = nolock,soft,vers=3,timeo=180,intr,lookupcache=none
+
+{% else %}
+
+vault_storage_type = s3
+vault_s3_auth_version = DEFAULT
+
+vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
+vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
+vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
+
+vault_s3_bucket = {{ VAULT_S3_BUCKET }}
+vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
+vault_s3_endpoint_url = {{ VAULT_S3_ENDPOINT_URL }}
+
+vault_s3_ssl = false
+vault_s3_ssl_cert = {{ VAULT_S3_SSL_CERT_PATH }}
+
+vault_storage_das_device = none
+vault_storage_nfs_export = TrilioVault
+
+{% endif %}
+
+verbose = true
+workloads_workers = {{ workloads_workers }}
+
+[alembic]
+{% if 'venv' in venv_path %}
+script_location = /home/stack/venv/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
+version_locations = /home/stack/venv/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+{% else %}
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
+{% endif %}
+
+sqlalchemy.url = mysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+
+[clients]
+client_retry_limit = {{ client_retry_limit }}
+endpoint_type  = {{ triliovault_endpoint_type }}
+
+insecure = false
+
+[filesearch]
+process_timeout = {{ process_timeout }}
+
+[global_job_scheduler]
+misfire_grace_time = {{ misfire_grace_time }}
+
+[keystone_authtoken]
+auth_plugin = {{ wlmapi_keystone_auth_plugin }}
+admin_tenant_name = {{ wlmapi_service_project_name }}
+
+admin_user = {{ trilio_admin_username }}
+admin_password = {{ trilio_admin_password }}
+
+auth_type = {{ auth_type }}
+auth_url = {{ keystone_service_adminuri }}
+
+auth_version = {{ auth_version }}
+cafile = {{ wlmapi_oslomsg_rpc_ssl_ca_file }}
+
+insecure = false
+password = {{ trilio_user_password }}
+
+project_name = {{ wlmapi_service_project_name }}
+region_name = {{ wlmapi_service_region }}
+
+service_token_roles_required = true
+signing_dir = {{ signing_dir }}
+
+username = {{ trilio_user_name }}
+www_authenticate_uri = {{ wlmapi_service_internaluri }}
+
+[s3fuse_sys_admin]
+helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+

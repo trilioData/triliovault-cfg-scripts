@@ -1,0 +1,28 @@
+---
+- set_fact: PYTHON_VERSION=python3
+  when: openstack_venv_python_executable == "python3"
+
+- set_fact: PYTHON_VERSION=python2
+  when: openstack_venv_python_executable == "python2"
+
+- debug:
+    msg: "PYTHON_VERSION: {{PYTHON_VERSION}}"
+    verbosity: "{{verbosity_level}}"
+
+- name: find location when using python3
+  shell: type -p python3
+  register: python3
+  when: PYTHON_VERSION=="python3"
+
+- name: find location when using python2
+  shell: type -p python
+  register: python2
+  when: PYTHON_VERSION=="python2"
+
+- set_fact:
+    PYTHON_EXEC : "{{python3.stdout}}"
+  when: PYTHON_VERSION=="python3"
+
+- set_fact:
+    PYTHON_EXEC : "{{python2.stdout}}"
+  when: PYTHON_VERSION=="python2"

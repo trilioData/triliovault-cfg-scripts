@@ -1,0 +1,149 @@
+---
+
+## DATABASE INFO
+wlmapi_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
+wlmapi_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_python_interpreter | default((wlmapi_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
+
+wlmapi_galera_address: "{{ galera_address | default('127.0.0.1') }}"
+wlmapi_galera_database: workloadmgr
+wlmapi_galera_user: workloadmgr
+
+wlmapi_galera_use_ssl: "{{ galera_use_ssl | default(False) }}"
+wlmapi_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-ca.pem') }}"
+
+wlmapi_galera_password: "{{ WLMAPI_MYSQL_PASSWORD }}"
+wlmapi_galera_port: 3306
+wlmapi_service_role_name: admin
+wlmapi_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
+
+
+## RPC
+wlmapi_oslomsg_rpc_host_group: "{{ oslomsg_rpc_host_group | default('rabbitmq_all') }}"
+wlmapi_oslomsg_rpc_setup_host: "{{ (wlmapi_oslomsg_rpc_host_group in groups) | ternary(groups[wlmapi_oslomsg_rpc_host_group][0], 'localhost') }}"
+
+wlmapi_oslomsg_rpc_transport: "{{ oslomsg_rpc_transport | default('rabbit') }}"
+wlmapi_oslomsg_rpc_servers: "{{ oslomsg_rpc_servers | default('127.0.0.1') }}"
+
+wlmapi_oslomsg_rpc_port: "{{ oslomsg_rpc_port | default('5672') }}"
+wlmapi_oslomsg_rpc_use_ssl: "{{ oslomsg_rpc_use_ssl | default(False) }}"
+
+wlmapi_oslomsg_rpc_userid: wlmapi
+wlmapi_oslomsg_rpc_vhost: /wlmapi
+
+wlmapi_oslomsg_rpc_ssl_version: "{{ oslomsg_rpc_ssl_version | default('TLSv1_2') }}"
+wlmapi_oslomsg_rpc_ssl_ca_file: "{{ oslomsg_rpc_ssl_ca_file | default('') }}"
+
+wlmapi_oslomsg_rpc_password: "{{RABBITMQ_PASSWORD}}"
+
+## Notify
+wlmapi_oslomsg_notify_host_group: "{{ oslomsg_notify_host_group | default('rabbitmq_all') }}"
+wlmapi_oslomsg_notify_setup_host: "{{ (wlmapi_oslomsg_notify_host_group in groups) | ternary(groups[wlmapi_oslomsg_notify_host_group][0], 'localhost') }}"
+
+wlmapi_oslomsg_notify_transport: "{{ oslomsg_notify_transport | default('rabbit') }}"
+wlmapi_oslomsg_notify_servers: "{{ oslomsg_notify_servers | default('127.0.0.1') }}"
+
+wlmapi_oslomsg_notify_port: "{{ oslomsg_notify_port | default('5672') }}"
+wlmapi_oslomsg_notify_use_ssl: "{{ oslomsg_notify_use_ssl | default(False) }}"
+
+wlmapi_oslomsg_notify_userid: "{{ wlmapi_oslomsg_rpc_userid }}"
+wlmapi_oslomsg_notify_password: "{{ wlmapi_oslomsg_rpc_password }}"
+
+wlmapi_oslomsg_notify_vhost: "{{ wlmapi_oslomsg_rpc_vhost }}"
+wlmapi_oslomsg_notify_ssl_version: "{{ oslomsg_notify_ssl_version | default('TLSv1_2') }}"
+
+wlmapi_oslomsg_notify_ssl_ca_file: "{{ oslomsg_notify_ssl_ca_file | default('') }}"
+
+## (Qdrouterd) integration
+## TODO(ansmith) Change structure when more backends will be supported
+wlmapi_oslomsg_amqp1_enabled: "{{ wlmapi_oslomsg_rpc_transport == 'amqp' }}"
+
+
+## Service Type and Data
+wlmapi_service_region: "{{ service_region | default('RegionOne') }}"
+wlmapi_service_name: triliovault-wlm-api
+
+wlmapi_service_port: 8780
+wlmapi_service_proto: http
+
+wlmapi_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(wlmapi_service_proto) }}"
+wlmapi_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(wlmapi_service_proto) }}"
+
+wlmapi_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(wlmapi_service_proto) }}"
+wlmapi_service_type: workloads
+
+wlmapi_service_description: "Triliovault Workloadmgr API Service"
+wlmapi_service_user_name: workloadmgr
+wlmapi_service_project_name: service
+
+wlmapi_service_password: "{{ WLMAPI_SERVICE_PASSWORD }}"
+wlmapi_service_project_domain_id: default
+wlmapi_service_user_domain_id: default
+
+wlmapi_service_publicuri: "{{ wlmapi_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlmapi_service_port }}"
+wlmapi_service_publicurl: "{{ wlmapi_service_publicuri }}"
+
+wlmapi_service_internaluri: "{{ wlmapi_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ wlmapi_service_port }}"
+wlmapi_service_internalurl: "{{ wlmapi_service_internaluri }}"
+
+wlmapi_service_adminuri: "{{ wlmapi_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ wlmapi_service_port }}"
+wlmapi_service_adminurl: "{{ wlmapi_service_adminuri }}"
+
+## Enable automatic parsing of X-Forwarded-Proto, etc. headers passed by the Load balancer.
+wlmapi_proxy_headers_parsing: True
+
+
+## Triliovault-wlm services
+trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+
+## Default Triliovault username & Password
+trilio_user_name: "triliovault"
+trilio_user_password: "Password1!"
+triliovault_endpoint_type: internal
+
+## Triliovault configuration files
+wlmapi_cfg: "/etc/triliovault-wlm/triliovault-wlm.conf"
+wlmapi_api_paste: "/etc/triliovault-wlm/api-paste.ini"
+triliovault_obj_sotre_cfg: "/etc/triliovault-object-store/triliovault-object-store.conf"
+rootwrap_config: "/etc/triliovault-wlm/rootwrap.conf"
+workloadmgr_rootwrap: "/usr/bin/workloadmgr-rootwrap"
+
+glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
+wlmapi_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
+glance_api_version: 2
+
+trustee_role: "cretor"
+api_auth_port: 35357 
+osapi_workloads_listen_port: 8780
+
+max_wait_upload: 48
+workloads_workers: 4
+client_retry_limit: 3
+
+process_timeout: 300
+misfire_grace_time: 600
+
+log_dir: "/var/log/triliovault"
+
+## Keystone authentication middleware
+wlmapi_keystone_auth_plugin: password
+auth_type: password
+
+auth_version: v3
+keystone_auth_version: 3
+
+## Required Directories
+triliovault_mnt_dir: "/var/trilio/triliovault-mounts"
+triliovault_obj_str: "/etc/triliovault-object-store/"
+
+triliovault_log_dir: "/var/log/triliovault/"
+triliovault_cfg_dir: "/etc/triliovault-wlm/"
+
+triliovault_opt_dir: "/opt/triliovault-wlm/"
+triliovault_virt_env: "/home/stack/wlm-venv"
+
+signing_dir: "/var/cache/workloadmgr"
+state_path: "/opt/stack/data/triliovault-wlm"
+
+## api-paste.ini var
+keystone_admin_port: 5000

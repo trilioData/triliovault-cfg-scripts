@@ -1,4 +1,24 @@
 ---
+
+- name: Installation and setup of WLM services
+  hosts: triliovault-wlm-api_all
+  gather_facts: "{{ osa_gather_facts | default(True) }}"
+  user: root
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  vars_files:
+    - "defaults/repo_packages/openstack_services.yml"
+    - "defaults/{{ install_method }}_install.yml"
+  pre_tasks:
+    - include_tasks: "common-tasks/os-{{ container_tech | default('lxc') }}-container-setup.yml"
+      when: not is_metal
+
+    - include_tasks: common-tasks/unbound-clients.yml
+      when:
+        - hostvars['localhost']['resolvconf_enabled'] | bool
+  roles:
+    - role: openstack-ansible-os_triliovault_wlm
+
+
 - name: Installation and setup of dmapi conatiner
   hosts: dmapi_all
   gather_facts: "{{ osa_gather_facts | default(True) }}"
