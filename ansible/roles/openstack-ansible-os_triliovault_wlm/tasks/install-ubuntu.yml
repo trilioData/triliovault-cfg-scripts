@@ -1,0 +1,165 @@
+---
+
+- name: Copy nova_userid script
+  template:
+     src: nova_userid.sh
+     dest: /opt/
+     mode: '0777'
+
+- name: Update NOVA UID GID
+  command: |
+        /bin/bash -c "/opt/nova_userid.sh"
+
+- name: Create triliovault log dir
+  file:
+    path: "{{ triliovault_log_dir }}"
+    state: directory
+
+- name: Create triliovault conf dir
+  file:
+    path: "{{ triliovault_cfg_dir }}"
+    state: directory
+
+- name: Create triliovault mount dir
+  file:
+    path: "{{ triliovault_mnt_dir }}"
+    state: directory
+    mode: '0777'
+
+- name: Install packages python-dev libcurl4-openssl-dev libssl-dev m2crypto
+  package:
+    update_cache: yes
+    name:
+      - "python-dev" 
+      - "libcurl4-openssl-dev"
+      - "libssl-dev"
+      - "python3-m2crypto"
+    state: latest
+
+- name: Install packages libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev
+  package:
+    update_cache: yes
+    name:
+      - "libmysqlclient-dev"
+      - "qemu-utils"
+      - "libxml2-dev"
+      - "libxslt-dev"
+    state: latest
+
+- name: Install packages nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system
+  package:
+    update_cache: yes
+    name:
+      - "nfs-common "
+      - "swig"
+      - "python3-guestfs"
+      - "libguestfs-tools"
+      - "libvirt-daemon-system"
+      - "python3.8-venv"
+    state: latest
+
+- name: Install & upgrade pip
+  apt:
+    name: pip
+    state: latest
+
+- name: Install jinja2
+  pip:
+    name: jinja2
+    state: latest
+
+- name: Copy repo file
+  template:
+     src: triliovault.list
+     dest: "{{ trilio_apt_repo_file_path }}" 
+
+- name: update cache
+  command: apt-get update
+
+- name: Install nova-common python3-neutronclient, python3-glanceclient
+  package:
+    name: 
+      - "nova-common"
+      - "python3-neutronclient"
+      - "python3-glanceclient"
+    state: latest
+
+- name: Install workloadmgr pckg
+  package:
+    name: workloadmgr
+    state: latest
+
+- name: Install s3fuse pckg
+  package: 
+    name: python3-s3-fuse-plugin
+    state: latest
+
+- name: copy triliovault wlm workload conf
+  template:
+     src: triliovault-wlm.conf.j2
+     dest: "{{ wlmapi_cfg }}"
+
+- import_tasks: triliovault_db_sync.yml 
+
+- name: Copy triliovault wlm api paste ini 
+  template:
+     src: api-paste.ini.j2
+     dest: "{{ wlmapi_api_paste }}"
+
+- name: Copy triliovault object store conf
+  template:
+     src: triliovault-object-store.conf.j2
+     dest: "{{ triliovault_obj_sotre_cfg }}"
+  when: NFS == False
+
+- name: Enable triliovault object store service
+  service:
+    name: tvault-object-store.service
+    enabled: yes
+  when: NFS == False
+
+- name: Start triliovault object store service
+  service:
+    name: tvault-object-store.service
+    state: started
+  when: NFS == False
+
+- name: Enable triliovault wlm api service
+  service:
+    name: wlm-api
+    enabled: yes
+
+- name: Start triliovault wlm api service
+  service:
+    name: wlm-api
+    state: started
+
+- name: Enable triliovault wlm workloads service
+  service:
+    name: wlm-workloads
+    enabled: yes
+
+- name: Start triliovault wlm workloads service
+  service:
+    name: wlm-workloads
+    state: started
+
+- name: Enable triliovault wlm scheduler service
+  service:
+    name: wlm-scheduler
+    enabled: yes
+
+- name: Start triliovault wlm scheduler service
+  service:
+    name: wlm-scheduler
+    state: started
+
+- name: Enable triliovault wlm cron service
+  service:
+    name: wlm-cron
+    enabled: yes
+
+- name: Start triliovault wlm cron service
+  service:
+    name: wlm-cron
+    state: started

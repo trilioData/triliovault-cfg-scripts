@@ -1,0 +1,39 @@
+## tvault-dmapi
+tvault-dmapi_hosts:            ## Add controller details in this section as tvault DMAPI is resides on controller nodes.
+   infra-1:                    ## controller hostname.
+     ip: <controller_ip_01>    ## IP address of controller1
+   infra-2:                    ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+     ip: <controller_ip_02>    ## IP address of controller2
+
+## tvault-datamover
+tvault_compute_hosts:          ## Add compute details in this section as tvault datamover is resides on compute nodes.
+   infra-1:                    ## compute hostname
+     ip: <compute_ip_01>       ## IP Address of compute1
+   infra-2:                    ## If we have multiple computes add computes details in same manner as shown in Infra-2
+     ip: <compute_ip_02>       ## IP Address of compute2
+
+## NEW WLM-SERVICES CONTAINERIZAITON PART
+
+## triliovault-wlm-api
+triliovault-wlm-api_hosts:      ## Add controller details in this section as tvault WLM-API is resides on controller nodes.
+   infra-1:                     ## controller hostname
+     ip: <controller_ip_01>     ## IP address of controller1
+   infra-2:                     ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+     ip: <controller_ip_02>     ## IP address of controller2
+
+## triliovault-wlm-workload
+triliovault-wlm-workload_hosts: ## Add controller details in this section as tvault WLM-WORKLOAD is resides on controller nodes.
+   infra-1:                     ## controller hostname
+     ip: <controller_ip_01>     ## IP address of controller1
+   infra-2:                     ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+     ip: <controller_ip_02>     ## IP address of controller2  
+
+## triliovault-wlm-cron
+triliovault-wlm-cron_hosts:     ## Add controller details in this section as tvault WLM-CRON is resides on controller nodes.
+   infra-1:                     ## controller hostname
+     ip: <controller_ip_01>     ## IP address of controller1
+     
+## triliovault-wlm-scheduler
+triliovault-wlm-scheduler_hosts: ## Add controller details in this section as tvault WLM-SCHEDULER is resides on controller nodes.
+   infra-1:                      ## controller hostname
+     ip: <controller_ip_01>      ## IP address of controller

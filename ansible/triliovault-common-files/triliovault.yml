@@ -1,0 +1,132 @@
+---
+
+## Triliovault-datamover-api
+
+component_skel:
+  dmapi_api:
+    belongs_to:
+      - dmapi_all
+
+container_skel:
+  dmapi_container:
+    belongs_to:
+      - tvault-dmapi_containers
+    contains:
+      - dmapi_api
+
+physical_skel:
+  tvault-dmapi_containers:
+    belongs_to:
+      - all_containers
+  tvault-dmapi_hosts:
+    belongs_to:
+      - hosts
+          
+## Triliovault-datamover
+component_skel:
+  triliovault_datamover_api:
+    belongs_to:
+      - triliovault_datamover_all
+
+container_skel:
+  triliovault_datamover_container:
+    belongs_to:
+      - triliovault_datamover_containers
+    contains:
+      - triliovault_datamover
+
+physical_skel:
+  triliovault_datamover_containers:
+    belongs_to:
+      - all_containers
+  triliovault_datamover_hosts:
+    belongs_to:
+      - hosts
+
+## Triliovault-wlm-api
+
+component_skel:
+  triliovault-wlm-api_api:
+    belongs_to:
+      - triliovault-wlm-api_all
+
+container_skel:
+  triliovault-wlm-api_container:
+    belongs_to:
+      - triliovault-wlm-api_containers
+    contains:
+      - triliovault-wlm-api
+
+physical_skel:
+  triliovault-wlm-api_containers:
+    belongs_to:
+      - all_containers
+  triliovault-wlm-api_hosts:
+    belongs_to:
+      - hosts
+          
+## Triliovault-wlm-workloads
+
+component_skel:
+  triliovault-wlm-workload_api:
+    belongs_to:
+      - triliovault-wlm-workload_all
+
+container_skel:
+  triliovault-wlm-workload_container:
+    belongs_to:
+      - triliovault-wlm-workload_containers
+    contains:
+      - triliovault-wlm-workload_api
+
+physical_skel:
+  triliovault-wlm-workload_containers:
+    belongs_to:
+      - all_containers
+  triliovault-wlm-workload_hosts:
+    belongs_to:
+      - hosts
+          
+## Triliovault-wlm-scheduler
+
+component_skel:
+  triliovault-wlm-scheduler_api:
+    belongs_to:
+      - triliovault-wlm-scheduler_all
+
+container_skel:
+  triliovault-wlm-scheduler_container:
+    belongs_to:
+      - triliovault-wlm-scheduler_containers
+    contains:
+      - triliovault-wlm-scheduler_api
+
+physical_skel:
+  triliovault-wlm-scheduler_containers:
+    belongs_to:
+      - all_containers
+  triliovault-wlm-scheduler_hosts:
+    belongs_to:
+      - hosts
+          
+## Triliovault-wlm-cron
+
+component_skel:
+  triliovault-wlm-cron_api:
+    belongs_to:
+      - triliovault-wlm-cron_all
+
+container_skel:
+  triliovault-wlm-cron_container:
+    belongs_to:
+      - triliovault-wlm-cron_containers
+    contains:
+      - triliovault-wlm-cron_api
+
+physical_skel:
+  triliovault-wlm-cron_containers:
+    belongs_to:
+      - all_containers
+  triliovault-wlm-cron_hosts:
+    belongs_to:
+      - hosts

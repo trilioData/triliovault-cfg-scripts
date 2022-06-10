@@ -1,0 +1,122 @@
+---
+
+- name: Create yum repo file if ansible_distribution is Centos/RHEL
+  template:
+     src: triliovault.repo
+     dest: "{{trilio_yum_repo_file_path}}"
+
+- name: Install packages on wlm-api container | centos-release-openstack-{{OPENSTACK_DIST}}
+  dnf:
+    update_cache: yes
+    name:
+      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+    state: latest
+
+- name: Install packages on wlm-api container | {{ PYTHON_VERSION }} devel and nova packages
+  dnf:
+    update_cache: yes
+    name:
+      - "{{ PYTHON_VERSION }}-devel"
+      - "{{ PYTHON_VERSION }}-nova"
+    state: latest
+   
+- name: Install packages on wlm-api container | swig and libguestfs-tools packages
+  dnf:
+    update_cache: yes
+    name:
+      - "swig" 
+      - "libguestfs-tools"
+    state: latest
+
+- name: Install pre-requisites packages for m2crypto
+  dnf:
+    update_cache: yes
+    name:
+      - "gcc"
+      - "gcc-c++"
+      - "make"
+      - "openssl-devel"
+    state: latest
+
+- name: Install m2crypto packages on wlm-api container
+  pip:
+    name:
+      - "m2crypto" 
+    state: latest
+
+- name: Create a python3 virtual environment
+  command: /bin/bash -c 'python3 -m venv /home/stack/wlm-venv'
+
+- name: Activate virtual environment
+  command: /bin/bash -c "source /home/stack/wlm-venv/bin/activate"
+
+- name: Install & upgrade pip
+  pip:
+    name: pip
+    executable: pip3
+    state: latest
+
+- name: Install all the jinja2 packages
+  pip:
+    name: jinja2
+    state: latest
+
+- name: Add Triliovault repo
+  yum_repository:
+    name: Triliovault-repo
+    description: “Repo for hosts in testing”
+    baseurl: “https://pypi.fury.io/triliodata-4-2/”
+    async: yes
+    gpgcheck: yes
+
+- name: Install workloadmgr
+  pip:
+    name: 
+      - workloadmgr
+
+
+##- name: Create /tmp/datamover_url
+##  template:
+##     src: datamover_url
+##     dest: /tmp/datamover_url
+##
+##- name: Install triliovault-wlm-api rpm package when using python2
+##  yum:
+##    update_cache: yes
+##    name: wlmapi
+##    state: latest
+##  notify:
+##      - restart triliovault-wlm-api
+##  when: PYTHON_VERSION=="python2"
+##      
+##- name: Install triliovault-wlm-api rpm package when using python3
+##  yum:
+##    update_cache: yes
+##    name: python3-wlmapi
+##    state: latest
+##  notify:
+##      - restart triliovault-datamover-api
+##  when: PYTHON_VERSION=="python3"
+##
+##- name: Execute populate-conf binary
+##  shell: populate-conf
+##  register: populate_conf
+##  notify:
+##      - restart triliovault-datamover-api
+##
+##- name: Create triliovault-wlm-api service in systemd if ansible_distribution is Centos/RHEL
+##  template:
+##     src: triliovault_datamover_service.j2
+##     dest: "{{datamover_service_file_path}}"
+##  register: create_systemd
+##  notify:
+##      - restart triliovault-datamover-api
+##
+##- name: Enable and daemon reload triliovault-datamover-api service
+##  shell: systemctl daemon-reload && systemctl enable triliovault-datamover-api.service
+##  when: populate_conf.changed or create_systemd.changed
+##  notify:
+##      - restart triliovault-datamover-api
+##
+##- name: Ensure /tmp/wlm_url file is deleted
+##  file: path="/tmp/wlm_url" state=absent

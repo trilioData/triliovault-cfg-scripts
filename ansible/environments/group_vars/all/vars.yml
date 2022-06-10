@@ -6,10 +6,10 @@ IP_ADDRESS: sample_tvault_ip_address
 TIME_ZONE: "Etc/UTC"
 
 #Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
-TVAULT_PACKAGE_VERSION: 4.1.4
+TVAULT_PACKAGE_VERSION: 4.2.64
 
 # Update Openstack dist code name like ussuri etc.
-OPENSTACK_DIST: ussuri
+OPENSTACK_DIST: wallaby
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
@@ -94,11 +94,13 @@ PORT_NO: 8085
 PYPI_PORT: 8081
 DMAPI_USR: dmapi
 DMAPI_GRP: dmapi
-#tvault contego file path
+
+## tvault contego file path
 TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
 TVAULT_OBJECT_STORE_CONF: /etc/tvault-object-store/tvault-object-store.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
-#Nova distribution specific configuration file path
+
+## Nova distribution specific configuration file path
 NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
 TVAULT_CONTEGO_EXT_USER: nova
 TVAULT_CONTEGO_EXT_GROUP: nova
@@ -132,3 +134,30 @@ datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
 
+## Triliovault-repo
+trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+PIP_EXTRA_INDEX_URL: deb https://apt.fury.io/triliodata-5-0-beta/
+
+
+### Openstack Credentials
+trilio_user_name: "cloudadmin"
+trilio_user_password: "Password1!"
+
+trilio_admin_username: "cloudadmin"
+trilio_admin_password: "Password1!"
+
+trilio_trustee_role: "creator"
+cloud_admin_domain_name: ""
+
+### Openstack Cloud Details
+cloud_admin_project_name: ""
+cloud_admin_domain_name: ""
+
+cloud_admin_user_name: ""
+cloud_admin_user_password: ""
+
+cloud_admin_user_role: ""
+os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
+
+venv_path: ""

@@ -1,0 +1,27 @@
+---
+- import_tasks: service_setup.yml
+  run_once: True
+  vars:
+    _service_adminuri_insecure: "{{ keystone_service_adminuri_insecure }}"
+    _service_setup_host: "{{ wlmapi_service_setup_host }}"
+    _service_setup_host_python_interpreter: "{{ wlmapi_service_setup_host_python_interpreter }}"
+    _service_project_name: "{{wlmapi_service_project_name}}"
+    _service_region: "{{ wlmapi_service_region }}"
+    _service_users:
+      - name: "{{ wlmapi_service_user_name }}"
+        password: "{{ wlmapi_service_password }}"
+        role: "{{ wlmapi_service_role_name }}"
+    _service_endpoints:
+      - service: "{{ wlmapi_service_name }}"
+        interface: "public"
+        url: "{{ wlmapi_service_publicurl }}/v2"
+      - service: "{{ wlmapi_service_name }}"
+        interface: "internal"
+        url: "{{ wlmapi_service_internalurl }}/v2"
+      - service: "{{ wlmapi_service_name }}"
+        interface: "admin"
+        url: "{{ wlmapi_service_adminurl }}/v2"
+    _service_catalog:
+      - name: "{{ wlmapi_service_name }}"
+        type: "{{ wlmapi_service_type }}"
+        description: "{{ wlmapi_service_description }}"
