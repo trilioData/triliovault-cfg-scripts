@@ -17,7 +17,7 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Install datamover packages in CentOS 8
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install -y python3-tvault-contego puppet-triliovault python3-s3fuse-plugin
+RUN dnf install -y python3-tvault-contego python3-s3fuse-plugin
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
