@@ -95,27 +95,22 @@ pod:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_api:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_scheduler:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_cron:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_workloads:
           readOnlyRootFilesystem: false
           privileged: true
           runAsUser: 42424
-          runAsGroup: 42424
         triliovault_wlm_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
@@ -205,9 +200,9 @@ pod:
           max_unavailable: 1
     disruption_budget:
       datamover_api:
-        min_available: 0
+        min_available: 2
       wlm_api:
-        min_available: 0
+        min_available: 2
     termination_grace_period:
       wlm_api:
         timeout: 30
@@ -395,6 +390,7 @@ manifests:
   secret_db_wlm: true
   secret_ingress_tls_datamover: true
   secret_ingress_tls_wlm: true
+  secret_ca_bundle: true
   secret_keystone: true
   secret_rabbitmq_wlm: true
   service_datamover_api: true
@@ -910,6 +906,9 @@ conf:
       ssl: false
     cinder:
       http_retries: 10
+    barbican:
+      barbican_endpoint_type: internal
+##    verify_ssl_path = /etc/ssl/certs/ca-certificates.crt
   wlm:
     DEFAULT:
       api_workers: 4
