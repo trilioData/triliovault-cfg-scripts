@@ -18,7 +18,7 @@ ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
 RUN sed -i 's#baseurl.*#baseurl=http://mirror.centos.org/centos-8/8/storage/x86_64/ceph-nautilus/#g' /etc/yum.repos.d/tripleo-centos-ceph-nautilus.repo
-RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin -y
+RUN dnf install python3-tvault-contego python3-s3fuse-plugin -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
