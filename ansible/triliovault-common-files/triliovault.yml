@@ -22,27 +22,6 @@ physical_skel:
     belongs_to:
       - hosts
           
-## Triliovault-datamover
-component_skel:
-  triliovault_datamover_api:
-    belongs_to:
-      - triliovault_datamover_all
-
-container_skel:
-  triliovault_datamover_container:
-    belongs_to:
-      - triliovault_datamover_containers
-    contains:
-      - triliovault_datamover
-
-physical_skel:
-  triliovault_datamover_containers:
-    belongs_to:
-      - all_containers
-  triliovault_datamover_hosts:
-    belongs_to:
-      - hosts
-
 ## Triliovault-wlm-api
 
 component_skel:
