@@ -133,31 +133,20 @@ datamover_service_debian_path: /etc/init/tvault-datamover.conf
 datamover_log_dir: /var/log/dmapi
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
-
-## Triliovault-repo
-trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
-trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
-PIP_EXTRA_INDEX_URL: deb https://apt.fury.io/triliodata-5-0-beta/
-
+## Triliovault version
+triliovault_version: 'triliodata-dev-stable-5-0'
 
 ### Openstack Credentials
-trilio_user_name: "cloudadmin"
-trilio_user_password: "Password1!"
-
-trilio_admin_username: "cloudadmin"
-trilio_admin_password: "Password1!"
+trilio_admin_username: ""
+trilio_admin_password: ""
 
 trilio_trustee_role: "creator"
-cloud_admin_domain_name: ""
 
-### Openstack Cloud Details
+## Cloud Details
 cloud_admin_project_name: ""
 cloud_admin_domain_name: ""
-
 cloud_admin_user_name: ""
-cloud_admin_user_password: ""
-
-cloud_admin_user_role: ""
+cloud_admin_password: ""
+cloud_admin_role: "admin"
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
-
 venv_path: ""

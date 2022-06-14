@@ -1,1 +1,1 @@
-deb [trusted=yes] https://apt.fury.io/triliodata-5-0-beta/ /
+deb [trusted=yes] https://apt.fury.io/{{ triliovault_version }}/ /

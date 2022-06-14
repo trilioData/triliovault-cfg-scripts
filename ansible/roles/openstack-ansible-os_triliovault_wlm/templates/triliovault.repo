@@ -1,5 +1,5 @@
 [trilio]
-name=Trilio Repository
-baseurl=http://{{IP_ADDRESS}}:8085/yum-repo/queens/
+name=Triliovault Repository
+baseurl=https://yum.fury.io/{{ triliovault_version }}/
 enabled=1
 gpgcheck=0
