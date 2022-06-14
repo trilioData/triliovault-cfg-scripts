@@ -11,25 +11,24 @@ debug = false
 glance_api_version = {{ glance_api_version }}
 
 glance_production_host = {{ internal_lb_vip_address }}
-glance_production_api_servers = {{ wlmapi_glance_api_servers }} 
+glance_production_api_servers = {{ glance_endpoint_url }} 
 
 global_job_scheduler_override = false
 helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
 
 keystone_auth_version = 3
-keystone_endpoint_url = {{ keystone_service_adminurl }}
+keystone_endpoint_url = {{ keystone_service_publicurl }}
 
-log_dir = {{ log_dir }}
+log_dir = {{ triliovault_log_dir }}
 max_wait_for_upload = {{ max_wait_upload }}
 
 neutron_api_insecure = false
 
-neutron_admin_auth_url = {{ keystone_service_adminurl }} 
-nova_admin_auth_url = {{ keystone_service_adminurl }}
+neutron_admin_auth_url = {{ keystone_service_publicurl }} 
+nova_admin_auth_url = {{ keystone_service_publicurl }}
 
-neutron_production_url =  < wlmapi_neutron_api_servers >
-nova_production_endpoint_template = <nova_endpoint_url>
-
+neutron_production_url = {{ neutron_endpoint_url }}
+nova_production_endpoint_template = {{ nova_endpoint_url }}
 
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
@@ -108,17 +107,17 @@ misfire_grace_time = {{ misfire_grace_time }}
 auth_plugin = {{ wlmapi_keystone_auth_plugin }}
 admin_tenant_name = {{ wlmapi_service_project_name }}
 
-admin_user = {{ trilio_admin_username }}
-admin_password = {{ trilio_admin_password }}
+admin_user = {{ cloud_admin_user_name }}
+admin_password = {{ cloud_admin_password }}
 
 auth_type = {{ auth_type }}
-auth_url = {{ keystone_service_adminuri }}
+auth_url = {{ keystone_service_publicurl }}
 
 auth_version = {{ auth_version }}
 cafile = {{ wlmapi_oslomsg_rpc_ssl_ca_file }}
 
 insecure = false
-password = {{ trilio_user_password }}
+password = {{ cloud_admin_password }}
 
 project_name = {{ wlmapi_service_project_name }}
 region_name = {{ wlmapi_service_region }}
@@ -131,4 +130,3 @@ www_authenticate_uri = {{ wlmapi_service_internaluri }}
 
 [s3fuse_sys_admin]
 helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
-
