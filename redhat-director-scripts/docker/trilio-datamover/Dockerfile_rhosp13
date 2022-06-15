@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhosp13/openstack-nova-compute
+FROM registry.redhat.io/rhosp13/openstack-base:13.0
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="rhosp13/openstack-nova-compute-triliodata-plugin" \
@@ -16,8 +16,9 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum clean all
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms --enable rhel-7-server-rpms --enable rhel-7-server-extras-rpms --enable rhel-ha-for-rhel-7-server-rpms
-RUN yum install python3 -y
-RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 -y
+RUN yum install python3 openstack-nova-common python-nova python2-novaclient python-pyudev fuse -y
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
+RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 qemu-img-rhev ceph-common libvirt-python python2-cinderclient -y
 RUN python3 -m venv /home/tvault/.s3venv
 RUN /home/tvault/.s3venv/bin/pip install --upgrade pip
 RUN /home/tvault/.s3venv/bin/pip install --extra-index-url "https://pypi.fury.io/triliodata-stable-4-2/" s3fuse --upgrade --no-cache-dir
@@ -36,6 +37,7 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
+RUN chown root:nova /usr/share/nova/nova-dist.conf
 RUN mkdir -p /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault-mounts
 RUN mkdir -p /var/triliovault
