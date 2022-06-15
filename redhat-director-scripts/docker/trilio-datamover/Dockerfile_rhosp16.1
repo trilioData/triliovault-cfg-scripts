@@ -21,7 +21,6 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient udev fuse 
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN dnf install python3-tvault-contego puppet-triliovault python3-s3fuse-plugin qemu-img ceph-common python3-libvirt-6.0.0-1.module+el8.3.0+6423+e4cb6418 python3-cinderclient qemu-kvm-block-rbd -y
 RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt
-RUN chown root:nova /usr/share/nova/nova-dist.conf
 RUN dnf config-manager --disable openstack-16.1-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms --disable advanced-virt-for-rhel-8-x86_64-rpms --disable rhceph-4-tools-for-rhel-8-x86_64-rpms --disable fast-datapath-for-rhel-8-x86_64-rpms
 
 
@@ -40,6 +39,7 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova
 ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
 RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
+RUN chown root:nova /usr/share/nova/nova-dist.conf
 RUN mkdir -p /var/triliovault-mounts
 RUN chown nova:nova /var/triliovault-mounts
 RUN mkdir -p /var/triliovault
