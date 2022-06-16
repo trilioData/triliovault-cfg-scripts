@@ -13,11 +13,17 @@
 - name: Create triliovault log dir
   file:
     path: "{{ triliovault_log_dir }}"
+    mode: '0755'
+    owner: nova
+    group: nova
     state: directory
 
 - name: Create triliovault conf dir
   file:
     path: "{{ triliovault_cfg_dir }}"
+    mode: '0755'
+    owner: nova
+    group: nova
     state: directory
 
 - name: Create triliovault mount dir
@@ -25,6 +31,15 @@
     path: "{{ triliovault_mnt_dir }}"
     state: directory
     mode: '0777'
+
+- name: Copy repo file
+  template:
+     src: triliovault.list
+     dest: "{{ trilio_apt_repo_file_path }}"
+
+- name: update cache
+  command: apt-get update
+
 
 - name: Install packages python-dev libcurl4-openssl-dev libssl-dev m2crypto
   package:
@@ -67,14 +82,6 @@
   pip:
     name: jinja2
     state: latest
-
-- name: Copy repo file
-  template:
-     src: triliovault.list
-     dest: "{{ trilio_apt_repo_file_path }}" 
-
-- name: update cache
-  command: apt-get update
 
 - name: Install nova-common python3-neutronclient, python3-glanceclient
   package:
