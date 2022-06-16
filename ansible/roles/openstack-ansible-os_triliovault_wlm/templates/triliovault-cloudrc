@@ -1,5 +1,5 @@
 export OS_AUTH_URL={{ keystone_service_internalurl }}
 export OS_PROJECT_NAME={{ cloud_admin_project_name }}
 export OS_USER_DOMAIN_NAME={{ cloud_admin_domain_name }}
-export OS_USERNAME={{ cloud_admin_user_name}}
-export OS_PASSWORD={{ cloud_admin_user_password }}
+export OS_USERNAME={{ cloud_admin_username}}
+export OS_PASSWORD={{ cloud_admin_password }}

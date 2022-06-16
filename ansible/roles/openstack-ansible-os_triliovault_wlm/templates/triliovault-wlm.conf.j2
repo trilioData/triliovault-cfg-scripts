@@ -1,7 +1,8 @@
 [DEFAULT]
+triliovault_hostnames = {{ wlmapi_service_setup_host }}
 api_paste_config = {{ wlmapi_api_paste }}
-api_workers = 4
 
+api_workers = 4
 cloud_admin_role = {{ wlmapi_service_role_name }}
 
 compute_driver = libvirt.LibvirtDriver
@@ -17,15 +18,15 @@ global_job_scheduler_override = false
 helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
 
 keystone_auth_version = 3
-keystone_endpoint_url = {{ keystone_service_publicurl }}
+keystone_endpoint_url = {{ cloud_auth_url }}
 
 log_dir = {{ triliovault_log_dir }}
 max_wait_for_upload = {{ max_wait_upload }}
 
 neutron_api_insecure = false
 
-neutron_admin_auth_url = {{ keystone_service_publicurl }} 
-nova_admin_auth_url = {{ keystone_service_publicurl }}
+neutron_admin_auth_url = {{ cloud_auth_url }} 
+nova_admin_auth_url = {{ cloud_auth_url }}
 
 neutron_production_url = {{ neutron_endpoint_url }}
 nova_production_endpoint_template = {{ nova_endpoint_url }}
@@ -37,12 +38,11 @@ rootwrap_config = {{ rootwrap_config }}
 
 sql_connection = mysql+pymysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
 
-state_path = {{ state_path }}
 
 transport_url = {{ wlmapi_oslomsg_rpc_transport }}://{% for host in wlmapi_oslomsg_rpc_servers.split(',') %}{{ wlmapi_oslomsg_rpc_userid }}:{{ wlmapi_oslomsg_rpc_password }}@{{ host }}:{{ wlmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlmapi_oslomsg_rpc_vhost }}{% if wlmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlmapi_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlmapi_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
+state_path = {{ state_path }}
 trustee_role  = {{ trustee_role }}
-
 use_syslog = false
 
 
@@ -81,21 +81,21 @@ verbose = true
 workloads_workers = {{ workloads_workers }}
 
 [alembic]
-{% if 'venv' in venv_path %}
-script_location = /home/stack/venv/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
-version_locations = /home/stack/venv/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+{% if venv_path is defined  and texts|length > 0 %}
+script_location = {{ venv_path }}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
+version_locations = {{venv_path}}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
 {% else %}
 script_location = /usr/share/workloadmgr/migrate_repo
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 {% endif %}
-
 sqlalchemy.url = mysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+
 
 [clients]
 client_retry_limit = {{ client_retry_limit }}
-endpoint_type  = {{ triliovault_endpoint_type }}
-
+endpoint_type  = {{ cloud_endpoint_type }}
 insecure = false
+
 
 [filesearch]
 process_timeout = {{ process_timeout }}
@@ -107,11 +107,11 @@ misfire_grace_time = {{ misfire_grace_time }}
 auth_plugin = {{ wlmapi_keystone_auth_plugin }}
 admin_tenant_name = {{ wlmapi_service_project_name }}
 
-admin_user = {{ cloud_admin_user_name }}
+admin_user = {{ cloud_admin_username }}
 admin_password = {{ cloud_admin_password }}
 
 auth_type = {{ auth_type }}
-auth_url = {{ keystone_service_publicurl }}
+auth_url = {{ cloud_auth_url }}
 
 auth_version = {{ auth_version }}
 cafile = {{ wlmapi_oslomsg_rpc_ssl_ca_file }}
@@ -126,7 +126,7 @@ service_token_roles_required = true
 signing_dir = {{ signing_dir }}
 
 username = {{ trilio_user_name }}
-www_authenticate_uri = {{ wlmapi_service_internaluri }}
+www_authenticate_uri = {{ keystone_service_internalurl }}
 
 [s3fuse_sys_admin]
 helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
