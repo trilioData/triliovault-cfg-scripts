@@ -2,7 +2,8 @@
   shell: echo /openstack/venvs/nova*
   register: venv_path
 
-- set_fact: virtual_env_path={{venv_path.stdout}}
+- set_fact: 
+    virtual_env_path: "/openstack/venvs/nova-{{ nova_venv_tag }}"
 
 - set_fact:
     virtual_env: ". {{virtual_env_path}}/bin/activate"
