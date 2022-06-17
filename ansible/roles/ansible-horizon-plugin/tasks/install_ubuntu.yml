@@ -21,25 +21,45 @@
     state: latest
     update_cache: yes
 
-- name: install tvault-horizon-plugin and python-workloadmgrclient deb packages when using python2
-  shell: |
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
-          rm -rf python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
-          rm -rf tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-  when: PYTHON_VERSION=="python2"
+##- name: install tvault-horizon-plugin and python-workloadmgrclient deb packages when using python2
+##  shell: |
+##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+##          apt-get install ./python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+##          rm -rf python-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+##          apt-get install ./tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+##          rm -rf tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##  when: PYTHON_VERSION=="python2"
+##
+##- name: install python3-tvault-horizon-plugin | python3-workloadmgrclient | python3-contegoclient deb packages when using python3
+##  shell: |
+##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##          apt-get install ./python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+##          rm -rf python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##          apt-get install ./python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+##          rm -rf python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
+##          apt-get install ./python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
+##          rm -rf python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+##  when: PYTHON_VERSION=="python3"
 
-- name: install python3-tvault-horizon-plugin | python3-workloadmgrclient | python3-contegoclient deb packages when using python3
-  shell: |
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
-          rm -rf python3-contegoclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
-          rm -rf python3-workloadmgrclient_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y {{EXTRA_APT_VAR}}
-          rm -rf python3-tvault-horizon-plugin_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+- name: Copy repo file
+  template:
+     src: triliovault.list
+     dest: "{{ trilio_apt_repo_file_path }}"
+
+- name: update cache
+  command: apt-get update
+
+- name: Install python3-tvault-horizon-plugin pckg
+  package:
+    name: python3-tvault-horizon-plugin
+    state: latest
+  when: PYTHON_VERSION=="python3"
+
+- name: Install python3-workloadmgrclient pckg
+  package:
+    name: python3-workloadmgrclient
+    state: latest
   when: PYTHON_VERSION=="python3"

@@ -1,0 +1,3 @@
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+# Version of Nova virtual env to deploy into
+nova_venv_tag: "{{ venv_tag | default('untagged') }}"
