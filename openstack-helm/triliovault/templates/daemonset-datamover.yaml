@@ -220,10 +220,11 @@ spec:
               {{- end }}
             {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
             {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+            {{ printf "\n" }}
             {{- $share_path := get $share "path" -}}
             {{- $share_ip := get $share "ip" -}}
             {{- $nfs_mount_point_endcoded := $share_path | b64enc }}
-            {{- $nfs_mount_point := printf "%s/%s" .Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
+            {{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
             - name: triliovault-nfs-pv-datamover
               mountPath: {{ $nfs_mount_point | quote }}
             {{- end }}
@@ -287,6 +288,7 @@ spec:
             path: /etc/iscsi
         {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
         {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+        {{ printf "\n" }}
         {{- $share_path := get $share "path" -}}
         {{- $share_ip := get $share "ip" -}}
         - name: triliovault-nfs-pv-datamover
