@@ -19,16 +19,15 @@ limitations under the License.
 {{- $envAll := . }}
 
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+---
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
-
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
 spec:
-  storageClassName: {{ .Values.conf.triliovault.nfs.storage_class_name }}
+  storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
   accessModes:
     - ReadWriteMany
   resources:
