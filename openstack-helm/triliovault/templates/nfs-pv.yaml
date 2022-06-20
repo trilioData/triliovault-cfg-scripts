@@ -20,7 +20,7 @@ limitations under the License.
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 
 ---
-
+{{ printf "\n" }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
 

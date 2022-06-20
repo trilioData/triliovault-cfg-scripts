@@ -96,7 +96,7 @@ limitations under the License.
 
 
 {{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_list := [] }}
+{{- $share_list := list "" }}
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
@@ -403,7 +403,7 @@ limitations under the License.
 
 
 {{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_list := [] }}
+{{- $share_list := list "" }}
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
