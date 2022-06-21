@@ -146,10 +146,12 @@ trilio_trustee_role: "creator"
 
 ## Cloud Details
 cloud_admin_project_name: ""
+cloud_admin_project_id: ""
 cloud_admin_domain_name: ""
 cloud_admin_username: ""
 cloud_admin_password: ""
 cloud_endpoint_type: ""
+service_region: 
 cloud_auth_url: ""
 cloud_admin_role: ""
 
