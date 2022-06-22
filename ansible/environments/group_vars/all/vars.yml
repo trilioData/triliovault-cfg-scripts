@@ -141,6 +141,19 @@ triliovault_version: 'triliodata-dev-stable-5-0'
 trilio_admin_username: ""
 trilio_admin_password: ""
 
+## Uncomment the varibale triliovault_project_name only if
+## user wants to deploy triliovault-wlm in different projcet
+## the default value of triliovault_project_name 'service'
+
+##triliovault_project_name: ""
+
+## Uncomment the variable triliovault_domain_id when
+## user wants to deploy triliovualt-wlm components in different
+## the default value of triliovault_domain_id is 'Default'
+
+##triliovault_domain_id: ""
+
+
 ## Triliovault trustee role default is creator
 trilio_trustee_role: "creator"
 

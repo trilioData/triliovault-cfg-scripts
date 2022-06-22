@@ -37,6 +37,7 @@ region_name_for_services = {{ wlmapi_service_region }}
 rootwrap_config = {{ rootwrap_config }}
 
 sql_connection = mysql+pymysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+
 transport_url = {{ wlmapi_oslomsg_rpc_transport }}://{% for host in wlmapi_oslomsg_rpc_servers.split(',') %}{{ wlmapi_oslomsg_rpc_userid }}:{{ wlmapi_oslomsg_rpc_password }}@{{ host }}:{{ wlmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlmapi_oslomsg_rpc_vhost }}{% if wlmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlmapi_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlmapi_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
 state_path = {{ state_path }}

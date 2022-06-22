@@ -73,11 +73,11 @@ wlmapi_service_type: workloads
 
 wlmapi_service_description: "Triliovault Workloadmgr API Service"
 wlmapi_service_user_name: workloadmgr
-wlmapi_service_project_name: service
+wlmapi_service_project_name: "{{ triliovault_project_name | default('service')}}"
 
 wlmapi_service_password: "{{ WLMAPI_SERVICE_PASSWORD }}"
 wlmapi_service_project_domain_id: default
-wlmapi_service_user_domain_id: default
+wlmapi_service_user_domain_id: "{{ triliovault_domain_id | default('Default')}}"
 
 wlmapi_service_publicuri: "{{ wlmapi_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlmapi_service_port }}"
 wlmapi_service_publicurl: "{{ wlmapi_service_publicuri }}"
