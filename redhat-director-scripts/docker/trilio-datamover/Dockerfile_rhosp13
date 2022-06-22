@@ -16,7 +16,7 @@ USER root
 ADD trilio.repo /etc/yum.repos.d/
 RUN yum clean all
 RUN yum-config-manager --enable rhel-7-server-openstack-13-rpms --enable rhel-7-server-rpms --enable rhel-7-server-extras-rpms --enable rhel-ha-for-rhel-7-server-rpms
-RUN yum install python3 openstack-nova-common python-nova python2-novaclient python-pyudev fuse -y
+RUN yum install python3 openstack-nova-common python-nova python2-novaclient python-pyudev fuse nfs-utils -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN yum install tvault-contego puppet-triliovault python-s3fuse-plugin-cent7 qemu-img-rhev ceph-common libvirt-python python2-cinderclient -y
 RUN python3 -m venv /home/tvault/.s3venv
