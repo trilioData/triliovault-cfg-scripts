@@ -96,13 +96,14 @@ limitations under the License.
 
 
 {{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_list := list "" }}
+{{- $share_list := list }}
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
-{{- $share_list :=  printf "%s:%s" | append $share_list -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
 {{- end }}
-{{- $shares_full_string := join "," $share_list }}'
+{{- $shares_full_string := join "," $share_list }}
 {{ $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
 {{- else -}}
 {{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
@@ -403,13 +404,14 @@ limitations under the License.
 
 
 {{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_list := list "" }}
+{{- $share_list := list }}
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
-{{- $share_list :=  printf "%s:%s" | append $share_list -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
 {{- end }}
-{{- $shares_full_string := join "," $share_list }}'
+{{- $shares_full_string := join "," $share_list }}
 {{ $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
 {{- else -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
