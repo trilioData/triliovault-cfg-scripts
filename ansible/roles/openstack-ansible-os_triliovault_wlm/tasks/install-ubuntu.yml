@@ -14,7 +14,7 @@
   file:
     path: "{{ triliovault_log_dir }}"
     mode: '0755'
-    owner: nova
+    owner: root
     group: nova
     state: directory
 
@@ -22,7 +22,7 @@
   file:
     path: "{{ triliovault_cfg_dir }}"
     mode: '0755'
-    owner: nova
+    owner: root
     group: nova
     state: directory
 
