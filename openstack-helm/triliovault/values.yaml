@@ -793,7 +793,7 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-api/triliovault-object-store.log
-      debug: true
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_scheduler:
@@ -807,7 +807,7 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-scheduler/triliovault-object-store.log
-      debug: true
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_workloads:
@@ -821,7 +821,7 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-workloads/triliovault-object-store.log
-      debug: true
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_datamover:
@@ -835,7 +835,7 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/datamover/triliovault-object-store.log
-      debug: true
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/privsep-helper
   datamover_api:
