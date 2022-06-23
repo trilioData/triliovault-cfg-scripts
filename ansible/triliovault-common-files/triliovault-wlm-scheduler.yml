@@ -1,10 +1,8 @@
----
-## Triliovault-wlm-scheduler
 
 component_skel:
   triliovault-wlm-scheduler_api:
     belongs_to:
-      - triliovault-wlm-scheduler_all
+      - triliovault-wlm-scheduler
 
 container_skel:
   triliovault-wlm-scheduler_container:

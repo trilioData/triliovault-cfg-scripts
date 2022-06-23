@@ -1,10 +1,8 @@
----          
 
-## Triliovault-wlm-cron
 component_skel:
   triliovault-wlm-cron_api:
     belongs_to:
-      - triliovault-wlm-cron_all
+      - triliovault-wlm-cron
 
 container_skel:
   triliovault-wlm-cron_container:

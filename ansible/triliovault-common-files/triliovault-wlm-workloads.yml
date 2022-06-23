@@ -1,10 +1,8 @@
----          
-## Triliovault-wlm-workloads
 
 component_skel:
   triliovault-wlm-workload_api:
     belongs_to:
-      - triliovault-wlm-workload_all
+      - triliovault-wlm-workload
 
 container_skel:
   triliovault-wlm-workload_container:
