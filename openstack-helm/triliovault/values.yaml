@@ -736,6 +736,7 @@ conf:
     backup_target_type: "nfs"
     ## Valid values are "nfs" and "s3"
     nfs:
+      multi_ip_nfs: false
       nfs_shares: 
       - path: /opt/share1
         ip: "192.168.122.101"
