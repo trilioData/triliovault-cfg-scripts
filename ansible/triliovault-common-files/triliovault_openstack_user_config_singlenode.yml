@@ -1,3 +1,11 @@
+tvault-dmapi_hosts:
+  controller:
+    ip: <controller_ip>
+
+tvault_compute_hosts:
+  compute:
+    ip: <compute_ip>
+
 triliovault-wlm-api_hosts:
   controller:
     ip: <controller_ip>

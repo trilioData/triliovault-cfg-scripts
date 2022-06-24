@@ -1,0 +1,31 @@
+## triliovault-datamover-api
+tvault-dmapi_hosts:              ## Add controller details in this section as tvault DMAPI is resides on controller nodes.
+  infra-1:                       ## controller hostname.
+    ip: <controller_ip_01>       ## IP address of controller1
+  infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+    ip: <controller_ip_02>       ## IP address of controller2
+
+## NEW WLM-SERVICES CONTAINERIZAITON PART
+## Triliovault-wlm-api
+triliovault-wlm-api_hosts:       ## Triliovault WLM-API HOSTS
+  infra-1:                       ## controller hostname
+    ip: <controller_IP_01>       ## controller IP
+  infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+     ip: <controller_ip_02>      ## IP address of controller2
+
+## Triliovault-wlm-workloads
+triliovault-wlm-workload_hosts:  ## Triliovault WLM-WORKLOADS HOSTS
+  infra-1:                       ## controller hostname
+    ip: <controller_IP_01>       ## controller IP
+  infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
+     ip: <controller_ip_02>      ## IP address of controller2
+
+## Triliovault-wlm-scheduler
+triliovault-wlm-scheduler_hosts: ## Triliovault WLM-SCHEDULER HOSTS
+  infra-1:                       ## controller hostname
+    ip: <controller_IP_01>       ## controller IP
+
+## Triliovault-wlm-cron
+triliovault-wlm-cron_hosts:      ## Triliovault WLM-SCHEDULER HOSTS
+  infra-1:                       ## controller hostname
+    ip: <controller_IP_01>       ## controller IP
