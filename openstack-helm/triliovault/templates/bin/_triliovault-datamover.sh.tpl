@@ -32,6 +32,7 @@ function start () {
   fi
   {{ end }}
   # Start triliovault datamover service
+  
   /usr/bin/python3 /usr/bin/tvault-contego \
     --config-file=/etc/nova/nova.conf \
     --config-file=/etc/triliovault-datamover/triliovault-datamover.conf

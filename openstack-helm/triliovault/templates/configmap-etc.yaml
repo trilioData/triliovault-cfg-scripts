@@ -403,7 +403,24 @@ limitations under the License.
 {{- end -}}
 
 
-{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
+
+{{- $share_list := list }}
+
+{{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+{{- if eq $share.node_selector_key "triliovault-control-plane" }}
+{{- $share_path := get $share "path" -}}
+{{- $share_ip := get $share "ip" -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
+{{- end }}
+{{- end }}
+
+{{- $shares_full_string := join "," $share_list }}
+{{ $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
+
+{{- else if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "false" ) }}
+
 {{- $share_list := list }}
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 {{- $share_path := get $share "path" -}}
@@ -413,7 +430,9 @@ limitations under the License.
 {{- end }}
 {{- $shares_full_string := join "," $share_list }}
 {{ $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
-{{- else -}}
+
+
+{{- else if eq .Values.conf.triliovault.backup_target_type "s3" -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
 {{- end -}}
 
