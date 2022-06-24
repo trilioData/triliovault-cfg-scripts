@@ -1,6 +1,6 @@
 ##common editable parameters required for installing tvault-horizon-plugin, tvault-contego and tvault-datamover-api
 #ip address of TVM
-IP_ADDRESS: sample_tvault_ip_address
+##IP_ADDRESS: sample_tvault_ip_address
 
 ##Time Zone
 TIME_ZONE: "Etc/UTC"
