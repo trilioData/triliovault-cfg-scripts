@@ -4,8 +4,8 @@
 
 [composite:osapi_workloads]
 use = call:workloadmgr.api:root_app_factory
-/: apiversions
-/v1: openstack_workloads_api_v1
+/= apiversions
+/v1= openstack_workloads_api_v1
 
 [composite:openstack_workloads_api_v1]
 use = call:workloadmgr.api.middleware.auth:pipeline_factory
