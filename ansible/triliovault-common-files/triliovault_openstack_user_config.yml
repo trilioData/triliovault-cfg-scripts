@@ -5,7 +5,6 @@ tvault-dmapi_hosts:              ## Add controller details in this section as tv
   infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
     ip: <controller_ip_02>       ## IP address of controller2
 
-## NEW WLM-SERVICES CONTAINERIZAITON PART
 ## Triliovault-wlm-api
 triliovault-wlm-api_hosts:       ## Triliovault WLM-API HOSTS
   infra-1:                       ## controller hostname
