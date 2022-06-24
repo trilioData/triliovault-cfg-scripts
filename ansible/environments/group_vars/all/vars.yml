@@ -164,11 +164,14 @@ cloud_admin_domain_name: ""
 cloud_admin_username: ""
 cloud_admin_password: ""
 cloud_endpoint_type: ""
-service_region: 
+service_region: ""
 cloud_auth_url: ""
+
+## cloud_admin_role default value 'admin'
 cloud_admin_role: ""
 
-
-
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
+
+## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
+## venv_path: "/home/stack/venv"
 venv_path: ""
