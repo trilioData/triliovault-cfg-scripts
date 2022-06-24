@@ -27,15 +27,41 @@ Following block gets executed if backup target is multi-ip nfs
 {{- $mounts_triliovault_datamover_init := .Values.pod.mounts.triliovault_datamover.init_container }}
 
 
-
-{{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+{{/* Create a string of comma separated single ip nfs shares */}}
+{{- $share_list := list }}
+{{- range $share := .Values.conf.triliovault.nfs.single_ip_nfs_shares }}
 {{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
 {{- $share_string := printf "%s:%s" $share_ip $share_path }}
-{{- $node_selector_key := get $share "node_selector_key" -}}
-{{- $node_selector_value := get $share "node_selector_value" -}}
-{{- $nfs_mount_point_endcoded := $share_path | b64enc }}
-{{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
+{{- $share_list =  append $share_list $share_string -}}
+{{- end }}
+{{- $single_ip_shares_full_string := join "," $share_list }}
+{{/* END */}}
+
+{{- range $label, $shares := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
+
+
+
+{{- if ne $label "triliovault-control-plane" }}
+{{- $node_selector_key := $label -}}
+{{- $node_selector_value := "enabled" -}}
+
+
+{{- range $share := $shares }}
+{{- $share_list := list }}
+{{- $multi_ip_share_path := get $share "path" -}}
+{{- $share_ip := get $share "ip" -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
+{{- end }}
+{{- $multi_ip_shares_full_string := join "," $share_list }}
+
+{{/* total list of nfs shares separated by comma */}}
+{{- if $single_ip_shares_full_string }}
+{{- $full_shares_string := printf "%s,%s" $multi_ip_shares_full_string $single_ip_shares_full_string }}
+{{- else }}
+{{- $full_shares_string := $multi_ip_shares_full_string }}
+{{- end }}
 
 {{- $serviceAccountName := "triliovault-datamover" }}
 {{ tuple $envAll "datamover" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -105,6 +131,8 @@ spec:
           env:
             - name: RBD_USER
               value: {{ .Values.ceph.rbd_user | quote }}
+            - name: NFS_SHARES
+              value: {{ $full_shares_string }}
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: pod-tmp
@@ -296,8 +324,8 @@ spec:
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{ if $mounts_triliovault_datamover.volumes }}{{ toYaml $mounts_triliovault_datamover.volumes | indent 8 }}{{ end }}
 {{- end }}
-
 {{- end }}
+
 
 {{/* 
 Following block gets executed if backup target is s3 OR nfs but not multi-ip nfs 
