@@ -60,9 +60,9 @@ wlmapi_oslomsg_amqp1_enabled: "{{ wlmapi_oslomsg_rpc_transport == 'amqp' }}"
 
 ## Service Type and Data
 wlmapi_service_region: "{{ service_region | default('RegionOne') }}"
-wlmapi_service_name: triliovault-wlm-api
+wlmapi_service_name: workloadmgr
 
-wlmapi_service_port: 8780
+wlmapi_service_port: 8781
 wlmapi_service_proto: http
 
 wlmapi_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(wlmapi_service_proto) }}"
@@ -98,9 +98,7 @@ trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
 
 ## Default Triliovault username & Password
 trilio_user_name: "triliovault"
-trilio_user_password: "Password1!"
-
-## triliovault_endpoint_type: internal
+trilio_user_password: "password"
 
 ## Triliovault configuration files
 wlmapi_cfg: "/etc/triliovault-wlm/triliovault-wlm.conf"
@@ -114,8 +112,8 @@ wlmapi_glance_api_servers: "{{ (glance_service_internalurl | default('http://loc
 glance_api_version: 2
 
 trustee_role: "creator"
-api_auth_port: 35357 
-osapi_workloads_listen_port: 8780
+api_auth_port: 35357
+osapi_workloads_listen_port: 8781
 
 max_wait_upload: 48
 workloads_workers: 4
