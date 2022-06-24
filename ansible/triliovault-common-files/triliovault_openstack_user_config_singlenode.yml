@@ -1,0 +1,15 @@
+triliovault-wlm-api_hosts:
+  controller:
+    ip: <controller_ip>
+
+triliovault-wlm-workload_hosts:
+  controller:
+    ip: <<controller_ip>>
+
+triliovault-wlm-cron_hosts:
+  controller:
+    ip: <<controller_ip>>
+
+triliovault-wlm-scheduler_hosts:
+  controller:
+    ip: <<controller_ip>>
