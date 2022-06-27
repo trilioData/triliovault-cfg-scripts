@@ -24,7 +24,7 @@ Following block gets executed if backup target is multi-ip nfs
 {{- $mounts_triliovault_datamover := .Values.pod.mounts.triliovault_datamover.triliovault_datamover }}
 {{- $mounts_triliovault_datamover_init := .Values.pod.mounts.triliovault_datamover.init_container }}
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}
 
 
 {{- range $label, $share := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
@@ -60,8 +60,8 @@ spec:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-hash: {{ tuple "configmap-bin.yaml" $envAll | include "helm-toolkit.utils.hash" }}
+        configmap-etc-hash: {{ tuple "configmap-etc.yaml" $envAll | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -75,7 +75,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         {{ $node_selector_key }}: {{ $node_selector_value }}
-{{ if .Values.conf.triliovault.docker_registry_auth_enabled }}
+{{ if $envAll.Values.conf.triliovault.docker_registry_auth_enabled }}
       imagePullSecrets:
         - name: triliovault-image-registry
 {{ end }}
@@ -100,7 +100,7 @@ spec:
               subPath: triliovault-datamover-init.sh
               readOnly: true
 {{ if $mounts_triliovault_datamover_init.volumeMounts }}{{ toYaml $mounts_triliovault_datamover_init.volumeMounts | indent 12 }}{{ end }}
-        {{- if .Values.ceph.enabled }}
+        {{- if $envAll.Values.ceph.enabled }}
         - name: ceph-keyring-placement-triliovault
 {{ tuple $envAll "triliovault_datamover" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ dict "envAll" $envAll "application" "triliovault" "container" "ceph_keyring_placement_triliovault" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
@@ -108,9 +108,7 @@ spec:
             - /tmp/ceph_keyring_placement_triliovault.sh
           env:
             - name: RBD_USER
-              value: {{ .Values.ceph.rbd_user | quote }}
-            - name: NFS_SHARES
-              value: {{ $full_shares_string }}
+              value: {{ $envAll.Values.ceph.rbd_user | quote }}
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: pod-tmp
@@ -152,7 +150,7 @@ spec:
               mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
               subPath: triliovault-datamover.conf
               readOnly: true
-            {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+            {{- if eq $envAll.Values.conf.triliovault.backup_target_type "s3" }}
             - mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
               name: triliovault-datamover-etc
               readOnly: true
@@ -197,7 +195,7 @@ spec:
               mountPath: /etc/triliovault-datamover/policy.yaml
               subPath: policy.yaml
               readOnly: true
-            {{- if .Values.ceph.enabled }}
+            {{- if $envAll.Values.ceph.enabled }}
             - name: etcceph
               mountPath: /etc/ceph
             - name: triliovault-datamover-etc
@@ -211,18 +209,18 @@ spec:
             {{ end }}
             - name: dev
               mountPath: /dev
-              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              {{- if or ( gt $envAll.Capabilities.KubeVersion.Major "1" ) ( ge $envAll.Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: HostToContainer
               {{- end }}
             - name: etciscsi
               mountPath: /etc/iscsi
-              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              {{- if or ( gt $envAll.Capabilities.KubeVersion.Major "1" ) ( ge $envAll.Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: HostToContainer
               {{- end }}
             - mountPath: /lib/modules
               name: libmodules
               readOnly: true
-            {{- if .Values.multipathd_enabled }}
+            {{- if $envAll.Values.multipathd_enabled }}
             - name: etcmultipath
               mountPath: /etc/multipath
             - name: multipathconf
@@ -232,7 +230,7 @@ spec:
               mountPath: /usr/local/sbin/multipathd
               subPath: multipathd
             {{ end }}
-              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              {{- if or ( gt $envAll.Capabilities.KubeVersion.Major "1" ) ( ge $envAll.Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: Bidirectional
               {{- end }}
             - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
@@ -273,14 +271,14 @@ spec:
         - name: machine-id
           hostPath:
             path: /etc/machine-id
-        {{- if .Values.ceph.enabled }}
+        {{- if $envAll.Values.ceph.enabled }}
         - name: etcceph
           emptyDir: {}
         - name: ceph-keyring
           secret:
             secretName: triliovault-ceph-keyring
         {{ end }}
-        {{- if .Values.multipathd_enabled }}
+        {{- if $envAll.Values.multipathd_enabled }}
         - name: etcmultipath
           hostPath:
             path: /etc/multipath

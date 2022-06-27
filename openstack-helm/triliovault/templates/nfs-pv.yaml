@@ -18,7 +18,7 @@ limitations under the License.
 {{- $nfs_options := .Values.conf.triliovault.nfs.nfs_options }}
 
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}
 
 
 {{- range $label, $share := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
