@@ -20,8 +20,8 @@ mkdir -p /var/log/triliovault/datamover
 chown -R nova:nova /var/log/triliovault /var/trilio
 touch /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
-
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}
+{{ printf "\n" }}
 if [ -n $NFS_SHARE ]
 then
 tee > /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf << EOF
