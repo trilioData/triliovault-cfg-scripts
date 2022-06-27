@@ -153,8 +153,8 @@ spec:
               subPath: triliovault-wlm-workloads.sh
               readOnly: true
             {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) }}
-            {{- $share_ip := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares.triliovault-control-plane "ip" }}
-            {{- $share_path := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares.triliovault-control-plane "path" }}
+            {{- $share_ip := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares. "triliovault-control-plane" "ip" }}
+            {{- $share_path := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "path" }}
             - name: triliovault-nfs-pv-wlm-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
               mountPath: {{ $nfs_mount_point | quote }}
             {{- else if eq .Values.conf.triliovault.backup_target_type "nfs" }}
@@ -189,8 +189,8 @@ spec:
             name: triliovault-bin
             defaultMode: 0555
         {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) }}
-        {{- $share_ip := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares.triliovault-control-plane "ip" }}
-        {{- $share_path := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares.triliovault-control-plane "path" }}
+        {{- $share_ip := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "ip" }}
+        {{- $share_path := get .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "path" }}
         - name: triliovault-nfs-pv-wlm-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
           persistentVolumeClaim:
             claimName: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}

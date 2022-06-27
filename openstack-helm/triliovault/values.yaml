@@ -740,8 +740,6 @@ conf:
       nfs_shares: 
       - path: /opt/share1
         ip: "192.168.122.101"
-        node_selector_key: openstack-compute-node
-        node_selector_value: enabled
       multi_ip_nfs_shares:
         triliovault-control-plane:
           path: /var/share
