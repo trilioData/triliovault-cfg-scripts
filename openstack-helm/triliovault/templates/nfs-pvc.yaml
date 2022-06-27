@@ -15,8 +15,33 @@ limitations under the License.
 
 
 {{- if .Values.manifests.nfs_pvc -}}
-{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
 {{- $envAll := . }}
+
+
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
+
+{{- range $label, $share := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
+
+---
+{{ printf "\n" }}
+{{- $share_path := get $share "path" -}}
+{{- $share_ip := get $share "ip" -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+spec:
+  storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+
+{{- end }}
+
+
+{{- else }}
 
 {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
 ---

@@ -19,49 +19,24 @@ limitations under the License.
 Following block gets executed if backup target is multi-ip nfs 
 */}}
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
-
 {{- $envAll := . }}
 
 {{- $mounts_triliovault_datamover := .Values.pod.mounts.triliovault_datamover.triliovault_datamover }}
 {{- $mounts_triliovault_datamover_init := .Values.pod.mounts.triliovault_datamover.init_container }}
 
-
-{{/* Create a string of comma separated single ip nfs shares */}}
-{{- $share_list := list }}
-{{- range $share := .Values.conf.triliovault.nfs.single_ip_nfs_shares }}
-{{- $share_path := get $share "path" -}}
-{{- $share_ip := get $share "ip" -}}
-{{- $share_string := printf "%s:%s" $share_ip $share_path }}
-{{- $share_list =  append $share_list $share_string -}}
-{{- end }}
-{{- $single_ip_shares_full_string := join "," $share_list }}
-{{/* END */}}
-
-{{- range $label, $shares := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
 
 
+{{- range $label, $share := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
 
 {{- if ne $label "triliovault-control-plane" }}
 {{- $node_selector_key := $label -}}
 {{- $node_selector_value := "enabled" -}}
-
-
-{{- range $share := $shares }}
-{{- $share_list := list }}
-{{- $multi_ip_share_path := get $share "path" -}}
+{{- $share_path := get $share "path" -}}
 {{- $share_ip := get $share "ip" -}}
 {{- $share_string := printf "%s:%s" $share_ip $share_path }}
-{{- $share_list =  append $share_list $share_string -}}
-{{- end }}
-{{- $multi_ip_shares_full_string := join "," $share_list }}
-
-{{/* total list of nfs shares separated by comma */}}
-{{- if $single_ip_shares_full_string }}
-{{- $full_shares_string := printf "%s,%s" $multi_ip_shares_full_string $single_ip_shares_full_string }}
-{{- else }}
-{{- $full_shares_string := $multi_ip_shares_full_string }}
-{{- end }}
+{{- $nfs_mount_point_endcoded := $share_path | b64enc }}
+{{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
 
 {{- $serviceAccountName := "triliovault-datamover" }}
 {{ tuple $envAll "datamover" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -111,6 +86,9 @@ spec:
 {{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_datamover_init" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
           command:
             - /tmp/triliovault-datamover-init.sh
+          env:
+            - name: NFS_SHARE
+              value: {{ $share_string }}
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: vartrilio
@@ -334,12 +312,6 @@ Following block gets executed if backup target is s3 OR nfs but not multi-ip nfs
 {{- else }}
 
 
-{{- $envAll := . }}
-
-{{- $mounts_triliovault_datamover := .Values.pod.mounts.triliovault_datamover.triliovault_datamover }}
-{{- $mounts_triliovault_datamover_init := .Values.pod.mounts.triliovault_datamover.init_container }}
-
-
 {{- $node_selector_key := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_key" -}}
 {{- $node_selector_value := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_value" -}}
 
@@ -379,11 +351,7 @@ spec:
       hostIPC: true
       dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
-        {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
-        {{ $node_selector_key }}: {{ $node_selector_value }}
-        {{- else }}
         {{ .Values.labels.datamover.node_selector_key }}: {{ .Values.labels.datamover.node_selector_value }}
-        {{- end }}
 {{ if .Values.conf.triliovault.docker_registry_auth_enabled }}
       imagePullSecrets:
         - name: triliovault-image-registry
@@ -405,6 +373,8 @@ spec:
               mountPath: /tmp/triliovault-datamover-init.sh
               subPath: triliovault-datamover-init.sh
               readOnly: true
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
 {{ if $mounts_triliovault_datamover_init.volumeMounts }}{{ toYaml $mounts_triliovault_datamover_init.volumeMounts | indent 12 }}{{ end }}
         {{- if .Values.ceph.enabled }}
         - name: ceph-keyring-placement-triliovault
@@ -448,6 +418,8 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
             - name: varlogtriliovault
@@ -556,6 +528,8 @@ spec:
 {{ if $mounts_triliovault_datamover.volumeMounts }}{{ toYaml $mounts_triliovault_datamover.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp
+          emptyDir: {}
+        - name: pod-shared-triliovault-datamover
           emptyDir: {}
         - name: vartrilio
           hostPath:
