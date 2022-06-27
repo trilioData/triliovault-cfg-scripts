@@ -18,15 +18,17 @@ set -ex
 
 mkdir -p /var/log/triliovault/datamover
 chown -R nova:nova /var/log/triliovault /var/trilio
+touch /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
 
-if [ -n $NFS_SHARES ]
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (eq .Values.conf.triliovault.nfs.multi_ip_nfs "true" ) -}}
+
+if [ -n $NFS_SHARE ]
 then
-touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-dynamic-values.conf
-echo vault_storage_nfs_export
-
-tee > /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-dynamic-values.conf << EOF
+tee > /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf << EOF
 [DEFAULT]
-vault_storage_nfs_export = $NFS_SHARES
+vault_storage_nfs_export = $NFS_SHARE
 EOF
 
 fi
+
+{{- end }}
