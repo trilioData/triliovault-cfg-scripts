@@ -12,8 +12,8 @@ haproxy_extra_services:
 ## Triliovault wlm API haproxy setting
 haproxy_extra_services:
   - service:
-      haproxy_service_name: wlmapi_service
-      haproxy_backend_nodes: "{{ groups['triliovault-wlm-api_all'] | default([]) }}"
+      haproxy_service_name: workloadmgr
+      haproxy_backend_nodes: "{{ groups['triliovault-wlm-api'] | default([]) }}"
       haproxy_ssl: "{{ haproxy_ssl }}"
       haproxy_port: 8781
       haproxy_balance_type: http

@@ -14,9 +14,9 @@
 
 - debug: msg="tvault_contego_ext_bin:{{tvault_contego_ext_bin}}" verbosity={{verbosity_level}}
 
-- name: Fail if tvault_contego_ext_bin directory is not present
-  fail: msg="vault_contego_external_bin directory is not present"
-  when: tvault_contego_ext_bin.stat.exists != true
+# - name: Fail if tvault_contego_ext_bin directory is not present
+#   fail: msg="vault_contego_external_bin directory is not present"
+#   when: tvault_contego_ext_bin.stat.exists != true
 
 - name: check if tvault contego conf file is present or not
   stat: path="{{TVAULT_CONTEGO_CONF}}"
