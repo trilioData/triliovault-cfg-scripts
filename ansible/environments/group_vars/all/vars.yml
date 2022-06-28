@@ -167,8 +167,10 @@ cloud_endpoint_type: ""
 service_region: ""
 cloud_auth_url: ""
 
-## cloud_admin_role default value 'admin'
-cloud_admin_role: ""
+## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'
+## Specify the role
+
+#cloud_admin_role: ""
 
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 

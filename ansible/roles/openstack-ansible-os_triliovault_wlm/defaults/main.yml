@@ -13,7 +13,7 @@ wlmapi_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/gale
 
 wlmapi_galera_password: "{{ WLMAPI_MYSQL_PASSWORD }}"
 wlmapi_galera_port: 3306
-wlmapi_service_role_name: admin
+wlmapi_service_role_name: "{{ cloud_admin_role | default('admin') }}"
 wlmapi_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
 
 
