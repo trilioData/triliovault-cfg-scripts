@@ -58,10 +58,10 @@ do
       buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release} .
       if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
       then
-          echo "$PUSH_PKG_CNT : Push Datamover Containers to Docker")
+          echo "$PUSH_PKG_CNT : Push Datamover Containers to Docker"
           podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release}
       else
-          echo "$PUSH_PKG_CNT : Don't push Datamover Containers to Docker")
+          echo "$PUSH_PKG_CNT : Don't push Datamover Containers to Docker"
       fi
 
       #Build trilio_datamover-api containers
@@ -71,10 +71,10 @@ do
       buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release} .
       if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
       then
-          echo "$PUSH_PKG_CNT : Push Datamover API Containers to Docker")
+          echo "$PUSH_PKG_CNT : Push Datamover API Containers to Docker"
           podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
       else
-          echo "$PUSH_PKG_CNT : Don't push Datamover API Containers to Docker")
+          echo "$PUSH_PKG_CNT : Don't push Datamover API Containers to Docker"
       fi
 
       #Build trilio_horizon_plugin containers
@@ -84,10 +84,10 @@ do
       buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release} .
       if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
       then
-          echo "$PUSH_PKG_CNT : Push Horizon Containers to Docker")
+          echo "$PUSH_PKG_CNT : Push Horizon Containers to Docker"
           podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release}
       else
-          echo "$PUSH_PKG_CNT : Don't push Horizon Containers to Docker")
+          echo "$PUSH_PKG_CNT : Don't push Horizon Containers to Docker"
       fi
 
       # Clean the build_dir
