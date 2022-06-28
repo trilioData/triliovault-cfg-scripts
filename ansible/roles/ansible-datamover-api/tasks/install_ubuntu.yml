@@ -37,6 +37,12 @@
      src: datamover_url
      dest: /tmp/datamover_url
 
+- name: Install python2 dmapi pckg
+  package:
+    name: dmapi
+    state: latest
+  when: PYTHON_VERSION=="python2"
+
 - name: Install python3-dmapi pckg
   package:
     name: python3-dmapi
