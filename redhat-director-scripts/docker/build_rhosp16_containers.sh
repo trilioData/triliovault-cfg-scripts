@@ -9,13 +9,14 @@ echo -e "\tYou can use following commands:"
 echo -e "\n\t- podman login docker.io\n\t- podman login registry.redhat.io\n"
 
 
-if [ $# -lt 1 ];then
-   echo "Script takes exacyly 1 argument"
-   echo -e "./build_container.sh <tvault_version>"
+if [ $# -lt 2 ];then
+   echo "Script takes exactly 2 arguments"
+   echo -e "./build_container.sh <tvault_version> <PUSH_PKG_CNT>"
    exit 1
 fi
 
 tvault_version=$1
+PUSH_PKG_CNT=$2
 
 
 current_dir=$(pwd)
@@ -55,22 +56,39 @@ do
       cd $base_dir/${build_dir}/trilio-datamover/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release} .
-      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release}
-
+      if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
+      then
+          echo "$PUSH_PKG_CNT : Push Datamover Containers to Docker"
+          podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover:${tvault_version}-${openstack_release}
+      else
+          echo "$PUSH_PKG_CNT : Don't push Datamover Containers to Docker"
+      fi
 
       #Build trilio_datamover-api containers
       echo -e "Creating trilio-datamover container-api for ${openstack_release}"
       cd $base_dir/${build_dir}/trilio-datamover-api/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release} .
-      podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
+      if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
+      then
+          echo "$PUSH_PKG_CNT : Push Datamover API Containers to Docker"
+          podman push --authfile /root/auth.json docker.io/trilio/trilio-datamover-api:${tvault_version}-${openstack_release}
+      else
+          echo "$PUSH_PKG_CNT : Don't push Datamover API Containers to Docker"
+      fi
 
       #Build trilio_horizon_plugin containers
       echo -e "Creating trilio-horizon-plugin container for ${openstack_release}"
       cd $base_dir/${build_dir}/trilio-horizon-plugin/
       cp Dockerfile_${openstack_release} Dockerfile
       buildah bud --format docker -t docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release} .
-      podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release}
+      if [ $(echo "$PUSH_PKG_CNT" | tr '[:upper:]' '[:lower:]') == "yes" ]
+      then
+          echo "$PUSH_PKG_CNT : Push Horizon Containers to Docker"
+          podman push --authfile /root/auth.json  docker.io/trilio/trilio-horizon-plugin:${tvault_version}-${openstack_release}
+      else
+          echo "$PUSH_PKG_CNT : Don't push Horizon Containers to Docker"
+      fi
 
       # Clean the build_dir
       rm -rf $base_dir/${build_dir}
