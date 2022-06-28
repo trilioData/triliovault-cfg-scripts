@@ -1,6 +1,5 @@
-##common editable parameters required for installing tvault-horizon-plugin, tvault-contego and tvault-datamover-api
-#ip address of TVM
-##IP_ADDRESS: sample_tvault_ip_address
+##common editable parameters required for installing 
+## Triliovault-workloamdgr, Triliovault-horizon-plugin, Triliovault-contego and Triliovault-datamover-api services
 
 ##Time Zone
 TIME_ZONE: "Etc/UTC"
@@ -96,7 +95,7 @@ DMAPI_USR: dmapi
 DMAPI_GRP: dmapi
 
 ## tvault contego file path
-TVAULT_CONTEGO_CONF: /etc/tvault-contego/tvault-contego.conf
+TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/tvault-contego.conf
 TVAULT_OBJECT_STORE_CONF: /etc/tvault-object-store/tvault-object-store.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
 

@@ -40,30 +40,6 @@
     name: "rbd"
     state: "present"
 
-##- name: Download contego virtenv deb package
-##  shell: |
-##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-##          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb -y
-##          rm -rf ./tvault-contego-extension_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-##
-##- debug : msg="curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego-extension_{{TVAULT_PACKAGE_VERSION}}_all.deb" verbosity={{ verbosity_level }}
-##
-##- name: install tvault-contego deb package when using python2
-##  shell: |
-##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/tvault-contego_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-##          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
-##          rm -rf tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-##  when: PYTHON_VERSION=="python2"
-##
-##- name: install python3-tvault-contego deb package when using python3
-##  shell: |
-##          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-##          dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
-##          rm -rf python3-tvault-contego_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-##  when: PYTHON_VERSION=="python3"
-##
-##
-
 - name: Copy repo file
   template:
      src: triliovault.list
@@ -72,7 +48,7 @@
 - name: update cache
   command: apt-get update
 
-- name: Install tvault-contego pckg when python_version is python2
+- name: Install python2 tvault-contego pckg
   package:
     name: tvault-contego
     state: latest
