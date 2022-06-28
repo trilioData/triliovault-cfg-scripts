@@ -38,7 +38,7 @@ Following block gets executed if backup target is multi-ip nfs
 {{- $nfs_mount_point_endcoded := $share_path | b64enc }}
 {{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
 
-{{- $serviceAccountName := "triliovault-datamover" }}
+{{- $serviceAccountName := printf "%s-%s" "triliovault-datamover" $node_selector_key }}
 {{ tuple $envAll "datamover" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: apps/v1
@@ -93,6 +93,8 @@ spec:
           volumeMounts:
             - name: vartrilio
               mountPath: /var/trilio
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
             - name: varlogtriliovault
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-bin
@@ -142,6 +144,8 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
             - name: varlogtriliovault
@@ -242,6 +246,8 @@ spec:
       volumes:
         - name: pod-tmp
           emptyDir: {}
+        - name: pod-shared-triliovault-datamover
+          emptyDir: {}
         - name: vartrilio
           hostPath:
             path: /var/trilio
@@ -310,16 +316,14 @@ Following block gets executed if backup target is s3 OR nfs but not multi-ip nfs
 {{- else }}
 
 
-{{- $node_selector_key := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_key" -}}
-{{- $node_selector_value := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_value" -}}
 
-{{- $serviceAccountName := "triliovault-datamover" }}
+{{- $serviceAccountName := printf "%s-%s" "triliovault-datamover" .Values.labels.datamover.node_selector_key }}
 {{ tuple $envAll "datamover" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: triliovault-datamover-{{ $node_selector_key }}
+  name: triliovault-datamover-{{ .Values.labels.datamover.node_selector_key }}
   annotations:
     {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
   labels:
