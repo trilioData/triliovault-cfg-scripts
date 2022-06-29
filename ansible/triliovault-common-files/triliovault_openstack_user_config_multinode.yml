@@ -12,31 +12,7 @@ tvault_compute_hosts:
   compute1:
     ip: <compute2_ip>
 
-triliovault-wlm-api_hosts:
-  controller1:
-    ip: <controller1_ip>
-  controller2:
-    ip: <controller2_ip>
-  controller3:
-    ip: <controller3_ip>
-
-triliovault-wlm-workload_hosts:
-  controller1:
-    ip: <controller1_ip>
-  controller2:
-    ip: <controller2_ip>
-  controller3:
-    ip: <controller3_ip>
-
-triliovault-wlm-cron_hosts:
-  controller1:
-    ip: <controller1_ip>
-  controller2:
-    ip: <controller2_ip>
-  controller3:
-    ip: <controller3_ip>
-
-triliovault-wlm-scheduler_hosts:
+triliovault-wlm_hosts:
   controller1:
     ip: <controller1_ip>
   controller2:

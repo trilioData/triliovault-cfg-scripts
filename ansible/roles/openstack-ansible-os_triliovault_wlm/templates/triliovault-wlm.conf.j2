@@ -1,8 +1,8 @@
 [DEFAULT]
-api_paste_config = {{ wlmapi_api_paste }}
+api_paste_config = {{ wlm_api_paste }}
 
 api_workers = 4
-cloud_admin_role = {{ wlmapi_service_role_name }}
+cloud_admin_role = {{ wlm_service_role_name }}
 
 compute_driver = libvirt.LibvirtDriver
 config_status = configured
@@ -32,12 +32,12 @@ nova_production_endpoint_template = {{ nova_endpoint_url }}
 
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
-region_name_for_services = {{ wlmapi_service_region }}
+region_name_for_services = {{ wlm_service_region }}
 rootwrap_config = {{ rootwrap_config }}
 
-sql_connection = mysql+pymysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
-transport_url = {{ wlmapi_oslomsg_rpc_transport }}://{% for host in wlmapi_oslomsg_rpc_servers.split(',') %}{{ wlmapi_oslomsg_rpc_userid }}:{{ wlmapi_oslomsg_rpc_password }}@{{ host }}:{{ wlmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlmapi_oslomsg_rpc_vhost }}{% if wlmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlmapi_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlmapi_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
 state_path = {{ state_path }}
 trustee_role  = {{ trustee_role }}
@@ -86,7 +86,7 @@ version_locations = {{venv_path}}/lib/python3.6/site-packages/workloadmgr/db/sql
 script_location = /usr/share/workloadmgr/migrate_repo
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 {% endif %}
-sqlalchemy.url = mysql://{{ wlmapi_galera_user }}:{{ wlmapi_galera_password }}@{{ wlmapi_galera_address }}/{{ wlmapi_galera_database }}?charset=utf8{% if wlmapi_galera_use_ssl | bool %}&ssl_ca={{ wlmapi_galera_ssl_ca_cert }}{% endif %}
+sqlalchemy.url = mysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 
 [clients]
@@ -102,8 +102,8 @@ process_timeout = {{ process_timeout }}
 misfire_grace_time = {{ misfire_grace_time }}
 
 [keystone_authtoken]
-auth_plugin = {{ wlmapi_keystone_auth_plugin }}
-admin_tenant_name = {{ wlmapi_service_project_name }}
+auth_plugin = {{ wlm_keystone_auth_plugin }}
+admin_tenant_name = {{ wlm_service_project_name }}
 
 admin_user = {{ cloud_admin_username }}
 admin_password = {{ cloud_admin_password }}
@@ -112,13 +112,13 @@ auth_type = {{ auth_type }}
 auth_url = {{ cloud_auth_url }}
 
 auth_version = {{ auth_version }}
-cafile = {{ wlmapi_oslomsg_rpc_ssl_ca_file }}
+cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
 
 insecure = false
 password = {{ cloud_admin_password }}
 
-project_name = {{ wlmapi_service_project_name }}
-region_name = {{ wlmapi_service_region }}
+project_name = {{ wlm_service_project_name }}
+region_name = {{ wlm_service_region }}
 
 service_token_roles_required = true
 signing_dir = {{ signing_dir }}

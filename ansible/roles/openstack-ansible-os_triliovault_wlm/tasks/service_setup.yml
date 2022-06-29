@@ -117,7 +117,6 @@
       retries: 5
       delay: 10
       no_log: false
-      ##no_log: True
 
     - name: Add endpoints to keystone endpoint catalog
       openstack.cloud.endpoint:

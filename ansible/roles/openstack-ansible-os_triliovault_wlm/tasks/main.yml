@@ -35,17 +35,17 @@
 
 - import_tasks: db_setup.yml
   when:
-    - "wlmapi_db_setup_host"
+    - "wlm_db_setup_host"
   vars:
-    _oslodb_setup_host: "{{ wlmapi_db_setup_host }}"
-    _oslodb_ansible_python_interpreter: "{{ wlmapi_db_setup_python_interpreter }}"
-    _oslodb_setup_endpoint: "{{ wlmapi_galera_address }}"
-    _oslodb_setup_port: "{{ wlmapi_galera_port }}"
+    _oslodb_setup_host: "{{ wlm_db_setup_host }}"
+    _oslodb_ansible_python_interpreter: "{{ wlm_db_setup_python_interpreter }}"
+    _oslodb_setup_endpoint: "{{ wlm_galera_address }}"
+    _oslodb_setup_port: "{{ wlm_galera_port }}"
     _oslodb_databases:
-      - name: "{{ wlmapi_galera_database }}"
+      - name: "{{ wlm_galera_database }}"
         users:
-          - username: "{{ wlmapi_galera_user }}"
-            password: "{{ wlmapi_galera_password }}"
+          - username: "{{ wlm_galera_user }}"
+            password: "{{ wlm_galera_password }}"
   tags:
     - triliovault-wlm
     - triliovault-wlm-uninstall
@@ -54,18 +54,18 @@
 
 - import_tasks: mq_setup.yml
   when:
-    - "wlmapi_oslomsg_rpc_setup_host"
+    - "wlm_oslomsg_rpc_setup_host"
   vars:
-    _oslomsg_rpc_setup_host: "{{ wlmapi_oslomsg_rpc_setup_host }}"
-    _oslomsg_rpc_userid: "{{ wlmapi_oslomsg_rpc_userid }}"
-    _oslomsg_rpc_password: "{{ wlmapi_oslomsg_rpc_password }}"
-    _oslomsg_rpc_vhost: "{{ wlmapi_oslomsg_rpc_vhost }}"
-    _oslomsg_rpc_transport: "{{ wlmapi_oslomsg_rpc_transport }}"
-    _oslomsg_notify_setup_host: "{{ wlmapi_oslomsg_notify_setup_host }}"
-    _oslomsg_notify_userid: "{{ wlmapi_oslomsg_notify_userid }}"
-    _oslomsg_notify_password: "{{ wlmapi_oslomsg_notify_password }}"
-    _oslomsg_notify_vhost: "{{ wlmapi_oslomsg_notify_vhost }}"
-    _oslomsg_notify_transport: "{{ wlmapi_oslomsg_notify_transport }}"
+    _oslomsg_rpc_setup_host: "{{ wlm_oslomsg_rpc_setup_host }}"
+    _oslomsg_rpc_userid: "{{ wlm_oslomsg_rpc_userid }}"
+    _oslomsg_rpc_password: "{{ wlm_oslomsg_rpc_password }}"
+    _oslomsg_rpc_vhost: "{{ wlm_oslomsg_rpc_vhost }}"
+    _oslomsg_rpc_transport: "{{ wlm_oslomsg_rpc_transport }}"
+    _oslomsg_notify_setup_host: "{{ wlm_oslomsg_notify_setup_host }}"
+    _oslomsg_notify_userid: "{{ wlm_oslomsg_notify_userid }}"
+    _oslomsg_notify_password: "{{ wlm_oslomsg_notify_password }}"
+    _oslomsg_notify_vhost: "{{ wlm_oslomsg_notify_vhost }}"
+    _oslomsg_notify_transport: "{{ wlm_oslomsg_notify_transport }}"
   tags:
     - triliovault-wlm
     - triliovault-wlm-uninstall
@@ -80,7 +80,7 @@
     - tvault-all-install
     - tvault-all-uninstall
 
-- name: Install WLM-API on CentOS/RHEL 
+- name: Install TRILIOVAULT WLM Services on CentOS/RHEL 
   import_tasks: install-centos.yml
   tags:
     - triliovault-wlm
@@ -91,7 +91,7 @@
        (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
        (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
-- name: Install WLM-API on Ubuntu/Debian
+- name: Install TRILIOVAULT WLM Services on Ubuntu/Debian
   import_tasks: install-ubuntu.yml
   tags:
     - triliovault-wlm

@@ -10,7 +10,7 @@
   block:
     - name: Add RPC RabbitMQ vhost
       community.rabbitmq.rabbitmq_vhost:
-        name: "{{ wlmapi_oslomsg_rpc_vhost }}"
+        name: "{{ wlm_oslomsg_rpc_vhost }}"
         state: "present"
 
     - name: Apply RPC RabbitMQ vhost policies
@@ -19,7 +19,7 @@
         pattern: "{{ item.pattern }}"
         priority: "{{ item.priority | default(0) }}"
         tags: "{{ item.tags }}"
-        vhost: "{{ wlmapi_oslomsg_rpc_vhost }}"
+        vhost: "{{ wlm_oslomsg_rpc_vhost }}"
       loop: "{{ _oslomsg_rpc_policies | default([]) + oslomsg_rpc_policies }}"
 
     - name: Add RPC RabbitMQ user
@@ -27,7 +27,7 @@
         user: "{{ _oslomsg_rpc_userid }}"
         password: "{{ _oslomsg_rpc_password }}"
         update_password: always
-        vhost: "{{ wlmapi_oslomsg_rpc_vhost }}"
+        vhost: "{{ wlm_oslomsg_rpc_vhost }}"
         configure_priv: ".*"
         read_priv: ".*"
         write_priv: ".*"
@@ -47,8 +47,8 @@
         name: "{{ _oslomsg_notify_vhost }}"
         state: "present"
       when:
-        - (wlmapi_oslomsg_rpc_vhost is undefined) or
-          (_oslomsg_notify_vhost != wlmapi_oslomsg_rpc_vhost) or
+        - (wlm_oslomsg_rpc_vhost is undefined) or
+          (_oslomsg_notify_vhost != wlm_oslomsg_rpc_vhost) or
           (_oslomsg_notify_setup_host != _oslomsg_rpc_setup_host)
 
     - name: Apply Notify RabbitMQ vhost policies
@@ -60,8 +60,8 @@
         vhost: "{{ _oslomsg_notify_vhost }}"
       loop: "{{ _oslomsg_notify_policies | default([]) + oslomsg_notify_policies }}"
       when:
-        - (wlmapi_oslomsg_rpc_vhost is undefined) or
-          (_oslomsg_notify_vhost != wlmapi_oslomsg_rpc_vhost) or
+        - (wlm_oslomsg_rpc_vhost is undefined) or
+          (_oslomsg_notify_vhost != wlm_oslomsg_rpc_vhost) or
           (_oslomsg_notify_setup_host != _oslomsg_rpc_setup_host)
 
     - name: Add Notify RabbitMQ user
