@@ -111,11 +111,11 @@ glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost
 wlm_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
 glance_api_version: 2
 
-trustee_role: "creator"
+trustee_role: "member"
 api_auth_port: 35357
 osapi_workloads_listen_port: 8781
 
-max_wait_upload: 48
+max_wait_upload: 10
 workloads_workers: 4
 client_retry_limit: 3
 
