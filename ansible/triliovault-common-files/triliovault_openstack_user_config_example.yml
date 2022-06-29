@@ -1,11 +1,11 @@
-## triliovault-datamover-api
+## Triliovault-datamover-api
 tvault-dmapi_hosts:              ## Add controller details in this section as tvault DMAPI is resides on controller nodes.
   infra-1:                       ## controller hostname.
     ip: <controller1_ip>         ## IP address of controller1
   infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in infra-2
     ip: <controller2_ip>         ## IP address of controller2
 
-## triliovault-datamover
+## Triliovault-datamover
 tvault_compute_hosts:           ## Add compute details in this section as triliovault datamover is resides on compute nodes.
   infra-1:                      ## compute hostname
     ip: <compute1_ip>           ## IP address of compute
