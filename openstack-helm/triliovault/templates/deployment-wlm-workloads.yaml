@@ -25,10 +25,6 @@ limitations under the License.
 {{- end -}}
 
 
-{{- $node_selector_key := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_key" -}}
-{{- $node_selector_value := index .Values.conf.triliovault.nfs.nfs_shares 0 "node_selector_value" -}}
-
-
 {{- $serviceAccountName := "triliovault-wlm-workloads" }}
 {{ tuple $envAll "wlm_workloads" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 
@@ -156,7 +152,14 @@ spec:
               mountPath: /tmp/triliovault-wlm-workloads.sh
               subPath: triliovault-wlm-workloads.sh
               readOnly: true
-            {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
+            {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) }}
+            {{- $share_ip := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "ip" }}
+            {{- $share_path := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "path" }}
+            {{- $nfs_mount_point_endcoded := $share_path | b64enc }}
+            {{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
+            - name: triliovault-nfs-pv-wlm-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+              mountPath: {{ $nfs_mount_point | quote }}
+            {{- else if eq .Values.conf.triliovault.backup_target_type "nfs" }}
             {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
             {{ printf "\n" | indent 12 }}
             {{- $share_path := get $share "path" -}}
@@ -187,7 +190,13 @@ spec:
           configMap:
             name: triliovault-bin
             defaultMode: 0555
-        {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
+        {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) }}
+        {{- $share_ip := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "ip" }}
+        {{- $share_path := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "path" }}
+        - name: triliovault-nfs-pv-wlm-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+          persistentVolumeClaim:
+            claimName: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+        {{- else if eq .Values.conf.triliovault.backup_target_type "nfs" }}
         {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
         {{ printf "\n" | indent 8 }}
         {{- $share_path := get $share "path" -}}
