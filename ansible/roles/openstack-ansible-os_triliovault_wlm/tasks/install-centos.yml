@@ -99,14 +99,14 @@
 - name: copy triliovault wlm workload conf
   template:
      src: triliovault-wlm.conf.j2
-     dest: "{{ wlmapi_cfg }}"
+     dest: "{{ wlm_cfg }}"
 
 - import_tasks: triliovault_db_sync.yml 
 
 - name: Copy triliovault wlm api paste ini 
   template:
      src: api-paste.ini.j2
-     dest: "{{ wlmapi_api_paste }}"
+     dest: "{{ wlm_api_paste }}"
 
 - name: Copy triliovault object store conf
   template:
