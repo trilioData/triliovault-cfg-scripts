@@ -765,7 +765,7 @@ conf:
       ## And, copy S3's ca cert file in triliovault/files/s3-cert.pem file in triliovault helm chart code directory.
       ssl_enabled: False
 
-    ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
+    ## Configure 'dmapi_workers' parameter of '/etc/triliovault-datamover/triliovault-datamover-api.conf' file
     ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
     ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
     ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
