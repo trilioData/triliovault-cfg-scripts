@@ -76,7 +76,7 @@ wlm_service_user_name: workloadmgr
 wlm_service_project_name: "{{ triliovault_project_name | default('service')}}"
 
 wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
-wlm_service_project_domain_id: default
+wlm_service_project_domain_id: "{{ wlm_project_domain_id | default('default')}}"
 wlm_service_user_domain_id: "{{ triliovault_domain_id | default('Default')}}"
 
 wlm_service_publicuri: "{{ wlm_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlm_service_port }}"
@@ -111,7 +111,7 @@ glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost
 wlm_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
 glance_api_version: 2
 
-trustee_role: "member"
+trustee_role: "{{ trilio_trustee_role | default('creator') }}"
 api_auth_port: 35357
 osapi_workloads_listen_port: 8781
 
@@ -122,7 +122,8 @@ client_retry_limit: 3
 process_timeout: 300
 misfire_grace_time: 600
 
-log_dir: "/var/log/triliovault"
+wlm_log_dir: "/var/log/workloadmgr"
+wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
 ## Keystone authentication middleware
 wlm_keystone_auth_plugin: password

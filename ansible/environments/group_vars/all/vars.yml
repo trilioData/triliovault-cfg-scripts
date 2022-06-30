@@ -26,7 +26,7 @@ NFS_SHARES:
           - sample_nfs_server_ip1:sample_share_path
           - sample_nfs_server_ip2:sample_share_path
 
-#if NFS_OPTS is empty then default value will be "nolock,soft,timeo=180,intr,lookupcache=none"
+## If NFS_OPTS is empty then default value will be "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
 NFS_OPTS: ""
 
 ## Valid for 'nfs' backup target only.
@@ -158,16 +158,23 @@ trilio_admin_password: ""
 ##triliovault_domain_id: ""
 
 
-## Triliovault trustee role default is creator
-trilio_trustee_role: "creator"
+## Triliovault trustee role default value is creator
+## If need to assign trustee_role other than default value
+## Uncomment 'trilio_trustee_role' and assign the value
+
+#trilio_trustee_role: ""
 
 ## Cloud Details
 cloud_admin_project_name: ""
 cloud_admin_project_id: ""
+
 cloud_admin_domain_name: ""
+
 cloud_admin_username: ""
 cloud_admin_password: ""
+
 cloud_endpoint_type: ""
+
 service_region: ""
 cloud_auth_url: ""
 
@@ -181,3 +188,7 @@ os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 ## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
 ## venv_path: "/home/stack/venv"
 venv_path: ""
+
+## Uncomment 'wlm_project_domain_id' if user wants to set any other value than 'default'
+#wlm_project_domain_id : ""
+

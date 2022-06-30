@@ -1,78 +1,76 @@
 [DEFAULT]
-log_dir = {{ triliovault_log_dir }}
+log_dir = {{ wlm_log_dir }}
 use_syslog = false
+
 use_stderr = False
-log_config = /etc/triliovault-wlm/wlm_logging.conf
+log_config = {{ wlm_log_cfg }}
 
 triliovault_hostnames = <WLM_NODE_IP>
 api_workers = 4
+
 workloads_workers = {{ workloads_workers }}
 max_wait_for_upload = {{ max_wait_upload }}
 
 config_status = configured
-
 transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
 rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
-
 sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
+
 compute_driver = libvirt.LibvirtDriver
-
 state_path = {{ state_path }}
+
 rootwrap_config = {{ rootwrap_config }}
-
 api_paste_config = {{ wlm_api_paste }}
+
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
-
 verbose = true
-debug = false
 
+debug = false
 glance_production_host = {{ internal_lb_vip_address }}
+
 glance_production_api_servers = {{ glance_endpoint_url }} 
-cinder_production_endpoint_template = <>
+cinder_production_endpoint_template = {{ cinder_endpoint_url }}
+
 nova_production_endpoint_template = {{ nova_endpoint_url }}
 neutron_production_url = {{ neutron_endpoint_url }}
 
 trustee_role  = {{ trustee_role }}
-global_job_scheduler_override = false
-
-
+global_job_scheduler_override = False
 region_name_for_services = {{ wlm_service_region }}
 
 nova_admin_auth_url = {{ cloud_auth_url }}
 neutron_admin_auth_url = {{ cloud_auth_url }}
 
-
 keystone_endpoint_url = {{ cloud_auth_url }}
+domain_name = {{ cloud_admin_domain_name }}
 
-domain_name = <default>
-triliovault_user_domain_id = <default>
+triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
 
-cloud_unique_id = <>
-cloud_admin_user_id = <>
+## Need to Fetch the value
+cloud_unique_id = {{ trilio_user_id }}
 
-cloud_admin_domain = <>
-cloud_admin_project_id = <>
+## Need to Fetch the value
+cloud_admin_user_id = {{ cloud_admin_user_id }}
+
+cloud_admin_domain = {{ cloud_admin_domain_name }}
+
+cloud_admin_project_id = {{ cloud_admin_project_id }}
+cloud_admin_role = {{ wlm_service_role_name }}
 
 keystone_auth_version = 3
 glance_api_version = {{ glance_api_version }}
 
-
-cloud_admin_role = {{ wlm_service_role_name }}
-helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
-
-neutron_api_insecure = false
-
-
 {% if NFS == True %}
-vault_storage_type = nfs
 
 vault_data_directory = {{ triliovault_mnt_dir }}
-vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
-
 vault_data_directory_old = /var/triliovault
-vault_storage_das_device = none
 
-vault_storage_nfs_options = nolock,soft,vers=3,timeo=180,intr,lookupcache=none
+vault_storage_das_device = none
+vault_storage_type = nfs
+
+vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
+vault_storage_nfs_options = {{ NFS_OPTIONS }}
 
 {% else %}
 
@@ -95,9 +93,47 @@ vault_storage_nfs_export = TrilioVault
 
 {% endif %}
 
+helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+neutron_api_insecure = false
+
+[keystone_authtoken]
+auth_uri = {{ cloud_auth_url }}/{{ auth_version}}
+auth_url = {{ cloud_auth_url }}/{{ auth_version}}
+
+www_authenticate_uri = {{ keystone_service_internalurl }}/{{ auth_version}}
+auth_type = {{ auth_type }}
+
+user_domain_name =  {{ cloud_admin_domain_name }}
+project_domain_id = {{ cloud_admin_project_id }}
+
+user_domain_id = <default>
+project_name = {{ wlm_service_project_name }}
+
+username = {{ trilio_user_name }}
+password = {{ trilio_user_password }}
+
+admin_password = {{ cloud_admin_password }}
+admin_user = {{ cloud_admin_username }}
+admin_tenant_name = {{ wlm_service_project_name }}
+
+memcached_servers = inet6:[::1]:11211
+project_domain_name = {{ cloud_admin_domain_name }}
+
+auth_plugin = {{ wlm_keystone_auth_plugin }}
+auth_version = {{ auth_version }}
+cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+insecure = false
+region_name = {{ wlm_service_region }}
+service_token_roles_required = true
+signing_dir = {{ signing_dir }}
+
+[clients]
+client_retry_limit = {{ client_retry_limit }}
+endpoint_type  = {{ cloud_endpoint_type }}
+insecure = false
+
 
 [alembic]
-
 {% if venv_path is defined  and venv_path|length > 0 %}
 script_location = {{ venv_path }}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
 version_locations = {{venv_path}}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
@@ -110,47 +146,8 @@ version_locations = /usr/share/workloadmgr/migrate_repo/versions
 sqlalchemy.url = mysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 
-[clients]
-client_retry_limit = {{ client_retry_limit }}
-endpoint_type  = {{ cloud_endpoint_type }}
-insecure = false
-
-
 [filesearch]
 process_timeout = {{ process_timeout }}
-
-[keystone_authtoken]
-auth_uri = <>
-auth_url = {{ cloud_auth_url }}
-
-www_authenticate_uri = {{ keystone_service_internalurl }}
-auth_type = {{ auth_type }}
-
-project_domain_name = <default>
-project_domain_id = <default>
-
-user_domain_id = <default>
-project_name = {{ wlm_service_project_name }}
-
-username = {{ trilio_user_name }}
-password = {{ cloud_admin_password }}
-
-admin_password = {{ cloud_admin_password }}
-admin_user = {{ cloud_admin_username }}
-
-admin_tenant_name = {{ wlm_service_project_name }}
-memcached_servers = inet6:[::1]:11211
-
-auth_plugin = {{ wlm_keystone_auth_plugin }}
-auth_version = {{ auth_version }}
-
-cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
-insecure = false
-
-region_name = {{ wlm_service_region }}
-service_token_roles_required = true
-
-signing_dir = {{ signing_dir }}
 
 [global_job_scheduler]
 misfire_grace_time = {{ misfire_grace_time }}
