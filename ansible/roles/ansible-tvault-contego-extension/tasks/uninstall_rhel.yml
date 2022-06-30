@@ -15,7 +15,6 @@
      name:
         - python-s3fuse-plugin-cent7
         - tvault-contego
-        - puppet-triliovault
      state: absent
   when: PYTHON_VERSION=="python2"
 
@@ -25,7 +24,6 @@
         - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
         - python3-s3fuse-plugin
         - python3-tvault-contego
-        - puppet-triliovault
      state: absent
   when: PYTHON_VERSION=="python3"
 
