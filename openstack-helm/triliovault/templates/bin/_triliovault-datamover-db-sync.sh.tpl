@@ -15,4 +15,4 @@ limitations under the License.
 */}}
 
 set -ex
-exec /var/lib/openstack/bin/python3 /usr/bin/dmapi-dbsync
+exec /var/lib/openstack/bin/python3 /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf
