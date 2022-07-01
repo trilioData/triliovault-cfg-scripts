@@ -53,7 +53,7 @@ cloud_unique_id = {{ trilio_user_id }}
 ## Need to Fetch the value
 cloud_admin_user_id = {{ cloud_admin_user_id }}
 
-cloud_admin_domain = {{ cloud_admin_domain_name }}
+cloud_admin_domain = {{ cloud_admin_domain_id }}
 
 cloud_admin_project_id = {{ cloud_admin_project_id }}
 cloud_admin_role = {{ wlm_service_role_name }}
@@ -103,10 +103,10 @@ auth_url = {{ cloud_auth_url }}/{{ auth_version}}
 www_authenticate_uri = {{ keystone_service_internalurl }}/{{ auth_version}}
 auth_type = {{ auth_type }}
 
-user_domain_name =  {{ cloud_admin_domain_name }}
+user_domain_name =  {{ cloud_admin_domain_id }}
 project_domain_id = {{ cloud_admin_project_id }}
 
-user_domain_id = <default>
+user_domain_id = {{ wlm_user_domain_id }}
 project_name = {{ wlm_service_project_name }}
 
 username = {{ trilio_user_name }}
