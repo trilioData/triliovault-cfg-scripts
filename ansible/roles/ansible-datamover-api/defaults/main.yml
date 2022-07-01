@@ -65,3 +65,5 @@ dmapi_service_adminurl: "{{ dmapi_service_adminuri_proto }}://{{ internal_lb_vip
 
 ## New Vars
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+dmapi_cfg_dir: "/etc/triliovault-datamover"
+dmapi_cfg_file: "{{ dmapi_cfg_dir }}/triliovault-datamover-api.conf"
