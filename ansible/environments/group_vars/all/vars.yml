@@ -152,8 +152,8 @@ trilio_admin_password: ""
 ##triliovault_project_name: ""
 
 ## Uncomment the variable triliovault_domain_id when
-## user wants to deploy triliovualt-wlm components in different
-## the default value of triliovault_domain_id is 'Default'
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of triliovault_domain_id is 'default'
 
 ##triliovault_domain_id: ""
 
@@ -189,6 +189,7 @@ os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 ## venv_path: "/home/stack/venv"
 venv_path: ""
 
-## Uncomment 'wlm_project_domain_id' if user wants to set any other value than 'default'
+## Uncomment 'wlm_project_domain_id' and set any value 
+## Default value is other than 'default'
 #wlm_project_domain_id : ""
 

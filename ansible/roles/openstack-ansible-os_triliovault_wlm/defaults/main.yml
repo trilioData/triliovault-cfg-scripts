@@ -28,7 +28,7 @@ wlm_oslomsg_rpc_port: "{{ oslomsg_rpc_port | default('5672') }}"
 wlm_oslomsg_rpc_use_ssl: "{{ oslomsg_rpc_use_ssl | default(False) }}"
 
 wlm_oslomsg_rpc_userid: workloadmgr
-wlm_oslomsg_rpc_vhost: /workloadmgr
+wlm_oslomsg_rpc_vhost: workloadmgr
 
 wlm_oslomsg_rpc_ssl_version: "{{ oslomsg_rpc_ssl_version | default('TLSv1_2') }}"
 wlm_oslomsg_rpc_ssl_ca_file: "{{ oslomsg_rpc_ssl_ca_file | default('') }}"
@@ -77,7 +77,7 @@ wlm_service_project_name: "{{ triliovault_project_name | default('service')}}"
 
 wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
 wlm_service_project_domain_id: "{{ wlm_project_domain_id | default('default')}}"
-wlm_service_user_domain_id: "{{ triliovault_domain_id | default('Default')}}"
+wlm_service_user_domain_id: "{{ triliovault_domain_id | default('default')}}"
 
 wlm_service_publicuri: "{{ wlm_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlm_service_port }}"
 wlm_service_publicurl: "{{ wlm_service_publicuri }}"

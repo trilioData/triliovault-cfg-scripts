@@ -107,7 +107,9 @@
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
 
-- import_tasks: triliovault_db_sync.yml 
+- import_tasks: triliovault_db_sync.yml
+
+- import_tasks: get_cloud_details.yml
 
 - name: Copy triliovault wlm api paste ini 
   template:
