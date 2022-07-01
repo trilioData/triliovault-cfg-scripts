@@ -147,3 +147,5 @@ state_path: "/opt/stack/data/triliovault-wlm"
 
 ## api-paste.ini var
 keystone_admin_port: 5000
+
+NFS_OPTIONS: "{{ NFS_OPTIONS | default('nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3')}}"
