@@ -102,14 +102,12 @@
     name: python3-s3-fuse-plugin
     state: latest
 
+- import_tasks: get_cloud_details.yml
+
 - name: copy triliovault wlm workload conf
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
-
-- import_tasks: triliovault_db_sync.yml
-
-- import_tasks: get_cloud_details.yml
 
 - name: Copy triliovault wlm api paste ini 
   template:
@@ -121,6 +119,8 @@
      src: triliovault-object-store.conf.j2
      dest: "{{ triliovault_obj_sotre_cfg }}"
   when: NFS == False
+
+- import_tasks: triliovault_db_sync.yml
 
 - name: Enable triliovault object store service
   service:
