@@ -12,9 +12,12 @@ workloads_workers = {{ workloads_workers }}
 max_wait_for_upload = {{ max_wait_upload }}
 
 config_status = configured
+
 transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
+
 rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
+
 sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 compute_driver = libvirt.LibvirtDriver
@@ -37,12 +40,15 @@ neutron_production_url = {{ neutron_endpoint_url }}
 
 trustee_role  = {{ trustee_role }}
 global_job_scheduler_override = False
+
 region_name_for_services = {{ wlm_service_region }}
 
 nova_admin_auth_url = {{ cloud_auth_url }}
+
 neutron_admin_auth_url = {{ cloud_auth_url }}
 
 keystone_endpoint_url = {{ cloud_auth_url }}
+
 domain_name = {{ cloud_admin_domain_name }}
 
 triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
@@ -100,11 +106,11 @@ neutron_api_insecure = false
 auth_uri = {{ cloud_auth_url }}/{{ auth_version}}
 auth_url = {{ cloud_auth_url }}/{{ auth_version}}
 
-www_authenticate_uri = {{ keystone_service_internalurl }}/{{ auth_version}}
+www_authenticate_uri = {{ keystone_service_internalurl }}
 auth_type = {{ auth_type }}
 
-user_domain_name =  {{ cloud_admin_domain_id }}
 project_domain_id = {{ cloud_admin_project_id }}
+user_domain_name =  {{ cloud_admin_domain_id }}
 
 user_domain_id = {{ wlm_user_domain_id }}
 project_name = {{ wlm_service_project_name }}
@@ -114,22 +120,25 @@ password = {{ trilio_user_password }}
 
 admin_password = {{ cloud_admin_password }}
 admin_user = {{ cloud_admin_username }}
-admin_tenant_name = {{ wlm_service_project_name }}
 
-memcached_servers = inet6:[::1]:11211
+admin_tenant_name = {{ wlm_service_project_name }}
 project_domain_name = {{ cloud_admin_domain_name }}
 
 auth_plugin = {{ wlm_keystone_auth_plugin }}
 auth_version = {{ auth_version }}
+
 cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
 insecure = false
+
 region_name = {{ wlm_service_region }}
 service_token_roles_required = true
+
 signing_dir = {{ signing_dir }}
 
 [clients]
 client_retry_limit = {{ client_retry_limit }}
 endpoint_type  = {{ cloud_endpoint_type }}
+
 insecure = false
 
 
