@@ -14,13 +14,13 @@
     _service_endpoints:
       - service: "{{ wlm_service_name }}"
         interface: "public"
-        url: "{{ wlm_service_publicurl }}v1//$(tenant_id)s"
+        url: "{{ wlm_service_publicurl }}/v1//$(tenant_id)s"
       - service: "{{ wlm_service_name }}"
         interface: "internal"
-        url: "{{ wlm_service_internalurl }}v1//$(tenant_id)s"
+        url: "{{ wlm_service_internalurl }}/v1//$(tenant_id)s"
       - service: "{{ wlm_service_name }}"
         interface: "admin"
-        url: "{{ wlm_service_adminurl }}v1//$(tenant_id)s"
+        url: "{{ wlm_service_adminurl }}/v1//$(tenant_id)s"
     _service_catalog:
       - name: "{{ wlm_service_name }}"
         type: "{{ wlm_service_type }}"
