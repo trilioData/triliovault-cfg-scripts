@@ -6,3 +6,9 @@ compute
 
 [triliovault-horizon:children]
 horizon
+
+[triliovault-workloadmgr:children]
+control
+
+[triliovault-workloadmgr-api:children]
+control

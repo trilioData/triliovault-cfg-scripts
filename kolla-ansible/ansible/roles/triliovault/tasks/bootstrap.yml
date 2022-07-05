@@ -1,5 +1,6 @@
 ---
-- name: Creating triliovault datamover api database
+
+- name: Creating triliovault workloadmgr api database
   become: true
   kolla_toolbox:
     module_name: mysql_db
@@ -8,13 +9,15 @@
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ triliovault_database_name }}"
+      name: "{{ item.triliovault_database_name }}"
   run_once: True
-  delegate_to: "{{ groups[triliovault_datamover_api_group][0] }}"
+  delegate_to: "{{ groups[item.group_name][0]  }}"
+  with_items:
+     - "{{ triliovault_db_details }}"
   when:
     - not use_preconfigured_databases | bool
 
-- name: Creating triliovault datamover api database user and setting permissions
+- name: Creating triliovault datamover and workloadmgr api database user and setting permissions
   become: true
   kolla_toolbox:
     module_name: mysql_user
@@ -23,14 +26,18 @@
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ triliovault_database_user }}"
+      name: "{{ item.triliovault_database_user }}"
       password: "{{ triliovault_database_password }}"
       host: "%"
-      priv: "{{ triliovault_database_name }}.*:ALL"
+      priv: "{{ item.triliovault_database_name }}.*:ALL"
       append_privs: "yes"
   run_once: True
-  delegate_to: "{{ groups[triliovault_datamover_api_group][0] }}"
+  delegate_to: "{{ groups[item.group_name][0]  }}"
+  with_items:
+     - "{{ triliovault_db_details }}"
   when:
     - not use_preconfigured_databases | bool
 
-- include_tasks: bootstrap_service.yml    
+- import_tasks: rabbitmq.yml
+
+- include_tasks: bootstrap_service.yml
