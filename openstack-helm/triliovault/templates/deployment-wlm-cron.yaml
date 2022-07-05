@@ -111,6 +111,10 @@ spec:
               mountPath: /tmp
             - name: varlogtriliovault
               mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-wlm/wlm_logging.conf
+              name: triliovault-wlm-etc
+              readOnly: true
+              subPath: wlm_logging.conf
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf

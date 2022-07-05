@@ -144,10 +144,14 @@ spec:
               readOnly: true
               subPath: s3-cert.pem
             {{- end }}
-            - mountPath: /etc/triliovault-object-store/logging.conf
+            - mountPath: /etc/triliovault-wlm/wlm_logging.conf
               name: triliovault-wlm-etc
               readOnly: true
-              subPath: logging.conf
+              subPath: wlm_logging.conf
+            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
+              name: triliovault-wlm-etc
+              readOnly: true
+              subPath: object_store_logging.conf
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-workloads.sh
               subPath: triliovault-wlm-workloads.sh
