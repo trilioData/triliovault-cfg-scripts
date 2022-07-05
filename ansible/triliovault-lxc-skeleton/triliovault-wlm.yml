@@ -2,7 +2,7 @@
 component_skel:
   triliovault-wlm_api:
     belongs_to:
-      - triliovault-wlm_all
+      - triliovault-wlm
 
 container_skel:
   triliovault-wlm_container:
