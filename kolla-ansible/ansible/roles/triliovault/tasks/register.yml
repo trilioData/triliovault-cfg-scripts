@@ -5,7 +5,7 @@
     service_ks_register_auth: "{{ openstack_triliovault_auth }}"
     service_ks_register_services: "{{ triliovault_ks_services }}"
     service_ks_register_users: "{{ triliovault_ks_users }}"
-  tags: always
+  tags: register
 
 ## TrilioVault service does not need any users
 ##service_ks_register_users: "{{ triliovault_ks_users }}"
