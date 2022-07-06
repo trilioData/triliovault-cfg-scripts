@@ -1,6 +1,11 @@
 export OS_AUTH_URL={{ cloud_auth_url }}
-export OS_PROJECT_NAME={{ cloud_admin_project_name }}
 export OS_PROJECT_ID={{ cloud_admin_project_id }}
+
+export OS_PROJECT_NAME={{ cloud_admin_project_name }}
 export OS_USER_DOMAIN_NAME={{ cloud_admin_domain_name }}
-export OS_USERNAME={{ cloud_admin_username}}
+
+export OS_PROJECT_DOMAIN_ID={{ cloud_admin_domain_id }}
+export OS_USERNAME={{ cloud_admin_username }}
+
 export OS_PASSWORD={{ cloud_admin_password }}
+export OS_REGION_NAME= {{ service_region }}

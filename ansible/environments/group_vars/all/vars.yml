@@ -168,7 +168,9 @@ trilio_admin_password: ""
 cloud_admin_project_name: ""
 cloud_admin_project_id: ""
 
+
 cloud_admin_domain_name: ""
+cloud_admin_domain_id: ""
 
 cloud_admin_username: ""
 cloud_admin_password: ""
