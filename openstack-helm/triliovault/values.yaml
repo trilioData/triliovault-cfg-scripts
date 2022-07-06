@@ -1168,7 +1168,7 @@ conf:
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
-  object_store_logging.conf:
+  object_store_logging:
     loggers:
       keys: "root"
     handlers:
