@@ -559,6 +559,10 @@ data:
   triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
   triliovault-datamover.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover | b64enc }}
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
+  wlm_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm_logging | b64enc }}
+  datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
+  datamover_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_logging | b64enc }}
+  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
   triliovault-object-store-datamover.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_datamover | b64enc }}
   triliovault-object-store-wlm-api.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_wlm_api | b64enc }}

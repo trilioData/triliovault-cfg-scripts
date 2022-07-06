@@ -6,4 +6,6 @@ conf:
       nfs_shares: 
       - path: /mnt/tvault/42424
         ip: 172.25.0.10
+      - path: /mnt/tvault/mosk
+        ip: 172.25.0.10
       nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
