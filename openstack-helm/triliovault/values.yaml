@@ -981,7 +981,7 @@ conf:
       keys: "default,advanced"
     logger_root:
       level: "INFO"
-      handlers: "workloadmgr"
+      handlers: "stdout"
     handler_workloadmgr:
       class: "logging.handlers.RotatingFileHandler"
       args: "('/var/log/triliovault/workloadmgr.log','a',25000000,20)"
@@ -1105,7 +1105,7 @@ conf:
       keys: "default,advanced"
     logger_root:
       level: "INFO"
-      handlers: "dmapi"
+      handlers: "stdout"
     handler_dmapi:
       class: "logging.handlers.RotatingFileHandler"
       args: "('/var/log/triliovault/dmapi.log','a',25000000,20)"
@@ -1141,7 +1141,7 @@ conf:
       keys: "default,advanced"
     logger_root:
       level: "INFO"
-      handlers: "datamover"
+      handlers: "stdout"
     handler_datamover:
       class: "logging.handlers.RotatingFileHandler"
       args: "('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)"
@@ -1177,7 +1177,7 @@ conf:
       keys: "default,advanced"
     logger_root:
       level: "INFO"
-      handlers: "s3fuse"
+      handlers: "stdout"
     handler_s3fuse:
       class: "logging.handlers.RotatingFileHandler"
       args: "('/var/log/triliovault/tvault-object-store.log','a',25000000,20)"
