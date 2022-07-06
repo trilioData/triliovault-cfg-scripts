@@ -13,7 +13,6 @@ wlm_galera_port: 3306
 wlm_service_role_name: "{{ cloud_admin_role | default('admin') }}"
 wlm_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
 
-
 ## RPC
 wlm_oslomsg_rpc_host_group: "{{ oslomsg_rpc_host_group | default('rabbitmq_all') }}"
 wlm_oslomsg_rpc_setup_host: "{{ (wlm_oslomsg_rpc_host_group in groups) | ternary(groups[wlm_oslomsg_rpc_host_group][0], 'localhost') }}"
@@ -148,4 +147,4 @@ state_path: "/opt/stack/data/triliovault-wlm"
 ## api-paste.ini var
 keystone_admin_port: 5000
 
-NFS_OPTIONS: "{{ NFS_OPTIONS | default('nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3')}}"
+NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
