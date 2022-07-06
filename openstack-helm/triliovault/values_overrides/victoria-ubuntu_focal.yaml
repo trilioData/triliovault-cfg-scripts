@@ -19,4 +19,3 @@ images:
     triliovault_datamover: docker.io/trilio/triliovault-datamover-helm:5.0.1-DEV-victoria-ubuntu_focal
     triliovault_datamover_api: docker.io/trilio/triliovault-datamover-api-helm:5.0.1-DEV-victoria-ubuntu_focal
     triliovault_datamover_db_sync: docker.io/trilio/triliovault-datamover-api-helm:5.0.1-DEV-victoria-ubuntu_focal
-    triliovault_horizon: docker.io/trilio/triliovault-horizon-helm:5.0.1-DEV-victoria-ubuntu_focal

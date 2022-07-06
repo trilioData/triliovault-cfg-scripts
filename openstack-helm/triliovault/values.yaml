@@ -60,7 +60,6 @@ images:
     triliovault_datamover_api: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
     triliovault_datamover_db_sync: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_db_sync: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_horizon: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -1098,8 +1097,177 @@ conf:
       args: "('/var/log/triliovault/workloadmgr-workloads.log','a',25000000,20)"
       formatter: "default"
   datamover_api_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "dmapi,dmapierr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "dmapi"
+    handler_dmapi:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/dmapi.log','a',25000000,20)"
+      formatter: "default"
+    handler_dmapierr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/dmapi-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
   datamover_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "datamover,datamovererr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "datamover"
+    handler_datamover:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)"
+      formatter: "default"
+    handler_datamovererr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-datamover-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
   object_store_logging.conf:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "s3fuse,s3fuseerr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "s3fuse"
+    handler_s3fuse:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/tvault-object-store.log','a',25000000,20)"
+      formatter: "default"
+    handler_s3fuseerr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/tvault-object-store-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+  logging:
+    loggers:
+      keys:
+        - root
+        - datamover
+        - os.brick
+    handlers:
+      keys:
+        - stdout
+        - stderr
+        - "null"
+    formatters:
+      keys:
+        - context
+        - default
+    logger_root:
+      level: WARNING
+      handlers: stdout
+    logger_datamover:
+      level: INFO
+      handlers: ""
+      qualname: datamover
+    logger_os.brick:
+      level: INFO
+      handlers: ""
+      qualname: os.brick
+    logger_amqp:
+      level: WARNING
+      handlers: ""
+      qualname: amqp
+    logger_amqplib:
+      level: WARNING
+      handlers: ""
+      qualname: amqplib
+    logger_eventletwsgi:
+      level: WARNING
+      handlers: ""
+      qualname: eventlet.wsgi.server
+    logger_sqlalchemy:
+      level: WARNING
+      handlers: ""
+      qualname: sqlalchemy
+    logger_boto:
+      level: WARNING
+      handlers: ""
+      qualname: boto
+    handler_null:
+      class: logging.NullHandler
+      formatter: default
+      args: ()
+    handler_stdout:
+      class: StreamHandler
+      args: (sys.stdout,)
+      formatter: context
+    handler_stderr:
+      class: StreamHandler
+      args: (sys.stderr,)
+      formatter: context
+    formatter_context:
+      class: oslo_log.formatters.ContextFormatter
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    formatter_default:
+      format: "%(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
 
 bootstrap:
   enabled: false
