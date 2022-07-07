@@ -177,7 +177,7 @@ cloud_admin_password: ""
 
 cloud_endpoint_type: ""
 
-service_region: ""
+OS_REGION: ""
 cloud_auth_url: ""
 
 ## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'

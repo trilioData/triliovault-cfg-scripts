@@ -8,4 +8,4 @@ export OS_PROJECT_DOMAIN_ID={{ cloud_admin_domain_id }}
 export OS_USERNAME={{ cloud_admin_username }}
 
 export OS_PASSWORD={{ cloud_admin_password }}
-export OS_REGION_NAME={{ service_region }}
+export OS_REGION_NAME={{ OS_REGION }}

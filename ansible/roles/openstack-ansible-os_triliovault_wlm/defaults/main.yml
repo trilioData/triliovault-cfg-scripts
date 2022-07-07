@@ -58,7 +58,7 @@ wlm_oslomsg_amqp1_enabled: "{{ wlm_oslomsg_rpc_transport == 'amqp' }}"
 wlm_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
 wlm_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_python_interpreter | default((wlm_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
 
-wlm_service_region: "{{ service_region | default('RegionOne') }}"
+wlm_service_region: "{{ OS_REGION | default('RegionOne') }}"
 wlm_service_name: workloadmgr
 
 wlm_service_port: 8781
