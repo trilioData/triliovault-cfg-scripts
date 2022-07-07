@@ -49,20 +49,17 @@ neutron_admin_auth_url = {{ cloud_auth_url }}
 
 keystone_endpoint_url = {{ cloud_auth_url }}
 
-domain_name = {{ cloud_admin_domain_id }}
-
+##Cloud details
 triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
+cloud_unique_id = {{ cloud_admin_user_id }}
 
-## Need to Fetch the value
-cloud_unique_id = {{ wlm_user_domain_id }}
-
-## Need to Fetch the value
 cloud_admin_user_id = {{ cloud_admin_user_id }}
+cloud_admin_project_id = {{ cloud_admin_project_id }}
 
 cloud_admin_domain = {{ cloud_admin_domain_id }}
-
-cloud_admin_project_id = {{ cloud_admin_project_id }}
 cloud_admin_role = {{ wlm_service_role_name }}
+
+domain_name = {{ cloud_admin_domain_id }}
 
 keystone_auth_version = 3
 glance_api_version = {{ glance_api_version }}
@@ -103,20 +100,26 @@ helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-h
 neutron_api_insecure = false
 
 [keystone_authtoken]
-www_authenticate_uri = {{ keystone_service_internaluri }}
+auth_uri = {{ cloud_auth_url }}/v3
 auth_url = {{ cloud_auth_url }}/v3
+
+www_authenticate_uri = {{ keystone_service_internaluri }}/v3
+auth_type = {{ auth_type }}
+
+project_domain_name = {{ cloud_admin_domain_name }}
+user_domain_name = {{ cloud_admin_domain_name }}
 
 admin_tenant_name = {{ wlm_service_project_name }}
 project_name = {{ wlm_service_project_name }}
 
-project_domain_id = {{ cloud_admin_project_id }}
+project_domain_id = {{ cloud_admin_domain_name }}
 user_domain_id = {{ wlm_user_domain_id }}
 
-password = {{ trilio_user_password }}
-username = {{ trilio_user_name }}
+username = {{ wlm_service_user_name }}
+password = {{ wlm_service_password }}
 
-admin_password = {{ trilio_user_password }}
-admin_user = {{ trilio_user_name }}
+admin_user = {{ wlm_service_user_name }}
+admin_password = {{ wlm_service_password }}
 
 auth_plugin = {{ wlm_keystone_auth_plugin }}
 signing_dir = {{ signing_dir }}
