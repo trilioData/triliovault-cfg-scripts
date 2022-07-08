@@ -41,7 +41,7 @@ paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContex
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
 auth_host = {{ internal_lb_vip_address }}
-auth_port = {{ keystone_admin_port }}
+auth_port = {{ api_auth_port }}
 auth_protocol = https
 admin_tenant_name = {{ wlm_service_project_name }}
 admin_user = {{ wlm_service_user_name }}
@@ -49,4 +49,4 @@ admin_password = {{ wlm_service_password }}
 admin_user_domain_id = {{ cloud_admin_domain_id }}
 signing_dir = {{ signing_dir }}
 insecure = True
-interface = {{ cloud_endpoint_type }}
+interface = {{ OS_ENDPOINT_TYPE }}

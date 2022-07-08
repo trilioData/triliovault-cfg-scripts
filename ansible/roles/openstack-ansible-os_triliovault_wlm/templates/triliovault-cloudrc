@@ -1,6 +1,6 @@
 ## Updated OS-rc file
 export OS_DEFAULT_DOMAIN={{ cloud_admin_domain_id }}
-export OS_AUTH_URL={{ cloud_auth_url }}
+export OS_AUTH_URL={{ OS_AUTH_URL }}
 
 export OS_ENDPOINT_TYPE=internal
 export OS_REGION_NAME={{ OS_REGION }}
