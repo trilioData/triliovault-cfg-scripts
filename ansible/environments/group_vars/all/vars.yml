@@ -137,37 +137,12 @@ datamover_service_debian_path: /etc/init/tvault-datamover.conf
 datamover_log_dir: /var/log/triliovault
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
-## Newly added variables
-## Triliovault version
-triliovault_version: 'triliodata-dev-stable-5-0'
-
-### Triliovault Credentials
-trilio_admin_username: ""
-trilio_admin_password: ""
-
-## Uncomment the varibale triliovault_project_name only if
-## user wants to deploy triliovault-wlm in different projcet
-## the default value of triliovault_project_name 'service'
-
-##triliovault_project_name: ""
-
-## Uncomment the variable triliovault_domain_id when
-## user wants to deploy triliovualt-wlm components in different domain
-## default value of triliovault_domain_id is 'default'
-
-##triliovault_domain_id: ""
-
-
-## Triliovault trustee role default value is creator
-## If need to assign trustee_role other than default value
-## Uncomment 'trilio_trustee_role' and assign the value
-
-#trilio_trustee_role: ""
+## Triliovault pckg version
+triliovault_version: ""
 
 ## Cloud Details
 cloud_admin_project_name: ""
 cloud_admin_project_id: ""
-
 
 cloud_admin_domain_name: ""
 cloud_admin_domain_id: ""
@@ -175,10 +150,10 @@ cloud_admin_domain_id: ""
 cloud_admin_username: ""
 cloud_admin_password: ""
 
-cloud_endpoint_type: ""
+OS_ENDPOINT_TYPE: ""
 
 OS_REGION: ""
-cloud_auth_url: ""
+OS_AUTH_URL: ""
 
 ## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'
 ## Specify the role
@@ -191,7 +166,36 @@ os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 ## venv_path: "/home/stack/venv"
 venv_path: ""
 
+## Uncomment the varibale wlm_service_project_name only if
+## user wants to deploy triliovault-wlm in different projcet
+## the default value of wlm_service_project_name 'service'
+
+#wlm_service_project_name: ""
+
+## Uncomment the variable wlm_user_domain_name namewhen
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_name is 'Default'
+
+#wlm_user_domain_name: ""
+
+## Uncomment the variable wlm_user_domain_id when
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_id is 'default'
+
+#wlm_user_domain_id: ""
+
+## Uncomment 'wlm_project_domain_name' and set any value 
+## Default value is other than 'Default'
+
+#wlm_project_domain_name : ""
+
 ## Uncomment 'wlm_project_domain_id' and set any value 
 ## Default value is other than 'default'
+
 #wlm_project_domain_id : ""
 
+## Triliovault trustee role default value is creator
+## If need to assign trustee_role other than default value
+## Uncomment 'wlm_trustee_role' and assign the value
+
+#wlm_trustee_role: ""

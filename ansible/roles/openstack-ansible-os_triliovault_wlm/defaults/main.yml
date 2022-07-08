@@ -53,7 +53,6 @@ wlm_oslomsg_notify_ssl_ca_file: "{{ oslomsg_notify_ssl_ca_file | default('') }}"
 ## TODO(ansmith) Change structure when more backends will be supported
 wlm_oslomsg_amqp1_enabled: "{{ wlm_oslomsg_rpc_transport == 'amqp' }}"
 
-
 ## Service Type and Data
 wlm_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
 wlm_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_python_interpreter | default((wlm_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
@@ -66,17 +65,21 @@ wlm_service_proto: http
 
 wlm_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(wlm_service_proto) }}"
 wlm_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(wlm_service_proto) }}"
-
 wlm_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(wlm_service_proto) }}"
+
 wlm_service_type: workloads
-
 wlm_service_description: "Triliovault Workloadmgr API Service"
-wlm_service_user_name: triliovault
-wlm_service_project_name: "{{ triliovault_project_name | default('service')}}"
 
+wlm_service_user_name: triliovault
 wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
+
+wlm_service_project_name: "{{ wlm_service_project_name | default('service')}}"
+
 wlm_service_project_domain_id: "{{ wlm_project_domain_id | default('default')}}"
-wlm_service_user_domain_id: "{{ triliovault_domain_id | default('default')}}"
+wlm_service_project_domain_name: "{{ wlm_project_domain_name | default('Default')}}"
+
+wlm_service_user_domain_id: "{{ wlm_user_domain_id | default('default')}}"
+wlm_service_user_domain_name: "{{ wlm_user_domain_name | default('Default')}}"
 
 wlm_service_publicuri: "{{ wlm_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlm_service_port }}"
 wlm_service_publicurl: "{{ wlm_service_publicuri }}"
@@ -90,16 +93,11 @@ wlm_service_adminurl: "{{ wlm_service_adminuri }}"
 ## Enable automatic parsing of X-Forwarded-Proto, etc. headers passed by the Load balancer.
 wlm_proxy_headers_parsing: True
 
-
-## Triliovault-wlm services
+## Triliovault repo file location
 trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
 
-## Default Triliovault username & Password
-trilio_user_name: "triliovault"
-trilio_user_password: "password"
-
-## Triliovault configuration files
+## Triliovault-wlm configuration files
 wlm_cfg: "/etc/triliovault-wlm/triliovault-wlm.conf"
 wlm_api_paste: "/etc/triliovault-wlm/api-paste.ini"
 triliovault_obj_sotre_cfg: "/etc/triliovault-object-store/triliovault-object-store.conf"
@@ -110,7 +108,7 @@ glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost
 wlm_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
 glance_api_version: 2
 
-trustee_role: "{{ trilio_trustee_role | default('creator') }}"
+trustee_role: "{{ wlm_trustee_role | default('creator') }}"
 api_auth_port: 35357
 osapi_workloads_listen_port: 8781
 
@@ -143,8 +141,5 @@ triliovault_virt_env: "/home/stack/wlm-venv"
 
 signing_dir: "/var/cache/workloadmgr"
 state_path: "/opt/stack/data/triliovault-wlm"
-
-## api-paste.ini var
-keystone_admin_port: 35357
 
 NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
