@@ -111,10 +111,7 @@ password = {{ wlm_service_password }}
 admin_user = {{ wlm_service_user_name }}
 admin_password = {{ wlm_service_password }}
 
-project_domain_name = {{ wlm_service_project_domain_name }}
 project_domain_id = {{ wlm_service_project_domain_id }}
-
-user_domain_name = {{ wlm_service_user_domain_name }}
 user_domain_id = {{ wlm_service_user_domain_id }}
 
 admin_tenant_name = {{ wlm_service_project_name }}
@@ -123,8 +120,9 @@ project_name = {{ wlm_service_project_name }}
 auth_plugin = {{ wlm_keystone_auth_plugin }}
 signing_dir = {{ signing_dir }}
 
-cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
-insecure = True
+#Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
+#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+insecure = False
 
 [clients]
 client_retry_limit = {{ client_retry_limit }}
