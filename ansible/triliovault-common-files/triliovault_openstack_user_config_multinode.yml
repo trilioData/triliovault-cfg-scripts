@@ -12,7 +12,7 @@ tvault_compute_hosts:
   compute1:
     ip: <compute2_ip>
 
-triliovault-wlm_hosts:
+triliovault_wlm_hosts:
   controller1:
     ip: <controller1_ip>
   controller2:
