@@ -6,6 +6,6 @@ tvault_compute_hosts:
   compute:
     ip: <compute_ip>
 
-triliovault_wlm_hosts:
+triliovault-wlm_hosts:
   controller:
     ip: <controller_ip>

@@ -1,7 +1,7 @@
 ---
 
 - name: Installation and setup of WLM services
-  hosts: triliovault_wlm
+  hosts: triliovault-wlm_all
   gather_facts: "{{ osa_gather_facts | default(True) }}"
   user: root
   environment: "{{ deployment_environment_variables | default({}) }}"

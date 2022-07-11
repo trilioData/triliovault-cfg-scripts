@@ -1,20 +1,20 @@
 
 component_skel:
-  triliovault_wlm_api:
+  triliovault-wlm_api:
     belongs_to:
-      - triliovault_wlm
+      - triliovault-wlm
 
 container_skel:
-  triliovault_wlm_container:
+  triliovault-wlm_container:
     belongs_to:
-      - triliovault_wlm_containers
+      - triliovault-wlm_containers
     contains:
-      - triliovault_wlm
+      - triliovault-wlm
 
 physical_skel:
-  triliovault_wlm_containers:
+  triliovault-wlm_containers:
     belongs_to:
       - all_containers
-  triliovault_wlm_hosts:
+  triliovault-wlm_hosts:
     belongs_to:
       - hosts
