@@ -157,14 +157,14 @@ OS_AUTH_URL: ""
 
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 
+## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
+## venv_path: "/home/stack/venv"
+venv_path: ""
+
 ## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'
 ## Specify the role
 
 cloud_admin_role: "admin"
-
-## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
-## venv_path: "/home/stack/venv"
-venv_path: ""
 
 ## Uncomment the varibale wlm_service_project_name only if
 ## user wants to deploy triliovault-wlm in different projcet
