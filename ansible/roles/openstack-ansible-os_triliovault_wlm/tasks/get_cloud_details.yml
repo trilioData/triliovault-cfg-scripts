@@ -1,7 +1,7 @@
 --- 
 
 - name: get CLOUD_PROJECT_ID
-  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ cloud_admin_domain_name }}"
+  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ cloud_admin_project_name }}"
   register: cld_prj_id
   delegate_to: localhost
 

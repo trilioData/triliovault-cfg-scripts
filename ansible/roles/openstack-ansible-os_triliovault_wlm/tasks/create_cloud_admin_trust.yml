@@ -2,10 +2,11 @@
 
 - name: Create cloud admin trust
   shell: |
-    /bin/bash -c "export OS_PROJECT_ID={{ cloud_project_id }}"
-    /bin/bash -c ". /root/triliovault-cloudrc && workloadmgr trust-create --is_cloud_trust True admin --insecure"
+    export OS_PROJECT_ID={{ cloud_project_id }}
+    . /root/cloudrc && workloadmgr trust-create --is_cloud_trust True admin --insecure
   register: crt_cld_trust
   delegate_to: localhost
+  ignore_errors: yes
 
 - name: Print Cloud admin trust output
   debug:

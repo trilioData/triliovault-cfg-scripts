@@ -7,6 +7,12 @@
     mode: '0777'
   delegate_to: localhost
 
+- name: Copy Triliovault-cloudrc into wlm container
+  template:
+    src: triliovault-cloudrc
+    dest: /root/cloudrc
+    mode: '0777'
+  
 - name: get neutron endpoint url
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service neutron --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL --os-cacert {{ os_ca_cert }}"
   register: neutron_endpoint
