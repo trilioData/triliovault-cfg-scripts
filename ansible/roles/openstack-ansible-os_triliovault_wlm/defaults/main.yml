@@ -10,7 +10,7 @@ wlm_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-
 
 wlm_galera_password: "{{ WLM_MYSQL_PASSWORD }}"
 wlm_galera_port: 3306
-wlm_service_role_name: "{{ cloud_admin_role | default('admin') }}"
+wlm_service_role_name: "{{ cloud_admin_role }}"
 wlm_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
 
 ## RPC
@@ -73,13 +73,13 @@ wlm_service_description: "Triliovault Workloadmgr API Service"
 wlm_service_user_name: triliovault
 wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
 
-wlm_service_project_name: "{{ wlm_service_project_name | default('service')}}"
+wlm_service_project_name: "{{ wlm_service_project_name }}"
 
-wlm_service_project_domain_id: "{{ wlm_project_domain_id | default('default')}}"
-wlm_service_project_domain_name: "{{ wlm_project_domain_name | default('Default')}}"
+wlm_service_project_domain_id: "{{ wlm_project_domain_id }}"
+wlm_service_project_domain_name: "{{ wlm_project_domain_name }}"
 
-wlm_service_user_domain_id: "{{ wlm_user_domain_id | default('default')}}"
-wlm_service_user_domain_name: "{{ wlm_user_domain_name | default('Default')}}"
+wlm_service_user_domain_id: "{{ wlm_user_domain_id }}"
+wlm_service_user_domain_name: "{{ wlm_user_domain_name }}"
 
 wlm_service_publicuri: "{{ wlm_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlm_service_port }}"
 wlm_service_publicurl: "{{ wlm_service_publicuri }}"
@@ -108,7 +108,7 @@ glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost
 wlm_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
 glance_api_version: 2
 
-trustee_role: "{{ wlm_trustee_role | default('creator') }}"
+trustee_role: "{{ wlm_trustee_role }}"
 api_auth_port: 35357
 osapi_workloads_listen_port: 8781
 
