@@ -1,5 +1,0 @@
-conf:
-  triliovault:
-    cloud_admin_user_name: "admin"
-    cloud_admin_project_name: "admin"
-    cloud_admin_domain_name: "default"

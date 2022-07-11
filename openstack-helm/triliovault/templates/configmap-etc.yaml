@@ -366,11 +366,11 @@ limitations under the License.
 
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.www_authenticate_uri -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "www_authenticate_uri" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "www_authenticate_uri" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.auth_url -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "auth_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.region_name -}}
@@ -481,7 +481,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.nova_admin_auth_url -}}
-{{- $_ := tuple "compute" "admin" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "nova_admin_auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "nova_admin_auth_url" -}}
 {{- end -}}
 
 
@@ -494,7 +494,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.neutron_admin_auth_url -}}
-{{- $_ := tuple "network" "admin" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "neutron_admin_auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "neutron_admin_auth_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.glance_production_api_servers -}}
@@ -523,6 +523,7 @@ limitations under the License.
 {{- if empty .Values.conf.wlm.DEFAULT.trustee_role -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "trustee_role " .Values.conf.triliovault.trustee_role  -}}
 {{- end -}}
+
 
 
 {{/* **********************************************************************
