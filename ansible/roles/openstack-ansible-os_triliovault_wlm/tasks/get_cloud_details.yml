@@ -1,5 +1,13 @@
 --- 
 
+- name: get CLOUD_PROJECT_ID
+  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ cloud_admin_domain_name }}"
+  register: cld_prj_id
+  delegate_to: localhost
+
+- set_fact:
+    cloud_project_id: "{{ cld_prj_id.stdout }}"
+
 - name: get CLOUD_ADMIN_USER_ID
   shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ cloud_admin_domain_name }} -f value -c id {{ cloud_admin_username }}"
   register: admin_usr_id
