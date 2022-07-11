@@ -16,14 +16,6 @@
 - set_fact:
     cloud_admin_user_id: "{{ admin_usr_id.stdout }}"
 
-- name: get WLM_USER_DOMAIN_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c domain_id {{ wlm_service_user_name }}"
-  register: wlm_usr_domain_id
-  delegate_to: localhost
-
-- set_fact:
-    wlm_user_domain_id: "{{ wlm_usr_domain_id.stdout }}"
-
 - name: get CLOUD_ADMIN_DOMAIN_ID
   shell: ". /root/triliovault-cloudrc && openstack domain show --insecure -f value -c id {{ cloud_admin_domain_name }}"
   register: admin_domain_id
@@ -32,5 +24,11 @@
 - set_fact:
     cloud_admin_domain_id: "{{ admin_domain_id.stdout }}"
 
+- name: get CLOUD_UNIQUE_ID
+  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c domain_id {{ wlm_service_user_name }}"
+  register: wlm_usr_id
+  delegate_to: localhost
 
+- set_fact:
+    wlm_user_id: "{{ wlm_usr_id.stdout }}"
 
