@@ -1,4 +1,3 @@
-## Triliovault datamover API haproxy setting
 haproxy_extra_services:
   - service:
       haproxy_service_name: datamover_service
@@ -9,11 +8,10 @@ haproxy_extra_services:
       haproxy_backend_options:
         - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
 
-## Triliovault wlm API haproxy setting
 haproxy_extra_services:
   - service:
       haproxy_service_name: workloadmgr
-      haproxy_backend_nodes: "{{ groups['triliovault_wlm'] | default([]) }}"
+      haproxy_backend_nodes: "{{ groups['triliovault-wlm'] | default([]) }}"
       haproxy_ssl: "{{ haproxy_ssl }}"
       haproxy_port: 8781
       haproxy_balance_type: http
