@@ -13,7 +13,7 @@ tvault_compute_hosts:           ## Add compute details in this section as trilio
     ip: <compute2_ip>
 
 ## Triliovault-wlm
-triliovault-wlm_hosts:           ## Triliovault WLM HOSTS
+triliovault_wlm_hosts:           ## Triliovault WLM HOSTS
   infra-1:                       ## controller hostname
     ip: <controller1_ip>         ## controller IP
   infra-2:                       ## If we have multiple controllers add controllers details in same manner as shown in Infra-2
