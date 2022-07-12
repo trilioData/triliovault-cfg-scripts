@@ -105,6 +105,17 @@
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
+- name: Ensuring "{{ triliovault_parent_data_directory }}/triliovault-mounts"  directory exist
+  become: true
+  file:
+    path: "{{ triliovault_parent_data_directory }}/triliovault-mounts"
+    state: "directory"
+    owner: "{{ triliovault_datamover_user_id }}"
+    group: "{{ triliovault_datamover_group_id }}"
+    mode: "0755"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - include_tasks: copy-certs.yml
   when:
     - kolla_copy_ca_into_containers | bool
