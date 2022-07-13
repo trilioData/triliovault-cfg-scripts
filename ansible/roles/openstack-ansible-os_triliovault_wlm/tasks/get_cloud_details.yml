@@ -25,7 +25,7 @@
     cloud_admin_domain_id: "{{ admin_domain_id.stdout }}"
 
 - name: get CLOUD_UNIQUE_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c domain_id {{ wlm_service_user_name }}"
+  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c id {{ wlm_service_user_name }}"
   register: wlm_usr_id
   delegate_to: localhost
 
