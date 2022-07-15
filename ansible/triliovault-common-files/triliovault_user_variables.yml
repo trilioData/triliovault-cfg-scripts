@@ -5,10 +5,11 @@ haproxy_extra_services:
       haproxy_ssl: "{{ haproxy_ssl }}"
       haproxy_port: 8784
       haproxy_balance_type: http
+      haproxy_balance_alg: roundrobin
+      haproxy_timeout_client: 10m
+      haproxy_timeout_server: 10m
       haproxy_backend_options:
         - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
-
-haproxy_extra_services:
   - service:
       haproxy_service_name: workloadmgr
       haproxy_backend_nodes: "{{ groups['triliovault-wlm'] | default([]) }}"
