@@ -5,7 +5,7 @@ use_syslog = false
 use_stderr = False
 log_config = {{ wlm_log_cfg }}
 
-triliovault_hostnames = <WLM_NODE_IP>
+triliovault_hostnames = {{container_address}}
 api_workers = 4
 
 workloads_workers = {{ workloads_workers }}
@@ -102,7 +102,7 @@ neutron_api_insecure = false
 [keystone_authtoken]
 auth_url = {{ OS_AUTH_URL }}/v3
 
-www_authenticate_uri = {{ keystone_service_internaluri }}
+www_authenticate_uri = {{ keystone_service_internaluri }}/v3
 auth_type = {{ auth_type }}
 
 username = {{ wlm_service_user_name }}
