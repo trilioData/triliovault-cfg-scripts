@@ -1,13 +1,13 @@
 --- 
 
-- name: Create Triliovault-cloudrc file    
+- name: Copy Triliovault-cloudrc Ansible Node
   template:
     src: triliovault-cloudrc
     dest: /root/triliovault-cloudrc
     mode: '0777'
   delegate_to: localhost
 
-- name: Copy Triliovault-cloudrc into wlm container
+- name: Copy Triliovault-cloudrc into WLM container
   template:
     src: triliovault-cloudrc
     dest: /root/cloudrc

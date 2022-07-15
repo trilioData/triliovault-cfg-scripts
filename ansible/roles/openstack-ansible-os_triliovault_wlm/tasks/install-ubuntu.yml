@@ -1,15 +1,5 @@
 ---
 
-- name: Copy nova_userid script
-  template:
-     src: nova_userid.sh
-     dest: /opt/
-     mode: '0777'
-
-- name: Update NOVA UID GID
-  command: |
-        /bin/bash -c "/opt/nova_userid.sh"
-
 - name: Create triliovault log dir
   file:
     path: "{{ triliovault_log_dir }}"
