@@ -2,11 +2,8 @@
 
 - name: Create cloud admin trust
   shell: |
-    export OS_PROJECT_ID={{ cloud_project_id }}
     . /root/cloudrc && workloadmgr trust-create --is_cloud_trust True admin --insecure
   register: crt_cld_trust
-  delegate_to: localhost
-  ignore_errors: yes
 
 - name: Print Cloud admin trust output
   debug:
