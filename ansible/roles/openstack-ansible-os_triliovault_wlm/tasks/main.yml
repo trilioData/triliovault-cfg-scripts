@@ -1,6 +1,14 @@
 ---
 ## Tasks Triliovault-wlm services
 
+- name: Creates required dirs for wlm services
+  import_tasks: create_req_dirs.yml
+  tags:
+    - triliovault-wlm
+    - triliovault-wlm-uninstall
+    - tvault-all-install
+    - tvault-all-uninstall
+
 - name: Fetch nova and neutron public urls
   import_tasks: get_endpoint_list.yml
   tags:
