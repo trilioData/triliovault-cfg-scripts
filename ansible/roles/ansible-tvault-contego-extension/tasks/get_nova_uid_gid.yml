@@ -1,7 +1,7 @@
 ---
 
 - name: GET NOVA UID
-  shell: /bin/bash -c "id -u nova"
+  shell: /bin/bash -c "id -u {{ TVAULT_CONTEGO_EXT_USER }}"
   register: nova_uid
 
 - set_fact:
@@ -9,7 +9,7 @@
     cacheable: yes
 
 - name: GET NOVA GID
-  shell: /bin/bash -c "id -g nova"
+  shell: /bin/bash -c "id -g {{ TVAULT_CONTEGO_EXT_GROUP }}"
   register: nova_gid
 
 - set_fact:
