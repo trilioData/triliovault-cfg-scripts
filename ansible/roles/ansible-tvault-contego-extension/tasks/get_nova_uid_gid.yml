@@ -1,0 +1,17 @@
+---
+
+- name: GET NOVA UID
+  shell: /bin/bash -c "id -u nova"
+  register: nova_uid
+
+- set_fact:
+    nova_uid: "{{ nova_uid.stdout }}"
+    cacheable: yes
+
+- name: GET NOVA GID
+  shell: /bin/bash -c "id -g nova"
+  register: nova_gid
+
+- set_fact:
+    nova_gid: "{{ nova_gid.stdout }}"
+    cacheable: yes

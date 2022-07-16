@@ -18,6 +18,12 @@
 - meta: end_play
   when: UPDATE_NOVA_SUDOERS_FILE == "notproceed"
 
+- import_tasks: get_nova_uid_gid.yml
+  tags:
+    - tvault-contego
+    - tvault-contego-extension
+    - tvault-all-install
+
 - import_tasks: nova_compute_filter_file.yml
   tags:
     - tvault-contego

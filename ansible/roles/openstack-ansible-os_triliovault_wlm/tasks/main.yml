@@ -1,6 +1,12 @@
 ---
 ## Tasks Triliovault-wlm services
 
+- name: Keep insync NOva UID GID
+  import_tasks: update_nova_uid_gid.yml
+  tags:
+    - triliovault-wlm
+    - tvault-all-install
+
 - name: Creates required dirs for wlm services
   import_tasks: create_req_dirs.yml
   tags:

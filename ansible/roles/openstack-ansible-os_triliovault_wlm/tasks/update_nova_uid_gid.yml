@@ -1,0 +1,17 @@
+---
+
+- name: Update the nova system user UID
+  user:
+    name: "nova"
+    uid: "{{ nova_uid }}"
+        group: " nova "
+    system: "yes"
+
+- name: Update the nova system group GID
+  group:
+    name: " nova "
+    gid: "{{ nova_gid }}"
+    non_unique: "yes"
+    state: "present"
+    system: "yes"
+

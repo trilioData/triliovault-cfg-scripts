@@ -164,4 +164,3 @@
     name: wlm-cron
     state: started
 
-- import_tasks: create_cloud_admin_trust.yml
