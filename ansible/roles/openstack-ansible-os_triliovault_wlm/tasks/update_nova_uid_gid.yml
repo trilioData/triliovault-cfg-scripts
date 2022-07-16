@@ -1,17 +1,21 @@
 ---
 
+- import_tasks: get_nova_uid_gid.yml
+  delegate_to: "{{ COMPUTE_NODE_IP }}"
+
 - name: Update the nova system user UID
   user:
-    name: "nova"
-    uid: "{{ nova_uid }}"
-        group: " nova "
+    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
+    uid: "{{ NOVA_UID }}"
+    group: " {{ TVAULT_CONTEGO_EXT_GROUP }} "
     system: "yes"
 
 - name: Update the nova system group GID
   group:
-    name: " nova "
-    gid: "{{ nova_gid }}"
+    name: "{{ TVAULT_CONTEGO_EXT_GROUP }} "
+    gid: "{{ NOVA_GID }}"
     non_unique: "yes"
     state: "present"
     system: "yes"
+
 

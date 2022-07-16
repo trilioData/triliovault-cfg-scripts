@@ -5,7 +5,7 @@
   register: nova_uid
 
 - set_fact:
-    nova_uid: "{{ nova_uid.stdout }}"
+    NOVA_UID: "{{ nova_uid.stdout }}"
     cacheable: yes
 
 - name: GET NOVA GID
@@ -13,5 +13,5 @@
   register: nova_gid
 
 - set_fact:
-    nova_gid: "{{ nova_gid.stdout }}"
+    NOVA_GID: "{{ nova_gid.stdout }}"
     cacheable: yes
