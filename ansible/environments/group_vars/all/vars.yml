@@ -199,3 +199,7 @@ wlm_project_domain_id : "default"
 ## Uncomment 'wlm_trustee_role' and assign the value
 
 wlm_trustee_role: "creator"
+
+## COMPUTE_NODE_IP TO FETCH NOVA UID & GID
+## IF MORE THAN ONE COMPUTE NODES ARE THERE PASS FIRST COMPUTE IP
+COMPUTE_NODE_IP: ""
