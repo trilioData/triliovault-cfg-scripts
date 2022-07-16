@@ -5,25 +5,19 @@
   import_tasks: create_req_dirs.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - name: Fetch nova and neutron public urls
   import_tasks: get_endpoint_list.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - name: Set workloadmgr database variables
   import_tasks: set_workloadmgr_db_vars.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - name: Get python details
   import_tasks: get_python.yml
@@ -37,9 +31,7 @@
   import_tasks: generate_password.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - import_tasks: db_setup.yml
   when:
@@ -56,9 +48,7 @@
             password: "{{ wlm_galera_password }}"
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - import_tasks: mq_setup.yml
   when:
@@ -76,25 +66,19 @@
     _oslomsg_notify_transport: "{{ wlm_oslomsg_notify_transport }}"
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - name: Create Opensatck Endpoints
   import_tasks: create_endpoint.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
 
 - name: Install TRILIOVAULT WLM Services on CentOS/RHEL 
   import_tasks: install-centos.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
   when: >
        (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
        (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
@@ -103,8 +87,6 @@
   import_tasks: install-ubuntu.yml
   tags:
     - triliovault-wlm
-    - triliovault-wlm-uninstall
     - tvault-all-install
-    - tvault-all-uninstall
   when: >
         (ansible_distribution_major_version>"16.04" and ansible_distribution=="Ubuntu")
