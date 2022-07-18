@@ -10,6 +10,7 @@ haproxy_extra_services:
       haproxy_timeout_server: 10m
       haproxy_backend_options:
         - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
+
   - service:
       haproxy_service_name: workloadmgr
       haproxy_backend_nodes: "{{ groups['triliovault-wlm'] | default([]) }}"
@@ -18,3 +19,5 @@ haproxy_extra_services:
       haproxy_balance_type: http
       haproxy_backend_options:
         - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
+
+haproxy_ssl: "True"
