@@ -1,18 +1,34 @@
 ---
 
-- name: Update the nova system user UID
-  user:
-    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
-    uid: "{{ NOVA_UID }}"
-    group: " {{ TVAULT_CONTEGO_EXT_GROUP }} "
-    system: "yes"
+##- name: CHECK NOVA UID
+##  shell: /bin/bash -c "id -u {{ TVAULT_CONTEGO_EXT_USER }}"
+##  register: nova_uid
+##
+##- set_fact:
+##    UID: "{{ nova_uid.stdout }}"
+##    cacheable: yes
+##
+##- name: GET NOVA GID
+##  shell: /bin/bash -c "id -g {{ TVAULT_CONTEGO_EXT_GROUP }}"
+##  register: nova_gid
+##
+##- set_fact:
+##    GID: "{{ nova_gid.stdout }}"
+##    cacheable: yes
 
-- name: Update the nova system group GID
+- name: Ensure nova system group GID inSync
   group:
-    name: "{{ TVAULT_CONTEGO_EXT_GROUP }} "
+    name: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
     gid: "{{ NOVA_GID }}"
     non_unique: "yes"
     state: "present"
     system: "yes"
+##  when: {{ NOVA_GID }} != {{ GID }}
 
-
+- name: Ensure nova system user UID inSync
+  user:
+    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
+    uid: "{{ NOVA_UID }}"
+    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+    system: "yes"
+##  when: {{ NOVA_UID }} !=  {{ UID }}

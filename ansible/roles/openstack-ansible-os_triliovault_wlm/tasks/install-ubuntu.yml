@@ -56,7 +56,7 @@
   package:
     update_cache: yes
     name:
-      - "nfs-common "
+      - "nfs-common"
       - "swig"
       - "python3-guestfs"
       - "libguestfs-tools"
@@ -77,7 +77,6 @@
 - name: Install nova-common python3-neutronclient, python3-glanceclient
   package:
     name: 
-      - "nova-common"
       - "python3-neutronclient"
       - "python3-glanceclient"
     state: latest
@@ -91,6 +90,8 @@
   package: 
     name: python3-s3-fuse-plugin
     state: latest
+
+- import_tasks: create_req_dirs.yml
 
 - import_tasks: get_cloud_details.yml
 

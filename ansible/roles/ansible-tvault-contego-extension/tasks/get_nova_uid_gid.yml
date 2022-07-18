@@ -15,3 +15,18 @@
 - set_fact:
     NOVA_GID: "{{ nova_gid.stdout }}"
     cacheable: yes
+
+##- name: Update NOVA_GID
+##  lineinfile:
+##    path: /etc/openstack_deploy/user_tvault_vars.yml
+##    regexp: "^NOVA_GID:"
+##    line: 'NOVA_GID: {{ NOVA_GID }}'
+##  delegate_to: localhost
+##
+##- name: Update NOVA_UID
+##  lineinfile: 
+##    path: /etc/openstack_deploy/user_tvault_vars.yml 
+##    regexp: "^NOVA_UID:"
+##    line: 'NOVA_UID: {{ NOVA_UID }}'
+##  delegate_to: localhost
+##
