@@ -1,8 +1,5 @@
 ---
 
-- import_tasks: get_nova_uid_gid.yml
-  delegate_to: "{{ COMPUTE_NODE_IP }}"
-
 - name: Update the nova system user UID
   user:
     name: "{{ TVAULT_CONTEGO_EXT_USER }}"

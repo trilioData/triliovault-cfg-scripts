@@ -94,6 +94,8 @@
 
 - import_tasks: get_cloud_details.yml
 
+- import_tasks: update_nova_uid_gid.yml
+
 - name: copy triliovault wlm workload conf
   template:
      src: triliovault-wlm.conf.j2
