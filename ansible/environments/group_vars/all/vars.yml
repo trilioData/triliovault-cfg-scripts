@@ -95,7 +95,8 @@ DMAPI_USR: dmapi
 DMAPI_GRP: dmapi
 
 ## tvault contego file path
-TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/tvault-contego.conf
+TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/triliovault-datamover.conf
+#TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/tvault-contego.conf
 TVAULT_OBJECT_STORE_CONF: /etc/triliovault-object-store/triliovault-object-store.conf
 NOVA_CONF_FILE: /etc/nova/nova.conf
 
