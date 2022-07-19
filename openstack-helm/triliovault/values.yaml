@@ -740,18 +740,6 @@ conf:
       - path: /opt/share1
         ip: "192.168.122.101"
       multi_ip_nfs_shares:
-        triliovault-control-plane:
-          path: /var/share
-          ip: 192.168.10.5
-        triliovault-datamover-192-168-10-5:
-          path: /var/share
-          ip: 192.168.10.5
-        triliovault-datamover-192-168-10-6:
-          path: /var/share
-          ip: 192.168.10.6
-        triliovault-datamover-192-168-10-7:
-          path: /var/share
-          ip: 192.168.10.7
       nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
       storage_class_name: nfs
     s3:
