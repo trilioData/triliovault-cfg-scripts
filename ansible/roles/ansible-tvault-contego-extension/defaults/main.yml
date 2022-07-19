@@ -9,3 +9,5 @@ TRILIOVAULT_OBJ_STR: "/etc/triliovault-object-store"
 TRILIOVAULT_LOG_DIR: "/var/log/triliovault"
 TRILIOVAULT_CFG_DIR: "/etc/triliovault-wlm"
 
+TRILIOVAULT_MNT_DIR_OLD: "/var/triliovault"
+LIOVAULT_MNT_DIR_MODE: 0775

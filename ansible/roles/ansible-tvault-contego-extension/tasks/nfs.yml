@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    nfsmount: "{{TVAULT_DATA_DIR}}"
+    nfsmount: "{{TRILIOVAULT_MNT_DIR}}"
 
 - set_fact:
     triliovault_storage_nfs_export: "{{triliovault_nfs_map[inventory_hostname].split(',')}}"
