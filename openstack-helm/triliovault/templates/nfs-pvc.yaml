@@ -17,8 +17,10 @@ limitations under the License.
 {{- if .Values.manifests.nfs_pvc -}}
 {{- $envAll := . }}
 
+{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}} 
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}
+{{- if .Values.conf.triliovault.nfs.multi_ip_nfs -}}
+
 
 {{- range $label, $share := .Values.conf.triliovault.nfs.multi_ip_nfs_shares }}
 
@@ -61,5 +63,9 @@ spec:
       storage: 20Gi
 
 {{- end }}
+
+
 {{- end }}
+{{- end }}
+
 {{- end }}
