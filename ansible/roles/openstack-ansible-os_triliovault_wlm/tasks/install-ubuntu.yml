@@ -74,9 +74,12 @@
     name: jinja2
     state: latest
 
+- import_tasks: update_nova_uid_gid.yml
+
 - name: Install nova-common python3-neutronclient, python3-glanceclient
   package:
     name: 
+      - "nova-common"
       - "python3-neutronclient"
       - "python3-glanceclient"
     state: latest
@@ -95,7 +98,7 @@
 
 - import_tasks: get_cloud_details.yml
 
-- import_tasks: update_nova_uid_gid.yml
+#- import_tasks: update_nova_uid_gid.yml
 
 - name: copy triliovault wlm workload conf
   template:

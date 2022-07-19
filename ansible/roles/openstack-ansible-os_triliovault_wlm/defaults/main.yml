@@ -143,3 +143,7 @@ signing_dir: "/var/cache/workloadmgr"
 state_path: "/opt/stack/data/triliovault-wlm"
 
 NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
+
+## NOVA UID & GID insync with compute node
+NOVA_UID: 997
+NOVA_GID: 998
