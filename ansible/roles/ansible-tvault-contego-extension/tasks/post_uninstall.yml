@@ -24,7 +24,7 @@
   shell: systemctl daemon-reload
              
 - name: grep mountpath
-  shell: df -h | grep '{{TVAULT_DATA_DIR}}' | awk -F' ' '{print $6}'
+  shell: df -h | grep '{{TRILIOVAULT_MNT_DIR}}' | awk -F' ' '{print $6}'
   register: mount_path
 
 - debug: msg="{{mount_path.stdout}}"  verbosity={{verbosity_level}}
