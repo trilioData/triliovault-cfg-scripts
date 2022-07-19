@@ -7,48 +7,60 @@
     state: "present"
     system: "yes"
 
-- name: Add NOVA user to system groups if CentOS/RedHat
+- name: Create NOVA system user
   user:
     name: "{{ TVAULT_CONTEGO_EXT_USER }}"
     uid: "{{ NOVA_UID }}"
     group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+    groups: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
     state: "present"
     system: "yes"
-  when: (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
-        (ansible_distribution_major_version>="7" and ansible_distribution=="RedHat")
 
-- name: Add users to system groups if CentOS/RedHat
-  user:
-    name: "{{item}}"
-    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
-    state: "present"
-    system: "yes"
-  with_items:
-   - disk
-   - kvm
-   - libvirt
-   - qemu
-  when: (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
-        (ansible_distribution_major_version>="7" and ansible_distribution=="RedHat")
 
-- name: Add NOVA user to system groups if Ubuntu
-  user:
-    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
-    uid: "{{ NOVA_UID }}"
-    group: "{{TVAULT_CONTEGO_EXT_GROUP}}"
-    state: "present"
-    system: "yes"
-  when: ansible_distribution=="Ubuntu"
+##- name: Add NOVA user to system groups if CentOS/RedHat
+##  user:
+##    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
+##    uid: "{{ NOVA_UID }}"
+##    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+##    state: "present"
+##    system: "yes"
+##  when: (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+##        (ansible_distribution_major_version>="7" and ansible_distribution=="RedHat")
 
-- name: Add users to system groups if Ubuntu
-  user:
-    name: "{{ item }}"
-    group: "{{TVAULT_CONTEGO_EXT_GROUP}}"
-    state: "present"
-    system: "yes"
-  with_items:
-   - disk
-   - kvm
-   - libvirt
-  when: ansible_distribution=="Ubuntu"
+##- name: Add users to system groups if CentOS/RedHat
+##  user:
+##    name: "{{item}}"
+##    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+##    groups: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+##    state: "present"
+##    system: "yes"
+##  with_items:
+##   - disk
+##   - kvm
+##   - libvirt
+##   - qemu
+##  when: (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+##        (ansible_distribution_major_version>="7" and ansible_distribution=="RedHat")
+
+##- name: Add NOVA user to system groups if Ubuntu
+##  user:
+##    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
+##    uid: "{{ NOVA_UID }}"
+##    group: "{{TVAULT_CONTEGO_EXT_GROUP}}"
+##    state: "present"
+##    system: "yes"
+##  when: ansible_distribution=="Ubuntu"
+
+##- name: Add users to system groups if Ubuntu
+##  user:
+##    name: "{{ item }}"
+##    group: "{{TVAULT_CONTEGO_EXT_GROUP}}"
+##    groups: "{{TVAULT_CONTEGO_EXT_GROUP}}"
+##    state: "present"
+##    system: "yes"
+##  with_items:
+##   - disk
+##   - kvm
+##   - libvirt
+##  when: ansible_distribution=="Ubuntu"
 
