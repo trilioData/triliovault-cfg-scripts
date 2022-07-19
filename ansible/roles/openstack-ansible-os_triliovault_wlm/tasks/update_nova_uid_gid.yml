@@ -15,20 +15,68 @@
 ##- set_fact:
 ##    GID: "{{ nova_gid.stdout }}"
 ##    cacheable: yes
+##
+##- name: Ensure nova system group GID inSync
+##  group:
+##    name: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+##    gid: "{{ NOVA_GID }}"
+##    non_unique: "no"
+##    state: "present"
+##    system: "yes"
+##  when: {{ NOVA_GID }} != {{ GID }}
+##
+##- name: Ensure nova system user UID inSync
+##  user:
+##    name: "{{ TVAULT_CONTEGO_EXT_USER }}"
+##    uid: "{{ NOVA_UID }}"
+##    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
+##    system: "yes"
+##  when: {{ NOVA_UID }} !=  {{ UID }}
 
-- name: Ensure nova system group GID inSync
+- name: Create NOVA system group
   group:
     name: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
     gid: "{{ NOVA_GID }}"
-    non_unique: "yes"
     state: "present"
     system: "yes"
-##  when: {{ NOVA_GID }} != {{ GID }}
 
-- name: Ensure nova system user UID inSync
+- name: Add NOVA user to system groups if CentOS/RedHat
+  user: 
+    name: "{{TVAULT_CONTEGO_EXT_USER}}"
+    uid: "{{ NOVA_UID }}"
+    groups: "{{item}}"
+    state: "present"
+    append: "yes"
+  with_items:
+   - nova
+   - disk
+   - kvm
+#   - qemu
+   - libvirt
+  when: >
+        (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+        (ansible_distribution_major_version>="7" and ansible_distribution=="RedHat")
+
+- name: Add NOVA user to system groups if Ubuntu
   user:
     name: "{{ TVAULT_CONTEGO_EXT_USER }}"
     uid: "{{ NOVA_UID }}"
-    group: "{{ TVAULT_CONTEGO_EXT_GROUP }}"
-    system: "yes"
-##  when: {{ NOVA_UID }} !=  {{ UID }}
+    groups: "{{item}}"
+    state: "present"
+    append: "yes"
+  with_items:
+   - nova
+   - disk
+   - kvm
+#   - qemu
+   - libvirt
+  when: ansible_distribution=="Ubuntu"
+
+- name: check if /usr/lib64 dir not exist or not
+  stat: path=/usr/lib64
+  register: lib64_dir
+
+- debug: msg="print True if lib64 dir is exist:{{lib64_dir.stat.exists}}" verbosity={{verbosity_level}}
+
+- name: create symlink /usr/lib64/ if /usr/lib64 dir not exist
+  file: src=/usr/lib/ dest=/usr/lib64
