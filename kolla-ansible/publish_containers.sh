@@ -20,13 +20,13 @@ do
     tag=${tvault_version[$count]}
     for openstack_platform in "${openstack_platforms[@]}"
     do
-        #docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
-        #docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
-        #docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
 
-        #docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
-        #docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
-        #docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tag}-${openstack_release}
+        docker tag trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} \
+        docker.io/trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release}
+        docker push docker.io/trilio/${openstack_platform}-binary-trilio-datamover:${tag}-${openstack_release}
 
         docker tag trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release} \
         docker.io/trilio/${openstack_platform}-binary-trilio-horizon-plugin:${tag}-${openstack_release}

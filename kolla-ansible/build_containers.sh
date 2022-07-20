@@ -44,19 +44,17 @@ do
                 docker pull kolla/${openstack_platform}-binary-nova-api:${openstack_release}
  
 		#Build trilio-datamover containers
-		#echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
-		#cd $base_dir/${build_dir}/trilio-datamover/
-		#mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
-		#docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover:${tag}-${openstack_release} .
-		echo "Skipping trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
+		echo -e "Creating trilio-datamover container for kolla ${openstack_release} ${openstack_platform}"
+		cd $base_dir/${build_dir}/trilio-datamover/
+		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
+		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover:${tag}-${openstack_release} .
 
 
 		#Build trilio_datamover-api containers
-		#echo -e "Creating trilio-datamover container-api for kolla ${openstack_release} ${openstack_platform}"
-		#cd $base_dir/${build_dir}/trilio-datamover-api/
-		#mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
-		#docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} .
-		echo "Skipping trilio-datamover-api container for kolla ${openstack_release} ${openstack_platform}"
+		echo -e "Creating trilio-datamover container-api for kolla ${openstack_release} ${openstack_platform}"
+		cd $base_dir/${build_dir}/trilio-datamover-api/
+		mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
+		docker build --no-cache -t trilio/${openstack_platform}-binary-trilio-datamover-api:${tag}-${openstack_release} .
 
 
 		echo -e "Creating trilio-horizon-plugin container for kolla ${openstack_release} ${openstack_platform}"
