@@ -70,7 +70,7 @@ wlm_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default
 wlm_service_type: workloads
 wlm_service_description: "Triliovault Workloadmgr API Service"
 
-wlm_service_user_name: triliovault
+wlm_service_user_name: workloadmgr
 wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
 
 wlm_service_project_name: "{{ wlm_service_project_name }}"
