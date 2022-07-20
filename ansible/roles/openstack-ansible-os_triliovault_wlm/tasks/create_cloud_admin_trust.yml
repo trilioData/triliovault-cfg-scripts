@@ -7,4 +7,4 @@
 
 - name: Print Cloud admin trust output
   debug:
-    msg: "{{ crt_cld_trust.stdout }}"
+    msg: "{{ crt_cld_trust }}"
