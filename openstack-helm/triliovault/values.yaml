@@ -487,7 +487,7 @@ endpoints:
       triliovault_wlm:
         role: admin
         region_name: RegionOne
-        username: triliovault
+        username: workloadmgr
         password: password
         project_name: service
         user_domain_name: service
@@ -604,7 +604,7 @@ endpoints:
           tls:
             internal: rabbitmq-tls-direct
       triliovault_wlm:
-        username: triliovault
+        username: workloadmgr
         password: password
     statefulset:
       replicas: 2
@@ -613,7 +613,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /triliovault
+    path: /workloadmgr
     scheme: rabbit
     port:
       amqp:
@@ -949,8 +949,8 @@ conf:
       auth_version: v3
       auth_type: password
       auth_plugin: password
-      username: triliovault
-      admin_user: triliovault
+      username: workloadmgr
+      admin_user: workloadmgr
       signing_dir: /var/cache/workloadmgr
       insecure: False
       service_token_roles_required: True
