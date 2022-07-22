@@ -1,8 +1,0 @@
-[Filters]
-# mount and unmout filter
-mount: CommandFilter, mount, root
-umount: CommandFilter, umount, root
-rescan-scsi-bus.sh: CommandFilter, /usr/bin/rescan-scsi-bus.sh, root
-multipath: CommandFilter, multipath, root
-qemu-img: CommandFilter, qemu-img, root
-multipathd: CommandFilter, multipathd, root
