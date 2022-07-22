@@ -604,7 +604,7 @@ endpoints:
           tls:
             internal: rabbitmq-tls-direct
       triliovault_wlm:
-        username: triliovault
+        username: workloadmgr
         password: password
     statefulset:
       replicas: 2
@@ -613,7 +613,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /triliovault
+    path: /workloadmgr
     scheme: rabbit
     port:
       amqp:
