@@ -150,5 +150,10 @@ process_timeout = {{ process_timeout }}
 [global_job_scheduler]
 misfire_grace_time = {{ misfire_grace_time }}
 
+[barbican]
+encryption_support = {{ barbican_encryption }}
+
+
 [s3fuse_sys_admin]
 helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+

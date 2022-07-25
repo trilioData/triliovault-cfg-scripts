@@ -147,3 +147,7 @@ NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
 ## NOVA UID & GID insync with compute node
 NOVA_UID: 997
 NOVA_GID: 998
+
+
+## Barbican Encryption Boolean Value Default value 'True'
+barbican_encryption: "{{ barbican_encryption | default(True) }}"
