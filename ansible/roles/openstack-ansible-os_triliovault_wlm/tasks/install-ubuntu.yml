@@ -1,29 +1,5 @@
 ---
 
-##- name: Create triliovault log dir
-##  file:
-##    path: "{{ triliovault_log_dir }}"
-##    mode: '0755'
-##    recurse: yes
-##    owner: nova
-##    group: nova
-##    state: directory
-##
-##- name: Create triliovault conf dir
-##  file:
-##    path: "{{ triliovault_cfg_dir }}"
-##    mode: '0755'
-##    recurse: yes
-##    owner: root
-##    group: nova
-##    state: directory
-##
-##- name: Create triliovault mount dir
-##  file:
-##    path: "{{ triliovault_mnt_dir }}"
-##    state: directory
-##    mode: '0777'
-
 - name: Copy repo file
   template:
      src: triliovault.list
@@ -97,8 +73,6 @@
 - import_tasks: create_req_dirs.yml
 
 - import_tasks: get_cloud_details.yml
-
-#- import_tasks: update_nova_uid_gid.yml
 
 - name: copy triliovault wlm workload conf
   template:
