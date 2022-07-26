@@ -138,6 +138,9 @@ datamover_service_debian_path: /etc/init/tvault-datamover.conf
 datamover_log_dir: /var/log/triliovault
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
+## OS SSL Cert Location
+os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
+
 ## Triliovault pckg version
 triliovault_version: ""
 
@@ -152,11 +155,9 @@ cloud_admin_username: ""
 cloud_admin_password: ""
 
 OS_ENDPOINT_TYPE: ""
-
-OS_REGION: ""
 OS_AUTH_URL: ""
+OS_REGION: ""
 
-os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 
 ## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
 ## venv_path: "/home/stack/venv"
