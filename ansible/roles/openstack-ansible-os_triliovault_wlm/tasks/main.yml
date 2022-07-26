@@ -21,6 +21,16 @@
     - tvault-all-install
     - tvault-all-uninstall
 
+- import_tasks: uninstall_wlm_pckgs.yml
+  tags:
+    - triliovault-wlm-uninstall
+    - tvault-all-uninstall
+
+- import_tasks: delete_wlm_endpoints.yml
+  tags:
+    - triliovault-wlm-uninstall
+    - tvault-all-uninstall
+
 - name: Generate password
   import_tasks: generate_password.yml
   tags:
