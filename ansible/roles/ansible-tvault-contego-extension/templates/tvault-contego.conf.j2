@@ -36,7 +36,15 @@ vault_s3_ssl_cert =
 
 vault_data_directory_old = {{TRILIOVAULT_MNT_DIR_OLD}}
 vault_data_directory = {{TRILIOVAULT_MNT_DIR}}
-log_file = /var/log/tvault-contego/tvault-contego.log
+
+log_dir = {{ TRILIOVAULT_LOG_DIR }}
+log_file = {{ DATAMOVER_LOG_FILE }}
+log_config = {{ DATAMOVER_LOG_CONF }}
+
+##log_file = /var/log/tvault-contego/tvault-contego.log
+
+
+
 debug = False
 verbose = True
 max_uploads_pending = 3

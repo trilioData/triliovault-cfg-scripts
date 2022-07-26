@@ -7,6 +7,11 @@ my_ip = {{container_address}}
 transport_url: {{ dmapi_oslomsg_rpc_transport }}://{% for host in dmapi_oslomsg_rpc_servers.split(',') %}{{ dmapi_oslomsg_rpc_userid }}:{{ dmapi_oslomsg_rpc_password }}@{{ host }}:{{ dmapi_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ dmapi_oslomsg_rpc_vhost }}{% if dmapi_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ dmapi_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ dmapi_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
 
+log_dir = {{ DMAPI_LOG_DIR }}
+log_file = {{ DMAPI_LOG_FILE }}
+log_config = {{ DMAPI_LOG_CONF }}
+
+
 [database]
 connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_database }}?charset=utf8{% if dmapi_galera_use_ssl | bool %}&ssl_ca={{ dmapi_galera_ssl_ca_cert }}{% endif %}
 

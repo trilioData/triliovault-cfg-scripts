@@ -49,6 +49,11 @@
     state: latest
   when: PYTHON_VERSION=="python3"
 
+- name: create datamover_api_logging.conf file
+  template:
+     src: datamover_api_logging.conf.j2
+     dest: "{{ DMAPI_LOG_CONF }}"
+
 - name: find out path of dmapi bianry
   shell: which dmapi-api
   register: dmapi_bin

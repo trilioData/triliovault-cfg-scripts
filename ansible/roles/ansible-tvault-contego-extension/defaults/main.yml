@@ -11,3 +11,6 @@ TRILIOVAULT_CFG_DIR: "/etc/triliovault-wlm"
 
 TRILIOVAULT_MNT_DIR_OLD: "/var/triliovault"
 TRILIOVAULT_MNT_DIR_MODE: 0775
+
+DATAMOVER_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-datamover.log"
+DATAMOVER_LOG_CONF: "/etc/triliovault-datamover/datamover_logging.conf"

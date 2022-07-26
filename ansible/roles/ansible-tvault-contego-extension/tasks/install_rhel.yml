@@ -46,6 +46,11 @@
     name: "rbd"
     state: "present"
 
+- name: Create datamover_logging.conf file
+  template:
+     src: datamover_logging.conf.j2
+     dest: "{{ DATAMOVER_LOG_CONF }}"
+
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}

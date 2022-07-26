@@ -43,6 +43,11 @@
       - restart tvault-datamover-api
   when: PYTHON_VERSION=="python3"
 
+- name: create datamover_api_logging.conf file
+  template:
+     src: datamover_api_logging.conf.j2
+     dest: "{{ DMAPI_LOG_CONF }}"
+
 - name: Create dmapi group
   group:
     name: "{{DMAPI_GRP}}"

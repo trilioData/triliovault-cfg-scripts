@@ -120,7 +120,6 @@ process_timeout: 300
 misfire_grace_time: 600
 
 wlm_log_dir: "/var/log/workloadmgr"
-wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
 ## Keystone authentication middleware
 wlm_keystone_auth_plugin: password
@@ -138,6 +137,9 @@ triliovault_cfg_dir: "/etc/triliovault-wlm"
 
 triliovault_opt_dir: "/opt/triliovault-wlm"
 triliovault_virt_env: "/home/stack/wlm-venv"
+
+wlm_log_file: "{{ triliovault_log_dir }}/triliovault-workloadmgr.log"
+wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
 signing_dir: "/var/cache/workloadmgr"
 state_path: "/opt/stack/data/triliovault-wlm"
