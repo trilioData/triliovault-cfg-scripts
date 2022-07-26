@@ -37,6 +37,11 @@
      src: triliovault.repo
      dest: "{{ trilio_yum_repo_file_path }}"
 
+- name: create wlm_logging.conf file
+  template:
+     src: wlm_logging.conf.j2
+     dest: "{{ wlm_log_cfg }}"
+
 # - name: Update repository
 #   command: /bin/bash -c "yum repolist"
   

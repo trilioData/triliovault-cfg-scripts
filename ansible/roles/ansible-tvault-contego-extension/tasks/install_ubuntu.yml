@@ -40,6 +40,11 @@
     name: "rbd"
     state: "present"
 
+- name: Create datamover_logging.conf file
+  template:
+     src: datamover_logging.conf.j2
+     dest: "{{ DATAMOVER_LOG_CONF }}"
+
 - name: Copy repo file
   template:
      src: triliovault.list

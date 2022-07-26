@@ -1,12 +1,14 @@
 [DEFAULT]
-log_dir = {{ wlm_log_dir }}
-use_syslog = false
 
-use_stderr = False
+log_dir = {{ triliovault_log_dir }}
+log_file = {{ wlm_log_file }}
 log_config = {{ wlm_log_cfg }}
 
-triliovault_hostnames = {{container_address}}
+use_syslog = false
+use_stderr = False
+
 api_workers = 4
+triliovault_hostnames = {{container_address}}
 
 workloads_workers = {{ workloads_workers }}
 max_wait_for_upload = {{ max_wait_upload }}
