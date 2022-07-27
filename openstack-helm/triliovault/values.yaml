@@ -962,6 +962,8 @@ conf:
       process_timeout: 300
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+    barbican:
+      encryption_support: True
   nova_compute:
   wlm_logging:
     loggers:
