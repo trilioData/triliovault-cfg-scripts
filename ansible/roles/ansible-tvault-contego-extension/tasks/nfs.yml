@@ -28,13 +28,14 @@
 - name: Ensure NFS common is installed when Ubuntu
   package: 
     name: nfs-common 
-    state: present 
+    state: present
   when: ansible_distribution=="Ubuntu"
 
+
 - name: Ensure NFS Utils is installed when Centos/RedHat
-  package: 
-    name: nfs-utils 
-    state: 
+  package:
+    name: nfs-utils
+    state: present
   when: >
     (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
     (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
