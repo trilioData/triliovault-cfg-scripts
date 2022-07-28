@@ -2,7 +2,7 @@
 
 - name: Setup trilio yum repo for queens
   template:
-     src: trilio.repo
+     src: triliovault.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
 - name: Install packages on horizon container | centos-release-openstack-{{OPENSTACK_DIST}}
@@ -13,8 +13,7 @@
     state: latest
 
 - name: install tvault horizon plugin packages when using python2
-  yum:
-     update_cache: yes
+  package:
      name:
         - tvault-horizon-plugin
      state: latest
@@ -23,8 +22,7 @@
   when: PYTHON_VERSION=="python2"
 
 - name: install tvault horizon plugin packages when using python3 ansible_distribution_major_version=="7"
-  yum:
-     update_cache: yes
+  package:
      name:
         - python3-workloadmgrclient-el7
         - python3-tvault-horizon-plugin
@@ -34,8 +32,7 @@
   when: PYTHON_VERSION=="python3" and ansible_distribution_major_version=="7"
 
 - name: install tvault horizon plugin packages when using python3 ansible_distribution_major_version=="8"
-  yum:
-     update_cache: yes
+  package:
      name:
         - python3-workloadmgrclient-el8
         - python3-tvault-horizon-plugin-el8
