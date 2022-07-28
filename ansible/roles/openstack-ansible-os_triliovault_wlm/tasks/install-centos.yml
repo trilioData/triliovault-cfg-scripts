@@ -1,69 +1,40 @@
 ---
 
-- name: Copy nova_userid script
-  template:
-     src: nova_userid.sh
-     dest: /opt/
-     mode: '0777'
-
-- name: Update NOVA UID GID
-  command: |
-        /bin/bash -c "/opt/nova_userid.sh"
-
-- name: Create triliovault log dir
-  file:
-    path: "{{ triliovault_log_dir }}"
-    mode: '0755'
-    owner: nova
-    group: nova
-    state: directory
-
-- name: Create triliovault conf dir
-  file:
-    path: "{{ triliovault_cfg_dir }}"
-    mode: '0755'
-    owner: nova
-    group: nova
-    state: directory
-
-- name: Create triliovault mount dir
-  file:
-    path: "{{ triliovault_mnt_dir }}"
-    state: directory
-    mode: '0777'
-
-- name: Copy repo file
+- name: Copy triliovault-yum-repo file
   template:
      src: triliovault.repo
      dest: "{{ trilio_yum_repo_file_path }}"
 
-- name: create wlm_logging.conf file
-  template:
-     src: wlm_logging.conf.j2
-     dest: "{{ wlm_log_cfg }}"
-
-# - name: Update repository
-#   command: /bin/bash -c "yum repolist"
-  
 - name: Install centos-release-openstack-{{OPENSTACK_DIST}}
   package:
     name:
       - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
     state: latest
 
-- name: Install packages on wlm-api container | {{ PYTHON_VERSION }} devel and nova packages
+- name: Install python36-devel
   package:
     name:
-      - "{{ PYTHON_VERSION }}-devel"
-      - "{{ PYTHON_VERSION }}-nova"
+      - "python36-devel"
     state: latest
    
-- name: Install packages on wlm-api container | swig and libguestfs-tools packages
+- name: Install libxslt-devel
+  package:
+    name:
+      - "libxslt-devel" 
+    state: latest
+
+- name: Install swig
   package:
     name:
       - "swig" 
+    state: latest
+
+- name: Install libguestfs-tools
+  package:
+    name:
       - "libguestfs-tools"
     state: latest
+
 
 - name: Install pre-requisites packages for m2crypto
   package:
@@ -74,10 +45,16 @@
       - "openssl-devel"
     state: latest
 
-- name: Install m2crypto packages on wlm-api container
-  package:
+- name: Install m2crypto
+  pip:
     name:
       - "m2crypto" 
+    state: latest
+
+- name: Install epel-release
+  package:
+    name:
+      - "epel-release" 
     state: latest
 
 - name: Install & upgrade pip
@@ -87,28 +64,48 @@
     state: latest
 
 - name: Install all the jinja2 packages
-  package:
+  pip:
     name: jinja2
     state: latest
+
+- import_tasks: update_nova_uid_gid.yml
 
 - name: Install workloadmgr
   package:
     name: workloadmgr
     state: latest
 
-- name: Install python3-s3-fuse-plugin
+- name: Install python3-s3-fuse-plugin when backup target is S3
   package:
     name: python3-s3-fuse-plugin
     state: latest
+  when: 
+    - NFS == False
+    - PYTHON_VERSION=="python3"
 
-- name: copy triliovault wlm workload conf
+- name: Install s3-fuse-plugin when backup target is S3
+  package:
+    name: s3-fuse-plugin
+    state: latest
+  when:
+    - NFS == False 
+    - PYTHON_VERSION=="python2"
+
+- import_tasks: create_req_dirs.yml
+
+- name: create wlm_logging.conf file
+  template:
+     src: wlm_logging.conf.j2
+     dest: "{{ wlm_log_cfg }}"
+
+- import_tasks: get_cloud_details.yml
+
+- name: copy workloadmgr conf
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
 
-- import_tasks: triliovault_db_sync.yml 
-
-- name: Copy triliovault wlm api paste ini 
+- name: Copy workloadmgr api-paste-ini 
   template:
      src: api-paste.ini.j2
      dest: "{{ wlm_api_paste }}"
@@ -119,54 +116,58 @@
      dest: "{{ triliovault_obj_sotre_cfg }}"
   when: NFS == False
 
-- name: Enable triliovault object store service
+- import_tasks: triliovault_db_sync.yml 
+  tags:
+    - test
+
+- name: Enable triliovault-object-store service
   service:
     name: tvault-object-store.service
     enabled: yes
   when: NFS == False
 
-- name: Start triliovault object store service
+- name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
     state: started
   when: NFS == False
 
-- name: Enable triliovault wlm api service
+- name: Enable wlm-api service
   service:
     name: wlm-api
     enabled: yes
 
-- name: Start triliovault wlm api service
+- name: Start wlm-api service
   service:
     name: wlm-api
     state: started
 
-- name: Enable triliovault wlm workloads service
+- name: Enable wlm-workloads service
   service:
     name: wlm-workloads
     enabled: yes
 
-- name: Start triliovault wlm workloads service
+- name: Start wlm-workloads service
   service:
     name: wlm-workloads
     state: started
 
-- name: Enable triliovault wlm scheduler service
+- name: Enable wlm-scheduler service
   service:
     name: wlm-scheduler
     enabled: yes
 
-- name: Start triliovault wlm scheduler service
+- name: Start wlm-scheduler service
   service:
     name: wlm-scheduler
     state: started
 
-- name: Enable triliovault wlm cron service
+- name: Enable wlm-cron service
   service:
     name: wlm-cron
     enabled: yes
 
-- name: Start triliovault wlm cron service
+- name: Start wlm-cron service
   service:
     name: wlm-cron
     state: started

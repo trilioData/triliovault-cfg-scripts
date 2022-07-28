@@ -5,9 +5,6 @@
      src: triliovault.list
      dest: "{{ trilio_apt_repo_file_path }}"
 
-- name: update cache
-  command: apt-get update
-
 - name: Install packages python-dev libcurl4-openssl-dev libssl-dev m2crypto
   package:
     update_cache: yes

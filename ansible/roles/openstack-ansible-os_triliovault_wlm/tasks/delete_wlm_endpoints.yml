@@ -9,36 +9,45 @@
 - name: Get workloadmgr intenral endpoint ID
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface internal --insecure -f value -c ID --os-cacert {{ os_ca_cert }}"
   register: int_endpt_id
+  ignore_errors: True
   delegate_to: localhost
 
 - set_fact:
     WLM_INTERNAL_ID: "{{ int_endpt_id.stdout }}"
+  ignore_errors: True
 
 - name: Get workloadmgr admin endpoint ID
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface admin --insecure -f value -c ID --os-cacert {{ os_ca_cert }}"
   register: admn_endpt_id
+  ignore_errors: True
   delegate_to: localhost
 
 - set_fact:
     WLM_ADMN_ID: "{{ admn_endpt_id.stdout }}"
+  ignore_errors: True
 
 - name: Get workloadmgr public endpoint ID
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface public --insecure -f value -c ID --os-cacert {{ os_ca_cert }}"
   register: pub_endpt_id
+  ignore_errors: True
   delegate_to: localhost
 
 - set_fact:
     WLM_PUB_ID: "{{ pub_endpt_id.stdout }}"
+  ignore_errors: True
 
 - name: Delete workloadmgr internal endpoint
-  shell: "openstack endpoint delete {{ WLM_INTERNAL_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_INTERNAL_ID }}"
+  ignore_errors: True
   delegate_to: localhost
 
 - name: Delete workloadmgr admin endpoint
-  shell: "openstack endpoint delete {{ WLM_ADMN_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_ADMN_ID }}"
+  ignore_errors: True
   delegate_to: localhost
 
 - name: Delete workloadmgr public endpoint
-  shell: "openstack endpoint delete {{ WLM_PUB_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_PUB_ID }}"
+  ignore_errors: True
   delegate_to: localhost
 
