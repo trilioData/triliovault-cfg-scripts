@@ -5,7 +5,10 @@
      src: triliovault.list
      dest: "{{ trilio_apt_repo_file_path }}"
 
-- name: Install packages python-dev libcurl4-openssl-dev libssl-dev m2crypto
+- name: update cache
+  command: apt-get update
+
+- name: Install python-dev libcurl4-openssl-dev libssl-dev m2crypto packages
   package:
     update_cache: yes
     name:
@@ -15,7 +18,7 @@
       - "python3-m2crypto"
     state: latest
 
-- name: Install packages libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev
+- name: Install libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev packages
   package:
     update_cache: yes
     name:
@@ -25,7 +28,7 @@
       - "libxslt-dev"
     state: latest
 
-- name: Install packages nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system
+- name: Install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system packages
   package:
     update_cache: yes
     name:
