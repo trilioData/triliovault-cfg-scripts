@@ -63,9 +63,19 @@
     executable: pip3
     state: latest
 
-- name: Install all the jinja2 packages
+- name: Install jinja2
   pip:
     name: jinja2
+    state: latest
+
+- name: Install igraph
+  pip:
+    name: igraph
+    state: latest
+
+- name: Install namedatomiclock
+  pip:
+    name: namedatomiclock
     state: latest
 
 - import_tasks: update_nova_uid_gid.yml
