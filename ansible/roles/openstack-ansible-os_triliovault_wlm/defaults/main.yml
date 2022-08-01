@@ -90,12 +90,54 @@ wlm_service_internalurl: "{{ wlm_service_internaluri }}"
 wlm_service_adminuri: "{{ wlm_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ wlm_service_port }}"
 wlm_service_adminurl: "{{ wlm_service_adminuri }}"
 
+
+## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'
+## Specify the role
+
+cloud_admin_role: "admin"
+
+## Uncomment the varibale wlm_service_project_name only if
+## user wants to deploy triliovault-wlm in different projcet
+## the default value of wlm_service_project_name 'service'
+
+wlm_service_project_name: "service"
+
+## Uncomment the variable wlm_user_domain_name namewhen
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_name is 'Default'
+
+wlm_user_domain_name: "Default"
+
+## Uncomment the variable wlm_user_domain_id when
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_id is 'default'
+
+wlm_user_domain_id: "default"
+
+## Uncomment 'wlm_project_domain_name' and set any value 
+## Default value is other than 'Default'
+
+wlm_project_domain_name : "Default"
+
+## Uncomment 'wlm_project_domain_id' and set any value 
+## Default value is other than 'default'
+
+wlm_project_domain_id : "default"
+
+## Triliovault trustee role default value is 'creator'
+## If need to assign trustee_role other than default value
+## Uncomment 'wlm_trustee_role' and assign the value
+
+wlm_trustee_role: "creator"
+
+
 ## Enable automatic parsing of X-Forwarded-Proto, etc. headers passed by the Load balancer.
 wlm_proxy_headers_parsing: True
 
 ## Triliovault repo file location
 trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+
 
 ## Triliovault-wlm configuration files
 wlm_cfg: "/etc/triliovault-wlm/triliovault-wlm.conf"
@@ -152,3 +194,5 @@ NOVA_GID: 998
 
 ## Barbican Encryption Boolean Value Default value 'True'
 barbican_encryption: "True"
+
+
