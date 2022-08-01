@@ -20,3 +20,4 @@ haproxy_extra_services:
       haproxy_backend_options:
         - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
 
+haproxy_ssl: "True"
