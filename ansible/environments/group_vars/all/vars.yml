@@ -4,9 +4,6 @@
 ##Time Zone
 TIME_ZONE: "Etc/UTC"
 
-#Update TVAULT package version here, we will install mentioned version plugins for Example# TVAULT_PACKAGE_VERSION: 3.3.36
-TVAULT_PACKAGE_VERSION: 4.2.64
-
 # Update Openstack dist code name like ussuri etc.
 OPENSTACK_DIST: wallaby
 
