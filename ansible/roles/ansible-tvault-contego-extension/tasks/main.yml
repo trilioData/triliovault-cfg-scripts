@@ -182,3 +182,9 @@
        - tvault-contego
        - tvault-contego-extension
        - tvault-all-install
+
+- import_tasks: get_nova_uid_gid.yml
+  tags:
+    - tvault-contego
+    - tvault-contego-extension
+    - tvault-all-install

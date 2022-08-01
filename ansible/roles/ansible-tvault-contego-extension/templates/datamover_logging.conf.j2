@@ -1,0 +1,47 @@
+
+[loggers]
+keys = root
+
+[handlers]
+keys = datamover,datamovererr,stdout,stderr,null
+
+[formatters]
+keys = default,advanced
+
+[logger_root]
+level = INFO
+handlers = datamover
+
+[handler_datamover]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)
+formatter = default
+
+[handler_datamovererr]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-datamover-error.log','a',25000000,20)
+formatter = advanced
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_legacyworkloadmgr]
+class = workloadmgr.openstack.common.log.LegacyFormatter
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s

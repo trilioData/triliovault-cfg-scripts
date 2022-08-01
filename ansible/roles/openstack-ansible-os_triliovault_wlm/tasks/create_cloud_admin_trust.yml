@@ -1,0 +1,10 @@
+--- 
+
+- name: Create cloud admin trust
+  shell: |
+    . /root/cloudrc && workloadmgr trust-create --is_cloud_trust True admin --insecure
+  register: crt_cld_trust
+
+- name: Print Cloud admin trust output
+  debug:
+    msg: "{{ crt_cld_trust }}"

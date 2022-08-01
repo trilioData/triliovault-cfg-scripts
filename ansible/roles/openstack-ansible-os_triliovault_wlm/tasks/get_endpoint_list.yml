@@ -1,0 +1,46 @@
+--- 
+
+- name: Copy Triliovault-cloudrc Ansible Node
+  template:
+    src: triliovault-cloudrc
+    dest: /root/triliovault-cloudrc
+    mode: '0777'
+  delegate_to: localhost
+
+- name: Copy Triliovault-cloudrc into WLM container
+  template:
+    src: triliovault-cloudrc
+    dest: /root/cloudrc
+    mode: '0777'
+  
+- name: get neutron endpoint url
+  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service neutron --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL --os-cacert {{ os_ca_cert }}"
+  register: neutron_endpoint
+  delegate_to: localhost
+
+- set_fact:
+    neutron_endpoint_url: "{{ neutron_endpoint.stdout }}"
+
+- name: get nova endpoint url
+  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service nova --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL --os-cacert {{ os_ca_cert }}"
+  register: nova_endpoint
+  delegate_to: localhost
+
+- set_fact:
+    nova_endpoint_url: "{{ nova_endpoint.stdout }}/%(project_id)s"
+
+- name: get glance endpoint url
+  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service glance --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL --os-cacert {{ os_ca_cert }}"
+  register: glance_endpoint
+  delegate_to: localhost
+
+- set_fact:
+    glance_endpoint_url: "{{ glance_endpoint.stdout }}"
+
+- name: get cinder endpoint url
+  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service cinderv3 --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL --os-cacert {{ os_ca_cert }}"
+  register: cinder_endpoint
+  delegate_to: localhost
+
+- set_fact:
+    cinder_endpoint_url: "{{ cinder_endpoint.stdout }}"

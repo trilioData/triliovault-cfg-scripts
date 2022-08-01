@@ -1,0 +1,198 @@
+---
+
+## DATABASE INFO
+wlm_galera_address: "{{ galera_address | default('127.0.0.1') }}"
+wlm_galera_database: workloadmgr
+wlm_galera_user: workloadmgr
+
+wlm_galera_use_ssl: "{{ galera_use_ssl | default(False) }}"
+wlm_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-ca.pem') }}"
+
+wlm_galera_password: "{{ WLM_MYSQL_PASSWORD }}"
+wlm_galera_port: 3306
+wlm_service_role_name: "{{ cloud_admin_role }}"
+wlm_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
+
+## RPC
+wlm_oslomsg_rpc_host_group: "{{ oslomsg_rpc_host_group | default('rabbitmq_all') }}"
+wlm_oslomsg_rpc_setup_host: "{{ (wlm_oslomsg_rpc_host_group in groups) | ternary(groups[wlm_oslomsg_rpc_host_group][0], 'localhost') }}"
+
+wlm_oslomsg_rpc_transport: "{{ oslomsg_rpc_transport | default('rabbit') }}"
+wlm_oslomsg_rpc_servers: "{{ oslomsg_rpc_servers | default('127.0.0.1') }}"
+
+wlm_oslomsg_rpc_port: "{{ oslomsg_rpc_port | default('5672') }}"
+wlm_oslomsg_rpc_use_ssl: "{{ oslomsg_rpc_use_ssl | default(False) }}"
+
+wlm_oslomsg_rpc_userid: workloadmgr
+wlm_oslomsg_rpc_vhost: workloadmgr
+
+wlm_oslomsg_rpc_ssl_version: "{{ oslomsg_rpc_ssl_version | default('TLSv1_2') }}"
+wlm_oslomsg_rpc_ssl_ca_file: "{{ oslomsg_rpc_ssl_ca_file | default('') }}"
+
+wlm_oslomsg_rpc_password: "{{RABBITMQ_PASSWORD}}"
+
+## Notify
+wlm_oslomsg_notify_host_group: "{{ oslomsg_notify_host_group | default('rabbitmq_all') }}"
+wlm_oslomsg_notify_setup_host: "{{ (wlm_oslomsg_notify_host_group in groups) | ternary(groups[wlm_oslomsg_notify_host_group][0], 'localhost') }}"
+
+wlm_oslomsg_notify_transport: "{{ oslomsg_notify_transport | default('rabbit') }}"
+wlm_oslomsg_notify_servers: "{{ oslomsg_notify_servers | default('127.0.0.1') }}"
+
+wlm_oslomsg_notify_port: "{{ oslomsg_notify_port | default('5672') }}"
+wlm_oslomsg_notify_use_ssl: "{{ oslomsg_notify_use_ssl | default(False) }}"
+
+wlm_oslomsg_notify_userid: "{{ wlm_oslomsg_rpc_userid }}"
+wlm_oslomsg_notify_password: "{{ wlm_oslomsg_rpc_password }}"
+
+wlm_oslomsg_notify_vhost: "{{ wlm_oslomsg_rpc_vhost }}"
+wlm_oslomsg_notify_ssl_version: "{{ oslomsg_notify_ssl_version | default('TLSv1_2') }}"
+
+wlm_oslomsg_notify_ssl_ca_file: "{{ oslomsg_notify_ssl_ca_file | default('') }}"
+
+## (Qdrouterd) integration
+## TODO(ansmith) Change structure when more backends will be supported
+wlm_oslomsg_amqp1_enabled: "{{ wlm_oslomsg_rpc_transport == 'amqp' }}"
+
+## Service Type and Data
+wlm_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
+wlm_service_setup_host_python_interpreter: "{{ openstack_service_setup_host_python_interpreter | default((wlm_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"
+
+wlm_service_region: "{{ OS_REGION | default('RegionOne') }}"
+wlm_service_name: workloadmgr
+
+wlm_service_port: 8781
+wlm_service_proto: http
+
+wlm_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(wlm_service_proto) }}"
+wlm_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(wlm_service_proto) }}"
+wlm_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(wlm_service_proto) }}"
+
+wlm_service_type: workloads
+wlm_service_description: "Triliovault Workloadmgr API Service"
+
+wlm_service_user_name: triliovault
+wlm_service_password: "{{ WLM_SERVICE_PASSWORD }}"
+
+wlm_service_project_name: "{{ wlm_service_project_name }}"
+
+wlm_service_project_domain_id: "{{ wlm_project_domain_id }}"
+wlm_service_project_domain_name: "{{ wlm_project_domain_name }}"
+
+wlm_service_user_domain_id: "{{ wlm_user_domain_id }}"
+wlm_service_user_domain_name: "{{ wlm_user_domain_name }}"
+
+wlm_service_publicuri: "{{ wlm_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ wlm_service_port }}"
+wlm_service_publicurl: "{{ wlm_service_publicuri }}"
+
+wlm_service_internaluri: "{{ wlm_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ wlm_service_port }}"
+wlm_service_internalurl: "{{ wlm_service_internaluri }}"
+
+wlm_service_adminuri: "{{ wlm_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ wlm_service_port }}"
+wlm_service_adminurl: "{{ wlm_service_adminuri }}"
+
+
+## Uncomment 'cloud_admin_role' if user wants to set any other role than 'admin'
+## Specify the role
+
+cloud_admin_role: "admin"
+
+## Uncomment the varibale wlm_service_project_name only if
+## user wants to deploy triliovault-wlm in different projcet
+## the default value of wlm_service_project_name 'service'
+
+wlm_service_project_name: "service"
+
+## Uncomment the variable wlm_user_domain_name namewhen
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_name is 'Default'
+
+wlm_user_domain_name: "Default"
+
+## Uncomment the variable wlm_user_domain_id when
+## user wants to deploy triliovualt-wlm components in different domain
+## default value of wlm_user_domain_id is 'default'
+
+wlm_user_domain_id: "default"
+
+## Uncomment 'wlm_project_domain_name' and set any value 
+## Default value is other than 'Default'
+
+wlm_project_domain_name : "Default"
+
+## Uncomment 'wlm_project_domain_id' and set any value 
+## Default value is other than 'default'
+
+wlm_project_domain_id : "default"
+
+## Triliovault trustee role default value is 'creator'
+## If need to assign trustee_role other than default value
+## Uncomment 'wlm_trustee_role' and assign the value
+
+wlm_trustee_role: "creator"
+
+
+## Enable automatic parsing of X-Forwarded-Proto, etc. headers passed by the Load balancer.
+wlm_proxy_headers_parsing: True
+
+## Triliovault repo file location
+trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+
+
+## Triliovault-wlm configuration files
+wlm_cfg: "/etc/triliovault-wlm/triliovault-wlm.conf"
+wlm_api_paste: "/etc/triliovault-wlm/api-paste.ini"
+triliovault_obj_sotre_cfg: "/etc/triliovault-object-store/triliovault-object-store.conf"
+rootwrap_config: "/etc/triliovault-wlm/rootwrap.conf"
+workloadmgr_rootwrap: "/usr/bin/workloadmgr-rootwrap"
+
+glance_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
+wlm_glance_api_servers: "{{ (glance_service_internalurl | default('http://localhost')) | urlsplit('scheme') ~ '://' ~ (glance_service_internalurl | default('http://localhost')) | urlsplit('netloc') }}"
+glance_api_version: 2
+
+trustee_role: "{{ wlm_trustee_role }}"
+api_auth_port: 35357
+osapi_workloads_listen_port: 8781
+
+max_wait_upload: 10
+workloads_workers: 4
+client_retry_limit: 3
+
+process_timeout: 300
+misfire_grace_time: 600
+
+wlm_log_dir: "/var/log/workloadmgr"
+
+## Keystone authentication middleware
+wlm_keystone_auth_plugin: password
+auth_type: password
+
+auth_version: v3
+keystone_auth_version: 3
+
+## Required Directories
+triliovault_mnt_dir: "/var/trilio/triliovault-mounts"
+triliovault_obj_str: "/etc/triliovault-object-store"
+
+triliovault_log_dir: "/var/log/triliovault"
+triliovault_cfg_dir: "/etc/triliovault-wlm"
+
+triliovault_opt_dir: "/opt/triliovault-wlm"
+triliovault_virt_env: "/home/stack/wlm-venv"
+
+wlm_log_file: "{{ triliovault_log_dir }}/triliovault-workloadmgr.log"
+wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
+
+signing_dir: "/var/cache/workloadmgr"
+state_path: "/opt/stack/data/triliovault-wlm"
+
+NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
+
+## NOVA UID & GID insync with compute node
+NOVA_UID: 997 
+NOVA_GID: 998
+
+## Barbican Encryption Boolean Value Default value 'True'
+barbican_encryption: "True"
+
+

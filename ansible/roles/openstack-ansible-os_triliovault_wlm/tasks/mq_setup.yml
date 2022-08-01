@@ -1,0 +1,93 @@
+---
+
+- name: Setup RPC MQ Service (RabbitMQ)
+  delegate_to: "{{ _oslomsg_rpc_setup_host }}"
+  when:
+    - "(_oslomsg_configure_rpc | default(_oslomsg_rpc_transport is defined))"
+    - "(_oslomsg_rpc_transport is defined) and (_oslomsg_rpc_transport == 'rabbit')"
+  tags:
+    - common-rabbitmq
+  block:
+    - name: Add RPC RabbitMQ vhost
+      community.rabbitmq.rabbitmq_vhost:
+        name: "{{ wlm_oslomsg_rpc_vhost }}"
+        state: "present"
+
+    - name: Apply RPC RabbitMQ vhost policies
+      community.rabbitmq.rabbitmq_policy:
+        name: "{{ item.name }}"
+        pattern: "{{ item.pattern }}"
+        priority: "{{ item.priority | default(0) }}"
+        tags: "{{ item.tags }}"
+        vhost: "{{ wlm_oslomsg_rpc_vhost }}"
+      loop: "{{ _oslomsg_rpc_policies | default([]) + oslomsg_rpc_policies }}"
+
+    - name: Add RPC RabbitMQ user
+      community.rabbitmq.rabbitmq_user:
+        user: "{{ _oslomsg_rpc_userid }}"
+        password: "{{ _oslomsg_rpc_password }}"
+        update_password: always
+        vhost: "{{ wlm_oslomsg_rpc_vhost }}"
+        configure_priv: ".*"
+        read_priv: ".*"
+        write_priv: ".*"
+        state: "present"
+      no_log: true
+
+- name: Setup Notify MQ Service (RabbitMQ)
+  delegate_to: "{{ _oslomsg_notify_setup_host }}"
+  when:
+    - "(_oslomsg_configure_notify | default(_oslomsg_notify_transport is defined))"
+    - "(_oslomsg_notify_transport is defined) and (_oslomsg_notify_transport == 'rabbit')"
+  tags:
+    - common-rabbitmq
+  block:
+    - name: Add Notify RabbitMQ vhost
+      community.rabbitmq.rabbitmq_vhost:
+        name: "{{ _oslomsg_notify_vhost }}"
+        state: "present"
+      when:
+        - (wlm_oslomsg_rpc_vhost is undefined) or
+          (_oslomsg_notify_vhost != wlm_oslomsg_rpc_vhost) or
+          (_oslomsg_notify_setup_host != _oslomsg_rpc_setup_host)
+
+    - name: Apply Notify RabbitMQ vhost policies
+      community.rabbitmq.rabbitmq_policy:
+        name: "{{ item.name }}"
+        pattern: "{{ item.pattern }}"
+        priority: "{{ item.priority | default(0) }}"
+        tags: "{{ item.tags }}"
+        vhost: "{{ _oslomsg_notify_vhost }}"
+      loop: "{{ _oslomsg_notify_policies | default([]) + oslomsg_notify_policies }}"
+      when:
+        - (wlm_oslomsg_rpc_vhost is undefined) or
+          (_oslomsg_notify_vhost != wlm_oslomsg_rpc_vhost) or
+          (_oslomsg_notify_setup_host != _oslomsg_rpc_setup_host)
+
+    - name: Add Notify RabbitMQ user
+      community.rabbitmq.rabbitmq_user:
+        user: "{{ _oslomsg_notify_userid }}"
+        password: "{{ _oslomsg_notify_password }}"
+        update_password: always
+        vhost: "{{ _oslomsg_notify_vhost }}"
+        configure_priv: ".*"
+        read_priv: ".*"
+        write_priv: ".*"
+        state: "present"
+      no_log: true
+      when:
+        - (_oslomsg_rpc_userid is undefined) or
+          (_oslomsg_notify_userid != _oslomsg_rpc_userid) or
+          (_oslomsg_notify_setup_host != _oslomsg_rpc_setup_host)
+
+- name: Setup RPC MQ Service (Qdrouterd)
+  delegate_to: "{{ _oslomsg_rpc_setup_host }}"
+  when:
+    - "(_oslomsg_configure_rpc | default(_oslomsg_rpc_transport is defined))"
+    - "(_oslomsg_rpc_transport is defined) and (_oslomsg_rpc_transport == 'amqp')"
+  tags:
+    - common-qdrouterd
+  block:
+    - name: Add RPC Qdrouterd user
+      shell: "echo {{ _oslomsg_rpc_password }} | saslpasswd2 -c -p -f /var/lib/qdrouterd/qdrouterd.sasldb -u AMQP {{ _oslomsg_rpc_userid }}"
+      no_log: true

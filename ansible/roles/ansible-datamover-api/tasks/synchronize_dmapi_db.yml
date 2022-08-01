@@ -1,10 +1,9 @@
 ---
 - name: Syncup dmapi database
-  shell: dmapi-dbsync
+  shell: /bin/bash -c "dmapi-dbsync --config-file {{ dmapi_cfg_file }}"
 
 - name: connection string
   template:
     src: connection_string.j2
     dest: /tmp/connection_string
   delegate_to: localhost
-

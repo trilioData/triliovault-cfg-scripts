@@ -1,0 +1,171 @@
+####################
+#   wlm-log.conf   #
+####################
+
+[loggers]
+keys = root
+
+[handlers]
+keys = workloadmgr,workloadmgrerr,stdout,stderr,null
+
+[formatters]
+keys = default,advanced
+
+[logger_root]
+level = INFO
+handlers = workloadmgr
+
+[handler_workloadmgr]
+class = logging.handlers.RotatingFileHandler 
+args = ('/var/log/triliovault/workloadmgr.log','a',25000000,20)
+formatter = default
+
+[handler_workloadmgrerr]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/workloadmgr_error.log','a',25000000,20)
+formatter = advanced
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_legacyworkloadmgr]
+class = workloadmgr.openstack.common.log.LegacyFormatter
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+
+
+###################################
+#   Extra Loggers and handslers   #
+###################################
+
+[logger_workloadmgr.workloads.api]
+level = DEBUG
+handlers = apilog
+qualname = workloadmgr.workloads.api
+
+[logger_workloadmgr.vault.vault]
+level = DEBUG
+handlers = apilog,schedulelog
+qualname = workloadmgr.vault.vault
+
+[logger_workloadmgr.api.extensions]
+level = DEBUG
+handlers = apilog
+qualname = workloadmgr.api.extensions
+
+[logger_workloadmgr.workloads.rpcapi]
+level = DEBUG
+handlers = apilog,schedulelog
+qualname = workloadmgr.workloads.rpcapi
+
+[logger_workloadmgr.api]
+level = DEBUG
+handlers = apilog
+qualname = workloadmgr.api
+
+[logger_keystonemiddleware.auth_token]
+level = DEBUG
+handlers = apilog
+qualname = keystonemiddleware.auth_token
+
+[logger_keystonemiddleware._common.config]
+level = DEBUG
+handlers = apilog
+qualname = keystonemiddleware._common.config
+
+[logger_eventletwsgi]
+level = DEBUG
+handlers = apilog
+qualname = eventlet.wsgi.server
+
+[logger_workloadmgr.apscheduler.schedule]
+level = DEBUG
+handlers = cronlog
+qualname = workloadmgr.apscheduler.schedule
+
+
+[logger_workloadmgr.wlm_cron.manager]
+level = DEBUG
+handlers = cronlog
+qualname = workloadmgr.wlm_cron.manager
+
+
+[logger_oslo.messaging._drivers.pool]
+level = DEBUG
+handlers = cronlog,schedulelog,workloadslog
+qualname = oslo.messaging._drivers.pool
+
+
+[logger_amqp]
+level = DEBUG
+handlers = cronlog,schedulelog,workloadslog
+qualname = amqp
+
+
+[logger_oslo.messaging._drivers.impl_rabbit]
+level = DEBUG
+handlers = cronlog,schedulelog,workloadslog
+qualname = oslo.messaging._drivers.impl_rabbit
+
+
+[logger_oslo_messaging._drivers.amqpdriver]
+level = DEBUG
+handlers = cronlog,schedulelog,workloadslog
+qualname = oslo_messaging._drivers.amqpdriver
+
+
+[logger_amqp.connection.Connection.heartbeat_tick]
+level = DEBUG
+handlers = cronlog,schedulelog,workloadslog
+qualname = amqp.connection.Connection.heartbeat_tick
+
+[logger_workloadmgr.apscheduler.threadpool]
+level = DEBUG
+handlers = workloadslog
+qualname = workloadmgr.apscheduler.threadpool
+
+[logger_workloadmgr.apscheduler.scheduler]
+level = DEBUG
+handlers = workloadslog
+qualname = workloadmgr.apscheduler.scheduler
+
+[logger_workloadmgr.workloads.manager]
+level = DEBUG
+handlers = workloadslog
+qualname = workloadmgr.workloads.manager
+
+[handler_apilog]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/workloadmgr-api.log','a',25000000,20)
+formatter = default
+
+[handler_cronlog]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/workloadmgr-cron.log','a',25000000,20)
+formatter = default
+
+[handler_schedulelog]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/workloadmgr-scheduler.log','a',25000000,20)
+formatter = default
+
+[handler_workloadslog]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/workloadmgr-workloads.log','a',25000000,20)
+formatter = default

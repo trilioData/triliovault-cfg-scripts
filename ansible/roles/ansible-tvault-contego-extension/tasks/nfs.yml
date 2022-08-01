@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    nfsmount: "{{TVAULT_DATA_DIR}}"
+    nfsmount: "{{TRILIOVAULT_MNT_DIR}}"
 
 - set_fact:
     triliovault_storage_nfs_export: "{{triliovault_nfs_map[inventory_hostname].split(',')}}"
@@ -18,7 +18,7 @@
   when: NFS_OPTS != ""
 
 - set_fact:
-      NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none"
+      NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
   when: NFS_OPTS == ""
 
 - debug: msg="value of NFS_OPTIONS is:{{NFS_OPTIONS}}" verbosity={{ verbosity_level }}
@@ -26,11 +26,16 @@
 - debug: msg="value of NFS_SHARES is:{{triliovault_storage_nfs_export}}" verbosity={{verbosity_level}}
 
 - name: Ensure NFS common is installed when Ubuntu
-  apt: name=nfs-common state=present update_cache=yes
+  package: 
+    name: nfs-common 
+    state: present
   when: ansible_distribution=="Ubuntu"
 
+
 - name: Ensure NFS Utils is installed when Centos/RedHat
-  yum: name=nfs-utils state=present update_cache=yes
+  package:
+    name: nfs-utils
+    state: present
   when: >
     (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
     (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
