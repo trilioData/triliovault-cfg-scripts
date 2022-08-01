@@ -7,6 +7,9 @@ TIME_ZONE: "Etc/UTC"
 # Update Openstack dist code name like ussuri etc.
 OPENSTACK_DIST: wallaby
 
+## Triliovault pckg version
+triliovault_version: ""
+
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
 #These changes require for Datamover, Otherwise Datamover will not work
@@ -71,6 +74,30 @@ horizon_virtual_env: '/openstack/venvs/horizon*'
 
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
+
+## OS SSL Cert Location
+os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
+
+## Cloud Details
+cloud_admin_project_name: ""
+cloud_admin_project_id: ""
+
+cloud_admin_domain_name: ""
+cloud_admin_domain_id: ""
+
+cloud_admin_username: ""
+cloud_admin_password: ""
+
+OS_ENDPOINT_TYPE: ""
+OS_AUTH_URL: ""
+OS_REGION: ""
+
+
+## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
+## venv_path: "/home/stack/venv"
+venv_path: ""
+
+
 
 #******************************************************************************************************************************************************************
 ###static fields for tvault contego extension ,Please Do not Edit Below Variables
@@ -137,27 +164,4 @@ trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
 ## OS SSL Cert Location
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
-
-## Triliovault pckg version
-triliovault_version: ""
-
-## Cloud Details
-cloud_admin_project_name: ""
-cloud_admin_project_id: ""
-
-cloud_admin_domain_name: ""
-cloud_admin_domain_id: ""
-
-cloud_admin_username: ""
-cloud_admin_password: ""
-
-OS_ENDPOINT_TYPE: ""
-OS_AUTH_URL: ""
-OS_REGION: ""
-
-
-## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
-## venv_path: "/home/stack/venv"
-venv_path: ""
-
 
