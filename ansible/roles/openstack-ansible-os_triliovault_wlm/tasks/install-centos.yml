@@ -78,6 +78,11 @@
     name: namedatomiclock
     state: latest
 
+- name: Install python3-tzlocal
+  dnf:
+    name: python3-tzlocal
+    state: latest
+
 - import_tasks: update_nova_uid_gid.yml
 
 - name: Install workloadmgr
