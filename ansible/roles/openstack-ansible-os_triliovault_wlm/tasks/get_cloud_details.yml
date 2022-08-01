@@ -1,0 +1,34 @@
+--- 
+
+- name: get CLOUD_PROJECT_ID
+  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ cloud_admin_project_name }}"
+  register: cld_prj_id
+  delegate_to: localhost
+
+- set_fact:
+    cloud_project_id: "{{ cld_prj_id.stdout }}"
+
+- name: get CLOUD_ADMIN_USER_ID
+  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ cloud_admin_domain_name }} -f value -c id {{ cloud_admin_username }}"
+  register: admin_usr_id
+  delegate_to: localhost
+
+- set_fact:
+    cloud_admin_user_id: "{{ admin_usr_id.stdout }}"
+
+- name: get CLOUD_ADMIN_DOMAIN_ID
+  shell: ". /root/triliovault-cloudrc && openstack domain show --insecure -f value -c id {{ cloud_admin_domain_name }}"
+  register: admin_domain_id
+  delegate_to: localhost
+
+- set_fact:
+    cloud_admin_domain_id: "{{ admin_domain_id.stdout }}"
+
+- name: get CLOUD_UNIQUE_ID
+  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c id {{ wlm_service_user_name }}"
+  register: wlm_usr_id
+  delegate_to: localhost
+
+- set_fact:
+    wlm_user_id: "{{ wlm_usr_id.stdout }}"
+

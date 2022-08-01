@@ -74,6 +74,9 @@
 
 - name: Synchronize the Dmapi schema and generate connection string
   import_tasks: synchronize_dmapi_db.yml
+  tags:
+       - tvault-datamover-api
+       - tvault-all-install
 
 
 

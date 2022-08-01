@@ -1,0 +1,27 @@
+---
+- import_tasks: service_setup.yml
+  run_once: True
+  vars:
+    _service_adminuri_insecure: "{{ keystone_service_adminuri_insecure }}"
+    _service_setup_host: "{{ wlm_service_setup_host }}"
+    _service_setup_host_python_interpreter: "{{ wlm_service_setup_host_python_interpreter }}"
+    _service_project_name: "{{wlm_service_project_name}}"
+    _service_region: "{{ wlm_service_region }}"
+    _service_users:
+      - name: "{{ wlm_service_user_name }}"
+        password: "{{ wlm_service_password }}"
+        role: "{{ wlm_service_role_name }}"
+    _service_endpoints:
+      - service: "{{ wlm_service_name }}"
+        interface: "public"
+        url: "{{ wlm_service_publicurl }}/v1/$(tenant_id)s"
+      - service: "{{ wlm_service_name }}"
+        interface: "internal"
+        url: "{{ wlm_service_internalurl }}/v1/$(tenant_id)s"
+      - service: "{{ wlm_service_name }}"
+        interface: "admin"
+        url: "{{ wlm_service_adminurl }}/v1/$(tenant_id)s"
+    _service_catalog:
+      - name: "{{ wlm_service_name }}"
+        type: "{{ wlm_service_type }}"
+        description: "{{ wlm_service_description }}"

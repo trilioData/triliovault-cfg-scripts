@@ -8,9 +8,9 @@
   service: name=tvault-contego state=stopped
   ignore_errors: yes
 
-- name: Setup trilio yum repo for queens
+- name: Setup trilio yum repo
   template:
-     src: trilio.repo
+     src: triliovault.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
 - name: Reload Daemon
@@ -46,6 +46,13 @@
     name: "rbd"
     state: "present"
 
+- import_tasks: create_conf_dirs.yml
+
+- name: Create datamover_logging.conf file
+  template:
+     src: datamover_logging.conf.j2
+     dest: "{{ DATAMOVER_LOG_CONF }}"
+
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}
@@ -53,16 +60,14 @@
   register: inst_pckg
 
 - name: install contego extension packages when using python2
-  yum:
-     update_cache: yes
+  package:
      name:
         - tvault-contego
      state: latest
   when: PYTHON_VERSION=="python2"
   
 - name: install contego extension packages when using python3
-  yum:
-     update_cache: yes
+  package:
      name:
         - python3-tvault-contego
      state: latest
