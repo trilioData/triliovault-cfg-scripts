@@ -59,7 +59,6 @@
       - "python3-neutronclient"
       - "python3-glanceclient"
     state: latest
-  when: PYTHON_VERSION=="python3"
 
 - name: Install workloadmgr pckg
   package:
@@ -68,15 +67,10 @@
 
 - name: Install s3fuse pckg
   package: 
-    name: python3-s3-fuse-plugin
+    name: python3-s3-fuse-plugin when backup target is S3
     state: latest
-  when: PYTHON_VERSION=="python3"
-
-- name: Install s3fuse pckg
-  package: 
-    name: s3-fuse-plugin
-    state: latest
-  when: PYTHON_VERSION=="python2"
+  when: 
+    - NFS == False
 
 - import_tasks: create_req_dirs.yml
 

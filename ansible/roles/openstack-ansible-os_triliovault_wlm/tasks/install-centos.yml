@@ -93,14 +93,6 @@
     - NFS == False
     - PYTHON_VERSION=="python3"
 
-- name: Install s3-fuse-plugin when backup target is S3
-  package:
-    name: s3-fuse-plugin
-    state: latest
-  when:
-    - NFS == False 
-    - PYTHON_VERSION=="python2"
-
 - import_tasks: create_req_dirs.yml
 
 - name: create wlm_logging.conf file
