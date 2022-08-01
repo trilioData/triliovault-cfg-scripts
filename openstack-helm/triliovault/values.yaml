@@ -60,7 +60,6 @@ images:
     triliovault_datamover_api: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
     triliovault_datamover_db_sync: docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_db_sync: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_horizon: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -488,7 +487,7 @@ endpoints:
       triliovault_wlm:
         role: admin
         region_name: RegionOne
-        username: triliovault
+        username: workloadmgr
         password: password
         project_name: service
         user_domain_name: service
@@ -605,7 +604,7 @@ endpoints:
           tls:
             internal: rabbitmq-tls-direct
       triliovault_wlm:
-        username: triliovault
+        username: workloadmgr
         password: password
     statefulset:
       replicas: 2
@@ -614,7 +613,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /triliovault
+    path: /workloadmgr
     scheme: rabbit
     port:
       amqp:
@@ -736,11 +735,11 @@ conf:
     backup_target_type: "nfs"
     ## Valid values are "nfs" and "s3"
     nfs:
+      multi_ip_nfs: false
       nfs_shares: 
       - path: /opt/share1
         ip: "192.168.122.101"
-        node_selector_key: openstack-compute-node
-        node_selector_value: enabled
+      multi_ip_nfs_shares:
       nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
       storage_class_name: nfs
     s3:
@@ -756,7 +755,7 @@ conf:
       ## And, copy S3's ca cert file in triliovault/files/s3-cert.pem file in triliovault helm chart code directory.
       ssl_enabled: False
 
-    ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
+    ## Configure 'dmapi_workers' parameter of '/etc/triliovault-datamover/triliovault-datamover-api.conf' file
     ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
     ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
     ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
@@ -793,7 +792,8 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-api/triliovault-object-store.log
-      debug: true
+      log_config: /etc/triliovault-object-store/object_store_logging.conf
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_scheduler:
@@ -807,7 +807,8 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-scheduler/triliovault-object-store.log
-      debug: true
+      log_config: /etc/triliovault-object-store/object_store_logging.conf
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_workloads:
@@ -821,7 +822,8 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/wlm-workloads/triliovault-object-store.log
-      debug: true
+      log_config: /etc/triliovault-object-store/object_store_logging.conf
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_datamover:
@@ -835,12 +837,13 @@ conf:
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_file: /var/log/triliovault/datamover/triliovault-object-store.log
-      debug: true
+      log_config: /etc/triliovault-object-store/object_store_logging.conf
+      debug: false
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/privsep-helper
   datamover_api:
     DEFAULT:
-      log_config_append: /etc/triliovault-datamover/logging.conf
+      log_config: /etc/triliovault-datamover/datamover_api_logging.conf 
       ## Don't delete this parameter. Keep it empty
       dmapi_enabled_ssl_apis: ""
       dmapi_listen_port: 8784
@@ -878,7 +881,7 @@ conf:
     host_interface:
   datamover:
     DEFAULT:
-      log_config_append: /etc/triliovault-datamover/logging.conf
+      log_config: /etc/triliovault-datamover/datamover_logging.conf
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: ''
       vault_data_directory_old: "/var/triliovault"
@@ -913,7 +916,8 @@ conf:
     DEFAULT:
       api_workers: 4
       osapi_workloads_listen_port: 8780
-      log_config_append: /etc/triliovault-wlm/logging.conf
+      log_config: /etc/triliovault-wlm/wlm_logging.conf
+      log_dir: /var/log/triliovault/
       workloads_workers: 4
       global_job_scheduler_override: False
       api_paste_config: /etc/triliovault-wlm/api-paste.ini
@@ -945,8 +949,8 @@ conf:
       auth_version: v3
       auth_type: password
       auth_plugin: password
-      username: triliovault
-      admin_user: triliovault
+      username: workloadmgr
+      admin_user: workloadmgr
       signing_dir: /var/cache/workloadmgr
       insecure: False
       service_token_roles_required: True
@@ -958,7 +962,241 @@ conf:
       process_timeout: 300
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+    barbican:
+      encryption_support: True
   nova_compute:
+  wlm_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "workloadmgr,workloadmgrerr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "stdout"
+    handler_workloadmgr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr.log','a',25000000,20)"
+      formatter: "default"
+    handler_workloadmgrerr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr_error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+    logger_workloadmgr.workloads.api:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "workloadmgr.workloads.api"
+    logger_workloadmgr.vault.vault:
+      level: "DEBUG"
+      handlers: "apilog,schedulelog"
+      qualname: "workloadmgr.vault.vault"
+    logger_workloadmgr.api.extensions:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "workloadmgr.api.extensions"
+    logger_workloadmgr.workloads.rpcapi:
+      level: "DEBUG"
+      handlers: "apilog,schedulelog"
+      qualname: "workloadmgr.workloads.rpcapi"
+    logger_workloadmgr.api:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "workloadmgr.api"
+    logger_keystonemiddleware.auth_token:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "keystonemiddleware.auth_token"
+    logger_keystonemiddleware._common.config:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "keystonemiddleware._common.config"
+    logger_eventletwsgi:
+      level: "DEBUG"
+      handlers: "apilog"
+      qualname: "eventlet.wsgi.server"
+    logger_workloadmgr.apscheduler.schedule:
+      level: "DEBUG"
+      handlers: "cronlog"
+      qualname: "workloadmgr.apscheduler.schedule"
+    logger_workloadmgr.wlm_cron.manager:
+      level: "DEBUG"
+      handlers: "cronlog"
+      qualname: "workloadmgr.wlm_cron.manager"
+    logger_oslo.messaging._drivers.pool:
+      level: "DEBUG"
+      handlers: "cronlog,schedulelog,workloadslog"
+      qualname: "oslo.messaging._drivers.pool"
+    logger_amqp:
+      level: "DEBUG"
+      handlers: "cronlog,schedulelog,workloadslog"
+      qualname: "amqp"
+    logger_oslo.messaging._drivers.impl_rabbit:
+      level: "DEBUG"
+      handlers: "cronlog,schedulelog,workloadslog"
+      qualname: "oslo.messaging._drivers.impl_rabbit"
+    logger_oslo_messaging._drivers.amqpdriver:
+      level: "DEBUG"
+      handlers: "cronlog,schedulelog,workloadslog"
+      qualname: "oslo_messaging._drivers.amqpdriver"
+    logger_amqp.connection.Connection.heartbeat_tick:
+      level: "DEBUG"
+      handlers: "cronlog,schedulelog,workloadslog"
+      qualname: "amqp.connection.Connection.heartbeat_tick"
+    logger_workloadmgr.apscheduler.threadpool:
+      level: "DEBUG"
+      handlers: "workloadslog"
+      qualname: "workloadmgr.apscheduler.threadpool"
+    logger_workloadmgr.apscheduler.scheduler:
+      level: "DEBUG"
+      handlers: "workloadslog"
+      qualname: "workloadmgr.apscheduler.scheduler"
+    logger_workloadmgr.workloads.manager:
+      level: "DEBUG"
+      handlers: "workloadslog"
+      qualname: "workloadmgr.workloads.manager"
+    handler_apilog:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr-api.log','a',25000000,20)"
+      formatter: "default"
+    handler_cronlog:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr-cron.log','a',25000000,20)"
+      formatter: "default"
+    handler_schedulelog:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr-scheduler.log','a',25000000,20)"
+      formatter: "default"
+    handler_workloadslog:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/workloadmgr-workloads.log','a',25000000,20)"
+      formatter: "default"
+  datamover_api_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "dmapi,dmapierr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "stdout"
+    handler_dmapi:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/dmapi.log','a',25000000,20)"
+      formatter: "default"
+    handler_dmapierr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/dmapi-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+  datamover_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "datamover,datamovererr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "stdout"
+    handler_datamover:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)"
+      formatter: "default"
+    handler_datamovererr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-datamover-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+  object_store_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "s3fuse,s3fuseerr,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced"
+    logger_root:
+      level: "INFO"
+      handlers: "stdout"
+    handler_s3fuse:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/tvault-object-store.log','a',25000000,20)"
+      formatter: "default"
+    handler_s3fuseerr:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/tvault-object-store-error.log','a',25000000,20)"
+      formatter: "advanced"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_legacyworkloadmgr:
+      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
   logging:
     loggers:
       keys:

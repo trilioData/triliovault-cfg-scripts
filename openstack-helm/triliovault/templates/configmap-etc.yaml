@@ -95,10 +95,16 @@ limitations under the License.
 {{- end -}}
 
 
-{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_path := index .Values.conf.triliovault.nfs.nfs_shares 0 "path" -}}
-{{- $share_ip := index .Values.conf.triliovault.nfs.nfs_shares 0 "ip" -}}
-{{- $_ :=  printf "%s:%s" $share_ip $share_path | set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" -}}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (not .Values.conf.triliovault.nfs.multi_ip_nfs) -}}
+{{- $share_list := list }}
+{{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+{{- $share_path := get $share "path" -}}
+{{- $share_ip := get $share "ip" -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
+{{- end }}
+{{- $shares_full_string := join "," $share_list }}
+{{ $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
 {{- else -}}
 {{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
 {{- end -}}
@@ -360,11 +366,11 @@ limitations under the License.
 
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.www_authenticate_uri -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "www_authenticate_uri" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "www_authenticate_uri" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.auth_url -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "auth_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.region_name -}}
@@ -397,11 +403,25 @@ limitations under the License.
 {{- end -}}
 
 
-{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
-{{- $share_path := index .Values.conf.triliovault.nfs.nfs_shares 0 "path" -}}
-{{- $share_ip := index .Values.conf.triliovault.nfs.nfs_shares 0 "ip" -}}
-{{- $_ :=  printf "%s:%s" $share_ip $share_path | set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" -}}
-{{- else -}}
+{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}
+{{- $share_ip := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "ip" }}
+{{- $share_path := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "path" }}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{ $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" $share_string -}}
+
+{{- else if and (eq .Values.conf.triliovault.backup_target_type "nfs") (not .Values.conf.triliovault.nfs.multi_ip_nfs) }}
+{{- $share_list := list }}
+{{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+{{- $share_path := get $share "path" -}}
+{{- $share_ip := get $share "ip" -}}
+{{- $share_string := printf "%s:%s" $share_ip $share_path }}
+{{- $share_list =  append $share_list $share_string -}}
+{{- end }}
+{{- $shares_full_string := join "," $share_list }}
+{{ $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
+
+
+{{- else if eq .Values.conf.triliovault.backup_target_type "s3" -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
 {{- end -}}
 
@@ -461,7 +481,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.nova_admin_auth_url -}}
-{{- $_ := tuple "compute" "admin" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "nova_admin_auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "nova_admin_auth_url" -}}
 {{- end -}}
 
 
@@ -474,7 +494,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.neutron_admin_auth_url -}}
-{{- $_ := tuple "network" "admin" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "neutron_admin_auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "neutron_admin_auth_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.glance_production_api_servers -}}
@@ -503,6 +523,7 @@ limitations under the License.
 {{- if empty .Values.conf.wlm.DEFAULT.trustee_role -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "trustee_role " .Values.conf.triliovault.trustee_role  -}}
 {{- end -}}
+
 
 
 {{/* **********************************************************************
@@ -537,9 +558,12 @@ metadata:
 type: Opaque
 data:
   triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
-  dmapi.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
   triliovault-datamover.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover | b64enc }}
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
+  wlm_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm_logging | b64enc }}
+  datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
+  datamover_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_logging | b64enc }}
+  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
   triliovault-object-store-datamover.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_datamover | b64enc }}
   triliovault-object-store-wlm-api.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_wlm_api | b64enc }}

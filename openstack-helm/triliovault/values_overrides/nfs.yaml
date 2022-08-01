@@ -1,0 +1,9 @@
+## Edit nfs shares ip and path.
+conf:
+  triliovault:
+    backup_target_type: "nfs"
+    nfs:
+      nfs_shares: 
+      - path: /mnt/tvault/42424
+        ip: 172.25.0.10
+      nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"

@@ -1,5 +1,0 @@
-[triliovault-4-2]
-name=triliovault-4-2
-baseurl=http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-hotfix1-4-2/yum/
-gpgcheck=0
-enabled=1
