@@ -1,0 +1,11 @@
+conf:
+  triliovault:
+    cloud_admin_user_name: "admin"
+    cloud_admin_project_name: "admin"
+    cloud_admin_domain_name: "default"
+    ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+    ## Valid values: internal, public, admin
+    interface: "internal"
+    ## Provide any role name as your preference. 
+    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+    trustee_role: "creator"

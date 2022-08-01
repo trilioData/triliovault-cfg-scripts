@@ -38,6 +38,7 @@ WLM_USER_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.username -}}"
 
 WLM_PROJECT_DOMAIN_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.project_domain_name -}}"
 
+WLM_PROJECT_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.project_name -}}"
 
 CLOUD_ADMIN_USER_ID=$(openstack user show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" -f value -c id \
                 "${CLOUD_ADMIN_USER_NAME}")
@@ -45,11 +46,11 @@ CLOUD_ADMIN_USER_ID=$(openstack user show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" 
 CLOUD_ADMIN_DOMAIN_ID=$(openstack domain show -f value -c id \
                 "${CLOUD_ADMIN_DOMAIN_NAME}")
 
-CLOUD_ADMIN_PROJECT_ID=$(openstack project show -f value -c id \
+CLOUD_ADMIN_PROJECT_ID=$(openstack project show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" -f value -c id \
                 "${CLOUD_ADMIN_PROJECT_NAME}")
 
-WLM_PROJECT_DOMAIN_ID=$(openstack project show -f value -c domain_id \
-                "${WLM_PROJECT_DOMAIN_NAME}")
+WLM_PROJECT_DOMAIN_ID=$(openstack project show --domain "${WLM_PROJECT_DOMAIN_NAME}" -f value -c domain_id \
+                "${WLM_PROJECT_NAME}")
 
 WLM_USER_ID=$(openstack user show --domain "${WLM_PROJECT_DOMAIN_NAME}" -f value -c id \
                 "${WLM_USER_NAME}")
