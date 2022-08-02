@@ -95,6 +95,3 @@
   when: >
         (ansible_distribution_major_version>"16.04" and ansible_distribution=="Ubuntu")
 
-- import_tasks: create_cloud_admin_trust.yml
-  tags:
-    - create-trust
