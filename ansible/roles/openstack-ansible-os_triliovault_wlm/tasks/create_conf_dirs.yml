@@ -22,3 +22,7 @@
     path: "{{ triliovault_mnt_dir }}"
     state: directory
     mode: '0777'
+    recurse: yes
+    owner: nova
+    group: nova
+    state: directory

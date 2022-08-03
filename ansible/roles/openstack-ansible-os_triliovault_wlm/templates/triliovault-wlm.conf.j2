@@ -79,6 +79,9 @@ vault_storage_nfs_options = {{ NFS_OPTIONS }}
 
 {% else %}
 
+vault_data_directory = {{ triliovault_mnt_dir }}
+vault_data_directory_old = /var/triliovault
+
 vault_storage_type = s3
 vault_s3_auth_version = DEFAULT
 
