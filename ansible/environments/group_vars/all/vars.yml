@@ -28,6 +28,9 @@ cloud_admin_username: ""
 cloud_admin_password: ""
 
 OS_ENDPOINT_TYPE: ""
+
+## If OS_ENDPOINT_TYPE is 'internal' then pass internal OS_AUTH_URL only
+## same for the 'admin' & 'public'
 OS_AUTH_URL: ""
 OS_REGION: ""
 
