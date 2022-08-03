@@ -40,6 +40,8 @@
     name: "rbd"
     state: "present"
 
+- import_tasks: create_conf_dirs.yml
+
 - name: Create datamover_logging.conf file
   template:
      src: datamover_logging.conf.j2

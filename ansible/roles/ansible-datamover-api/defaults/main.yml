@@ -74,3 +74,9 @@ DMAPI_LOG_CONF: "/etc/triliovault-datamover/datamover_api_logging.conf"
 
 dmapi_cfg_dir: "/etc/triliovault-datamover"
 dmapi_cfg_file: "{{ dmapi_cfg_dir }}/triliovault-datamover-api.conf"
+
+## Triliovault Debian Repo string
+TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
+
+### Triliovault RHEL Repo string
+TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"

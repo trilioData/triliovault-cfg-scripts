@@ -14,3 +14,9 @@ TRILIOVAULT_MNT_DIR_MODE: 0775
 
 DATAMOVER_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-datamover.log"
 DATAMOVER_LOG_CONF: "{{ TRILIOVAULT_CFG_DIR }}/datamover_logging.conf"
+
+## Triliovault Debian Repo string
+TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
+
+### Triliovault RHEL Repo string
+TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"

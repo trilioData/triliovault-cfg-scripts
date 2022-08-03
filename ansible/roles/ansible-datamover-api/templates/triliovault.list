@@ -1,1 +1,1 @@
-deb [trusted=yes] https://apt.fury.io/{{ triliovault_version }}/ /
+deb [trusted=yes] https://apt.fury.io/{{ TRILIOVAULT_DEB_REPO_STRING }}/ /

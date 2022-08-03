@@ -1,5 +1,5 @@
 [trilio]
 name=Triliovault Repository
-baseurl=https://yum.fury.io/{{ triliovault_version }}/
+baseurl=https://yum.fury.io/{{ TRILIOVAULT_RPM_REPO_STRING }}/
 enabled=1
 gpgcheck=0

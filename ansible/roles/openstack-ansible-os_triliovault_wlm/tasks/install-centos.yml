@@ -98,7 +98,7 @@
     - NFS == False
     - PYTHON_VERSION=="python3"
 
-- import_tasks: create_req_dirs.yml
+- import_tasks: create_conf_dirs.yml
 
 - name: create wlm_logging.conf file
   template:

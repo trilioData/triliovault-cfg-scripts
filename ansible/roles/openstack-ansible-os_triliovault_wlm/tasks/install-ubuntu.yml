@@ -65,14 +65,14 @@
     name: workloadmgr
     state: latest
 
-- name: Install s3fuse pckg
+- name: Install s3fuse pckg when backup target is S
   package: 
-    name: python3-s3-fuse-plugin when backup target is S3
+    name: python3-s3-fuse-plugin
     state: latest
   when: 
     - NFS == False
 
-- import_tasks: create_req_dirs.yml
+- import_tasks: create_conf_dirs.yml
 
 - name: create wlm_logging.conf file
   template:
