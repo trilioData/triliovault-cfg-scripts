@@ -7,9 +7,6 @@ TIME_ZONE: "Etc/UTC"
 # Update Openstack dist code name like ussuri etc.
 OPENSTACK_DIST: wallaby
 
-## Triliovault pckg version
-triliovault_version: ""
-
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
 #These changes require for Datamover, Otherwise Datamover will not work
