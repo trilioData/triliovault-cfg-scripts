@@ -196,3 +196,8 @@ NOVA_GID: 998
 barbican_encryption: "True"
 
 
+## Triliovault Debian Repo string
+TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
+
+### Triliovault RHEL Repo string
+TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"
