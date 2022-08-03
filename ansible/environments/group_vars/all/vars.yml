@@ -15,6 +15,22 @@ OPENSTACK_DIST: wallaby
 #other wise ansible tvault-contego installation will exit
 UPDATE_NOVA_SUDOERS_FILE: proceed
 
+
+## OS Cloud Details Required for 
+## Triliovault & Openstack Integration
+cloud_admin_project_name: ""
+cloud_admin_project_id: ""
+
+cloud_admin_domain_name: ""
+cloud_admin_domain_id: ""
+
+cloud_admin_username: ""
+cloud_admin_password: ""
+
+OS_ENDPOINT_TYPE: ""
+OS_AUTH_URL: ""
+OS_REGION: ""
+
 ##### Select snapshot storage type #####
 #Details for NFS as snapshot storage , NFS_SHARES should begin with "-".
 ##True/False
@@ -75,25 +91,10 @@ verbosity_level: 3
 ## OS SSL Cert Location
 os_ca_cert: "/etc/openstack_deploy/ssl/ca.crt"
 
-## Cloud Details
-cloud_admin_project_name: ""
-cloud_admin_project_id: ""
-
-cloud_admin_domain_name: ""
-cloud_admin_domain_id: ""
-
-cloud_admin_username: ""
-cloud_admin_password: ""
-
-OS_ENDPOINT_TYPE: ""
-OS_AUTH_URL: ""
-OS_REGION: ""
-
 
 ## Specify installation is done trhough python pip packages e.g. if venv is /home/stack/venv, then
 ## venv_path: "/home/stack/venv"
 venv_path: ""
-
 
 
 #******************************************************************************************************************************************************************
