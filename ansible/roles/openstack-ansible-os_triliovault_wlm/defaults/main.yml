@@ -183,6 +183,9 @@ triliovault_virt_env: "/home/stack/wlm-venv"
 wlm_log_file: "{{ triliovault_log_dir }}/triliovault-workloadmgr.log"
 wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
+OBJECT_STORE_LOG_FILE: "{{ triliovault_log_dir }}/tvault-object-store.log"
+OBJECT_STORE_LOG_CFG: "/etc/triliovault-object-store/object_store_logging.conf"
+
 signing_dir: "/var/cache/workloadmgr"
 state_path: "/opt/stack/data/triliovault-wlm"
 
@@ -201,3 +204,4 @@ TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
 
 ### Triliovault RHEL Repo string
 TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"
+
