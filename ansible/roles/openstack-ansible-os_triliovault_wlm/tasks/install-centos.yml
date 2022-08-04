@@ -147,12 +147,12 @@
     state: started
   when: NFS == False
 
-- name: Enable {{ item }} service
+- name: Enable "{{ item }}" service
   service:
-    name: {{ item }}
+    name: "{{ item }}"
     state: started
     enabled: yes
-  with_item:
+  with_items:
     - wlm-api
     - wlm-workloads
     - wlm-scheduler
