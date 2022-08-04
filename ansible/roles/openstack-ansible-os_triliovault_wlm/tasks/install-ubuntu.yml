@@ -65,7 +65,7 @@
     name: workloadmgr
     state: latest
 
-- name: Install s3fuse pckg when backup target is S
+- name: Install s3fuse pckg when backup target is S3
   package: 
     name: python3-s3-fuse-plugin
     state: latest
@@ -78,6 +78,17 @@
   template:
      src: wlm_logging.conf.j2
      dest: "{{ wlm_log_cfg }}"
+  tags:
+    - update_cfg
+
+- name: create object_store_logging.conf file
+  template:
+     src: object_store_logging.conf.j2
+     dest: "{{ OBJECT_STORE_LOG_CFG }}"
+  when: 
+    - NFS == False
+  tags:
+    - update_cfg
 
 - import_tasks: get_cloud_details.yml
 
@@ -85,17 +96,23 @@
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
+  tags:
+    - update_cfg
 
 - name: Copy triliovault wlm api paste ini 
   template:
      src: api-paste.ini.j2
      dest: "{{ wlm_api_paste }}"
+  tags:
+    - update_cfg
 
 - name: Copy triliovault object store conf
   template:
      src: triliovault-object-store.conf.j2
      dest: "{{ triliovault_obj_sotre_cfg }}"
   when: NFS == False
+  tags:
+    - update_cfg
 
 - import_tasks: triliovault_db_sync.yml
 
@@ -110,44 +127,68 @@
     name: tvault-object-store.service
     state: started
   when: NFS == False
+  tags:
+    - update_cfg
 
-- name: Enable triliovault wlm api service
+- name: Enable {{ item }} service
   service:
-    name: wlm-api
-    enabled: yes
-
-- name: Start triliovault wlm api service
-  service:
-    name: wlm-api
+    name: {{ item }}
     state: started
-
-- name: Enable triliovault wlm workloads service
-  service:
-    name: wlm-workloads
     enabled: yes
+  with_item:
+    - wlm-api
+    - wlm-workloads
+    - wlm-scheduler
+    - wlm-cron
+  tags:
+    - update_cfg
 
-- name: Start triliovault wlm workloads service
-  service:
-    name: wlm-workloads
-    state: started
 
-- name: Enable triliovault wlm scheduler service
-  service:
-    name: wlm-scheduler
-    enabled: yes
-
-- name: Start triliovault wlm scheduler service
-  service:
-    name: wlm-scheduler
-    state: started
-
-- name: Enable triliovault wlm cron service
-  service:
-    name: wlm-cron
-    enabled: yes
-
-- name: Start triliovault wlm cron service
-  service:
-    name: wlm-cron
-    state: started
-
+##- name: Enable triliovault wlm api service
+##  service:
+##    name: wlm-api
+##    enabled: yes
+##
+##- name: Start triliovault wlm api service
+##  service:
+##    name: wlm-api
+##    state: started
+##  tags:
+##    - update_cfg
+##
+##- name: Enable triliovault wlm workloads service
+##  service:
+##    name: wlm-workloads
+##    enabled: yes
+##
+##- name: Start triliovault wlm workloads service
+##  service:
+##    name: wlm-workloads
+##    state: started
+##  tags:
+##    - update_cfg
+##
+##- name: Enable triliovault wlm scheduler service
+##  service:
+##    name: wlm-scheduler
+##    enabled: yes
+##
+##- name: Start triliovault wlm scheduler service
+##  service:
+##    name: wlm-scheduler
+##    state: started
+##  tags:
+##    - update_cfg
+##
+##- name: Enable triliovault wlm cron service
+##  service:
+##    name: wlm-cron
+##    enabled: yes
+##
+##- name: Start triliovault wlm cron service
+##  service:
+##    name: wlm-cron
+##    state: started
+##  tags:
+##    - update_cfg
+##

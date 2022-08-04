@@ -104,6 +104,8 @@
   template:
      src: wlm_logging.conf.j2
      dest: "{{ wlm_log_cfg }}"
+  tags:
+    - update_cfg
 
 - import_tasks: get_cloud_details.yml
 
@@ -111,17 +113,23 @@
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
+  tags:
+    - update_cfg
 
 - name: Copy workloadmgr api-paste-ini 
   template:
      src: api-paste.ini.j2
      dest: "{{ wlm_api_paste }}"
+  tags:
+    - update_cfg
 
 - name: Copy triliovault object store conf
   template:
      src: triliovault-object-store.conf.j2
      dest: "{{ triliovault_obj_sotre_cfg }}"
   when: NFS == False
+  tags:
+    - update_cfg
 
 - import_tasks: triliovault_db_sync.yml 
   tags:
@@ -139,42 +147,55 @@
     state: started
   when: NFS == False
 
-- name: Enable wlm-api service
+- name: Enable {{ item }} service
   service:
-    name: wlm-api
-    enabled: yes
-
-- name: Start wlm-api service
-  service:
-    name: wlm-api
+    name: {{ item }}
     state: started
-
-- name: Enable wlm-workloads service
-  service:
-    name: wlm-workloads
     enabled: yes
+  with_item:
+    - wlm-api
+    - wlm-workloads
+    - wlm-scheduler
+    - wlm-cron
+  tags:
+    - update_cfg
 
-- name: Start wlm-workloads service
-  service:
-    name: wlm-workloads
-    state: started
-
-- name: Enable wlm-scheduler service
-  service:
-    name: wlm-scheduler
-    enabled: yes
-
-- name: Start wlm-scheduler service
-  service:
-    name: wlm-scheduler
-    state: started
-
-- name: Enable wlm-cron service
-  service:
-    name: wlm-cron
-    enabled: yes
-
-- name: Start wlm-cron service
-  service:
-    name: wlm-cron
-    state: started
+##- name: Enable wlm-api service
+##  service:
+##    name: wlm-api
+##    enabled: yes
+##
+##- name: Start wlm-api service
+##  service:
+##    name: wlm-api
+##    state: started
+##
+##- name: Enable wlm-workloads service
+##  service:
+##    name: wlm-workloads
+##    enabled: yes
+##
+##- name: Start wlm-workloads service
+##  service:
+##    name: wlm-workloads
+##    state: started
+##
+##- name: Enable wlm-scheduler service
+##  service:
+##    name: wlm-scheduler
+##    enabled: yes
+##
+##- name: Start wlm-scheduler service
+##  service:
+##    name: wlm-scheduler
+##    state: started
+##
+##- name: Enable wlm-cron service
+##  service:
+##    name: wlm-cron
+##    enabled: yes
+##
+##- name: Start wlm-cron service
+##  service:
+##    name: wlm-cron
+##    state: started

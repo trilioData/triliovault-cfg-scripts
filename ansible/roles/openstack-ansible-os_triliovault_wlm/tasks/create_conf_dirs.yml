@@ -1,13 +1,4 @@
 ---
-- name: Create triliovault log dir
-  file:
-    path: "{{ triliovault_log_dir }}"
-    mode: '0755'
-    recurse: yes
-    owner: nova
-    group: nova
-    state: directory
-
 - name: Create triliovault conf dir
   file:
     path: "{{ triliovault_cfg_dir }}"
