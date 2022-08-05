@@ -12,10 +12,15 @@
       - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
     state: latest
 
-- name: install packages on datamover api container | {{ PYTHON_VERSION }} devel and nova packages
+- name: Install {{ PYTHON_VERSION }} devel package
   package:
     name:
       - "{{ PYTHON_VERSION }}-devel"
+    state: latest
+
+- name: Install {{ PYTHON_VERSION }} nova package
+  package:
+    name:
       - "{{ PYTHON_VERSION }}-nova"
     state: latest
 
@@ -24,15 +29,7 @@
      src: datamover_url
      dest: /tmp/datamover_url
 
-- name: install tvault-datamover-api rpm package when using python2
-  package:
-    name: dmapi
-    state: latest
-  notify:
-      - restart tvault-datamover-api
-  when: PYTHON_VERSION=="python2"
-      
-- name: install tvault-datamover-api rpm package when using python3
+- name: Install tvault-datamover-api RPM package
   package:
     name: python3-dmapi
     state: latest
