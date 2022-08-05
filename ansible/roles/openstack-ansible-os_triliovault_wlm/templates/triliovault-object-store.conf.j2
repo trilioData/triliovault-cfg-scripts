@@ -18,7 +18,7 @@ vault_s3_signature_version =
 {%endif%}
 
 {% if VAULT_S3_SSL_CERT != "" %}
-vault_s3_ssl_cert = {{VAULT_S3_SSL_CERT_PATH}}
+vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
 {%else%}
 vault_s3_ssl_cert =
 {%endif%}

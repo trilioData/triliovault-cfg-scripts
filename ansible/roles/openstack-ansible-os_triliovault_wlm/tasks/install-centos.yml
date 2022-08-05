@@ -90,13 +90,12 @@
     name: workloadmgr
     state: latest
 
-- name: Install python3-s3-fuse-plugin when backup target is S3
+- name: Install python3-s3fuse-plugin
   package:
-    name: python3-s3-fuse-plugin
+    name: python3-s3fuse-plugin
     state: latest
   when: 
     - NFS == False
-    - PYTHON_VERSION=="python3"
 
 - import_tasks: create_conf_dirs.yml
 
