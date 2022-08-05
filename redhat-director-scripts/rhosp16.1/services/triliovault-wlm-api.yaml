@@ -1,0 +1,314 @@
+heat_template_version: rocky
+
+description: >
+  Trilio Datamover Api containerized service
+parameters:
+  DockerTriliovaultWlmApiImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  TriliovaultWlmApiPort:
+    default: '8784'
+    description: Trilio Dmapi listen port
+    type: string
+  TriliovaultWlmApiSslPort:
+    default: '13784'
+    description: Trilio Dmapi ssl listen port
+    type: string
+  DefaultPasswords:
+    default: {}
+    type: json 
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  TriliovaultWlmApiDbPassword:
+    description: The password for the triliovault wlm service's database user
+    type: string
+    hidden: true
+  TriliovaultWlmApiKeystonePassword:
+    description: The password for the triliovault wlm service account in keystone
+    type: string
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications. 
+  ContainerMysqlConfigImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string  
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  ConfigDebug:
+    default: false
+    description: Whether to run config management (e.g. Puppet) in debug mode.
+    type: boolean
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  ContainerCli:
+    type: string
+    default: 'podman'
+    description: CLI tool used to manage containers.
+    constraints:
+      - allowed_values: ['docker', 'podman']
+  ClusterCommonTag:
+    default: false
+    description: When set to false, a pacemaker service is configured
+                 to use a floating tag for its container image name,
+                 e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
+                 set to true, the service uses a floating prefix as
+                 well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
+    type: boolean
+
+
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+  MySQLClient:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
+
+conditions:
+  puppet_debug_enabled: {get_param: ConfigDebug}
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
+  common_tag_enabled: {equals: [{get_param: ClusterCommonTag}, true]}
+
+
+outputs:
+  role_data:
+    description: Role data for the TrilioVault Wlm Service role.
+    value:
+      service_name: triliovault_wlm_api
+      keystone_resources:
+        workloadmgr:
+          endpoints:
+            public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
+            internal: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
+            admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+          users:
+            dmapi:
+              password: {get_param: TriliovaultWlmApiKeystonePassword}
+          region: {get_param: KeystoneRegion}
+          service: 'workloads'      
+      config_settings:
+        trilio::workloadmgr::dmapi_port: {get_param: TrilioApiPort}
+        trilio::workloadmgr::dmapi_ssl_port: {get_param: DmApiSslPort}
+        trilio::workloadmgr::password: {get_param: TrilioDatamoverPassword}
+        trilio::workloadmgr::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::workloadmgr::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::workloadmgr::notification_driver: {get_param: NotificationDriver}
+        trilio::workloadmgr::enable_proxy_headers_parsing: true
+        trilio::workloadmgr::project_name: 'service'
+        trilio::workloadmgr::region_name: {get_param: KeystoneRegion}
+        trilio::workloadmgr::user_domain_name: 'Default'
+        trilio::workloadmgr::project_domain_name: 'Default'
+        tripleo::triliovault_wlm_api::firewall_rules:
+              '240 triliovault-wlm-api':
+                dport:
+                  - 8781
+                  - 13781
+        trilio::workloadmgr::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: workloadmgr
+            password: {get_param: TriliovaultWlmApiDbPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: /workloadmgr
+        trilio::dmapi::my_ip:
+            str_replace:
+              template:
+                "%{hiera('$NETWORK')}"
+              params:
+                $NETWORK: {get_param: [ServiceNetMap, TriliovaultWlmApiNetwork]}                                
+      service_config_settings:
+        haproxy:
+          tripleo::triliovault_wlm_api::haproxy_endpoints:
+            triliovault_wlm_api:
+                public_virtual_ip: "%{hiera('public_virtual_ip')}"
+                internal_ip: "%{hiera('triliovault_wlm_api_vip')}"
+                service_port: {get_param: TriliovaultWlmApiPort}
+                public_ssl_port: {get_param: TriliovaultWlmApiSslPort}
+                member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
+                haproxy_listen_bind_param: ['transparent']
+                service_network: "%{hiera('triliovault_wlm_api_network')}"
+          tripleo::haproxy::triliovault_wlm_api::options:
+             'retries': '5'
+             'maxconn': '50000'
+             'balance': 'roundrobin'
+             'timeout http-request': '10m'
+             'timeout queue': '10m'
+             'timeout connect': '10m'
+             'timeout client': '10m'
+             'timeout server': '10m'
+             'timeout check': '10m'
+        keystone:
+          trilio::keystone::auth::tenant: 'service'
+          trilio::keystone::auth::service_name: 'workloadmgr'
+          trilio::keystone::auth::service_type: 'workloads'
+          trilio::keystone::auth::service_description: 'TrilioVault Wlm Service'
+          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
+          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
+          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+          trilio::keystone::auth::password: {get_param: TriliovaultWlmApiKeystonePassword}
+          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+        mysql:
+          trilio::db::mysql::user: workloadmgr
+          trilio::db::mysql::password: {get_param: TriliovaultWlmApiDbPassword}
+          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::db::mysql::dbname: workloadmgr
+          trilio::db::mysql::allowed_hosts:
+            - '%'
+            - "%{hiera('mysql_bind_host')}"                         
+      puppet_config:
+        config_volume: triliovaultwlmapi
+        puppet_tags: wlmapiconfig
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::trilio::wlmapi"
+              - {get_attr: [MySQLClient, role_data, step_config]}        
+        config_image: {get_param: DockerTriliovaultWlmApiImage}
+      kolla_config:
+        /var/lib/kolla/config_files/triliovault_wlm_api.json:
+          command: /tmp/start_triliovault_wlm_api.sh
+          config_files:
+            - source: "/var/lib/kolla/config_files/triliovaultwlmapi/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/triliovault/
+              owner: nova:nova
+              recurse: true
+      container_puppet_tasks:
+        step_3:
+          config_volume: 'triliovault_wlm_api_mysql_init_bundle'
+          puppet_tags: 'mysql_database,mysql_grant,mysql_user'
+          step_config: 'include ::trilio::tripleo::mysql'
+          config_image: {get_param: ContainerMysqlConfigImage}
+          volumes:
+            list_concat:
+            -
+              - /var/lib/mysql:/var/lib/mysql/:rw
+              - /var/log/containers/mysql:/var/log/mariadb
+              - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
+            - if:
+              - internal_tls_enabled
+              -
+                - list_join:
+                  - ':'
+                  - - {get_param: InternalTLSCAFile}
+                    - {get_param: InternalTLSCAFile}
+                    - 'ro'
+                - /etc/pki/tls/certs/mysql.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/mysql.crt:ro
+                - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
+              - null          
+        step_4:
+          config_volume: 'triliovault_wlm_api_keystone_init_tasks'
+          puppet_tags: 'keystone_config'
+          step_config: 'include ::trilio::tripleo::keystone'
+          config_image: {get_param: ContainerKeystoneConfigImage}
+          volumes:
+              - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
+      docker_config:
+        step_2:
+          triliovault_wlm_api_init_log:
+            image: &triliovault_wlm_api_image {get_param: DockerTriliovaultWlmApiImage}
+            start_order: 0
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/triliovault-wlm-api:/var/log/triliovault:z
+            command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']
+        step_4:
+          triliovault_wlm_api_db_sync:
+            image: *triliovault_wlm_api_image
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm-api/:/etc/triliovault-wlm-api/:ro
+                  - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
+            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
+        step_5:
+          trilio_dmapi:
+            image: {get_param: DockerTrilioDmApiImage}
+            net: host
+            privileged: true
+            user: dmapi
+            restart: always
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                    - []
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                    - []
+            environment:
+               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create trilio datamover api log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks: []
