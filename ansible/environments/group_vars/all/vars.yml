@@ -119,6 +119,9 @@ RABBITMQ_SSL_DIR: /opt/config-certs/rabbitmq
 DMAPI_SSL_CERT_PATH: /opt/config-certs/dmapi/dmapi-ca.pem
 DMAPI_SSL_KEY_PATH: /opt/config-certs/dmapi/dmapi.key
 VAULT_S3_SSL_CERT_PATH: /opt/config-certs/s3/ca_cert.pem
+
+WLM_S3_SSL_CERT_PATH: /opt/config-certs/s3/triliovault-wlm-s3.pem
+
 RABBITMQ_SSL_CERT_PATH: /opt/config-certs/rabbitmq/rabbitmq.pem
 RABBITMQ_SSL_KEY_PATH: /opt/config-certs/rabbitmq/rabbitmq.key
 RABBITMQ_SSL_CA_CERT_PATH: /opt/config-certs/rabbitmq/rabbitmq-ca.pem
