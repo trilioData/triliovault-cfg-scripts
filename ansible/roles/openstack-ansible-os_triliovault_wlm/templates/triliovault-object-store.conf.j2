@@ -1,17 +1,17 @@
 [DEFAULT]
-{% if vault_s3_auth_version != "" %}
+{% if VAULT_S3_AUTH_VERSION != "" %}
 vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
 {%else%}
 #vault_s3_auth_version =
 {%endif%}
 
-{% if vault_s3_endpoint_url != "" %}
+{% if VAULT_S3_ENDPOINT_URL != "" %}
 vault_s3_endpoint_url = {{ VAULT_S3_ENDPOINT_URL }}
 {%else%}
 #vault_s3_endpoint_url =
 {%endif%}
 
-{% if vault_s3_signature_version != "" %}
+{% if VAULT_S3_SIGNATURE_VERSION != "" %}
 vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
 {%else%}
 #vault_s3_signature_version =
