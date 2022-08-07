@@ -106,7 +106,17 @@
   tags:
     - update_cfg
 
+- name: create object_store_logging.conf file
+  template:
+     src: object_store_logging.conf.j2
+     dest: "{{ OBJECT_STORE_LOG_CFG }}"
+  when: 
+    - NFS == False
+  tags:
+    - update_cfg
+
 - import_tasks: get_cloud_details.yml
+
 
 - name: copy workloadmgr conf
   template:
@@ -138,20 +148,29 @@
   tags:
     - update_cfg
 
-- block:
-  - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
-    file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+- name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+  file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
-  - name: check {{VAULT_S3_SSL_CERT}} is present or not
-    stat: path="{{VAULT_S3_SSL_CERT}}"
-    register: tvault_ssl_cert_output
+- name: check {{VAULT_S3_SSL_CERT}} is present or not
+  stat: path="{{VAULT_S3_SSL_CERT}}"
+  register: tvault_ssl_cert_output
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
-  - name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
-    copy:
-      src: "{{VAULT_S3_SSL_CERT}}"
-      dest: "{{WLM_S3_SSL_CERT_PATH}}"
-    when:
-      - tvault_ssl_cert_output.stat.exists == true
+- name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
+  copy:
+    src: "{{VAULT_S3_SSL_CERT}}"
+    dest: "{{WLM_S3_SSL_CERT_PATH}}"
   when:
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
@@ -186,42 +205,3 @@
   tags:
     - update_cfg
 
-##- name: Enable wlm-api service
-##  service:
-##    name: wlm-api
-##    enabled: yes
-##
-##- name: Start wlm-api service
-##  service:
-##    name: wlm-api
-##    state: started
-##
-##- name: Enable wlm-workloads service
-##  service:
-##    name: wlm-workloads
-##    enabled: yes
-##
-##- name: Start wlm-workloads service
-##  service:
-##    name: wlm-workloads
-##    state: started
-##
-##- name: Enable wlm-scheduler service
-##  service:
-##    name: wlm-scheduler
-##    enabled: yes
-##
-##- name: Start wlm-scheduler service
-##  service:
-##    name: wlm-scheduler
-##    state: started
-##
-##- name: Enable wlm-cron service
-##  service:
-##    name: wlm-cron
-##    enabled: yes
-##
-##- name: Start wlm-cron service
-##  service:
-##    name: wlm-cron
-##    state: started
