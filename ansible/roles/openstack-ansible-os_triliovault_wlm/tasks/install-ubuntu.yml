@@ -114,20 +114,29 @@
   tags:
     - update_cfg
 
-- block:
-  - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
-    file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+- name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+  file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
-  - name: check {{VAULT_S3_SSL_CERT}} is present or not
-    stat: path="{{VAULT_S3_SSL_CERT}}"
-    register: tvault_ssl_cert_output
+- name: check {{VAULT_S3_SSL_CERT}} is present or not
+  stat: path="{{VAULT_S3_SSL_CERT}}"
+  register: tvault_ssl_cert_output
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
-  - name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
-    copy:
-      src: "{{VAULT_S3_SSL_CERT}}"
-      dest: "{{WLM_S3_SSL_CERT_PATH}}"
-    when:
-      - tvault_ssl_cert_output.stat.exists == true
+- name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
+  copy:
+    src: "{{VAULT_S3_SSL_CERT}}"
+    dest: "{{WLM_S3_SSL_CERT_PATH}}"
   when:
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
@@ -165,51 +174,3 @@
     - update_cfg
 
 
-##- name: Enable triliovault wlm api service
-##  service:
-##    name: wlm-api
-##    enabled: yes
-##
-##- name: Start triliovault wlm api service
-##  service:
-##    name: wlm-api
-##    state: started
-##  tags:
-##    - update_cfg
-##
-##- name: Enable triliovault wlm workloads service
-##  service:
-##    name: wlm-workloads
-##    enabled: yes
-##
-##- name: Start triliovault wlm workloads service
-##  service:
-##    name: wlm-workloads
-##    state: started
-##  tags:
-##    - update_cfg
-##
-##- name: Enable triliovault wlm scheduler service
-##  service:
-##    name: wlm-scheduler
-##    enabled: yes
-##
-##- name: Start triliovault wlm scheduler service
-##  service:
-##    name: wlm-scheduler
-##    state: started
-##  tags:
-##    - update_cfg
-##
-##- name: Enable triliovault wlm cron service
-##  service:
-##    name: wlm-cron
-##    enabled: yes
-##
-##- name: Start triliovault wlm cron service
-##  service:
-##    name: wlm-cron
-##    state: started
-##  tags:
-##    - update_cfg
-##
