@@ -1,7 +1,7 @@
 --- 
 
 - name: get CLOUD_PROJECT_ID
-  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ cloud_admin_project_name }}"
+  shell: ". /root/triliovault-cloudrc && openstack project show -f value -c id {{ CLOUD_ADMIN_PROJECT_NAME }}"
   register: cld_prj_id
   delegate_to: localhost
 
@@ -9,7 +9,7 @@
     cloud_project_id: "{{ cld_prj_id.stdout }}"
 
 - name: get CLOUD_ADMIN_USER_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ cloud_admin_domain_name }} -f value -c id {{ cloud_admin_username }}"
+  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ CLOUD_ADMIN_DOMAIN_NAME }} -f value -c id {{ CLOUD_ADMIN_USERNAME }}"
   register: admin_usr_id
   delegate_to: localhost
 
@@ -17,7 +17,7 @@
     cloud_admin_user_id: "{{ admin_usr_id.stdout }}"
 
 - name: get CLOUD_ADMIN_DOMAIN_ID
-  shell: ". /root/triliovault-cloudrc && openstack domain show --insecure -f value -c id {{ cloud_admin_domain_name }}"
+  shell: ". /root/triliovault-cloudrc && openstack domain show --insecure -f value -c id {{ CLOUD_ADMIN_DOMAIN_NAME }}"
   register: admin_domain_id
   delegate_to: localhost
 

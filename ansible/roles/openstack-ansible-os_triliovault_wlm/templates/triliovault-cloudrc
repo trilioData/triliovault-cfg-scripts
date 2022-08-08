@@ -2,17 +2,17 @@
 export OS_AUTH_URL={{ OS_AUTH_URL }}
 export OS_REGION_NAME={{ OS_REGION }}
 
-export OS_PROJECT_NAME={{ cloud_admin_project_name }}
-export OS_PROJECT_ID={{ cloud_admin_project_id }}
+export OS_PROJECT_NAME={{ CLOUD_ADMIN_PROJECT_NAME }}
+export OS_PROJECT_ID={{ CLOUD_ADMIN_PROJECT_ID }}
 
-export OS_PROJECT_DOMAIN_ID={{ cloud_admin_domain_name }}
-export OS_USER_DOMAIN_NAME={{ cloud_admin_domain_name }}
+export OS_PROJECT_DOMAIN_ID={{ CLOUD_ADMIN_DOMAIN_ID }}
+export OS_USER_DOMAIN_NAME={{ CLOUD_ADMIN_DOMAIN_NAME }}
 
-export OS_USERNAME={{ cloud_admin_username }}
-export OS_PASSWORD={{ cloud_admin_password }}
+export OS_USERNAME={{ CLOUD_ADMIN_USERNAME }}
+export OS_PASSWORD={{ CLOUD_ADMIN_PASSWORD }}
 
-export OS_PROJECT_DOMAIN_NAME={{ cloud_admin_project_name }}
-export OS_DEFAULT_DOMAIN={{ cloud_admin_domain_id }}
+export OS_PROJECT_DOMAIN_NAME={{ CLOUD_ADMIN_PROJECT_NAME }}
+export OS_DEFAULT_DOMAIN={{ CLOUD_ADMIN_DOMAIN_ID }}
 
 unset OS_TENANT_ID
 unset OS_TENANT_NAME

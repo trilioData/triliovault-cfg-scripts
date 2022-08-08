@@ -1,110 +1,141 @@
 [DEFAULT]
-
 log_dir = {{ triliovault_log_dir }}
 log_file = {{ wlm_log_file }}
 log_config = {{ wlm_log_cfg }}
 
-use_syslog = false
+use_syslog = False
 use_stderr = False
 
-api_workers = 4
 triliovault_hostnames = {{container_address}}
-
-workloads_workers = {{ workloads_workers }}
-max_wait_for_upload = {{ max_wait_upload }}
-
 config_status = configured
 
-transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+state_path = {{ state_path }}
+rootwrap_config = {{ rootwrap_config }}
 
-rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
+wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
+api_paste_config = {{ wlm_api_paste }}
 
 sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
-compute_driver = libvirt.LibvirtDriver
-state_path = {{ state_path }}
-
-rootwrap_config = {{ rootwrap_config }}
-api_paste_config = {{ wlm_api_paste }}
-
-osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 verbose = True
+osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
-debug = false
-glance_production_host = {{ internal_lb_vip_address }}
+#Not required if you are using log_config
+#debug=False
 
-glance_production_api_servers = {{ glance_endpoint_url }} 
-
-cinder_production_endpoint_template = {{ cinder_endpoint_url }}
-
-nova_production_endpoint_template = {{ nova_endpoint_url }}
-
-nova_admin_auth_url = {{ OS_AUTH_URL }}
-
-neutron_admin_auth_url = {{ OS_AUTH_URL }}
-
-keystone_endpoint_url = {{ OS_AUTH_URL }}
-
-neutron_production_url = {{ neutron_endpoint_url }}
-
-##Cloud details
+##OS Details
 cloud_admin_user_id = {{ cloud_admin_user_id }}
-cloud_admin_project_id = {{ cloud_admin_project_id }}
+cloud_admin_project_id = {{ CLOUD_ADMIN_PROJECT_ID }}
 
-domain_name = {{ cloud_admin_domain_id }}
-cloud_admin_domain = {{ cloud_admin_domain_id }}
+cloud_admin_domain = {{ CLOUD_ADMIN_DOMAIN_ID }}
 cloud_admin_role = {{ wlm_service_role_name }}
+
+trustee_role  = {{ trustee_role }}
+domain_name = {{ CLOUD_ADMIN_DOMAIN_ID }}
 
 triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
 cloud_unique_id = {{ wlm_user_id }}
 
-glance_api_version = {{ glance_api_version }}
-trustee_role  = {{ trustee_role }}
-
 region_name_for_services = {{ wlm_service_region }}
-
-keystone_auth_version = 3
 global_job_scheduler_override = False
 
-{% if NFS == True %}
+transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
 
-vault_data_directory = {{ triliovault_mnt_dir }}
-vault_data_directory_old = /var/triliovault
+api_workers = 4
+workloads_workers = {{ workloads_workers }}
+
+glance_production_host = {{ internal_lb_vip_address }}
+glance_production_api_servers = {{ glance_endpoint_url }} 
+glance_api_version = {{ glance_api_version }}
+
+keystone_endpoint_url = {{ OS_AUTH_URL }}
+keystone_auth_version = 3
+
+cinder_production_endpoint_template = {{ cinder_endpoint_url }}
+
+nova_admin_auth_url = {{ OS_AUTH_URL }}
+nova_production_endpoint_template = {{ nova_endpoint_url }}
+
+neutron_admin_auth_url = {{ OS_AUTH_URL }}
+neutron_production_url = {{ neutron_endpoint_url }}
+
+##
+rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
+compute_driver = libvirt.LibvirtDriver
 
 vault_storage_das_device = none
+
+{% if (NFS|bool == True) and (S3|bool == False)%}
+
 vault_storage_type = nfs
-
 vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
+
 vault_storage_nfs_options = {{ NFS_OPTIONS }}
-
-{% else %}
-
-vault_data_directory = {{ triliovault_mnt_dir }}
-vault_data_directory_old = /var/triliovault
-
-vault_storage_type = s3
-vault_s3_auth_version = DEFAULT
-
-vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
-vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
-vault_s3_bucket = {{ VAULT_S3_BUCKET }}
-
-vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
-vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
-
-vault_s3_endpoint_url = {{ VAULT_S3_ENDPOINT_URL }}
-vault_s3_ssl_cert = {{ VAULT_S3_SSL_CERT_PATH }}
-
-vault_s3_ssl = false
-vault_storage_das_device = none
-vault_storage_nfs_export = TrilioVault
-
 {% endif %}
 
-helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+{% if S3|bool == True and s3_type == Amazon %}
+
+vault_storage_type = s3
+
+vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
+vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
+
+vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
+vault_s3_bucket = {{ VAULT_S3_BUCKET }}
+vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
+
+vault_enable_threadpool = True
+vault_s3_support_empty_dir = False
+
+{% elif S3|bool == True and s3_type == Other_S3_Compatible %}
+
+vault_storage_type = s3
+
+vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
+vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
+
+vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
+vault_s3_bucket = {{ VAULT_S3_BUCKET }}
+vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
+
+vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
+vault_s3_ssl = {{VAULT_S3_SECURE}}
+
+vault_enable_threadpool = True
+vault_s3_support_empty_dir = False
+
+{% if VAULT_S3_SSL_CERT != "" %}
+vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
+{% else %}
+vault_s3_ssl_cert =
+{% endif %}
+{% endif %}
+
+
+vault_data_directory_old = /var/triliovault
+vault_data_directory = {{ triliovault_mnt_dir }}
+
+#The amount of time(in hrs) that snapshot upload operation should wait for the upload
+max_wait_for_upload = {{ max_wait_upload }}
+
 neutron_api_insecure = false
 
+[global_job_scheduler]
+# misfire_grace_time is the grace time in which the global job scheduler will consider to
+# trigger the missed snapshots
+# The value is in seconds
+misfire_grace_time = {{ misfire_grace_time }}
+
+[s3fuse_sys_admin]
+helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+
 [keystone_authtoken]
+admin_tenant_name = {{ wlm_service_project_name }}
+signing_dir = {{ signing_dir }}
+
+project_name = {{ wlm_service_project_name }}
 auth_url = {{ OS_AUTH_URL }}/v3
 
 www_authenticate_uri = {{ keystone_service_internaluri }}/v3
@@ -119,11 +150,7 @@ admin_password = {{ wlm_service_password }}
 project_domain_id = {{ wlm_service_project_domain_id }}
 user_domain_id = {{ wlm_service_user_domain_id }}
 
-admin_tenant_name = {{ wlm_service_project_name }}
-project_name = {{ wlm_service_project_name }}
-
 auth_plugin = {{ wlm_keystone_auth_plugin }}
-signing_dir = {{ signing_dir }}
 
 #Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
 #cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
@@ -152,13 +179,6 @@ sqlalchemy.url = mysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_
 [filesearch]
 process_timeout = {{ process_timeout }}
 
-[global_job_scheduler]
-misfire_grace_time = {{ misfire_grace_time }}
-
 [barbican]
 encryption_support = {{ barbican_encryption }}
-
-
-[s3fuse_sys_admin]
-helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
 

@@ -1,5 +1,5 @@
-##common editable parameters required for installing 
-## Triliovault-workloamdgr, Triliovault-horizon-plugin, Triliovault-contego and Triliovault-datamover-api services
+## Common editable parameters required for installation of  
+## Triliovault-datamover-api,Triliovault-datamover, Triliovault-Horizon-Plugin, and Triliovault-workloamdgr services
 
 ##Time Zone
 TIME_ZONE: "Etc/UTC"
@@ -18,14 +18,14 @@ UPDATE_NOVA_SUDOERS_FILE: proceed
 
 ## OS Cloud Details Required for 
 ## Triliovault & Openstack Integration
-cloud_admin_project_name: ""
-cloud_admin_project_id: ""
+CLOUD_ADMIN_PROJECT_NAME: ""
+CLOUD_ADMIN_PROJECT_ID: ""
 
-cloud_admin_domain_name: ""
-cloud_admin_domain_id: ""
+CLOUD_ADMIN_DOMAIN_NAME: ""
+CLOUD_ADMIN_DOMAIN_ID: ""
 
-cloud_admin_username: ""
-cloud_admin_password: ""
+CLOUD_ADMIN_USERNAME: ""
+CLOUD_ADMIN_PASSWORD: ""
 
 OS_ENDPOINT_TYPE: ""
 
@@ -53,19 +53,28 @@ multi_ip_nfs_enabled: False
 #### Details for S3 as snapshot storage
 ##True/False
 S3: False
+
 VAULT_S3_ACCESS_KEY: sample_s3_access_key
 VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
+
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
-VAULT_S3_SIGNATURE_VERSION: default
+
+VAULT_S3_SIGNATURE_VERSION:
+VAULT_S3_AUTH_VERSION:
+
 #### S3 Specific Backend Configurations
 #### Provide one of follwoing two values in s3_type variable, string's case should be match
 #Amazon/Other_S3_Compatible
 s3_type: sample_s3_type
+
 #### Required field(s) for all S3 backends except Amazon
 VAULT_S3_ENDPOINT_URL: ""
+
 #True/False
 VAULT_S3_SECURE: True
+
+## Specify S3 SSL Cert Path
 VAULT_S3_SSL_CERT: ""
 
 ###details of datamover API
@@ -110,6 +119,9 @@ RABBITMQ_SSL_DIR: /opt/config-certs/rabbitmq
 DMAPI_SSL_CERT_PATH: /opt/config-certs/dmapi/dmapi-ca.pem
 DMAPI_SSL_KEY_PATH: /opt/config-certs/dmapi/dmapi.key
 VAULT_S3_SSL_CERT_PATH: /opt/config-certs/s3/ca_cert.pem
+
+WLM_S3_SSL_CERT_PATH: /opt/config-certs/s3/triliovault-wlm-s3.pem
+
 RABBITMQ_SSL_CERT_PATH: /opt/config-certs/rabbitmq/rabbitmq.pem
 RABBITMQ_SSL_KEY_PATH: /opt/config-certs/rabbitmq/rabbitmq.key
 RABBITMQ_SSL_CA_CERT_PATH: /opt/config-certs/rabbitmq/rabbitmq-ca.pem
@@ -119,20 +131,19 @@ PYPI_PORT: 8081
 DMAPI_USR: dmapi
 DMAPI_GRP: dmapi
 
-## tvault contego file path
+## TRILIOVAULT CONTEGO CONF FILES
 TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/triliovault-datamover.conf
-#TVAULT_CONTEGO_CONF: /etc/triliovault-datamover/tvault-contego.conf
+
 TVAULT_OBJECT_STORE_CONF: /etc/triliovault-object-store/triliovault-object-store.conf
+
 NOVA_CONF_FILE: /etc/nova/nova.conf
 
 ## Nova distribution specific configuration file path
 NOVA_DIST_CONF_FILE: /usr/share/nova/nova-dist.conf
 TVAULT_CONTEGO_EXT_USER: nova
 TVAULT_CONTEGO_EXT_GROUP: nova
-#TVAULT_DATA_DIR_MODE: 0775
-#TVAULT_DATA_DIR_OLD: /var/triliovault
-#TVAULT_DATA_DIR: /var/trilio/triliovault-mounts
 TVAULT_CONTEGO_VIRTENV: /home/tvault
+
 TVAULT_CONTEGO_VIRTENV_PATH: "{{TVAULT_CONTEGO_VIRTENV}}/.virtenv"
 TVAULT_CONTEGO_EXT_BIN: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/bin/tvault-contego"
 TVAULT_CONTEGO_EXT_PYTHON: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/bin/python"
@@ -143,24 +154,25 @@ TVAULT_CONTEGO_EXT_S3: "{{TVAULT_CONTEGO_VIRTENV_PATH}}/lib/python2.7/site-packa
 privsep_helper_file: /home/tvault/.virtenv/bin/privsep-helper
 pip_version: 7.1.2
 virsh_version: "1.2.8"
-contego_service_file_path: /etc/systemd/system/tvault-contego.service
 contego_service_ulimits_count: 65536
-contego_service_debian_path: /etc/init/tvault-contego.conf
 
-objstore_service_file_path:  /etc/systemd/system/tvault-object-store.service
-objstore_service_debian_path: /etc/init/tvault-object-store.conf
+contego_service_file_path: /etc/systemd/system/tvault-contego.service
+
+objstore_service_file_path: /lib/systemd/system/tvault-object-store.service
 
 ubuntu: "Ubuntu"
 centos: "CentOS"
 redhat: "RedHat"
 Amazon: "Amazon"
+
 Other_S3_Compatible: "Other_S3_Compatible"
+
 tvault_datamover_api: tvault-datamover-api
 
-datamover_service_file_path: /etc/systemd/system/tvault-datamover-api.service
-datamover_service_debian_path: /etc/init/tvault-datamover.conf
+datamover_service_file_path: /lib/systemd/system/tvault-datamover-api.service
 
 datamover_log_dir: /var/log/triliovault
+
 trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
 ## OS SSL Cert Location
