@@ -1,0 +1,47 @@
+[loggers]
+keys = root
+
+[handlers]
+keys = s3fuse,s3fuseerr,stdout,stderr,null
+
+[formatters]
+keys = default,advanced
+
+[logger_root]
+level = INFO
+handlers = s3fuse
+
+[handler_s3fuse]
+class = logging.handlers.RotatingFileHandler 
+args = ('/var/log/triliovault/tvault-object-store.log','a',25000000,20)
+formatter = default
+
+[handler_s3fuseerr]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/tvault-object-store-error.log','a',25000000,20)
+formatter = advanced
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_legacyworkloadmgr]
+class = workloadmgr.openstack.common.log.LegacyFormatter
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+
