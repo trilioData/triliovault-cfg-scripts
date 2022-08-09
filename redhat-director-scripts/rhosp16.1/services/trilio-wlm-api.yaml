@@ -3,7 +3,7 @@ heat_template_version: rocky
 description: >
   Trilio Datamover Api containerized service
 parameters:
-  DockerTriliovaultWlmApiImage:
+  ContainerTriliovaultWlmApiImage:
     default: ''
     description: The location of Trilio Datamover container image
     type: string
@@ -34,12 +34,12 @@ parameters:
                  via parameter_defaults in the resource registry.
     type: json
   TriliovaultWlmApiPort:
-    default: '8784'
-    description: Trilio Dmapi listen port
+    default: '8781'
+    description: Triliovault Wlm Api Service port for http
     type: string
   TriliovaultWlmApiSslPort:
-    default: '13784'
-    description: Trilio Dmapi ssl listen port
+    default: '13781'
+    description: Triliovault Wlm Api Service Port for https
     type: string
   DefaultPasswords:
     default: {}
@@ -276,23 +276,23 @@ outputs:
                   - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm-api/:/etc/triliovault-wlm-api/:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
-            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
+            command: "/bin/bash -c alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
-          trilio_dmapi:
-            image: {get_param: DockerTrilioDmApiImage}
+          triliovault_wlm_api:
+            image: {get_param: DockerTriliovaultWlmApiImage}
             net: host
             privileged: true
-            user: dmapi
+            user: nova
             restart: always
             volumes:
               list_concat:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
-                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
-                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                  - /var/lib/kolla/config_files/triliovault_wlm_api.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliovaultwlmapi/:/var/lib/kolla/config_files/triliovaultwlmapi:ro
+                  - /var/log/containers/triliovault-wlm-api:/var/log/triliovault:z
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
@@ -304,11 +304,11 @@ outputs:
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       host_prep_tasks:
-        - name: create trilio datamover api log directory
+        - name: create triliovault wlm api log directory
           file:
             path: "{{ item.path }}"
             state: directory
             setype: "{{ item.setype }}"
           with_items:
-            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/triliovault-wlm-api, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []
