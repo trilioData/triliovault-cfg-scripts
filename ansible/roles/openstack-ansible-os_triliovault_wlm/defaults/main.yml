@@ -205,3 +205,8 @@ TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
 ### Triliovault RHEL Repo string
 TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"
 
+
+## TASKFLOW PARAM
+TASKFLOW_PATH: "/var/lib/workloadmgr/taskflow"
+TASKFLOW_CACHE: 1024
+TASKFLOW_AGE: 10
