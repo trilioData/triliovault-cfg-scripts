@@ -137,6 +137,9 @@
   copy:
     src: "{{VAULT_S3_SSL_CERT}}"
     dest: "{{WLM_S3_SSL_CERT_PATH}}"
+    owner: nova
+    group: nova
+    mode: '640'
   when:
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
