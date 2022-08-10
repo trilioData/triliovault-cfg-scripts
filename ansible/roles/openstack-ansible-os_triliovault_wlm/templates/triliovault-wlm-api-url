@@ -9,8 +9,15 @@ transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc
 connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 [keystone_authtoken]
-signing_dir =
+
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_CA_CERT }}
+{% else %}
 cafile =
+{% endif %}
+
+signing_dir =
+
 project_name = {{wlm_service_project_name}}
 user_domain_id = {{wlm_service_user_domain_id}}
 project_domain_id = {{wlm_service_project_domain_id}}
