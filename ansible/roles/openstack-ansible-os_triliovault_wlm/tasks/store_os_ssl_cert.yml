@@ -1,0 +1,22 @@
+- name: Create {{OS_SSL_CERT_DIR}} directory
+  file: name="{{OS_SSL_CERT_DIR}}"  state=directory
+  tags:
+    - update_cfg
+
+- name: Verify {{OS_CA_CERT}} is present or not
+  stat: path="{{OS_CA_CERT}}"
+  register: os_ssl_cert_output
+  tags:
+    - update_cfg
+
+- name: Store user provided OS SSL Cert
+  copy:
+    src: "{{OS_CA_CERT}}"
+    dest: "{{OS_SSL_CERT_PATH}}"
+    owner: nova
+    group: nova
+    mode: '640'
+  when:
+    - os_ssl_cert_output.stat.exists == true
+  tags:
+    - update_cfg

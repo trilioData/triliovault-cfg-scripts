@@ -74,6 +74,10 @@
 
 - import_tasks: create_conf_dirs.yml
 
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != "" 
+
 - name: create wlm_logging.conf file
   template:
      src: wlm_logging.conf.j2
@@ -117,9 +121,9 @@
 - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
   file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
   when:
-      - VAULT_S3_SSL_CERT != ""
-      - S3|bool == True
-      - s3_type == Other_S3_Compatible
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
   tags:
     - update_cfg
 
@@ -127,9 +131,9 @@
   stat: path="{{VAULT_S3_SSL_CERT}}"
   register: tvault_ssl_cert_output
   when:
-      - VAULT_S3_SSL_CERT != ""
-      - S3|bool == True
-      - s3_type == Other_S3_Compatible
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
   tags:
     - update_cfg
 
@@ -141,9 +145,10 @@
     group: nova
     mode: '640'
   when:
-      - VAULT_S3_SSL_CERT != ""
-      - S3|bool == True
-      - s3_type == Other_S3_Compatible
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+    - tvault_ssl_cert_output.stat.exists == true   
   tags:
     - update_cfg
 
