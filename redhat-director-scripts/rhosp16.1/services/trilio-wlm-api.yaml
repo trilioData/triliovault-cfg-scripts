@@ -17,9 +17,6 @@ parameters:
                  via parameter_defaults in the resource registry.  This
                  mapping overrides those in ServiceNetMapDefaults.
     type: json
-  DefaultPasswords:
-    default: {}
-    type: json
   RoleName:
     default: ''
     description: Role name on which the service is applied
@@ -33,27 +30,59 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  TriliovaultWlmApiPort:
+  DefaultPasswords:
+    default: {}
+    type: json
+  WlmApiPort:
     default: '8781'
     description: Triliovault Wlm Api Service port for http
     type: string
-  TriliovaultWlmApiSslPort:
+  WlmApiSslPort:
     default: '13781'
     description: Triliovault Wlm Api Service Port for https
     type: string
-  DefaultPasswords:
-    default: {}
-    type: json 
-  KeystoneRegion:
+  TriliovaultKeystoneRegionName:
     type: string
     default: 'regionOne'
     description: Keystone region for endpoint
-  TriliovaultWlmApiDbPassword:
-    description: The password for the triliovault wlm service's database user
+  CloudAdminUserName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user name
+  CloudAdminProjectName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user project name
+  CloudAdminDomainName:
+    type: string
+    default: 'Default'
+    description: OpenStack Cloud admin user domain name
+  WlmApiKeystoneUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Keystone user name for TrilioVault Wlm Service
+  WlmApiKeystoneUserPassword:
+    description: The password for the triliovault wlm service's Keystone user
     type: string
     hidden: true
-  TriliovaultWlmApiKeystonePassword:
-    description: The password for the triliovault wlm service account in keystone
+  WlmApiKeystoneUserProjectName:
+    type: string
+    default: 'service'
+    description: Keystone project name for TrilioVault Wlm Service User
+  WlmApiKeystoneUserRoleName:
+    type: string
+    default: 'admin'
+    description: Role name for TrilioVault Wlm Service User on service project (WlmApiKeystoneUserProjectName)
+  WlmApiKeystoneUserDomainName:
+    type: string
+    default: 'Default'
+    description: Keyston Domain name for TrilioVault Wlm Service User
+  WlmApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserPassword:
+    description: The password for the Triliovault wlm service's Database user
     type: string
     hidden: true
   NotificationDriver:
@@ -133,17 +162,17 @@ outputs:
           region: {get_param: KeystoneRegion}
           service: 'workloads'      
       config_settings:
-        trilio::workloadmgr::dmapi_port: {get_param: TrilioApiPort}
-        trilio::workloadmgr::dmapi_ssl_port: {get_param: DmApiSslPort}
-        trilio::workloadmgr::password: {get_param: TrilioDatamoverPassword}
-        trilio::workloadmgr::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
-        trilio::workloadmgr::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
-        trilio::workloadmgr::notification_driver: {get_param: NotificationDriver}
-        trilio::workloadmgr::enable_proxy_headers_parsing: true
-        trilio::workloadmgr::project_name: 'service'
-        trilio::workloadmgr::region_name: {get_param: KeystoneRegion}
-        trilio::workloadmgr::user_domain_name: 'Default'
-        trilio::workloadmgr::project_domain_name: 'Default'
+        trilio::wlmapi::port: {get_param: TrilioApiPort}
+        trilio::wlmapi::ssl_port: {get_param: DmApiSslPort}
+        trilio::wlmapi::password: {get_param: TriliovaultWlmApiKeystonePassword}
+        trilio::wlmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::wlmapi::enable_proxy_headers_parsing: true
+        trilio::wlmapi::project_name: 'service'
+        trilio::wlmapi::region_name: {get_param: KeystoneRegion}
+        trilio::wlmapi::user_domain_name: 
+        trilio::wlmapi::project_domain_name: 'Default'
         tripleo::triliovault_wlm_api::firewall_rules:
               '240 triliovault-wlm-api':
                 dport:
@@ -153,7 +182,7 @@ outputs:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: workloadmgr
-            password: {get_param: TriliovaultWlmApiDbPassword}
+            password: {get_param: WlmApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /workloadmgr
         trilio::dmapi::my_ip:
@@ -184,21 +213,21 @@ outputs:
              'timeout server': '10m'
              'timeout check': '10m'
         keystone:
-          trilio::keystone::auth::tenant: 'service'
-          trilio::keystone::auth::service_name: 'workloadmgr'
-          trilio::keystone::auth::service_type: 'workloads'
-          trilio::keystone::auth::service_description: 'TrilioVault Wlm Service'
-          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
-          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
-          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
-          trilio::keystone::auth::password: {get_param: TriliovaultWlmApiKeystonePassword}
-          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+          trilio::wlmapi::keystone::auth::tenant: 'service'
+          trilio::wlmapi::keystone::auth::service_name: 'workloadmgr'
+          trilio::wlmapi::keystone::auth::service_type: 'workloads'
+          trilio::wlmapi::keystone::auth::service_description: 'TrilioVault Wlm Service'
+          trilio::wlmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
+          trilio::wlmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
+          trilio::wlmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+          trilio::wlmapi::keystone::auth::password: {get_param: TriliovaultWlmApiKeystonePassword}
+          trilio::wlmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
-          trilio::db::mysql::user: workloadmgr
-          trilio::db::mysql::password: {get_param: TriliovaultWlmApiDbPassword}
-          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
-          trilio::db::mysql::dbname: workloadmgr
-          trilio::db::mysql::allowed_hosts:
+          trilio::wlmapi::db::mysql::user: workloadmgr
+          trilio::wlmapi::db::mysql::password: {get_param: TriliovaultWlmApiDbPassword}
+          trilio::wlmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::wlmapi::db::mysql::dbname: workloadmgr
+          trilio::wlmapi::db::mysql::allowed_hosts:
             - '%'
             - "%{hiera('mysql_bind_host')}"                         
       puppet_config:

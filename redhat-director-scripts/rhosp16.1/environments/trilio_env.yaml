@@ -1,33 +1,8 @@
 resource_registry:
-  OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
-  OS::TripleO::Services::TrilioWlmApi: ../services/trilio-wlm-api.yaml
-  OS::TripleO::Services::TrilioWlmWorkloads: ../services/trilio-wlm-workloads.yaml
-  OS::TripleO::Services::TrilioWlmScheduler: ../services/trilio-wlm-scheduler.yaml
-  OS::TripleO::Services::TrilioWlmCron: ../services/trilio-wlm-cron.yaml
-  OS::TripleO::Services::TrilioHorizon: ../services/trilio-horizon.yaml
-  # NOTE: If there are addition customizations to the endpoint map (e.g. for
-  # other integratiosn), this will need to be regenerated.
-  OS::TripleO::EndpointMap: endpoint_map.yaml
 
 parameter_defaults:
 
-   ## Enable TrilioVault's quota functionality on horizon
-   ExtraConfig:
-     horizon::customization_module: 'dashboards.overrides'
-
-   ## Define network map for trilio datamover api service
-   ServiceNetMap:
-       TriliovaultDatamoverApiNetwork: internal_api
-       TriliovaultWlmApiNetwork: internal_api
-
-   ## TrilioVault Service account passwords for Keystone and Database
-   TriliovaultDatamoverApiKeystonePassword: ""
-   TriliovaultDatamoverApiDbPassword: ""
-   TriliovaultWlmApiKeystonePassword: ""
-   TriliovaultWlmApiDbPassword: ""
-
-   ## TrilioVault container Images
+   ## TrilioVault container Images.
    ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
    ContainerTriliovaultDmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
    ContainerTriliovaultWlmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
@@ -87,10 +62,37 @@ parameter_defaults:
    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
    DmApiWorkers: 16
 
-   ## Don't edit following parameter
-   EnablePackageInstall: True
+   ## TrilioVault Keystone Region Name
+   TriliovaultKeystoneRegionName: "RegionOne"
 
-   ## Load 'rbd' kernel module on all compute nodes
-   ComputeParameters:
-     ExtraKernelModules:
-       rbd: {}
+   ## Cloud Admin user details
+   CloudAdminUserName: "admin"
+   CloudAdminProjectName: "admin"
+   CloudAdminDomainName: "default"
+
+   ## TrilioVault Wlm Service's Keystone User Details
+   WlmApiKeystoneUserName: "workloadmgr"                          ## Do Not Change this parameter
+   WlmApiKeystoneUserProjectName: "service"
+   WlmApiKeystoneUserDomainName: "Default"
+   WlmApiKeystoneUserRoleName: "admin"
+
+   ## TrilioVault Wlm Service's Database User Details
+   WlmApiDbUserName: "workloadmgr"                              ## Do Not Change this parameter
+
+   ## TrilioVault Datamover Service's Keystone User Details
+   DatamoverApiKeystoneUserName: "dmapi"                          ## Do Not Change this parameter
+   DatamoverApiKeystoneUserProjectName: "service"
+   DatamoverApiKeystoneUserDomainName: "Default"
+   DatamoverApiKeystoneUserRoleName: "admin"
+
+   ## TrilioVault Datamover Service's Database User Details
+   WlmApiDbUserName: "dmapi"                               ## Do Not Change this parameter
+
+   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+   ## Valid values: internal, public, admin
+   Interface: "internal"
+   
+   ## Provide any role name as your preference. 
+   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+   TrusteeRole: "creator"
+
