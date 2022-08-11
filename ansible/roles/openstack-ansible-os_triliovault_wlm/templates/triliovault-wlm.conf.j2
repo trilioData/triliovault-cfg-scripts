@@ -164,7 +164,7 @@ auth_plugin = {{ wlm_keystone_auth_plugin }}
 
 #Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
 {% if OS_CA_CERT != "" %}
-cafile = {{ OS_CA_CERT }}
+cafile = {{ OS_SSL_CERT_PATH }}
 {% else %}
 #cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
 {% endif %}
@@ -176,7 +176,7 @@ client_retry_limit = {{ client_retry_limit }}
 endpoint_type  = {{ OS_ENDPOINT_TYPE }}
 
 {% if OS_CA_CERT != "" %}
-cafile = {{ OS_CA_CERT }}
+cafile = {{ OS_SSL_CERT_PATH }}
 {% else %}
 #cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
 {% endif %}
