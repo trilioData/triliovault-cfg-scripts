@@ -32,16 +32,14 @@
   notify:
     - update timezone
 
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != "" 
+
 - name: create /tmp/datamover_url
   template:
      src: datamover_url
      dest: /tmp/datamover_url
-
-- name: Install python2 dmapi pckg
-  package:
-    name: dmapi
-    state: latest
-  when: PYTHON_VERSION=="python2"
 
 - name: Install python3-dmapi pckg
   package:
