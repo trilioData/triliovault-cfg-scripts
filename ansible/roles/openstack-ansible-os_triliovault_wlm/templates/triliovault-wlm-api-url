@@ -11,7 +11,7 @@ connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ 
 [keystone_authtoken]
 
 {% if OS_CA_CERT != "" %}
-cafile = {{ OS_CA_CERT }}
+cafile = {{ OS_SSL_CERT_PATH }}
 {% else %}
 cafile =
 {% endif %}
