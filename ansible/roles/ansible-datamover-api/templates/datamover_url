@@ -16,8 +16,13 @@ log_config = {{ DMAPI_LOG_CONF }}
 connection = mysql+pymysql://{{ dmapi_galera_user }}:{{ dmapi_galera_password }}@{{ dmapi_galera_address }}/{{ dmapi_galera_database }}?charset=utf8{% if dmapi_galera_use_ssl | bool %}&ssl_ca={{ dmapi_galera_ssl_ca_cert }}{% endif %}
 
 [keystone_authtoken]
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_SSL_CERT_PATH }}
+{% else %}
+cafile = 
+{% endif %}
+
 signing_dir =
-cafile =
 project_name = {{dmapi_service_project_name}}
 user_domain_id = {{dmapi_service_user_domain_id}}
 project_domain_id = {{dmapi_service_project_domain_id}}
