@@ -130,6 +130,7 @@
 - name: check {{VAULT_S3_SSL_CERT}} is present or not
   stat: path="{{VAULT_S3_SSL_CERT}}"
   register: tvault_ssl_cert_output
+  delegate_to: localhost
   when:
     - VAULT_S3_SSL_CERT != ""
     - S3|bool == True
