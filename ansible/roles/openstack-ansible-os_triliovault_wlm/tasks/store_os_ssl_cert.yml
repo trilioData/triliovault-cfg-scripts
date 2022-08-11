@@ -6,6 +6,7 @@
 - name: Verify {{OS_CA_CERT}} is present or not
   stat: path="{{OS_CA_CERT}}"
   register: os_ssl_cert_output
+  delegate_to: localhost
   tags:
     - update_cfg
 
