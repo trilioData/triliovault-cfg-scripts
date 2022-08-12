@@ -1,5 +1,11 @@
 export OS_AUTH_URL={{ OS_AUTH_URL }}
 
+{% if OS_CA_CERT != "" %}
+export OS_CACERT={{ OS_SSL_CERT_PATH }}
+{% else %}
+#export OS_CACERT=
+{% endif %}
+
 export OS_PROJECT_NAME={{ CLOUD_ADMIN_PROJECT_NAME }}
 export OS_PROJECT_ID={{ CLOUD_ADMIN_PROJECT_ID }}
 
