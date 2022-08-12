@@ -14,8 +14,8 @@
   copy:
     src: "{{OS_CA_CERT}}"
     dest: "{{OS_SSL_CERT_PATH}}"
-    owner: nova
-    group: nova
+    owner: dmapi
+    group: dmapi
     mode: '640'
   when:
     - os_ssl_cert_output.stat.exists == true
