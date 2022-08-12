@@ -24,10 +24,6 @@
       - "{{ PYTHON_VERSION }}-nova"
     state: latest
 
-- import_tasks: store_os_ssl_cert.yml
-  when:
-    - OS_CA_CERT != ""
-
 - name: create /tmp/datamover_url
   template:
      src: datamover_url
@@ -69,6 +65,10 @@
 - name: find out path of dmapi bianry 
   shell: which dmapi-api
   register: dmapi_bin
+
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != ""
 
 - name: execute populate-conf binary
   shell: populate-conf

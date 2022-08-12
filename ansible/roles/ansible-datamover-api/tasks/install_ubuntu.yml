@@ -32,10 +32,6 @@
   notify:
     - update timezone
 
-- import_tasks: store_os_ssl_cert.yml
-  when:
-    - OS_CA_CERT != "" 
-
 - name: create /tmp/datamover_url
   template:
      src: datamover_url
@@ -51,6 +47,10 @@
   template:
      src: datamover_api_logging.conf.j2
      dest: "{{ DMAPI_LOG_CONF }}"
+
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != "" 
 
 - name: find out path of dmapi bianry
   shell: which dmapi-api
