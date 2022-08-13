@@ -6,11 +6,18 @@
     dest: /root/cloudrc
     mode: '0777'
 
+- name: Verify cloudrc is present or not
+  stat: path="/root/cloudrc"
+  register: cld_rc_output
+  delegate_to: localhost
+
 - name: Get workloadmgr intenral endpoint ID
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface internal --insecure -f value -c ID"
   register: int_endpt_id
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - cld_rc_output.stat.exists == true
 
 - set_fact:
     WLM_INTERNAL_ID: "{{ int_endpt_id.stdout }}"
@@ -21,6 +28,8 @@
   register: admn_endpt_id
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - cld_rc_output.stat.exists == true
 
 - set_fact:
     WLM_ADMN_ID: "{{ admn_endpt_id.stdout }}"
@@ -31,23 +40,34 @@
   register: pub_endpt_id
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - cld_rc_output.stat.exists == true
 
 - set_fact:
     WLM_PUB_ID: "{{ pub_endpt_id.stdout }}"
   ignore_errors: True
 
 - name: Delete workloadmgr internal endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_INTERNAL_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_INTERNAL_ID }}"
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - WLM_INTERNAL_ID != ""
+    - cld_rc_output.stat.exists == true
 
 - name: Delete workloadmgr admin endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_ADMN_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_ADMN_ID }}"
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - WLM_ADMN_ID != ""
+    - cld_rc_output.stat.exists == true
 
 - name: Delete workloadmgr public endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete {{ WLM_PUB_ID }}"
+  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_PUB_ID }}"
   ignore_errors: True
   delegate_to: localhost
+  when:
+    - WLM_PUB_ID != ""
+    - cld_rc_output.stat.exists == true
 
