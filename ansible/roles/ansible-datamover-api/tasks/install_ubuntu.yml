@@ -62,6 +62,12 @@
   notify:
     - restart tvault-datamover-api
 
+- name: enable and daemon reload tvault-datamover-api service
+  shell: systemctl daemon-reload && systemctl enable tvault-datamover-api.service
+  when: populate_conf.changed or create_systemd.changed
+  notify:
+      - restart tvault-datamover-api
+
 - name: ensure /tmp/datamover_url file is deleted
   file: path="/tmp/datamover_url" state=absent
 
