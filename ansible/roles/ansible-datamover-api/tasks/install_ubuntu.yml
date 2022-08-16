@@ -60,7 +60,6 @@
   file:
     path: "{{datamover_log_dir}}/dmapi-error.log"
     state: file
-    recurse: yes
     owner: "{{DMAPI_USR}}"
     group: "{{DMAPI_GRP}}"
   notify:
