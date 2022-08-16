@@ -29,12 +29,6 @@
 - name: update cache
   command: apt-get update
 
-- name: Install python2 tvault-horizon-plugin | workloadmgrclient | contegoclient pckgs
-  package:
-    name: tvault-horizon-plugin
-    state: latest
-  when: PYTHON_VERSION=="python2"
-
 - name: Install python3 tvault-horizon-plugin | workloadmgrclient | contegoclient pckgs
   package:
     name: python3-tvault-horizon-plugin

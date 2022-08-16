@@ -59,6 +59,16 @@ nova_production_endpoint_template = {{ nova_endpoint_url }}
 neutron_admin_auth_url = {{ OS_AUTH_URL }}
 neutron_production_url = {{ neutron_endpoint_url }}
 
+
+# The path to store the taskflow data
+taskflow_path = {{ TASKFLOW_PATH }}
+
+# max cache size to keep up-to entries in memory
+taskflow_max_cache_size = {{ TASKFLOW_CACHE }}
+
+# max age in days to retain taskflow data
+taskflow_max_age = {{ TASKFLOW_AGE }}
+
 ##
 rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
 compute_driver = libvirt.LibvirtDriver
@@ -153,13 +163,23 @@ user_domain_id = {{ wlm_service_user_domain_id }}
 auth_plugin = {{ wlm_keystone_auth_plugin }}
 
 #Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_SSL_CERT_PATH }}
+{% else %}
 #cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+{% endif %}
+ 
 insecure = False
 
 [clients]
 client_retry_limit = {{ client_retry_limit }}
 endpoint_type  = {{ OS_ENDPOINT_TYPE }}
 
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_SSL_CERT_PATH }}
+{% else %}
+#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+{% endif %}
 insecure = false
 
 
