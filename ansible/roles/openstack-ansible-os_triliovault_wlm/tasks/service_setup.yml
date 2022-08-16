@@ -69,7 +69,7 @@
       with_items: "{{ _service_users }}"
       retries: 5
       delay: 10
-      no_log: false
+      no_log: true
 
     - name: Add service users
       openstack.cloud.identity_user:
@@ -93,7 +93,7 @@
       with_items: "{{ _service_users }}"
       retries: 5
       delay: 10
-      no_log: false
+      no_log: true
 
     - name: Add service users to the role
       openstack.cloud.role_assignment:
@@ -116,7 +116,7 @@
       with_items: "{{ _service_users }}"
       retries: 5
       delay: 10
-      no_log: false
+      no_log: true
 
     - name: Add endpoints to keystone endpoint catalog
       openstack.cloud.endpoint:
