@@ -56,9 +56,9 @@
   shell: which dmapi-api
   register: dmapi_bin
 
-- name: Recursively change ownership of a DMAPI log directory
+- name: Update ownership of a DMAPI log file
   file:
-    path: "{{datamover_log_dir}}/*"
+    path: "{{datamover_log_dir}}/dmapi-error.log"
     state: file
     recurse: yes
     owner: "{{DMAPI_USR}}"
