@@ -56,15 +56,6 @@
   shell: which dmapi-api
   register: dmapi_bin
 
-- name: Update ownership of a DMAPI log file
-  file:
-    path: "{{datamover_log_dir}}/dmapi-error.log"
-    state: file
-    owner: "{{DMAPI_USR}}"
-    group: "{{DMAPI_GRP}}"
-  notify:
-    - restart tvault-datamover-api
-
 - name: execute populate-conf binary
   shell: populate-conf
   register: populate_conf_ubuntu
@@ -73,3 +64,4 @@
 
 - name: ensure /tmp/datamover_url file is deleted
   file: path="/tmp/datamover_url" state=absent
+
