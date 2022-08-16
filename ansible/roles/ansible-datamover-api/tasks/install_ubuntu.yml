@@ -65,3 +65,33 @@
 - name: ensure /tmp/datamover_url file is deleted
   file: path="/tmp/datamover_url" state=absent
 
+- name: Disable tvault-datamover-api service
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - tvault-datamover-api
+
+- name: Verify "{{datamover_log_dir}}/dmapi-error.log" is present or not
+  stat: path="{{datamover_log_dir}}/dmapi-error.log"
+  register: dmapi_error_log
+
+- name: Change ownership of log file
+  file:
+    path: "{{datamover_log_dir}}/dmapi-error.log"
+    state: file
+    owner: dmapi
+    group: dmapi
+    mode: '644'
+  when:
+    - dmapi_error_log.stat.exists == true
+
+- name: Enable tvault-datamover-api service
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - tvault-datamover-api
+
