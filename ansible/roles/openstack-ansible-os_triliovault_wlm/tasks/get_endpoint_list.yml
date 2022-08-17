@@ -7,6 +7,20 @@
     mode: '0777'
   delegate_to: localhost
 
+- name: Verify /root/triliovault-cloudrc is present or not
+  stat: path="/root/triliovault-cloudrc"
+  register: trilio_rc
+  delegate_to: localhost
+
+- name: Update OS_CACERT Path under triliovault-cloudrc
+  lineinfile:
+    path: /root/triliovault-cloudrc
+    regexp: '^export OS_CACERT'
+    line: export OS_CACERT={{OS_CA_CERT}}
+  delegate_to: localhost
+  when:
+    - trilio_rc.stat.exists == true
+
 - name: Copy Triliovault-cloudrc into WLM container
   template:
     src: triliovault-cloudrc
@@ -17,6 +31,8 @@
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service neutron --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL"
   register: neutron_endpoint
   delegate_to: localhost
+  when:
+    - trilio_rc.stat.exists == true
 
 - set_fact:
     neutron_endpoint_url: "{{ neutron_endpoint.stdout }}"
@@ -25,6 +41,8 @@
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service nova --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL"
   register: nova_endpoint
   delegate_to: localhost
+  when:
+    - trilio_rc.stat.exists == true
 
 - set_fact:
     nova_endpoint_url: "{{ nova_endpoint.stdout }}/%(project_id)s"
@@ -33,6 +51,8 @@
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service glance --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL"
   register: glance_endpoint
   delegate_to: localhost
+  when:
+    - trilio_rc.stat.exists == true
 
 - set_fact:
     glance_endpoint_url: "{{ glance_endpoint.stdout }}"
@@ -41,6 +61,8 @@
   shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service cinderv3 --interface {{ OS_ENDPOINT_TYPE }} -f value -c URL"
   register: cinder_endpoint
   delegate_to: localhost
+  when:
+    - trilio_rc.stat.exists == true
 
 - set_fact:
     cinder_endpoint_url: "{{ cinder_endpoint.stdout }}"
