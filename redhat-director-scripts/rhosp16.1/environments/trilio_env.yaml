@@ -4,7 +4,7 @@ parameter_defaults:
 
    ## TrilioVault container Images.
    ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
-   ContainerTriliovaultDmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultDatamoverApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
    ContainerTriliovaultWlmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
    ContainerTriliovaultWlmWorkloadsImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
    ContainerTriliovaultWlmSchedulerImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
@@ -56,15 +56,6 @@ parameter_defaults:
    ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
 
-   ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
-   ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
-   ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
-   ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
-   DmApiWorkers: 16
-
-   ## TrilioVault Keystone Region Name
-   TriliovaultKeystoneRegionName: "RegionOne"
-
    ## Cloud Admin user details
    CloudAdminUserName: "admin"
    CloudAdminProjectName: "admin"
@@ -76,23 +67,19 @@ parameter_defaults:
    WlmApiKeystoneUserDomainName: "Default"
    WlmApiKeystoneUserRoleName: "admin"
 
-   ## TrilioVault Wlm Service's Database User Details
-   WlmApiDbUserName: "workloadmgr"                              ## Do Not Change this parameter
-
    ## TrilioVault Datamover Service's Keystone User Details
    DatamoverApiKeystoneUserName: "dmapi"                          ## Do Not Change this parameter
    DatamoverApiKeystoneUserProjectName: "service"
    DatamoverApiKeystoneUserDomainName: "Default"
    DatamoverApiKeystoneUserRoleName: "admin"
 
-   ## TrilioVault Datamover Service's Database User Details
-   WlmApiDbUserName: "dmapi"                               ## Do Not Change this parameter
-
    ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
    ## Valid values: internal, public, admin
    Interface: "internal"
+   ## Provide keystone auth url based on above interface type. You can get this using command 
+   ## Command: "openstack endpoint list | grep keystone " Example: "http://trilio-openstack.demo:5000/v3"
+   KeystoneAuthUrl: ""
    
    ## Provide any role name as your preference. 
    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
    TrusteeRole: "creator"
-

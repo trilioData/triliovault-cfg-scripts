@@ -1,0 +1,25 @@
+[DEFAULT]
+#vault_s3_auth_version =
+#vault_s3_endpoint_url =
+#vault_s3_signature_version =
+
+#Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
+#vault_s3_ssl_cert =
+
+vault_s3_access_key_id =
+vault_s3_secret_access_key =
+vault_s3_region_name =
+vault_s3_bucket =
+vault_storage_type = s3
+vault_s3_max_pool_connections = 500
+vault_data_directory_old = /var/triliovault
+vault_data_directory = /var/triliovault-mounts
+log_file = /var/log/triliovault/tvault-object-store.log
+debug = False
+log_config = /etc/triliovault-object-store/object_store_logging.conf
+verbose = True
+
+vault_s3_max_pool_connections = 500
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/nova-rootwrap /etc/nova/rootwrap.conf privsep-helper
