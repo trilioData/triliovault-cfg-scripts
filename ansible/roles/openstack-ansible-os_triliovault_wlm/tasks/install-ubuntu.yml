@@ -78,14 +78,14 @@
   when:
     - OS_CA_CERT != "" 
 
-- name: create wlm_logging.conf file
+- name: Create wlm_logging.conf
   template:
      src: wlm_logging.conf.j2
      dest: "{{ wlm_log_cfg }}"
   tags:
     - update_cfg
 
-- name: create object_store_logging.conf file
+- name: Create object_store_logging.conf
   template:
      src: object_store_logging.conf.j2
      dest: "{{ OBJECT_STORE_LOG_CFG }}"
@@ -96,21 +96,21 @@
 
 - import_tasks: get_cloud_details.yml
 
-- name: copy triliovault wlm workload conf
+- name: Copy triliovault-wlm.conf
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
   tags:
     - update_cfg
 
-- name: Copy triliovault wlm api paste ini 
+- name: Copy workloadmgr api-paste.ini 
   template:
      src: api-paste.ini.j2
      dest: "{{ wlm_api_paste }}"
   tags:
     - update_cfg
 
-- name: Copy triliovault object store conf
+- name: Copy triliovault-object-store.conf
   template:
      src: triliovault-object-store.conf.j2
      dest: "{{ triliovault_obj_sotre_cfg }}"
@@ -127,7 +127,7 @@
   tags:
     - update_cfg
 
-- name: check {{VAULT_S3_SSL_CERT}} is present or not
+- name: Check {{VAULT_S3_SSL_CERT}} is present OR not
   stat: path="{{VAULT_S3_SSL_CERT}}"
   register: tvault_ssl_cert_output
   delegate_to: localhost
@@ -138,7 +138,7 @@
   tags:
     - update_cfg
 
-- name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
+- name: Deploy user provided S3-Cert {{VAULT_S3_SSL_CERT}}
   copy:
     src: "{{VAULT_S3_SSL_CERT}}"
     dest: "{{WLM_S3_SSL_CERT_PATH}}"
@@ -155,21 +155,16 @@
 
 - import_tasks: triliovault_db_sync.yml
 
-- name: Enable triliovault object store service
-  service:
-    name: tvault-object-store.service
-    enabled: yes
-  when: NFS == False
-
-- name: Start triliovault object store service
+- name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
     state: started
+    enabled: yes
   when: NFS == False
   tags:
     - update_cfg
 
-- name: Enable "{{ item }}" service
+- name: Start Workloadmgr services
   service:
     name: "{{ item }}"
     state: started
