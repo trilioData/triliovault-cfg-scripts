@@ -41,7 +41,7 @@ parameters:
     default: '13781'
     description: Triliovault Wlm Api Service Port for https
     type: string
-  TriliovaultKeystoneRegionName:
+  KeystoneRegion:
     type: string
     default: 'regionOne'
     description: Keystone region for endpoint
@@ -119,6 +119,9 @@ parameters:
     description: CLI tool used to manage containers.
     constraints:
       - allowed_values: ['docker', 'podman']
+  KeystoneAuthUrl:
+    description: Keystone Auth Url
+    type: string
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -153,20 +156,32 @@ outputs:
       keystone_resources:
         workloadmgr:
           endpoints:
-            public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
-            internal: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
-            admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+            public: {get_param: [EndpointMap, TrilioWlmPublic, uri]}
+            internal: {get_param: [EndpointMap, TriliotWlmInternal, uri]}
+            admin: {get_param: [EndpointMap, TrilioWlmAdmin, uri]}
           users:
             dmapi:
-              password: {get_param: TriliovaultWlmApiKeystonePassword}
+              password: {get_param: WlmApiKeystoneUserPassword}
           region: {get_param: KeystoneRegion}
           service: 'workloads'      
       config_settings:
-        trilio::wlmapi::port: {get_param: TrilioApiPort}
-        trilio::wlmapi::ssl_port: {get_param: DmApiSslPort}
-        trilio::wlmapi::password: {get_param: TriliovaultWlmApiKeystonePassword}
-        trilio::wlmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
-        trilio::wlmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::port: {get_param: WlmApiPort}
+        trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::auth_uri: { get_param: KeystoneAuthUrl }
+        trilio::wlmapi::keystone_auth_url: { get_param: KeystoneAuthUrl }    
+        trilio::wlmapi::neutron_internal_auth_url: {get_param: [EndpointMap, NeutronInternal, uri]}
+        trilio::wlmapi::neutron_admin_auth_url: {get_param: [EndpointMap, NeutronAdmin, uri]}
+        trilio::wlmapi::neutron_public_auth_url: {get_param: [EndpointMap, NeutronPublic, uri]}
+        trilio::wlmapi::nova_internal_auth_url: {get_param: [EndpointMap, NovaInternal, uri]}
+        trilio::wlmapi::nova_admin_auth_url: {get_param: [EndpointMap, NovaAdmin, uri]}
+        trilio::wlmapi::nova_public_auth_url: {get_param: [EndpointMap, NovaPublic, uri]}
+        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderInternal, uri]}
+        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderAdmin, uri]}
+        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderPublic, uri]}
+        trilio::wlmapi::glance_internal_auth_url: {get_param: [EndpointMap, GlanceInternal, uri]}
+        trilio::wlmapi::glance_admin_auth_url: {get_param: [EndpointMap, GlanceAdmin, uri]}
+        trilio::wlmapi::glance_public_auth_url: {get_param: [EndpointMap, GlancePublic, uri]}
         trilio::wlmapi::notification_driver: {get_param: NotificationDriver}
         trilio::wlmapi::enable_proxy_headers_parsing: true
         trilio::wlmapi::project_name: 'service'

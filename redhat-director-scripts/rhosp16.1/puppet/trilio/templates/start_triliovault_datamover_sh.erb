@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -ex
+/usr/sbin/modprobe nbd nbds_max=128
+
+## Start triliovault-object-store service if backup target type is s3
+<% if @backup_target_type == "s3" -%>
+/usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-datamover/triliovault-datamover.conf  &
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start triliovault-object-store service: $status"
+  exit $status
+fi
+sleep 20s
+<% end -%>
+
+/usr/bin/python3 /usr/bin/tvault-contego \
+--config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf \
+--config-file=/etc/triliovault-datamover/triliovault-datamover.conf

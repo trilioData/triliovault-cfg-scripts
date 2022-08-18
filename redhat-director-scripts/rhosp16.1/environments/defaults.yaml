@@ -46,3 +46,4 @@ parameter_defaults:
 
    ## TrilioVault Wlm rabbitmq details
    WlmOsloMessagingRpcUserName: "workloadmgr"
+   
