@@ -36,6 +36,11 @@
     - "defaults/{{ install_method }}_install.yml"
   pre_tasks:
     - include_tasks: "common-tasks/os-{{ container_tech | default('lxc') }}-container-setup.yml"
+      list_of_bind_mounts:
+        - bind_dir_path: "/dev"
+          mount_path: "dev"
+        - bind_dir_path: "/lib/modules"
+          mount_path: "lib"
       when: not is_metal
 
     - include_tasks: common-tasks/unbound-clients.yml
