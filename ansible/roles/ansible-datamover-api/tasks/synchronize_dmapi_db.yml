@@ -1,6 +1,7 @@
 ---
 - name: Syncup dmapi database
   shell: /bin/bash -c "dmapi-dbsync --config-file {{ dmapi_cfg_file }}"
+  become_user: dmapi
 
 - name: connection string
   template:
