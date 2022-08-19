@@ -730,7 +730,6 @@ endpoints:
       mysql:
         default: 3306
 conf:
-  policy: {}
   triliovault:
     backup_target_type: "nfs"
     ## Valid values are "nfs" and "s3"

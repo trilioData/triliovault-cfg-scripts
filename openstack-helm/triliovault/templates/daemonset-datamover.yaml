@@ -195,10 +195,6 @@ spec:
               mountPath: /etc/triliovault-object-store/object_store_logging.conf
               subPath: object_store_logging.conf
               readOnly: true
-            - name: triliovault-datamover-etc
-              mountPath: /etc/triliovault-datamover/policy.yaml
-              subPath: policy.yaml
-              readOnly: true
             {{- if $envAll.Values.ceph.enabled }}
             - name: etcceph
               mountPath: /etc/ceph
@@ -470,10 +466,6 @@ spec:
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-object-store/object_store_logging.conf
               subPath: object_store_logging.conf
-              readOnly: true
-            - name: triliovault-datamover-etc
-              mountPath: /etc/triliovault-datamover/policy.yaml
-              subPath: policy.yaml
               readOnly: true
             {{- if .Values.ceph.enabled }}
             - name: etcceph
