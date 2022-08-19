@@ -13,21 +13,21 @@ vault_s3_ssl = {{VAULT_S3_SECURE}}
 
 {% if VAULT_S3_ENDPOINT_URL != "" %}
 vault_s3_endpoint_url = {{ VAULT_S3_ENDPOINT_URL }}
-{%else%}
+{% else %}
 vault_s3_endpoint_url =
-{%endif%}
+{% endif %}
 
 {% if VAULT_S3_SIGNATURE_VERSION != "" %}
 vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
-{%else%}
+{% else %}
 vault_s3_signature_version =
-{%endif%}
+{% endif %}
 
 {% if VAULT_S3_AUTH_VERSION != "" %}
 vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
-{%else%}
+{% else %}
 vault_s3_auth_version =
-{%endif%}
+{% endif %}
 
 {% if VAULT_S3_SSL_CERT != "" %}
 vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
