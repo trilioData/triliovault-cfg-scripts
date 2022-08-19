@@ -82,7 +82,7 @@ VAULT_S3_ENDPOINT_URL: ""
 #True/False
 VAULT_S3_SECURE: True
 
-## Specify S3 SSL Cert Path
+## Specify S3 SSL Cert Path when S3 backends except Amazon
 VAULT_S3_SSL_CERT: ""
 
 ###details of datamover API
