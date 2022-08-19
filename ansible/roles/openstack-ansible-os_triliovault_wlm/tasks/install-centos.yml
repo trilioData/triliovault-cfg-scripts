@@ -85,7 +85,7 @@
 
 - import_tasks: update_nova_uid_gid.yml
 
-- name: Install workloadmgr
+- name: Install workloadmgr pckg
   package:
     name: workloadmgr
     state: latest
@@ -103,14 +103,14 @@
   when:
     - OS_CA_CERT != ""
 
-- name: create wlm_logging.conf file
+- name: Create wlm_logging.conf
   template:
      src: wlm_logging.conf.j2
      dest: "{{ wlm_log_cfg }}"
   tags:
     - update_cfg
 
-- name: create object_store_logging.conf file
+- name: Create object_store_logging.conf
   template:
      src: object_store_logging.conf.j2
      dest: "{{ OBJECT_STORE_LOG_CFG }}"
@@ -121,33 +121,24 @@
 
 - import_tasks: get_cloud_details.yml
 
-
-- name: copy workloadmgr conf
+- name: Copy workloadmgr.conf
   template:
      src: triliovault-wlm.conf.j2
      dest: "{{ wlm_cfg }}"
   tags:
     - update_cfg
 
-- name: Copy workloadmgr api-paste-ini 
+- name: Copy workloadmgr api-paste.ini 
   template:
      src: api-paste.ini.j2
      dest: "{{ wlm_api_paste }}"
   tags:
     - update_cfg
 
-- name: Copy triliovault object store conf
+- name: Copy triliovault-object-store.conf
   template:
      src: triliovault-object-store.conf.j2
      dest: "{{ triliovault_obj_sotre_cfg }}"
-  when: NFS == False
-  tags:
-    - update_cfg
-
-- name: Start triliovault object store service
-  service:
-    name: tvault-object-store.service
-    state: started
   when: NFS == False
   tags:
     - update_cfg
@@ -161,7 +152,7 @@
   tags:
     - update_cfg
 
-- name: check {{VAULT_S3_SSL_CERT}} is present or not
+- name: Check {{VAULT_S3_SSL_CERT}} is present OR not
   stat: path="{{VAULT_S3_SSL_CERT}}"
   register: tvault_ssl_cert_output
   delegate_to: localhost
@@ -172,7 +163,7 @@
   tags:
     - update_cfg
 
-- name: Deploy user provided Triliovault s3 {{VAULT_S3_SSL_CERT}}
+- name: Deploy user provided S3-Cert {{VAULT_S3_SSL_CERT}}
   copy:
     src: "{{VAULT_S3_SSL_CERT}}"
     dest: "{{WLM_S3_SSL_CERT_PATH}}"
@@ -189,19 +180,14 @@
 
 - import_tasks: triliovault_db_sync.yml 
 
-- name: Enable triliovault-object-store service
-  service:
-    name: tvault-object-store.service
-    enabled: yes
-  when: NFS == False
-
 - name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
     state: started
+    enabled: yes
   when: NFS == False
 
-- name: Enable "{{ item }}" service
+- name: service Start Workloadmgr services
   service:
     name: "{{ item }}"
     state: started
