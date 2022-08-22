@@ -1,0 +1,37 @@
+--- 
+
+- name: Check "/var/lib/lxc/{{ container_name }}/autodev" is Present OR Not
+  stat: path="/var/lib/lxc/{{ container_name }}/autodev"
+  register: chk_autodev
+  delegate_to: "{{ physical_host }}"
+
+- name: Add 'cp -dpR /dev/fuse ${LXC_ROOTFS_MOUNT}/dev' to autodev
+  lineinfile:
+    path: "/var/lib/lxc/{{ container_name }}/autodev"
+    line: cp -dpR /dev/fuse ${LXC_ROOTFS_MOUNT}/dev
+    create: no
+    state: present 
+  register: reg_1
+  delegate_to: "{{ physical_host }}"
+  when:
+    - chk_autodev.stat.exists == true
+
+- name: print output
+  debug:
+    msg: "{{ reg_1 }}"
+
+- name: Add 'chmod 0666 ${LXC_ROOTFS_MOUNT}/dev/fuse' to autodev
+  lineinfile:
+    path: "/var/lib/lxc/{{ container_name }}/autodev"
+    line: chmod 0666 ${LXC_ROOTFS_MOUNT}/dev/fuse
+    create: no
+    state: present 
+  delegate_to: "{{ physical_host }}"
+  when:
+    - chk_autodev.stat.exists == true
+
+- name: Restart "{{ container_name }}" container
+  lxc_container:
+    name: "{{ container_name }}"
+    state: restarted
+  delegate_to: "{{ physical_host }}"
