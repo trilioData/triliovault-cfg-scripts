@@ -58,6 +58,8 @@
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
       - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
 - name: check {{VAULT_S3_SSL_CERT}} is present or not
   stat: path="{{VAULT_S3_SSL_CERT}}"
@@ -67,6 +69,8 @@
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
       - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
 - name: Deploy user provided Tvault s3 {{VAULT_S3_SSL_CERT}}
   copy:
@@ -80,6 +84,8 @@
     - S3|bool == True
     - s3_type == Other_S3_Compatible
     - tvault_ssl_cert_output.stat.exists == true
+  tags:
+    - update_cfg
 
 - name: populate object store parameters in conf file
   template:
@@ -88,28 +94,25 @@
     owner: root
     group: nova
     mode: '755'
-  when:
-    - VAULT_S3_SSL_CERT != ""
-    - S3|bool == True
-    - s3_type == Other_S3_Compatible
-    - tvault_ssl_cert_output.stat.exists == true
+  tags:
+    - update_cfg
 
 - name: systemd to reread configs
   systemd:
     daemon_reload: yes
   when:
     - S3|bool == True
-    - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
 - name: Start triliovault-object-store service
   service:
     name: tvault-object-store
     state: started
+  ignore_errors: yes
   when:
     - S3|bool == True
-    - s3_type == Other_S3_Compatible
   tags:
     - update_cfg
-  ignore_errors: yes
 
 

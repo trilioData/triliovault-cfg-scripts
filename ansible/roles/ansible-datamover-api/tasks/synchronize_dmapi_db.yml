@@ -1,6 +1,8 @@
 ---
-- name: Syncup dmapi database
-  shell: /bin/bash -c "dmapi-dbsync --config-file {{ dmapi_cfg_file }}"
+- name: Sync Triliovault-Datamover-API DB
+  command: "dmapi-dbsync --config-file {{ dmapi_cfg_file }}"
+  become: yes
+  become_user: "dmapi"
 
 - name: connection string
   template:
