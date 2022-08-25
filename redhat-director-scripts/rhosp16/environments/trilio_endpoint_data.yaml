@@ -14,3 +14,17 @@ TrilioDatamover:
         uri_suffixes:
             '': /v2
     port: 8784
+TrilioWlm:
+    Internal:
+        net_param: TrilioWlmApi
+        uri_suffixes:
+            '': /v2
+    Public:
+        net_param: Public
+        uri_suffixes:
+            '': /v2
+    Admin:
+        net_param: TrilioWlmApi
+        uri_suffixes:
+            '': /v2
+    port: 8781
