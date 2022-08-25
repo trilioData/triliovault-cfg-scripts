@@ -9,10 +9,10 @@ bindir = /usr/bin
 instance_name_template = instance-%08x
 dmapi_listen = <%= @my_ip %>
 my_ip = <%= @my_ip %>
-rootwrap_config = /etc/dmapi/rootwrap.conf
+rootwrap_config = /etc/triliovault-datamover/rootwrap.conf
 debug = False
-log_file = /var/log/trilio-datamover-api/dmapi.log
-log_dir = /var/log/trilio-datamover-api
+log_file = /var/log/triliovault/triliovault-datamover/dmapi.log
+log_dir = /var/log/triliovault/triliovault-datamover
 
 
 [wsgi]
@@ -32,7 +32,7 @@ project_name = <%= @project_name %>
 user_domain_name = <%= @user_domain_name %>
 password = <%= @password %>
 username = dmapi
-auth_url = <%= @auth_url %>
+auth_url = <%= @keystone_auth_url %>
 auth_type = password
 auth_uri = <%= @auth_uri %>
 insecure = True

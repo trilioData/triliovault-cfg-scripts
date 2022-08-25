@@ -1,5 +1,5 @@
-class trilio::dmapi::config inherits trilio::dmapi {
-    tag 'dmapiconfig'
+class trilio::wlmapi::config inherits trilio::wlmapi {
+    tag 'wlmapiconfig'
 
 
       $oslomsg_rpc_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_rpc_use_ssl)))
@@ -25,18 +25,12 @@ class trilio::dmapi::config inherits trilio::dmapi {
 
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
 
-      file { '/etc/triliovault-datamover/':
+      file { '/etc/triliovault-wlm/':
           ensure => 'directory',
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
       } ->
-      file { "/etc/triliovault-datamover/triliovault-datamover-api.conf":
+      file { "/etc/triliovault-wlm/triliovault-wlm.conf":
           ensure  => present,
-          content => template('trilio/triliovault_datamover_api_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
+          content => template('trilio/triliovault_wlm_conf.erb'),
       }
 
-}      
+}

@@ -111,7 +111,7 @@ parameters:
     default: []
     description: list of optional vo
     type: comma_delimited_list
-  TrilioDatamoverNfsMap:
+  TrilioMultiIPNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
@@ -158,7 +158,7 @@ outputs:
             password: {get_param: TrilioDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
-        trilio::contego::nfs_map:  {get_param: TrilioDatamoverNfsMap}
+        trilio::contego::nfs_map:  {get_param: TrilioMultiIPNfsMap}
         trilio::contego::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
       puppet_config:
         config_volume: triliodm
