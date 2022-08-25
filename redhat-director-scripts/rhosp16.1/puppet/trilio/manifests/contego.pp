@@ -1,7 +1,7 @@
 class trilio::contego (
     $backup_target_type                   = 'nfs',
     $nfs_shares                           = undef,
-    $nfs_options                          = 'nolock,soft,timeo=180,intr',
+    $nfs_options                          = 'nolock,soft,vers=3,timeo=180,intr,lookupcache=none',
     $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,

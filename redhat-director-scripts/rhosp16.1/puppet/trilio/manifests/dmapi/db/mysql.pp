@@ -1,4 +1,4 @@
-# The trilio::db::mysql class implements mysql backend for trilio datamover api service
+# The trilio::dmapi::db::mysql class implements mysql backend for trilio datamover api service
 #
 # This class can be used to create tables, users and grant
 # privileges for a mysql dmapi database.
@@ -33,7 +33,7 @@
 #   Only used with mysql modules >= 2.2.
 #   Defaults to 'utf8_general_ci'
 #
-class trilio::db::mysql(
+class trilio::dmapi::db::mysql(
   $password,
   $dbname        = 'dmapi',
   $user          = 'dmapi',

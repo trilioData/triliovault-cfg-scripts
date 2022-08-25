@@ -52,6 +52,34 @@ parameters:
     description: The password for the trilio service and db account
     type: string
     hidden: true
+  DatamoverApiKeystoneUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Keystone user name for TrilioVault Datamover Service
+  DatamoverApiKeystoneUserPassword:
+    description: The password for the triliovault datamover service's Keystone user
+    type: string
+    hidden: true
+  DatamoverApiKeystoneUserProjectName:
+    type: string
+    default: 'service'
+    description: Keystone project name for TrilioVault Wlm Service User
+  DatamoverApiKeystoneUserRoleName:
+    type: string
+    default: 'admin'
+    description: Role name for TrilioVault Datamover Service User on service project (WlmApiKeystoneUserProjectName)
+  DatamoverApiKeystoneUserDomainName:
+    type: string
+    default: 'Default'
+    description: Keyston Domain name for TrilioVault Datamover Service User
+  DatamoverApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Datamover Service
+  DatamoverApiDbUserPassword:
+    description: The password for the Triliovault Datamover service's Database user
+    type: string
+    hidden: true
   NotificationDriver:
     type: string
     default: 'messagingv2'
@@ -277,7 +305,7 @@ outputs:
                   - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi/:ro
                   - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api
-            command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync"
+            command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
