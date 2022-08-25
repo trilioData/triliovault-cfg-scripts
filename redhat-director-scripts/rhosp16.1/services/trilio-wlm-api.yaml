@@ -122,6 +122,97 @@ parameters:
   KeystoneAuthUrl:
     description: Keystone Auth Url
     type: string
+  CephClientUserName:
+    default: openstack
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  BackupTargetType:
+    description:
+    type: string
+  NfsShares:
+    description: Provide comma separated list of NFS shares to use as backup target
+    type: string
+  NfsOptions:
+    default: 'nolock,soft,timeo=180,intr'
+    description: NFS mount otpions
+    type: string
+  S3Type:
+    description: S3 type like Amazon/Ceph/Minio
+    type: string
+  S3AccessKey:
+    description: S3 access key
+    type: string
+  S3SecretKey:
+    description: S3 secret key
+    type: string
+  S3RegionName:
+    description: S3 region name
+    type: string
+  S3Bucket:
+    description: S3 bucket name
+    type: string
+  S3EndpointUrl:
+    description: S3 endpoint url
+    type: string
+  S3SignatureVersion:
+    default: 'default'
+    description: S3 Signature Version
+    type: string
+  S3AuthVersion:
+    default: 'DEFAULT'
+    description: S3 Auth Version
+    type: string
+  S3SslEnabled:
+    default: false
+    description: S3 ssl enabled
+    type: boolean
+  S3SslCert:
+    description: S3 SSL certificate file path
+    type: string
+  CinderEnableRbdBackend:
+    default: false
+    description: Whether ceph cinder backend enabled or not
+    type: boolean	
+  CephClientUserName: 
+    default: 'openstack'	
+    description: Cinder ceph backend user name
+    type: string
+  TrilioDatamoverPassword:
+    description: The password for the trilio service and db account
+    type: string
+    hidden: true
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
+  NovaComputeOptVolumes:
+    default: []
+    description: list of optional vo
+    type: comma_delimited_list
+  TrilioMultiIPNfsMap:
+    default: {}
+    description: Mapping of datamover node -> NFS share. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  MultiIPNfsEnabled:
+    default: false
+    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
+    type: boolean
+  TrusteeRole: 
+    default: 'creator'	
+    description: This is the role to allow using triliovault features 
+    type: string
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -165,11 +256,33 @@ outputs:
           region: {get_param: KeystoneRegion}
           service: 'workloads'      
       config_settings:
+        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
+        trilio::wlmapi::nfs_shares: {get_param: NfsShares}
+        trilio::wlmapi::nfs_options: {get_param: NfsOptions}
+        trilio::wlmapi::nfs_map:  {get_param: TrilioMultiIPNfsMap}
+        trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
+        trilio::wlmapi::s3_type: {get_param: S3Type}
+        trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
+        trilio::wlmapi::s3_secretkey: {get_param: S3SecretKey}
+        trilio::wlmapi::s3_region_name: {get_param: S3RegionName}
+        trilio::wlmapi::s3_bucket: {get_param: S3Bucket}
+        trilio::wlmapi::s3_endpoint_url: {get_param: S3EndpointUrl}
+        trilio::wlmapi::s3_signature_version: {get_param: S3SignatureVersion}
+        trilio::wlmapi::s3_auth_version: {get_param: S3AuthVersion}
+        trilio::wlmapi::s3_ssl_enabled: {get_param: S3SslEnabled}
+        trilio::wlmapi::s3_ssl_cert: {get_param: S3SslCert}
+        trilio::wlmapi::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
+        trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::keystone_username: 'workloadmgr'
         trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
-        trilio::wlmapi::auth_uri: { get_param: KeystoneAuthUrl }
-        trilio::wlmapi::keystone_auth_url: { get_param: KeystoneAuthUrl }    
+        trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_url: { get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] } 
+        trilio::wlmapi::keystone_public_auth_uri: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix] }
+        trilio::wlmapi::keystone_public_auth_url: { get_param: [EndpointMap, KeystonePublic, uri_no_suffix] } 
         trilio::wlmapi::neutron_internal_auth_url: {get_param: [EndpointMap, NeutronInternal, uri]}
         trilio::wlmapi::neutron_admin_auth_url: {get_param: [EndpointMap, NeutronAdmin, uri]}
         trilio::wlmapi::neutron_public_auth_url: {get_param: [EndpointMap, NeutronPublic, uri]}
@@ -188,12 +301,13 @@ outputs:
         trilio::wlmapi::region_name: {get_param: KeystoneRegion}
         trilio::wlmapi::user_domain_name: 
         trilio::wlmapi::project_domain_name: 'Default'
+        trilio::wlmapi::trustee_role: { get_param: TrusteeRole }
         tripleo::triliovault_wlm_api::firewall_rules:
               '240 triliovault-wlm-api':
                 dport:
                   - 8781
                   - 13781
-        trilio::workloadmgr::database_connection:
+        trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: workloadmgr

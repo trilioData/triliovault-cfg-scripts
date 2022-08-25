@@ -8,7 +8,6 @@ config_status = configured
 debug = false
 glance_api_version = 2
 
-glance_production_host = glance-api.openstack.svc.cluster.local
 global_job_scheduler_override = false
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 keystone_auth_version = 3
@@ -39,37 +38,70 @@ cinder_production_endpoint_template = <%= @neutron_public_auth_url %>
 glance_production_api_servers = <%= @neutron_public_auth_url %>
 <% end -%>
 
-osapi_workloads_listen_port = 8780
-region_name_for_services = RegionOne
+osapi_workloads_listen_port = 8781
+region_name_for_services = <%= @region_name %>
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
-sql_connection = mysql+pymysql://workloadmgr:gbAONKfua20kgf4CSmSzLUMJbRZylj68aut6AbGuaU@mariadb.openstack.svc.cluster.local:3306/workloadmgr
+sql_connection = <%= @database_connection %>
 state_path = /opt/stack/data/workloadmgr
 taskflow_max_age = 10
 taskflow_max_cache_size = 1024
-taskflow_path = /var/lib/workloadmgr/taskflow
-transport_url = rabbit://workloadmgr:zMXCGqn8MhS964FFaGbBxQuajxxbT6GYg88udSsziI@rabbitmq.openstack.svc.cluster.local:5672/workloadmgr
-trustee_role  = creator
+transport_url = <%= @default_transport_url %>
+trustee_role  = <%= @trustee_role %>
 use_syslog = false
-vault_data_directory = /var/trilio/triliovault-mounts
+vault_data_directory = <%= @vault_data_dir %>
 vault_data_directory_old = /var/triliovault
-vault_s3_access_key_id =
-vault_s3_auth_version = DEFAULT
-vault_s3_bucket =
+
+vault_storage_type = <%= @backup_target_type %>
+
+<% if @backup_target_type == "s3" -%>
+
+vault_s3_access_key_id = <%= @s3_accesskey %>
+vault_s3_secret_access_key = <%= @s3_secretkey  %>
+vault_s3_bucket = <%= @s3_bucket %>
+vault_s3_region_name = <%= @s3_region_name %>
+vault_s3_auth_version = <%= @s3_auth_version %>
+vault_s3_signature_version = <%= @s3_signature_version %>
+vault_s3_ssl = <%= @s3_ssl_enabled %>
+vault_s3_ssl_cert = <%= @s3_ssl_cert %>
+
+<% if @s_type == "ceph_s3" -%>
+vault_s3_endpoint_url = <%= @s3_endpoint_url %>
+<% else -%>
 vault_s3_endpoint_url =
-vault_s3_region_name =
-vault_s3_secret_access_key =
-vault_s3_signature_version = default
-vault_s3_ssl = false
-vault_s3_ssl_cert = /etc/triliovault-wlm/s3-cert.pem
+<% end -%>
+
 vault_storage_das_device = none
-vault_storage_nfs_export = 172.25.0.10:/mnt/tvault/42424
-vault_storage_nfs_options = nolock,soft,vers=3,timeo=180,intr,lookupcache=none
-vault_storage_type = nfs
+vault_storage_nfs_export = TrilioVault
+vault_storage_nfs_options =
+
+<% else -%>
+
+<% if @multi_ip_nfs_enabled -%>
+vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
+<% else -%>
+vault_storage_nfs_export = <%= @nfs_shares %>
+<% end -%>
+
+vault_storage_das_device = none
+vault_storage_nfs_options = <%= @nfs_options %>
+
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_bucket = 
+vault_s3_region_name = 
+vault_s3_auth_version = 
+vault_s3_signature_version = 
+vault_s3_ssl = 
+vault_s3_ssl_cert = 
+vault_s3_endpoint_url =
+
+<% end -%>
+
 verbose = true
 workloads_workers = 4
 [alembic]
 script_location = /usr/share/workloadmgr/migrate_repo
-sqlalchemy.url = mysql+pymysql://workloadmgr:gbAONKfua20kgf4CSmSzLUMJbRZylj68aut6AbGuaU@mariadb.openstack.svc.cluster.local:3306/workloadmgr
+sqlalchemy.url = <%= @database_connection %>
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 [barbican]
 encryption_support = true
@@ -81,22 +113,33 @@ insecure = false
 process_timeout = 300
 [global_job_scheduler]
 misfire_grace_time = 600
+
 [keystone_authtoken]
-admin_password = UvKow1UBbEqhnBCjmPRKKtNPzXu8c5QpoQCkfzepJ4
-admin_tenant_name = service
-admin_user = workloadmgr
+<% if @interface == "internal" -%>
+auth_url = <%= @keystone_internal_auth_url %>
+www_authenticate_uri = <%= @keystone_internal_auth_uri %>
+<% elsif @interface == "admin" -%>
+auth_url = <%= @keystone_admin_auth_url %>
+www_authenticate_uri = <%= @keystone_admin_auth_uri %>
+<% else -%>
+auth_url = <%= @keystone_public_auth_url %>
+www_authenticate_uri = <%= @keystone_public_auth_uri %>
+<% end -%>
+admin_password = <%= @password %>
+admin_tenant_name = <%= @project_name %>
+admin_user = <%= @keystone_username %>
 auth_plugin = password
 auth_type = password
-auth_url = http://keystone-api.openstack.svc.cluster.local:5000/v3
 auth_version = v3
 cafile =
-insecure = false
-password = UvKow1UBbEqhnBCjmPRKKtNPzXu8c5QpoQCkfzepJ4
-project_name = service
-region_name = RegionOne
+insecure = True
+password = <%= @password %>
+project_name = <%= @project_name %>
+region_name = <%= @region_name %>
 service_token_roles_required = true
 signing_dir = /var/cache/workloadmgr
-username = workloadmgr
-www_authenticate_uri = http://keystone-api.openstack.svc.cluster.local:5000/v3
+username = <%= @keystone_username %>
+memcached_servers = <%= @memcached_servers %>
+
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
