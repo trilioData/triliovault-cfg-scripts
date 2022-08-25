@@ -102,3 +102,6 @@ parameter_defaults:
     TrilioDatamoverAdmin: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
     TrilioDatamoverInternal: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
     TrilioDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
+    TrilioDatamoverAdmin: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
+    TrilioDatamoverInternal: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
+    TrilioDatamoverPublic: {protocol: 'https', port: '13781', host: 'CLOUDNAME'}
