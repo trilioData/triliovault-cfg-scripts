@@ -1,19 +1,33 @@
 [DEFAULT]
-#vault_s3_auth_version =
-#vault_s3_endpoint_url =
-#vault_s3_signature_version =
+<% if @backup_target_type == "s3" -%>
+vault_s3_access_key_id = <%= @s3_accesskey %>
+vault_s3_secret_access_key = <%= @s3_secretkey  %>
+vault_s3_bucket = <%= @s3_bucket %>
+vault_s3_region_name = <%= @s3_region_name %>
+vault_s3_auth_version = <%= @s3_auth_version %>
+vault_s3_signature_version = <%= @s3_signature_version %>
+vault_s3_ssl = <%= @s3_ssl_enabled %>
+vault_s3_ssl_cert = <%= @s3_ssl_cert %>
+<% if @s_type == "ceph_s3" -%>
+vault_s3_endpoint_url = <%= @s3_endpoint_url %>
+<% else -%>
+vault_s3_endpoint_url =
+<% end -%>
+<% else -%>
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_bucket = 
+vault_s3_region_name = 
+vault_s3_auth_version = 
+vault_s3_signature_version = 
+vault_s3_ssl = 
+vault_s3_ssl_cert = 
+vault_s3_endpoint_url =
+<% end -%>
 
-#Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
-#vault_s3_ssl_cert =
-
-vault_s3_access_key_id =
-vault_s3_secret_access_key =
-vault_s3_region_name =
-vault_s3_bucket =
-vault_storage_type = s3
 vault_s3_max_pool_connections = 500
 vault_data_directory_old = /var/triliovault
-vault_data_directory = /var/triliovault-mounts
+vault_data_directory = <%= @vault_data_dir %>
 log_file = /var/log/triliovault/tvault-object-store.log
 debug = False
 log_config = /etc/triliovault-object-store/object_store_logging.conf
@@ -22,4 +36,4 @@ verbose = True
 vault_s3_max_pool_connections = 500
 
 [s3fuse_sys_admin]
-helper_command = sudo /usr/bin/nova-rootwrap /etc/nova/rootwrap.conf privsep-helper
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
