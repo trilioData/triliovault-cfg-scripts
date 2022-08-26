@@ -4,7 +4,7 @@
   vars:
     ansible_python_interpreter: "{{ _oslodb_ansible_python_interpreter }}"
   block:
-    - name: Victoria | Create database for service
+    - name: Create database
       mysql_db:
         name: "{{ item.name }}"
         login_host: "{{ _oslodb_setup_endpoint | default(omit) }}"
@@ -12,7 +12,7 @@
       loop: "{{ _oslodb_databases }}"
       no_log: true
 
-    - name: Victoria | Grant access to the database for the service
+    - name: Grant access to the database for the service
       mysql_user:
         name: "{{ item.1.username }}"
         password: "{{ item.1.password }}"
