@@ -1,0 +1,97 @@
+####################
+# triliovault-wlm.conf #
+####################
+
+[DEFAULT]
+log_dir = /var/log/kolla/triliovault
+use_syslog = False
+use_stderr = False
+# Keystone URL for internal authentication
+keystone_endpoint_url = https://{{ kolla_internal_fqdn }}:35357/v3
+# RabbitMQ URL 
+transport_url = "rabbit://{% for host in groups[om_rpc_group] %}{{ triliovault_wlm_rabbitmq_users[0].user }}:{{ triliovault_wlm_rabbitmq_users[0].password  }}@{{ 'api' | kolla_address(host) | put_address_in_context('url') }}:5672{% if not loop.last %},{% endif %}{% endfor %}/{{ om_rpc_vhost }}"
+state_path = /opt/stack/data/workloadmgr
+rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
+api_paste_config = /etc/triliovault-wlm/api-paste.ini
+osapi_workloads_listen_port = {{ triliovault_wlm_api_port }}
+# This is not in use
+triliovault_hostnames = 192.168.18.11=tvm1_new,192.168.18.12=tvm2_new,192.168.18.13=tvm3_new
+sql_connection = mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_db_details[1].triliovault_database_user }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
+
+verbose = True
+debug = False
+api_workers = 4
+workloads_workers = 4
+
+cloud_admin_role = admin
+
+glance_production_host = {{ kolla_internal_fqdn }}
+
+glance_production_api_servers = https://{{ kolla_internal_fqdn }}:9292
+
+cinder_production_endpoint_template = https://{{ kolla_internal_fqdn }}:8776/v2/%(tenant_id)s
+
+neutron_production_url = https://{{ kolla_internal_fqdn }}:9696
+
+nova_production_endpoint_template = "https://{{ kolla_internal_fqdn }} :8774/v2.1/%(project_id)s"
+
+nova_admin_auth_url = https://{{ kolla_internal_fqdn }}:35357/v3
+
+neutron_admin_auth_url = https://{{ kolla_internal_fqdn }}:35357/v3
+
+neutron_ca_certificates_file = /etc/workloadmgr/ca-chain.pem
+neutron_api_insecure = False
+
+trustee_role = _member_
+
+global_job_scheduler_override = False
+
+keystone_auth_version = 3
+glance_api_version = 2
+
+#The amount of time(in hrs) that snapshot upload operation should wait for the upload
+max_wait_for_upload = 48
+
+
+vault_data_directory = /var/trilio/triliovault-mounts
+vault_data_directory_old = /var/triliovault
+vault_storage_das_device = none
+vault_storage_type = nfs
+
+
+vault_storage_nfs_export = 192.168.1.34:/mnt/tvault/42436
+vault_storage_nfs_options = nolock,soft,timeo=180,intr,lookupcache=none
+
+
+[global_job_scheduler]
+# misfire_grace_time is the grace time in which the global job scheduler will consider to
+# trigger the missed snapshots
+# The value is in seconds
+misfire_grace_time = 600
+
+[keystone_authtoken]
+admin_tenant_name = service
+project_name = service
+www_authenticate_uri = https://{{ kolla_internal_fqdn }}:35357/v3
+auth_url = https://{{ kolla_internal_fqdn }}:35357/
+project_domain_id = default
+user_domain_id = default
+auth_plugin = password
+auth_type = password
+signing_dir = /var/cache/workloadmgr
+cafile = /etc/triliovault-wlm/ca-chain.pem
+insecure = False
+
+service_token_roles_required = True
+
+[clients]
+endpoint_type = internal
+insecure = False
+cafile = /etc/triliovault-wlm/ca-chain.pem
+client_retry_limit = 3
+
+[alembic]
+script_location = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
+version_locations = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+#sqlalchemy.url = mysql://root:Pasword1!@192.168.18.14/workloadmgr?charset=utf8
+sqlalchemy.url=mysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_db_details[1].triliovault_database_user }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
