@@ -302,6 +302,15 @@ outputs:
         trilio::wlmapi::user_domain_name: 
         trilio::wlmapi::project_domain_name: 'Default'
         trilio::wlmapi::trustee_role: { get_param: TrusteeRole }
+        trilio::wlmapi::auth_host_internal: {get_param: [EndpointMap, KeystoneInternal, host] }
+        trilio::wlmapi::auth_port_internal: {get_param: [EndpointMap, KeystoneInternal, port] }
+        trilio::wlmapi::auth_protocol_internal: {get_param: [EndpointMap, KeystoneInternal, protocol] }
+        trilio::wlmapi::auth_host_admin: {get_param: [EndpointMap, KeystoneAdmin, host] }
+        trilio::wlmapi::auth_port_admin: {get_param: [EndpointMap, KeystoneAdmin, port] }
+        trilio::wlmapi::auth_protocol_admin: {get_param: [EndpointMap, KeystoneAdmin, protocol] }
+        trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
+        trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
+        trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
         tripleo::triliovault_wlm_api::firewall_rules:
               '240 triliovault-wlm-api':
                 dport:
