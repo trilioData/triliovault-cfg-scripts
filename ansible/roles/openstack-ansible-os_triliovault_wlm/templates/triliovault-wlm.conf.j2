@@ -1,7 +1,5 @@
 [DEFAULT]
-log_dir = {{ triliovault_log_dir }}
-log_file = {{ wlm_log_file }}
-log_config = {{ wlm_log_cfg }}
+log_config_append = {{ wlm_log_cfg }}
 
 use_syslog = False
 use_stderr = False
@@ -20,8 +18,6 @@ sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}
 verbose = True
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
-#Not required if you are using log_config
-#debug=False
 
 ##OS Details
 cloud_admin_user_id = {{ cloud_admin_user_id }}
