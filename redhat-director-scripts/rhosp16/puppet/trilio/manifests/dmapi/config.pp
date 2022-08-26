@@ -25,12 +25,18 @@ class trilio::dmapi::config inherits trilio::dmapi {
 
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
 
-      file { '/etc/dmapi/':
+      file { '/etc/triliovault-datamover/':
           ensure => 'directory',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
       } ->
-      file { "/etc/dmapi/dmapi.conf":
+      file { "/etc/triliovault-datamover/triliovault-datamover-api.conf":
           ensure  => present,
-          content => template('trilio/dmapi.erb'),
+          content => template('trilio/triliovault_datamover_api_conf.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
       }
 
 }      

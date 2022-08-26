@@ -1,32 +1,24 @@
 resource_registry:
-  OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
-  # NOTE: If there are addition customizations to the endpoint map (e.g. for
-  # other integratiosn), this will need to be regenerated.
-  OS::TripleO::EndpointMap: endpoint_map.yaml
 
 parameter_defaults:
 
-   ## Enable TrilioVault's quota functionality on horizon
-   ExtraConfig:
-     horizon::customization_module: 'dashboards.overrides'
-
-   ## Define network map for trilio datamover api service
-   ServiceNetMap:
-       TrilioDatamoverApiNetwork: internal_api
-
-   ## TrilioVault Datamover Password for keystone and database
-   TrilioDatamoverPassword: "test1234"
-
-   ## TrilioVault container pull urls
-   DockerTrilioDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
-   DockerTrilioDmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ## TrilioVault container Images.
+   ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
+   ContainerTriliovaultDatamoverApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultWlmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultWlmWorkloadsImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultWlmSchedulerImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultWlmCronImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
 
    ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
    ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
    BackupTargetType: 'nfs'
+
+   ## If backup target NFS share support multiple IPs and you want to use those IPs(more than one) then
+   ## set this parameter to True. Otherwise keep it False.
+   MultiIPNfsEnabled: False
 
    ## For backup target 'nfs'
    NfsShares: '192.168.122.101:/opt/tvault'
@@ -64,11 +56,30 @@ parameter_defaults:
    ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
 
-   ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
-   ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
-   ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
-   ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
-   DmApiWorkers: 16
+   ## Cloud Admin user details
+   CloudAdminUserName: "admin"
+   CloudAdminProjectName: "admin"
+   CloudAdminDomainName: "default"
 
-   ## Don't edit following parameter
-   EnablePackageInstall: True
+   ## TrilioVault Wlm Service's Keystone User Details
+   WlmApiKeystoneUserName: "workloadmgr"                          ## Do Not Change this parameter
+   WlmApiKeystoneUserProjectName: "service"
+   WlmApiKeystoneUserDomainName: "Default"
+   WlmApiKeystoneUserRoleName: "admin"
+
+   ## TrilioVault Datamover Service's Keystone User Details
+   DatamoverApiKeystoneUserName: "dmapi"                          ## Do Not Change this parameter
+   DatamoverApiKeystoneUserProjectName: "service"
+   DatamoverApiKeystoneUserDomainName: "Default"
+   DatamoverApiKeystoneUserRoleName: "admin"
+
+   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+   ## Valid values: internal, public, admin
+   Interface: "internal"
+   ## Provide keystone auth url based on above interface type. You can get this using command 
+   ## Command: "openstack endpoint list | grep keystone " Example: "http://trilio-openstack.demo:5000/v3"
+   KeystoneAuthUrl: ""
+   
+   ## Provide any role name as your preference. 
+   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+   TrusteeRole: "creator"
