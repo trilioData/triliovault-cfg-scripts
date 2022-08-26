@@ -53,7 +53,7 @@ parameter_defaults:
    S3SslEnabled: False
 
    ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
-   ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
+   ## user need to set this parameter value to: '/etc/triliovault-datamover/s3-cert.pem', otherwise keep it's value as empty string.
    S3SslCert: ''
 
    ## Cloud Admin user details

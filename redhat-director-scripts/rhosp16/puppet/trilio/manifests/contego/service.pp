@@ -10,17 +10,17 @@ class trilio::contego::service inherits trilio::contego {
             enable     => true,
             hasstatus  => true,
             hasrestart => true,
-            subscribe  => [Exec['daemon_reload_for_contego'], File['/etc/tvault-contego/tvault-contego.conf']],
-            before     => Service['tvault-contego'],
+            subscribe  => [Exec['daemon_reload_for_contego'], File['/etc/triliovault-datamover/triliovault-datamover.conf']],
+            before     => Service['triliovault-datamover'],
          } 
     }
 
-    service { 'tvault-contego':
+    service { 'triliovault-datamover':
         ensure     => running,
         enable     => true,
         hasstatus  => true,
         hasrestart => true,
-        subscribe  => File['/etc/tvault-contego/tvault-contego.conf']
+        subscribe  => File['/etc/triliovault-datamover/triliovault-datamover.conf']
     }
 
 }
