@@ -48,7 +48,7 @@ parameters:
     type: string
     default: 'regionOne'
     description: Keystone region for endpoint
-  TrilioDatamoverPassword:
+  TriliovaultDatamoverPassword:
     description: The password for the trilio service and db account
     type: string
     hidden: true
@@ -148,22 +148,22 @@ outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: trilio_datamover_api
+      service_name: triliovault_datamover_api
       keystone_resources:
         dmapi:
           endpoints:
-            public: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
-            internal: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
-            admin: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
+            public: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
+            internal: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
+            admin: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
           users:
             dmapi:
-              password: {get_param: TrilioDatamoverPassword}
+              password: {get_param: TriliovaultDatamoverPassword}
           region: {get_param: KeystoneRegion}
           service: 'datamover'      
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
-        trilio::dmapi::password: {get_param: TrilioDatamoverPassword}
+        trilio::dmapi::password: {get_param: TriliovaultDatamoverPassword}
         trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::notification_driver: {get_param: NotificationDriver}
@@ -174,7 +174,7 @@ outputs:
         trilio::dmapi::project_domain_name: 'Default'
         trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
         tripleo::trilio_datamover_api::firewall_rules:
-              '240 trilio-datamover-api':
+              '240 triliovault-datamover-api':
                 dport:
                   - 8784
                   - 13784
@@ -182,7 +182,7 @@ outputs:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: dmapi
-            password: {get_param: TrilioDatamoverPassword}
+            password: {get_param: TriliovaultDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
         trilio::dmapi::my_ip:
@@ -190,7 +190,7 @@ outputs:
               template:
                 "%{hiera('$NETWORK')}"
               params:
-                $NETWORK: {get_param: [ServiceNetMap, TrilioDatamoverApiNetwork]}                                
+                $NETWORK: {get_param: [ServiceNetMap, TriliovaultDatamoverApiNetwork]}                                
       service_config_settings:
         haproxy:
           tripleo::trilio_datamover_api::haproxy_endpoints:
@@ -217,17 +217,17 @@ outputs:
           trilio::keystone::auth::service_name: 'dmapi'
           trilio::keystone::auth::service_type: 'datamover'
           trilio::keystone::auth::service_description: 'TrilioVault Datamover Service'
-          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TrilioDatamoverPublic, uri]}
-          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TrilioDatamoverInternal, uri]}
-          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TrilioDatamoverAdmin, uri]}
-          trilio::keystone::auth::password: {get_param: TrilioDatamoverPassword}
+          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
+          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
+          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
+          trilio::keystone::auth::password: {get_param: TriliovaultDatamoverPassword}
           trilio::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
-          trilio::db::mysql::user: dmapi
-          trilio::db::mysql::password: {get_param: TrilioDatamoverPassword}
-          trilio::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
-          trilio::db::mysql::dbname: dmapi
-          trilio::db::mysql::allowed_hosts:
+          trilio::dmapi::db::mysql::user: dmapi
+          trilio::dmapi::db::mysql::password: {get_param: TriliovaultDatamoverPassword}
+          trilio::dmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::dmapi::db::mysql::dbname: dmapi
+          trilio::dmapi::db::mysql::allowed_hosts:
             - '%'
             - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
@@ -248,7 +248,7 @@ outputs:
               merge: true
               preserve_properties: true
           permissions:
-            - path: /var/log/trilio-datamover-api
+            - path: /var/log/triliovault-datamover-api
               owner: dmapi:dmapi
               recurse: true
       container_puppet_tasks:
@@ -289,8 +289,8 @@ outputs:
             net: none
             user: root
             volumes:
-              - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
-            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/trilio-datamover-api']
+              - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api:z
+            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/triliovault-datamover-api']
         step_4:
           trilio_datamover_api_db_sync:
             image: *trilio_datamover_api_image
@@ -304,7 +304,7 @@ outputs:
                 -
                   - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi/:ro
-                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api
+                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
@@ -321,7 +321,7 @@ outputs:
                 -
                   - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
-                  - /var/log/containers/trilio-datamover-api:/var/log/trilio-datamover-api:z
+                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api:z
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
@@ -339,5 +339,5 @@ outputs:
             state: directory
             setype: "{{ item.setype }}"
           with_items:
-            - { 'path': /var/log/containers/trilio-datamover-api, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/triliovault-datamover-api, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []

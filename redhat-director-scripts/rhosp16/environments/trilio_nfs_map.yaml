@@ -1,4 +1,4 @@
-# TrilioDatamoverNfsMap represents datamover node (compute node) and it's NFS share mapping.
+# TriliovaultMultiIPNfsMap represents datamover node (compute node) and it's NFS share mapping.
 # NFS share is a backup target of TrilioVault
 parameter_defaults:
-  TrilioMultiIPNfsMap:
+  TriliovaultMultiIPNfsMap:
