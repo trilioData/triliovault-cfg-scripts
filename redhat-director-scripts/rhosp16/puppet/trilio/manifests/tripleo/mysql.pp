@@ -20,7 +20,7 @@ class trilio::tripleo::mysql (
 
   if $create_db {
     if hiera('trilio_datamover_api_enabled', false) {
-      include ::trilio::db::mysql
+      tripleo::profile::base::database::mysql::include_and_check_auth{'::trilio::db::mysql':}
     }    
   }
 }
