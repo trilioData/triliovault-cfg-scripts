@@ -185,10 +185,6 @@ parameters:
     default: 'openstack'	
     description: Cinder ceph backend user name
     type: string
-  TrilioDatamoverPassword:
-    description: The password for the trilio service and db account
-    type: string
-    hidden: true
   EnableInternalTLS:
     type: boolean
     default: false
@@ -200,7 +196,7 @@ parameters:
     default: []
     description: list of optional vo
     type: comma_delimited_list
-  TrilioMultiIPNfsMap:
+  TriliovaultMultiIPNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
@@ -247,9 +243,9 @@ outputs:
       keystone_resources:
         workloadmgr:
           endpoints:
-            public: {get_param: [EndpointMap, TrilioWlmPublic, uri]}
+            public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
             internal: {get_param: [EndpointMap, TriliotWlmInternal, uri]}
-            admin: {get_param: [EndpointMap, TrilioWlmAdmin, uri]}
+            admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
           users:
             dmapi:
               password: {get_param: WlmApiKeystoneUserPassword}
@@ -259,7 +255,7 @@ outputs:
         trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
-        trilio::wlmapi::nfs_map:  {get_param: TrilioMultiIPNfsMap}
+        trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
         trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
         trilio::wlmapi::s3_type: {get_param: S3Type}
         trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
@@ -312,7 +308,7 @@ outputs:
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
         tripleo::triliovault_wlm_api::firewall_rules:
-              '240 triliovault-wlm-api':
+              '241 triliovault-wlm-api':
                 dport:
                   - 8781
                   - 13781
@@ -335,21 +331,11 @@ outputs:
             triliovault_wlm_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
                 internal_ip: "%{hiera('triliovault_wlm_api_vip')}"
-                service_port: {get_param: TriliovaultWlmApiPort}
-                public_ssl_port: {get_param: TriliovaultWlmApiSslPort}
+                service_port: {get_param: WlmApiPort}
+                public_ssl_port: {get_param: WlmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
                 service_network: "%{hiera('triliovault_wlm_api_network')}"
-          tripleo::haproxy::triliovault_wlm_api::options:
-             'retries': '5'
-             'maxconn': '50000'
-             'balance': 'roundrobin'
-             'timeout http-request': '10m'
-             'timeout queue': '10m'
-             'timeout connect': '10m'
-             'timeout client': '10m'
-             'timeout server': '10m'
-             'timeout check': '10m'
         keystone:
           trilio::wlmapi::keystone::auth::tenant: 'service'
           trilio::wlmapi::keystone::auth::service_name: 'workloadmgr'
@@ -358,11 +344,11 @@ outputs:
           trilio::wlmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
           trilio::wlmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
           trilio::wlmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
-          trilio::wlmapi::keystone::auth::password: {get_param: TriliovaultWlmApiKeystonePassword}
+          trilio::wlmapi::keystone::auth::password: {get_param: WlmApiKeystoneUserPassword}
           trilio::wlmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
           trilio::wlmapi::db::mysql::user: workloadmgr
-          trilio::wlmapi::db::mysql::password: {get_param: TriliovaultWlmApiDbPassword}
+          trilio::wlmapi::db::mysql::password: {get_param: WlmApiDbUserPassword}
           trilio::wlmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
           trilio::wlmapi::db::mysql::dbname: workloadmgr
           trilio::wlmapi::db::mysql::allowed_hosts:
