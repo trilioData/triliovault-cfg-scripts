@@ -1,4 +1,4 @@
-/var/log/nova/tvault-contego.log {
+/var/log/nova/triliovault-datamover.log {
 daily
 missingok
 notifempty

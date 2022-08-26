@@ -39,28 +39,28 @@ class trilio::contego::postinstall inherits trilio::contego {
     }
 
 
-##Create /etc/tvault-contego/ directory and tvault-contego.conf
-    file { '/etc/tvault-contego/':
+##Create /etc/triliovault-datamover/ directory and triliovault-datamover.conf
+    file { '/etc/triliovault-datamover/':
         ensure => 'directory',
     }
 
 ##Create contego conf file
 
     if $backup_target_type == 'nfs' {
-        file { "/etc/tvault-contego/tvault-contego.conf":
+        file { "/etc/triliovault-datamover/triliovault-datamover.conf":
             ensure  => present,
             content => template('trilio/contego_nfs_conf.erb'),
         }    
     }
     elsif $backup_target_type == 's3' {
         if $s3_type == 'amazon_s3' {
-            file { "/etc/tvault-contego/tvault-contego.conf":
+            file { "/etc/triliovault-datamover/triliovault-datamover.conf":
                 ensure  => present,
                 content => template('trilio/contego_amazon_s3_conf.erb'),
             }    
         }
         elsif $s3_type == 'ceph_s3' {
-            file { "/etc/tvault-contego/tvault-contego.conf":
+            file { "/etc/triliovault-datamover/triliovault-datamover.conf":
                 ensure  => present,
                 content => template('contego_ceph_s3_conf.erb'),
             }    
@@ -73,14 +73,14 @@ class trilio::contego::postinstall inherits trilio::contego {
          fail("backup_target_type is not valid")
     }
 
-##Create log rorate file for contego log rotation: /etc/logrotate.d/tvault-contego
-    file { '/etc/logrotate.d/tvault-contego':
+##Create log rorate file for contego log rotation: /etc/logrotate.d/triliovault-datamover
+    file { '/etc/logrotate.d/triliovault-datamover':
         source  => 'puppet:///modules/trilio/log_rotate_conf',
     }
 
-##Create systemd file for tvault-contego service: /etc/systemd/system/tvault-contego.service
+##Create systemd file for triliovault-datamover service: /etc/systemd/system/triliovault-datamover.service
 
-    file { '/etc/systemd/system/tvault-contego.service':
+    file { '/etc/systemd/system/triliovault-datamover.service':
         ensure  => present,
         content => template('trilio/contego_systemd_conf.erb'),
     }
@@ -97,7 +97,7 @@ class trilio::contego::postinstall inherits trilio::contego {
              command     => 'systemctl daemon-reload',
              path        => ['/usr/bin', '/usr/sbin',],
              subscribe   => File['/etc/systemd/system/tvault-object-store.service'],
-             notify      => [Service['tvault-contego'], Service['tvault-object-store']],
+             notify      => [Service['triliovault-datamover'], Service['tvault-object-store']],
              refreshonly => true,
           }
 
@@ -109,8 +109,8 @@ class trilio::contego::postinstall inherits trilio::contego {
         cwd         => '/tmp',
         command     => 'systemctl daemon-reload',
         path        => ['/usr/bin', '/usr/sbin',],
-        subscribe   => File['/etc/systemd/system/tvault-contego.service'],
-        notify      => Service['tvault-contego'],
+        subscribe   => File['/etc/systemd/system/triliovault-datamover.service'],
+        notify      => Service['triliovault-datamover'],
         refreshonly => true,
     }
 

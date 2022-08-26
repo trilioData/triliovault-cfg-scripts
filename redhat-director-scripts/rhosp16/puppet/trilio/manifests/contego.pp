@@ -29,7 +29,7 @@ class trilio::contego (
 
     $contego_user                         = 'nova'
     $contego_group                        = 'nova'
-    $contego_conf_file                    = "/etc/tvault-contego/tvault-contego.conf"
+    $contego_conf_file                    = "/etc/triliovault-datamover/triliovault-datamover.conf"
     $contego_groups                       = ['kvm','qemu','disk']
     $vault_data_dir                       = "/var/lib/nova/triliovault-mounts"
     $vault_data_dir_old                   = "/var/triliovault"
