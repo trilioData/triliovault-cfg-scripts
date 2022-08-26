@@ -18,3 +18,25 @@
     volumes: "{{ triliovault_datamover_api.volumes|reject('equalto', '')|list }}"
   run_once: True
   delegate_to: "{{ groups[triliovault_datamover_api.group][0] }}"
+
+
+  #- name: Running triliovault workloadmgr api bootstrap container
+  #vars:
+  #  triliovault_workloadmgr_api: "{{ triliovault_services['triliovault-workloadmgr-api'] }}"
+  #become: true
+  #kolla_docker:
+  #  action: "start_container"
+  #  common_options: "{{ docker_common_options }}"
+  #  detach: False
+  #  environment:
+  #    KOLLA_BOOTSTRAP:
+  #    KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
+  #  image: "{{ triliovault_workloadmgr_api.image }}"
+  #  labels:
+  #    BOOTSTRAP:
+  #  name: "bootstrap_triliovault_workloadmgr_api"
+  #  restart_policy: "no"
+  #  volumes: "{{ triliovault_workloadmgr_api.volumes|reject('equalto', '')|list }}"
+  #run_once: True
+  #delegate_to: "{{ groups[triliovault_workloadmgr_api.group][0] }}"
+
