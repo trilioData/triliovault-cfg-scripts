@@ -2,13 +2,13 @@
 - name: Setup Database Service (MariaDB)
   delegate_to: "{{_oslodb_setup_host }}"
   block:
-    - name: Ussuri | Create database for service Ussuri
+    - name: Create database for service
       mysql_db:
         name: "{{ item.name }}"
       loop: "{{ _oslodb_databases }}"
       no_log: true
 
-    - name:  Ussuri | Grant access to the database for the service
+    - name: Grant access to the database for the service
       mysql_user:
         name: "{{ item.1.username }}"
         password: "{{ item.1.password }}"

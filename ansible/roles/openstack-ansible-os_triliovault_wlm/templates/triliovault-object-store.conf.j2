@@ -42,7 +42,7 @@ vault_data_directory = {{ triliovault_mnt_dir }}
 
 log_file = {{ OBJECT_STORE_LOG_FILE }}
 debug = False
-log_config = {{ OBJECT_STORE_LOG_CFG }}
+log_config_append = {{ OBJECT_STORE_LOG_CFG }}
 
 verbose = True
 vault_s3_max_pool_connections = 500
