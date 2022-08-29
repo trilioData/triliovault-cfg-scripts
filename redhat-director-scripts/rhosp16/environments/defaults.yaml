@@ -34,16 +34,53 @@ parameter_defaults:
    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
    DmApiWorkers: 16
 
+   ## Cloud Admin user details
+   CloudAdminUserName: "admin"
+   CloudAdminProjectName: "admin"
+   CloudAdminDomainName: "default"
+
+   ## Project name in which triliovault keystone resources will get created
+   TriliovaultKeystoneServiceProjectName: 'service'
+   TriliovaultKeystoneUserDomainName: "Default"
+   TriliovaultKeystoneUserRoleName: "admin"
+
+   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+   ## Valid values: internal, public, admin
+   Interface: "internal"
+   
+   ## Provide any role name as your preference. 
+   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+   TrusteeRole: "creator"
+
+############################### DONE #####################################################
+
+
+
+
+
+
+   
+############### DO NOT EDIT FOLLOWING PARAMETERS.######################################################
+   ## Project name in which triliovault keystone resources will get created
+   
    ## Triliovault Wlm Api Service port
    WlmApiPort: "8781"
    WlmApiSslPort: "13781"
+   WlmApiPort: "8784"
+   WlmApiSslPort: "13784"
 
-   ## TrilioVault Wlm Service's Database User Details
-   WlmApiDbUserName: "workloadmgr"                              ## Do Not Change this parameter
+   ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
+   WlmApiDbUserName: "workloadmgr"
+   WlmApiDbName: "workloadmgr"
+   WlmApiKeystoneUserName: "workloadmgr"
+   WlmApiKeystoneServiceName: "workloadmgr"
+   WlmApiKeystoneServiceType: "workloads"
+   ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 
-   ## TrilioVault Datamover Service's Database User Details
-   WlmApiDbUserName: "dmapi"                               ## Do Not Change this parameter
-
-   ## TrilioVault Wlm rabbitmq details
-   WlmOsloMessagingRpcUserName: "workloadmgr"
-   
+   ## TrilioVault Datamover Service's Database, Keystone and rabbitmq user names
+   DatamoverApiDbUserName: "dmapi"
+   DatamoverApiDbName: "dmapi"
+   DatamoverApiKeystoneUserName: "dmapi"
+   DatamoverApiKeystoneServiceName: "dmapi"
+   DatamoverApiKeystoneServiceType: "datamover"
+###################################################################
