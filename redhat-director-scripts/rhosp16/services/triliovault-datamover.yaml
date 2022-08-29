@@ -3,7 +3,7 @@ heat_template_version: rocky
 description: >
   Trilio Datamover containerized service
 parameters:
-  DockerTrilioDatamoverImage:
+  DockerTriliovaultDatamoverImage:
     default: ''
     description: The location of Trilio Datamover container image
     type: string
@@ -96,7 +96,7 @@ parameters:
     default: 'openstack'	
     description: Cinder ceph backend user name
     type: string
-  TrilioDatamoverPassword:
+  TriliovaultDatamoverPassword:
     description: The password for the trilio service and db account
     type: string
     hidden: true
@@ -111,7 +111,7 @@ parameters:
     default: []
     description: list of optional vo
     type: comma_delimited_list
-  TrilioMultiIPNfsMap:
+  TriliovaultMultiIPNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
@@ -134,7 +134,7 @@ outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: tvault-contego
+      service_name: triliovault_datamover
       config_settings:
         trilio::contego::backup_target_type: {get_param: BackupTargetType}
         trilio::contego::nfs_shares: {get_param: NfsShares}
@@ -155,17 +155,17 @@ outputs:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: dmapi
-            password: {get_param: TrilioDatamoverPassword}
+            password: {get_param: TriliovaultDatamoverPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
-        trilio::contego::nfs_map:  {get_param: TrilioMultiIPNfsMap}
+        trilio::contego::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
         trilio::contego::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
       puppet_config:
         config_volume: triliodm
         puppet_tags: dmconfig
         step_config: |
             include ::trilio::contego
-        config_image: {get_param: DockerTrilioDatamoverImage}
+        config_image: {get_param: DockerTriliovaultDatamoverImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dm.json:
           command:
@@ -191,7 +191,7 @@ outputs:
               merge: true
               preserve_properties: true
           permissions:
-            - path: /var/log/trilio-datamover
+            - path: /var/log/triliovault-datamover
               owner: nova:nova
               recurse: true
             - path: /var/lib/nova/triliovault-mounts
@@ -208,7 +208,7 @@ outputs:
       docker_config:
         step_5:
           trilio_datamover:
-            image: {get_param: DockerTrilioDatamoverImage}
+            image: {get_param: DockerTriliovaultDatamoverImage}
             net: host
             ipc: host
             privileged: true
@@ -226,7 +226,7 @@ outputs:
                   - /etc/ceph:/var/lib/kolla/config_files/src-ceph:ro
                   - /dev:/dev
                   - /var/run/libvirt/:/var/run/libvirt/
-                  - /var/log/containers/trilio-datamover:/var/log/trilio-datamover:z
+                  - /var/log/containers/triliovault-datamover:/var/log/triliovault-datamover:z
                   - /var/lib/nova:/var/lib/nova:shared
                   - /etc/ssh/ssh_known_hosts:/etc/ssh/ssh_known_hosts:ro
                   - /lib/modules:/lib/modules:ro
@@ -252,5 +252,5 @@ outputs:
             setype: "{{ item.setype }}"
           with_items:
             - { 'path': /var/lib/nova/triliovault-mounts, 'setype': svirt_sandbox_file_t }
-            - { 'path': /var/log/containers/trilio-datamover, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []

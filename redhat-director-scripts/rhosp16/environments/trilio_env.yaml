@@ -51,35 +51,3 @@ parameter_defaults:
 
    ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
    S3SslEnabled: False
-
-   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint URL and SSL certificates are self signed, then
-   ## user need to set this parameter value to: '/etc/tvault-contego/s3-cert.pem', otherwise keep it's value as empty string.
-   S3SslCert: ''
-
-   ## Cloud Admin user details
-   CloudAdminUserName: "admin"
-   CloudAdminProjectName: "admin"
-   CloudAdminDomainName: "default"
-
-   ## TrilioVault Wlm Service's Keystone User Details
-   WlmApiKeystoneUserName: "workloadmgr"                          ## Do Not Change this parameter
-   WlmApiKeystoneUserProjectName: "service"
-   WlmApiKeystoneUserDomainName: "Default"
-   WlmApiKeystoneUserRoleName: "admin"
-
-   ## TrilioVault Datamover Service's Keystone User Details
-   DatamoverApiKeystoneUserName: "dmapi"                          ## Do Not Change this parameter
-   DatamoverApiKeystoneUserProjectName: "service"
-   DatamoverApiKeystoneUserDomainName: "Default"
-   DatamoverApiKeystoneUserRoleName: "admin"
-
-   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
-   ## Valid values: internal, public, admin
-   Interface: "internal"
-   ## Provide keystone auth url based on above interface type. You can get this using command 
-   ## Command: "openstack endpoint list | grep keystone " Example: "http://trilio-openstack.demo:5000/v3"
-   KeystoneAuthUrl: ""
-   
-   ## Provide any role name as your preference. 
-   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
-   TrusteeRole: "creator"

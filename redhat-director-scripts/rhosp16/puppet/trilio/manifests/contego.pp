@@ -11,7 +11,6 @@ class trilio::contego (
     $s3_signature_version                 = 'default',
     $s3_auth_version                      = 'DEFAULT',
     $s3_ssl_enabled                       = 'False',
-    $s3_ssl_cert                          = undef,
     $database_connection                  = undef,
     $oslomsg_rpc_proto                    = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
     $oslomsg_rpc_hosts                    = any2array(hiera('oslo_messaging_rpc_node_names', undef)),
@@ -29,7 +28,7 @@ class trilio::contego (
 
     $contego_user                         = 'nova'
     $contego_group                        = 'nova'
-    $contego_conf_file                    = "/etc/tvault-contego/tvault-contego.conf"
+    $contego_conf_file                    = "/etc/triliovault-datamover/triliovault-datamover.conf"
     $contego_groups                       = ['kvm','qemu','disk']
     $vault_data_dir                       = "/var/lib/nova/triliovault-mounts"
     $vault_data_dir_old                   = "/var/triliovault"

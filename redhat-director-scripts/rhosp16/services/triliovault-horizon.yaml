@@ -50,7 +50,7 @@ outputs:
   role_data:
     description: Role data for the Trilio Datamover role.
     value:
-      service_name: trilio-horizon
+      service_name: triliovault_horizon
       config_settings:
         trilio::horizon::horizon_dir: {get_param: HorizonDir}
       puppet_config:
