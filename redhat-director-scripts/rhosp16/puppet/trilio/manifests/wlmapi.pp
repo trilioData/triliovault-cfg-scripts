@@ -44,7 +44,6 @@ class trilio::wlmapi (
   $s3_signature_version            = 'default',
   $s3_auth_version                 = 'DEFAULT',
   $s3_ssl_enabled                  = 'False',
-  $s3_ssl_cert                     = undef,
   $nfs_map                         = {},
   $multi_ip_nfs_enabled            = false,
 ) {

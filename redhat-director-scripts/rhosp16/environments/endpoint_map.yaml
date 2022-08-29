@@ -367,15 +367,15 @@ parameters:
         protocol: http
         port: '3000'
         host: IP_ADDRESS
-      TrilioDatamoverAdmin:
+      TriliovaultDatamoverAdmin:
         protocol: http
         port: '8784'
         host: IP_ADDRESS
-      TrilioDatamoverInternal:
+      TriliovaultDatamoverInternal:
         protocol: http
         port: '8784'
         host: IP_ADDRESS
-      TrilioDatamoverPublic:
+      TriliovaultDatamoverPublic:
         protocol: http
         port: '8784'
         host: IP_ADDRESS
@@ -13504,13 +13504,13 @@ outputs:
               - EndpointMap
               - SwiftUIConfig
               - port
-      TrilioDatamoverAdmin:
+      TriliovaultDatamoverAdmin:
         host:
           str_replace:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - host
             params:
               CLOUDNAME:
@@ -13518,7 +13518,7 @@ outputs:
                 - CloudEndpoints
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
               IP_ADDRESS:
                 get_param:
                 - NetIpMap
@@ -13527,14 +13527,14 @@ outputs:
                       NETWORK:
                         get_param:
                         - ServiceNetMap
-                        - TrilioDatamoverApiNetwork
+                        - TriliovaultDatamoverApiNetwork
                     template: NETWORK_uri
         host_nobrackets:
           str_replace:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - host
             params:
               CLOUDNAME:
@@ -13542,36 +13542,36 @@ outputs:
                 - CloudEndpoints
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
               IP_ADDRESS:
                 get_param:
                 - NetIpMap
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
         port:
           get_param:
           - EndpointMap
-          - TrilioDatamoverAdmin
+          - TriliovaultDatamoverAdmin
           - port
         protocol:
           get_param:
           - EndpointMap
-          - TrilioDatamoverAdmin
+          - TriliovaultDatamoverAdmin
           - protocol
         uri:
           make_url:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverAdmin
+                  - TriliovaultDatamoverAdmin
                   - host
                 params:
                   CLOUDNAME:
@@ -13579,7 +13579,7 @@ outputs:
                     - CloudEndpoints
                     - get_param:
                       - ServiceNetMap
-                      - TrilioDatamoverApiNetwork
+                      - TriliovaultDatamoverApiNetwork
                   IP_ADDRESS:
                     get_param:
                     - NetIpMap
@@ -13588,12 +13588,12 @@ outputs:
                           NETWORK:
                             get_param:
                             - ServiceNetMap
-                            - TrilioDatamoverApiNetwork
+                            - TriliovaultDatamoverApiNetwork
                         template: NETWORK_uri
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - port
             path: /v2
         uri_no_suffix:
@@ -13601,14 +13601,14 @@ outputs:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverAdmin
+                  - TriliovaultDatamoverAdmin
                   - host
                 params:
                   CLOUDNAME:
@@ -13616,7 +13616,7 @@ outputs:
                     - CloudEndpoints
                     - get_param:
                       - ServiceNetMap
-                      - TrilioDatamoverApiNetwork
+                      - TriliovaultDatamoverApiNetwork
                   IP_ADDRESS:
                     get_param:
                     - NetIpMap
@@ -13625,20 +13625,20 @@ outputs:
                           NETWORK:
                             get_param:
                             - ServiceNetMap
-                            - TrilioDatamoverApiNetwork
+                            - TriliovaultDatamoverApiNetwork
                         template: NETWORK_uri
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverAdmin
+              - TriliovaultDatamoverAdmin
               - port
-      TrilioDatamoverInternal:
+      TriliovaultDatamoverInternal:
         host:
           str_replace:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - host
             params:
               CLOUDNAME:
@@ -13646,7 +13646,7 @@ outputs:
                 - CloudEndpoints
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
               IP_ADDRESS:
                 get_param:
                 - NetIpMap
@@ -13655,14 +13655,14 @@ outputs:
                       NETWORK:
                         get_param:
                         - ServiceNetMap
-                        - TrilioDatamoverApiNetwork
+                        - TriliovaultDatamoverApiNetwork
                     template: NETWORK_uri
         host_nobrackets:
           str_replace:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - host
             params:
               CLOUDNAME:
@@ -13670,36 +13670,36 @@ outputs:
                 - CloudEndpoints
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
               IP_ADDRESS:
                 get_param:
                 - NetIpMap
                 - get_param:
                   - ServiceNetMap
-                  - TrilioDatamoverApiNetwork
+                  - TriliovaultDatamoverApiNetwork
         port:
           get_param:
           - EndpointMap
-          - TrilioDatamoverInternal
+          - TriliovaultDatamoverInternal
           - port
         protocol:
           get_param:
           - EndpointMap
-          - TrilioDatamoverInternal
+          - TriliovaultDatamoverInternal
           - protocol
         uri:
           make_url:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverInternal
+                  - TriliovaultDatamoverInternal
                   - host
                 params:
                   CLOUDNAME:
@@ -13707,7 +13707,7 @@ outputs:
                     - CloudEndpoints
                     - get_param:
                       - ServiceNetMap
-                      - TrilioDatamoverApiNetwork
+                      - TriliovaultDatamoverApiNetwork
                   IP_ADDRESS:
                     get_param:
                     - NetIpMap
@@ -13716,12 +13716,12 @@ outputs:
                           NETWORK:
                             get_param:
                             - ServiceNetMap
-                            - TrilioDatamoverApiNetwork
+                            - TriliovaultDatamoverApiNetwork
                         template: NETWORK_uri
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - port
             path: /v2
         uri_no_suffix:
@@ -13729,14 +13729,14 @@ outputs:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverInternal
+                  - TriliovaultDatamoverInternal
                   - host
                 params:
                   CLOUDNAME:
@@ -13744,7 +13744,7 @@ outputs:
                     - CloudEndpoints
                     - get_param:
                       - ServiceNetMap
-                      - TrilioDatamoverApiNetwork
+                      - TriliovaultDatamoverApiNetwork
                   IP_ADDRESS:
                     get_param:
                     - NetIpMap
@@ -13753,20 +13753,20 @@ outputs:
                           NETWORK:
                             get_param:
                             - ServiceNetMap
-                            - TrilioDatamoverApiNetwork
+                            - TriliovaultDatamoverApiNetwork
                         template: NETWORK_uri
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverInternal
+              - TriliovaultDatamoverInternal
               - port
-      TrilioDatamoverPublic:
+      TriliovaultDatamoverPublic:
         host:
           str_replace:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
               - host
             params:
               CLOUDNAME:
@@ -13790,7 +13790,7 @@ outputs:
             template:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
               - host
             params:
               CLOUDNAME:
@@ -13808,26 +13808,26 @@ outputs:
         port:
           get_param:
           - EndpointMap
-          - TrilioDatamoverPublic
+          - TriliovaultDatamoverPublic
           - port
         protocol:
           get_param:
           - EndpointMap
-          - TrilioDatamoverPublic
+          - TriliovaultDatamoverPublic
           - protocol
         uri:
           make_url:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverPublic
+                  - TriliovaultDatamoverPublic
                   - host
                 params:
                   CLOUDNAME:
@@ -13849,7 +13849,7 @@ outputs:
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
               - port
             path: /v2
         uri_no_suffix:
@@ -13857,14 +13857,14 @@ outputs:
             scheme:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
               - protocol
             host:
               str_replace:
                 template:
                   get_param:
                   - EndpointMap
-                  - TrilioDatamoverPublic
+                  - TriliovaultDatamoverPublic
                   - host
                 params:
                   CLOUDNAME:
@@ -13886,7 +13886,391 @@ outputs:
             port:
               get_param:
               - EndpointMap
-              - TrilioDatamoverPublic
+              - TriliovaultDatamoverPublic
+              - port
+      TriliovaultWlmAdmin:
+        host:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param:
+                        - ServiceNetMap
+                        - TriliovaultWlmApiNetwork
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+        port:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmAdmin
+          - port
+        protocol:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmAdmin
+          - protocol
+        uri:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmAdmin
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - TriliovaultWlmApiNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - TriliovaultWlmApiNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - port
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmAdmin
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - TriliovaultWlmApiNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - TriliovaultWlmApiNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmAdmin
+              - port
+      TriliovaultWlmInternal:
+        host:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param:
+                        - ServiceNetMap
+                        - TriliovaultWlmApiNetwork
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param:
+                  - ServiceNetMap
+                  - TriliovaultWlmApiNetwork
+        port:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmInternal
+          - port
+        protocol:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmInternal
+          - protocol
+        uri:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmInternal
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - TriliovaultWlmApiNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - TriliovaultWlmApiNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - port
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmInternal
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - TriliovaultWlmApiNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - TriliovaultWlmApiNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmInternal
+              - port
+      TriliovaultWlmPublic:
+        host:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - PublicNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - str_replace:
+                    params:
+                      NETWORK:
+                        get_param:
+                        - ServiceNetMap
+                        - PublicNetwork
+                    template: NETWORK_uri
+        host_nobrackets:
+          str_replace:
+            template:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
+              - host
+            params:
+              CLOUDNAME:
+                get_param:
+                - CloudEndpoints
+                - get_param:
+                  - ServiceNetMap
+                  - PublicNetwork
+              IP_ADDRESS:
+                get_param:
+                - NetIpMap
+                - get_param:
+                  - ServiceNetMap
+                  - PublicNetwork
+        port:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmPublic
+          - port
+        protocol:
+          get_param:
+          - EndpointMap
+          - TriliovaultWlmPublic
+          - protocol
+        uri:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmPublic
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - PublicNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - PublicNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
+              - port
+            path: /v2
+        uri_no_suffix:
+          make_url:
+            scheme:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
+              - protocol
+            host:
+              str_replace:
+                template:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmPublic
+                  - host
+                params:
+                  CLOUDNAME:
+                    get_param:
+                    - CloudEndpoints
+                    - get_param:
+                      - ServiceNetMap
+                      - PublicNetwork
+                  IP_ADDRESS:
+                    get_param:
+                    - NetIpMap
+                    - str_replace:
+                        params:
+                          NETWORK:
+                            get_param:
+                            - ServiceNetMap
+                            - PublicNetwork
+                        template: NETWORK_uri
+            port:
+              get_param:
+              - EndpointMap
+              - TriliovaultWlmPublic
               - port
       ZaqarAdmin:
         host:

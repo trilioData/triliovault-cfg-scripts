@@ -99,9 +99,9 @@ parameter_defaults:
     ZaqarWebSocketPublic: {protocol: 'wss', port: '3000', host: 'CLOUDNAME'}
     ZaqarWebSocketUIConfig: {protocol: 'wss', port: '443', host: 'IP_ADDRESS'}
     # ADDED FOR TRILIO
-    TrilioDatamoverAdmin: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
-    TrilioDatamoverInternal: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
-    TrilioDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
-    TrilioWlmAdmin: {protocol: 'http', port: '8781', host: 'IP_ADDRESS'}
-    TrilioWlmInternal: {protocol: 'http', port: '8781', host: 'IP_ADDRESS'}
-    TrilioWlmPublic: {protocol: 'https', port: '13781', host: 'CLOUDNAME'}
+    TriliovaultDatamoverAdmin: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
+    TriliovaultDatamoverInternal: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
+    TriliovaultDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
+    TriliovaultWlmAdmin: {protocol: 'http', port: '8781', host: 'IP_ADDRESS'}
+    TriliovaultWlmInternal: {protocol: 'http', port: '8781', host: 'IP_ADDRESS'}
+    TriliovaultWlmPublic: {protocol: 'https', port: '13781', host: 'CLOUDNAME'}

@@ -1,11 +1,11 @@
 resource_registry:
-  OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
-  OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
-  OS::TripleO::Services::TrilioWlmApi: ../services/trilio-wlm-api.yaml
-  OS::TripleO::Services::TrilioWlmWorkloads: ../services/trilio-wlm-workloads.yaml
-  OS::TripleO::Services::TrilioWlmScheduler: ../services/trilio-wlm-scheduler.yaml
-  OS::TripleO::Services::TrilioWlmCron: ../services/trilio-wlm-cron.yaml
-  OS::TripleO::Services::TrilioHorizon: ../services/trilio-horizon.yaml
+  OS::TripleO::Services::TrilioDatamover: ../services/triliovault-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: ../services/triliovault-datamover-api.yaml
+  OS::TripleO::Services::TrilioWlmApi: ../services/triliovault-wlm-api.yaml
+  OS::TripleO::Services::TrilioWlmWorkloads: ../services/triliovault-wlm-workloads.yaml
+  OS::TripleO::Services::TrilioWlmScheduler: ../services/triliovault-wlm-scheduler.yaml
+  OS::TripleO::Services::TrilioWlmCron: ../services/triliovault-wlm-cron.yaml
+  OS::TripleO::Services::TrilioHorizon: ../services/triliovault-horizon.yaml
   # NOTE: If there are addition customizations to the endpoint map (e.g. for
   # other integratiosn), this will need to be regenerated.
   OS::TripleO::EndpointMap: endpoint_map.yaml
@@ -34,16 +34,53 @@ parameter_defaults:
    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
    DmApiWorkers: 16
 
+   ## Cloud Admin user details
+   CloudAdminUserName: "admin"
+   CloudAdminProjectName: "admin"
+   CloudAdminDomainName: "default"
+
+   ## Project name in which triliovault keystone resources will get created
+   TriliovaultKeystoneServiceProjectName: 'service'
+   TriliovaultKeystoneUserDomainName: "Default"
+   TriliovaultKeystoneUserRoleName: "admin"
+
+   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+   ## Valid values: internal, public, admin
+   Interface: "internal"
+   
+   ## Provide any role name as your preference. 
+   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+   TrusteeRole: "creator"
+
+############################### DONE #####################################################
+
+
+
+
+
+
+   
+############### DO NOT EDIT FOLLOWING PARAMETERS.######################################################
+   ## Project name in which triliovault keystone resources will get created
+   
    ## Triliovault Wlm Api Service port
    WlmApiPort: "8781"
    WlmApiSslPort: "13781"
+   WlmApiPort: "8784"
+   WlmApiSslPort: "13784"
 
-   ## TrilioVault Wlm Service's Database User Details
-   WlmApiDbUserName: "workloadmgr"                              ## Do Not Change this parameter
+   ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
+   WlmApiDbUserName: "workloadmgr"
+   WlmApiDbName: "workloadmgr"
+   WlmApiKeystoneUserName: "workloadmgr"
+   WlmApiKeystoneServiceName: "workloadmgr"
+   WlmApiKeystoneServiceType: "workloads"
+   ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 
-   ## TrilioVault Datamover Service's Database User Details
-   WlmApiDbUserName: "dmapi"                               ## Do Not Change this parameter
-
-   ## TrilioVault Wlm rabbitmq details
-   WlmOsloMessagingRpcUserName: "workloadmgr"
-   
+   ## TrilioVault Datamover Service's Database, Keystone and rabbitmq user names
+   DatamoverApiDbUserName: "dmapi"
+   DatamoverApiDbName: "dmapi"
+   DatamoverApiKeystoneUserName: "dmapi"
+   DatamoverApiKeystoneServiceName: "dmapi"
+   DatamoverApiKeystoneServiceType: "datamover"
+###################################################################
