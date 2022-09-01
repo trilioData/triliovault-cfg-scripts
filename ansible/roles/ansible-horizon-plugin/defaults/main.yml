@@ -1,4 +1,6 @@
+## Trilio repo file path
 trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
 
 ## Triliovault Debian Repo string
 TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"

@@ -7,20 +7,12 @@
   service: name=tvault-contego state=stopped enabled=no
   ignore_errors: yes
 
-- name: uninstall tvault-contego deb package when using python2
-  apt:
-     name:
-        - s3-fuse-plugin
-        - tvault-contego
-     state: absent
-     allow_unauthenticated: yes
-     purge: yes
-  when: PYTHON_VERSION=="python2"
-  
-- name: uninstall tvault-contego deb package when using python3
+- name: Uninstall tvault-contego and python3-s3-fuse-plugin packages
   apt:
      name:
        - python3-s3-fuse-plugin
+       - python3-workloadmgrclient
+       - python3-contegoclient
        - python3-tvault-contego
      state: absent
      allow_unauthenticated: yes

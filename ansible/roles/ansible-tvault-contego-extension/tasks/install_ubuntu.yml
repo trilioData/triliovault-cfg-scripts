@@ -55,14 +55,15 @@
 - name: update cache
   command: apt-get update
 
-- name: Install python3-tvault-contego pckg
+- name: Install python3-tvault-contego packages
   package:
     name: python3-tvault-contego
     state: latest
 
-- name: Install python3-s3-fuse-plugin pckg
+- name: Install python3-s3-fuse-plugin packages
   package:
-    name: python3-s3-fuse-plugin
+    name: 
+      - python3-s3-fuse-plugin
+      - python3-workloadmgrclient
+      - python3-contegoclient
     state: latest
-  when:
-    - NFS == False
