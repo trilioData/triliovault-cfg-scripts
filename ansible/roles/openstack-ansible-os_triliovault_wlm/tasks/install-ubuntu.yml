@@ -60,17 +60,14 @@
       - "python3-glanceclient"
     state: latest
 
-- name: Install workloadmgr pckg
+- name: Install workloadmgr and python3-s3-fuse-plugin packages
   package:
-    name: workloadmgr
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient
+      - python3-contegoclient
+      - python3-s3-fuse-plugin 
     state: latest
-
-- name: Install s3fuse pckg when backup target is S3
-  package: 
-    name: python3-s3-fuse-plugin
-    state: latest
-  when: 
-    - NFS == False
 
 - import_tasks: create_conf_dirs.yml
 

@@ -178,6 +178,6 @@ datamover_service_file_path: /lib/systemd/system/tvault-datamover-api.service
 
 datamover_log_dir: /var/log/triliovault
 
-trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
+trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
 
 
