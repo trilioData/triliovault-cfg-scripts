@@ -64,6 +64,4 @@
   package:
     name: 
       - python3-s3-fuse-plugin
-      - python3-workloadmgrclient
-      - python3-contegoclient
     state: latest

@@ -164,7 +164,7 @@
 - name: Start Workloadmgr services
   service:
     name: "{{ item }}"
-    state: started
+    state: restarted
     enabled: yes
   with_items:
     - wlm-api

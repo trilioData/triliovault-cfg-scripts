@@ -65,6 +65,12 @@
       - python3-tvault-contego
     state: latest
 
+- name: Install python3-s3-fuse-plugin packages
+  package:
+    name:
+      - python3-s3-fuse-plugin
+    state: latest
+
 - name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
   package:
     name: centos-release-openstack-{{OPENSTACK_DIST | lower}}

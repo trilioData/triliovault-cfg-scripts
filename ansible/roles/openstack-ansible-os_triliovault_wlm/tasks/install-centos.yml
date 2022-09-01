@@ -180,14 +180,14 @@
 - name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
-    state: started
+    state: restarted
     enabled: yes
   when: NFS == False
 
 - name: service Start Workloadmgr services
   service:
     name: "{{ item }}"
-    state: started
+    state: restarted
     enabled: yes
   with_items:
     - wlm-api
