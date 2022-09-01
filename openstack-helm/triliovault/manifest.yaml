@@ -89,7 +89,6 @@ bootstrap:
 conf:
   datamover:
     DEFAULT:
-      debug: false
       log_config_append: /etc/triliovault-datamover/logging.conf
       max_commit_pending: 3
       max_uploads_pending: 3
@@ -97,7 +96,6 @@ conf:
       vault_data_directory_old: /var/triliovault
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: /etc/triliovault-datamover/s3-cert.pem
-      verbose: true
     ceph:
       keyring_ext: .cinder.keyring
     cinder:
@@ -124,7 +122,6 @@ conf:
   datamover_api:
     DEFAULT:
       bindir: /usr/bin
-      debug: false
       dmapi_enabled_apis: dmapi
       dmapi_enabled_ssl_apis: ""
       dmapi_listen_port: 8784
@@ -261,7 +258,6 @@ conf:
       vault_s3_ssl_cert: /etc/triliovault-wlm/s3-cert.pem
       vault_storage_nfs_export: TrilioVault
       vault_storage_type: s3
-      verbose: true
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault/rootwrap.conf
         privsep-helper
@@ -272,7 +268,6 @@ conf:
       cloud_admin_role: admin
       compute_driver: libvirt.LibvirtDriver
       config_status: configured
-      debug: false
       domain_name: null
       glance_api_version: 2
       global_job_scheduler_override: false
@@ -287,13 +282,11 @@ conf:
       state_path: /opt/stack/data/workloadmgr
       triliovault_hostnames: ""
       trustee_role: creater
-      use_syslog: false
       vault_data_directory: /var/triliovault-mounts
       vault_data_directory_old: /var/triliovault
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: /etc/triliovault/s3-cert.pem
       vault_storage_das_device: none
-      verbose: true
       workloads_workers: 4
     alembic:
       script_location: /usr/share/workloadmgr/migrate_repo
