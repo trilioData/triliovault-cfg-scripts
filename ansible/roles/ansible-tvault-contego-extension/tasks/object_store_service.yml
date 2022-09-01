@@ -5,26 +5,6 @@
 
 - debug: msg="external s3:{{TVAULT_CONTEGO_EXT_S3}}" verbosity={{verbosity_level}}
 
-- name: Install packages on compute node | centos-release-openstack-{{OPENSTACK_DIST}}
-  package:
-    name:
-      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
-    state: latest
-  when: >
-    (ansible_distribution_major_version>="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
-    (ansible_distribution_major_version>="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
-
-- name: Install python3-s3fuse-plugin on CentOS8/RedHat-8
-  package:
-    name:
-      - python3-s3fuse-plugin
-      - python3-workloadmgrclient
-      - python3-contegoclient
-    state: latest
-  when: >
-    (ansible_distribution_major_version>="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
-    (ansible_distribution_major_version>="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
-
 - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
   file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
   when:

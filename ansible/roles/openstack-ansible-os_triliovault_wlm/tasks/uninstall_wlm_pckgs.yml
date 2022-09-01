@@ -43,8 +43,6 @@
   package:
     name: 
       - workloadmgr
-      - python3-workloadmgrclient
-      - python3-contegoclient
     state: absent
 
 - name: Remove files from {{ triliovault_cfg_dir }}  dir
