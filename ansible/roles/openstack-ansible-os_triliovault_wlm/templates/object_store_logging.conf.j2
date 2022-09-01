@@ -13,7 +13,7 @@ handlers = s3fuse,stdout
 
 [handler_s3fuse]
 class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
+args = ('{{ OBJECT_STORE_LOG_FILE }}','a',25000000,20)
 formatter = advanced-utc
 
 [handler_stderr]
