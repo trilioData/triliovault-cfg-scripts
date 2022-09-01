@@ -40,11 +40,8 @@ vault_s3_ssl_cert =
 vault_data_directory_old = /var/triliovault
 vault_data_directory = {{ triliovault_mnt_dir }}
 
-log_file = {{ OBJECT_STORE_LOG_FILE }}
-debug = False
 log_config_append = {{ OBJECT_STORE_LOG_CFG }}
 
-verbose = True
 vault_s3_max_pool_connections = 500
 
 [s3fuse_sys_admin]

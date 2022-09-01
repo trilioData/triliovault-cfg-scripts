@@ -1,9 +1,6 @@
 [DEFAULT]
 log_config_append = {{ wlm_log_cfg }}
 
-use_syslog = False
-use_stderr = False
-
 triliovault_hostnames = {{container_address}}
 config_status = configured
 
@@ -15,7 +12,6 @@ api_paste_config = {{ wlm_api_paste }}
 
 sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
-verbose = True
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
 

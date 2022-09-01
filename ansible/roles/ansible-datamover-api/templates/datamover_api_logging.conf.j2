@@ -1,25 +1,26 @@
+
 [loggers]
-keys = root
+keys = root,dmapi
 
 [handlers]
-keys = dmapi,dmapierr,stdout,stderr,null
+keys = dmapi,stdout,stderr,null
 
 [formatters]
-keys = default,advanced
+keys = default,advanced,default-utc,advanced-utc
 
 [logger_root]
 level = INFO
+handlers = stdout
+
+[logger_dmapi]
+level = INFO
 handlers = dmapi
+qualname = dmapi
 
 [handler_dmapi]
 class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/dmapi.log','a',25000000,20)
-formatter = default
-
-[handler_dmapierr]
-class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/dmapi-error.log','a',25000000,20)
-formatter = advanced
+args = ('/var/log/triliovault/triliovault-datamover-api.log','a',25000000,20)
+formatter = advanced-utc
 
 [handler_stderr]
 class = StreamHandler
@@ -36,12 +37,21 @@ class = NullHandler
 formatter = default
 args = ()
 
-[formatter_legacyworkloadmgr]
-class = workloadmgr.openstack.common.log.LegacyFormatter
+
+[formatter_default-utc]
+class = dmapi.common.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = dmapi.common.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
 [formatter_default]
 format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
 [formatter_advanced]
 format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z

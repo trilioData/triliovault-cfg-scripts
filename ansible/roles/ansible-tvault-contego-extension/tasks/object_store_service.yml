@@ -97,6 +97,15 @@
   tags:
     - update_cfg
 
+- name: populate object store logging config parameters
+  template:
+    src: object_store_logging.conf.j2
+    dest: "{{TRILIOVAULT_OBJECT_STORE_LOG_CONF}}"
+    owner: root
+    group: nova
+    mode: '755'
+  tags:
+    - update_cfg
 - name: systemd to reread configs
   systemd:
     daemon_reload: yes
