@@ -25,8 +25,5 @@ vault_data_directory = {{TRILIOVAULT_MNT_DIR}}
 
 log_config_append = {{ DATAMOVER_LOG_CONF }}
 
-debug = False
-verbose = True
-
 [s3fuse_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}
