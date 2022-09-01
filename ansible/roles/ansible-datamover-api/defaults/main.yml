@@ -68,7 +68,7 @@ trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
 trilio_yum_repo_file_path: /etc/yum.repos.d/triliovault.repo
 
 DMAPI_LOG_DIR: "/var/log/triliovault"
-DMAPI_LOG_FILE: "{{ DMAPI_LOG_DIR }}/dmapi.log"
+DMAPI_LOG_FILE: "{{ DMAPI_LOG_DIR }}/triliovault-datamover-api.log"
 DMAPI_LOG_CONF: "/etc/triliovault-datamover/datamover_api_logging.conf"
 
 

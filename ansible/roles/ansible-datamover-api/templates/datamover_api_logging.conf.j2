@@ -19,7 +19,7 @@ qualname = dmapi
 
 [handler_dmapi]
 class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-datamover-api.log','a',25000000,20)
+args = ('{{ DMAPI_LOG_FILE }}','a',25000000,20)
 formatter = advanced-utc
 
 [handler_stderr]
