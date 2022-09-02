@@ -29,8 +29,6 @@
   ignore_errors: True
   when: >
     (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
-    (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat") or
-    (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
     (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
 - name: Remove trilio apt repo
@@ -52,14 +50,17 @@
     name: 
       - python3-s3-fuse-plugin
     state: absent
-  when: NFS == False
+  when: >
+    (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
+    (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat") 
 
 - name: Uninstall python3-s3fuse-plugin packages
   package:
     name: 
       - python3-s3fuse-plugin
     state: absent
-  when: NFS == True
+  when: >
+    (ansible_distribution_major_version>="20.04" and ansible_distribution=="Ubuntu")
 
 - name: Remove files from {{ triliovault_cfg_dir }}  dir
   file:
