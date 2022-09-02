@@ -62,18 +62,20 @@ multi_ip_nfs_enabled: False
 ##True/False
 S3: False
 
+#######################################
+#### S3 Specific Backend Configurations
+#######################################
 VAULT_S3_ACCESS_KEY: sample_s3_access_key
 VAULT_S3_SECRET_ACCESS_KEY: sample_s3_secret_access_key
-
 VAULT_S3_REGION_NAME: sample_s3_region_name
 VAULT_S3_BUCKET: sample_s3_bucket
 
-VAULT_S3_SIGNATURE_VERSION:
-VAULT_S3_AUTH_VERSION:
+## Do not change below 2 params if not sure
+#VAULT_S3_SIGNATURE_VERSION: default
+#VAULT_S3_AUTH_VERSION: DEFAULT
 
-#### S3 Specific Backend Configurations
 #### Provide one of follwoing two values in s3_type variable, string's case should be match
-#Amazon/Other_S3_Compatible
+# Amazon/Other_S3_Compatible
 s3_type: sample_s3_type
 
 #### Required field(s) for all S3 backends except Amazon
