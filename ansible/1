@@ -1,0 +1,177 @@
+---
+
+- name: Copy repo file
+  template:
+     src: triliovault.list
+     dest: "{{ trilio_apt_repo_file_path }}"
+
+- name: update cache
+  command: apt-get update
+
+- name: Install python-dev libcurl4-openssl-dev libssl-dev m2crypto packages
+  package:
+    update_cache: yes
+    name:
+      - "python-dev" 
+      - "libcurl4-openssl-dev"
+      - "libssl-dev"
+      - "python3-m2crypto"
+    state: latest
+
+- name: Install libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev packages
+  package:
+    update_cache: yes
+    name:
+      - "libmysqlclient-dev"
+      - "qemu-utils"
+      - "libxml2-dev"
+      - "libxslt-dev"
+    state: latest
+
+- name: Install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system packages
+  package:
+    update_cache: yes
+    name:
+      - "nfs-common"
+      - "swig"
+      - "python3-guestfs"
+      - "libguestfs-tools"
+      - "libvirt-daemon-system"
+      - "python3.8-venv"
+    state: latest
+
+- name: Install & upgrade pip
+  apt:
+    name: pip
+    state: latest
+
+- name: Install jinja2
+  pip:
+    name: jinja2
+    state: latest
+
+- import_tasks: update_nova_uid_gid.yml
+
+- name: Install nova-common python3-neutronclient, python3-glanceclient
+  package:
+    name: 
+      - "nova-common"
+      - "python3-neutronclient"
+      - "python3-glanceclient"
+    state: latest
+
+- name: Install workloadmgr and python3-s3-fuse-plugin packages
+  package:
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient
+      - python3-contegoclient
+      - python3-s3-fuse-plugin 
+    state: latest
+
+- import_tasks: create_conf_dirs.yml
+
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != "" 
+
+- name: Create wlm_logging.conf
+  template:
+     src: wlm_logging.conf.j2
+     dest: "{{ wlm_log_cfg }}"
+  tags:
+    - update_cfg
+
+- name: Create object_store_logging.conf
+  template:
+     src: object_store_logging.conf.j2
+     dest: "{{ OBJECT_STORE_LOG_CFG }}"
+  when: 
+    - NFS == False
+  tags:
+    - update_cfg
+
+- import_tasks: get_cloud_details.yml
+
+- name: Copy triliovault-wlm.conf
+  template:
+     src: triliovault-wlm.conf.j2
+     dest: "{{ wlm_cfg }}"
+  tags:
+    - update_cfg
+
+- name: Copy workloadmgr api-paste.ini 
+  template:
+     src: api-paste.ini.j2
+     dest: "{{ wlm_api_paste }}"
+  tags:
+    - update_cfg
+
+- name: Copy triliovault-object-store.conf
+  template:
+     src: triliovault-object-store.conf.j2
+     dest: "{{ triliovault_obj_sotre_cfg }}"
+  when: NFS == False
+  tags:
+    - update_cfg
+
+- name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+  file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
+
+- name: Check {{VAULT_S3_SSL_CERT}} is present OR not
+  stat: path="{{VAULT_S3_SSL_CERT}}"
+  register: tvault_ssl_cert_output
+  delegate_to: localhost
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
+
+- name: Deploy user provided S3-Cert {{VAULT_S3_SSL_CERT}}
+  copy:
+    src: "{{VAULT_S3_SSL_CERT}}"
+    dest: "{{WLM_S3_SSL_CERT_PATH}}"
+    owner: nova
+    group: nova
+    mode: '640'
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+    - tvault_ssl_cert_output.stat.exists == true   
+  tags:
+    - update_cfg
+
+- import_tasks: triliovault_db_sync.yml
+
+- name: Start triliovault-object-store service
+  service:
+    name: tvault-object-store.service
+    state: started
+    enabled: yes
+  when: NFS == False
+  tags:
+    - update_cfg
+
+- name: Start Workloadmgr services
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  with_items:
+    - wlm-api
+    - wlm-workloads
+    - wlm-scheduler
+    - wlm-cron
+  tags:
+    - update_cfg
+
+
