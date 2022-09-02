@@ -98,7 +98,11 @@ vault_s3_support_empty_dir = False
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
+{% if VAULT_S3_AUTH_VERSION is defined and VAULT_S3_AUTH_VERSION != "" %}
 vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+{% else %}
+vault_s3_auth_version = DEFAULT
+{% endif %}
 vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
 vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
 
@@ -106,7 +110,12 @@ vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
 vault_s3_bucket = {{ VAULT_S3_BUCKET }}
 vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
 
-vault_s3_signature_version = {{VAULT_S3_SIGNATURE_VERSION}}
+{% if VAULT_S3_SIGNATURE_VERSION is defined and VAULT_S3_SIGNATURE_VERSION != "" %}
+vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
+{% else %}
+vault_s3_signature_version = default
+{% endif %}
+
 vault_s3_ssl = {{VAULT_S3_SECURE}}
 
 vault_enable_threadpool = True
@@ -191,7 +200,7 @@ script_location = /usr/share/workloadmgr/migrate_repo
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 
 {% endif %}
-sqlalchemy.url = mysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
+sqlalchemy.url = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 
 [filesearch]
