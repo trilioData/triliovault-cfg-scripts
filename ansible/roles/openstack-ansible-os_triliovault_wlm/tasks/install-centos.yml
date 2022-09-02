@@ -85,17 +85,14 @@
 
 - import_tasks: update_nova_uid_gid.yml
 
-- name: Install workloadmgr pckg
+- name: Install workloadmgr and python3-s3fuse-plugin packages
   package:
-    name: workloadmgr
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient
+      - python3-contegoclient
+      - python3-s3fuse-plugin
     state: latest
-
-- name: Install python3-s3fuse-plugin
-  package:
-    name: python3-s3fuse-plugin
-    state: latest
-  when: 
-    - NFS == False
 
 - import_tasks: create_conf_dirs.yml
 
@@ -183,14 +180,14 @@
 - name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
-    state: started
+    state: restarted
     enabled: yes
   when: NFS == False
 
 - name: service Start Workloadmgr services
   service:
     name: "{{ item }}"
-    state: started
+    state: restarted
     enabled: yes
   with_items:
     - wlm-api

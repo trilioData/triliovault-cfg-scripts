@@ -59,19 +59,17 @@
     state: latest
   register: inst_pckg
 
-- name: install contego extension packages when using python2
+- name: Install tvault-contego-extension packages
   package:
-     name:
-        - tvault-contego
-     state: latest
-  when: PYTHON_VERSION=="python2"
-  
-- name: install contego extension packages when using python3
+    name:
+      - python3-tvault-contego
+    state: latest
+
+- name: Install python3-s3-fuse-plugin packages
   package:
-     name:
-        - python3-tvault-contego
-     state: latest
-  when: PYTHON_VERSION=="python3"
+    name:
+      - python3-s3-fuse-plugin
+    state: latest
 
 - name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
   package:
