@@ -43,7 +43,23 @@
   package:
     name: 
       - workloadmgr
+      - python3-workloadmgrclient
+      - python3-contegoclient
     state: absent
+
+- name: Uninstall python3-s3-fuse-plugin packages
+  package:
+    name: 
+      - python3-s3-fuse-plugin
+    state: absent
+  when: NFS == False
+
+- name: Uninstall python3-s3fuse-plugin packages
+  package:
+    name: 
+      - python3-s3fuse-plugin
+    state: absent
+  when: NFS == True
 
 - name: Remove files from {{ triliovault_cfg_dir }}  dir
   file:
