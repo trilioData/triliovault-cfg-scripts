@@ -3,7 +3,7 @@ heat_template_version: rocky
 description: >
   Trilio Datamover Api containerized service
 parameters:
-  DockerTrilioDmApiImage:
+  ContainerTriliovaultDatamoverApiImage:
     default: ''
     description: The location of Trilio Datamover container image
     type: string
@@ -257,7 +257,7 @@ outputs:
             - "\n"
             - - "include ::trilio::dmapi"
               - {get_attr: [MySQLClient, role_data, step_config]}        
-        config_image: {get_param: DockerTrilioDmApiImage}
+        config_image: {get_param: ContainerTriliovaultDatamoverApiImage}
       kolla_config:
         /var/lib/kolla/config_files/trilio_dmapi.json:
           command: /usr/bin/python3 /usr/bin/dmapi-api
@@ -303,7 +303,7 @@ outputs:
       docker_config:
         step_2:
           trilio_datamover_api_init_log:
-            image: &trilio_datamover_api_image {get_param: DockerTrilioDmApiImage}
+            image: &trilio_datamover_api_image {get_param: ContainerTriliovaultDatamoverApiImage}
             start_order: 0
             net: none
             user: root
@@ -329,7 +329,7 @@ outputs:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
           trilio_dmapi:
-            image: {get_param: DockerTrilioDmApiImage}
+            image: {get_param: ContainerTriliovaultDatamoverApiImage}
             net: host
             privileged: true
             user: dmapi
