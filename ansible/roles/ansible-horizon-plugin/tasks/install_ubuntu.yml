@@ -23,8 +23,8 @@
 
 - name: Copy repo file
   template:
-     src: triliovault.list
-     dest: "{{ trilio_apt_repo_file_path }}"
+    src: triliovault.list
+    dest: "{{ trilio_apt_repo_file_path }}"
 
 - name: update cache
   command: apt-get update

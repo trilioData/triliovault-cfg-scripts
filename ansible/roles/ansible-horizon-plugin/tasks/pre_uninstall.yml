@@ -8,12 +8,12 @@
     - tvault_admin_panel.py
     - tvault_settings_panel.py
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: remove tvault_filter.py file from openstack_dashboard diretory
   file: path="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py" state=absent
   notify:
-     - restart webserver
+    - restart webserver
 
 - block:
     - copy: src="{{automation_home}}/files/sync_static1.py" dest="/tmp/sync_static1.py"
