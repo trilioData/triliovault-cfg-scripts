@@ -438,7 +438,7 @@ outputs:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
                   - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
-                  - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm-api/:/etc/triliovault-wlm-api/:ro
+                  - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
             command: "/bin/bash -c alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head"
             environment:
