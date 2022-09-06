@@ -102,6 +102,6 @@ parameter_defaults:
     TriliovaultDatamoverAdmin: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
     TriliovaultDatamoverInternal: {protocol: 'https', port: '8784', host: 'CLOUDNAME'}
     TriliovaultDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
-    TriliovaultDatamoverAdmin: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
-    TriliovaultDatamoverInternal: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
-    TriliovaultDatamoverPublic: {protocol: 'https', port: '13781', host: 'CLOUDNAME'}
+    TriliovaultWlmAdmin: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
+    TriliovaultWlmInternal: {protocol: 'https', port: '8781', host: 'CLOUDNAME'}
+    TriliovaultWlmPublic: {protocol: 'https', port: '13781', host: 'CLOUDNAME'}
