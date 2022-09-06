@@ -1,31 +1,16 @@
 ---
 
-- name: uninstall tvault-horizon-plugin deb packages when using python2
-  apt:
-     name: "{{ horizon_packages }}"
-     state: absent
-     allow_unauthenticated: yes
-     purge: yes
-  vars:
-    horizon_packages:
-    - tvault-horizon-plugin
-    - python-workloadmgrclient
-    - python-contegoclient
-  notify:
-      - restart webserver
-  when: PYTHON_VERSION=="python2"
-  
 - name: uninstall tvault-horizon-plugin deb packages when using python3
   apt:
-     name: "{{ horizon_packages }}"
-     state: absent
-     allow_unauthenticated: yes
-     purge: yes
+    name: "{{ horizon_packages }}"
+    state: absent
+    allow_unauthenticated: yes
+    purge: yes
   vars:
     horizon_packages:
     - python3-tvault-horizon-plugin
     - python3-workloadmgrclient
     - python3-contegoclient
   notify:
-      - restart webserver
+    - restart webserver
   when: PYTHON_VERSION=="python3"

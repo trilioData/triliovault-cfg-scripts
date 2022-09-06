@@ -10,8 +10,8 @@
 
 - name: Setup trilio yum repo
   template:
-     src: triliovault.repo
-     dest: "{{trilio_yum_repo_file_path}}"
+    src: triliovault.repo
+    dest: "{{trilio_yum_repo_file_path}}"
 
 - name: Reload Daemon
   shell: systemctl daemon-reload
@@ -50,8 +50,8 @@
 
 - name: Create datamover_logging.conf file
   template:
-     src: datamover_logging.conf.j2
-     dest: "{{ DATAMOVER_LOG_CONF }}"
+    src: datamover_logging.conf.j2
+    dest: "{{ DATAMOVER_LOG_CONF }}"
 
 - name: Install openstack-{{OPENSTACK_DIST}} repo if is not installed
   package:
@@ -65,10 +65,10 @@
       - python3-tvault-contego
     state: latest
 
-- name: Install python3-s3-fuse-plugin packages
+- name: Install python3-s3fuse-plugin packages
   package:
     name:
-      - python3-s3-fuse-plugin
+      - python3-s3fuse-plugin
     state: latest
 
 - name: Remove recently installed openstack-{{OPENSTACK_DIST}} repo
