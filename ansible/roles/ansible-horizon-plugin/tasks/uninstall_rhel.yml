@@ -3,33 +3,24 @@
 - name: Remove trilio yum repo
   file: path="{{trilio_yum_repo_file_path}}" state=absent
 
-- name: uninstall tvault horizon plugin packages when using python2
-  yum:
-     name:
-        - tvault-horizon-plugin
-     state: absent
-  notify:
-     - restart webserver
-  when: PYTHON_VERSION=="python2"
-  
 - name: uninstall tvault horizon plugin packages when using python3 and ansible_distribution_major_version=="7"
-  yum:
-     name:
-        - python3-tvault-horizon-plugin
-        - python3-workloadmgrclient-el7
-        - python3-contegoclient-el7
-     state: absent
+  package:
+    name:
+      - python3-tvault-horizon-plugin
+      - python3-workloadmgrclient-el7
+      - python3-contegoclient-el7
+    state: absent
   notify:
-     - restart webserver
+    - restart webserver
   when: PYTHON_VERSION=="python3" and ansible_distribution_major_version=="7"
 
 - name: uninstall tvault horizon plugin packages when using python3 and ansible_distribution_major_version=="8"
-  yum:
-     name:
-        - python3-tvault-horizon-plugin-el8
-        - python3-workloadmgrclient-el8
-        - python3-contegoclient-el8
-     state: absent
+  package:
+    name:
+      - python3-tvault-horizon-plugin-el8
+      - python3-workloadmgrclient-el8
+      - python3-contegoclient-el8
+    state: absent
   notify:
-     - restart webserver
+    - restart webserver
   when: PYTHON_VERSION=="python3" and ansible_distribution_major_version=="8"
