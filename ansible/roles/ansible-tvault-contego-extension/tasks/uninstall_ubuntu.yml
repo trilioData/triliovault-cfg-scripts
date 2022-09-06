@@ -9,10 +9,11 @@
 
 - name: Uninstall tvault-contego and python3-s3-fuse-plugin packages
   apt:
-     name:
-       - python3-tvault-contego
-       - python3-s3-fuse-plugin
-     state: absent
-     allow_unauthenticated: yes
-     purge: yes
+    name:
+      - python3-tvault-contego
+      - python3-s3-fuse-plugin
+    state: absent
+    allow_unauthenticated: yes
+    purge: yes
+  ignore_errors: yes
   when: PYTHON_VERSION=="python3"
