@@ -11,7 +11,7 @@
   file: path="{{trilio_yum_repo_file_path}}" state=absent
 
 - name: uninstall tvault contego extension | python3-s3fuse-plugin | centos-release-openstack-{{OPENSTACK_DIST}} packages when using python3
-  pacakge:
+  package:
     name:
       - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
       - python3-s3fuse-plugin
