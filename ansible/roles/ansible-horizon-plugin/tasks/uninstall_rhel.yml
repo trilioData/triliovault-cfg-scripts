@@ -11,7 +11,7 @@
       - python3-contegoclient-el7
     state: absent
   notify:
-     - restart webserver
+    - restart webserver
   when: PYTHON_VERSION=="python3" and ansible_distribution_major_version=="7"
 
 - name: uninstall tvault horizon plugin packages when using python3 and ansible_distribution_major_version=="8"
@@ -22,5 +22,5 @@
       - python3-contegoclient-el8
     state: absent
   notify:
-     - restart webserver
+    - restart webserver
   when: PYTHON_VERSION=="python3" and ansible_distribution_major_version=="8"
