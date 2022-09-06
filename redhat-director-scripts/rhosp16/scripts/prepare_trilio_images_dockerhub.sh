@@ -34,7 +34,7 @@ openstack tripleo container image push --local ${undercloud_hostname}:8787/trili
 
 ## Prepare trilio wlm container
 podman pull docker.io/trilio/trilio-wlm:${tag}
-podman tag docker.io/trilio/trilio-wlm::${tag} ${undercloud_hostname}:8787/trilio/trilio-wlm:${tag}
+podman tag docker.io/trilio/trilio-wlm:${tag} ${undercloud_hostname}:8787/trilio/trilio-wlm:${tag}
 openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/trilio-wlm:${tag}
 
 ## Update image locations in env file
