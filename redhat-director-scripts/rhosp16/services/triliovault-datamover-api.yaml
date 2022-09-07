@@ -48,10 +48,6 @@ parameters:
     type: string
     default: 'regionOne'
     description: Keystone region for endpoint
-  TriliovaultDatamoverPassword:
-    description: The password for the trilio service and db account
-    type: string
-    hidden: true
   DatamoverApiKeystoneUserName:
     type: string
     default: 'dmapi'
@@ -173,13 +169,13 @@ outputs:
             admin: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
           users:
             dmapi:
-              password: {get_param: TriliovaultDatamoverPassword}
+              password: {get_param: DatamoverApiKeystoneUserPassword}
           region: {get_param: KeystoneRegion}
           service: 'datamover'      
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
-        trilio::dmapi::password: {get_param: TriliovaultDatamoverPassword}
+        trilio::dmapi::password: {get_param: DatamoverApiKeystoneUserPassword}
         trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::notification_driver: {get_param: NotificationDriver}
@@ -198,7 +194,7 @@ outputs:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: dmapi
-            password: {get_param: TriliovaultDatamoverPassword}
+            password: {get_param: DatamoverApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: 
               list_concat: 
@@ -239,11 +235,11 @@ outputs:
           trilio::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
           trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
           trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
-          trilio::keystone::auth::password: {get_param: TriliovaultDatamoverPassword}
+          trilio::keystone::auth::password: {get_param: DatamoverApiKeystoneUserPassword}
           trilio::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
           trilio::dmapi::db::mysql::user: {get_param: DatamoverApiDbUserName}
-          trilio::dmapi::db::mysql::password: {get_param: TriliovaultDatamoverPassword}
+          trilio::dmapi::db::mysql::password: {get_param: DatamoverApiDbUserPassword}
           trilio::dmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
           trilio::dmapi::db::mysql::dbname: {get_param: DatamoverApiDbName}
           trilio::dmapi::db::mysql::allowed_hosts:
