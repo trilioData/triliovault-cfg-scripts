@@ -286,7 +286,7 @@ outputs:
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
         trilio::wlmapi::interface: {get_param: Interface}
         trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
-        trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::password: {get_param: WlmApiKeystoneUserPassword}
         trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
