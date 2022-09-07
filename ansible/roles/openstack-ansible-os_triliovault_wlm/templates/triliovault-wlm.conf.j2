@@ -1,9 +1,6 @@
 [DEFAULT]
 log_config_append = {{ wlm_log_cfg }}
 
-use_syslog = False
-use_stderr = False
-
 triliovault_hostnames = {{container_address}}
 config_status = configured
 
@@ -15,7 +12,6 @@ api_paste_config = {{ wlm_api_paste }}
 
 sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
-verbose = True
 osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
 
 
@@ -79,50 +75,31 @@ vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
 vault_storage_nfs_options = {{ NFS_OPTIONS }}
 {% endif %}
 
-{% if S3|bool == True and s3_type == Amazon %}
+{% if S3|bool == True %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
-vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
 vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
 vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
-
 vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
 vault_s3_bucket = {{ VAULT_S3_BUCKET }}
-vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
 
-vault_enable_threadpool = True
-vault_s3_support_empty_dir = False
-
-{% elif S3|bool == True and s3_type == Other_S3_Compatible %}
-
-vault_storage_type = s3
-vault_storage_nfs_export = TrilioVault
-{% if VAULT_S3_AUTH_VERSION is defined and VAULT_S3_AUTH_VERSION != "" %}
-vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
-{% else %}
-vault_s3_auth_version = DEFAULT
-{% endif %}
-vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
-vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
-
-vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
-vault_s3_bucket = {{ VAULT_S3_BUCKET }}
-vault_s3_endpoint_url = {{VAULT_S3_ENDPOINT_URL}}
-
+{% if s3_type == Other_S3_Compatible %}
 {% if VAULT_S3_SIGNATURE_VERSION is defined and VAULT_S3_SIGNATURE_VERSION != "" %}
 vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
 {% else %}
 vault_s3_signature_version = default
 {% endif %}
-
+{% if VAULT_S3_AUTH_VERSION is defined and VAULT_S3_AUTH_VERSION != "" %}
+vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+{% else %}
+vault_s3_auth_version = DEFAULT
+{% endif %}
 vault_s3_ssl = {{VAULT_S3_SECURE}}
-
+{% endif %}
 vault_enable_threadpool = True
 vault_s3_support_empty_dir = False
-
 {% endif %}
-
 
 {% if VAULT_S3_SSL_CERT != "" and s3_type == Other_S3_Compatible %}
 vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
