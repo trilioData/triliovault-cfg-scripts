@@ -1,0 +1,386 @@
+heat_template_version: rocky
+
+description: >
+  Trilio Wlm Cron containerized service
+parameters:
+  ContainerTriliovaultWlmImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  WlmApiPort:
+    default: '8781'
+    description: Triliovault Wlm cron Service port for http
+    type: string
+  WlmApiSslPort:
+    default: '13781'
+    description: Triliovault Wlm cron Service Port for https
+    type: string
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  CloudAdminUserName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user name
+  CloudAdminProjectName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user project name
+  CloudAdminDomainName:
+    type: string
+    default: 'Default'
+    description: OpenStack Cloud admin user domain name
+  WlmApiKeystoneUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Keystone user name for TrilioVault Wlm Service
+  WlmApiKeystoneUserPassword:
+    description: The password for the triliovault wlm service's Keystone user
+    type: string
+    hidden: true
+  TriliovaultKeystoneServiceProjectName:
+    type: string
+    default: 'service'
+    description: Keystone project name for TrilioVault Wlm Service User
+  TriliovaultKeystoneUserRoleName:
+    description: The admin role name for TrilioVault wlm service user on service project
+    type: string
+    hidden: true
+  TriliovaultKeystoneUserDomainName:
+    type: string
+    default: 'Default'
+    description: Keyston Domain name for TrilioVault Wlm Service User
+  WlmApiKeystoneServiceName:
+    type: string
+    default: 'workloadmgr'
+    description: Keyston Catalog Service name for TrilioVault Wlm Service
+  WlmApiKeystoneServiceType:
+    type: string
+    default: 'workloads'
+    description: Keyston Catalog Service Type for TrilioVault Wlm Service
+  WlmApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserPassword:
+    description: The password for the Triliovault wlm service's Database user
+    type: string
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications. 
+  ContainerMysqlConfigImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string  
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  ConfigDebug:
+    default: false
+    description: Whether to run config management (e.g. Puppet) in debug mode.
+    type: boolean
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  ContainerCli:
+    type: string
+    default: 'podman'
+    description: CLI tool used to manage containers.
+    constraints:
+      - allowed_values: ['docker', 'podman']
+  KeystoneAuthUrl:
+    description: Keystone Auth Url
+    type: string
+  CephClientUserName:
+    default: openstack
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  BackupTargetType:
+    description:
+    type: string
+  NfsShares:
+    description: Provide comma separated list of NFS shares to use as backup target
+    type: string
+  NfsOptions:
+    default: 'nolock,soft,timeo=180,intr'
+    description: NFS mount otpions
+    type: string
+  S3Type:
+    description: S3 type like Amazon/Ceph/Minio
+    type: string
+  S3AccessKey:
+    description: S3 access key
+    type: string
+  S3SecretKey:
+    description: S3 secret key
+    type: string
+  S3RegionName:
+    description: S3 region name
+    type: string
+  S3Bucket:
+    description: S3 bucket name
+    type: string
+  S3EndpointUrl:
+    description: S3 endpoint url
+    type: string
+  S3SignatureVersion:
+    default: 'default'
+    description: S3 Signature Version
+    type: string
+  S3AuthVersion:
+    default: 'DEFAULT'
+    description: S3 Auth Version
+    type: string
+  S3SslEnabled:
+    default: false
+    description: S3 ssl enabled
+    type: boolean
+  S3SslCert:
+    description: S3 SSL certificate file path
+    type: string
+  CinderEnableRbdBackend:
+    default: false
+    description: Whether ceph cinder backend enabled or not
+    type: boolean	
+  CephClientUserName: 
+    default: 'openstack'	
+    description: Cinder ceph backend user name
+    type: string
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
+  NovaComputeOptVolumes:
+    default: []
+    description: list of optional vo
+    type: comma_delimited_list
+  TriliovaultMultiIPNfsMap:
+    default: {}
+    description: Mapping of triliovault node -> NFS share. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  MultiIPNfsEnabled:
+    default: false
+    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
+    type: boolean
+  TrusteeRole: 
+    default: 'creator'	
+    description: This is the role to allow using triliovault features 
+    type: string
+  ClusterCommonTag:
+    default: false
+    description: When set to false, a pacemaker service is configured
+                 to use a floating tag for its container image name,
+                 e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'. When
+                 set to true, the service uses a floating prefix as
+                 well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
+    type: boolean
+
+
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+  MySQLClient:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
+
+conditions:
+  puppet_debug_enabled: {get_param: ConfigDebug}
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
+  common_tag_enabled: {equals: [{get_param: ClusterCommonTag}, true]}
+
+
+outputs:
+  role_data:
+    description: Role data for the TrilioVault Wlm Service role.
+    value:
+      service_name: triliovault_wlm_cron
+      config_settings:
+        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
+        trilio::wlmapi::nfs_shares: {get_param: NfsShares}
+        trilio::wlmapi::nfs_options: {get_param: NfsOptions}
+        trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
+        trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
+        trilio::wlmapi::s3_type: {get_param: S3Type}
+        trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
+        trilio::wlmapi::s3_secretkey: {get_param: S3SecretKey}
+        trilio::wlmapi::s3_region_name: {get_param: S3RegionName}
+        trilio::wlmapi::s3_bucket: {get_param: S3Bucket}
+        trilio::wlmapi::s3_endpoint_url: {get_param: S3EndpointUrl}
+        trilio::wlmapi::s3_signature_version: {get_param: S3SignatureVersion}
+        trilio::wlmapi::s3_auth_version: {get_param: S3AuthVersion}
+        trilio::wlmapi::s3_ssl_enabled: {get_param: S3SslEnabled}
+        trilio::wlmapi::s3_ssl_cert: {get_param: S3SslCert}
+        trilio::wlmapi::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
+        trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
+        trilio::wlmapi::port: {get_param: WlmApiPort}
+        trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
+        trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_url: { get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] } 
+        trilio::wlmapi::keystone_public_auth_uri: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix] }
+        trilio::wlmapi::keystone_public_auth_url: { get_param: [EndpointMap, KeystonePublic, uri_no_suffix] } 
+        trilio::wlmapi::neutron_internal_auth_url: {get_param: [EndpointMap, NeutronInternal, uri]}
+        trilio::wlmapi::neutron_admin_auth_url: {get_param: [EndpointMap, NeutronAdmin, uri]}
+        trilio::wlmapi::neutron_public_auth_url: {get_param: [EndpointMap, NeutronPublic, uri]}
+        trilio::wlmapi::nova_internal_auth_url: {get_param: [EndpointMap, NovaInternal, uri]}
+        trilio::wlmapi::nova_admin_auth_url: {get_param: [EndpointMap, NovaAdmin, uri]}
+        trilio::wlmapi::nova_public_auth_url: {get_param: [EndpointMap, NovaPublic, uri]}
+        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderInternal, uri]}
+        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderAdmin, uri]}
+        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderPublic, uri]}
+        trilio::wlmapi::glance_internal_auth_url: {get_param: [EndpointMap, GlanceInternal, uri]}
+        trilio::wlmapi::glance_admin_auth_url: {get_param: [EndpointMap, GlanceAdmin, uri]}
+        trilio::wlmapi::glance_public_auth_url: {get_param: [EndpointMap, GlancePublic, uri]}
+        trilio::wlmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::wlmapi::enable_proxy_headers_parsing: true
+        trilio::wlmapi::project_name: 'service'
+        trilio::wlmapi::region_name: {get_param: KeystoneRegion}
+        trilio::wlmapi::user_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
+        trilio::wlmapi::project_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
+        trilio::wlmapi::trustee_role: { get_param: TrusteeRole }
+        trilio::wlmapi::auth_host_internal: {get_param: [EndpointMap, KeystoneInternal, host] }
+        trilio::wlmapi::auth_port_internal: {get_param: [EndpointMap, KeystoneInternal, port] }
+        trilio::wlmapi::auth_protocol_internal: {get_param: [EndpointMap, KeystoneInternal, protocol] }
+        trilio::wlmapi::auth_host_admin: {get_param: [EndpointMap, KeystoneAdmin, host] }
+        trilio::wlmapi::auth_port_admin: {get_param: [EndpointMap, KeystoneAdmin, port] }
+        trilio::wlmapi::auth_protocol_admin: {get_param: [EndpointMap, KeystoneAdmin, protocol] }
+        trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
+        trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
+        trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
+        trilio::wlmapi::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: {get_param: WlmApiDbUserName}
+            password: {get_param: WlmApiDbUserPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: 
+              list_concat: 
+                - "/"
+                - {get_param: WlmApiDbName}
+        trilio::wlmapi::my_ip:
+            str_replace:
+              template:
+                "%{hiera('$NETWORK')}"
+              params:
+                $NETWORK: {get_param: [ServiceNetMap, TriliovaultWlmApiNetwork]}                 
+      puppet_config:
+        config_volume: triliovaultwlmcron
+        puppet_tags: wlmapiconfig
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::trilio::wlmapi"
+              - {get_attr: [MySQLClient, role_data, step_config]}        
+        config_image: {get_param: ContainerTriliovaultWlmImage}
+      kolla_config:
+        /var/lib/kolla/config_files/triliovault_wlm_cron.json:
+          command: /tmp/start_triliovault_wlm_cron.sh
+          config_files:
+            - source: "/var/lib/kolla/config_files/triliovaultwlmcron/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/triliovault/
+              owner: nova:nova
+              recurse: true
+      docker_config:
+        step_2:
+          triliovault_wlm_cron_init_log:
+            image: &triliovault_wlm_cron_image {get_param: ContainerTriliovaultWlmImage}
+            start_order: 0
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
+            command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']  
+        step_5:
+          triliovault_wlm_cron:
+            image: {get_param: ContainerTriliovaultWlmImage}
+            net: host
+            privileged: true
+            user: nova
+            restart: always
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/triliovault_wlm_cron.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliovaultwlmcron/:/var/lib/kolla/config_files/triliovaultwlmcron:ro
+                  - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                    - []
+                - if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                    - []
+            environment:
+               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create triliovault wlm cron log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/triliovault-wlm-cron, 'setype': svirt_sandbox_file_t }
+      upgrade_tasks: []

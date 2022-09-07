@@ -85,17 +85,14 @@
 
 - import_tasks: update_nova_uid_gid.yml
 
-- name: Install workloadmgr pckg
+- name: Install workloadmgr and python3-s3fuse-plugin packages
   package:
-    name: workloadmgr
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient-el8
+      - python3-contegoclient-el8
+      - python3-s3fuse-plugin
     state: latest
-
-- name: Install python3-s3fuse-plugin
-  package:
-    name: python3-s3fuse-plugin
-    state: latest
-  when: 
-    - NFS == False
 
 - import_tasks: create_conf_dirs.yml
 
@@ -105,15 +102,15 @@
 
 - name: Create wlm_logging.conf
   template:
-     src: wlm_logging.conf.j2
-     dest: "{{ wlm_log_cfg }}"
+    src: wlm_logging.conf.j2
+    dest: "{{ wlm_log_cfg }}"
   tags:
     - update_cfg
 
 - name: Create object_store_logging.conf
   template:
-     src: object_store_logging.conf.j2
-     dest: "{{ OBJECT_STORE_LOG_CFG }}"
+    src: object_store_logging.conf.j2
+    dest: "{{ OBJECT_STORE_LOG_CFG }}"
   when: 
     - NFS == False
   tags:
@@ -123,22 +120,22 @@
 
 - name: Copy workloadmgr.conf
   template:
-     src: triliovault-wlm.conf.j2
-     dest: "{{ wlm_cfg }}"
+    src: triliovault-wlm.conf.j2
+    dest: "{{ wlm_cfg }}"
   tags:
     - update_cfg
 
 - name: Copy workloadmgr api-paste.ini 
   template:
-     src: api-paste.ini.j2
-     dest: "{{ wlm_api_paste }}"
+    src: api-paste.ini.j2
+    dest: "{{ wlm_api_paste }}"
   tags:
     - update_cfg
 
 - name: Copy triliovault-object-store.conf
   template:
-     src: triliovault-object-store.conf.j2
-     dest: "{{ triliovault_obj_sotre_cfg }}"
+    src: triliovault-object-store.conf.j2
+    dest: "{{ triliovault_obj_sotre_cfg }}"
   when: NFS == False
   tags:
     - update_cfg
@@ -183,14 +180,14 @@
 - name: Start triliovault-object-store service
   service:
     name: tvault-object-store.service
-    state: started
+    state: restarted
     enabled: yes
   when: NFS == False
 
 - name: service Start Workloadmgr services
   service:
     name: "{{ item }}"
-    state: started
+    state: restarted
     enabled: yes
   with_items:
     - wlm-api
