@@ -75,7 +75,7 @@ vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
 vault_storage_nfs_options = {{ NFS_OPTIONS }}
 {% endif %}
 
-{% if S3|bool == True %} and s3_type == Amazon %}
+{% if S3|bool == True %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
