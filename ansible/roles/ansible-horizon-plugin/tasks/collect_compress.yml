@@ -3,7 +3,7 @@
 - name: Collect static files for horizon
   shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }}  collectstatic --noinput"
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: compress the collected files
   shell: "{{virtual_env}} && nohup {{PYTHON_VERSION}} {{ MANAGE_FILE }} compress --force"
@@ -12,7 +12,7 @@
   register: compress_result
   until: compress_result.rc == 0
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: write content into destination file - sync_static.py
   template: src="sync_static.py" dest="/tmp/sync_static.py"
@@ -30,7 +30,7 @@
   args:
     chdir: "{{HORIZON_PATH}}"
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: remove temporary file - sync_static.py
   file: path=/tmp/sync_static.py state=absent

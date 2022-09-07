@@ -101,7 +101,6 @@ vault_enable_threadpool = True
 vault_s3_support_empty_dir = False
 {% endif %}
 
-
 {% if VAULT_S3_SSL_CERT != "" and s3_type == Other_S3_Compatible %}
 vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
 {% else %}
@@ -178,7 +177,7 @@ script_location = /usr/share/workloadmgr/migrate_repo
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 
 {% endif %}
-sqlalchemy.url = mysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
+sqlalchemy.url = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
 
 
 [filesearch]

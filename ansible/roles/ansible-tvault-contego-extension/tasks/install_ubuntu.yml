@@ -44,25 +44,24 @@
 
 - name: Create datamover_logging.conf file
   template:
-     src: datamover_logging.conf.j2
-     dest: "{{ DATAMOVER_LOG_CONF }}"
+    src: datamover_logging.conf.j2
+    dest: "{{ DATAMOVER_LOG_CONF }}"
 
 - name: Copy repo file
   template:
-     src: triliovault.list
-     dest: "{{ trilio_apt_repo_file_path }}"
+    src: triliovault.list
+    dest: "{{ trilio_apt_repo_file_path }}"
 
 - name: update cache
   command: apt-get update
 
-- name: Install python3-tvault-contego pckg
+- name: Install python3-tvault-contego packages
   package:
     name: python3-tvault-contego
     state: latest
 
-- name: Install python3-s3-fuse-plugin pckg
+- name: Install python3-s3-fuse-plugin packages
   package:
-    name: python3-s3-fuse-plugin
+    name: 
+      - python3-s3-fuse-plugin
     state: latest
-  when:
-    - NFS == False

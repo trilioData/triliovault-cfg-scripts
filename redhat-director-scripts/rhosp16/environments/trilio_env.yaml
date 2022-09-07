@@ -5,10 +5,7 @@ parameter_defaults:
    ## TrilioVault container Images.
    ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
    ContainerTriliovaultDatamoverApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
-   ContainerTriliovaultWlmApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
-   ContainerTriliovaultWlmWorkloadsImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
-   ContainerTriliovaultWlmSchedulerImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
-   ContainerTriliovaultWlmCronImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
+   ContainerTriliovaultWlmImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
 
    ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
    ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
