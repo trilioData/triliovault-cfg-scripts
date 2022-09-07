@@ -100,7 +100,7 @@
 - name: populate object store logging config parameters
   template:
     src: object_store_logging.conf.j2
-    dest: "{{TRILIOVAULT_OBJECT_STORE_LOG_CONF}}"
+    dest: "{{OBJECTSTORE_LOG_CONF}}"
     owner: root
     group: nova
     mode: '755'

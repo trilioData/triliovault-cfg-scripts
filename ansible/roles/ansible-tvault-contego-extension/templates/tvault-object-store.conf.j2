@@ -31,7 +31,7 @@ vault_s3_ssl_cert =
 vault_data_directory_old = {{TRILIOVAULT_MNT_DIR_OLD}}
 vault_data_directory = {{TRILIOVAULT_MNT_DIR}}
 
-log_config_append = {{ DATAMOVER_LOG_CONF }}
+log_config_append = {{ OBJECTSTORE_LOG_CONF }}
 
 [s3fuse_sys_admin]
 helper_command = sudo {{privsep_bin_path.stdout}}

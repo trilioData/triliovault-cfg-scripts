@@ -15,7 +15,7 @@ TRILIOVAULT_MNT_DIR_MODE: 0775
 DATAMOVER_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-datamover.log"
 DATAMOVER_LOG_CONF: "{{ TRILIOVAULT_CFG_DIR }}/datamover_logging.conf"
 
-TRILIOVAULT_OBJECT_STORE_LOG_CONF: "{{ TRILIOVAULT_OBJ_STR }}/object_store_logging.conf"
+OBJECTSTORE_LOG_CONF: "{{ TRILIOVAULT_OBJ_STR }}/object_store_logging.conf"
 OBJECTSTORE_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-object-store.log"
 
 ## Triliovault Debian Repo string
