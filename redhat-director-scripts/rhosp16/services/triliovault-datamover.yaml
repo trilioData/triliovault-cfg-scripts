@@ -96,8 +96,8 @@ parameters:
     default: 'openstack'	
     description: Cinder ceph backend user name
     type: string
-  TriliovaultDatamoverPassword:
-    description: The password for the trilio service and db account
+  DatamoverApiDbUserPassword:
+    description: The password for the trilio datamover db account
     type: string
     hidden: true
   EnableInternalTLS:
@@ -155,7 +155,7 @@ outputs:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
             username: dmapi
-            password: {get_param: TriliovaultDatamoverPassword}
+            password: {get_param: DatamoverApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
         trilio::contego::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
