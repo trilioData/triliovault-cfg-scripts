@@ -2,24 +2,19 @@
 keys = root
 
 [handlers]
-keys = s3fuse,s3fuseerr,stdout,stderr,null
+keys = s3fuse,stdout,stderr,null
 
 [formatters]
-keys = default,advanced
+keys = default,advanced,default-utc,advanced-utc
 
 [logger_root]
 level = INFO
-handlers = s3fuse
+handlers = s3fuse,stdout
 
 [handler_s3fuse]
-class = logging.handlers.RotatingFileHandler 
-args = ('/var/log/triliovault/tvault-object-store.log','a',25000000,20)
-formatter = default
-
-[handler_s3fuseerr]
 class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/tvault-object-store-error.log','a',25000000,20)
-formatter = advanced
+args = ('{{ OBJECT_STORE_LOG_FILE }}','a',25000000,20)
+formatter = advanced-utc
 
 [handler_stderr]
 class = StreamHandler
@@ -36,12 +31,22 @@ class = NullHandler
 formatter = default
 args = ()
 
-[formatter_legacyworkloadmgr]
-class = workloadmgr.openstack.common.log.LegacyFormatter
+
+[formatter_default-utc]
+class = s3fuse.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = s3fuse.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
 [formatter_default]
 format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
 [formatter_advanced]
 format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
