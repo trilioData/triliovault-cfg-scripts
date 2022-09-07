@@ -319,7 +319,7 @@ outputs:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
                   - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
-                  - /var/lib/config-data/triliodmapi/etc/dmapi/:/etc/dmapi/:ro
+                  - /var/lib/config-data/triliodmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
                   - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
