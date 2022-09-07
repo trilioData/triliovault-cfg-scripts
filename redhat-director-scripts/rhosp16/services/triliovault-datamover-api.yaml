@@ -196,10 +196,11 @@ outputs:
             username: dmapi
             password: {get_param: DatamoverApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
-            path: 
-              list_concat: 
-                - "/"
-                - {get_param: DatamoverApiDbName}
+            path:
+              str_replace:
+                template: "/$DATAMOVER_DB_NAME"
+                params:
+                  $DATAMOVER_DB_NAME: {get_param: DatamoverApiDbName}
         trilio::dmapi::my_ip:
             str_replace:
               template:
