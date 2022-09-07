@@ -27,10 +27,20 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
 
       file { '/etc/triliovault-wlm/':
           ensure => 'directory',
-      } ->
+      }->
+      file { '/etc/triliovault-object-store/':
+          ensure => 'directory',
+      }->
       file { "/etc/triliovault-wlm/triliovault-wlm.conf":
           ensure  => present,
           content => template('trilio/triliovault_wlm_conf.erb'),
+      }->
+      file { "/etc/triliovault-wlm/api-paste.ini":
+          ensure  => present,
+          content => template('trilio/api_paste_ini.erb'),
+      }->
+      file { "/etc/triliovault-object-store/triliovault-object-store.conf":
+          ensure  => present,
+          content => template('trilio/triliovault_object_store_conf.erb'),
       }
-
 }

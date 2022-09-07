@@ -26,7 +26,10 @@ class trilio::tripleo::keystone (
 
   if $manage_endpoint {
     if hiera('trilio_datamover_api_enabled', false) {
-      include ::trilio::keystone::auth
+      include ::trilio::dmapi::keystone::auth
+    }
+    if hiera('trilio_wlm_api_enabled', false) {
+      include ::trilio::wlmapi::keystone::auth
     }
   }
 }

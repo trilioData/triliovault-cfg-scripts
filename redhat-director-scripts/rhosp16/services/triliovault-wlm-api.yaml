@@ -33,6 +33,10 @@ parameters:
   DefaultPasswords:
     default: {}
     type: json
+  Interface:
+    default: 'internal'
+    description: OpenStack endpoint type on which triliovault will communicate
+    type: string
   WlmApiPort:
     default: '8781'
     description: Triliovault Wlm Api Service port for http
@@ -85,10 +89,14 @@ parameters:
     type: string
     default: 'workloads'
     description: Keyston Catalog Service Type for TrilioVault Wlm Service
-  WlmApiDbUserName:
+  WlmApiDbName:
     type: string
     default: 'workloadmgr'
     description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database user name for TrilioVault Wlm Service
   WlmApiDbUserPassword:
     description: The password for the Triliovault wlm service's Database user
     type: string
@@ -279,6 +287,7 @@ outputs:
         trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::interface: {get_param: Interface}
         trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
         trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
         trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
@@ -327,9 +336,10 @@ outputs:
             password: {get_param: WlmApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: 
-              list_concat: 
-                - "/"
-                - {get_param: WlmApiDbName}
+              str_replace:
+                template: "/$WLM_DB_NAME"
+                params:
+                  $WLM_DB_NAME: {get_param: WlmApiDbName}
         trilio::wlmapi::my_ip:
             str_replace:
               template:

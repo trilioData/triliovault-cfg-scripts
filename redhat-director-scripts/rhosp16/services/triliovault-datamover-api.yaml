@@ -134,7 +134,7 @@ parameters:
                  set to true, the service uses a floating prefix as
                  well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
     type: boolean
-  DmApiWorkers:
+  DatamoverApiWorkers:
     default: 16
     description: Set dmapi_workers parameters of dmapi.conf for tilio datamover api service
     type: number
@@ -173,8 +173,8 @@ outputs:
           region: {get_param: KeystoneRegion}
           service: 'datamover'      
       config_settings:
-        trilio::dmapi::dmapi_port: {get_param: DmApiPort}
-        trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
+        trilio::dmapi::dmapi_port: {get_param: DatamoverApiPort}
+        trilio::dmapi::dmapi_ssl_port: {get_param: DatamoverApiSslPort}
         trilio::dmapi::password: {get_param: DatamoverApiKeystoneUserPassword}
         trilio::dmapi::auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::dmapi::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
@@ -184,7 +184,7 @@ outputs:
         trilio::dmapi::region_name: {get_param: KeystoneRegion}
         trilio::dmapi::user_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
         trilio::dmapi::project_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
-        trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
+        trilio::dmapi::dmapi_workers: {get_param: DatamoverApiWorkers}
         tripleo::trilio_datamover_api::firewall_rules:
               '240 triliovault-datamover-api':
                 dport:
@@ -213,8 +213,8 @@ outputs:
             trilio_datamover_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
                 internal_ip: "%{hiera('trilio_datamover_api_vip')}"
-                service_port: {get_param: DmApiPort}
-                public_ssl_port: {get_param: DmApiSslPort}
+                service_port: {get_param: DatamoverApiPort}
+                public_ssl_port: {get_param: DatamoverApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
                 service_network: "%{hiera('trilio_datamover_api_network')}"
@@ -229,15 +229,15 @@ outputs:
              'timeout server': '10m'
              'timeout check': '10m'
         keystone:
-          trilio::keystone::auth::tenant: {get_param: TriliovaultKeystoneServiceProjectName}
-          trilio::keystone::auth::service_name: {get_param: DatamoverApiKeystoneServiceName}
-          trilio::keystone::auth::service_type: {get_param: DatamoverApiKeystoneServiceType}
-          trilio::keystone::auth::service_description: 'TrilioVault Datamover Service'
-          trilio::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
-          trilio::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
-          trilio::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
-          trilio::keystone::auth::password: {get_param: DatamoverApiKeystoneUserPassword}
-          trilio::keystone::auth::region: {get_param: KeystoneRegion}
+          trilio::dmapi::keystone::auth::tenant: {get_param: TriliovaultKeystoneServiceProjectName}
+          trilio::dmapi::keystone::auth::service_name: {get_param: DatamoverApiKeystoneServiceName}
+          trilio::dmapi::keystone::auth::service_type: {get_param: DatamoverApiKeystoneServiceType}
+          trilio::dmapi::keystone::auth::service_description: 'TrilioVault Datamover Service'
+          trilio::dmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
+          trilio::dmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
+          trilio::dmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
+          trilio::dmapi::keystone::auth::password: {get_param: DatamoverApiKeystoneUserPassword}
+          trilio::dmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
           trilio::dmapi::db::mysql::user: {get_param: DatamoverApiDbUserName}
           trilio::dmapi::db::mysql::password: {get_param: DatamoverApiDbUserPassword}
