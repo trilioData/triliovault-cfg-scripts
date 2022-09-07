@@ -19,7 +19,7 @@ class trilio::contego::config inherits trilio::contego {
         group  => '42436',
         mode   => '0644',
     }->
-    file { "/etc/triliovault-datamover/triliovault_datamover_conf.erb":
+    file { "/etc/triliovault-datamover/triliovault-datamover.conf":
         ensure  => present,
         owner  => '42436',
         group  => '42436',
