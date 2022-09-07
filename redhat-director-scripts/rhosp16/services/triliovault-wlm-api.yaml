@@ -135,9 +135,6 @@ parameters:
     description: CLI tool used to manage containers.
     constraints:
       - allowed_values: ['docker', 'podman']
-  KeystoneAuthUrl:
-    description: Keystone Auth Url
-    type: string
   CephClientUserName:
     default: openstack
     type: string
