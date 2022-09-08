@@ -10,9 +10,7 @@ instance_name_template = instance-%08x
 dmapi_listen = <%= @my_ip %>
 my_ip = <%= @my_ip %>
 rootwrap_config = /etc/triliovault-datamover/rootwrap.conf
-debug = False
-log_file = /var/log/triliovault/triliovault-datamover/dmapi.log
-log_dir = /var/log/triliovault/triliovault-datamover
+log_config_append = /var/log/triliovault/datamover_api_logging.conf
 
 
 [wsgi]

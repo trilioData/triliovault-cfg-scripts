@@ -42,5 +42,14 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
       file { "/etc/triliovault-object-store/triliovault-object-store.conf":
           ensure  => present,
           content => template('trilio/triliovault_object_store_conf.erb'),
+      }->
+      file { "/etc/triliovault-wlm/wlm_logging.conf":
+          ensure  => present,
+          content => template('trilio/wlm_logging_conf.erb'),
       }
+      file { "/etc/triliovault-object-store/object_store_logging.conf":
+          ensure  => present,
+          content => template('trilio/object_store_logging_conf.erb'),
+      }
+
 }
