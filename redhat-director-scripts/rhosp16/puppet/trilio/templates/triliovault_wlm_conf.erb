@@ -11,25 +11,31 @@ keystone_auth_version = 3
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
 neutron_api_insecure = false
-keystone_endpoint_url = <%= @keystone_auth_url %>
-neutron_admin_auth_url = <%= @keystone_auth_url %>
-nova_admin_auth_url = <%= @keystone_auth_url %>
 
 <% if @interface == "public" -%>
 neutron_production_url =  <%= @neutron_public_auth_url %>
 nova_production_endpoint_template = <%= @neutron_public_auth_url %>
 cinder_production_endpoint_template = <%= @neutron_public_auth_url %>
 glance_production_api_servers = <%= @neutron_public_auth_url %>
+keystone_endpoint_url = <%= @keystone_public_auth_url %>
+neutron_admin_auth_url = <%= @keystone_public_auth_url %>
+nova_admin_auth_url = <%= @keystone_public_auth_url %>
 <% elsif @interface == "admin" -%>
 neutron_production_url =  <%= @neutron_admin_auth_url %>
 nova_production_endpoint_template = <%= @neutron_admin_auth_url %>
 cinder_production_endpoint_template = <%= @neutron_admin_auth_url %>
 glance_production_api_servers = <%= @neutron_admin_auth_url %>
+keystone_endpoint_url = <%= @keystone_admin_auth_url %>
+neutron_admin_auth_url = <%= @keystone_admin_auth_url %>
+nova_admin_auth_url = <%= @keystone_admin_auth_url %>
 <% else -%>
 neutron_production_url =  <%= @neutron_internal_auth_url %>
 nova_production_endpoint_template = <%= @neutron_internal_auth_url %>
 cinder_production_endpoint_template = <%= @neutron_internal_auth_url %>
 glance_production_api_servers = <%= @neutron_internal_auth_url %>
+keystone_endpoint_url = <%= @keystone_internal_auth_url %>
+neutron_admin_auth_url = <%= @keystone_internal_auth_url %>
+nova_admin_auth_url = <%= @keystone_internal_auth_url %>
 <% end -%>
 
 osapi_workloads_listen_port = 8781
