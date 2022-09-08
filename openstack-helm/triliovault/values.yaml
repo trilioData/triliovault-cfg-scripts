@@ -951,12 +951,11 @@ conf:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
     barbican:
       encryption_support: True
-  nova_compute:
   wlm_logging:
     loggers:
-      keys: "root, workloadmgr-api, workloadmgr-workloads, workloadmgr-cron, workloadmgr-scheduler"
+      keys: "root,workloadmgr-api,workloadmgr-workloads,workloadmgr-cron,workloadmgr-scheduler"
     handlers:
-      keys: "stdout,stderr,null, workloadmgr-api, workloadmgr-workloads, workloadmgr-scheduler, workloadmgr-cron"
+      keys: "stdout,stderr,null,workloadmgr-api,workloadmgr-workloads,workloadmgr-scheduler,workloadmgr-cron"
     formatters:
       keys: "default,advanced,default-utc,advanced-utc"
     logger_root:
@@ -1020,7 +1019,6 @@ conf:
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
-
   datamover_api_logging:
     loggers:
       keys: "root,dmapi"
@@ -1151,6 +1149,41 @@ conf:
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+  logging:
+    loggers:
+      keys:
+        - root
+    handlers:
+      keys:
+        - stdout
+        - stderr
+        - "null"
+    formatters:
+      keys:
+        - context
+        - default
+    logger_root:
+      level: WARNING
+      handlers: stdout
+    handler_null:
+      class: logging.NullHandler
+      formatter: default
+      args: ()
+    handler_stdout:
+      class: StreamHandler
+      args: (sys.stdout,)
+      formatter: context
+    handler_stderr:
+      class: StreamHandler
+      args: (sys.stderr,)
+      formatter: context
+    formatter_context:
+      class: oslo_log.formatters.ContextFormatter
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    formatter_default:
+      format: "%(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+
 
 bootstrap:
   enabled: false
