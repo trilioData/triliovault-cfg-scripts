@@ -37,6 +37,13 @@ class trilio::dmapi::config inherits trilio::dmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
+      }->
+      file { "/etc/triliovault-datamover/datamover_api_logging.conf":
+          ensure  => present,
+          content => template('trilio/datamover_api_logging_conf.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
       }
 
 }      

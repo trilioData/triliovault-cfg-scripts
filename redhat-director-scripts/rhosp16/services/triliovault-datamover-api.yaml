@@ -264,7 +264,7 @@ outputs:
               merge: true
               preserve_properties: true
           permissions:
-            - path: /var/log/triliovault-datamover-api
+            - path: /var/log/triliovault
               owner: dmapi:dmapi
               recurse: true
       container_puppet_tasks:
@@ -305,8 +305,8 @@ outputs:
             net: none
             user: root
             volumes:
-              - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api:z
-            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/triliovault-datamover-api']
+              - /var/log/containers/triliovault-datamover-api:/var/log/triliovault:z
+            command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/triliovault']
         step_4:
           trilio_datamover_api_db_sync:
             image: *trilio_datamover_api_image
@@ -320,7 +320,7 @@ outputs:
                 -
                   - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliodmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
-                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api
+                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
@@ -337,7 +337,7 @@ outputs:
                 -
                   - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
-                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault-datamover-api:z
+                  - /var/log/containers/triliovault-datamover-api:/var/log/triliovault:z
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
