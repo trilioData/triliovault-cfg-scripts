@@ -783,7 +783,6 @@ conf:
     user_allow_other
   triliovault_object_store_wlm_api:
     DEFAULT:
-      verbose: true
       vault_storage_type: s3
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
@@ -791,14 +790,11 @@ conf:
       vault_data_directory: /var/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
-      log_file: /var/log/triliovault/wlm-api/triliovault-object-store.log
-      log_config: /etc/triliovault-object-store/object_store_logging.conf
-      debug: false
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_scheduler:
     DEFAULT:
-      verbose: true
       vault_storage_type: s3
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
@@ -806,14 +802,11 @@ conf:
       vault_data_directory: /var/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
-      log_file: /var/log/triliovault/wlm-scheduler/triliovault-object-store.log
-      log_config: /etc/triliovault-object-store/object_store_logging.conf
-      debug: false
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_wlm_workloads:
     DEFAULT:
-      verbose: true
       vault_storage_type: s3
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
@@ -821,14 +814,11 @@ conf:
       vault_data_directory: /var/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
-      log_file: /var/log/triliovault/wlm-workloads/triliovault-object-store.log
-      log_config: /etc/triliovault-object-store/object_store_logging.conf
-      debug: false
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
   triliovault_object_store_datamover:
     DEFAULT:
-      verbose: true
       vault_storage_type: s3
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: ''
@@ -836,14 +826,12 @@ conf:
       vault_data_directory: /var/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
-      log_file: /var/log/triliovault/datamover/triliovault-object-store.log
-      log_config: /etc/triliovault-object-store/object_store_logging.conf
-      debug: false
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
     s3fuse_sys_admin:
       helper_command: sudo /usr/bin/privsep-helper
   datamover_api:
     DEFAULT:
-      log_config: /etc/triliovault-datamover/datamover_api_logging.conf 
+      log_config_append: /etc/triliovault-datamover/datamover_api_logging.conf 
       ## Don't delete this parameter. Keep it empty
       dmapi_enabled_ssl_apis: ""
       dmapi_listen_port: 8784
@@ -851,7 +839,6 @@ conf:
       bindir: /usr/bin
       instance_name_template: instance-%08x
       rootwrap_config: /etc/triliovault-datamover/rootwrap.conf
-      debug: False
     wsgi:
       ## Don't delete these entries. We need to keep them with empty values
       ssl_cert_file: ""
@@ -881,13 +868,11 @@ conf:
     host_interface:
   datamover:
     DEFAULT:
-      log_config: /etc/triliovault-datamover/datamover_logging.conf
+      log_config_append: /etc/triliovault-datamover/datamover_logging.conf
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: ''
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: "/var/trilio/triliovault-mounts"
-      debug: False
-      verbose: True
       max_uploads_pending: 3
       max_commit_pending: 3
     dmapi_database:
@@ -916,8 +901,7 @@ conf:
     DEFAULT:
       api_workers: 4
       osapi_workloads_listen_port: 8780
-      log_config: /etc/triliovault-wlm/wlm_logging.conf
-      log_dir: /var/log/triliovault/
+      log_config_append: /etc/triliovault-wlm/wlm_logging.conf
       workloads_workers: 4
       global_job_scheduler_override: False
       api_paste_config: /etc/triliovault-wlm/api-paste.ini
@@ -925,13 +909,10 @@ conf:
       cloud_admin_role: admin
       compute_driver: libvirt.LibvirtDriver
       config_status: configured
-      verbose: True
-      debug: False
       keystone_auth_version: 3
       glance_api_version: 2
       neutron_api_insecure: False
       state_path: /opt/stack/data/workloadmgr
-      use_syslog: False
       vault_storage_das_device: none
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
@@ -970,25 +951,48 @@ conf:
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
     barbican:
       encryption_support: True
-  nova_compute:
   wlm_logging:
     loggers:
-      keys: "root"
+      keys: "root,workloadmgr-api,workloadmgr-workloads,workloadmgr-cron,workloadmgr-scheduler"
     handlers:
-      keys: "workloadmgr,workloadmgrerr,stdout,stderr,null"
+      keys: "stdout,stderr,null,workloadmgr-api,workloadmgr-workloads,workloadmgr-scheduler,workloadmgr-cron"
     formatters:
-      keys: "default,advanced"
+      keys: "default,advanced,default-utc,advanced-utc"
     logger_root:
       level: "INFO"
-      handlers: "stdout"
-    handler_workloadmgr:
+      handlers: "null"
+    logger_workloadmgr-cron:
+      level: "INFO"
+      handlers: "workloadmgr-cron,stdout"
+      qualname: "workloadmgr-cron"
+    logger_workloadmgr-scheduler:
+      level: "INFO"
+      handlers: "workloadmgr-scheduler,stdout"
+      qualname: "workloadmgr-scheduler"
+    logger_workloadmgr-workloads:
+      level: "INFO"
+      handlers: "workloadmgr-workloads,stdout"
+      qualname: "workloadmgr-workloads"
+    logger_workloadmgr-api:
+      level: "INFO"
+      handlers: "workloadmgr-api,stdout"
+      qualname: "workloadmgr-api"
+    handler_workloadmgr-api:
       class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr.log','a',25000000,20)"
-      formatter: "default"
-    handler_workloadmgrerr:
+      args: "('/var/log/triliovault/triliovault-wlm-api.log','a', 25000000,20)"
+      formatter: "advanced-utc"
+    handler_workloadmgr-cron:
       class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr_error.log','a',25000000,20)"
-      formatter: "advanced"
+      args: "('/var/log/triliovault/triliovault-wlm-cron.log','a', 25000000,20)"
+      formatter: "advanced-utc"
+    handler_workloadmgr-scheduler:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-wlm-scheduler.log','a', 25000000,20)"
+      formatter: "advanced-utc"
+    handler_workloadmgr-workloads:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-wlm-workloads.log','a', 25000000,20)"
+      formatter: "advanced-utc"
     handler_stderr:
       class: "StreamHandler"
       args: "(sys.stderr,)"
@@ -1001,118 +1005,38 @@ conf:
       class: "NullHandler"
       formatter: "default"
       args: "()"
-    formatter_legacyworkloadmgr:
-      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default-utc:
+      class: "workloadmgr.openstack.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced-utc:
+      class: "workloadmgr.openstack.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_default:
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
-    logger_workloadmgr.workloads.api:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "workloadmgr.workloads.api"
-    logger_workloadmgr.vault.vault:
-      level: "DEBUG"
-      handlers: "apilog,schedulelog"
-      qualname: "workloadmgr.vault.vault"
-    logger_workloadmgr.api.extensions:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "workloadmgr.api.extensions"
-    logger_workloadmgr.workloads.rpcapi:
-      level: "DEBUG"
-      handlers: "apilog,schedulelog"
-      qualname: "workloadmgr.workloads.rpcapi"
-    logger_workloadmgr.api:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "workloadmgr.api"
-    logger_keystonemiddleware.auth_token:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "keystonemiddleware.auth_token"
-    logger_keystonemiddleware._common.config:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "keystonemiddleware._common.config"
-    logger_eventletwsgi:
-      level: "DEBUG"
-      handlers: "apilog"
-      qualname: "eventlet.wsgi.server"
-    logger_workloadmgr.apscheduler.schedule:
-      level: "DEBUG"
-      handlers: "cronlog"
-      qualname: "workloadmgr.apscheduler.schedule"
-    logger_workloadmgr.wlm_cron.manager:
-      level: "DEBUG"
-      handlers: "cronlog"
-      qualname: "workloadmgr.wlm_cron.manager"
-    logger_oslo.messaging._drivers.pool:
-      level: "DEBUG"
-      handlers: "cronlog,schedulelog,workloadslog"
-      qualname: "oslo.messaging._drivers.pool"
-    logger_amqp:
-      level: "DEBUG"
-      handlers: "cronlog,schedulelog,workloadslog"
-      qualname: "amqp"
-    logger_oslo.messaging._drivers.impl_rabbit:
-      level: "DEBUG"
-      handlers: "cronlog,schedulelog,workloadslog"
-      qualname: "oslo.messaging._drivers.impl_rabbit"
-    logger_oslo_messaging._drivers.amqpdriver:
-      level: "DEBUG"
-      handlers: "cronlog,schedulelog,workloadslog"
-      qualname: "oslo_messaging._drivers.amqpdriver"
-    logger_amqp.connection.Connection.heartbeat_tick:
-      level: "DEBUG"
-      handlers: "cronlog,schedulelog,workloadslog"
-      qualname: "amqp.connection.Connection.heartbeat_tick"
-    logger_workloadmgr.apscheduler.threadpool:
-      level: "DEBUG"
-      handlers: "workloadslog"
-      qualname: "workloadmgr.apscheduler.threadpool"
-    logger_workloadmgr.apscheduler.scheduler:
-      level: "DEBUG"
-      handlers: "workloadslog"
-      qualname: "workloadmgr.apscheduler.scheduler"
-    logger_workloadmgr.workloads.manager:
-      level: "DEBUG"
-      handlers: "workloadslog"
-      qualname: "workloadmgr.workloads.manager"
-    handler_apilog:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr-api.log','a',25000000,20)"
-      formatter: "default"
-    handler_cronlog:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr-cron.log','a',25000000,20)"
-      formatter: "default"
-    handler_schedulelog:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr-scheduler.log','a',25000000,20)"
-      formatter: "default"
-    handler_workloadslog:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/workloadmgr-workloads.log','a',25000000,20)"
-      formatter: "default"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
   datamover_api_logging:
     loggers:
-      keys: "root"
+      keys: "root,dmapi"
     handlers:
-      keys: "dmapi,dmapierr,stdout,stderr,null"
+      keys: "dmapi,stdout,stderr,null"
     formatters:
-      keys: "default,advanced"
+      keys: "default,advanced,default-utc,advanced-utc"
     logger_root:
       level: "INFO"
-      handlers: "stdout"
+      handlers: "null"
+    logger_dmapi:
+      level: "INFO"
+      handlers: "dmapi,stdout"
+      qualname: "dmapi"
     handler_dmapi:
       class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/dmapi.log','a',25000000,20)"
-      formatter: "default"
-    handler_dmapierr:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/dmapi-error.log','a',25000000,20)"
-      formatter: "advanced"
+      args: "('/var/log/triliovault/triliovault-datamover-api.log','a',25000000,20)"
+      formatter: "advanced-utc"
     handler_stderr:
       class: "StreamHandler"
       args: "(sys.stderr,)"
@@ -1125,30 +1049,39 @@ conf:
       class: "NullHandler"
       formatter: "default"
       args: "()"
-    formatter_legacyworkloadmgr:
-      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default-utc:
+      class: "dmapi.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced-utc:
+      class: "dmapi.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_default:
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+
   datamover_logging:
     loggers:
-      keys: "root"
+      keys: "root,contego"
     handlers:
-      keys: "datamover,datamovererr,stdout,stderr,null"
+      keys: "datamover,stdout,stderr,null"
     formatters:
-      keys: "default,advanced"
+      keys: "default,advanced,default-utc,advanced-utc"
     logger_root:
       level: "INFO"
-      handlers: "stdout"
+      handlers: "null"
+    logger_contego:
+      level: "INFO"
+      handlers: "datamover,stdout"
+      qualname: "contego"
     handler_datamover:
       class: "logging.handlers.RotatingFileHandler"
       args: "('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)"
-      formatter: "default"
-    handler_datamovererr:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/triliovault-datamover-error.log','a',25000000,20)"
-      formatter: "advanced"
+      formatter: "advanced-utc"
     handler_stderr:
       class: "StreamHandler"
       args: "(sys.stderr,)"
@@ -1161,30 +1094,35 @@ conf:
       class: "NullHandler"
       formatter: "default"
       args: "()"
-    formatter_legacyworkloadmgr:
-      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default-utc:
+      class: "contego.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced-utc:
+      class: "contego.common.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_default:
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+
   object_store_logging:
     loggers:
       keys: "root"
     handlers:
-      keys: "s3fuse,s3fuseerr,stdout,stderr,null"
+      keys: "s3fuse,stdout,stderr,null"
     formatters:
-      keys: "default,advanced"
+      keys: "default,advanced,default-utc,advanced-utc"
     logger_root:
       level: "INFO"
-      handlers: "stdout"
+      handlers: "s3fuse"
     handler_s3fuse:
       class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/tvault-object-store.log','a',25000000,20)"
-      formatter: "default"
-    handler_s3fuseerr:
-      class: "logging.handlers.RotatingFileHandler"
-      args: "('/var/log/triliovault/tvault-object-store-error.log','a',25000000,20)"
-      formatter: "advanced"
+      args: "('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)"
+      formatter: "advanced-utc"
     handler_stderr:
       class: "StreamHandler"
       args: "(sys.stderr,)"
@@ -1197,18 +1135,24 @@ conf:
       class: "NullHandler"
       formatter: "default"
       args: "()"
-    formatter_legacyworkloadmgr:
-      class: "workloadmgr.openstack.common.log.LegacyFormatter"
+    formatter_default-utc:
+      class: "s3fuse.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced-utc:
+      class: "s3fuse.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_default:
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
     formatter_advanced:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
   logging:
     loggers:
       keys:
         - root
-        - datamover
-        - os.brick
     handlers:
       keys:
         - stdout
@@ -1221,34 +1165,6 @@ conf:
     logger_root:
       level: WARNING
       handlers: stdout
-    logger_datamover:
-      level: INFO
-      handlers: ""
-      qualname: datamover
-    logger_os.brick:
-      level: INFO
-      handlers: ""
-      qualname: os.brick
-    logger_amqp:
-      level: WARNING
-      handlers: ""
-      qualname: amqp
-    logger_amqplib:
-      level: WARNING
-      handlers: ""
-      qualname: amqplib
-    logger_eventletwsgi:
-      level: WARNING
-      handlers: ""
-      qualname: eventlet.wsgi.server
-    logger_sqlalchemy:
-      level: WARNING
-      handlers: ""
-      qualname: sqlalchemy
-    logger_boto:
-      level: WARNING
-      handlers: ""
-      qualname: boto
     handler_null:
       class: logging.NullHandler
       formatter: default
@@ -1267,6 +1183,7 @@ conf:
     formatter_default:
       format: "%(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S"
+
 
 bootstrap:
   enabled: false
