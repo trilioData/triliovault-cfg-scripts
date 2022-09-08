@@ -71,8 +71,8 @@ parameter_defaults:
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
    WlmApiDbUserName: "workloadmgr"
    WlmApiDbName: "workloadmgr"
-   WlmApiKeystoneUserName: "workloadmgr"
-   WlmApiKeystoneServiceName: "workloadmgr"
+   WlmApiKeystoneUserName: "triliovault"
+   WlmApiKeystoneServiceName: "TrilioVaultWLM"
    WlmApiKeystoneServiceType: "workloads"
    ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 
