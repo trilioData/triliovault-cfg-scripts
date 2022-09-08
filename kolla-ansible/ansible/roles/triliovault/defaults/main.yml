@@ -264,7 +264,7 @@ triliovault_ks_services:
     triliovault_keystone_user: "triliovault"  
 
 triliovault_datamover_keystone_user: "dmapi"	
-triliovault_workloadmgr_keystone_user: "workloadmgr"	
+triliovault_workloadmgr_keystone_user: "triliovault"	
 
 triliovault_ks_users:
   - project: "service"
