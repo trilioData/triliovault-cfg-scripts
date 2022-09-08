@@ -254,9 +254,9 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
     triliovault_keystone_user: "dmapi"  
-  - name: "workloadmgr"
+  - name: "TrilioVaultWLM"
     type: "workloads"
-    description: "TrilioVault workloadmgr Api Service"
+    description: "TrilioVaultWLM API Service"
     endpoints:
       - {'interface': 'admin', 'url': '{{ triliovault_workloadmgr_api_admin_endpoint }}'}
       - {'interface': 'internal', 'url': '{{ triliovault_workloadmgr_api_internal_endpoint }}'}
