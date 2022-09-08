@@ -75,7 +75,7 @@
 
 class trilio::keystone::auth (
   $password,
-  $auth_name              = 'workloadmgr',
+  $auth_name              = 'triliovault',
   $tenant                 = 'services',
   $email                  = 'trilio@localhost',
   $public_url             = 'http://127.0.0.1:8784/v2',
@@ -84,13 +84,13 @@ class trilio::keystone::auth (
   $configure_endpoint     = true,
   $configure_user         = true,
   $configure_user_role    = true,
-  $service_name           = 'workloadmgr',
+  $service_name           = 'TrilioVaultWLM',
   $service_type           = 'workloads',
   $service_description    = 'Trilio Wlm Service',
   $region                 = 'RegionOne',
 ) {
   
-  keystone::resource::service_identity { 'dmapi':
+  keystone::resource::service_identity { 'TrilioVaultWLM':
     configure_user      => $configure_user,
     configure_user_role => $configure_user_role,
     configure_endpoint  => $configure_endpoint,

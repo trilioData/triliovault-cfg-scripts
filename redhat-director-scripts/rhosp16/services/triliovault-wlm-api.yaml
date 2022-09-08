@@ -254,13 +254,13 @@ outputs:
     value:
       service_name: triliovault_wlm_api
       keystone_resources:
-        workloadmgr:
+        TrilioVaultWLM:
           endpoints:
             public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
             internal: {get_param: [EndpointMap, TriliotWlmInternal, uri]}
             admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
           users:
-            workloadmgr:
+            triliovault:
               password: {get_param: WlmApiKeystoneUserPassword}
           region: {get_param: KeystoneRegion}
           service: {get_param: WlmApiKeystoneServiceType}
@@ -362,6 +362,7 @@ outputs:
           trilio::wlmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
           trilio::wlmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
           trilio::wlmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+          trilio::wlmapi::keystone::auth::auth_name: {get_param: WlmApiKeystoneUserName}
           trilio::wlmapi::keystone::auth::password: {get_param: WlmApiKeystoneUserPassword}
           trilio::wlmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:

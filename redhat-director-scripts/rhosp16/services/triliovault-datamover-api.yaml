@@ -236,6 +236,7 @@ outputs:
           trilio::dmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultDatamoverPublic, uri]}
           trilio::dmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultDatamoverInternal, uri]}
           trilio::dmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultDatamoverAdmin, uri]}
+          trilio::dmapi::keystone::auth::auth_name: {get_param: DatamoverApiKeystoneUserName}
           trilio::dmapi::keystone::auth::password: {get_param: DatamoverApiKeystoneUserPassword}
           trilio::dmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
