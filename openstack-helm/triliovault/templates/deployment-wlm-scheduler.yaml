@@ -136,12 +136,6 @@ spec:
               readOnly: true
               subPath: s3-cert.pem
             {{- end }}
-            {{- if .Values.conf.wlm.DEFAULT.log_config_append }}
-            - name: triliovault-wlm-etc
-              mountPath: {{ .Values.conf.wlm.DEFAULT.log_config_append }}
-              subPath: {{ base .Values.conf.wlm.DEFAULT.log_config_append }}
-              readOnly: true
-            {{- end }}
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
