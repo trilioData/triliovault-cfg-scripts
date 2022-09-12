@@ -487,7 +487,7 @@ endpoints:
       triliovault_wlm:
         role: admin
         region_name: RegionOne
-        username: workloadmgr
+        username: triliovault
         password: password
         project_name: service
         user_domain_name: service
@@ -668,7 +668,7 @@ endpoints:
         default: 8784
         public: 80
   workloads:
-    name: workloadmgr
+    name: TrilioVaultWLM
     hosts:
       default: triliovault-wlm-api
       public: triliovault-wlm
