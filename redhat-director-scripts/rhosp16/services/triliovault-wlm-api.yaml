@@ -257,7 +257,7 @@ outputs:
         TrilioVaultWLM:
           endpoints:
             public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
-            internal: {get_param: [EndpointMap, TriliotWlmInternal, uri]}
+            internal: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
             admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
           users:
             triliovault:
