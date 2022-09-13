@@ -73,7 +73,7 @@
 #
 
 
-class trilio::keystone::auth (
+class trilio::wlmapi::keystone::auth (
   $password,
   $auth_name              = 'triliovault',
   $tenant                 = 'services',

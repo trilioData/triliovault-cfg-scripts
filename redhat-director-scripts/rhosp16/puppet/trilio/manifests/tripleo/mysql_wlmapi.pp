@@ -19,7 +19,7 @@ class trilio::tripleo::mysql_wlmapi (
   }
 
   if $create_db {
-    if hiera('trilio_wlm_api_enabled', false) {
+    if hiera('triliovault_wlm_api_enabled', false) {
       tripleo::profile::base::database::mysql::include_and_check_auth{'::trilio::wlmapi::db::mysql':}
     }    
   }

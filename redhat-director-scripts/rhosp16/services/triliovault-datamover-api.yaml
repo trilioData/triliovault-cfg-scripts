@@ -272,7 +272,7 @@ outputs:
         step_3:
           config_volume: 'trilio_datamover_api_mysql_init_bundle'
           puppet_tags: 'mysql_database,mysql_grant,mysql_user'
-          step_config: 'include ::trilio::tripleo::mysql'
+          step_config: 'include ::trilio::tripleo::mysql_dmapi'
           config_image: {get_param: ContainerMysqlConfigImage}
           volumes:
             list_concat:
