@@ -15,4 +15,4 @@ limitations under the License.
 */}}
 
 set -ex
-exec alembic --config /etc/workloadmgr/workloadmgr.conf upgrade head
+exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head

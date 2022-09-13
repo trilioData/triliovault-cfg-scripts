@@ -936,8 +936,8 @@ conf:
       auth_version: v3
       auth_type: password
       auth_plugin: password
-      username: workloadmgr
-      admin_user: workloadmgr
+      username: triliovault
+      admin_user: triliovault
       signing_dir: /var/cache/workloadmgr
       insecure: False
       service_token_roles_required: True
