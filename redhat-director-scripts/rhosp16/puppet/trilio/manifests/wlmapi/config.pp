@@ -35,6 +35,20 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           ensure  => present,
           content => template('trilio/triliovault_wlm_conf.erb'),
       }->
+      file { "/etc/triliovault-datamover/s3-cert.pem":
+          ensure => 'present',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
+          source => 'puppet:///modules/trilio/s3-cert.pem',
+      }->
+      file { "/etc/triliovault-datamover/triliovault-wlm-ids.conf":
+          ensure => 'present',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
+          source => 'puppet:///modules/trilio/triliovault_wlm_ids.conf',
+      }->
       file { "/etc/triliovault-wlm/api-paste.ini":
           ensure  => present,
           content => template('trilio/api_paste_ini.erb'),
