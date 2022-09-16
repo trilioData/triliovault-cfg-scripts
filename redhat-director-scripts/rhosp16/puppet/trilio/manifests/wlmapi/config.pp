@@ -25,7 +25,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
  
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
 
-      $cloud_unique_id = ""
       
       file { "/etc/triliovault-wlm/cloud_admin_rc":
           ensure  => present,
@@ -58,14 +57,14 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           command => '/etc/triliovault-wlm/get_keystone_resources.sh',
           provider => shell,
       }
-      file { "/etc/triliovault-datamover/s3-cert.pem":
+      file { "/etc/triliovault-wlm/s3-cert.pem":
           ensure => 'present',
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
           source => 'puppet:///modules/trilio/s3-cert.pem',
       }->
-      file { "/etc/triliovault-datamover/triliovault-wlm-ids.conf":
+      file { "/etc/triliovault-wlm/triliovault-wlm-ids.conf":
           ensure => 'present',
           owner  => '42436',
           group  => '42436',
