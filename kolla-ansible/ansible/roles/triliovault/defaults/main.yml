@@ -253,18 +253,18 @@ triliovault_ks_services:
       - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
-    triliovault_keystone_user: "dmapi"  
-  - name: "workloadmgr"
+    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
+  - name: "TrilioVaultWLM "
     type: "workloads"
     description: "TrilioVault workloadmgr Api Service"
     endpoints:
       - {'interface': 'admin', 'url': '{{ triliovault_workloadmgr_api_admin_endpoint }}'}
       - {'interface': 'internal', 'url': '{{ triliovault_workloadmgr_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_workloadmgr_api_public_endpoint }}'}
-    triliovault_keystone_user: "triliovault"  
+    triliovault_keystone_user: "{{ triliovault_workloadmgr_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
-triliovault_workloadmgr_keystone_user: "triliovault"	
+triliovault_workloadmgr_keystone_user : "workloadmgr"	
 
 triliovault_ks_users:
   - project: "service"
@@ -327,9 +327,13 @@ triliovault_workloadmgr_group: 'triliovault-workloadmgr'
 
 
 ## Log directories for triliovault services
-triliovault_kolla_log_dir: "/var/log/kolla"
+triliovault_kolla_log_dir: "/var/log/kolla/triliovault"
+
+##Below two dir are seems unused once build is stable will clean it.
 triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover"
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
+
+
 
 ############ Following variables are user configurable ##########
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.

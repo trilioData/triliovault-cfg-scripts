@@ -11,7 +11,7 @@
       login_password: "{{ database_password }}"
       name: "{{ item.triliovault_database_name }}"
   run_once: True
-  delegate_to: "{{ groups[item.group_name][0]  }}"
+  delegate_to: "{{ groups[item.group_name][0] }}"
   with_items:
      - "{{ triliovault_db_details }}"
   when:
