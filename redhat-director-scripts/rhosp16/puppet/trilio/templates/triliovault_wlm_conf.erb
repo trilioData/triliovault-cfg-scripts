@@ -13,6 +13,8 @@ log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
 neutron_api_insecure = false
 
+cloud_unique_id =
+
 <% if @interface == "public" -%>
 neutron_production_url =  <%= @neutron_public_auth_url %>
 nova_production_endpoint_template = <%= @neutron_public_auth_url %>

@@ -18,7 +18,7 @@ class trilio::wlmapi (
   $memcached_ips                   = hiera('memcached_node_ips', undef),
   $my_ip                           = undef,	  
   $database_connection             = undef,
-  $keystone_username               = 'workloadmgr',
+  $keystone_username               = 'triliovault',
   $project_domain_name             = 'Default',
   $project_name                    = 'service',
   $user_domain_name                = 'Default',

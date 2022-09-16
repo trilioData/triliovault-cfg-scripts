@@ -1,0 +1,12 @@
+#!/bin/bash -x
+
+set -e
+
+source /etc/triliovault-wlm/cloud_admin_rc
+wlm_user_id=`openstack user show --domain ${user_domain_name} -f value -c id ${keystone_username}`
+
+old_wlm_user_id=`grep "cloud_unique_id" /etc/triliovault-wlm/triliovault-wlm.conf | awk -F "=" '{print $2}' | tr -d ' ' | tr -d \'\"`
+
+if [ "$old_wlm_user_id" != "$wlm_user_id" ];then
+sed -i "s/cloud_unique_id.*/cloud_unique_id\ =\ $wlm_user_id/" /etc/triliovault-wlm/triliovault-wlm.conf
+fi

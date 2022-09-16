@@ -53,6 +53,10 @@ parameters:
     type: string
     default: 'admin'
     description: OpenStack Cloud admin user name
+  CloudAdminPassword:
+    description: The password for cloud admin user
+    type: string
+    hidden: true
   CloudAdminProjectName:
     type: string
     default: 'admin'
@@ -265,6 +269,10 @@ outputs:
           region: {get_param: KeystoneRegion}
           service: {get_param: WlmApiKeystoneServiceType}
       config_settings:
+        trilio::wlmapi::cloud_admin_user_name: {get_param: CloudAdminUserName}
+        trilio::wlmapi::cloud_admin_password: {get_param: CloudAdminPassword}
+        trilio::wlmapi::cloud_admin_project_name: {get_param: CloudAdminProjectName}
+        trilio::wlmapi::cloud_admin_domain_name: {get_param: CloudAdminDomainName}
         trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
