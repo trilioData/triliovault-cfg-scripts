@@ -25,17 +25,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
  
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
 
-      
-      file { "/etc/triliovault-wlm/cloud_admin_rc":
-          ensure  => present,
-          content => template('trilio/cloud_admin_rc.erb'),
-          mode    => '0744',
-      }->
-      file { "/etc/triliovault-wlm/get_keystone_resources.sh":
-          ensure  => present,
-          content => template('trilio/get_keystone_resources_sh.erb'),
-          mode    => '0744',
-      }->
       file { '/etc/triliovault-wlm/':
           ensure => 'directory',
           owner  => '42436',
@@ -45,6 +34,16 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           ensure => 'directory',
           owner  => '42436',
           group  => '42436',
+      }->
+      file { "/etc/triliovault-wlm/cloud_admin_rc":
+          ensure  => present,
+          content => template('trilio/cloud_admin_rc.erb'),
+          mode    => '0744',
+      }->
+      file { "/etc/triliovault-wlm/get_keystone_resources.sh":
+          ensure  => present,
+          content => template('trilio/get_keystone_resources_sh.erb'),
+          mode    => '0744',
       }->
       file { "/etc/triliovault-wlm/triliovault-wlm.conf":
           ensure  => present,
