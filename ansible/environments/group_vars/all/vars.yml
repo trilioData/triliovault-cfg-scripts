@@ -8,7 +8,9 @@ TIME_ZONE: "Etc/UTC"
 OPENSTACK_DIST: wallaby
 
 # Specify the controller hostname where wlm-cron should run
-CONTROLLER_HOSTNAME: ""
+# you will get the controller hostname under file /etc/openstack_deploy/openstack_user_config.yml
+# Select the hostname where identity_hosts service is deployed
+WLM_CRON_CONTROLLER_HOSTNAME: ""
 
 #Need to add the following statement in nova sudoers file
 #nova ALL = (root) NOPASSWD: /home/tvault/.virtenv/bin/privsep-helper *
