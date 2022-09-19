@@ -2,6 +2,13 @@ resource_registry:
 
 parameter_defaults:
 
+   ## Cloud Admin user details
+   CloudAdminUserName: "admin"
+   CloudAdminProjectName: "admin"
+   CloudAdminDomainName: "default"
+   CloudAdminPassword: "KFYTWkFa4ufdiR6S7blZTdfgR"
+
+
    ## TrilioVault container Images.
    ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
    ContainerTriliovaultDatamoverApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16

@@ -33,6 +33,10 @@ parameters:
   DefaultPasswords:
     default: {}
     type: json
+  Interface:
+    default: 'internal'
+    description: OpenStack endpoint type on which triliovault will communicate
+    type: string
   WlmApiPort:
     default: '8781'
     description: Triliovault Wlm workloads Service port for http
@@ -85,6 +89,10 @@ parameters:
     type: string
     default: 'workloads'
     description: Keyston Catalog Service Type for TrilioVault Wlm Service
+  WlmApiDbName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Wlm Service
   WlmApiDbUserName:
     type: string
     default: 'workloadmgr'
@@ -127,9 +135,6 @@ parameters:
     description: CLI tool used to manage containers.
     constraints:
       - allowed_values: ['docker', 'podman']
-  KeystoneAuthUrl:
-    description: Keystone Auth Url
-    type: string
   CephClientUserName:
     default: openstack
     type: string
@@ -269,7 +274,7 @@ outputs:
         trilio::wlmapi::port: {get_param: WlmApiPort}
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
         trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
-        trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::password: {get_param: WlmApiKeystoneUserPassword}
         trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
@@ -311,9 +316,10 @@ outputs:
             password: {get_param: WlmApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: 
-              list_concat: 
-                - "/"
-                - {get_param: WlmApiDbName}
+              str_replace:
+                template: "/$WLM_DB_NAME"
+                params:
+                  $WLM_DB_NAME: {get_param: WlmApiDbName}
         trilio::wlmapi::my_ip:
             str_replace:
               template:

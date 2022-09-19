@@ -33,6 +33,10 @@ parameters:
   DefaultPasswords:
     default: {}
     type: json
+  Interface:
+    default: 'internal'
+    description: OpenStack endpoint type on which triliovault will communicate
+    type: string
   WlmApiPort:
     default: '8781'
     description: Triliovault Wlm Api Service port for http
@@ -49,6 +53,10 @@ parameters:
     type: string
     default: 'admin'
     description: OpenStack Cloud admin user name
+  CloudAdminPassword:
+    description: The password for cloud admin user
+    type: string
+    hidden: true
   CloudAdminProjectName:
     type: string
     default: 'admin'
@@ -85,10 +93,14 @@ parameters:
     type: string
     default: 'workloads'
     description: Keyston Catalog Service Type for TrilioVault Wlm Service
-  WlmApiDbUserName:
+  WlmApiDbName:
     type: string
     default: 'workloadmgr'
     description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database user name for TrilioVault Wlm Service
   WlmApiDbUserPassword:
     description: The password for the Triliovault wlm service's Database user
     type: string
@@ -127,9 +139,6 @@ parameters:
     description: CLI tool used to manage containers.
     constraints:
       - allowed_values: ['docker', 'podman']
-  KeystoneAuthUrl:
-    description: Keystone Auth Url
-    type: string
   CephClientUserName:
     default: openstack
     type: string
@@ -249,17 +258,21 @@ outputs:
     value:
       service_name: triliovault_wlm_api
       keystone_resources:
-        workloadmgr:
+        TrilioVaultWLM:
           endpoints:
             public: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
-            internal: {get_param: [EndpointMap, TriliotWlmInternal, uri]}
+            internal: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
             admin: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
           users:
-            workloadmgr:
+            triliovault:
               password: {get_param: WlmApiKeystoneUserPassword}
           region: {get_param: KeystoneRegion}
           service: {get_param: WlmApiKeystoneServiceType}
       config_settings:
+        trilio::wlmapi::cloud_admin_user_name: {get_param: CloudAdminUserName}
+        trilio::wlmapi::cloud_admin_password: {get_param: CloudAdminPassword}
+        trilio::wlmapi::cloud_admin_project_name: {get_param: CloudAdminProjectName}
+        trilio::wlmapi::cloud_admin_domain_name: {get_param: CloudAdminDomainName}
         trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
@@ -279,8 +292,9 @@ outputs:
         trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::interface: {get_param: Interface}
         trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
-        trilio::wlmapi::keystone_password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::password: {get_param: WlmApiKeystoneUserPassword}
         trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
         trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
@@ -327,9 +341,10 @@ outputs:
             password: {get_param: WlmApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: 
-              list_concat: 
-                - "/"
-                - {get_param: WlmApiDbName}
+              str_replace:
+                template: "/$WLM_DB_NAME"
+                params:
+                  $WLM_DB_NAME: {get_param: WlmApiDbName}
         trilio::wlmapi::my_ip:
             str_replace:
               template:
@@ -355,6 +370,7 @@ outputs:
           trilio::wlmapi::keystone::auth::public_url: {get_param: [EndpointMap, TriliovaultWlmPublic, uri]}
           trilio::wlmapi::keystone::auth::internal_url: {get_param: [EndpointMap, TriliovaultWlmInternal, uri]}
           trilio::wlmapi::keystone::auth::admin_url: {get_param: [EndpointMap, TriliovaultWlmAdmin, uri]}
+          trilio::wlmapi::keystone::auth::auth_name: {get_param: WlmApiKeystoneUserName}
           trilio::wlmapi::keystone::auth::password: {get_param: WlmApiKeystoneUserPassword}
           trilio::wlmapi::keystone::auth::region: {get_param: KeystoneRegion}
         mysql:
@@ -390,7 +406,7 @@ outputs:
         step_3:
           config_volume: 'triliovault_wlm_api_mysql_init_bundle'
           puppet_tags: 'mysql_database,mysql_grant,mysql_user'
-          step_config: 'include ::trilio::tripleo::mysql'
+          step_config: 'include ::trilio::tripleo::mysql_wlmapi'
           config_image: {get_param: ContainerMysqlConfigImage}
           volumes:
             list_concat:
@@ -440,7 +456,7 @@ outputs:
                   - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
-            command: "/bin/bash -c alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head"
+            command: ['/bin/bash', '-c', 'alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head']
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
