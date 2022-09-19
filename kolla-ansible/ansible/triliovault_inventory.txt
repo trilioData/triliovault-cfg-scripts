@@ -7,8 +7,14 @@ compute
 [triliovault-horizon:children]
 horizon
 
+[triliovault-workloadmgr-api:children]
+control
+
 [triliovault-workloadmgr:children]
 control
 
-[triliovault-workloadmgr-api:children]
+[triliovault-workloadmgr-scheduler:children]
+control
+
+[triliovault-workloadmgr-cron:children]
 control
