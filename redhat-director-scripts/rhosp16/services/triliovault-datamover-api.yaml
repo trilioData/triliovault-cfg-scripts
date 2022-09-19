@@ -248,7 +248,7 @@ outputs:
             - '%'
             - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
-        config_volume: triliodmapi
+        config_volume: triliovaultdmapi
         puppet_tags: dmapiconfig
         step_config:
           list_join:
@@ -257,10 +257,10 @@ outputs:
               - {get_attr: [MySQLClient, role_data, step_config]}        
         config_image: {get_param: ContainerTriliovaultDatamoverApiImage}
       kolla_config:
-        /var/lib/kolla/config_files/trilio_dmapi.json:
-          command: /usr/bin/python3 /usr/bin/dmapi-api
+        /var/lib/kolla/config_files/triliovault_datamover_api.json:
+          command: /tmp/start_triliovault_datamover_api.sh
           config_files:
-            - source: "/var/lib/kolla/config_files/triliodmapi/*"
+            - source: "/var/lib/kolla/config_files/triliovaultdmapi/*"
               dest: "/"
               merge: true
               preserve_properties: true
@@ -319,14 +319,14 @@ outputs:
               list_concat:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
-                  - /var/lib/config-data/triliodmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
-                  - /var/lib/config-data/triliodmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
+                  - /var/lib/config-data/triliovaultdmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliovaultdmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
                   - /var/log/containers/triliovault-datamover-api:/var/log/triliovault
             command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
-          trilio_dmapi:
+          triliovault_datamover_api:
             image: {get_param: ContainerTriliovaultDatamoverApiImage}
             net: host
             privileged: true
@@ -336,8 +336,8 @@ outputs:
               list_concat:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
-                  - /var/lib/kolla/config_files/trilio_dmapi.json:/var/lib/kolla/config_files/config.json:ro
-                  - /var/lib/config-data/puppet-generated/triliodmapi/:/var/lib/kolla/config_files/triliodmapi:ro
+                  - /var/lib/kolla/config_files/triliovault_datamover_api.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/triliovaultdmapi/:/var/lib/kolla/config_files/triliovaultdmapi:ro
                   - /var/log/containers/triliovault-datamover-api:/var/log/triliovault:z
                 - if:
                     - internal_tls_enabled
