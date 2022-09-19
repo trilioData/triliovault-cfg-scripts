@@ -34,12 +34,7 @@ vault_s3_endpoint_url =
 vault_s3_max_pool_connections = 500
 vault_data_directory_old = /var/triliovault
 vault_data_directory = <%= @vault_data_dir %>
-log_file = /var/log/triliovault/triliovault-object-store.log
-debug = False
-log_config = /etc/triliovault-object-store/object_store_logging.conf
-verbose = True
-
+log_config_append = /etc/triliovault-object-store/object_store_logging.conf
 vault_s3_max_pool_connections = 500
-
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper

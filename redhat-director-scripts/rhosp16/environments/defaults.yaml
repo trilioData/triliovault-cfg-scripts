@@ -27,16 +27,11 @@ parameter_defaults:
      ExtraKernelModules:
        rbd: {}
 
-   ## Configure 'dmapi_workers' parameter of '/etc/dmapi/dmapi.conf' file
-   ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
-   ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
+   ## Configure 'dmapi_workers' parameter of '/etc/triliovault-datamover/triliovault-datamover-api.conf' file
+   ## This parameter value used to spawn the number of datamover api processes to handle the incoming api requests.
+   ## If your datamover api node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
    ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
-   DmApiWorkers: 16
-
-   ## Cloud Admin user details
-   CloudAdminUserName: "admin"
-   CloudAdminProjectName: "admin"
-   CloudAdminDomainName: "default"
+   DatamoverApiWorkers: 16
 
    ## Project name in which triliovault keystone resources will get created
    TriliovaultKeystoneServiceProjectName: 'service'
@@ -71,8 +66,8 @@ parameter_defaults:
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
    WlmApiDbUserName: "workloadmgr"
    WlmApiDbName: "workloadmgr"
-   WlmApiKeystoneUserName: "workloadmgr"
-   WlmApiKeystoneServiceName: "workloadmgr"
+   WlmApiKeystoneUserName: "triliovault"
+   WlmApiKeystoneServiceName: "TrilioVaultWLM"
    WlmApiKeystoneServiceType: "workloads"
    ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 

@@ -19,19 +19,39 @@ class trilio::contego::config inherits trilio::contego {
         group  => '42436',
         mode   => '0644',
     }->
-    file { "/etc/triliovault-datamover/triliovault_datamover_conf.erb":
+    file { "/etc/triliovault-datamover/triliovault-datamover.conf":
         ensure  => present,
         owner  => '42436',
         group  => '42436',
         mode   => '0644',
         content => template('trilio/triliovault_datamover_conf.erb'),
-    }
+    }->
+    file { "/etc/triliovault-datamover/datamover_logging.conf":
+        ensure  => present,
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        content => template('trilio/datamover_logging_conf.erb'),
+    }->
     file { "/etc/triliovault-datamover/s3-cert.pem":
         ensure => 'present',
         owner  => '42436',
         group  => '42436',
         mode   => '0644',
         source => 'puppet:///modules/trilio/s3-cert.pem',
+    }
+    file { '/tmp/':
+        ensure => 'directory',
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
+    }->
+    file { "/tmp/start_triliovault_datamover.sh":
+        ensure  => present,
+        content => template('trilio/start_triliovault_datamover_sh.erb'),
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
     }
 }
 

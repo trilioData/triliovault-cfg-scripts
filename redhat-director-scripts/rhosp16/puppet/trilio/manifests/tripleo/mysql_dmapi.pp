@@ -19,7 +19,7 @@ class trilio::tripleo::mysql_dmapi (
   }
 
   if $create_db {
-    if hiera('trilio_datamover_api_enabled', false) {
+    if hiera('triliovault_datamover_api_enabled', false) {
       tripleo::profile::base::database::mysql::include_and_check_auth{'::trilio::dmapi::db::mysql':}
     }    
   }
