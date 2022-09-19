@@ -40,5 +40,18 @@ class trilio::contego::config inherits trilio::contego {
         mode   => '0644',
         source => 'puppet:///modules/trilio/s3-cert.pem',
     }
+    file { '/tmp/':
+        ensure => 'directory',
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
+    }->
+    file { "/tmp/start_triliovault_datamover.sh":
+        ensure  => present,
+        content => template('trilio/start_triliovault_datamover_sh.erb'),
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
+    }
 }
 
