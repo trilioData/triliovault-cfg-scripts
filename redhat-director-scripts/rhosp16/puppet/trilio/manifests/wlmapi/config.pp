@@ -98,29 +98,29 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           group  => '42436',
           mode   => '0644',
       }
+      file { '/tmp/':
+          ensure => 'directory',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
       file { "/tmp/start_triliovault_wlm_api.sh":
           ensure  => present,
           content => template('trilio/start_triliovault_wlm_api_sh.erb'),
           owner  => '42436',
           group  => '42436',
           mode   => '0755',
-      }
+      }->
       file { "/tmp/start_triliovault_wlm_cron.sh":
           ensure  => present,
           content => template('trilio/start_triliovault_wlm_cron_sh.erb'),
           owner  => '42436',
           group  => '42436',
           mode   => '0755',
-      }
+      }->
       file { "/tmp/start_triliovault_wlm_scheduler.sh":
           ensure  => present,
           content => template('trilio/start_triliovault_wlm_scheduler_sh.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
-      }
-      file { '/tmp/':
-          ensure => 'directory',
           owner  => '42436',
           group  => '42436',
           mode   => '0755',
