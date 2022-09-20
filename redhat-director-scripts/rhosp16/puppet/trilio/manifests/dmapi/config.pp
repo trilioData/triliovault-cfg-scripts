@@ -39,13 +39,13 @@ class trilio::dmapi::config inherits trilio::dmapi {
           content => template('trilio/datamover_api_logging_conf.erb'),
           mode   => '0644',
       }
-      file { '/tmp/':
+      file { '/opt/triliovault':
           ensure => 'directory',
           owner  => '42436',
           group  => '42436',
           mode   => '0755',
       }->
-      file { "/tmp/start_triliovault_datamover_api.sh":
+      file { "/opt/triliovault/start_triliovault_datamover_api.sh":
           ensure  => present,
           content => template('trilio/start_triliovault_datamover_api_sh.erb'),
           mode   => '0755',

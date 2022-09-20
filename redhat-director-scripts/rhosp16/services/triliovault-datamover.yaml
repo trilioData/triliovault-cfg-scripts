@@ -168,7 +168,7 @@ outputs:
         config_image: {get_param: ContainerTriliovaultDatamoverImage}
       kolla_config:
         /var/lib/kolla/config_files/triliovault_datamover.json:
-          command: /tmp/start_triliovault_datamover.sh
+          command: /opt/triliovault/start_triliovault_datamover.sh
           config_files:
             - source: "/var/lib/kolla/config_files/nova_libvirt/*"
               dest: "/"

@@ -5,9 +5,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 
 ## User Input
-CLOUD_ADMIN_USER_NAME=`grep "CloudAdminUserName" ${SCRIPT_DIR}/../environments/defaults.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
-CLOUD_ADMIN_PROJECT_NAME=`grep "CloudAdminProjectName" ${SCRIPT_DIR}/../environments/defaults.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
-CLOUD_ADMIN_DOMAIN_NAME=`grep "CloudAdminDomainName" ${SCRIPT_DIR}/../environments/defaults.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
+CLOUD_ADMIN_USER_NAME=`grep "CloudAdminUserName" ${SCRIPT_DIR}/../environments/trilio_env.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
+CLOUD_ADMIN_PROJECT_NAME=`grep "CloudAdminProjectName" ${SCRIPT_DIR}/../environments/trilio_env.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
+CLOUD_ADMIN_DOMAIN_NAME=`grep "CloudAdminDomainName" ${SCRIPT_DIR}/../environments/trilio_env.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
 WLM_PROJECT_DOMAIN_NAME=`grep "TriliovaultKeystoneUserDomainName" ${SCRIPT_DIR}/../environments/defaults.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
 WLM_PROJECT_NAME=`grep "TriliovaultKeystoneServiceProjectName" ${SCRIPT_DIR}/../environments/defaults.yaml | awk -F ":" '{print $2}' | tr -d ' ' | tr -d \'\"`
 
