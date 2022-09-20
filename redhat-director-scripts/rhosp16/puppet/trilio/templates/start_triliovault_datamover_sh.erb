@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -ex
-/usr/sbin/modprobe nbd nbds_max=128
 
 ## Start triliovault-object-store service if backup target type is s3
 <% if @backup_target_type == "s3" -%>

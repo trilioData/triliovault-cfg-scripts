@@ -337,7 +337,7 @@ outputs:
         config_image: {get_param: ContainerTriliovaultWlmImage}
       kolla_config:
         /var/lib/kolla/config_files/triliovault_wlm_workloads.json:
-          command: /tmp/start_triliovault_wlm_workloads.sh
+          command: /opt/triliovault/start_triliovault_wlm_workloads.sh
           config_files:
             - source: "/var/lib/kolla/config_files/triliovaultwlmworkloads/*"
               dest: "/"
