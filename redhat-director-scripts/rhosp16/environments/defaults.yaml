@@ -60,8 +60,8 @@ parameter_defaults:
    ## Triliovault Wlm Api Service port
    WlmApiPort: "8781"
    WlmApiSslPort: "13781"
-   WlmApiPort: "8784"
-   WlmApiSslPort: "13784"
+   DatamoverApiPort: "8784"
+   DatamoverApiSslPort: "13784"
 
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
    WlmApiDbUserName: "workloadmgr"

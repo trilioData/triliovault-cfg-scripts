@@ -185,7 +185,7 @@ outputs:
         trilio::dmapi::user_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
         trilio::dmapi::project_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
         trilio::dmapi::dmapi_workers: {get_param: DatamoverApiWorkers}
-        tripleo::trilio_datamover_api::firewall_rules:
+        tripleo::triliovault_datamover_api::firewall_rules:
               '240 triliovault-datamover-api':
                 dport:
                   - {get_param: DatamoverApiPort}
@@ -209,16 +209,16 @@ outputs:
                 $NETWORK: {get_param: [ServiceNetMap, TriliovaultDatamoverApiNetwork]}                                
       service_config_settings:
         haproxy:
-          tripleo::trilio_datamover_api::haproxy_endpoints:
-            trilio_datamover_api:
+          tripleo::triliovault_datamover_api::haproxy_endpoints:
+            triliovault_datamover_api:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
-                internal_ip: "%{hiera('trilio_datamover_api_vip')}"
+                internal_ip: "%{hiera('triliovault_datamover_api_vip')}"
                 service_port: {get_param: DatamoverApiPort}
                 public_ssl_port: {get_param: DatamoverApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
-                service_network: "%{hiera('trilio_datamover_api_network')}"
-          tripleo::haproxy::trilio_datamover_api::options:
+                service_network: "%{hiera('triliovault_datamover_api_network')}"
+          tripleo::haproxy::triliovault_datamover_api::options:
              'retries': '5'
              'maxconn': '50000'
              'balance': 'roundrobin'
@@ -270,7 +270,7 @@ outputs:
               recurse: true
       container_puppet_tasks:
         step_3:
-          config_volume: 'trilio_datamover_api_mysql_init_bundle'
+          config_volume: 'triliovault_datamover_api_mysql_init_bundle'
           puppet_tags: 'mysql_database,mysql_grant,mysql_user'
           step_config: 'include ::trilio::tripleo::mysql_dmapi'
           config_image: {get_param: ContainerMysqlConfigImage}
@@ -292,7 +292,7 @@ outputs:
                 - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
               - null          
         step_4:
-          config_volume: 'trilio_datamover_api_keystone_init_tasks'
+          config_volume: 'triliovault_datamover_api_keystone_init_tasks'
           puppet_tags: 'keystone_config'
           step_config: 'include ::trilio::tripleo::keystone'
           config_image: {get_param: ContainerKeystoneConfigImage}
@@ -300,8 +300,8 @@ outputs:
               - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
       docker_config:
         step_2:
-          trilio_datamover_api_init_log:
-            image: &trilio_datamover_api_image {get_param: ContainerTriliovaultDatamoverApiImage}
+          triliovault_datamover_api_init_log:
+            image: &triliovault_datamover_api_image {get_param: ContainerTriliovaultDatamoverApiImage}
             start_order: 0
             net: none
             user: root
@@ -309,8 +309,8 @@ outputs:
               - /var/log/containers/triliovault-datamover-api:/var/log/triliovault:z
             command: ['/bin/bash', '-c', 'chown -R dmapi:dmapi /var/log/triliovault']
         step_4:
-          trilio_datamover_api_db_sync:
-            image: *trilio_datamover_api_image
+          triliovault_datamover_api_db_sync:
+            image: *triliovault_datamover_api_image
             net: host
             privileged: false
             detach: false
@@ -322,7 +322,7 @@ outputs:
                   - /var/lib/config-data/triliovaultdmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultdmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
                   - /var/log/containers/triliovault-datamover-api:/var/log/triliovault
-            command: "/usr/bin/bootstrap_host_exec trilio_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
+            command: "/usr/bin/bootstrap_host_exec triliovault_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
