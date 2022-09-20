@@ -170,8 +170,21 @@
     - wlm-api
     - wlm-workloads
     - wlm-scheduler
+  tags:
+    - update_cfg
+
+- name: Start wlm-cron service on {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  with_items:
     - wlm-cron
   tags:
     - update_cfg
+  when:
+    - "'{{ physical_host}}' == '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
+    - WLM_CRON_CONTROLLER_HOSTNAME != ""
+
 
 

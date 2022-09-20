@@ -3,6 +3,7 @@
   command: "dmapi-dbsync --config-file {{ dmapi_cfg_file }}"
   become: yes
   become_user: "dmapi"
+  run_once: True
 
 - name: connection string
   template:
