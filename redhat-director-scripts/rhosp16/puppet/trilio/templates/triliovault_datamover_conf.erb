@@ -45,7 +45,7 @@ vault_s3_ssl_cert =
 vault_s3_endpoint_url =
 <% end -%>
 
-log_config_append = /var/log/triliovault/datamover_logging.conf
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
 max_uploads_pending = 3
 max_commit_pending = 3
 dmapi_transport_url = <%= @default_transport_url %>
