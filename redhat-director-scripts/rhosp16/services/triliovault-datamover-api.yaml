@@ -322,7 +322,7 @@ outputs:
                   - /var/lib/config-data/triliovaultdmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultdmapi/etc/triliovault-datamover/:/etc/triliovault-datamover/:ro
                   - /var/log/containers/triliovault-datamover-api:/var/log/triliovault
-            command: "/usr/bin/bootstrap_host_exec triliovault_datamover_api su dmapi -s /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
+            command: "/usr/bin/bootstrap_host_exec triliovault_datamover_api /bin/bash -c /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
