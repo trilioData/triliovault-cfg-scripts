@@ -41,7 +41,7 @@ neutron_admin_auth_url = <%= @keystone_internal_auth_url %>
 nova_admin_auth_url = <%= @keystone_internal_auth_url %>
 <% end -%>
 
-osapi_workloads_listen_port = 8781
+osapi_workloads_listen_port = <%= @port %>
 region_name_for_services = <%= @region_name %>
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 sql_connection = <%= @database_connection %>

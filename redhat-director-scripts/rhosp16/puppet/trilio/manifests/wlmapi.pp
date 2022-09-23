@@ -1,6 +1,6 @@
 class trilio::wlmapi ( 
   $password,
-  $port                            = '8781',
+  $port                            = '8780',
   $ssl_port                        = '13781',
   $enable_ssl                      = false,
   $oslomsg_rpc_proto               = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
