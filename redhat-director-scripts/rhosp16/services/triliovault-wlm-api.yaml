@@ -338,6 +338,7 @@ outputs:
                 dport:
                   - {get_param: WlmApiPort}
                   - {get_param: WlmApiSslPort}
+                  - {get_param: WlmApiHaproxyPort}
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
