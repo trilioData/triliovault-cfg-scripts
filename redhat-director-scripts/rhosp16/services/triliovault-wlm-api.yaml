@@ -37,8 +37,12 @@ parameters:
     default: 'internal'
     description: OpenStack endpoint type on which triliovault will communicate
     type: string
-  WlmApiPort:
+  WlmApiHaproxyPort:
     default: '8781'
+    description: Triliovault Wlm Api Haproxy frontend port for http
+    type: string
+  WlmApiPort:
+    default: '8780'
     description: Triliovault Wlm Api Service port for http
     type: string
   WlmApiSslPort:
@@ -358,6 +362,7 @@ outputs:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
                 internal_ip: "%{hiera('triliovault_wlm_api_vip')}"
                 service_port: {get_param: WlmApiPort}
+                haproxy_port: {get_param: WlmApiHaproxyPort}
                 public_ssl_port: {get_param: WlmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
