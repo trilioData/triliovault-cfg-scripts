@@ -186,5 +186,15 @@
     - "'{{ physical_host}}' == '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
     - WLM_CRON_CONTROLLER_HOSTNAME != ""
 
-
-
+- name: Disable wlm-cron service except {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - wlm-cron
+  tags:
+    - update_cfg
+  when:
+    - "'{{ physical_host}}' != '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
+    - WLM_CRON_CONTROLLER_HOSTNAME != ""
