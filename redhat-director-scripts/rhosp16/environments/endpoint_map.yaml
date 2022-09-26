@@ -13981,7 +13981,7 @@ outputs:
                   - EndpointMap
                   - TriliovaultWlmAdmin
                   - port
-                path: /v2
+                path: /v1/
             - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
@@ -14112,7 +14112,7 @@ outputs:
                   - EndpointMap
                   - TriliovaultWlmInternal
                   - port
-                path: /v2
+                path: /v1/
             - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
@@ -14243,7 +14243,7 @@ outputs:
                   - EndpointMap
                   - TriliovaultWlmPublic
                   - port
-                path: /v2
+                path: /v1/
             - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
