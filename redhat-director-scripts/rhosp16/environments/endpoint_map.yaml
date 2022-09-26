@@ -13595,8 +13595,7 @@ outputs:
               - EndpointMap
               - TriliovaultDatamoverAdmin
               - port
-            path: /v1/
-        - '$(tenant_id)s'
+            path: /v2
         uri_no_suffix:
           make_url:
             scheme:
@@ -13724,8 +13723,7 @@ outputs:
               - EndpointMap
               - TriliovaultDatamoverInternal
               - port
-            path: /v1/
-        - '$(tenant_id)s'
+            path: /v2
         uri_no_suffix:
           make_url:
             scheme:
@@ -13853,8 +13851,7 @@ outputs:
               - EndpointMap
               - TriliovaultDatamoverPublic
               - port
-            path: /v1/
-        - '$(tenant_id)s'
+            path: /v2
         uri_no_suffix:
           make_url:
             scheme:
