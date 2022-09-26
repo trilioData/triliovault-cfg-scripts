@@ -57,16 +57,16 @@ triliovault_services:
     dimensions: "{{ triliovault_datamover_dimensions }}"
 
 
-  triliovault-workloadmgr-api:
-    container_name: "triliovault_workloadmgr_api"
-    group: "{{ triliovault_workloadmgr_group }}"
-    image: "{{ triliovault_workloadmgr_image_full }}"
+  triliovault-wlm-api:
+    container_name: "triliovault_wlm_api"
+    group: "{{ triliovault_wlm_group }}"
+    image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: False
-    volumes: "{{ triliovault_workloadmgr_default_volumes }}"
-    dimensions: "{{ triliovault_workloadmgr_dimensions }}"
+    volumes: "{{ triliovault_wlm_default_volumes }}"
+    dimensions: "{{ triliovault_wlm_dimensions }}"
     haproxy:
-      triliovault_workloadmgr_api:
+      triliovault_wlm_api:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: false
@@ -82,7 +82,7 @@ triliovault_services:
           - "maxconn 50000"
         backend_http_extra:
           - "timeout server 10m"
-        listen_port: "{{ triliovault_workloadmgr_api_listen_port }}"
+        listen_port: "{{ triliovault_wlm_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_worklodmgr_api_external:
         enabled: "{{ enable_triliovault }}"
@@ -100,33 +100,33 @@ triliovault_services:
           - "maxconn 50000"
         backend_http_extra:
           - "timeout server 10m"
-        listen_port: "{{ triliovault_workloadmgr_api_listen_port }}"
+        listen_port: "{{ triliovault_wlm_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
 
-  triliovault-workloadmgr-workloads:
-    container_name: "triliovault_workloadmgr_workloads"
-    group: "{{ triliovault_workloadmgr_group }}"
-    image: "{{ triliovault_workloadmgr_image_full }}"
+  triliovault-wlm-workloads:
+    container_name: "triliovault_wlm_workloads"
+    group: "{{ triliovault_wlm_group }}"
+    image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_workloadmgr_default_volumes }}"
-    dimensions: "{{ triliovault_workloadmgr_dimensions }}"
-  triliovault-workloadmgr-scheduler:
-    container_name: "triliovault_workloadmgr_scheduler"
-    group: "{{ triliovault_workloadmgr_group }}"
-    image: "{{ triliovault_workloadmgr_image_full }}"
+    volumes: "{{ triliovault_wlm_default_volumes }}"
+    dimensions: "{{ triliovault_wlm_dimensions }}"
+  triliovault-wlm-scheduler:
+    container_name: "triliovault_wlm_scheduler"
+    group: "{{ triliovault_wlm_group }}"
+    image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_workloadmgr_default_volumes }}"
-    dimensions: "{{ triliovault_workloadmgr_dimensions }}"
-  triliovault-workloadmgr-cron:
-    container_name: "triliovault_workloadmgr_cron"
-    group: "{{ triliovault_workloadmgr_group }}"
-    image: "{{ triliovault_workloadmgr_image_full }}"
+    volumes: "{{ triliovault_wlm_default_volumes }}"
+    dimensions: "{{ triliovault_wlm_dimensions }}"
+  triliovault-wlm-cron:
+    container_name: "triliovault_wlm_cron"
+    group: "{{ triliovault_wlm_group }}"
+    image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_workloadmgr_default_volumes }}"
-    dimensions: "{{ triliovault_workloadmgr_dimensions }}"
+    volumes: "{{ triliovault_wlm_default_volumes }}"
+    dimensions: "{{ triliovault_wlm_dimensions }}"
 
 
 
@@ -150,13 +150,13 @@ triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
 
 
 ###### START OF WORKLOADMGR ####
-triliovault_workloadmgr_image: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-wlm"
-triliovault_workloadmgr_tag: "{{ triliovault_tag }}"
-triliovault_workloadmgr_image_full: "{{ triliovault_workloadmgr_image }}:{{ triliovault_workloadmgr_tag }}"
+triliovault_wlm_image: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-wlm"
+triliovault_wlm_tag: "{{ triliovault_tag }}"
+triliovault_wlm_image_full: "{{ triliovault_wlm_image }}:{{ triliovault_wlm_tag }}"
 
 
-triliovault_workloadmgr_api_dimensions: "{{ default_container_dimensions }}"
-triliovault_workloadmgr_dimensions: "{{ default_container_dimensions }}"
+triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
+triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
 ###### END OF WORKLOADMGR ####
 
@@ -173,8 +173,8 @@ triliovault_parent_data_directory: "/var/trilio"
 triliovault_datamover_user_id: "42436"
 triliovault_datamover_group_id: "42436"
 
-triliovault_workloadmgr_user_id: "42436"
-triliovault_workloadmgr_group_id: "42436"
+triliovault_wlm_user_id: "42436"
+triliovault_wlm_group_id: "42436"
 
 
 triliovault_datamover_api_default_volumes:
@@ -184,8 +184,8 @@ triliovault_datamover_api_default_volumes:
   - "/lib/modules:/lib/modules:ro"
   - "kolla_logs:/var/log/kolla/"
 
-triliovault_workloadmgr_api_default_volumes:
-  - "{{ node_config_directory }}/triliovault-workloadmgr-api/:{{ container_config_directory }}/:ro"
+triliovault_wlm_api_default_volumes:
+  - "{{ node_config_directory }}/triliovault-wlm-api/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "/lib/modules:/lib/modules:ro"
@@ -204,8 +204,8 @@ triliovault_datamover_default_volumes:
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
-triliovault_workloadmgr_default_volumes:
-  - "{{ node_config_directory }}/triliovault-workloadmgr/:{{ container_config_directory }}/:ro"
+triliovault_wlm_default_volumes:
+  - "{{ node_config_directory }}/triliovault-wlm/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
@@ -228,9 +228,9 @@ triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 
-triliovault_workloadmgr_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
-triliovault_workloadmgr_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
-triliovault_workloadmgr_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
 
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
@@ -258,13 +258,13 @@ triliovault_ks_services:
     type: "workloads"
     description: "TrilioVault workloadmgr Api Service"
     endpoints:
-      - {'interface': 'admin', 'url': '{{ triliovault_workloadmgr_api_admin_endpoint }}'}
-      - {'interface': 'internal', 'url': '{{ triliovault_workloadmgr_api_internal_endpoint }}'}
-      - {'interface': 'public', 'url': '{{ triliovault_workloadmgr_api_public_endpoint }}'}
-    triliovault_keystone_user: "{{ triliovault_workloadmgr_keystone_user }}"  
+      - {'interface': 'admin', 'url': '{{ triliovault_wlm_api_admin_endpoint }}'}
+      - {'interface': 'internal', 'url': '{{ triliovault_wlm_api_internal_endpoint }}'}
+      - {'interface': 'public', 'url': '{{ triliovault_wlm_api_public_endpoint }}'}
+    triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
-triliovault_workloadmgr_keystone_user : "workloadmgr"	
+triliovault_wlm_keystone_user : "workloadmgr"	
 
 triliovault_ks_users:
   - project: "service"
@@ -272,7 +272,7 @@ triliovault_ks_users:
     password: "{{ triliovault_keystone_password }}"
     role: "admin"
   - project: "service"
-    user: "{{ triliovault_workloadmgr_keystone_user }}"
+    user: "{{ triliovault_wlm_keystone_user }}"
     password: "{{ triliovault_keystone_password }}"
     role: "admin"
 
@@ -301,7 +301,7 @@ triliovault_db_details:
     triliovault_database_user: "dmapi"
     triliovault_database_name: "dmapi"
     triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-  - group_name:  "triliovault-workloadmgr-api"
+  - group_name:  "triliovault-wlm-api"
     triliovault_database_user: "workloadmgr"
     triliovault_database_name: "workloadmgr"
     triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
@@ -322,7 +322,7 @@ triliovault_horizon_group: "horizon"
 
 ## TrilioVault Inventory for workloadmgr.  Refer triliovault_inventory file. 
 ## Since All workload manager Services get deployed on control nodes. We are not creating another inventory group for the same. 
-triliovault_workloadmgr_group: 'triliovault-workloadmgr'
+triliovault_wlm_group: 'triliovault-wlm'
 
 
 
