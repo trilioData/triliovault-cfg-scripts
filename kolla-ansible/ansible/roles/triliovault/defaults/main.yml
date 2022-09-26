@@ -70,7 +70,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: false
-        port: "{{ triliovault_workloadmgr_api_port }}"
+        port: "{{ triliovault_wlm_api_listen_port }}"
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request 10m"
@@ -88,7 +88,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
-        port: "{{ triliovault_workloadmgr_api_port }}"
+        port: "{{ triliovault_wlm_api_listen_port }}"
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request 10m"
@@ -228,9 +228,9 @@ triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 
-triliovault_workloadmgr_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_workloadmgr_api_port }}/v2"
-triliovault_workloadmgr_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_workloadmgr_api_port }}/v2"
-triliovault_workloadmgr_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_workloadmgr_api_port }}/v2"
+triliovault_workloadmgr_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_workloadmgr_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_workloadmgr_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
 
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
