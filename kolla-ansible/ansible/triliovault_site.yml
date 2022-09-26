@@ -23,10 +23,10 @@
   hosts:
     - triliovault-datamover-api
     - triliovault-datamover
-    - triliovault-workloadmgr-api
-    - triliovault-workloadmgr
-    - triliovault-workloadmgr-scheduler
-    - triliovault-workloadmgr-cron
+    - triliovault-wlm-api
+    - triliovault-wlm
+    - triliovault-wlm-scheduler
+    - triliovault-wlm-cron
     - enable_triliovault | bool
   serial: '{{ kolla_serial|default("0") }}'
   roles:

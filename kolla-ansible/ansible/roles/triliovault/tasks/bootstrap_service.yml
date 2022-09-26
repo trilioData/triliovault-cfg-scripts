@@ -22,7 +22,7 @@
 
   #- name: Running triliovault workloadmgr api bootstrap container
   #vars:
-  #  triliovault_workloadmgr_api: "{{ triliovault_services['triliovault-workloadmgr-api'] }}"
+  #  triliovault-wlm_api: "{{ triliovault_services['triliovault-wlm-api'] }}"
   #become: true
   #kolla_docker:
   #  action: "start_container"
@@ -31,12 +31,12 @@
   #  environment:
   #    KOLLA_BOOTSTRAP:
   #    KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
-  #  image: "{{ triliovault_workloadmgr_api.image }}"
+  #  image: "{{ triliovault-wlm_api.image }}"
   #  labels:
   #    BOOTSTRAP:
-  #  name: "bootstrap_triliovault_workloadmgr_api"
+  #  name: "bootstrap_triliovault-wlm_api"
   #  restart_policy: "no"
-  #  volumes: "{{ triliovault_workloadmgr_api.volumes|reject('equalto', '')|list }}"
+  #  volumes: "{{ triliovault-wlm_api.volumes|reject('equalto', '')|list }}"
   #run_once: True
-  #delegate_to: "{{ groups[triliovault_workloadmgr_api.group][0] }}"
+  #delegate_to: "{{ groups[triliovault-wlm_api.group][0] }}"
 
