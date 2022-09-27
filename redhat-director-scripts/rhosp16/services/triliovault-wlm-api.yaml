@@ -489,6 +489,23 @@ outputs:
                     - []
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+        step_6:
+          triliovault_wlm_api_cloud_trust_init:
+            image: *triliovault_wlm_api_image
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
+                  - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
+            command: "/opt/triliovault/create_wlm_cloud_trust.sh"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
       host_prep_tasks:
         - name: create triliovault wlm api log directory
           file:
