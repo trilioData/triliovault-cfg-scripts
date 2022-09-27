@@ -124,14 +124,14 @@ misfire_grace_time = 600
 [keystone_authtoken]
 
 <% if @interface == "public" -%>
-auth_url = <%= @keystone_public_auth_url %>
-www_authenticate_uri = <%= @keystone_public_auth_uri %>
+auth_url = <%= @keystone_public_auth_url %>/v3
+www_authenticate_uri = <%= @keystone_public_auth_uri %>/v3
 <% elsif @interface == "admin" -%>
-auth_url = <%= @keystone_admin_auth_url %>
-www_authenticate_uri = <%= @keystone_admin_auth_uri %>
+auth_url = <%= @keystone_admin_auth_url %>/v3
+www_authenticate_uri = <%= @keystone_admin_auth_uri %>/v3
 <% else -%>
-auth_url = <%= @keystone_internal_auth_url %>
-www_authenticate_uri = <%= @keystone_internal_auth_uri %>
+auth_url = <%= @keystone_internal_auth_url %>/v3
+www_authenticate_uri = <%= @keystone_internal_auth_uri %>/v3
 <% end -%>
 
 admin_password = <%= @password %>
