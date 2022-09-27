@@ -20,7 +20,7 @@ ssl_key_file =
 api_paste_config = /etc/dmapi/api-paste.ini
 
 [database]
-connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+connection = mysql+pymysql://{{ triliovault_db_details[0].triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_db_details[0].triliovault_database_address }}/{{ triliovault_db_details[0].triliovault_database_name }}
 
 [keystone_authtoken]
 www_authenticate_uri = {{ keystone_internal_url }}
