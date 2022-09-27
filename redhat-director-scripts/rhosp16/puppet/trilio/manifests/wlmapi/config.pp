@@ -57,6 +57,11 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0755',
+      }->
+      file { "/opt/triliovault/create_wlm_cloud_trust.sh":
+          ensure  => present,
+          content => template('trilio/create_wlm_cloud_trust_sh.erb'),
+          mode   => '0755',
       }
 
       file { '/etc/triliovault-wlm/':
@@ -132,5 +137,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           group  => '42436',
           mode   => '0644',
       }
+
 
 }
