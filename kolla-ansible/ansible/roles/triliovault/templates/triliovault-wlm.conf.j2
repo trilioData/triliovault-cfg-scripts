@@ -144,8 +144,9 @@ vault_s3_support_empty_dir = False
 
 {% endif %}
 
+##Path triliovault_s3_ssl_cert_file_name
 {% if triliovault_s3_ssl_cert_file_name != "" and triliovault_backup_target == other_s3_compatible %}
-vault_s3_ssl_cert = {{triliovault_s3_ssl_cert_file_name}}
+vault_s3_ssl_cert = /etc/triliovault-wlm/{{triliovault_s3_ssl_cert_file_name}}
 {% else %}
 vault_s3_ssl_cert =
 {% endif %}

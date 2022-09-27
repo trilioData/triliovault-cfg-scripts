@@ -2,13 +2,13 @@
 	"command": "/usr/bin/python3 /usr/bin/dmapi-api",
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-datamover-api.conf",
-			"dest": "/etc/dmapi/dmapi.conf",
+			"dest": "/etc/triliovault-datamover/triliovault-datamover-api.conf",
 			"owner": "dmapi",
-			"perm": "0600"
+			"perm": "0755"
 		}
 	],
 	"permissions": [{
-		"path": "/var/log/kolla/triliovault-datamover-api",
+		"path": "/var/log/kolla/triliovault",
 		"owner": "dmapi:dmapi",
 		"recurse": true
 	}]

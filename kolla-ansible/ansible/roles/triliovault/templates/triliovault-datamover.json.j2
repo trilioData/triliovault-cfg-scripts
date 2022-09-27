@@ -11,9 +11,9 @@
         },
 		{
             "source": "{{ container_config_directory }}/triliovault-datamover.conf",
-            "dest": "/etc/tvault-contego/tvault-contego.conf",
+            "dest": "/etc/triliovault-datamover/triliovault-datamover.conf",
             "owner": "nova",
-            "perm": "0600"
+            "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/{{ ceph_cinder_keyring }}",
