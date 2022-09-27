@@ -70,7 +70,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: false
-        port: "{{ triliovault_wlm_api_listen_port }}"
+        port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request 10m"
@@ -88,7 +88,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
-        port: "{{ triliovault_wlm_api_listen_port }}"
+        port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request 10m"
@@ -204,8 +204,8 @@ triliovault_datamover_default_volumes:
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
-triliovault_wlm_default_volumes:
-  - "{{ node_config_directory }}/triliovault-wlm/:{{ container_config_directory }}/:ro"
+triliovault_wlm_api_default_volumes:
+  - "{{ node_config_directory }}/triliovault-wlm-api/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
@@ -228,9 +228,9 @@ triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 
-triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
-triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
-triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_listen_port }}/v2"
+triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
+triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
+triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
 
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
@@ -307,8 +307,6 @@ triliovault_db_details:
     triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 
-
-
 ####################
 # TLS
 ####################
@@ -330,9 +328,9 @@ triliovault_wlm_group: 'triliovault-wlm'
 triliovault_kolla_log_dir: "/var/log/kolla/triliovault"
 
 ##Below two dir are seems unused once build is stable will clean it.
-triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover"
-triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-datamover-api"
-
+triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}"
+triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}"
+triliovault_wlm_api_log_dir: "{{ triliovault_kolla_log_dir }}"
 
 
 ############ Following variables are user configurable ##########
@@ -341,7 +339,7 @@ triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-
 enable_triliovault: "yes"
 
 ## TrilioVault's containers tag
-triliovault_tag: "4.1.6-ussuri"
+triliovault_tag: "5.0.X-wallaby"
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_docker_username: ""
 triliovault_docker_password: ""
@@ -402,4 +400,3 @@ triliovault_copy_ceph_s3_ssl_cert: False
 ## cinder
 ## cinder http retries default value
 cinder_http_retries: '10'
-
