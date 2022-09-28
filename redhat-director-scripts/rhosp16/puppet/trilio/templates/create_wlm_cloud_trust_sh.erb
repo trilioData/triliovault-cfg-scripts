@@ -4,4 +4,4 @@ set -e
 sleep 60s
 source /etc/triliovault-wlm/cloud_admin_rc
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
-workloadmgr trust-create --is_cloud_trust True admin
+/usr/bin/workloadmgr trust-create --is_cloud_trust True admin
