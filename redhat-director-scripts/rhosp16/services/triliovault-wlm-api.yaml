@@ -467,6 +467,7 @@ outputs:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
           triliovault_wlm_api:
+            start_order: 5
             image: {get_param: ContainerTriliovaultWlmImage}
             net: host
             privileged: true
@@ -489,8 +490,8 @@ outputs:
                     - []
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
-        step_6:
           triliovault_wlm_api_cloud_trust_init:
+            start_order: 6
             image: *triliovault_wlm_api_image
             net: host
             privileged: false
@@ -502,8 +503,9 @@ outputs:
                 -
                   - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
+                  - /var/lib/config-data/triliovaultwlmapi/opt/triliovault/:/opt/triliovault/
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
-            command: "/opt/triliovault/create_wlm_cloud_trust.sh"
+            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api /bin/bash -c '/opt/triliovault/create_wlm_cloud_trust.sh'"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
       host_prep_tasks:
