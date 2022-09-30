@@ -269,11 +269,11 @@ triliovault_wlm_keystone_user : "workloadmgr"
 triliovault_ks_users:
   - project: "service"
     user: "{{ triliovault_datamover_keystone_user }}"
-    password: "{{ triliovault_keystone_password }}"
+    password: "{{ datamover_api_keystone_user_password }}"
     role: "admin"
   - project: "service"
     user: "{{ triliovault_wlm_keystone_user }}"
-    password: "{{ triliovault_keystone_password }}"
+    password: "{{ wlm_api_keystone_user_password }}"
     role: "admin"
 
 ####################
