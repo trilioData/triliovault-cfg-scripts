@@ -311,9 +311,9 @@ outputs:
         trilio::wlmapi::nova_internal_auth_url: {get_param: [EndpointMap, NovaInternal, uri]}
         trilio::wlmapi::nova_admin_auth_url: {get_param: [EndpointMap, NovaAdmin, uri]}
         trilio::wlmapi::nova_public_auth_url: {get_param: [EndpointMap, NovaPublic, uri]}
-        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderInternal, uri]}
-        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderAdmin, uri]}
-        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderPublic, uri]}
+        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderV2Internal, uri]}
+        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderV2Admin, uri]}
+        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderV2Public, uri]}
         trilio::wlmapi::glance_internal_auth_url: {get_param: [EndpointMap, GlanceInternal, uri]}
         trilio::wlmapi::glance_admin_auth_url: {get_param: [EndpointMap, GlanceAdmin, uri]}
         trilio::wlmapi::glance_public_auth_url: {get_param: [EndpointMap, GlancePublic, uri]}
