@@ -55,12 +55,18 @@ limitations under the License.
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.memcached_servers -}}
 {{- $_ := tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "memcached_servers" -}}
-{{- end -}}
+{{- end -}}\
+
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.memcache_secret_key -}}
 {{- $_ := set .Values.conf.datamover_api.keystone_authtoken "memcache_secret_key" ( default ( randAlphaNum 64 ) .Values.endpoints.oslo_cache.auth.memcache_secret_key ) -}}
 {{- end -}}
 
+{{- if .Values.manifests.secret_ca_bundle -}}
+{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" "/etc/ssl/certs/openstack-ca-bundle.pem" -}}
+{{- else -}}
+{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" ""  -}}
+{{- end -}}
 
 
 {{- if empty .Values.conf.datamover_api.database.connection -}}
@@ -508,6 +514,12 @@ limitations under the License.
 
 {{- if empty .Values.conf.wlm.clients.endpoint_type -}}
 {{- $_ := set .Values.conf.wlm.clients "endpoint_type " .Values.conf.triliovault.interface  -}}
+{{- end -}}
+
+{{- if .Values.manifests.secret_ca_bundle -}}
+{{- $_ := set .Values.conf.wlm.clients "cafile" "/etc/ssl/certs/openstack-ca-bundle.pem" -}}
+{{- else -}}
+{{- $_ := set .Values.conf.wlm.clients "cafile" ""  -}}
 {{- end -}}
 
 
