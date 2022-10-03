@@ -21,23 +21,19 @@ limitations under the License.
 {{- $envAll := index . "envAll" -}}
 {{- $serviceName := index . "serviceName" -}}
 {{- $serviceTypes := index . "serviceTypes" -}}
-{{- $jobAnnotations := index . "jobAnnotations" -}}
-{{- $jobLabels := index . "jobLabels" -}}
 {{- $nodeSelector := index . "nodeSelector" | default ( dict $envAll.Values.labels.job.node_selector_key $envAll.Values.labels.job.node_selector_value ) -}}
-{{- $tolerationsEnabled := index . "tolerationsEnabled" | default false -}}
 {{- $configMapBin := index . "configMapBin" | default (printf "%s-%s" $serviceName "bin" ) -}}
 {{- $secretBin := index . "secretBin" -}}
 {{- $tlsSecret := index . "tlsSecret" | default "" -}}
-{{- $backoffLimit := index . "backoffLimit" | default "1000" -}}
+{{- $backoffLimit := index . "backoffLimit" | default "20" -}}
 {{- $activeDeadlineSeconds := index . "activeDeadlineSeconds" -}}
 {{- $serviceNamePretty := $serviceName | replace "_" "-" -}}
-{{- $restartPolicy_ := "OnFailure" -}}
+{{- $restartPolicy := index . "restartPolicy" | default "OnFailure" -}}
 {{- if hasKey $envAll.Values "jobs" -}}
 {{- if hasKey $envAll.Values.jobs "ks_service" -}}
-{{- $restartPolicy_ = $envAll.Values.jobs.ks_service.restartPolicy | default $restartPolicy_ }}
+{{- $restartPolicy = $envAll.Values.jobs.ks_service.restartPolicy | default "OnFailure" }}
 {{- end }}
 {{- end }}
-{{- $restartPolicy := index . "restartPolicy" | default $restartPolicy_ -}}
 
 {{- $serviceAccountName := printf "%s-%s" $serviceNamePretty "ks-service" }}
 {{ tuple $envAll "ks_service" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -46,15 +42,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ printf "%s-%s" $serviceNamePretty "ks-service" | quote }}
-  labels:
-{{ tuple $envAll $serviceName "ks-service" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 4 }}
-{{- end }}
-  annotations:
-{{- if $jobAnnotations }}
-{{ toYaml $jobAnnotations | indent 4 }}
-{{- end }}
 spec:
   backoffLimit: {{ $backoffLimit }}
 {{- if $activeDeadlineSeconds }}
@@ -64,38 +51,35 @@ spec:
     metadata:
       labels:
 {{ tuple $envAll $serviceName "ks-service" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 8 }}
-{{- end }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: {{ $restartPolicy }}
-      {{ tuple $envAll "ks_service" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
-{{- if $tolerationsEnabled }}
-{{ tuple $envAll $serviceName | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
-{{- end}}
       initContainers:
 {{ tuple $envAll "ks_service" list | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
 {{- range $key1, $osServiceType := $serviceTypes }}
+{{- $osServiceTypeDict := index $envAll.Values.endpoints ($osServiceType | replace "-" "_") }}
+{{- $enabled := true }}
+{{- if hasKey $osServiceTypeDict "enabled" }}
+{{- $enabled = $osServiceTypeDict.enabled }}
+{{- end }}
+{{- if $enabled }}
         - name: {{ printf "%s-%s" $osServiceType "ks-service-registration" | quote }}
           image: {{ $envAll.Values.images.tags.ks_service }}
           imagePullPolicy: {{ $envAll.Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.jobs.ks_service | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           command:
-            - /bin/bash
-            - -c
-            - /tmp/ks-service.sh
+            - /tmp/ks-service.py
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: ks-service-sh
-              mountPath: /tmp/ks-service.sh
-              subPath: ks-service.sh
+            - name: ks-service-py
+              mountPath: /tmp/ks-service.py
+              subPath: ks-service.py
               readOnly: true
 {{ dict "enabled" true "name" $tlsSecret "ca" true | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
           env:
@@ -105,20 +89,21 @@ spec:
             - name: OS_SERVICE_NAME
               value: {{ tuple $osServiceType $envAll | include "helm-toolkit.endpoints.keystone_endpoint_name_lookup" }}
             - name: OS_SERVICE_TYPE
-              value: {{ $osServiceType | quote }}
+              value: {{ $osServiceTypeDict.os_service_type | default $osServiceType | quote }}
+{{- end }}
 {{- end }}
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: ks-service-sh
+        - name: ks-service-py
 {{- if $secretBin }}
           secret:
             secretName: {{ $secretBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- else }}
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- end }}
 {{- dict "enabled" true "name" $tlsSecret | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- end }}

@@ -14,6 +14,56 @@ limitations under the License.
 
 {{/*
 abstract: |
+  Resolves an image reference to a string
+values: |
+  images:
+    tags:
+      test_image: docker.io/port/test:version-foo
+      image_foo: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
+    local_registry:
+      active: true
+      exclude:
+        - image_foo
+  endpoints:
+    cluster_domain_suffix: cluster.local
+    local_image_registry:
+      name: docker-registry
+      namespace: docker-registry
+      hosts:
+        default: localhost
+        internal: docker-registry
+        node: localhost
+      host_fqdn_override:
+        default: null
+      port:
+        registry:
+          node: 5000
+usage: |
+  {{ tuple . "test_image" | include "helm-toolkit.snippets.image" }}
+return: |
+  "localhost:5000/docker.io/port/test:version-foo"
+*/}}
+
+{{- define "helm-toolkit.snippets.imageName" -}}
+{{- $envAll := index . 0 -}}
+{{- $image := index . 1 -}}
+{{- $imageTag := index $envAll.Values.images.tags $image -}}
+{{- if $envAll.Values.global -}}
+{{- if $envAll.Values.global.dockerBaseUrl -}}
+{{ printf "%s/%s" $envAll.Values.global.dockerBaseUrl $imageTag }}
+{{- end }}
+{{- else -}}
+{{- if and ($envAll.Values.images.local_registry.active) (not (has $image $envAll.Values.images.local_registry.exclude )) -}}
+{{- $registryPrefix := printf "%s:%s" (tuple "local_image_registry" "node" $envAll | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup") (tuple "local_image_registry" "node" "registry" $envAll | include "helm-toolkit.endpoints.endpoint_port_lookup") -}}
+{{ printf "%s/%s" $registryPrefix $imageTag | quote }}
+{{- else -}}
+{{ $imageTag | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+abstract: |
   Resolves an image reference to a string, and its pull policy
 values: |
   images:
@@ -50,11 +100,6 @@ return: |
 {{- $envAll := index . 0 -}}
 {{- $image := index . 1 -}}
 {{- $imageTag := index $envAll.Values.images.tags $image -}}
-{{- if and ($envAll.Values.images.local_registry.active) (not (has $image $envAll.Values.images.local_registry.exclude )) -}}
-{{- $registryPrefix := printf "%s:%s" (tuple "local_image_registry" "node" $envAll | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup") (tuple "local_image_registry" "node" "registry" $envAll | include "helm-toolkit.endpoints.endpoint_port_lookup") -}}
-image: {{ printf "%s/%s" $registryPrefix $imageTag | quote }}
-{{- else -}}
-image: {{ $imageTag | quote }}
-{{- end }}
+image: {{ tuple $envAll $image | include "helm-toolkit.snippets.imageName" }}
 imagePullPolicy: {{ $envAll.Values.images.pull_policy }}
 {{- end -}}

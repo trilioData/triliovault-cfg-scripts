@@ -20,10 +20,7 @@ limitations under the License.
 {{- define "helm-toolkit.manifests.job_bootstrap" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $serviceName := index . "serviceName" -}}
-{{- $jobAnnotations := index . "jobAnnotations" -}}
-{{- $jobLabels := index . "jobLabels" -}}
 {{- $nodeSelector := index . "nodeSelector" | default ( dict $envAll.Values.labels.job.node_selector_key $envAll.Values.labels.job.node_selector_value ) -}}
-{{- $tolerationsEnabled := index . "tolerationsEnabled" | default false -}}
 {{- $podVolMounts := index . "podVolMounts" | default false -}}
 {{- $podVols := index . "podVols" | default false -}}
 {{- $configMapBin := index . "configMapBin" | default (printf "%s-%s" $serviceName "bin" ) -}}
@@ -34,9 +31,11 @@ limitations under the License.
 {{- $keystoneUser := index . "keystoneUser" | default $serviceName -}}
 {{- $openrc := index . "openrc" | default "true" -}}
 {{- $secretBin := index . "secretBin" -}}
-{{- $backoffLimit := index . "backoffLimit" | default "1000" -}}
+{{- $backoffLimit := index . "backoffLimit" | default "20" -}}
 {{- $activeDeadlineSeconds := index . "activeDeadlineSeconds" -}}
 {{- $serviceNamePretty := $serviceName | replace "_" "-" -}}
+{{- $boostrapScript := index . "boostrapScript" | default "bootstrap.sh" }}
+{{- $boostrapImage := index . "boostrapImage" | default "bootstrap" }}
 
 {{- $serviceAccountName := printf "%s-%s" $serviceNamePretty "bootstrap" }}
 {{ tuple $envAll "bootstrap" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -45,15 +44,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ printf "%s-%s" $serviceNamePretty "bootstrap" | quote }}
-  labels:
-{{ tuple $envAll $serviceName "bootstrap" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 4 }}
-{{- end }}
-  annotations:
-{{- if $jobAnnotations }}
-{{ toYaml $jobAnnotations | indent 4 }}
-{{- end }}
 spec:
   backoffLimit: {{ $backoffLimit }}
 {{- if $activeDeadlineSeconds }}
@@ -63,43 +53,41 @@ spec:
     metadata:
       labels:
 {{ tuple $envAll $serviceName "bootstrap" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 8 }}
-{{- end }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
-      {{ tuple $envAll "bootstrap" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
-{{- if $tolerationsEnabled }}
-{{ tuple $envAll $serviceName | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
-{{- end}}
       initContainers:
 {{ tuple $envAll "bootstrap" list | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container"  | indent 8 }}
       containers:
         - name: bootstrap
-          image: {{ $envAll.Values.images.tags.bootstrap }}
+          image: {{ index $envAll.Values.images.tags $boostrapImage }}
           imagePullPolicy: {{ $envAll.Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.jobs.bootstrap | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
-{{- if eq $openrc "true" }}
           env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+{{- if eq $openrc "true" }}
 {{- with $env := dict "ksUserSecret" ( index $envAll.Values.secrets.identity $keystoneUser ) "useCA" (ne $tlsSecret "") }}
 {{- include "helm-toolkit.snippets.keystone_openrc_env_vars" $env | indent 12 }}
 {{- end }}
 {{- end }}
+{{ dict "envAll" $envAll | include "helm-toolkit.snippets.kubernetes_proxy_env_vars" | indent 12 }}
           command:
             - /bin/bash
             - -c
-            - /tmp/bootstrap.sh
+            - /tmp/{{ $boostrapScript }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: bootstrap-sh
-              mountPath: /tmp/bootstrap.sh
-              subPath: bootstrap.sh
+            - name: bootstrap-script
+              mountPath: /tmp/{{ $boostrapScript }}
+              subPath: {{ $boostrapScript }}
               readOnly: true
             - name: etc-service
               mountPath: {{ dir $configFile | quote }}
@@ -118,15 +106,15 @@ spec:
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: bootstrap-sh
+        - name: bootstrap-script
 {{- if $secretBin }}
           secret:
             secretName: {{ $secretBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- else }}
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- end }}
         - name: etc-service
           emptyDir: {}
