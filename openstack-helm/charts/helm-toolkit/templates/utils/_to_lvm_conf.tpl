@@ -14,22 +14,30 @@ limitations under the License.
 
 {{/*
 abstract: |
-  Renders a set of standardised labels
+  Returns lvm.conf formatted output from yaml input
 values: |
-  release_group: null
+  conf:
+    lvm:
+      activation: # Keys at this level are used for section headings
+        udev_sync: 0
 usage: |
-  {{ tuple . "foo" "bar" | include "helm-toolkit.snippets.kubernetes_metadata_labels" }}
+  {{ include "helm-toolkit.utils.to_lvm_conf" .Values.conf.lvm }}
 return: |
-  release_group: RELEASE-NAME
-  application: foo
-  component: bar
+  activation {
+    udev_sync = 0
+  }
 */}}
 
-{{- define "helm-toolkit.snippets.kubernetes_metadata_labels" -}}
-{{- $envAll := index . 0 -}}
-{{- $application := index . 1 -}}
-{{- $component := index . 2 -}}
-release_group: {{ $envAll.Values.release_group | default $envAll.Release.Name }}
-application: {{ $application }}
-component: {{ $component }}
+{{- define "helm-toolkit.utils.to_lvm_conf" -}}
+{{- range $section, $values := . -}}
+{{ $section }} {{ "{" -}}
+{{ range $key, $value := $values -}}
+{{ if kindIs "slice" $value }}
+  {{ $key }} = {{ toJson $value }}
+{{- else }}
+  {{ $key }} = {{ $value }}
+{{- end }}
+{{- end }}
+{{ "}" }}
+{{ end -}}
 {{- end -}}

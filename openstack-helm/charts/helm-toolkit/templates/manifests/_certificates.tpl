@@ -30,8 +30,7 @@ examples:
                   organization:
                     - ACME
                   commonName: keystone-api.openstack.svc.cluster.local
-                  privateKey:
-                    size: 2048
+                  keySize: 2048
                   usages:
                     - server auth
                     - client auth
@@ -44,7 +43,7 @@ examples:
       {{ $opts | include "helm-toolkit.manifests.certificates" }}
     return: |
       ---
-      apiVersion: cert-manager.io/v1
+      apiVersion: cert-manager.io/v1alpha3
       kind: Certificate
       metadata:
         name: keystone-tls-api
@@ -56,8 +55,7 @@ examples:
         duration: 2160h
         issuerRef:
           name: ca-issuer
-        privateKey:
-          size: 2048
+        keySize: 2048
         organization:
         - ACME
         secretName: keystone-tls-api
@@ -79,13 +77,11 @@ examples:
 {{- $dnsNames := list $hostName (printf "%s.%s" $hostName $envAll.Release.Namespace) (printf "%s.%s.svc.%s" $hostName $envAll.Release.Namespace $envAll.Values.endpoints.cluster_domain_suffix) -}}
 {{- $_ := $dnsNames | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls") "dnsNames" -}}
 {{- end -}}
-{{/* Default privateKey size to 4096. This can be overridden. */}}
-{{- if not (hasKey $slice "privateKey") -}}
-{{- $_ := dict "size" ( printf "%d" 4096 | atoi ) | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls") "privateKey" -}}
-{{- else if empty (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls" "privateKey" "size") -}}
-{{- $_ := ( printf "%d" 4096 | atoi ) | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls" "privateKey") "size" -}}
+{{/* Default keySize to 4096. This can be overridden. */}}
+{{- if not (hasKey $slice "keySize") -}}
+{{- $_ := ( printf "%d" 4096 | atoi ) | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls") "keySize" -}}
 {{- end -}}
-{{/* Default duration to 3 months. Note the min is 720h. This can be overridden. */}}
+{{/* Default keySize to 3 months. Note the min is 720h. This can be overridden. */}}
 {{- if not (hasKey $slice "duration") -}}
 {{- $_ := printf "%s" "2190h" | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls") "duration" -}}
 {{- end -}}
@@ -98,7 +94,7 @@ examples:
 {{- $_ := (list "server auth" "client auth") | set (index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls") "usages" -}}
 {{- end -}}
 ---
-apiVersion: cert-manager.io/v1
+apiVersion: cert-manager.io/v1alpha3
 kind: Certificate
 metadata:
   name: {{ index $envAll.Values.endpoints $service "host_fqdn_override" "default" "tls" "secretName" }}

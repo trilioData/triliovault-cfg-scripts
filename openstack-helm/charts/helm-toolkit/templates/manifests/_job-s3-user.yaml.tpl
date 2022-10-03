@@ -20,14 +20,11 @@ limitations under the License.
 {{- define "helm-toolkit.manifests.job_s3_user" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $serviceName := index . "serviceName" -}}
-{{- $jobAnnotations := index . "jobAnnotations" -}}
-{{- $jobLabels := index . "jobLabels" -}}
 {{- $nodeSelector := index . "nodeSelector" | default ( dict $envAll.Values.labels.job.node_selector_key $envAll.Values.labels.job.node_selector_value ) -}}
-{{- $tolerationsEnabled := index . "tolerationsEnabled" | default false -}}
 {{- $configMapBin := index . "configMapBin" | default (printf "%s-%s" $serviceName "bin" ) -}}
 {{- $configMapCeph := index . "configMapCeph" | default (printf "ceph-etc" ) -}}
 {{- $secretBin := index . "secretBin" -}}
-{{- $backoffLimit := index . "backoffLimit" | default "1000" -}}
+{{- $backoffLimit := index . "backoffLimit" | default "20" -}}
 {{- $activeDeadlineSeconds := index . "activeDeadlineSeconds" -}}
 {{- $serviceNamePretty := $serviceName | replace "_" "-" -}}
 {{- $s3UserSecret := index $envAll.Values.secrets.rgw $serviceName -}}
@@ -39,17 +36,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ printf "%s-%s" $serviceNamePretty "s3-user" | quote }}
-  labels:
-{{ tuple $envAll $serviceName "s3-user" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 4 }}
-{{- end }}
   annotations:
-    "helm.sh/hook-delete-policy": before-hook-creation
     {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
-{{- if $jobAnnotations }}
-{{ toYaml $jobAnnotations | indent 4 }}
-{{- end }}
 spec:
   backoffLimit: {{ $backoffLimit }}
 {{- if $activeDeadlineSeconds }}
@@ -59,18 +47,11 @@ spec:
     metadata:
       labels:
 {{ tuple $envAll $serviceName "s3-user" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 8 }}
-{{- end }}
     spec:
       serviceAccountName: {{ $serviceAccountName | quote }}
       restartPolicy: OnFailure
-      {{ tuple $envAll "s3_user" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
-{{- if $tolerationsEnabled }}
-{{ tuple $envAll $serviceName | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
-{{- end}}
       initContainers:
 {{ tuple $envAll "s3_user" list | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
         - name: ceph-keyring-placement
@@ -106,7 +87,9 @@ spec:
 {{- with $env := dict "s3AdminSecret" $envAll.Values.secrets.rgw.admin }}
 {{- include "helm-toolkit.snippets.rgw_s3_admin_env_vars" $env | indent 12 }}
 {{- end }}
-{{- include "helm-toolkit.snippets.rgw_s3_user_env_vars" $envAll | indent 12 }}
+{{- with $env := dict "s3UserSecret" $s3UserSecret }}
+{{- include "helm-toolkit.snippets.rgw_s3_user_env_vars" $env | indent 12 }}
+{{- end }}
             - name: RGW_HOST
               value: {{ tuple "ceph_object_store" "internal" "api" $envAll | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" }}
           volumeMounts:
@@ -135,22 +118,22 @@ spec:
 {{- if $secretBin }}
           secret:
             secretName: {{ $secretBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- else }}
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- end }}
         - name: ceph-keyring-sh
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
         - name: etcceph
           emptyDir: {}
         - name: ceph-etc
           configMap:
             name: {{ $configMapCeph | quote }}
-            defaultMode: 0444
+            defaultMode: 292
         {{- if empty $envAll.Values.conf.ceph.admin_keyring }}
         - name: ceph-keyring
           secret:
