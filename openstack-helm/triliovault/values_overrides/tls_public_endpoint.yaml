@@ -12,4 +12,34 @@ endpoints:
     port:
       api:
         public: 443
+  identity:
+    scheme:
+      public: https
+    port:
+      api:
+        public: 443
+  image:
+    scheme:
+      public: https
+    port:
+      api:
+        public: 443
+  volumev3:
+    scheme:
+      public: https
+    port:
+      api:
+        public: 443
+  network:
+    scheme:
+      public: https
+    port:
+      api:
+        public: 443
+  compute:
+    scheme:
+      public: https
+    port:
+      api:
+        public: 443
 ...
