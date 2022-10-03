@@ -11,9 +11,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
+
 {{- define "helm-toolkit.scripts.create_s3_user" }}
 #!/bin/bash
+
 set -e
+
 function create_s3_user () {
   echo "Creating s3 user and key pair"
   radosgw-admin user create \
@@ -23,6 +26,7 @@ function create_s3_user () {
     --access-key ${S3_ACCESS_KEY} \
     --secret-key ${S3_SECRET_KEY}
 }
+
 function update_s3_user () {
   # Retrieve old access keys, if they exist
   old_access_keys=$(radosgw-admin user info --uid=${S3_USERNAME} \
@@ -56,10 +60,12 @@ function update_s3_user () {
       --secret-key ${S3_SECRET_KEY}
   fi
 }
+
 user_exists=$(radosgw-admin user info --uid=${S3_USERNAME} || true)
 if [[ -z ${user_exists} ]]; then
   create_s3_user
 else
   update_s3_user
 fi
+
 {{- end }}

@@ -25,36 +25,24 @@ limitations under the License.
 {{- define "helm-toolkit.manifests.job_db_init_mysql" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $serviceName := index . "serviceName" -}}
-{{- $jobAnnotations := index . "jobAnnotations" -}}
-{{- $jobLabels := index . "jobLabels" -}}
+{{- $jobComponent := index . "jobComponent" | default "db-init" -}}
 {{- $nodeSelector := index . "nodeSelector" | default ( dict $envAll.Values.labels.job.node_selector_key $envAll.Values.labels.job.node_selector_value ) -}}
-{{- $tolerationsEnabled := index . "tolerationsEnabled" | default false -}}
 {{- $configMapBin := index . "configMapBin" | default (printf "%s-%s" $serviceName "bin" ) -}}
 {{- $configMapEtc := index . "configMapEtc" | default (printf "%s-%s" $serviceName "etc" ) -}}
 {{- $dbToInit := index . "dbToInit" | default ( dict "adminSecret" $envAll.Values.secrets.oslo_db.admin "configFile" (printf "/etc/%s/%s.conf" $serviceName $serviceName ) "logConfigFile" (printf "/etc/%s/logging.conf" $serviceName ) "configDbSection" "database" "configDbKey" "connection" ) -}}
 {{- $dbsToInit := default (list $dbToInit) (index . "dbsToInit") }}
 {{- $secretBin := index . "secretBin" -}}
-{{- $backoffLimit := index . "backoffLimit" | default "1000" -}}
+{{- $backoffLimit := index . "backoffLimit" | default "20" -}}
 {{- $activeDeadlineSeconds := index . "activeDeadlineSeconds" -}}
 {{- $serviceNamePretty := $serviceName | replace "_" "-" -}}
-{{- $dbAdminTlsSecret := index . "dbAdminTlsSecret" | default "" -}}
 
-{{- $serviceAccountName := printf "%s-%s" $serviceNamePretty "db-init" }}
+{{- $serviceAccountName := printf "%s-%s" $serviceNamePretty $jobComponent }}
 {{ tuple $envAll "db_init" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ printf "%s-%s" $serviceNamePretty "db-init" | quote }}
-  labels:
-{{ tuple $envAll $serviceName "db-init" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 4 }}
-{{- end }}
-  annotations:
-{{- if $jobAnnotations }}
-{{ toYaml $jobAnnotations | indent 4 }}
-{{- end }}
+  name: {{ printf "%s-%s" $serviceNamePretty $jobComponent | quote }}
 spec:
   backoffLimit: {{ $backoffLimit }}
 {{- if $activeDeadlineSeconds }}
@@ -63,27 +51,20 @@ spec:
   template:
     metadata:
       labels:
-{{ tuple $envAll $serviceName "db-init" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 8 }}
-{{- end }}
+{{ tuple $envAll $serviceName $jobComponent | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
-      {{ tuple $envAll "db_init" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
-{{- if $tolerationsEnabled }}
-{{ tuple $envAll $serviceName | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
-{{- end}}
       initContainers:
 {{ tuple $envAll "db_init" list | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
 {{- range $key1, $dbToInit := $dbsToInit }}
 {{ $dbToInitType := default "oslo" $dbToInit.inputType }}
-        - name: {{ printf "%s-%s-%d" $serviceNamePretty "db-init" $key1 | quote }}
+        - name: {{ printf "%s-%s-%d" $serviceNamePretty $jobComponent $key1 | quote }}
           image: {{ $envAll.Values.images.tags.db_init }}
           imagePullPolicy: {{ $envAll.Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.jobs.db_init | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
@@ -108,10 +89,6 @@ spec:
                   name: {{ $dbToInit.userSecret | quote }}
                   key: DB_CONNECTION
 {{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-            - name: MARIADB_X509
-              value: "REQUIRE X509"
-{{- end }}
           command:
             - /tmp/db-init.py
           volumeMounts:
@@ -133,9 +110,6 @@ spec:
               subPath: {{ base $dbToInit.logConfigFile | quote }}
               readOnly: true
 {{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $dbAdminTlsSecret "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
-{{- end }}
 {{- end }}
       volumes:
         - name: pod-tmp
@@ -144,14 +118,11 @@ spec:
 {{- if $secretBin }}
           secret:
             secretName: {{ $secretBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- else }}
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
-{{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $dbAdminTlsSecret | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+            defaultMode: 365
 {{- end }}
 {{- $local := dict "configMapBinFirst" true -}}
 {{- range $key1, $dbToInit := $dbsToInit }}
@@ -163,7 +134,7 @@ spec:
         - name: db-init-conf
           secret:
             secretName: {{ $configMapEtc | quote }}
-            defaultMode: 0444
+            defaultMode: 292
 {{- end -}}
 {{- end -}}
 {{- end -}}

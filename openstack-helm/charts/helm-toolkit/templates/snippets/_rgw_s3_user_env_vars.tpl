@@ -13,22 +13,20 @@ limitations under the License.
 */}}
 
 {{- define "helm-toolkit.snippets.rgw_s3_user_env_vars" }}
-{{- range $client, $user := .Values.storage.s3.clients }}
-{{- $s3secret := printf "%s-s3-user-secret" ( $client | replace "_" "-" | lower ) }}
-- name: {{ printf "%s_S3_USERNAME" ($client | replace "-" "_" | upper) }}
+{{- $s3UserSecret := .s3UserSecret }}
+- name: S3_USERNAME
   valueFrom:
     secretKeyRef:
-      name: {{ $s3secret }}
-      key: USERNAME
-- name: {{ printf "%s_S3_ACCESS_KEY" ($client | replace "-" "_" | upper) }}
+      name: {{ $s3UserSecret }}
+      key: S3_USERNAME
+- name: S3_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ $s3secret }}
-      key: ACCESS_KEY
-- name: {{ printf "%s_S3_SECRET_KEY" ($client | replace "-" "_" | upper) }}
+      name: {{ $s3UserSecret }}
+      key: S3_ACCESS_KEY
+- name: S3_SECRET_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ $s3secret }}
-      key: SECRET_KEY
-{{- end }}
+      name: {{ $s3UserSecret }}
+      key: S3_SECRET_KEY
 {{- end }}

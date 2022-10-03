@@ -47,27 +47,12 @@ RABBITMQ_VHOST=$(echo "${RABBITMQ_USER_CONNECTION}" | \
 RABBITMQ_VHOST="${RABBITMQ_VHOST:-/}"
 
 function rabbitmqadmin_cli () {
-  if [ -n "$RABBITMQ_X509" ]
-  then
-    rabbitmqadmin \
-      --ssl \
-      --ssl-disable-hostname-verification \
-      --ssl-ca-cert-file="${USER_CERT_PATH}/ca.crt" \
-      --ssl-cert-file="${USER_CERT_PATH}/tls.crt" \
-      --ssl-key-file="${USER_CERT_PATH}/tls.key" \
-      --host="${RABBIT_HOSTNAME}" \
-      --port="${RABBIT_PORT}" \
-      --username="${RABBITMQ_ADMIN_USERNAME}" \
-      --password="${RABBITMQ_ADMIN_PASSWORD}" \
-      ${@}
-  else
-    rabbitmqadmin \
-      --host="${RABBIT_HOSTNAME}" \
-      --port="${RABBIT_PORT}" \
-      --username="${RABBITMQ_ADMIN_USERNAME}" \
-      --password="${RABBITMQ_ADMIN_PASSWORD}" \
-      ${@}
-  fi
+  rabbitmqadmin \
+    --host="${RABBIT_HOSTNAME}" \
+    --port="${RABBIT_PORT}" \
+    --username="${RABBITMQ_ADMIN_USERNAME}" \
+    --password="${RABBITMQ_ADMIN_PASSWORD}" \
+    ${@}
 }
 
 echo "Managing: User: ${RABBITMQ_USERNAME}"

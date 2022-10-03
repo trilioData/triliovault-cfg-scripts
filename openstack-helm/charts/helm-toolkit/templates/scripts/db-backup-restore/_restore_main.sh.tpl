@@ -130,6 +130,8 @@
 #      or "get_schema" when it needs that data requested by the user.
 #
 
+export LOG_FILE=/tmp/dbrestore.log
+
 usage() {
   ret_val=$1
   echo "Usage:"
@@ -143,7 +145,6 @@ usage() {
   echo "list_schema <archive_filename> <dbname> <table_name> [remote]"
   echo "restore <archive_filename> <db_specifier> [remote]"
   echo "        where <db_specifier> = <dbname> | ALL"
-  echo "delete_archive <archive_filename> [remote]"
   clean_and_exit $ret_val ""
 }
 
@@ -162,42 +163,6 @@ clean_and_exit() {
   exit $RETCODE
 }
 
-determine_resulting_error_code() {
-  RESULT="$1"
-
-  echo ${RESULT} | grep "HTTP 404"
-  if [[ $? -eq 0 ]]; then
-    echo "Could not find the archive: ${RESULT}"
-    return 1
-  else
-    echo ${RESULT} | grep "HTTP 401"
-    if [[ $? -eq 0 ]]; then
-      echo "Could not access the archive: ${RESULT}"
-      return 1
-    else
-      echo ${RESULT} | grep "HTTP 503"
-      if [[ $? -eq 0 ]]; then
-        echo "RGW service is unavailable. ${RESULT}"
-        # In this case, the RGW may be temporarily down.
-        # Return slightly different error code so the calling code can retry
-        return 2
-      else
-        echo ${RESULT} | grep "ConnectionError"
-        if [[ $? -eq 0 ]]; then
-          echo "Could not reach the RGW: ${RESULT}"
-          # In this case, keystone or the site/node may be temporarily down.
-          # Return slightly different error code so the calling code can retry
-          return 2
-        else
-          echo "Archive ${ARCHIVE} could not be retrieved: ${RESULT}"
-          return 1
-        fi
-      fi
-    fi
-  fi
-  return 0
-}
-
 # Retrieve a list of archives from the RGW.
 retrieve_remote_listing() {
   RESULT=$(openstack container show $CONTAINER_NAME 2>&1)
@@ -212,8 +177,22 @@ retrieve_remote_listing() {
       echo "Archive listing successfully retrieved."
     fi
   else
-    determine_resulting_error_code "${RESULT}"
-    return $?
+    echo $RESULT | grep "HTTP 401"
+    if [[ $? -eq 0 ]]; then
+      echo "Could not access the container: ${RESULT}"
+      return 1
+    else
+      echo $RESULT | grep "ConnectionError"
+      if [[ $? -eq 0 ]]; then
+        echo "Could not reach the RGW: ${RESULT}"
+        # In this case, keystone or the site/node may be temporarily down.
+        # Return slightly different error code so the calling code can retry
+        return 2
+      else
+        echo "Container $CONTAINER_NAME does not exist: ${RESULT}"
+        return 1
+      fi
+    fi
   fi
   return 0
 }
@@ -224,24 +203,24 @@ retrieve_remote_archive() {
 
   RESULT=$(openstack object save --file $TMP_DIR/$ARCHIVE $CONTAINER_NAME $ARCHIVE 2>&1)
   if [[ $? -ne 0 ]]; then
-    determine_resulting_error_code "${RESULT}"
-    return $?
+    echo $RESULT | grep "HTTP 401"
+    if [[ $? -eq 0 ]]; then
+      echo "Could not access the archive: ${RESULT}"
+      return 1
+    else
+      echo $RESULT | grep "ConnectionError"
+      if [[ $? -eq 0 ]]; then
+        echo "Could not reach the RGW: ${RESULT}"
+        # In this case, keystone or the site/node may be temporarily down.
+        # Return slightly different error code so the calling code can retry
+        return 2
+      else
+        echo "Archive ${ARCHIVE} could not be retrieved: ${RESULT}"
+        return 1
+      fi
+    fi
   else
     echo "Archive $ARCHIVE successfully retrieved."
-  fi
-  return 0
-}
-
-# Delete an archive from the RGW.
-delete_remote_archive() {
-  ARCHIVE=$1
-
-  RESULT=$(openstack object delete ${CONTAINER_NAME} ${ARCHIVE} 2>&1)
-  if [[ $? -ne 0 ]]; then
-    determine_resulting_error_code "${RESULT}"
-    return $?
-  else
-    echo "Archive ${ARCHIVE} successfully deleted."
   fi
   return 0
 }
@@ -256,20 +235,20 @@ list_archives() {
       echo
       echo "All Archives from RGW Data Store"
       echo "=============================================="
-      cat $TMP_DIR/archive_list | sort
+      cat $TMP_DIR/archive_list
       clean_and_exit 0 ""
     else
       clean_and_exit 1 "ERROR: Archives could not be retrieved from the RGW."
     fi
   elif [[ "x${REMOTE}" == "x" ]]; then
     if [[ -d $ARCHIVE_DIR ]]; then
-      archives=$(find $ARCHIVE_DIR/ -iname "*.gz" -print | sort)
+      archives=$(find $ARCHIVE_DIR/ -iname "*.gz" -print)
       echo
       echo "All Local Archives"
       echo "=============================================="
       for archive in $archives
       do
-        echo $archive | cut -d '/' -f8-
+        echo $archive | cut -d '/' -f 8
       done
       clean_and_exit 0 ""
     else
@@ -287,7 +266,6 @@ get_archive() {
   REMOTE=$2
 
   if [[ "x$REMOTE" == "xremote" ]]; then
-    echo "Retrieving archive ${ARCHIVE_FILE} from the remote RGW..."
     retrieve_remote_archive $ARCHIVE_FILE
     if [[ $? -ne 0 ]]; then
       clean_and_exit 1 "ERROR: Could not retrieve remote archive: $ARCHIVE_FILE"
@@ -319,7 +297,7 @@ list_databases() {
   REMOTE=$2
   WHERE="local"
 
-  if [[ -n ${REMOTE} ]]; then
+  if [[ "x${REMOTE}" != "x" ]]; then
     WHERE="remote"
   fi
 
@@ -350,7 +328,7 @@ list_tables() {
   REMOTE=$3
   WHERE="local"
 
-  if [[ -n ${REMOTE} ]]; then
+  if [[ "x${REMOTE}" != "x" ]]; then
     WHERE="remote"
   fi
 
@@ -382,7 +360,7 @@ list_rows() {
   REMOTE=$4
   WHERE="local"
 
-  if [[ -n ${REMOTE} ]]; then
+  if [[ "x${REMOTE}" != "x" ]]; then
     WHERE="remote"
   fi
 
@@ -414,7 +392,7 @@ list_schema() {
   REMOTE=$4
   WHERE="local"
 
-  if [[ -n ${REMOTE} ]]; then
+  if [[ "x${REMOTE}" != "x" ]]; then
     WHERE="remote"
   fi
 
@@ -438,36 +416,6 @@ list_schema() {
   fi
 }
 
-# Delete an archive
-delete_archive() {
-  ARCHIVE_FILE=$1
-  REMOTE=$2
-  WHERE="local"
-
-  if [[ -n ${REMOTE} ]]; then
-    WHERE="remote"
-  fi
-
-  if [[ "${WHERE}" == "remote" ]]; then
-    delete_remote_archive ${ARCHIVE_FILE}
-    if [[ $? -ne 0 ]]; then
-      clean_and_exit 1 "ERROR: Could not delete remote archive: ${ARCHIVE_FILE}"
-    fi
-  else # Local
-    if [[ -e ${ARCHIVE_DIR}/${ARCHIVE_FILE} ]]; then
-      rm -f ${ARCHIVE_DIR}/${ARCHIVE_FILE}
-      if [[ $? -ne 0 ]]; then
-        clean_and_exit 1 "ERROR: Could not delete local archive."
-      fi
-    else
-      clean_and_exit 1 "ERROR: Local archive file could not be found."
-    fi
-  fi
-
-  echo "Successfully deleted archive ${ARCHIVE_FILE} from ${WHERE} storage."
-}
-
-
 # Return 1 if the given database exists in the database file. 0 otherwise.
 database_exists() {
   DB=$1
@@ -482,9 +430,6 @@ database_exists() {
 # This is the main CLI interpreter function
 cli_main() {
   ARGS=("$@")
-
-  # Create the ARCHIVE DIR if it's not already there.
-  mkdir -p $ARCHIVE_DIR
 
   # Create temp directory for a staging area to decompress files into
   export TMP_DIR=$(mktemp -d)
@@ -538,16 +483,6 @@ cli_main() {
       fi
       ;;
 
-    "list_schema")
-      if [[ ${#ARGS[@]} -lt 4 || ${#ARGS[@]} -gt 5 ]]; then
-        usage 1
-      elif [[ ${#ARGS[@]} -eq 4 ]]; then
-        list_schema ${ARGS[1]} ${ARGS[2]} ${ARGS[3]}
-      else
-        list_schema ${ARGS[1]} ${ARGS[2]} ${ARGS[3]} ${ARGS[4]}
-      fi
-      ;;
-
     "restore")
       REMOTE=""
       if [[ ${#ARGS[@]} -lt 3 || ${#ARGS[@]} -gt 4 ]]; then
@@ -570,12 +505,10 @@ cli_main() {
           clean_and_exit 1 "ERROR: Could not get the list of databases to restore."
         fi
 
-        if [[ ! $DB_NAMESPACE == "kube-system" ]]; then
-          #check if the requested database is available in the archive
-          database_exists $DB_SPEC
-          if [[ $? -ne 1 ]]; then
-            clean_and_exit 1 "ERROR: Database ${DB_SPEC} does not exist."
-          fi
+        #check if the requested database is available in the archive
+        database_exists $DB_SPEC
+        if [[ $? -ne 1 ]]; then
+          clean_and_exit 1 "ERROR: Database ${DB_SPEC} does not exist."
         fi
 
         echo "Restoring Database $DB_SPEC And Grants"
@@ -585,6 +518,7 @@ cli_main() {
         else
           clean_and_exit 1 "ERROR: Single database restore failed."
         fi
+        echo "Tail ${LOG_FILE} for restore log."
         clean_and_exit 0 ""
       else
         echo "Restoring All The Databases. This could take a few minutes..."
@@ -594,16 +528,7 @@ cli_main() {
         else
           clean_and_exit 1 "ERROR: Database restore failed."
         fi
-        clean_and_exit 0 ""
-      fi
-      ;;
-    "delete_archive")
-      if [[ ${#ARGS[@]} -lt 2 || ${#ARGS[@]} -gt 3 ]]; then
-        usage 1
-      elif [[ ${#ARGS[@]} -eq 2 ]]; then
-        delete_archive ${ARGS[1]}
-      else
-        delete_archive ${ARGS[1]} ${ARGS[2]}
+        clean_and_exit 0 "Tail ${LOG_FILE} for restore log."
       fi
       ;;
     *)
@@ -611,6 +536,6 @@ cli_main() {
       ;;
   esac
 
-  clean_and_exit 0 ""
+  clean_and_exit 0 "Done"
 }
 {{- end }}

@@ -149,12 +149,14 @@ Values:
 {{- end -}}
 {{- end -}}
 
-{{- if and ($envAll.Values.manifests.job_rabbit_init) (hasKey $envAll.Values.dependencies "dynamic") -}}
-{{- if $envAll.Values.dependencies.dynamic.job_rabbit_init -}}
+{{- range $key1, $dyn_dep := tuple "job_rabbit_init" "job_storage_init" "job_backup_storage_init" "job_bootstrap" "job_db_init" "job_db_sync" "job_ks_endpoints" "job_db_nova_migrate_placement" "job_db_init_indexer" "job_db_init_mongodb" }}
+{{- if and (index $envAll.Values.manifests $dyn_dep) (hasKey $envAll.Values.dependencies "dynamic") -}}
+{{- if hasKey $envAll.Values.dependencies.dynamic $dyn_dep -}}
 {{- if eq $component "pod_dependency" -}}
-{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.pod_dependency ) (index $envAll.Values.dependencies.dynamic.job_rabbit_init $component) ) -}}
+{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.pod_dependency ) (index (index $envAll.Values.dependencies.dynamic $dyn_dep) $component) ) -}}
 {{- else -}}
-{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.dependencies.static $component ) (index $envAll.Values.dependencies.dynamic.job_rabbit_init $component)) -}}
+{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.dependencies.static $component ) (index (index $envAll.Values.dependencies.dynamic $dyn_dep) $component)) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
