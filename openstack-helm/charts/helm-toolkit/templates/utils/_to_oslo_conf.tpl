@@ -15,14 +15,11 @@ limitations under the License.
 {{/*
 abstract: |
   Returns OSLO.conf formatted output from yaml input
-  In case value is set to "<None>" the key won`t be
-  reflected in config
 values: |
   conf:
     keystone:
       DEFAULT: # Keys at this level are used for section headings
         max_token_size: 255
-        host: "<None>"
       oslo_messaging_notifications:
         driver: # An example of a multistring option's syntax
           type: multistring
@@ -64,17 +61,13 @@ return: |
 {{ else if kindIs "map" $value -}}
 {{- if eq $value.type "multistring" }}
 {{- range $k, $multistringValue := $value.values -}}
-{{- if not (eq (toString $multistringValue) "<None>") -}}
 {{ $key }} = {{ $multistringValue }}
-{{ end -}}
 {{ end -}}
 {{ else if eq $value.type "csv" -}}
 {{ $key }} = {{ include "helm-toolkit.utils.joinListWithComma" $value.values }}
 {{ end -}}
 {{- else -}}
-{{- if not (eq (toString $value) "<None>") -}}
 {{ $key }} = {{ $value }}
-{{ end -}}
 {{ end -}}
 {{- end -}}
 {{- end -}}
