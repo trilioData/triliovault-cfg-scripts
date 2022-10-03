@@ -158,6 +158,7 @@ triliovault_wlm_image_full: "{{ triliovault_wlm_image }}:{{ triliovault_wlm_tag 
 triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
+# triliovault_wlm_ks_user_domain_name: "Default"
 ###### END OF WORKLOADMGR ####
 
 
