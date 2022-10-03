@@ -25,19 +25,15 @@ limitations under the License.
 {{- define "helm-toolkit.manifests.job_db_drop_mysql" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $serviceName := index . "serviceName" -}}
-{{- $jobAnnotations := index . "jobAnnotations" -}}
-{{- $jobLabels := index . "jobLabels" -}}
 {{- $nodeSelector := index . "nodeSelector" | default ( dict $envAll.Values.labels.job.node_selector_key $envAll.Values.labels.job.node_selector_value ) -}}
-{{- $tolerationsEnabled := index . "tolerationsEnabled" | default false -}}
 {{- $configMapBin := index . "configMapBin" | default (printf "%s-%s" $serviceName "bin" ) -}}
 {{- $configMapEtc := index . "configMapEtc" | default (printf "%s-%s" $serviceName "etc" ) -}}
 {{- $dbToDrop := index . "dbToDrop" | default ( dict "adminSecret" $envAll.Values.secrets.oslo_db.admin "configFile" (printf "/etc/%s/%s.conf" $serviceName $serviceName ) "logConfigFile" (printf "/etc/%s/logging.conf" $serviceName ) "configDbSection" "database" "configDbKey" "connection" ) -}}
 {{- $dbsToDrop := default (list $dbToDrop) (index . "dbsToDrop") }}
 {{- $secretBin := index . "secretBin" -}}
-{{- $backoffLimit := index . "backoffLimit" | default "1000" -}}
+{{- $backoffLimit := index . "backoffLimit" | default "20" -}}
 {{- $activeDeadlineSeconds := index . "activeDeadlineSeconds" -}}
 {{- $serviceNamePretty := $serviceName | replace "_" "-" -}}
-{{- $dbAdminTlsSecret := index . "dbAdminTlsSecret" | default "" -}}
 
 {{- $serviceAccountName := printf "%s-%s" $serviceNamePretty "db-drop" }}
 {{ tuple $envAll "db_drop" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -46,17 +42,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ printf "%s-%s" $serviceNamePretty "db-drop" | quote }}
-  labels:
-{{ tuple $envAll $serviceName "db-drop" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 4 }}
-{{- end }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-delete-policy": hook-succeeded
-{{- if $jobAnnotations }}
-{{ toYaml $jobAnnotations | indent 4 }}
-{{- end }}
 spec:
   backoffLimit: {{ $backoffLimit }}
 {{- if $activeDeadlineSeconds }}
@@ -66,18 +54,11 @@ spec:
     metadata:
       labels:
 {{ tuple $envAll $serviceName "db-drop" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
-{{- if $jobLabels }}
-{{ toYaml $jobLabels | indent 8 }}
-{{- end }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
-      {{ tuple $envAll "db_drop" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
-{{- if $tolerationsEnabled }}
-{{ tuple $envAll $serviceName | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
-{{- end}}
       initContainers:
 {{ tuple $envAll "db_drop" list | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
@@ -101,10 +82,6 @@ spec:
             - name: OPENSTACK_CONFIG_DB_KEY
               value: {{ $dbToDrop.configDbKey | quote }}
 {{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-            - name: MARIADB_X509
-              value: "REQUIRE X509"
-{{- end }}
 {{- if eq $dbToDropType "secret" }}
             - name: DB_CONNECTION
               valueFrom:
@@ -121,7 +98,6 @@ spec:
               mountPath: /tmp/db-drop.py
               subPath: db-drop.py
               readOnly: true
-
 {{- if eq $dbToDropType "oslo" }}
             - name: etc-service
               mountPath: {{ dir $dbToDrop.configFile | quote }}
@@ -134,9 +110,6 @@ spec:
               subPath: {{ base $dbToDrop.logConfigFile | quote }}
               readOnly: true
 {{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $dbAdminTlsSecret "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
-{{- end }}
 {{- end }}
       volumes:
         - name: pod-tmp
@@ -145,14 +118,11 @@ spec:
 {{- if $secretBin }}
           secret:
             secretName: {{ $secretBin | quote }}
-            defaultMode: 0555
+            defaultMode: 365
 {{- else }}
           configMap:
             name: {{ $configMapBin | quote }}
-            defaultMode: 0555
-{{- end }}
-{{- if $envAll.Values.manifests.certificates }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $dbAdminTlsSecret | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+            defaultMode: 365
 {{- end }}
 {{- $local := dict "configMapBinFirst" true -}}
 {{- range $key1, $dbToDrop := $dbsToDrop }}
@@ -164,7 +134,7 @@ spec:
         - name: db-drop-conf
           secret:
             secretName: {{ $configMapEtc | quote }}
-            defaultMode: 0444
+            defaultMode: 292
 {{- end -}}
 {{- end -}}
 {{- end -}}

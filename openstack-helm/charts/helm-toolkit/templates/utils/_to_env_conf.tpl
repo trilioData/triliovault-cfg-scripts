@@ -14,22 +14,23 @@ limitations under the License.
 
 {{/*
 abstract: |
-  Renders a set of standardised labels
+  Returns file with env variables ready to source .
+  In case value is set to "<None>" the key won`t be
+  reflected in config
 values: |
-  release_group: null
+  conf:
+    keystone:
+      FOO: bar
 usage: |
-  {{ tuple . "foo" "bar" | include "helm-toolkit.snippets.kubernetes_metadata_labels" }}
+  {{ include "helm-toolkit.utils.to_env_conf" .Values.conf.keystone }}
 return: |
-  release_group: RELEASE-NAME
-  application: foo
-  component: bar
+  export FOO=bar
 */}}
 
-{{- define "helm-toolkit.snippets.kubernetes_metadata_labels" -}}
-{{- $envAll := index . 0 -}}
-{{- $application := index . 1 -}}
-{{- $component := index . 2 -}}
-release_group: {{ $envAll.Values.release_group | default $envAll.Release.Name }}
-application: {{ $application }}
-component: {{ $component }}
+{{- define "helm-toolkit.utils.to_env_conf" -}}
+{{- range $key, $value := . -}}
+{{- if not (eq (toString $value) "<None>") -}}
+export {{ $key }}={{ $value }}
+{{ end -}}
+{{ end -}}
 {{- end -}}
