@@ -22,16 +22,11 @@ limitations under the License.
   {{- $daemonset_root_name := printf (print $context.Chart.Name "_" $daemonset) }}
   {{- $_ := set $context.Values "__daemonset_list" list }}
   {{- $_ := set $context.Values "__default" dict }}
-
-  {{- $default_enabled := true }}
   {{- if hasKey $context.Values.conf "overrides" }}
     {{- range $key, $val := $context.Values.conf.overrides }}
 
       {{- if eq $key $daemonset_root_name }}
         {{- range $type, $type_data := . }}
-          {{- if eq $type "overrides_default" }}
-            {{- $default_enabled = $type_data }}
-          {{- end }}
 
           {{- if eq $type "hosts" }}
             {{- range $host_data := . }}
@@ -195,10 +190,8 @@ limitations under the License.
   {{- $_ := set $context.Values.__default "nodeData" $root_conf_copy4 }}
 
   {{/* add to global list */}}
-  {{- if $default_enabled }}
-    {{- $list_aggregate := append $context.Values.__daemonset_list $context.Values.__default }}
-    {{- $_ := set $context.Values "__daemonset_list" $list_aggregate }}
-  {{- end }}
+  {{- $list_aggregate := append $context.Values.__daemonset_list $context.Values.__default }}
+  {{- $_ := set $context.Values "__daemonset_list" $list_aggregate }}
 
   {{- range $current_dict := $context.Values.__daemonset_list }}
 

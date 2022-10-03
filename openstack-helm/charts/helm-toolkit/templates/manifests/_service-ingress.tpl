@@ -14,16 +14,12 @@ limitations under the License.
 
 # This function creates a manifest for a services ingress rules.
 # It can be used in charts dict created similar to the following:
-# {- $serviceIngressOpts := dict "envAll" . "backendServiceType" "key-manager" "ingressParams" .Values.network.api.ingress -}
+# {- $serviceIngressOpts := dict "envAll" . "backendServiceType" "key-manager" -}
 # { $serviceIngressOpts | include "helm-toolkit.manifests.service_ingress" }
 
 {{- define "helm-toolkit.manifests.service_ingress" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $backendServiceType := index . "backendServiceType" -}}
-{{- $ingressParams := index . "ingressParams" -}}
-{{- if not $ingressParams }}
-{{- $ingressParams = dict -}}
-{{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -40,12 +36,8 @@ spec:
 {{- if index $envAll.Values.endpoints $backendServiceType }}
 {{- if index $envAll.Values.endpoints $backendServiceType "ip" }}
 {{- if index $envAll.Values.endpoints $backendServiceType "ip" "ingress" }}
-{{- if not (hasKey $ingressParams "service") }}
-{{- $_ := set $ingressParams "service" dict }}
-{{- end }}
-{{- $_ := set $ingressParams.service "clusterIP" (index $envAll.Values.endpoints $backendServiceType "ip" "ingress") }}
+  clusterIP: {{ (index $envAll.Values.endpoints $backendServiceType "ip" "ingress") }}
 {{- end }}
 {{- end }}
 {{- end }}
-{{ $ingressParams | include "helm-toolkit.snippets.service_params" | indent 2 }}
 {{- end }}
