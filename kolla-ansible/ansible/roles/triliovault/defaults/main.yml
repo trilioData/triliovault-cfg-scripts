@@ -63,7 +63,7 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: False
-    volumes: "{{ triliovault_wlm_default_volumes }}"
+    volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
     haproxy:
       triliovault_wlm_api:
@@ -109,7 +109,7 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_wlm_default_volumes }}"
+    volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-scheduler:
     container_name: "triliovault_wlm_scheduler"
@@ -117,7 +117,7 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_wlm_default_volumes }}"
+    volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-cron:
     container_name: "triliovault_wlm_cron"
@@ -125,7 +125,7 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
-    volumes: "{{ triliovault_wlm_default_volumes }}"
+    volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
 
 
