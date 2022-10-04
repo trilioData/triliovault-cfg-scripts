@@ -17,4 +17,4 @@ limitations under the License.
 set -ex
 
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
-workloadmgr trust-create --is_cloud_trust True admin
+workloadmgr --insecure trust-create --is_cloud_trust True admin
