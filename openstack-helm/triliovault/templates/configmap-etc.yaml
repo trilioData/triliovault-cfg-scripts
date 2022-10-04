@@ -403,6 +403,12 @@ limitations under the License.
 {{- $_ := set .Values.conf.wlm.keystone_authtoken "admin_password" .Values.endpoints.identity.auth.triliovault_wlm.password -}}
 {{- end -}}
 
+{{- if .Values.manifests.secret_ca_bundle -}}
+{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" "/etc/ssl/certs/openstack-ca-bundle.pem" -}}
+{{- else -}}
+{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" ""  -}}
+{{- end -}}
+
 
 {{- if empty .Values.conf.wlm.DEFAULT.vault_storage_type -}}
 {{- $_ := set .Values.conf.wlm.DEFAULT "vault_storage_type" .Values.conf.triliovault.backup_target_type -}}
