@@ -17,4 +17,4 @@ limitations under the License.
 set -ex
 
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
-workloadmgr --insecure trust-create --is_cloud_trust True admin
+workloadmgr --os-cacert /etc/ssl/certs/openstack-ca-bundle.pem trust-create --is_cloud_trust True admin
