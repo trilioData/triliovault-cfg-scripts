@@ -854,7 +854,8 @@ conf:
       project_name: service
       memcache_security_strategy: ENCRYPT
       signing_dir: /var/cache/dmapi
-      insecure: True
+      insecure: False
+      cafile: ""
     oslo_messaging_notifications:
       driver: messagingv2
       topics: notifications,stacklight_notifications
