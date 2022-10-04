@@ -35,19 +35,6 @@ limitations under the License.
 {{- $_ := set $envAll.Values.__kubernetes_entrypoint_init_container "deps" ( index $envAll.Values.dependencies.static $component ) -}}
 {{- end -}}
 {{- end -}}
-
-{{- if hasKey $envAll.Values.dependencies "dynamic" -}}
-{{- range $dyn_dep, $v := $envAll.Values.dependencies.dynamic -}}
-{{- if and (index $envAll.Values.manifests $dyn_dep) (hasKey $v $component) -}}
-{{- if eq $component "pod_dependency" -}}
-{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.pod_dependency ) (index (index $envAll.Values.dependencies.dynamic $dyn_dep) $component) ) -}}
-{{- else -}}
-{{- $_ := include "helm-toolkit.utils.merge" ( tuple $envAll.Values.__kubernetes_entrypoint_init_container.deps ( index $envAll.Values.dependencies.static $component ) (index (index $envAll.Values.dependencies.dynamic $dyn_dep) $component)) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
 {{- $deps := $envAll.Values.__kubernetes_entrypoint_init_container.deps }}
 ---
 apiVersion: v1
@@ -70,6 +57,8 @@ metadata:
 {{- $_ := set $allNamespace $saNamespace  (printf "%s%s" "daemonsets," ((index $allNamespace $saNamespace) | default "")) }}
 {{- else if and (eq $k "pod") $v }}
 {{- $_ := set $allNamespace $saNamespace  (printf "%s%s" "pods," ((index $allNamespace $saNamespace) | default "")) }}
+{{- else if and (eq $k "secret") $v }}
+{{- $_ := set $allNamespace $saNamespace  (printf "%s%s" "secrets," ((index $allNamespace $saNamespace) | default "")) }}
 {{- end -}}
 {{- end -}}
 {{- $_ := unset $allNamespace $randomKey }}
