@@ -13,4 +13,4 @@
 dependencies:
   - name: helm-toolkit
     repository: file://../charts/helm-toolkit
-    version: "0.1.0-mcp-2792"
+    version: "0.2.41"
