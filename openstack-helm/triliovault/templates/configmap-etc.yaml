@@ -22,11 +22,11 @@ limitations under the License.
 
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.www_authenticate_uri -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "www_authenticate_uri" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "www_authenticate_uri" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.auth_url -}}
-{{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "auth_url" -}}
+{{- $_ := tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "auth_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.region_name -}}
@@ -63,9 +63,9 @@ limitations under the License.
 {{- end -}}
 
 {{- if .Values.manifests.secret_ca_bundle -}}
-{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" "/etc/ssl/certs/openstack-ca-bundle.pem" -}}
+{{- $_ := set .Values.conf.datamover_api.keystone_authtoken "cafile" "/etc/ssl/certs/openstack-ca-bundle.pem" -}}
 {{- else -}}
-{{- $_ := set .Values.conf.wlm.keystone_authtoken "cafile" ""  -}}
+{{- $_ := set .Values.conf.datamover_api.keystone_authtoken "cafile" ""  -}}
 {{- end -}}
 
 
