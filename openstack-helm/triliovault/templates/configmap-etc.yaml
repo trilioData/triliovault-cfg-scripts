@@ -55,7 +55,7 @@ limitations under the License.
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.memcached_servers -}}
 {{- $_ := tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "memcached_servers" -}}
-{{- end -}}\
+{{- end -}}
 
 
 {{- if empty .Values.conf.datamover_api.keystone_authtoken.memcache_secret_key -}}
