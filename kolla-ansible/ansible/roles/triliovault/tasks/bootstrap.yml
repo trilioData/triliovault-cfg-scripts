@@ -65,7 +65,7 @@
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
       name: "{{ item.triliovault_wlm_database_user }}"
-      password: "{{ triliovault_wlm_database_password }}"
+      password: "{{ triliovault_wlm_api_db_password }}"
       host: "%"
       priv: "{{ item.triliovault_wlm_database_name }}.*:ALL"
       append_privs: "yes"
