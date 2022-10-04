@@ -1,6 +1,6 @@
 ---
 
-- name: Creating triliovault workloadmgr api database
+- name: Creating triliovault-datamover-api database
   become: true
   kolla_toolbox:
     module_name: mysql_db
@@ -17,7 +17,7 @@
   when:
     - not use_preconfigured_databases | bool
 
-- name: Creating triliovault datamover and workloadmgr api database user and setting permissions
+- name: Provide access of triliovault-datamover-api database to dmapi user
   become: true
   kolla_toolbox:
     module_name: mysql_user
@@ -27,7 +27,7 @@
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
       name: "{{ item.triliovault_database_user }}"
-      password: "{{ triliovault_database_password }}"
+      password: "{{ triliovault_datamover_api_db_password }}"
       host: "%"
       priv: "{{ item.triliovault_database_name }}.*:ALL"
       append_privs: "yes"
@@ -35,6 +35,44 @@
   delegate_to: "{{ groups[item.group_name][0]  }}"
   with_items:
      - "{{ triliovault_db_details }}"
+  when:
+    - not use_preconfigured_databases | bool
+
+- name: Creating triliovault-wlm database
+  become: true
+  kolla_toolbox:
+    module_name: mysql_db
+    module_args:
+      login_host: "{{ database_address }}"
+      login_port: "{{ database_port }}"
+      login_user: "{{ database_user }}"
+      login_password: "{{ database_password }}"
+      name: "{{ item.triliovault_wlm_database_name }}"
+  run_once: True
+  delegate_to: "{{ groups[item.group_name][0] }}"
+  with_items:
+     - "{{ triliovault_wlm_db_details }}"
+  when:
+    - not use_preconfigured_databases | bool
+
+- name: Provide access of triliovault-wlm database to workloadmgr user 
+  become: true
+  kolla_toolbox:
+    module_name: mysql_user
+    module_args:
+      login_host: "{{ database_address }}"
+      login_port: "{{ database_port }}"
+      login_user: "{{ database_user }}"
+      login_password: "{{ database_password }}"
+      name: "{{ item.triliovault_wlm_database_user }}"
+      password: "{{ triliovault_wlm_database_password }}"
+      host: "%"
+      priv: "{{ item.triliovault_wlm_database_name }}.*:ALL"
+      append_privs: "yes"
+  run_once: True
+  delegate_to: "{{ groups[item.group_name][0]  }}"
+  with_items:
+     - "{{ triliovault_wlm_db_details }}"
   when:
     - not use_preconfigured_databases | bool
 
