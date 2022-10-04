@@ -1,0 +1,51 @@
+[DEFAULT]
+
+vault_storage_type = s3
+vault_storage_nfs_export = TrilioVault
+vault_s3_access_key_id = {{ triliovault_s3_access_key }}
+vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
+vault_s3_region_name = {{ triliovault_s3_region_name }}
+vault_s3_bucket = {{ triliovault_s3_bucket_name }}
+
+
+{% if s3_type == "Other_S3_Compatible" %}
+vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
+
+{% if triliovault_s3_endpoint_url != "" %}
+vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
+{% else %}
+vault_s3_endpoint_url =
+{% endif %}
+
+{% if triliovault_s3_version != "" %}
+vault_s3_signature_version = {{ triliovault_s3_version }}
+{% else %}
+vault_s3_signature_version =
+{% endif %}
+
+{% if VAULT_S3_AUTH_VERSION != "" %}
+vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+{% else %}
+vault_s3_auth_version =
+{% endif %}
+
+{% if VAULT_S3_SSL_CERT != "" %}
+vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}
+{% else %}
+vault_s3_ssl_cert =
+{% endif %}
+
+{% endif %}
+
+vault_data_directory_old = /var/triliovault
+vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
+
+log_file = /var/log/kolla/triliovault/triliovault-object-store.log
+debug = False
+log_config_append = /etc/triliovault-object-store/triliovault-object-store.conf
+
+verbose = True
+vault_s3_max_pool_connections = 500
+
+[s3fuse_sys_admin]
+helper_command = sudo {{ workloadmgr_rootwrap }}  {{ rootwrap_config }} privsep-helper
