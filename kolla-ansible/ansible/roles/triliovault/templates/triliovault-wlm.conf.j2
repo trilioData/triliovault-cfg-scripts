@@ -11,7 +11,8 @@ wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
 
 
-connection = mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
+##connection = mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
+connection = mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address  }}/{{  triliovault_wlm_db_details[0].triliovault_wlm_database_user }}
 
 osapi_workloads_listen_port = {{ triliovault_wlm_api_listen_port }}
 
