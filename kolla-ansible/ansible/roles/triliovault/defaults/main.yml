@@ -296,6 +296,10 @@ triliovault_database_user: "dmapi"
 triliovault_database_name: "dmapi"
 triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
+triliovault_wlm_database_name: "workloadmgr"
+triliovault_wlm_database_user: "workloadmgr"
+triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
+
 
 triliovault_db_details:
   - group_name:  "triliovault-datamover-api"
@@ -303,9 +307,9 @@ triliovault_db_details:
     triliovault_database_name: "dmapi"
     triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
   - group_name:  "triliovault-wlm-api"
-    triliovault_database_user: "workloadmgr"
-    triliovault_database_name: "workloadmgr"
-    triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
+    triliovault_wlm_database_name: "workloadmgr"
+    triliovault_wlm_database_user: "workloadmgr"
+    triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 
 ####################
