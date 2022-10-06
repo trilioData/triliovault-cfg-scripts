@@ -13944,42 +13944,45 @@ outputs:
           - TriliovaultWlmAdmin
           - protocol
         uri:
-          make_url:
-            scheme:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmAdmin
-              - protocol
-            host:
-              str_replace:
-                template:
+          list_join:
+          - ''
+          - - make_url:
+                scheme:
                   get_param:
                   - EndpointMap
                   - TriliovaultWlmAdmin
-                  - host
-                params:
-                  CLOUDNAME:
-                    get_param:
-                    - CloudEndpoints
-                    - get_param:
-                      - ServiceNetMap
-                      - TriliovaultWlmApiNetwork
-                  IP_ADDRESS:
-                    get_param:
-                    - NetIpMap
-                    - str_replace:
-                        params:
-                          NETWORK:
-                            get_param:
-                            - ServiceNetMap
-                            - TriliovaultWlmApiNetwork
-                        template: NETWORK_uri
-            port:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmAdmin
-              - port
-            path: /v2
+                  - protocol
+                host:
+                  str_replace:
+                    template:
+                      get_param:
+                      - EndpointMap
+                      - TriliovaultWlmAdmin
+                      - host
+                    params:
+                      CLOUDNAME:
+                        get_param:
+                        - CloudEndpoints
+                        - get_param:
+                          - ServiceNetMap
+                          - TriliovaultWlmApiNetwork
+                      IP_ADDRESS:
+                        get_param:
+                        - NetIpMap
+                        - str_replace:
+                            params:
+                              NETWORK:
+                                get_param:
+                                - ServiceNetMap
+                                - TriliovaultWlmApiNetwork
+                            template: NETWORK_uri
+                port:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmAdmin
+                  - port
+                path: /v1/
+            - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:
@@ -14072,42 +14075,45 @@ outputs:
           - TriliovaultWlmInternal
           - protocol
         uri:
-          make_url:
-            scheme:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmInternal
-              - protocol
-            host:
-              str_replace:
-                template:
+          list_join:
+          - ''
+          - - make_url:
+                scheme:
                   get_param:
                   - EndpointMap
                   - TriliovaultWlmInternal
-                  - host
-                params:
-                  CLOUDNAME:
-                    get_param:
-                    - CloudEndpoints
-                    - get_param:
-                      - ServiceNetMap
-                      - TriliovaultWlmApiNetwork
-                  IP_ADDRESS:
-                    get_param:
-                    - NetIpMap
-                    - str_replace:
-                        params:
-                          NETWORK:
-                            get_param:
-                            - ServiceNetMap
-                            - TriliovaultWlmApiNetwork
-                        template: NETWORK_uri
-            port:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmInternal
-              - port
-            path: /v2
+                  - protocol
+                host:
+                  str_replace:
+                    template:
+                      get_param:
+                      - EndpointMap
+                      - TriliovaultWlmInternal
+                      - host
+                    params:
+                      CLOUDNAME:
+                        get_param:
+                        - CloudEndpoints
+                        - get_param:
+                          - ServiceNetMap
+                          - TriliovaultWlmApiNetwork
+                      IP_ADDRESS:
+                        get_param:
+                        - NetIpMap
+                        - str_replace:
+                            params:
+                              NETWORK:
+                                get_param:
+                                - ServiceNetMap
+                                - TriliovaultWlmApiNetwork
+                            template: NETWORK_uri
+                port:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmInternal
+                  - port
+                path: /v1/
+            - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:
@@ -14200,42 +14206,45 @@ outputs:
           - TriliovaultWlmPublic
           - protocol
         uri:
-          make_url:
-            scheme:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmPublic
-              - protocol
-            host:
-              str_replace:
-                template:
+          list_join:
+          - ''
+          - - make_url:
+                scheme:
                   get_param:
                   - EndpointMap
                   - TriliovaultWlmPublic
-                  - host
-                params:
-                  CLOUDNAME:
-                    get_param:
-                    - CloudEndpoints
-                    - get_param:
-                      - ServiceNetMap
-                      - PublicNetwork
-                  IP_ADDRESS:
-                    get_param:
-                    - NetIpMap
-                    - str_replace:
-                        params:
-                          NETWORK:
-                            get_param:
-                            - ServiceNetMap
-                            - PublicNetwork
-                        template: NETWORK_uri
-            port:
-              get_param:
-              - EndpointMap
-              - TriliovaultWlmPublic
-              - port
-            path: /v2
+                  - protocol
+                host:
+                  str_replace:
+                    template:
+                      get_param:
+                      - EndpointMap
+                      - TriliovaultWlmPublic
+                      - host
+                    params:
+                      CLOUDNAME:
+                        get_param:
+                        - CloudEndpoints
+                        - get_param:
+                          - ServiceNetMap
+                          - PublicNetwork
+                      IP_ADDRESS:
+                        get_param:
+                        - NetIpMap
+                        - str_replace:
+                            params:
+                              NETWORK:
+                                get_param:
+                                - ServiceNetMap
+                                - PublicNetwork
+                            template: NETWORK_uri
+                port:
+                  get_param:
+                  - EndpointMap
+                  - TriliovaultWlmPublic
+                  - port
+                path: /v1/
+            - '$(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:

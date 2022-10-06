@@ -37,8 +37,12 @@ parameters:
     default: 'internal'
     description: OpenStack endpoint type on which triliovault will communicate
     type: string
-  WlmApiPort:
+  WlmApiHaproxyPort:
     default: '8781'
+    description: Triliovault Wlm Api Haproxy frontend port for http
+    type: string
+  WlmApiPort:
+    default: '8780'
     description: Triliovault Wlm Api Service port for http
     type: string
   WlmApiSslPort:
@@ -307,9 +311,9 @@ outputs:
         trilio::wlmapi::nova_internal_auth_url: {get_param: [EndpointMap, NovaInternal, uri]}
         trilio::wlmapi::nova_admin_auth_url: {get_param: [EndpointMap, NovaAdmin, uri]}
         trilio::wlmapi::nova_public_auth_url: {get_param: [EndpointMap, NovaPublic, uri]}
-        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderInternal, uri]}
-        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderAdmin, uri]}
-        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderPublic, uri]}
+        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderV2Internal, uri]}
+        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderV2Admin, uri]}
+        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderV2Public, uri]}
         trilio::wlmapi::glance_internal_auth_url: {get_param: [EndpointMap, GlanceInternal, uri]}
         trilio::wlmapi::glance_admin_auth_url: {get_param: [EndpointMap, GlanceAdmin, uri]}
         trilio::wlmapi::glance_public_auth_url: {get_param: [EndpointMap, GlancePublic, uri]}
@@ -334,6 +338,7 @@ outputs:
                 dport:
                   - {get_param: WlmApiPort}
                   - {get_param: WlmApiSslPort}
+                  - {get_param: WlmApiHaproxyPort}
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
@@ -358,6 +363,7 @@ outputs:
                 public_virtual_ip: "%{hiera('public_virtual_ip')}"
                 internal_ip: "%{hiera('triliovault_wlm_api_vip')}"
                 service_port: {get_param: WlmApiPort}
+                haproxy_port: {get_param: WlmApiHaproxyPort}
                 public_ssl_port: {get_param: WlmApiSslPort}
                 member_options: [ 'check', 'inter 2000', 'rise 2', 'fall 5' ]
                 haproxy_listen_bind_param: ['transparent']
@@ -392,7 +398,7 @@ outputs:
         config_image: {get_param: ContainerTriliovaultWlmImage}
       kolla_config:
         /var/lib/kolla/config_files/triliovault_wlm_api.json:
-          command: /tmp/start_triliovault_wlm_api.sh
+          command: /opt/triliovault/start_triliovault_wlm_api.sh
           config_files:
             - source: "/var/lib/kolla/config_files/triliovaultwlmapi/*"
               dest: "/"
@@ -456,11 +462,12 @@ outputs:
                   - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
                   - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
-            command: ['/bin/bash', '-c', 'alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head']
+            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api /bin/bash -c '/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head'"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
         step_5:
           triliovault_wlm_api:
+            start_order: 5
             image: {get_param: ContainerTriliovaultWlmImage}
             net: host
             privileged: true
@@ -483,6 +490,24 @@ outputs:
                     - []
             environment:
                KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          triliovault_wlm_api_cloud_trust_init:
+            start_order: 6
+            image: *triliovault_wlm_api_image
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/triliovaultwlmapi/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/triliovaultwlmapi/etc/triliovault-wlm/:/etc/triliovault-wlm/:ro
+                  - /var/lib/config-data/triliovaultwlmapi/opt/triliovault/:/opt/triliovault/
+                  - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
+            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api /bin/bash -c '/opt/triliovault/create_wlm_cloud_trust.sh'"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
       host_prep_tasks:
         - name: create triliovault wlm api log directory
           file:

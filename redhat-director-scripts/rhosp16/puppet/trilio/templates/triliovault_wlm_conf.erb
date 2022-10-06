@@ -11,37 +11,37 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 keystone_auth_version = 3
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
-neutron_api_insecure = false
+neutron_api_insecure = true
 
 cloud_unique_id =
 
 <% if @interface == "public" -%>
 neutron_production_url =  <%= @neutron_public_auth_url %>
-nova_production_endpoint_template = <%= @neutron_public_auth_url %>
-cinder_production_endpoint_template = <%= @neutron_public_auth_url %>
-glance_production_api_servers = <%= @neutron_public_auth_url %>
+nova_production_endpoint_template = <%= @nova_public_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_public_auth_url %>
+glance_production_api_servers = <%= @glance_public_auth_url %>
 keystone_endpoint_url = <%= @keystone_public_auth_url %>
 neutron_admin_auth_url = <%= @keystone_public_auth_url %>
 nova_admin_auth_url = <%= @keystone_public_auth_url %>
 <% elsif @interface == "admin" -%>
 neutron_production_url =  <%= @neutron_admin_auth_url %>
-nova_production_endpoint_template = <%= @neutron_admin_auth_url %>
-cinder_production_endpoint_template = <%= @neutron_admin_auth_url %>
-glance_production_api_servers = <%= @neutron_admin_auth_url %>
+nova_production_endpoint_template = <%= @nova_admin_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_admin_auth_url %>
+glance_production_api_servers = <%= @glance_admin_auth_url %>
 keystone_endpoint_url = <%= @keystone_admin_auth_url %>
 neutron_admin_auth_url = <%= @keystone_admin_auth_url %>
 nova_admin_auth_url = <%= @keystone_admin_auth_url %>
 <% else -%>
 neutron_production_url =  <%= @neutron_internal_auth_url %>
-nova_production_endpoint_template = <%= @neutron_internal_auth_url %>
-cinder_production_endpoint_template = <%= @neutron_internal_auth_url %>
-glance_production_api_servers = <%= @neutron_internal_auth_url %>
+nova_production_endpoint_template = <%= @nova_internal_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_internal_auth_url %>
+glance_production_api_servers = <%= @glance_internal_auth_url %>
 keystone_endpoint_url = <%= @keystone_internal_auth_url %>
 neutron_admin_auth_url = <%= @keystone_internal_auth_url %>
 nova_admin_auth_url = <%= @keystone_internal_auth_url %>
 <% end -%>
 
-osapi_workloads_listen_port = 8781
+osapi_workloads_listen_port = <%= @port %>
 region_name_for_services = <%= @region_name %>
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 sql_connection = <%= @database_connection %>
@@ -115,7 +115,8 @@ encryption_support = true
 [clients]
 client_retry_limit = 3
 endpoint_type  = internal
-insecure = false
+insecure = true
+cafile =
 [filesearch]
 process_timeout = 300
 [global_job_scheduler]
@@ -125,13 +126,13 @@ misfire_grace_time = 600
 
 <% if @interface == "public" -%>
 auth_url = <%= @keystone_public_auth_url %>
-www_authenticate_uri = <%= @keystone_public_auth_uri %>
+www_authenticate_uri = <%= @keystone_public_auth_uri %>/v3
 <% elsif @interface == "admin" -%>
 auth_url = <%= @keystone_admin_auth_url %>
-www_authenticate_uri = <%= @keystone_admin_auth_uri %>
+www_authenticate_uri = <%= @keystone_admin_auth_uri %>/v3
 <% else -%>
 auth_url = <%= @keystone_internal_auth_url %>
-www_authenticate_uri = <%= @keystone_internal_auth_uri %>
+www_authenticate_uri = <%= @keystone_internal_auth_uri %>/v3
 <% end -%>
 
 admin_password = <%= @password %>
@@ -141,7 +142,7 @@ auth_plugin = password
 auth_type = password
 auth_version = v3
 cafile =
-insecure = True
+insecure = true
 password = <%= @password %>
 project_name = <%= @project_name %>
 region_name = <%= @region_name %>

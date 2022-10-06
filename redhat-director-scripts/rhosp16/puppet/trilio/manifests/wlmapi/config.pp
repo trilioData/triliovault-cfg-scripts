@@ -24,6 +24,45 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
       })
  
       $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
+      file { '/opt/triliovault':
+          ensure => 'directory',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/triliovault/start_triliovault_wlm_api.sh":
+          ensure  => present,
+          content => template('trilio/start_triliovault_wlm_api_sh.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/triliovault/start_triliovault_wlm_cron.sh":
+          ensure  => present,
+          content => template('trilio/start_triliovault_wlm_cron_sh.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/triliovault/start_triliovault_wlm_scheduler.sh":
+          ensure  => present,
+          content => template('trilio/start_triliovault_wlm_scheduler_sh.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/triliovault/start_triliovault_wlm_workloads.sh":
+          ensure  => present,
+          content => template('trilio/start_triliovault_wlm_workloads_sh.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/triliovault/create_wlm_cloud_trust.sh":
+          ensure  => present,
+          content => template('trilio/create_wlm_cloud_trust_sh.erb'),
+          mode   => '0755',
+      }
 
       file { '/etc/triliovault-wlm/':
           ensure => 'directory',
@@ -97,40 +136,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
-      }
-      file { '/tmp/':
-          ensure => 'directory',
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
-      }->
-      file { "/tmp/start_triliovault_wlm_api.sh":
-          ensure  => present,
-          content => template('trilio/start_triliovault_wlm_api_sh.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
-      }->
-      file { "/tmp/start_triliovault_wlm_cron.sh":
-          ensure  => present,
-          content => template('trilio/start_triliovault_wlm_cron_sh.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
-      }->
-      file { "/tmp/start_triliovault_wlm_scheduler.sh":
-          ensure  => present,
-          content => template('trilio/start_triliovault_wlm_scheduler_sh.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
-      }->
-      file { "/tmp/start_triliovault_wlm_workloads.sh":
-          ensure  => present,
-          content => template('trilio/start_triliovault_wlm_workloads_sh.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0755',
       }
 
 
