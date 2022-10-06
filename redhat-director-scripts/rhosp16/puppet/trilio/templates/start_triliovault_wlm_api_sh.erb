@@ -17,7 +17,7 @@ sleep 20s
 ## Start triliovaut-wlm-api service
 /usr/bin/python3 /usr/bin/workloadmgr-api \
   --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-  --config-file=/etc/triliovault-wlm/triliovault-wlm-ids.conf \
+  --config-file=/etc/triliovault-wlm/triliovault-wlm-ids.conf
 
 status=$?
 if [ $status -ne 0 ]; then
