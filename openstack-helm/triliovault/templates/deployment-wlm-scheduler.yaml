@@ -102,6 +102,7 @@ spec:
                   - /tmp/triliovault-wlm-scheduler.sh
                   - stop
           volumeMounts:
+{{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-shared-triliovault-wlm-scheduler
               mountPath: /etc/workloadmgr/workloadmgr.conf
               subPath: triliovault-wlm-ids.conf
@@ -151,6 +152,7 @@ spec:
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{ if $mounts_triliovault_wlm_scheduler.volumeMounts }}{{ toYaml $mounts_triliovault_wlm_scheduler.volumeMounts | indent 12 }}{{ end }}
       volumes:
+{{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
         - name: varlogtriliovault
