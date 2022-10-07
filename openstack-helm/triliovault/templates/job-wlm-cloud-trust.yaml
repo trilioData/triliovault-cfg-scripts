@@ -86,6 +86,7 @@ spec:
             - -c
             - /tmp/triliovault-wlm-cloud-trust.sh
           volumeMounts:
+{{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
             - name: triliovault-wlm-cloud-trust-sh
@@ -100,6 +101,7 @@ spec:
 {{- include "helm-toolkit.snippets.keystone_openrc_env_vars" $env | indent 12 }}
 {{- end }}
       volumes:
+{{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
         - name: triliovault-wlm-cloud-trust-sh
