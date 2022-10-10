@@ -1,6 +1,6 @@
 ---
 
-- name: Creating triliovault-datamover-api database
+- name: Create triliovault-datamover-api database
   become: true
   kolla_toolbox:
     module_name: mysql_db
@@ -14,6 +14,23 @@
   delegate_to: "{{ groups[item.group_name][0] }}"
   with_items:
      - "{{ triliovault_db_details }}"
+  when:
+    - not use_preconfigured_databases | bool
+
+- name: Create triliovault-wlm database
+  become: true
+  kolla_toolbox:
+    module_name: mysql_db
+    module_args:
+      login_host: "{{ database_address }}"
+      login_port: "{{ database_port }}"
+      login_user: "{{ database_user }}"
+      login_password: "{{ database_password }}"
+      name: "{{ item.triliovault_wlm_database_name }}"
+  run_once: True
+  delegate_to: "{{ groups[item.group_name][0] }}"
+  with_items:
+     - "{{ triliovault_wlm_db_details }}"
   when:
     - not use_preconfigured_databases | bool
 
@@ -38,24 +55,7 @@
   when:
     - not use_preconfigured_databases | bool
 
-- name: Creating triliovault-wlm database
-  become: true
-  kolla_toolbox:
-    module_name: mysql_db
-    module_args:
-      login_host: "{{ database_address }}"
-      login_port: "{{ database_port }}"
-      login_user: "{{ database_user }}"
-      login_password: "{{ database_password }}"
-      name: "{{ item.triliovault_wlm_database_name }}"
-  run_once: True
-  delegate_to: "{{ groups[item.group_name][0] }}"
-  with_items:
-     - "{{ triliovault_wlm_db_details }}"
-  when:
-    - not use_preconfigured_databases | bool
-
-- name: Provide access of triliovault-wlm database to workloadmgr user 
+- name: Provide access of triliovault-wlm database to workloadmgr user
   become: true
   kolla_toolbox:
     module_name: mysql_user

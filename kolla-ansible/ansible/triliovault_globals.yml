@@ -11,7 +11,7 @@ Cloud_Admin_DomainName: ""
 Cloud_Admin_DomainID: ""
 
 OS_Region: ""
-OS_Endpoint_type: ""
+OS_Endpoint_Type: ""
 
 ## If OS_ENDPOINT_TYPE is 'internal' then pass internal OS_AUTH_URL only
 ## same for the 'admin' & 'public'
