@@ -36,3 +36,79 @@
     auth_registry: "{{ triliovault_docker_registry }}"
   when:
     - kolla_action != "config"
+
+- name: Restart triliovault_wlm_api container
+  vars:
+    service_name: "wlm-api"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_docker:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - kolla_action != "config"
+
+- name: Restart triliovault_wlm_workloads container
+  vars:
+    service_name: "wlm-workloads"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_docker:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - kolla_action != "config"
+
+- name: Restart triliovault_wlm_scheduler container
+  vars:
+    service_name: "wlm-scheduler"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_docker:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - kolla_action != "config"
+
+- name: Restart triliovault_wlm_cron container
+  vars:
+    service_name: "wlm-cron"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_docker:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - kolla_action != "config"

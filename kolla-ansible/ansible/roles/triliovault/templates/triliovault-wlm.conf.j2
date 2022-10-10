@@ -1,7 +1,7 @@
 [DEFAULT]
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 
-triliovault_hostnames = "{{ IPAddress }}"
+triliovault_hostnames = {{ network_interface }}
 config_status = configured
 
 state_path = /opt/stack/data/workloadmgr
@@ -10,26 +10,18 @@ rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
 
-
-##connection = mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
 connection = mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address  }}/{{  triliovault_wlm_db_details[0].triliovault_wlm_database_user }}
-
 osapi_workloads_listen_port = {{ triliovault_wlm_api_listen_port }}
 
-###
 ##OS Details
-##usr_name CLOUD_ADMIN_USER_ID
-cloud_admin_user_id = {{  }}
-cloud_admin_project_id = {{ CLOUD_ADMIN_PROJECT_ID }}
+cloud_admin_user_id = {{ Cloud_Admin_UserName }}
+cloud_admin_project_id = {{ Cloud_Admin_ProjectID }}
 
-##name: CLOUD_ADMIN_DOMAIN_ID
-cloud_admin_domain = {{  }}
-#admin
-cloud_admin_role = {{  }}
+cloud_admin_domain = {{  Cloud_Admin_DomainID }}
+cloud_admin_role = admin
 
 trustee_role = creator
-#CLOUD_ADMIN_DOMAIN_ID
-domain_name = {{  }}
+domain_name = {{ Cloud_Admin_DomainID  }}
 
 #CLOUD_ADMIN_DOMAIN_ID
 triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
@@ -37,11 +29,8 @@ cloud_unique_id = {{ wlm_user_id }}
 
 region_name_for_services = {{ openstack_region_name }}
 global_job_scheduler_override = False
-###
 
-# RabbitMQ URL
-# https://github.com/openstack/kolla-ansible/blob/1aac65de0c60e6aef543995d42ff0ccd56f664d5/ansible/group_vars/all.yml#L216
-# transport_url = "rabbit://{% for host in groups[om_rpc_group] %}{{ triliovault_wlm_rabbitmq_users[0].user }}:{{ triliovault_wlm_rabbitmq_users[0].password  }}@{{ 'api' | kolla_address(host) | put_address_in_conte xt('url') }}:5672{% if not loop.last %},{% endif %}{% endfor %}/{{ om_rpc_vhost }}"
+
 transport_url = {{ rpc_transport_url }}
 
 api_workers = 4
@@ -65,116 +54,67 @@ neutron_production_url = https://{{ kolla_internal_fqdn }}:9696
 
 # The path to store the taskflow data
 taskflow_path = {{ TASKFLOW_PATH }}
-
-# max cache size to keep up-to entries in memory
 taskflow_max_cache_size = {{ TASKFLOW_CACHE }}
-
-# max age in days to retain taskflow data
 taskflow_max_age = {{ TASKFLOW_AGE }}
 
-##rabbit_virtual_host = workloadmgr
 rabbit_virtual_host = {{ om_rpc_vhost }}
 compute_driver = libvirt.LibvirtDriver
 vault_storage_das_device = none
 
-
-###
-{% if (triliovault_backup_target == nfs)%}
+{% if triliovault_backup_target == "nfs" %}
 
 vault_storage_type = nfs
-vault_storage_nfs_export = {{ triliovault_nfs_shares }}
 
-vault_storage_nfs_options =  {{ triliovault_nfs_options }}
+{% if multi_ip_nfs_enabled == "yes" %}
+vault_storage_nfs_export = "{{ triliovault_nfs_map[inventory_hostname] }}"
+{% else %}
+vault_storage_nfs_export = {{ triliovault_nfs_shares }}
 {% endif %}
+
+vault_storage_nfs_options = {{ triliovault_nfs_options }}
 
 {% elif triliovault_backup_target == "amazon_s3" %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
-
+vault_s3_auth_version = DEFAULT
 vault_s3_access_key_id = {{ triliovault_s3_access_key }}
 vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
 vault_s3_region_name = {{ triliovault_s3_region_name }}
-
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
-
-{% if triliovault_s3_auth_version is defined and triliovault_s3_auth_version != "" %}
-vault_s3_auth_version = {{ triliovault_s3_auth_version }}
-{% else %}
-vault_s3_auth_version = DEFAULT
-{% endif %}
-
-{% if triliovault_s3_version is defined and triliovault_s3_version != "" %}
 vault_s3_signature_version = {{ triliovault_s3_version }}
-{% else %}
-vault_s3_signature_version = default
-{% endif %}
-
-
-vault_enable_threadpool = True
-vault_s3_support_empty_dir = False
+{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 
 {% elif triliovault_backup_target == "other_s3_compatible" %}
 
 vault_storage_type = s3
 vault_storage_nfs_export = TrilioVault
-
+vault_s3_auth_version = DEFAULT
 vault_s3_access_key_id = {{ triliovault_s3_access_key }}
 vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
-
 vault_s3_region_name = {{ triliovault_s3_region_name }}
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
-
-vault_s3_endpoint_url = {{triliovault_s3_endpoint_url}}
-
-{% if triliovault_s3_auth_version is defined and triliovault_s3_auth_version != "" %}
-vault_s3_auth_version = {{ triliovault_s3_auth_version }}
-{% else %}
-vault_s3_auth_version = DEFAULT
-{% endif %}
-
-{% if triliovault_s3_version is defined and triliovault_s3_version != "" %}
+vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
-{% else %}
-vault_s3_signature_version = default
+{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
+vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
+vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}
+
 {% endif %}
 
-vault_s3_ssl = {{triliovault_s3_ssl_enabled}}
 vault_enable_threadpool = True
 vault_s3_support_empty_dir = False
-
-{% endif %}
-
-##Path triliovault_s3_ssl_cert_file_name
-{% if triliovault_s3_ssl_cert_file_name != "" and triliovault_backup_target == other_s3_compatible %}
-vault_s3_ssl_cert = /etc/triliovault-wlm/{{triliovault_s3_ssl_cert_file_name}}
-{% else %}
-vault_s3_ssl_cert =
-{% endif %}
-
-
-###
 
 vault_data_directory_old = /var/triliovault
 vault_data_directory = /var/trilio/triliovault-mounts
 
-#The amount of time(in hrs) that snapshot upload operation should wait for the upload
 max_wait_for_upload = 48
-
 neutron_api_insecure = False
 
-
-
 [global_job_scheduler]
-# misfire_grace_time is the grace time in which the global job scheduler will consider to
-# trigger the missed snapshots
-# The value is in seconds
 misfire_grace_time = 600
 
-##new
 [s3fuse_sys_admin]
-## command in OSA
-#helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
 sudo /usr/bin/workloadmgr-rootwrap /etc/workloadmgr/rootwrap.conf privsep-helper
 
 [keystone_authtoken]
@@ -198,41 +138,36 @@ user_domain_id = default
 
 auth_plugin = password
 
-#Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
 {% if OS_CA_CERT != "" %}
 cafile = {{ OS_SSL_CERT_PATH }}
 {% else %}
-#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+cafile = 
 {% endif %}
 
 insecure = False
-
-##Remove if required need to add OSA
 service_token_roles_required = True
 
 [clients]
 client_retry_limit = 3
 endpoint_type = internal
 
-## cafile = /etc/triliovault-wlm/ca-chain.pem
 {% if OS_CA_CERT != "" %}
 cafile = {{ OS_SSL_CERT_PATH }}
 {% else %}
-#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+cafile = 
 {% endif %}
 
 insecure = False
-
 
 [alembic]
 {% if venv_path is defined  and venv_path|length > 0 %}
 script_location = {{ venv_path }}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
 version_locations = {{venv_path}}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+{% endif %}
 
-{% else %}
+{% if venv_path is undefined  and venv_path|length < 0 %}
 script_location = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
 version_locations = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
-
 {% endif %}
 
 sqlalchemy.url= mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_db_details[1].triliovault_database_user }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}

@@ -10,7 +10,7 @@ horizon
 [triliovault-wlm-api:children]
 control
 
-[triliovault-wlm:children]
+[triliovault-wlm-workloads:children]
 control
 
 [triliovault-wlm-scheduler:children]

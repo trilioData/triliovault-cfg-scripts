@@ -55,8 +55,6 @@ triliovault_services:
     privileged: True
     volumes: "{{ triliovault_datamover_default_volumes }}"
     dimensions: "{{ triliovault_datamover_dimensions }}"
-
-
   triliovault-wlm-api:
     container_name: "triliovault_wlm_api"
     group: "{{ triliovault_wlm_group }}"
@@ -102,7 +100,6 @@ triliovault_services:
           - "timeout server 10m"
         listen_port: "{{ triliovault_wlm_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
-
   triliovault-wlm-workloads:
     container_name: "triliovault_wlm_workloads"
     group: "{{ triliovault_wlm_group }}"
@@ -255,7 +252,7 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
     triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
-  - name: "TrilioVaultWLM "
+  - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVault workloadmgr Api Service"
     endpoints:
@@ -270,11 +267,11 @@ triliovault_wlm_keystone_user : "workloadmgr"
 triliovault_ks_users:
   - project: "service"
     user: "{{ triliovault_datamover_keystone_user }}"
-    password: "{{ datamover_api_keystone_user_password }}"
+    password: "{{ triliovault_datamover_api_ks_password }}"
     role: "admin"
   - project: "service"
     user: "{{ triliovault_wlm_keystone_user }}"
-    password: "{{ wlm_api_keystone_user_password }}"
+    password: "{{ triliovault_wlm_api_ks_password }}"
     role: "admin"
 
 ####################
