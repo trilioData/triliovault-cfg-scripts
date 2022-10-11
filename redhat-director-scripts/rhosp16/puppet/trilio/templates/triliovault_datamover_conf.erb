@@ -17,7 +17,7 @@ vault_s3_ssl_cert = /etc/triliovault-datamover/s3-cert.pem
 <% else -%>
 vault_s3_ssl_cert =
 <% end -%>
-<% if @s_type == "ceph_s3" -%>
+<% if @s3_type == "ceph_s3" -%>
 vault_s3_endpoint_url = <%= @s3_endpoint_url %>
 <% else -%>
 vault_s3_endpoint_url =
@@ -70,3 +70,6 @@ ssl = <%= @oslomsg_rpc_use_ssl %>
 
 [cinder]
 http_retries = <%= @cinder_http_retries %>
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
