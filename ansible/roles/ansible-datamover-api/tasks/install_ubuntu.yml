@@ -1,8 +1,8 @@
 ---
-- name: Remove old trilio repo file
-  file: path="/etc/apt/sources.list.d/trilio.list" state=absent
-
-- import_tasks: create_conf_dirs.yml
+- name: Remove old trilio repo
+  file:
+    path: /etc/apt/sources.list.d/trilio.list
+    state: absent
 
 - name: install packages on datamover api container | Install Tzdata package
   shell: "export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata"

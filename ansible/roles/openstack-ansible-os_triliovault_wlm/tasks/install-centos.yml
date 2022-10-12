@@ -1,4 +1,8 @@
 ---
+- name: Remove old trilio repo
+  file:
+    path: /etc/yum.repos.d/trilio.repo
+    state: absent
 
 - name: Copy triliovault-yum-repo file
   template:
