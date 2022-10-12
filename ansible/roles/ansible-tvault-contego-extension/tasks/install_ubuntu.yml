@@ -1,4 +1,9 @@
 ---
+- name: Remove old trilio repo
+  file:
+    path: /etc/apt/sources.list.d/trilio.list
+    state: absent
+
 - name: Stop tvault-objetc-store service if running
   service: name=tvault-object-store state=stopped
   ignore_errors: yes

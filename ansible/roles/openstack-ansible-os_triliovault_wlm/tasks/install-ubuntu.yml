@@ -1,4 +1,8 @@
 ---
+- name: Remove old trilio repo
+  file:
+    path: /etc/apt/sources.list.d/trilio.list
+    state: absent
 
 - name: Copy repo file
   template:
