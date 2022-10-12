@@ -11,7 +11,7 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 keystone_auth_version = 3
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
-neutron_api_insecure = true
+neutron_api_insecure = false
 
 cloud_unique_id =
 
@@ -115,8 +115,8 @@ encryption_support = true
 [clients]
 client_retry_limit = 3
 endpoint_type  = internal
-insecure = true
-cafile =
+#insecure = false
+cafile = /etc/pki/tls/certs/ca-bundle.crt
 [filesearch]
 process_timeout = 300
 [global_job_scheduler]
@@ -141,8 +141,8 @@ admin_user = <%= @keystone_username %>
 auth_plugin = password
 auth_type = password
 auth_version = v3
-cafile =
-insecure = true
+cafile = /etc/pki/tls/certs/ca-bundle.crt
+#insecure = false
 password = <%= @password %>
 project_name = <%= @project_name %>
 region_name = <%= @region_name %>
