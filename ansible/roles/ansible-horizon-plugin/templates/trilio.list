@@ -1,1 +1,1 @@
-{{ DEBIAN_PACKAGE_REPO_URL }}
+deb [trusted=yes] https://apt.fury.io/{{ TRILIOVAULT_DEB_REPO_STRING }}/ /

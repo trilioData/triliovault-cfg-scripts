@@ -1,15 +1,11 @@
 ---
-- name: Remove old trilio repo
-  file:
-    path: /etc/apt/sources.list.d/trilio.list
-    state: absent
 
 - name: install packages on datamover api container | Install Tzdata package
   shell: "export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata"
 
 - name: Copy repo file
   template:
-     src: triliovault.list
+     src: trilio.list
      dest: "{{ trilio_apt_repo_file_path }}"
 
 - name: update cache
