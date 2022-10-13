@@ -170,7 +170,7 @@ script_location = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/
 version_locations = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
 {% endif %}
 
-sqlalchemy.url= mysql+pymysql://{{ triliovault_db_details[1].triliovault_database_user }}:{{ triliovault_db_details[1].triliovault_database_user }}@{{ triliovault_db_details[1].triliovault_database_address  }}/{{  triliovault_db_details[1].triliovault_database_name }}
+sqlalchemy.url= mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address }}/{{ triliovault_wlm_db_details[0].triliovault_wlm_database_name }}
 
 [filesearch]
 process_timeout = 3
