@@ -1,6 +1,7 @@
 ## Version of Nova virtual env to deploy into
 nova_venv_tag: "{{ venv_tag | default('untagged') }}"
-trilio_apt_repo_file_path: /etc/apt/sources.list.d/triliovault.list
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
 
 ## Required Directories
 TRILIOVAULT_MNT_DIR: "/var/trilio/triliovault-mounts"
