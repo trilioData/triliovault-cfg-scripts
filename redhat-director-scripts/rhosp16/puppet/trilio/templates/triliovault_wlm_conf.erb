@@ -72,7 +72,7 @@ vault_s3_ssl_cert =
 <% end -%>
 
 
-<% if @s_type == "ceph_s3" -%>
+<% if @s3_type == "ceph_s3" -%>
 vault_s3_endpoint_url = <%= @s3_endpoint_url %>
 <% else -%>
 vault_s3_endpoint_url =
