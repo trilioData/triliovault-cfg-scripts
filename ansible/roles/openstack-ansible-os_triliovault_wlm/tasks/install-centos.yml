@@ -2,7 +2,7 @@
 
 - name: Copy triliovault-yum-repo file
   template:
-     src: triliovault.repo
+     src: trilio.repo
      dest: "{{ trilio_yum_repo_file_path }}"
 
 - name: Install centos-release-openstack-{{OPENSTACK_DIST}}

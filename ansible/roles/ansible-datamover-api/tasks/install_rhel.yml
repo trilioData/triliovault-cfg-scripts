@@ -2,7 +2,7 @@
 
 - name: create yum repo file if ansible_distribution is Centos/RHEL
   template:
-     src: triliovault.repo
+     src: trilio.repo
      dest: "{{trilio_yum_repo_file_path}}"
 
 - name: Install packages on datamover api container | centos-release-openstack-{{OPENSTACK_DIST}}
