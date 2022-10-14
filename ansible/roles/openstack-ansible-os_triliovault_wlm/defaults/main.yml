@@ -171,7 +171,7 @@ auth_version: v3
 keystone_auth_version: 3
 
 ## Required Directories
-triliovault_mnt_dir: "/var/trilio/triliovault-mounts"
+triliovault_mnt_dir: "/var/triliovault-mounts"
 triliovault_obj_str: "/etc/triliovault-object-store"
 
 triliovault_log_dir: "/var/log/triliovault"
