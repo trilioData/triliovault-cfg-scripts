@@ -10,7 +10,7 @@
 
 - name: Setup trilio yum repo
   template:
-    src: triliovault.repo
+    src: trilio.repo
     dest: "{{trilio_yum_repo_file_path}}"
 
 - name: Reload Daemon

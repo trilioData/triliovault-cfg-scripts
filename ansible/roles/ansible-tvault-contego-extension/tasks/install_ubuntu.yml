@@ -1,4 +1,5 @@
 ---
+
 - name: Stop tvault-objetc-store service if running
   service: name=tvault-object-store state=stopped
   ignore_errors: yes
@@ -49,7 +50,7 @@
 
 - name: Copy repo file
   template:
-    src: triliovault.list
+    src: trilio.list
     dest: "{{ trilio_apt_repo_file_path }}"
 
 - name: update cache
