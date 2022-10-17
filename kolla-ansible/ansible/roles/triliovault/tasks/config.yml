@@ -94,10 +94,57 @@
     mode: "0660"
   when:
     - inventory_hostname in groups[item.value.group]
+    - inventory_hostname not in groups[triliovault_wlm_api_group]
+    - inventory_hostname not in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname not in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname not in groups[triliovault_wlm_cron_group]
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart {{ item.key }} container"
+
+- name: Copy triliovault-wlm.conf file
+  become: true
+  template:
+    src: "triliovault-wlm.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm/triliovault-wlm.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart {{ item.key }} container"
+
+- name: Copy triliovault-wlm-logging.conf file
+  become: true
+  template:
+    src: "triliovault-wlm-logging.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm/wlm_logging.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart {{ item.key }} container"
+
+- name: Copy triliovault-wlm api-paste.ini file
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm/api-paste.ini"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+  with_dict: "{{ triliovault_services }}"
 
 - include_tasks: ceph_cinder.yml
   when:

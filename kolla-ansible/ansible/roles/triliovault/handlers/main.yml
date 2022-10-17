@@ -37,7 +37,7 @@
   when:
     - kolla_action != "config"
 
-- name: Restart triliovault_wlm_api container
+- name: Restart triliovault-wlm-api container
   vars:
     service_name: "wlm-api"
     service: "{{ triliovault_services[service_name] }}"

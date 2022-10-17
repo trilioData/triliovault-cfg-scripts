@@ -57,7 +57,7 @@ triliovault_services:
     dimensions: "{{ triliovault_datamover_dimensions }}"
   triliovault-wlm-api:
     container_name: "triliovault_wlm_api"
-    group: "{{ triliovault_wlm_group }}"
+    group: "{{ triliovault_wlm_api_group }}"
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: False
@@ -100,9 +100,10 @@ triliovault_services:
           - "timeout server 10m"
         listen_port: "{{ triliovault_wlm_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
+
   triliovault-wlm-workloads:
     container_name: "triliovault_wlm_workloads"
-    group: "{{ triliovault_wlm_group }}"
+    group: "{{ triliovault_wlm_workloads_group }}"
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
@@ -110,7 +111,7 @@ triliovault_services:
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-scheduler:
     container_name: "triliovault_wlm_scheduler"
-    group: "{{ triliovault_wlm_group }}"
+    group: "{{ triliovault_wlm_scheduler_group }}"
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
@@ -118,7 +119,7 @@ triliovault_services:
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-cron:
     container_name: "triliovault_wlm_cron"
-    group: "{{ triliovault_wlm_group }}"
+    group: "{{ triliovault_wlm_cron_group }}"
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
@@ -182,13 +183,6 @@ triliovault_datamover_api_default_volumes:
   - "/lib/modules:/lib/modules:ro"
   - "kolla_logs:/var/log/kolla/"
 
-triliovault_wlm_api_default_volumes:
-  - "{{ node_config_directory }}/triliovault-wlm-api/:{{ container_config_directory }}/:ro"
-  - "/etc/localtime:/etc/localtime:ro"
-  - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
-  - "/lib/modules:/lib/modules:ro"
-  - "kolla_logs:/var/log/kolla/"
- 
 triliovault_datamover_default_volumes:
   - "{{ node_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
@@ -203,7 +197,7 @@ triliovault_datamover_default_volumes:
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
 triliovault_wlm_api_default_volumes:
-  - "{{ node_config_directory }}/triliovault-wlm-api/:{{ container_config_directory }}/:ro"
+  - "{{ node_config_directory }}/triliovault-wlm/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
   - "kolla_logs:/var/log/kolla/"
@@ -252,7 +246,7 @@ triliovault_ks_services:
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
     triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
-  - name: "TrilioVaultWLM"
+  - name: "TrilioVaultWLM "
     type: "workloads"
     description: "TrilioVault workloadmgr Api Service"
     endpoints:
@@ -305,7 +299,7 @@ triliovault_db_details:
     triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 triliovault_wlm_db_details:
-  - group_name:  "triliovault-wlm-api"
+  - group_name:  "triliovault_wlm_api"
     triliovault_wlm_database_name: "workloadmgr"
     triliovault_wlm_database_user: "workloadmgr"
     triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
@@ -324,7 +318,10 @@ triliovault_horizon_group: "horizon"
 
 ## TrilioVault Inventory for workloadmgr.  Refer triliovault_inventory file. 
 ## Since All workload manager Services get deployed on control nodes. We are not creating another inventory group for the same. 
-triliovault_wlm_group: 'triliovault-wlm'
+triliovault_wlm_api_group: 'triliovault-wlm-api'
+triliovault_wlm_workloads_group: 'triliovault-wlm-workloads'
+triliovault_wlm_scheduler_group: 'triliovault-wlm-scheduler'
+triliovault_wlm_cron_group: 'triliovault-wlm-cron'
 
 
 
