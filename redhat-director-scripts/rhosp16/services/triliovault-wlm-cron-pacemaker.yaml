@@ -1,7 +1,7 @@
 heat_template_version: rocky
 
 description: >
-  OpenStack containerized Cinder Volume service
+  OpenStack containerized Triliovault Wlm Cron service
 
 parameters:
   ContainerTriliovaultWlmImage:
@@ -408,5 +408,44 @@ outputs:
                 tripleo_ha_wrapper_puppet_tags: 'pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ip,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation'
                 tripleo_ha_wrapper_puppet_debug: {get_param: ConfigDebug}
                 tripleo_ha_wrapper_config_suffix: .triliovault_wlm_cron_previous_run
+
+
+      update_tasks:
+        - name: triliovault_wlm_cron fetch and retag container image for pacemaker
+          when: step|int == 5
+          block: &triliovault_wlm_cron_fetch_retag_container_tasks
+            - name: Get container triliovault_wlm_cron image
+              set_fact:
+                triliovault_wlm_cron_image: {get_param: ContainerTriliovaultWlmImage}
+                triliovault_wlm_cron_image_latest: *triliovault_wlm_cron_image_pcmklatest
+            - name: Pull latest triliovault_wlm_cron images
+              command: "{{container_cli}} pull {{triliovault_wlm_cron_image}}"
+              register: result
+              retries: 3
+              delay: 3
+              until: result.rc == 0
+            - name: Get previous triliovault_wlm_cron image id
+              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image_latest}}"
+              register: old_triliovault_wlm_cron_image_id
+              failed_when: false
+            - name: Get new triliovault_wlm_cron image id
+              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
+              register: new_triliovault_wlm_cron_image_id
+            - name: Retag pcmklatest to latest triliovault_wlm_cron image
+              include_role:
+                name: tripleo-container-tag
+              vars:
+                container_image: "{{triliovault_wlm_cron_image}}"
+                container_image_latest: "{{triliovault_wlm_cron_image_latest}}"
+              when:
+                - old_triliovault_wlm_cron_image_id.stdout != new_triliovault_wlm_cron_image_id.stdout
+
+      post_update_tasks:
+        - name: Triliovault Wlm Cron bundle post update
+          when: step|int == 1
+          block: *triliovault_wlm_cron_puppet_bundle
+          vars:
+            tripleo_ha_wrapper_minor_update: true
+
 
       upgrade_tasks: []
