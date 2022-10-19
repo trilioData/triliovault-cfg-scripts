@@ -6,7 +6,7 @@
         service_rabbitmq_users: "{{ triliovault_wlm_rabbitmq_users }}"
         # Create users for cells in parallel. This should run when  hotstname is triliovault workloadmgr
         service_rabbitmq_run_once: false
-        service_rabbitmq_when: "{{ inventory_hostname == groups[triliovault-wlm_group][0] | default }}"
+        service_rabbitmq_when: "{{ inventory_hostname == groups[triliovault_wlm_api_group][0] | default }}"
         # Delegate to a host in the RPC group. This means it should run on Rabbitmq container / host.
         service_rabbitmq_delegate_host: "{{ groups[om_rpc_group][0] | default }}"
       tags: rabbitmq_svc

@@ -37,6 +37,7 @@
   when:
     - kolla_action != "config"
 
+##WLM
 - name: Restart triliovault-wlm-api container
   vars:
     service_name: "wlm-api"
@@ -56,7 +57,7 @@
   when:
     - kolla_action != "config"
 
-- name: Restart triliovault_wlm_workloads container
+- name: Restart triliovault-wlm-workloads container
   vars:
     service_name: "wlm-workloads"
     service: "{{ triliovault_services[service_name] }}"
@@ -75,7 +76,7 @@
   when:
     - kolla_action != "config"
 
-- name: Restart triliovault_wlm_scheduler container
+- name: Restart triliovault-wlm-scheduler container
   vars:
     service_name: "wlm-scheduler"
     service: "{{ triliovault_services[service_name] }}"
@@ -94,7 +95,7 @@
   when:
     - kolla_action != "config"
 
-- name: Restart triliovault_wlm_cron container
+- name: Restart triliovault-wlm-cron container
   vars:
     service_name: "wlm-cron"
     service: "{{ triliovault_services[service_name] }}"

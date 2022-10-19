@@ -73,6 +73,8 @@
   when:
     - kolla_copy_ca_into_containers | bool
 
+##json
+
 - name: Copying over config.json files for services
   become: true
   template:
@@ -86,7 +88,9 @@
   notify:
     - "Restart {{ item.key }} container"
 
-- name: Copying over triliovault services conf files
+##config
+
+- name: Copying triliovault conf files
   become: true
   template:
     src: "{{ item.key }}.conf.j2"
@@ -94,35 +98,128 @@
     mode: "0660"
   when:
     - inventory_hostname in groups[item.value.group]
-    - inventory_hostname not in groups[triliovault_wlm_api_group]
-    - inventory_hostname not in groups[triliovault_wlm_workloads_group]
-    - inventory_hostname not in groups[triliovault_wlm_scheduler_group]
-    - inventory_hostname not in groups[triliovault_wlm_cron_group]
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart {{ item.key }} container"
 
-- name: Copy triliovault-wlm.conf file
+- name: Copying triliovault-object-store conf files
   become: true
   template:
-    src: "triliovault-wlm.conf.j2"
-    dest: "{{ node_config_directory }}/triliovault-wlm/triliovault-wlm.conf"
+    src: "triliovault-object-store.conf.j2"
+    dest: "/etc/kolla/triliovault-wlm-api/triliovault-object-store.conf"
     mode: "0660"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
-    - inventory_hostname in groups[triliovault_wlm_workloads_group]
-    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
-    - inventory_hostname in groups[triliovault_wlm_cron_group]
   with_dict: "{{ triliovault_services }}"
   notify:
-    - "Restart {{ item.key }} container"
+    - "Restart triliovault-wlm-api container"
 
-- name: Copy triliovault-wlm-logging.conf file
+##logging_conf
+
+- name: Copying triliovault-datamover-api-logging-conf files
+  become: true
+  template:
+    src: "triliovault-datamover-api-logging.conf.j2"
+    dest: "/etc/kolla/triliovault-datamover-api/"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_api_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-datamover-api container"
+
+- name: Copying triliovault-datamover-logging-conf files
+  become: true
+  template:
+    src: "triliovault-datamover-logging.conf.j2"
+    dest: "/etc/kolla/triliovault-datamover/"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-datamover container"
+
+- name: Copying triliovault-object-store-logging-conf files
+  become: true
+  template:
+    src: "triliovault-object-store.conf.j2"
+    dest: "/etc/kolla/triliovault-datamover/"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-datamover container"
+
+- name: Copying triliovault-object-store-logging-wlm-conf files
+  become: true
+  template:
+    src: "triliovault-object-store.conf.j2"
+    dest: "/etc/kolla/triliovault-wlm/"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-api container"
+
+- name: Copy triliovault-wlm-api-logging.conf file
   become: true
   template:
     src: "triliovault-wlm-logging.conf.j2"
-    dest: "{{ node_config_directory }}/triliovault-wlm/wlm_logging.conf"
+    dest: "/etc/kolla/triliovault-wlm-api/wlm_logging.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-api container"
+
+- name: Copy triliovault-wlm-workloads-logging.conf file
+  become: true
+  template:
+    src: "triliovault-wlm-logging.conf.j2"
+    dest: "/etc/kolla/triliovault-wlm-workloads/wlm_logging.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-workloads container"
+
+- name: Copy triliovault-wlm-scheduler-logging.conf file
+  become: true
+  template:
+    src: "triliovault-wlm-logging.conf.j2"
+    dest: "/etc/kolla/triliovault-wlm-scheduler/wlm_logging.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-scheduler container"
+
+- name: Copy triliovault-wlm-cron-logging.conf file
+  become: true
+  template:
+    src: "triliovault-wlm-logging.conf.j2"
+    dest: "/etc/kolla/triliovault-wlm-cron/wlm_logging.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-cron container"
+
+##api-paste.ini
+      
+- name: Copy triliovault-wlm api-paste.ini file
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-api/api-paste.ini"
     mode: "0660"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
@@ -137,14 +234,38 @@
   become: true
   template:
     src: "api-paste.ini.j2"
-    dest: "{{ node_config_directory }}/triliovault-wlm/api-paste.ini"
+    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/api-paste.ini"
     mode: "0660"
   when:
-    - inventory_hostname in groups[triliovault_wlm_api_group]
     - inventory_hostname in groups[triliovault_wlm_workloads_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-api container"
+
+- name: Copy triliovault-wlm api-paste.ini file
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/api-paste.ini"
+    mode: "0660"
+  when:
     - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-scheduler container"
+
+- name: Copy triliovault-wlm api-paste.ini file
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-cron/api-paste.ini"
+    mode: "0660"
+  when:
     - inventory_hostname in groups[triliovault_wlm_cron_group]
   with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart {{ item.key }} container"
+
 
 - include_tasks: ceph_cinder.yml
   when:
@@ -179,6 +300,6 @@
   notify:
     - "Restart triliovault-datamover container"
 
-
 - include_tasks: check-containers.yml
   when: kolla_action != "config"
+
