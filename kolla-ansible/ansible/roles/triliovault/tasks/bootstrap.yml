@@ -55,7 +55,8 @@
   when:
     - not use_preconfigured_databases | bool
 
-- name: Provide access of triliovault-wlm database to workloadmgr user
+
+- name: Provide access of triliovault-wlm database to workloadmgr user 
   become: true
   kolla_toolbox:
     module_name: mysql_user
@@ -79,3 +80,4 @@
 - import_tasks: rabbitmq.yml
 
 - include_tasks: bootstrap_service.yml
+
