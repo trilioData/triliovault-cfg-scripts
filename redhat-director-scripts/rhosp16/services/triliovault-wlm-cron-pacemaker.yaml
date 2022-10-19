@@ -1,14 +1,11 @@
 heat_template_version: rocky
 
 description: >
-  OpenStack containerized Cinder Volume service
+  OpenStack containerized Triliovault Wlm Cron service
 
 parameters:
-  ContainerCinderVolumeImage:
+  ContainerTriliovaultWlmImage:
     description: image
-    type: string
-  ContainerCinderConfigImage:
-    description: The container image to use for the cinder config_volume
     type: string
   ClusterCommonTag:
     default: false
@@ -60,296 +57,395 @@ parameters:
     description: >
       Setting this to a unique value will re-run any deployment tasks which
       perform configuration on a Heat stack-update.
-  CinderVolumeLoggingSource:
+  Interface:
+    default: 'internal'
+    description: OpenStack endpoint type on which triliovault will communicate
+    type: string
+  WlmApiPort:
+    default: '8781'
+    description: Triliovault Wlm cron Service port for http
+    type: string
+  WlmApiSslPort:
+    default: '13781'
+    description: Triliovault Wlm cron Service Port for https
+    type: string
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  CloudAdminUserName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user name
+  CloudAdminProjectName:
+    type: string
+    default: 'admin'
+    description: OpenStack Cloud admin user project name
+  CloudAdminDomainName:
+    type: string
+    default: 'Default'
+    description: OpenStack Cloud admin user domain name
+  WlmApiKeystoneUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Keystone user name for TrilioVault Wlm Service
+  WlmApiKeystoneUserPassword:
+    description: The password for the triliovault wlm service's Keystone user
+    type: string
+    hidden: true
+  TriliovaultKeystoneServiceProjectName:
+    type: string
+    default: 'service'
+    description: Keystone project name for TrilioVault Wlm Service User
+  TriliovaultKeystoneUserRoleName:
+    description: The admin role name for TrilioVault wlm service user on service project
+    type: string
+    hidden: true
+  TriliovaultKeystoneUserDomainName:
+    type: string
+    default: 'Default'
+    description: Keyston Domain name for TrilioVault Wlm Service User
+  WlmApiKeystoneServiceName:
+    type: string
+    default: 'workloadmgr'
+    description: Keyston Catalog Service name for TrilioVault Wlm Service
+  WlmApiKeystoneServiceType:
+    type: string
+    default: 'workloads'
+    description: Keyston Catalog Service Type for TrilioVault Wlm Service
+  WlmApiDbName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserName:
+    type: string
+    default: 'workloadmgr'
+    description: Database name for TrilioVault Wlm Service
+  WlmApiDbUserPassword:
+    description: The password for the Triliovault wlm service's Database user
+    type: string
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications.
+  ContainerMysqlConfigImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string 
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  CephClientUserName:
+    default: openstack
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  BackupTargetType:
+    description:
+    type: string
+  NfsShares:
+    description: Provide comma separated list of NFS shares to use as backup target
+    type: string
+  NfsOptions:
+    default: 'nolock,soft,timeo=180,intr'
+    description: NFS mount otpions
+    type: string
+  S3Type:
+    description: S3 type like Amazon/Ceph/Minio
+    type: string
+  S3AccessKey:
+    description: S3 access key
+    type: string
+  S3SecretKey:
+    description: S3 secret key
+    type: string
+  S3RegionName:
+    description: S3 region name
+    type: string
+  S3Bucket:
+    description: S3 bucket name
+    type: string
+  S3EndpointUrl:
+    description: S3 endpoint url
+    type: string
+  S3SignatureVersion:
+    default: 'default'
+    description: S3 Signature Version
+    type: string
+  S3AuthVersion:
+    default: 'DEFAULT'
+    description: S3 Auth Version
+    type: string
+  S3SslEnabled:
+    default: false
+    description: S3 ssl enabled
+    type: boolean
+  S3SslCert:
+    description: S3 SSL certificate file path
+    type: string
+  CinderEnableRbdBackend:
+    default: false
+    description: Whether ceph cinder backend enabled or not
+    type: boolean
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
+  NovaComputeOptVolumes:
+    default: []
+    description: list of optional vo
+    type: comma_delimited_list
+  TriliovaultMultiIPNfsMap:
+    default: {}
+    description: Mapping of triliovault node -> NFS share. Typically set
+                 via parameter_defaults in the resource registry.
     type: json
-    default:
-      tag: openstack.cinder.volume
-      file: /var/log/containers/cinder/cinder-volume.log
-
-conditions:
-  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
-  common_tag_enabled: {equals: [{get_param: ClusterCommonTag}, true]}
+  MultiIPNfsEnabled:
+    default: false
+    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
+    type: boolean
+  TrusteeRole: 
+    default: 'creator'
+    description: This is the role to allow using triliovault features
+    type: string
 
 resources:
 
   ContainersCommon:
-    type: ../containers-common.yaml
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
 
   MySQLClient:
-    type: ../database/mysql-client.yaml
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
 
-  CinderBase:
-    type: ./cinder-volume-container-puppet.yaml
-    properties:
-      EndpointMap: {get_param: EndpointMap}
-      ServiceData: {get_param: ServiceData}
-      ServiceNetMap: {get_param: ServiceNetMap}
-      DefaultPasswords: {get_param: DefaultPasswords}
-      RoleName: {get_param: RoleName}
-      RoleParameters: {get_param: RoleParameters}
-
-  CinderCommon:
-    type: ./cinder-common-container-puppet.yaml
+conditions:
+  puppet_debug_enabled: {get_param: ConfigDebug}
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
+  common_tag_enabled: {equals: [{get_param: ClusterCommonTag}, true]}
 
 outputs:
   role_data:
-    description: Role data for the Cinder Volume role.
+    description: Role data for the Triliovault Wlm Cron role.
     value:
-      service_name: cinder_volume
-      monitoring_subscription: {get_attr: [CinderBase, role_data, monitoring_subscription]}
+      service_name: triliovault_wlm_cron
       config_settings:
-        map_merge:
-          - get_attr: [CinderBase, role_data, config_settings]
-          - tripleo::profile::base::lvm::enable_udev: false
-            tripleo::profile::pacemaker::cinder::volume_bundle::cinder_volume_docker_image: &cinder_volume_image_pcmklatest
-              yaql:
-                data:
-                  if:
-                    - common_tag_enabled
-                    - yaql:
-                        data: {get_param: ContainerCinderVolumeImage}
-                        expression: concat("cluster.common.tag/", $.data.rightSplit(separator => "/", maxSplits => 1)[1])
-                    - {get_param: ContainerCinderVolumeImage}
-                expression: concat($.data.rightSplit(separator => ":", maxSplits => 1)[0], ":pcmklatest")
-            tripleo::profile::pacemaker::cinder::volume_bundle::docker_volumes: {get_attr: [CinderCommon, cinder_volume_volumes]}
-            tripleo::profile::pacemaker::cinder::volume_bundle::docker_environment: {get_attr: [CinderCommon, cinder_volume_environment]}
-            tripleo::profile::pacemaker::cinder::volume_bundle::container_backend: {get_param: ContainerCli}
-            cinder::volume::manage_service: false
-            cinder::volume::enabled: false
-            cinder::backend_host: hostgroup
-      service_config_settings:
-        map_merge:
-          - get_attr: [CinderBase, role_data, service_config_settings]
-          - rsyslog:
-              tripleo_logging_sources_cinder_volume:
-                - {get_param: CinderVolumeLoggingSource}
-      # BEGIN DOCKER SETTINGS
+        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
+        trilio::wlmapi::nfs_shares: {get_param: NfsShares}
+        trilio::wlmapi::nfs_options: {get_param: NfsOptions}
+        trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
+        trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
+        trilio::wlmapi::s3_type: {get_param: S3Type}
+        trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
+        trilio::wlmapi::s3_secretkey: {get_param: S3SecretKey}
+        trilio::wlmapi::s3_region_name: {get_param: S3RegionName}
+        trilio::wlmapi::s3_bucket: {get_param: S3Bucket}
+        trilio::wlmapi::s3_endpoint_url: {get_param: S3EndpointUrl}
+        trilio::wlmapi::s3_signature_version: {get_param: S3SignatureVersion}
+        trilio::wlmapi::s3_auth_version: {get_param: S3AuthVersion}
+        trilio::wlmapi::s3_ssl_enabled: {get_param: S3SslEnabled}
+        trilio::wlmapi::s3_ssl_cert: {get_param: S3SslCert}
+        trilio::wlmapi::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
+        trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
+        trilio::wlmapi::port: {get_param: WlmApiPort}
+        trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
+        trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
+        trilio::wlmapi::password: {get_param: WlmApiKeystoneUserPassword}
+        trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_internal_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_uri: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] }
+        trilio::wlmapi::keystone_admin_auth_url: { get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix] } 
+        trilio::wlmapi::keystone_public_auth_uri: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix] }
+        trilio::wlmapi::keystone_public_auth_url: { get_param: [EndpointMap, KeystonePublic, uri_no_suffix] } 
+        trilio::wlmapi::neutron_internal_auth_url: {get_param: [EndpointMap, NeutronInternal, uri]}
+        trilio::wlmapi::neutron_admin_auth_url: {get_param: [EndpointMap, NeutronAdmin, uri]}
+        trilio::wlmapi::neutron_public_auth_url: {get_param: [EndpointMap, NeutronPublic, uri]}
+        trilio::wlmapi::nova_internal_auth_url: {get_param: [EndpointMap, NovaInternal, uri]}
+        trilio::wlmapi::nova_admin_auth_url: {get_param: [EndpointMap, NovaAdmin, uri]}
+        trilio::wlmapi::nova_public_auth_url: {get_param: [EndpointMap, NovaPublic, uri]}
+        trilio::wlmapi::cinder_internal_auth_url: {get_param: [EndpointMap, CinderInternal, uri]}
+        trilio::wlmapi::cinder_admin_auth_url: {get_param: [EndpointMap, CinderAdmin, uri]}
+        trilio::wlmapi::cinder_public_auth_url: {get_param: [EndpointMap, CinderPublic, uri]}
+        trilio::wlmapi::glance_internal_auth_url: {get_param: [EndpointMap, GlanceInternal, uri]}
+        trilio::wlmapi::glance_admin_auth_url: {get_param: [EndpointMap, GlanceAdmin, uri]}
+        trilio::wlmapi::glance_public_auth_url: {get_param: [EndpointMap, GlancePublic, uri]}
+        trilio::wlmapi::notification_driver: {get_param: NotificationDriver}
+        trilio::wlmapi::enable_proxy_headers_parsing: true
+        trilio::wlmapi::project_name: 'service'
+        trilio::wlmapi::region_name: {get_param: KeystoneRegion}
+        trilio::wlmapi::user_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
+        trilio::wlmapi::project_domain_name: {get_param: TriliovaultKeystoneUserDomainName}
+        trilio::wlmapi::trustee_role: { get_param: TrusteeRole }
+        trilio::wlmapi::auth_host_internal: {get_param: [EndpointMap, KeystoneInternal, host] }
+        trilio::wlmapi::auth_port_internal: {get_param: [EndpointMap, KeystoneInternal, port] }
+        trilio::wlmapi::auth_protocol_internal: {get_param: [EndpointMap, KeystoneInternal, protocol] }
+        trilio::wlmapi::auth_host_admin: {get_param: [EndpointMap, KeystoneAdmin, host] }
+        trilio::wlmapi::auth_port_admin: {get_param: [EndpointMap, KeystoneAdmin, port] }
+        trilio::wlmapi::auth_protocol_admin: {get_param: [EndpointMap, KeystoneAdmin, protocol] }
+        trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
+        trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
+        trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
+        trilio::wlmapi::database_connection:
+          make_url:
+            scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+            username: {get_param: WlmApiDbUserName}
+            password: {get_param: WlmApiDbUserPassword}
+            host: {get_param: [EndpointMap, MysqlInternal, host]}
+            path: 
+              str_replace:
+                template: "/$WLM_DB_NAME"
+                params:
+                  $WLM_DB_NAME: {get_param: WlmApiDbName}
+        trilio::wlmapi::my_ip:
+          str_replace:
+            template:
+              "%{hiera('$NETWORK')}"
+            params:
+              $NETWORK: {get_param: [ServiceNetMap, TriliovaultWlmApiNetwork]}
+        trilio::wlmapi::wlm_cron_bundle::triliovault_wlm_cron_docker_image: &triliovault_wlm_cron_image_pcmklatest
+          yaql:
+            data:
+              if:
+                - common_tag_enabled
+                - yaql:
+                    data: {get_param: ContainerTriliovaultWlmImage}
+                    expression: concat("cluster.common.tag/", $.data.rightSplit(separator => "/", maxSplits => 1)[1])
+                - {get_param: ContainerTriliovaultWlmImage}
+            expression: concat($.data.rightSplit(separator => ":", maxSplits => 1)[0], ":pcmklatest")
+        trilio::wlmapi::wlm_cron_bundle::docker_volumes:
+            list_concat:
+              - {get_attr: [ContainersCommon, volumes]}
+              -
+                - /var/lib/kolla/config_files/triliovault_wlm_cron.json:/var/lib/kolla/config_files/config.json:ro
+                - /var/lib/config-data/puppet-generated/triliovaultwlmcron/:/var/lib/kolla/config_files/triliovaultwlmcron:ro
+                - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
+              - if:
+                  - internal_tls_enabled
+                  - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                  - []
+              - if:
+                  - internal_tls_enabled
+                  - - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                  - []
+        trilio::wlmapi::wlm_cron_bundle::docker_environment: 
+            map_merge:
+              - KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+        trilio::wlmapi::wlm_cron_bundle::container_backend: {get_param: ContainerCli}
       puppet_config:
-        config_volume: cinder
-        puppet_tags: cinder_config,file,concat,file_line
+        config_volume: triliovaultwlmcron
+        puppet_tags: wlmapiconfig
         step_config:
           list_join:
             - "\n"
-            - - "include ::tripleo::profile::base::lvm"
-            - - "include ::tripleo::profile::pacemaker::cinder::volume"
-              - get_attr: [MySQLClient, role_data, step_config]
-        config_image: {get_param: ContainerCinderConfigImage}
+            - - "include ::trilio::wlmapi"
+              - {get_attr: [MySQLClient, role_data, step_config]}        
+        config_image: {get_param: ContainerTriliovaultWlmImage}
       kolla_config:
-        /var/lib/kolla/config_files/cinder_volume.json:
-          command: /usr/bin/cinder-volume --config-file /usr/share/cinder/cinder-dist.conf --config-file /etc/cinder/cinder.conf
-          config_files: {get_attr: [CinderCommon, cinder_common_kolla_config_files]}
-          permissions: {get_attr: [CinderCommon, cinder_common_kolla_permissions]}
-      container_config_scripts: {get_attr: [ContainersCommon, container_config_scripts]}
+        /var/lib/kolla/config_files/triliovault_wlm_cron.json:
+          command: /opt/triliovault/start_triliovault_wlm_cron.sh
+          config_files:
+            - source: "/var/lib/kolla/config_files/triliovaultwlmcron/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/triliovault/
+              owner: nova:nova
+              recurse: true
       docker_config:
-        step_3:
-          cinder_volume_init_logs:
+        step_2:
+          triliovault_wlm_cron_init_log:
+            image: &triliovault_wlm_cron_image {get_param: ContainerTriliovaultWlmImage}
             start_order: 0
-            image: {get_param: ContainerCinderVolumeImage}
             net: none
-            privileged: false
             user: root
             volumes:
-              - /var/log/containers/cinder:/var/log/cinder
-            command: ['/bin/bash', '-c', 'chown -R cinder:cinder /var/log/cinder']
-      host_prep_tasks: {get_attr: [CinderCommon, cinder_volume_host_prep_tasks]}
+              - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
+            command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']
+      host_prep_tasks:
+        - name: create triliovault wlm cron log directory
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/triliovault-wlm-cron, 'setype': svirt_sandbox_file_t }
       deploy_steps_tasks:
-        - name: Cinder Volume tag container image for pacemaker
+        - name: Triliovault Wlm Cron Container Image tag for pacemaker
           when: step|int == 1
           import_role:
             name: tripleo-container-tag
           vars:
-            container_image: {get_param: ContainerCinderVolumeImage}
-            container_image_latest: *cinder_volume_image_pcmklatest
-        - name: Cinder Volume HA Wrappers Step
+            container_image: {get_param: ContainerTriliovaultWlmImage}
+            container_image_latest: *triliovault_wlm_cron_image_pcmklatest
+        - name: Triliovault Wlm Cron HA Wrappers Step
           when: step|int == 5
-          block: &cinder_volume_puppet_bundle
-            - name: Cinder volume puppet bundle
+          block: &triliovault_wlm_cron_puppet_bundle
+            - name: TrilioVault Wlm Cron puppet bundle
               import_role:
                 name: tripleo_ha_wrapper
               vars:
-                tripleo_ha_wrapper_service_name: cinder_volume
-                tripleo_ha_wrapper_resource_name: openstack-cinder-volume
-                tripleo_ha_wrapper_bundle_name: openstack-cinder-volume
+                tripleo_ha_wrapper_service_name: triliovault_wlm_cron
+                tripleo_ha_wrapper_resource_name: triliovault-wlm-cron
+                tripleo_ha_wrapper_bundle_name: triliovault-wlm-cron
                 tripleo_ha_wrapper_resource_state: _ Started
-                tripleo_ha_wrapper_puppet_config_volume: cinder
-                tripleo_ha_wrapper_puppet_execute: 'include ::tripleo::profile::base::pacemaker; include ::tripleo::profile::pacemaker::cinder::volume_bundle'
+                tripleo_ha_wrapper_puppet_config_volume: triliovaultwlmcron
+                tripleo_ha_wrapper_puppet_execute: 'include ::tripleo::profile::base::pacemaker; include ::trilio::wlmapi::wlm_cron_bundle'
                 tripleo_ha_wrapper_puppet_tags: 'pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ip,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation'
                 tripleo_ha_wrapper_puppet_debug: {get_param: ConfigDebug}
-                tripleo_ha_wrapper_config_suffix: .cinder_volume_previous_run
+                tripleo_ha_wrapper_config_suffix: .triliovault_wlm_cron_previous_run
+
 
       update_tasks:
-        - name: cinder_volume fetch and retag container image for pacemaker
-          when: step|int == 2
-          block: &cinder_volume_fetch_retag_container_tasks
-            - name: Get container cinder_volume image
+        - name: triliovault_wlm_cron fetch and retag container image for pacemaker
+          when: step|int == 5
+          block: &triliovault_wlm_cron_fetch_retag_container_tasks
+            - name: Get container triliovault_wlm_cron image
               set_fact:
-                cinder_volume_image: {get_param: ContainerCinderVolumeImage}
-                cinder_volume_image_latest: *cinder_volume_image_pcmklatest
-            - name: Pull latest cinder_volume images
-              command: "{{container_cli}} pull {{cinder_volume_image}}"
+                triliovault_wlm_cron_image: {get_param: ContainerTriliovaultWlmImage}
+                triliovault_wlm_cron_image_latest: *triliovault_wlm_cron_image_pcmklatest
+            - name: Pull latest triliovault_wlm_cron images
+              command: "{{container_cli}} pull {{triliovault_wlm_cron_image}}"
               register: result
               retries: 3
               delay: 3
               until: result.rc == 0
-            - name: Get previous cinder_volume image id
-              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{cinder_volume_image_latest}}"
-              register: old_cinder_volume_image_id
+            - name: Get previous triliovault_wlm_cron image id
+              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image_latest}}"
+              register: old_triliovault_wlm_cron_image_id
               failed_when: false
-            - name: Get new cinder_volume image id
-              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{cinder_volume_image}}"
-              register: new_cinder_volume_image_id
-            - name: Retag pcmklatest to latest cinder_volume image
+            - name: Get new triliovault_wlm_cron image id
+              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
+              register: new_triliovault_wlm_cron_image_id
+            - name: Retag pcmklatest to latest triliovault_wlm_cron image
               include_role:
                 name: tripleo-container-tag
               vars:
-                container_image: "{{cinder_volume_image}}"
-                container_image_latest: "{{cinder_volume_image_latest}}"
+                container_image: "{{triliovault_wlm_cron_image}}"
+                container_image_latest: "{{triliovault_wlm_cron_image_latest}}"
               when:
-                - old_cinder_volume_image_id.stdout != new_cinder_volume_image_id.stdout
+                - old_triliovault_wlm_cron_image_id.stdout != new_triliovault_wlm_cron_image_id.stdout
 
       post_update_tasks:
-        - name: Cinder volume bundle post update
+        - name: Triliovault Wlm Cron bundle post update
           when: step|int == 1
-          block: *cinder_volume_puppet_bundle
+          block: *triliovault_wlm_cron_puppet_bundle
           vars:
             tripleo_ha_wrapper_minor_update: true
 
-      upgrade_tasks:
-        - name: Prepare switch of cinder_volume image name
-          when:
-            - step|int == 0
-          block:
-            - name: Get cinder_volume image id currently used by pacemaker
-              shell: "pcs resource config openstack-cinder-volume | grep -Eo 'image=[^ ]+' | awk -F= '{print $2;}'"
-              register: cinder_volume_image_current_res
-              failed_when: false
-            - name: cinder_volume image facts
-              set_fact:
-                cinder_volume_image_latest: *cinder_volume_image_pcmklatest
-                cinder_volume_image_current: "{{cinder_volume_image_current_res.stdout}}"
-            - name: Temporarily tag the current cinder_volume image id with the upgraded image name
-              import_role:
-                name: tripleo-container-tag
-              vars:
-                container_image: "{{cinder_volume_image_current}}"
-                container_image_latest: "{{cinder_volume_image_latest}}"
-                pull_image: false
-              when:
-                - cinder_volume_image_current != ''
-                - cinder_volume_image_current != cinder_volume_image_latest
-            # During an OS Upgrade, the cluster may not exist so we use
-            # the shell module instead.
-            # TODO(odyssey4me):
-            # Fix the pacemaker_resource module to handle the exception
-            # for a non-existant cluster more gracefully.
-            - name: Check openstack-cinder-volume cluster resource status
-              shell: pcs resource config openstack-cinder-volume
-              changed_when: false
-              failed_when: false
-              register: cinder_volume_pcs_res_result
-            - name: Set fact cinder_volume_pcs_res
-              set_fact:
-                cinder_volume_pcs_res: "{{cinder_volume_pcs_res_result.rc == 0}}"
-            - name: set is_cinder_volume_bootstrap_node fact
-              tags: common
-              set_fact: is_cinder_volume_bootstrap_node={{cinder_volume_short_bootstrap_node_name|lower == ansible_facts['hostname']|lower}}
-        - name: Update cinder_volume pcs resource bundle for new container image
-          when:
-            - step|int == 1
-            - is_cinder_volume_bootstrap_node
-            - cinder_volume_pcs_res|bool
-            - cinder_volume_image_current != cinder_volume_image_latest
-          block:
-            - name: Disable the cinder_volume cluster resource before container upgrade
-              pacemaker_resource:
-                resource: openstack-cinder-volume
-                state: disable
-                wait_for_resource: true
-              register: output
-              retries: 5
-              until: output.rc == 0
-            - name: pcs resource bundle update cinder_volume for new container image name
-              command: "pcs resource bundle update openstack-cinder-volume container image={{cinder_volume_image_latest}}"
-            - name: Enable the cinder_volume cluster resource
-              pacemaker_resource:
-                resource: openstack-cinder-volume
-                state: enable
-                wait_for_resource: true
-              register: output
-              retries: 5
-              until: output.rc == 0
-        - name: Create hiera data to upgrade cinder_volume in a stepwise manner.
-          when:
-            - step|int == 1
-            - cluster_recreate|bool
-          block:
-            - name: set cinder_volume upgrade node facts in a single-node environment
-              set_fact:
-                cinder_volume_short_node_names_upgraded: "{{ cinder_volume_short_node_names }}"
-                cinder_volume_node_names_upgraded: "{{ cinder_volume_node_names | default([]) }}"
-                cacheable: no
-              when: groups['cinder_volume'] | length <= 1
-            - name: set cinder_volume upgrade node facts from the limit option
-              set_fact:
-                cinder_volume_short_node_names_upgraded: "{{ cinder_volume_short_node_names_upgraded|default([]) + [item.split('.')[0]] }}"
-                cinder_volume_node_names_upgraded: "{{ cinder_volume_node_names_upgraded|default([]) + [item] }}"
-                cacheable: no
-              when:
-                - groups['cinder_volume'] | length > 1
-                - item.split('.')[0] in ansible_limit.split(':')
-              loop: "{{ cinder_volume_node_names }}"
-            - fail:
-                msg: >
-                  You can't upgrade cinder_volume without
-                  staged upgrade.  You need to use the limit option in order
-                  to do so.
-              when: >-
-                cinder_volume_short_node_names_upgraded is not defined or
-                cinder_volume_short_node_names_upgraded | length == 0 or
-                cinder_volume_node_names_upgraded is not defined or
-                cinder_volume_node_names_upgraded | length == 0
-            - debug:
-                msg: "Prepare cinder_volume upgrade for {{ cinder_volume_short_node_names_upgraded }}"
-            - name: remove cinder_volume init container on upgrade-scaleup to force re-init
-              include_role:
-                name: tripleo-container-rm
-              vars:
-                tripleo_containers_to_rm:
-                  - cinder_volume_init_bundle
-              when:
-                - cinder_volume_short_node_names_upgraded | length > 1
-            - name: add the cinder_volume short name to hiera data for the upgrade.
-              include_role:
-                name: tripleo-upgrade-hiera
-                tasks_from: set.yml
-              vars:
-                tripleo_upgrade_key: cinder_volume_short_node_names_override
-                tripleo_upgrade_value: "{{ cinder_volume_short_node_names_upgraded }}"
-            - name: add the cinder_volume long name to hiera data for the upgrade
-              include_role:
-                name: tripleo-upgrade-hiera
-                tasks_from: set.yml
-              vars:
-                tripleo_upgrade_key: cinder_volume_node_names_override
-                tripleo_upgrade_value: "{{ cinder_volume_node_names_upgraded }}"
-            - name: remove the extra hiera data needed for the upgrade.
-              include_role:
-                name: tripleo-upgrade-hiera
-                tasks_from: remove.yml
-              vars:
-                tripleo_upgrade_key: "{{ item }}"
-              loop:
-                - cinder_volume_short_node_names_override
-                - cinder_volume_node_names_override
-              when: cinder_volume_short_node_names_upgraded | length == cinder_volume_node_names | length
-        - name: Retag the pacemaker image if containerized
-          when:
-            - step|int == 3
-          block: *cinder_volume_fetch_retag_container_tasks
 
-      post_upgrade_tasks:
-        - name: Start cinder_volume service (pacemaker)
-          when: step|int == 1
-          pacemaker_resource:
-            resource: openstack-cinder-volume
-            state: enable
+      upgrade_tasks: []
