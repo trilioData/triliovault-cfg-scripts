@@ -11,13 +11,13 @@ dmapi_listen = {{ api_interface_address }}
 my_ip = {{ api_interface_address }}
 rootwrap_config = /etc/dmapi/rootwrap.conf
 debug = False
-log_file = /var/log/kolla/triliovault-datamover-api/dmapi.log
-log_dir = /var/log/kolla/triliovault-datamover-api
+log_config_append = /etc/triliovault-datamover/datamover_api_logging.conf
+
 
 [wsgi]
 ssl_cert_file = 
 ssl_key_file =
-api_paste_config = /etc/dmapi/api-paste.ini
+api_paste_config = /etc/triliovault-datamover/api-paste.ini
 
 [database]
 connection = mysql+pymysql://{{ triliovault_db_details[0].triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_db_details[0].triliovault_database_address }}/{{ triliovault_db_details[0].triliovault_database_name }}

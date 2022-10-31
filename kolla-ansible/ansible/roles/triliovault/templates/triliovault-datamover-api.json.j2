@@ -5,6 +5,12 @@
 			"dest": "/etc/triliovault-datamover/triliovault-datamover-api.conf",
 			"owner": "dmapi",
 			"perm": "0755"
+		},
+	        {
+			"source": "{{ container_config_directory }}/triliovault-datamover-api-logging.conf",
+			"dest": "/etc/triliovault-datamover/datamover_api_logging.conf",
+			"owner": "dmapi",
+			"perm": "0755"
 		}
 	],
 	"permissions": [{

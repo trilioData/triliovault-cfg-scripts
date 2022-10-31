@@ -14,6 +14,12 @@
             "dest": "/etc/triliovault-datamover/triliovault-datamover.conf",
             "owner": "nova",
             "perm": "0755"
+	},
+	{
+            "source": "{{ container_config_directory }}/triliovault-datamover-logging.conf.j2",
+            "dest": "/etc/triliovault-datamover/triliovault-datamover-logging.conf",
+            "owner": "nova",
+            "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/{{ ceph_cinder_keyring }}",

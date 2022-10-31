@@ -115,7 +115,7 @@ neutron_api_insecure = False
 misfire_grace_time = 600
 
 [s3fuse_sys_admin]
-sudo /usr/bin/workloadmgr-rootwrap /etc/workloadmgr/rootwrap.conf privsep-helper
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 
 [keystone_authtoken]
 admin_tenant_name = service
@@ -160,8 +160,8 @@ cafile =
 insecure = False
 
 [alembic]
-script_location = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
-version_locations = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
 
 sqlalchemy.url= mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address }}/{{ triliovault_wlm_db_details[0].triliovault_wlm_database_name }}
 

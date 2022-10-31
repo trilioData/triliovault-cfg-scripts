@@ -115,7 +115,7 @@ neutron_api_insecure = False
 misfire_grace_time = 600
 
 [s3fuse_sys_admin]
-sudo /usr/bin/workloadmgr-rootwrap /etc/workloadmgr/rootwrap.conf privsep-helper
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 
 [keystone_authtoken]
 admin_tenant_name = service
