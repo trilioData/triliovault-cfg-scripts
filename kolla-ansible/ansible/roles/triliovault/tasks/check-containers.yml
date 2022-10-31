@@ -17,10 +17,6 @@
     auth_registry: "{{ triliovault_docker_registry }}"    
   when:
     - inventory_hostname in groups[item.value.group]
-    - inventory_hostname in groups[triliovault_wlm_api_group]
-    - inventory_hostname in groups[triliovault_wlm_workloads_group]
-    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
-    - inventory_hostname in groups[triliovault_wlm_cron_group]
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
   notify:

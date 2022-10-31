@@ -3,8 +3,20 @@
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-wlm-api.conf",
 			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
-			"owner": "root",
+			"owner": "nova",
 			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/triliovault-wlm-logging.conf",
+			"dest": "/etc/triliovault-wlm/wlm_logging.conf",
+			"owner": "nova",
+			"perm": "0660"
+		},
+		{
+			"source": "{{ container_config_directory }}/api-paste.ini",
+			"dest": "/etc/triliovault-wlm/api-paste.ini",
+			"owner": "nova",
+			"perm": "0660"
 		}
 	],
 	"permissions": [{
