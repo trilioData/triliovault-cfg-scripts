@@ -16,8 +16,8 @@
             "perm": "0755"
 	},
 	{
-            "source": "{{ container_config_directory }}/triliovault-datamover-logging.conf.j2",
-            "dest": "/etc/triliovault-datamover/triliovault-datamover-logging.conf",
+            "source": "{{ container_config_directory }}/triliovault-datamover-logging.conf",
+            "dest": "/etc/triliovault-datamover/datamover_logging.conf",
             "owner": "nova",
             "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
@@ -44,7 +44,7 @@
     ],
     "permissions": [
         {
-            "path": "/var/log/kolla/triliovault-datamover",
+            "path": "/var/log/triliovault-datamover",
             "owner": "nova:nova",
             "recurse": true
         }
