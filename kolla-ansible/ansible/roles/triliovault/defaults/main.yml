@@ -60,7 +60,7 @@ triliovault_services:
     group: "{{ triliovault_wlm_api_group }}"
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
-    privileged: False
+    privileged: True
     volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
     haproxy:
