@@ -5,10 +5,16 @@
 			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
 			"owner": "nova",
 			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/triliovault-wlm-logging.conf",
+			"dest": "/etc/triliovault-wlm/wlm_logging.conf",
+			"owner": "nova",
+			"perm": "0755"
 		}
 	],
 	"permissions": [{
-		"path": "/var/log/kolla/triliovault",
+		"path": "/var/log/triliovault",
 		"owner": "nova:nova",
 		"recurse": true
 	}]

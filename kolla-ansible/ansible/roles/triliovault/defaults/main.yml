@@ -262,7 +262,7 @@ triliovault_ks_services:
     triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
-triliovault_wlm_keystone_user : "workloadmgr"	
+triliovault_wlm_keystone_user : "triliovault"	
 
 triliovault_ks_users:
   - project: "service"
@@ -356,13 +356,14 @@ triliovault_docker_registry: "docker.io"
 # RabbitMQ 
 ################# 
 triliovault_wlm_rabbitmq_user: "workloadmgr"
+triliovault_wlm_rpc_vhost: "workloadmgr"
 triliovault_tags:
   - "administrator"
 
 triliovault_wlm_rabbitmq_users:
   - user: "{{ triliovault_wlm_rabbitmq_user }}"
     password: "{{ om_rpc_password }}"
-    vhost: "{{ om_rpc_vhost }}"
+    vhost: "{{ triliovault_wlm_rpc_vhost }}"
     tags: "{{ triliovault_tags }}"
 
 
@@ -407,3 +408,7 @@ triliovault_copy_ceph_s3_ssl_cert: False
 ## cinder
 ## cinder http retries default value
 cinder_http_retries: '10'
+
+
+##New_vars
+cloud_admin_role: 'admin'
