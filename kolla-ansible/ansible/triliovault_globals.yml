@@ -10,17 +10,9 @@ Cloud_Admin_ProjectID: ""
 Cloud_Admin_DomainName: ""
 Cloud_Admin_DomainID: ""
 
-OS_Region: ""
 OS_Endpoint_Type: ""
-
-## If OS_ENDPOINT_TYPE is 'internal' then pass internal OS_AUTH_URL only
-## same for the 'admin' & 'public'
-OS_AUTH_URL: ""
-
-## If OS_AUTH_URL is on SSL then it's mandatory to pass OS SSL Certificate Path
 ## Ensure OS CA CERT is present on specified path
 OS_CA_CERT: ""
-
 
 # ## Project name in which triliovault keystone resources will get created
 # TriliovaultKeystoneServiceProjectName: "service"
