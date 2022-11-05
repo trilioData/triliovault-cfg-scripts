@@ -73,6 +73,7 @@
   when:
     - kolla_copy_ca_into_containers | bool
 
+- import_tasks: get_cloud_details.yml
 ##json
 
 - name: Copying over config.json files for services
@@ -222,8 +223,8 @@
 
 - name: Copy over triliovault backup target certs - ceph s3
   copy:
-    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/triliovault-datamover/"
+    src: "{{ triliovault_s3_ssl_cert_file_path }}"
+    dest: "{{ node_config_directory }}/triliovault-datamover/triliovault-s3.pem"
     mode: "0660"
   become: true
   when:
@@ -233,6 +234,19 @@
   notify:
     - Restart triliovault-datamover container  
     
+- name: Copy over triliovault-wlm backup target certs - ceph s3
+  copy:
+    src: "{{ triliovault_s3_ssl_cert_file_path }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-api/triliovault-s3.pem"
+    mode: "0660"
+  become: true
+  when:
+    - triliovault_copy_ceph_s3_ssl_cert | bool
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - triliovault_services['triliovault-wlm-api'].enabled | bool
+  notify:
+    - Restart triliovault-wlm-api container  
+      
 - name: Copying over nova.conf for triliovault datamover service
   become: true
   vars:

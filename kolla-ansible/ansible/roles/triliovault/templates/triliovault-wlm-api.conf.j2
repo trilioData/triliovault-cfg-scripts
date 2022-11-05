@@ -24,14 +24,11 @@ cloud_admin_role = {{ cloud_admin_role }}
 trustee_role = creator
 domain_name = {{ Cloud_Admin_DomainID }}
 
-#CLOUD_ADMIN_DOMAIN_ID
-triliovault_user_domain_id = 
-##Need to replace with ID
-cloud_unique_id = {{ triliovault_wlm_keystone_user }} 
+triliovault_user_domain_id = default 
+cloud_unique_id = {{ Triliovault_Wlm_User_ID }} 
 
 region_name_for_services = {{ openstack_region_name }}
 global_job_scheduler_override = False
-
 
 transport_url = {{ rpc_transport_url }}
 
@@ -100,7 +97,7 @@ vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
 {# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
-vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}
+vault_s3_ssl_cert = /etc/triliovault-wlm/triliovault-s3.pem
 
 {% endif %}
 
@@ -135,8 +132,8 @@ password = {{ triliovault_wlm_api_ks_password }}
 admin_user = {{ triliovault_wlm_keystone_user }} 
 admin_password = {{ triliovault_wlm_api_ks_password }}
 
-project_domain_id = {{ Cloud_Admin_ProjectID }}
-user_domain_id = {{ Cloud_Admin_DomainID }}
+project_domain_id = default
+user_domain_id = default
 
 auth_plugin = password
 
