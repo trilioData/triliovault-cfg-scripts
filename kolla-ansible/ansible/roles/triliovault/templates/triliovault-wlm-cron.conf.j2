@@ -1,35 +1,34 @@
 [DEFAULT]
-log_config_append = /etc/triliovault-wlm/wlm_logging.conf
+log_file = /etc/triliovault-wlm/wlm_logging.conf
 
-triliovault_hostnames = {{ network_interface }}
+triliovault_hostnames =
 config_status = configured
 
-state_path = /opt/stack/data/workloadmgr
+state_path = /opt/stack/data/triliovault-wlm
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 
 wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
 
 connection = mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address  }}/{{  triliovault_wlm_db_details[0].triliovault_wlm_database_user }}
+
 osapi_workloads_listen_port = {{ triliovault_wlm_api_listen_port }}
 
 ##OS Details
-cloud_admin_user_id = {{ Cloud_Admin_UserName }}
+cloud_admin_user_id = {{ Cloud_Admin_UserID }}
 cloud_admin_project_id = {{ Cloud_Admin_ProjectID }}
 
-cloud_admin_domain = {{  Cloud_Admin_DomainID }}
-cloud_admin_role = admin
+cloud_admin_domain = {{ Cloud_Admin_DomainID }}
+cloud_admin_role = {{ cloud_admin_role }}
 
 trustee_role = creator
-domain_name = {{ Cloud_Admin_DomainID  }}
+domain_name = {{ Cloud_Admin_DomainID }}
 
-#CLOUD_ADMIN_DOMAIN_ID
-triliovault_user_domain_id = default
-cloud_unique_id = d3a23d4940834089a03f8ecbe820f163
+triliovault_user_domain_id = default 
+cloud_unique_id = {{ Triliovault_Wlm_User_ID }} 
 
 region_name_for_services = {{ openstack_region_name }}
 global_job_scheduler_override = False
-
 
 transport_url = {{ rpc_transport_url }}
 
@@ -41,23 +40,23 @@ glance_production_api_servers = https://{{ kolla_internal_fqdn }}:9292
 glance_api_version = 2
 
 ## Keystone URL for internal authentication
-keystone_endpoint_url = https://{{ kolla_internal_fqdn }}:35357/v3
+keystone_endpoint_url = https://{{ kolla_internal_fqdn }}:5000
 keystone_auth_version = 3
 
 cinder_production_endpoint_template = https://{{ kolla_internal_fqdn }}:8776/v2/%(tenant_id)s
 
-nova_admin_auth_url = https://{{ kolla_internal_fqdn }}:35357/v3
+nova_admin_auth_url = https://{{ kolla_internal_fqdn }}:5000
 nova_production_endpoint_template = "https://{{ kolla_internal_fqdn }} :8774/v2.1/%(project_id)s"
 
-neutron_admin_auth_url = https://{{ kolla_internal_fqdn }}:35357/v3
+neutron_admin_auth_url = https://{{ kolla_internal_fqdn }}:5000
 neutron_production_url = https://{{ kolla_internal_fqdn }}:9696
 
 # The path to store the taskflow data
-taskflow_path = "/var/lib/workloadmgr/taskflow"
+taskflow_path = /var/lib/workloadmgr/taskflow
 taskflow_max_cache_size = 1024
 taskflow_max_age = 10
 
-rabbit_virtual_host = {{ om_rpc_vhost }}
+rabbit_virtual_host = {{ triliovault_wlm_rpc_vhost }}
 compute_driver = libvirt.LibvirtDriver
 vault_storage_das_device = none
 
@@ -98,7 +97,7 @@ vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
 {# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
-vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}
+vault_s3_ssl_cert = /etc/triliovault-wlm/triliovault-s3.pem
 
 {% endif %}
 
@@ -122,16 +121,16 @@ admin_tenant_name = service
 project_name = service
 
 signing_dir = /var/cache/workloadmgr
-auth_url = https://{{ kolla_internal_fqdn }}:35357/
+auth_url = https://{{ kolla_internal_fqdn }}:5000/v3
 
-www_authenticate_uri = https://{{ kolla_internal_fqdn }}:35357/v3
+www_authenticate_uri = https://{{ kolla_internal_fqdn }}:5000/v3
 auth_type = password
 
-username = 
-password =
+username = {{ triliovault_wlm_keystone_user }}
+password = {{ triliovault_wlm_api_ks_password }}
 
-admin_user =
-admin_password =
+admin_user = {{ triliovault_wlm_keystone_user }} 
+admin_password = {{ triliovault_wlm_api_ks_password }}
 
 project_domain_id = default
 user_domain_id = default
@@ -160,14 +159,14 @@ cafile =
 insecure = False
 
 [alembic]
-script_location = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
-version_locations = /home/stack/myansible/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
 
 sqlalchemy.url= mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address }}/{{ triliovault_wlm_db_details[0].triliovault_wlm_database_name }}
 
 
 [filesearch]
-process_timeout = 3
+process_timeout = 300
 
 [barbican]
 encryption_support = True
