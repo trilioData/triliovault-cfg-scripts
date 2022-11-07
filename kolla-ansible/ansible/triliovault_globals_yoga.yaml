@@ -3,10 +3,9 @@
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
 
-triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-horizon-plugin:{{ triliovault_tag }}"
-triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover:{{ triliovault_tag }}"
-triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover-api:{{ triliovault_tag }}"
-
+triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-horizon-plugin:{{ triliovault_tag }}"
+triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
+triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
 
 ## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
 ## By default triliovault horizon will not be enabled on openstack horizon
