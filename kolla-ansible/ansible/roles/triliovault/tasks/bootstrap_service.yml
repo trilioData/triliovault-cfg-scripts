@@ -58,6 +58,7 @@
     restart_policy: "no"
     volumes: "{{ triliovault_wlm_workloads.volumes|reject('equalto', '')|list }}"
   run_once: True
+  delegate_to: "{{ groups[triliovault_wlm_workloads.group][0] }}"
 
 
 - name: Running triliovault workloadmgr scheduler bootstrap container
@@ -78,6 +79,7 @@
     restart_policy: "no"
     volumes: "{{ triliovault_wlm_scheduler.volumes|reject('equalto', '')|list }}"
   run_once: True
+  delegate_to: "{{ groups[triliovault_wlm_scheduler.group][0] }}"
 
 
 - name: Running triliovault workloadmgr cron bootstrap container
@@ -98,3 +100,4 @@
     restart_policy: "no"
     volumes: "{{ triliovault_wlm_cron.volumes|reject('equalto', '')|list }}"
   run_once: True
+  delegate_to: "{{ groups[triliovault_wlm_cron.group][0] }}"
