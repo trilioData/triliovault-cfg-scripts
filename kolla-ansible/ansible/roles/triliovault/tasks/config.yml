@@ -74,6 +74,7 @@
     - kolla_copy_ca_into_containers | bool
 
 - import_tasks: get_cloud_details.yml
+
 ##json
 
 - name: Copying over config.json files for services
@@ -146,7 +147,7 @@
   become: true
   template:
     src: "triliovault-object-store-logging.conf.j2"
-    dest: "/etc/kolla/triliovault-wlm/triliovault-object-store-logging.conf"
+    dest: "/etc/kolla/triliovault-wlm-api/triliovault-object-store-logging.conf"
     mode: "0660"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
@@ -204,7 +205,7 @@
 
 ##api-paste.ini
       
-- name: Copy triliovault-wlm api-paste.ini file
+- name: Copy triliovault-wlm api-paste.ini file to api
   become: true
   template:
     src: "api-paste.ini.j2"
@@ -215,6 +216,44 @@
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart triliovault-wlm-api container"
+
+- name: Copy triliovault-wlm api-paste.ini file to workloads
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/api-paste.ini"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-workloads container"
+
+- name: Copy triliovault-wlm api-paste.ini file to scheudler
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/api-paste.ini"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-scheduler container"
+
+- name: Copy triliovault-wlm api-paste.ini file to cron
+  become: true
+  template:
+    src: "api-paste.ini.j2"
+    dest: "{{ node_config_directory }}/triliovault-wlm-cron/api-paste.ini"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+  with_dict: "{{ triliovault_services }}"
+  notify:
+    - "Restart triliovault-wlm-cron container"
+
+####
 
 - include_tasks: ceph_cinder.yml
   when:
