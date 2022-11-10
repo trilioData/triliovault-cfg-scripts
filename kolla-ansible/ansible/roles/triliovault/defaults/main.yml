@@ -82,7 +82,7 @@ triliovault_services:
           - "timeout server 10m"
         listen_port: "{{ triliovault_wlm_api_listen_port }}"
         tls_backend: "{{ triliovault_enable_tls_backend }}"
-      triliovault_worklodmgr_api_external:
+      triliovault_wlm_api_external:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
@@ -267,8 +267,8 @@ openstack_triliovault_auth: "{{ openstack_auth }}"
 triliovault_datamover_api_port: 8784
 triliovault_datamover_api_listen_port: "{{ triliovault_datamover_api_port }}"
 
-triliovault_wlm_api_port: 8780
-triliovault_wlm_api_listen_port: "{{ triliovault_wlm_api_port }}"
+triliovault_wlm_api_port: 8781
+triliovault_wlm_api_listen_port: 8781
 
 
 ####################
