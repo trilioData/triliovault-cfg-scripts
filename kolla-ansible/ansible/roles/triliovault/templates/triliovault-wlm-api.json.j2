@@ -23,6 +23,12 @@
 	            "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
         	    "owner": "nova",
 	            "perm": "0600"
+        	}{% endif %}{% if OS_CA_CERT_PATH != "" %},
+	        {
+        	    "source": "{{ container_config_directory }}/os-ca-cert.pem",
+	            "dest": "/etc/triliovault-wlm/os-ca-cert.pem",
+        	    "owner": "nova",
+	            "perm": "0600"
         	}{% endif %}
 	],
 	"permissions": [{

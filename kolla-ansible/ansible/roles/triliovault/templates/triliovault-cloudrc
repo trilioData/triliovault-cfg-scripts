@@ -10,10 +10,10 @@ export OS_PROJECT_ID={{ Cloud_Admin_ProjectID }}
 export OS_USER_DOMAIN_NAME={{ Cloud_Admin_DomainName }}
 export OS_PROJECT_DOMAIN_ID={{ Cloud_Admin_DomainID }}
 
-export OS_INTERFACE={{ OS_Endpoint_type }}
+export OS_INTERFACE={{ OS_Endpoint_Type }}
 
-{% if OS_CA_CERT != "" %}
-export OS_CACERT={{ OS_CA_CERT }}
+{% if OS_CA_CERT_PATH != "" %}
+export OS_CACERT={{ OS_CA_CERT_PATH }}
 {% else %}
 export OS_CACERT=
 {% endif %}

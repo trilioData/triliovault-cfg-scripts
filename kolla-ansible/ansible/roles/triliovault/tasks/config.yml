@@ -202,8 +202,6 @@
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart triliovault-wlm-cron container"
-
-##api-paste.ini
       
 - name: Copy triliovault-wlm api-paste.ini file to api
   become: true
@@ -253,8 +251,6 @@
   notify:
     - "Restart triliovault-wlm-cron container"
 
-####
-
 - include_tasks: ceph_cinder.yml
   when:
     - cinder_backend_ceph | bool
@@ -281,6 +277,18 @@
   become: true
   when:
     - triliovault_copy_ceph_s3_ssl_cert | bool
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - triliovault_services['triliovault-wlm-api'].enabled | bool
+  notify:
+    - Restart triliovault-wlm-api container  
+      
+- name: Copy OS-CA-CERT
+  copy:
+    src: "{{ OS_CA_CERT_PATH }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-api/os-ca-cert.pem"
+    mode: "0660"
+  become: true
+  when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
     - triliovault_services['triliovault-wlm-api'].enabled | bool
   notify:
