@@ -142,8 +142,8 @@ user_domain_id = default
 
 auth_plugin = password
 
-{% if OS_CA_CERT != "" %}
-cafile = {{ OS_SSL_CERT_PATH }}
+{% if OS_CA_CERT_PATH != "" %}
+cafile = {{ node_config_directory }}/triliovault-wlm-api/os-ca-cert.pem
 {% else %}
 cafile = 
 {% endif %}
@@ -155,8 +155,8 @@ service_token_roles_required = True
 client_retry_limit = 3
 endpoint_type = internal
 
-{% if OS_CA_CERT != "" %}
-cafile = {{ OS_SSL_CERT_PATH }}
+{% if OS_CA_CERT_PATH != "" %}
+cafile = {{ node_config_directory }}/triliovault-wlm-api/os-ca-cert.pem
 {% else %}
 cafile = 
 {% endif %}
