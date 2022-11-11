@@ -102,7 +102,7 @@
 
 - name: Create wlm_logging.conf
   template:
-    src: wlm_logging.conf.j2
+    src: wlm_logging.conf
     dest: "{{ wlm_log_cfg }}"
   tags:
     - update_cfg
