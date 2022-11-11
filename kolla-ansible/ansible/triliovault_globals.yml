@@ -5,7 +5,7 @@ enable_triliovault: "yes"
 
 triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-horizon-plugin:{{ triliovault_tag }}"
 triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover:{{ triliovault_tag }}"
-triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover-api:{{ triliovault_tag }}"
+triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/{{ kolla_base_distro }}-binary-trilio-datamover-api:{{ triliovault_tag }}"
 
 
 ## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
