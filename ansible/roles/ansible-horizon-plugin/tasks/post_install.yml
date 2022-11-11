@@ -27,49 +27,69 @@
   shell: "echo {{ PACKAGE_LIB }} > {{ TRILIO_FILE }}"
   when: ENV_PATH != "/usr"
 
+##Centos
+
 - block:
-  - name: copy tvault_panel_group.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel_group.py"
+  - name: Find panel files
+    find: 
+      paths: /usr/lib/python3.6/site-packages/dashboards/local/enabled
+      file_type: file
+    register: rpm_panel_path
+
+  - name: Copy panel files
+    copy:
+      src: "{{ item.path }}"
+      dest: /usr/share/openstack-dashboard/openstack_dashboard/local/enabled
+    loop: "{{ rpm_panel_path.files }}"
     notify:
       - restart webserver
 
-  - name: copy tvault_admin_panel_group.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_admin_panel_group.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel_group.py"
-    notify:
-      - restart webserver
+  - name: Find template files
+    find: 
+      paths: /usr/lib/python3.6/site-packages/dashboards/templatetags
+      file_type: file
+    register: rpm_template_path
 
-  - name: copy tvault_panel.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_panel.py"
-    notify:
-      - restart webserver
-
-  - name: copy tvault_settings_panel.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_settings_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_settings_panel.py"
-    notify:
-      - restart webserver
-
-  - name: copy tvault_admin_panel.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_admin_panel.py" dest="{{HORIZON_PATH}}/openstack_dashboard/local/enabled/tvault_admin_panel.py"
-    notify:
-      - restart webserver
-
-  - name: copy tvault_filter.py file to remote location
-    copy: src="{{automation_home}}/files/tvault_filter.py" dest="{{HORIZON_PATH}}/openstack_dashboard/templatetags/tvault_filter.py"
+  - name: Copy template files
+    copy:
+      src: "{{ item.path }}"
+      dest: /usr/share/openstack-dashboard/openstack_dashboard/templatetags
+    loop: "{{ rpm_template_path.files }}"
     notify:
       - restart webserver
   when: >
-        (ansible_distribution_major_version=="7" and ansible_distribution=="CentOS") or
-        (ansible_distribution_major_version=="7" and ansible_distribution=="RedHat") or
-        (ansible_distribution_major_version=="8" and ansible_distribution=="CentOS") or
-        (ansible_distribution_major_version=="8" and ansible_distribution=="RedHat")
-
-- name: Copy Trilio Dashboard Files when Ubuntu
-  shell: |
-      cp -rf /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/*panel*.py {{HORIZON_PATH}}/openstack_dashboard/local/enabled/
-      cp -f /usr/share/openstack-dashboard/openstack_dashboard/templatetags/tvault_filter.py {{HORIZON_PATH}}/openstack_dashboard/templatetags/
-  notify:
-    - restart webserver
-  when: ansible_distribution=="Ubuntu"
+        (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
+        (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
 
+##Ubuntu
+- block:
+  - name: Find panel files
+    find: 
+      paths: /usr/lib/python3/dist-packages/dashboards/local/enabled
+      file_type: file
+    register: deb_panel_path
 
+  - name: Copy panel files
+    copy:
+      src: "{{ item.path }}"
+      dest: /usr/share/openstack-dashboard/openstack_dashboard/local/enabled
+    loop: "{{ deb_panel_path.files }}"
+    notify:
+      - restart webserver
+
+  - name: Find template files
+    find: 
+      paths: /usr/lib/python3/dist-packages/dashboards/templatetags
+      file_type: file
+    register: deb_template_path
+
+  - name: Copy template files
+    copy:
+      src: "{{ item.path }}"
+      dest: /usr/share/openstack-dashboard/openstack_dashboard/templatetags
+    loop: "{{ template_path.files }}"
+    notify:
+      - restart webserver
+  when: >
+        (ansible_distribution_major_version>="18.04" and ansible_distribution=="Ubuntu")
