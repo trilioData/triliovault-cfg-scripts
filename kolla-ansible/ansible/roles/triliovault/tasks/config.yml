@@ -158,7 +158,7 @@
 - name: Copy triliovault-wlm-api-logging.conf file
   become: true
   template:
-    src: "triliovault-wlm-logging.conf.j2"
+    src: "triliovault-wlm-logging.conf"
     dest: "/etc/kolla/triliovault-wlm-api/triliovault-wlm-logging.conf"
     mode: "0660"
   when:
@@ -170,7 +170,7 @@
 - name: Copy triliovault-wlm-workloads-logging.conf file
   become: true
   template:
-    src: "triliovault-wlm-logging.conf.j2"
+    src: "triliovault-wlm-logging.conf"
     dest: "/etc/kolla/triliovault-wlm-workloads/triliovault-wlm-logging.conf"
     mode: "0660"
   when:
@@ -182,7 +182,7 @@
 - name: Copy triliovault-wlm-scheduler-logging.conf file
   become: true
   template:
-    src: "triliovault-wlm-logging.conf.j2"
+    src: "triliovault-wlm-logging.conf"
     dest: "/etc/kolla/triliovault-wlm-scheduler/triliovault-wlm-logging.conf"
     mode: "0660"
   when:
@@ -194,7 +194,7 @@
 - name: Copy triliovault-wlm-cron-logging.conf file
   become: true
   template:
-    src: "triliovault-wlm-logging.conf.j2"
+    src: "triliovault-wlm-logging.conf"
     dest: "/etc/kolla/triliovault-wlm-cron/triliovault-wlm-logging.conf"
     mode: "0660"
   when:
