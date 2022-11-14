@@ -40,6 +40,7 @@
     copy:
       src: "{{ item.path }}"
       dest: /usr/share/openstack-dashboard/openstack_dashboard/local/enabled
+      remote_src: true
     loop: "{{ rpm_panel_path.files }}"
     notify:
       - restart webserver
@@ -54,6 +55,7 @@
     copy:
       src: "{{ item.path }}"
       dest: /usr/share/openstack-dashboard/openstack_dashboard/templatetags
+      remote_src: true
     loop: "{{ rpm_template_path.files }}"
     notify:
       - restart webserver
@@ -74,6 +76,7 @@
     copy:
       src: "{{ item.path }}"
       dest: /usr/share/openstack-dashboard/openstack_dashboard/local/enabled
+      remote_src: true
     loop: "{{ deb_panel_path.files }}"
     notify:
       - restart webserver
@@ -88,7 +91,8 @@
     copy:
       src: "{{ item.path }}"
       dest: /usr/share/openstack-dashboard/openstack_dashboard/templatetags
-    loop: "{{ template_path.files }}"
+      remote_src: true
+    loop: "{{ deb_template_path.files }}"
     notify:
       - restart webserver
   when: >
