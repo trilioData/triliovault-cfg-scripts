@@ -61,11 +61,6 @@ triliovault_services:
 ####################
 
 
-horizon_source_image_prefix: "kolla-{{ kolla_base_distro }}-trilio-horizon-plugin"
-horizon_binary_image_prefix: "{{ kolla_base_distro }}-{{ kolla_install_type }}-trilio-horizon-plugin"
-
-triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
-
 triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
 triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
 
