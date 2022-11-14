@@ -196,7 +196,7 @@
   tags:
     - update_cfg
 
-- name: Start wlm-cron service on {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+- name: Start wlm-cron service on {{ WLM_CRON_CONTROLLER_HOSTNAME }} host
   service:
     name: "{{ item }}"
     state: restarted
@@ -209,7 +209,7 @@
     - "'{{ physical_host}}' == '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
     - WLM_CRON_CONTROLLER_HOSTNAME != ""
 
-- name: Disable wlm-cron service except {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+- name: Disable wlm-cron service except {{ WLM_CRON_CONTROLLER_HOSTNAME }} host
   service:
     name: "{{ item }}"
     state: stopped
