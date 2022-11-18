@@ -17,7 +17,7 @@
                         "dest": "/etc/triliovault-wlm/api-paste.ini",
                         "owner": "nova",
                         "perm": "0755"
-                 }{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
+                }{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
                 {
                         "source": "{{ triliovault_s3_ssl_cert_file_path }}",
                         "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
@@ -25,8 +25,8 @@
                         "perm": "0600"
                 }{% endif %}{% if OS_CA_CERT_PATH != "" %},
                 {
-                        "source": "/etc/kolla/triliovault-wlm-api/os-ca-cert.pem",
-                        "dest": "/etc/triliovault-wlm/os-ca-cert.pem",
+                        "source": "{{ container_config_directory }}/tls-ca-bundle.pem",
+                        "dest": "/etc/triliovault-wlm/tls-ca-bundle.pem",
                         "owner": "nova",
                         "perm": "0600"
                 }{% endif %}

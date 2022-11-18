@@ -257,9 +257,11 @@ triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 
-triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
-triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
-triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v2"
+triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
+
+triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
+
+triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
 
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
