@@ -16,6 +16,8 @@
   when: inventory_hostname in groups[triliovault_datamover_api_group] or
         inventory_hostname in groups[triliovault_wlm_api_group]
 
-
 - name: Flush handlers
   meta: flush_handlers
+
+- include_tasks: cloud_admin_trust.yml
+  when: inventory_hostname in groups[triliovault_wlm_api_group]

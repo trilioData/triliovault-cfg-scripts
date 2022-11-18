@@ -40,7 +40,7 @@
     volumes: "{{ triliovault_wlm_api.volumes|reject('equalto', '')|list }}"
   run_once: True
   delegate_to: "{{ groups[triliovault_wlm_api.group][0] }}"
-  register: result_wlm_api
+
 
 - name: Running triliovault workloadmgr workloads bootstrap container
   vars:
@@ -61,7 +61,6 @@
     volumes: "{{ triliovault_wlm_workloads.volumes|reject('equalto', '')|list }}"
   run_once: True
   delegate_to: "{{ groups[triliovault_wlm_workloads.group][0] }}"
-  register: result_wlm_workloads
 
 
 - name: Running triliovault workloadmgr scheduler bootstrap container
@@ -83,7 +82,6 @@
     volumes: "{{ triliovault_wlm_scheduler.volumes|reject('equalto', '')|list }}"
   run_once: True
   delegate_to: "{{ groups[triliovault_wlm_scheduler.group][0] }}"
-  register: result_wlm_scheduler
 
 
 - name: Running triliovault workloadmgr cron bootstrap container
@@ -105,19 +103,3 @@
     volumes: "{{ triliovault_wlm_cron.volumes|reject('equalto', '')|list }}"
   run_once: True
   delegate_to: "{{ groups[triliovault_wlm_cron.group][0] }}"
-  register: result_wlm_cron
-
-
-##Create_Cloud_Admin_Trust
-
-- name: Create Cloud Admin Trust
-  shell: |
-    . /opt/triliovault-cloudrc && workloadmgr trust-create --is_cloud_trust True admin --insecure
-  register: crt_cld_trust
-  run_once: True
-  delegate_to: "{{ groups[triliovault_wlm_api.group][0] }}"
-  when: (result_wlm_api.rc == 0) and (result_wlm_workloads.rc == 0) and (result_wlm_scheduler.rc == 0) and (result_wlm_cron.rc == 0)
-
-- name: Print Cloud admin trust output
-  debug:
-    msg: "{{ crt_cld_trust }}"
