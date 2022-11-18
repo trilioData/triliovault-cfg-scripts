@@ -202,6 +202,8 @@
   with_dict: "{{ triliovault_services }}"
   notify:
     - "Restart triliovault-wlm-cron container"
+
+##api-paste.ini
       
 - name: Copy triliovault-wlm api-paste.ini file to api
   become: true
@@ -282,10 +284,12 @@
   notify:
     - Restart triliovault-wlm-api container  
       
-- name: Copy OS-CA-CERT
+##OS-CA-CERT
+
+- name: Copy OS-CA-CERT WLM-API
   copy:
     src: "{{ OS_CA_CERT_PATH }}"
-    dest: "{{ node_config_directory }}/triliovault-wlm-api/os-ca-cert.pem"
+    dest: "{{ node_config_directory }}/triliovault-wlm-api/tls-ca-bundle.pem"
     mode: "0660"
   become: true
   when:
@@ -294,6 +298,42 @@
   notify:
     - Restart triliovault-wlm-api container  
       
+- name: Copy OS-CA-CERT WLM-WORKLOADS
+  copy:
+    src: "{{ OS_CA_CERT_PATH }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/tls-ca-bundle.pem"
+    mode: "0660"
+  become: true
+  when:
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - triliovault_services['triliovault-wlm-workloads'].enabled | bool
+  notify:
+    - Restart triliovault-wlm-workloads container  
+      
+- name: Copy OS-CA-CERT WLM-SCHEDULER
+  copy:
+    src: "{{ OS_CA_CERT_PATH }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/tls-ca-bundle.pem"
+    mode: "0660"
+  become: true
+  when:
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - triliovault_services['triliovault-wlm-scheduler'].enabled | bool
+  notify:
+    - Restart triliovault-wlm-scheduler container  
+      
+- name: Copy OS-CA-CERT WLM-CRON
+  copy:
+    src: "{{ OS_CA_CERT_PATH }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-cron/tls-ca-bundle.pem"
+    mode: "0660"
+  become: true
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - triliovault_services['triliovault-wlm-cron'].enabled | bool
+  notify:
+    - Restart triliovault-wlm-cron container  
+
 - name: Copying over nova.conf for triliovault datamover service
   become: true
   vars:

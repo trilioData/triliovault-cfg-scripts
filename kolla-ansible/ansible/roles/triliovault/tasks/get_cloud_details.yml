@@ -3,17 +3,19 @@
 - name: Copy Triliovault-cloudrc Ansible Node
   template:
     src: triliovault-cloudrc
-    dest: /root/triliovault-cloudrc
+    dest: "{{ item }}"
     mode: '0777'
+  with_items:
+    - /opt
   delegate_to: localhost
 
-- name: Verify /root/triliovault-cloudrc is present or not
-  stat: path="/root/triliovault-cloudrc"
+- name: Verify triliovault-cloudrc is present or not
+  stat: path="/opt/triliovault-cloudrc"
   register: trilio_rc
   delegate_to: localhost
 
 - name: GET CLOUD_ADMIN_USER_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ Cloud_Admin_DomainName }} -f value -c id {{ Cloud_Admin_UserName }}"
+  shell: ". /opt/triliovault-cloudrc && openstack user show --insecure --domain {{ Cloud_Admin_DomainName }} -f value -c id {{ Cloud_Admin_UserName }}"
   register: admin_usr_id
   delegate_to: localhost
   when:
@@ -23,7 +25,7 @@
     Cloud_Admin_UserID: "{{ admin_usr_id.stdout }}"
 
 - name: GET CLOUD_UNIQUE_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
+  shell: ". /opt/triliovault-cloudrc && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
   register: wlm_usr_id
   delegate_to: localhost
   when:

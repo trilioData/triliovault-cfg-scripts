@@ -19,21 +19,21 @@
 			"perm": "0755"
 		}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
 	        {
-        	    "source": "{{ triliovault_s3_ssl_cert_file_path }}",
-	            "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
-        	    "owner": "nova",
-	            "perm": "0600"
+        	        "source": "{{ triliovault_s3_ssl_cert_file_path }}",
+	                "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
+        	        "owner": "nova",
+	                "perm": "0600"
         	}{% endif %}{% if OS_CA_CERT_PATH != "" %},
 	        {
-        	    "source": "{{ container_config_directory }}/os-ca-cert.pem",
-	            "dest": "/etc/triliovault-wlm/os-ca-cert.pem",
-        	    "owner": "nova",
-	            "perm": "0600"
+        	        "source": "{{ container_config_directory }}/tls-ca-bundle.pem",
+	                "dest": "/etc/triliovault-wlm/tls-ca-bundle.pem",
+        	        "owner": "nova",
+	                "perm": "0600"
         	}{% endif %}
 	],
 	"permissions": [{
-		"path": "/var/log/triliovault",
-		"owner": "nova:nova",
-		"recurse": true
+		        "path": "/var/log/triliovault",
+		        "owner": "nova:nova",
+		        "recurse": true
 	}]
 }
