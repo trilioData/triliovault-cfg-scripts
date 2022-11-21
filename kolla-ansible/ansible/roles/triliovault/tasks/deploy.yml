@@ -19,5 +19,5 @@
 - name: Flush handlers
   meta: flush_handlers
 
-- include_tasks: cloud_admin_trust.yml
-  when: inventory_hostname in groups[triliovault_wlm_api_group]
+- include_tasks: wlm_cloud_trust.yml
+  delegate_to: localhost

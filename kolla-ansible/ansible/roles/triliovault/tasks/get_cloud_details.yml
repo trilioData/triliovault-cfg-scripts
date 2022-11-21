@@ -1,21 +1,26 @@
 --- 
 
+- name: set vars
+  set_fact:
+    cloudrc_dest: "/etc/kolla/triliovault-wlm-api"
+
 - name: Copy Triliovault-cloudrc Ansible Node
   template:
     src: triliovault-cloudrc
     dest: "{{ item }}"
     mode: '0777'
   with_items:
-    - /opt
+    - "{{ cloudrc_dest }}"
   delegate_to: localhost
 
 - name: Verify triliovault-cloudrc is present or not
-  stat: path="/opt/triliovault-cloudrc"
+  stat: 
+    path: "{{ cloudrc_dest }}"
   register: trilio_rc
   delegate_to: localhost
 
 - name: GET CLOUD_ADMIN_USER_ID
-  shell: ". /opt/triliovault-cloudrc && openstack user show --insecure --domain {{ Cloud_Admin_DomainName }} -f value -c id {{ Cloud_Admin_UserName }}"
+  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ Cloud_Admin_DomainName }} -f value -c id {{ Cloud_Admin_UserName }}"
   register: admin_usr_id
   delegate_to: localhost
   when:
@@ -25,7 +30,7 @@
     Cloud_Admin_UserID: "{{ admin_usr_id.stdout }}"
 
 - name: GET CLOUD_UNIQUE_ID
-  shell: ". /opt/triliovault-cloudrc && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
+  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
   register: wlm_usr_id
   delegate_to: localhost
   when:
