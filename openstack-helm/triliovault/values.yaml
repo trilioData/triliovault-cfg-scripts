@@ -730,7 +730,7 @@ endpoints:
     host_fqdn_override:
       default: null
     path: /workloadmgr
-    scheme: mysql+pymysql
+    scheme: mysql
     port:
       mysql:
         default: 3306
