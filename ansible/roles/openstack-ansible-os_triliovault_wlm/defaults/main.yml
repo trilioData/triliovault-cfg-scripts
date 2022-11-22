@@ -181,10 +181,6 @@ triliovault_opt_dir: "/opt/triliovault-wlm"
 triliovault_virt_env: "/home/stack/wlm-venv"
 
 wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
-WLM_API_LOG_FILE: "{{ triliovault_log_dir }}/triliovault-wlm-api.log"
-WLM_SCHD_LOG_FILE: "{{ triliovault_log_dir }}/triliovault-wlm-scheduler.log"
-WLM_CRON_LOG_FILE: "{{ triliovault_log_dir }}/triliovault-wlm-cron.log"
-WLM_WORK_LOG_FILE: "{{ triliovault_log_dir }}/triliovault-wlm-workloads.log"
 
 OBJECT_STORE_LOG_FILE: "{{ triliovault_log_dir }}/triliovault-object-store.log"
 OBJECT_STORE_LOG_CFG: "/etc/triliovault-object-store/object_store_logging.conf"
