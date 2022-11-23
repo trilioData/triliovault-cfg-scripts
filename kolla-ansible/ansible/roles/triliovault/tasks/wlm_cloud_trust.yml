@@ -1,18 +1,21 @@
 ---
-- hosts: localhost
-  become: true
-  vars:
-    - wlmcnf: "/etc/kolla/triliovault-wlm-api"
-    - cloudrc: "/etc/kolla/triliovault-wlm-api/triliovault-cloudrc"
-    - trust_cmd: "workloadmgr trust-create --is_cloud_trust True admin --insecure"
 
-  tasks:
-    - name: triliovault-cloud-admin-trust create container
-      docker_container:
-        name: "wlm_cloud_trust"
-        image: "docker.io/trilio/centos-binary-trilio-wlm:5.0.SB-wallaby"
-        command: " . {{ cloudrc }} && {{ trust_cmd }}"
-        state: present
-        volumes:
-          - /etc/kolla/triliovault-wlm-api:/etc/triliovault-wlm:rw
-          - /var/log/kolla/triliovault:/var/log/triliovault:rw
+- name: Create Cloud Admin Trust
+  docker_container:
+    name: wlm_cloud_trust
+    image: "{{ triliovault_wlm_image_full }}"
+    command: 
+      - /bin/bash
+      - -c
+      - /tmp/create_cloud_trust.sh
+    state: started
+    detach: no
+    interactive: yes
+    network_mode: host
+    tty: yes
+    volumes:
+      - /etc/kolla/triliovault-wlm-api/triliovault-wlm-api.conf:/etc/triliovault-wlm/triliovault-wlm.conf:ro
+      - /etc/kolla/triliovault-wlm-api/api-paste.ini:/etc/triliovault-wlm/api-paste.ini:ro
+      - /etc/kolla/triliovault-cloudrc:/etc/kolla/triliovault-cloudrc:ro
+      - /tmp/create_cloud_trust.sh:/tmp/create_cloud_trust.sh:ro
+
