@@ -20,4 +20,4 @@
   meta: flush_handlers
 
 - include_tasks: wlm_cloud_trust.yml
-  delegate_to: localhost
+  when: inventory_hostname in groups[triliovault_datamover_api_group]

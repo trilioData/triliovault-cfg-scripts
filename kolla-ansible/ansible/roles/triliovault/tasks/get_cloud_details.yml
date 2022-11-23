@@ -2,7 +2,16 @@
 
 - name: set vars
   set_fact:
-    cloudrc_dest: "/etc/kolla/triliovault-wlm-api"
+    cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
+
+- name: Copy Create Cloud Trust Ansible Node
+  template:
+    src: create_cloud_trust.sh
+    dest: "{{ item }}"
+    mode: '0777'
+  with_items:
+    - "/tmp/create_cloud_trust.sh"
+  delegate_to: localhost
 
 - name: Copy Triliovault-cloudrc Ansible Node
   template:
