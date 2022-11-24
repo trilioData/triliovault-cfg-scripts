@@ -1,0 +1,15 @@
+---
+
+- hosts: localhost
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Install lxc packages
+      package:
+        update_cache: yes
+        name:
+          - "lxc"
+          - "python3-lxc"
+          - "lxc-templates"
+        state: latest
