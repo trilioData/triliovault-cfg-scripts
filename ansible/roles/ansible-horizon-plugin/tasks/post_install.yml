@@ -39,7 +39,7 @@
   - name: Copy panel files
     copy:
       src: "{{ item.path }}"
-      dest: "{{ HORIZON_PATH }}"/openstack_dashboard/local/enabled
+      dest: "{{ HORIZON_PATH }}/openstack_dashboard/local/enabled"
       remote_src: true
     loop: "{{ rpm_panel_path.files }}"
     notify:
@@ -54,7 +54,7 @@
   - name: Copy template files
     copy:
       src: "{{ item.path }}"
-      dest: "{{ HORIZON_PATH }}"/openstack_dashboard/templatetags
+      dest: "{{ HORIZON_PATH }}/openstack_dashboard/templatetags"
       remote_src: true
     loop: "{{ rpm_template_path.files }}"
     notify:
@@ -75,7 +75,7 @@
   - name: Copy panel files
     copy:
       src: "{{ item.path }}"
-      dest: "{{ HORIZON_PATH }}"/openstack_dashboard/local/enabled
+      dest: "{{ HORIZON_PATH }}/openstack_dashboard/local/enabled"
       remote_src: true
     loop: "{{ deb_panel_path.files }}"
     notify:
@@ -90,7 +90,7 @@
   - name: Copy template files
     copy:
       src: "{{ item.path }}"
-      dest: "{{ HORIZON_PATH }}"/openstack_dashboard/templatetags
+      dest: "{{ HORIZON_PATH }}/openstack_dashboard/templatetags"
       remote_src: true
     loop: "{{ deb_template_path.files }}"
     notify:

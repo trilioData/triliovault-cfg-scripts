@@ -1,7 +1,7 @@
 ---
 - name: remove all python files from openstack_dashboard directory
   file: 
-    path: "{{ HORIZON_PATH }}"/openstack_dashboard/local/enabled/{{item}}
+    path: "{{ HORIZON_PATH }}/openstack_dashboard/local/enabled/{{item}}"
     state: absent
   with_items:
     - tvault_panel_group.py
@@ -14,7 +14,7 @@
 
 - name: remove tvault_filter.py file from openstack_dashboard diretory
   file: 
-    path: "{{ HORIZON_PATH }}"/openstack_dashboard/templatetags/tvault_filter.py
+    path: "{{ HORIZON_PATH }}/openstack_dashboard/templatetags/tvault_filter.py"
     state: absent
   notify:
     - restart webserver
