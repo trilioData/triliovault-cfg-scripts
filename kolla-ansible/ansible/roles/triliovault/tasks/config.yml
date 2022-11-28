@@ -288,7 +288,7 @@
 
 - name: Copy OS-CA-CERT WLM-API
   copy:
-    src: "{{ OS_CA_CERT_PATH }}"
+    src: "{{ os_ca_cert_path }}"
     dest: "{{ node_config_directory }}/triliovault-wlm-api/tls-ca-bundle.pem"
     mode: "0660"
   become: true
@@ -300,7 +300,7 @@
       
 - name: Copy OS-CA-CERT WLM-WORKLOADS
   copy:
-    src: "{{ OS_CA_CERT_PATH }}"
+    src: "{{ os_ca_cert_path }}"
     dest: "{{ node_config_directory }}/triliovault-wlm-workloads/tls-ca-bundle.pem"
     mode: "0660"
   become: true
@@ -312,7 +312,7 @@
       
 - name: Copy OS-CA-CERT WLM-SCHEDULER
   copy:
-    src: "{{ OS_CA_CERT_PATH }}"
+    src: "{{ os_ca_cert_path }}"
     dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/tls-ca-bundle.pem"
     mode: "0660"
   become: true
@@ -324,7 +324,7 @@
       
 - name: Copy OS-CA-CERT WLM-CRON
   copy:
-    src: "{{ OS_CA_CERT_PATH }}"
+    src: "{{ os_ca_cert_path }}"
     dest: "{{ node_config_directory }}/triliovault-wlm-cron/tls-ca-bundle.pem"
     mode: "0660"
   become: true

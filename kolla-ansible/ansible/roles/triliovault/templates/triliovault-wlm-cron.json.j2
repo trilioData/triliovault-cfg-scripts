@@ -23,7 +23,7 @@
                         "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
                         "owner": "nova",
                         "perm": "0600"
-                }{% endif %}{% if OS_CA_CERT_PATH != "" %},
+                }{% endif %}{% if os_ca_cert_path != "" %},
                 {
                         "source": "{{ container_config_directory }}/tls-ca-bundle.pem",
                         "dest": "/etc/triliovault-wlm/tls-ca-bundle.pem",
@@ -33,7 +33,6 @@
 	],
 	"permissions": [{
 		"path": "/var/log/triliovault",
-		"owner": "nova:nova",
-		"recurse": true
+		"owner": "nova:nova"
 	}]
 }
