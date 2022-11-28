@@ -34,13 +34,13 @@ osapi_workloads_listen_port = {{ triliovault_wlm_api_listen_port }}
 
 ##OS Details
 cloud_admin_user_id = {{ Cloud_Admin_UserID }}
-cloud_admin_project_id = {{ Cloud_Admin_ProjectID }}
+cloud_admin_project_id = {{ cloud_admin_projectid }}
 
-cloud_admin_domain = {{ Cloud_Admin_DomainID }}
+cloud_admin_domain = {{ cloud_admin_domainid }}
 cloud_admin_role = {{ cloud_admin_role }}
 
 trustee_role = creator
-domain_name = {{ Cloud_Admin_DomainID }}
+domain_name = {{ cloud_admin_domainid }}
 
 triliovault_user_domain_id = default 
 cloud_unique_id = {{ Triliovault_Wlm_User_ID }} 
@@ -155,7 +155,7 @@ user_domain_id = default
 
 auth_plugin = password
 
-{% if OS_CA_CERT_PATH != "" %}
+{% if os_ca_cert_path != "" %}
 cafile = /etc/triliovault-wlm/tls-ca-bundle.pem
 {% else %}
 cafile =
@@ -168,7 +168,7 @@ service_token_roles_required = True
 client_retry_limit = 3
 endpoint_type = internal
 
-{% if OS_CA_CERT_PATH != "" %}
+{% if os_ca_cert_path != "" %}
 cafile = /etc/triliovault-wlm/tls-ca-bundle.pem
 {% else %}
 cafile =

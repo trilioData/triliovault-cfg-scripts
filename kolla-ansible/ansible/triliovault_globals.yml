@@ -1,18 +1,17 @@
 ############ Following variables are user configurable ##########
-
 ### Cloud Details ###
-Cloud_Admin_UserName: ""
-Cloud_Admin_Password: ""
+cloud_admin_username: ""
+cloud_admin_password: ""
 
-Cloud_Admin_ProjectName: ""
-Cloud_Admin_ProjectID: ""
+cloud_admin_projectname: ""
+cloud_admin_projectid: ""
 
-Cloud_Admin_DomainName: ""
-Cloud_Admin_DomainID: ""
+cloud_admin_domainname: ""
+cloud_admin_domainid: ""
 
-OS_Endpoint_Type: ""
+os_endpoint_type: ""
 ## Ensure OS CA CERT is present on specified path
-OS_CA_CERT_PATH: ""
+os_ca_cert: ""
 
 # ## Project name in which triliovault keystone resources will get created
 # TriliovaultKeystoneServiceProjectName: "service"

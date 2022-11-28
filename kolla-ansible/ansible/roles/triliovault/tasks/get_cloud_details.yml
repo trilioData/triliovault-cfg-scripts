@@ -29,7 +29,7 @@
   delegate_to: localhost
 
 - name: GET CLOUD_ADMIN_USER_ID
-  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ Cloud_Admin_DomainName }} -f value -c id {{ Cloud_Admin_UserName }}"
+  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"
   register: admin_usr_id
   delegate_to: localhost
   when:
