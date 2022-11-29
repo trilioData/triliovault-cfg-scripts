@@ -25,7 +25,7 @@
     - triliovault-datamover-api
     - triliovault-datamover
     - triliovault-wlm-api
-    - triliovault_wlm_workloads
+    - triliovault-wlm-workloads
     - triliovault-wlm-scheduler
     - triliovault-wlm-cron
     - enable_triliovault | bool
