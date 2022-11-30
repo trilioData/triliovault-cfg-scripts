@@ -73,6 +73,10 @@ ceph_backend_enabled: False
 ## e.g. '/openstack/venvs/horizon-23.1.0'
 horizon_virtual_env: '/openstack/venvs/horizon*'
 
+## If more than one Nova Virtual Env on Compute Node(s)
+### then specify Nova Virtual Env as e.g. 'openstack/venvs/nova-23.2.0'
+nova_virtual_env: '/openstack/venvs/nova*'
+
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
 

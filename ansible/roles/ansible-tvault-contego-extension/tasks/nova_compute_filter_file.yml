@@ -1,5 +1,5 @@
 - name: Get nova venv path
-  shell: echo /openstack/venvs/nova*
+  shell: echo {{ nova_virtual_env }}
   register: venv_path
 
 - set_fact: virtual_env_path={{venv_path.stdout}}
