@@ -7,5 +7,3 @@
     service_ks_register_users: "{{ triliovault_ks_users }}"
   tags: register
 
-## TrilioVault service does not need any users
-##service_ks_register_users: "{{ triliovault_ks_users }}"

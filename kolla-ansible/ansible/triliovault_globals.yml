@@ -1,4 +1,23 @@
 ############ Following variables are user configurable ##########
+### Cloud Details ###
+cloud_admin_username: ""
+cloud_admin_password: ""
+
+cloud_admin_projectname: ""
+cloud_admin_projectid: ""
+
+cloud_admin_domainname: ""
+cloud_admin_domainid: ""
+
+os_endpoint_type: ""
+## Ensure OS CA CERT is present on specified path
+os_ca_cert: ""
+
+# ## Project name in which triliovault keystone resources will get created
+# TriliovaultKeystoneServiceProjectName: "service"
+# TriliovaultKeystoneUserDomainName: "Default"
+# TriliovaultKeystoneUserRoleName: "admin"
+
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
