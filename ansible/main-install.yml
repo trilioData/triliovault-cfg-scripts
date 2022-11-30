@@ -1,6 +1,6 @@
 ---
 - name: Installation and setup of dmapi conatiner
-  hosts: dmapi_all
+  hosts: tvault-dmapi_all 
   gather_facts: "{{ osa_gather_facts | default(True) }}"
   user: root
   environment: "{{ deployment_environment_variables | default({}) }}"
