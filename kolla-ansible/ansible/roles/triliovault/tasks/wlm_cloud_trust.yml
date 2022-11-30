@@ -1,0 +1,21 @@
+---
+
+- name: Create Cloud Admin Trust
+  docker_container:
+    name: wlm_cloud_trust
+    image: "{{ triliovault_wlm_image_full }}"
+    command: 
+      - /bin/bash
+      - -c
+      - /tmp/create_cloud_trust.sh
+    state: started
+    detach: no
+    interactive: yes
+    network_mode: host
+    tty: yes
+    volumes:
+      - /etc/kolla/triliovault-wlm-api/triliovault-wlm-api.conf:/etc/triliovault-wlm/triliovault-wlm.conf:ro
+      - /etc/kolla/triliovault-wlm-api/api-paste.ini:/etc/triliovault-wlm/api-paste.ini:ro
+      - /etc/kolla/triliovault-cloudrc:/opt/triliovault-cloudrc:rw
+      - /tmp/create_cloud_trust.sh:/tmp/create_cloud_trust.sh:rw
+

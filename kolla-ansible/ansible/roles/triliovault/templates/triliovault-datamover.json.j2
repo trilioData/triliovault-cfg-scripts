@@ -11,9 +11,15 @@
         },
 		{
             "source": "{{ container_config_directory }}/triliovault-datamover.conf",
-            "dest": "/etc/tvault-contego/tvault-contego.conf",
+            "dest": "/etc/triliovault-datamover/triliovault-datamover.conf",
             "owner": "nova",
-            "perm": "0600"
+            "perm": "0755"
+	},
+	{
+            "source": "{{ container_config_directory }}/triliovault-datamover-logging.conf",
+            "dest": "/etc/triliovault-datamover/datamover_logging.conf",
+            "owner": "nova",
+            "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/{{ ceph_cinder_keyring }}",
@@ -30,15 +36,15 @@
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
-            "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
-            "dest": "/etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}",
+            "source": "{{ node_config_directory }}/triliovault-datamover/triliovault-s3.pem",
+            "dest": "/etc/triliovault-datamover/triliovault-s3.pem",
             "owner": "nova",
             "perm": "0600"
         }{% endif %}
     ],
     "permissions": [
         {
-            "path": "/var/log/kolla/triliovault-datamover",
+            "path": "/var/log/triliovault-datamover",
             "owner": "nova:nova",
             "recurse": true
         }
