@@ -253,7 +253,7 @@ triliovault_ks_services:
       - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
       - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
       - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
-    triliovault_keystone_user: "dmapi"  
+    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
