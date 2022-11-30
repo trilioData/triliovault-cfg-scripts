@@ -12,4 +12,4 @@
           - "lxc"
           - "python3-lxc"
           - "lxc-templates"
-        state: latest
+        state: present
