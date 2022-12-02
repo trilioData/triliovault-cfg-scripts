@@ -428,19 +428,7 @@ outputs:
               when:
                 - old_triliovault_wlm_cron_image_id.stdout == new_triliovault_wlm_cron_image_id.stdout
             - name: Update triliovault-wlm-cron pacemaker resource and restart
-              import_role:
-                name: tripleo_ha_wrapper
-              vars:
-                tripleo_ha_wrapper_service_name: triliovault_wlm_cron
-                tripleo_ha_wrapper_resource_name: triliovault-wlm-cron
-                tripleo_ha_wrapper_bundle_name: triliovault-wlm-cron
-                tripleo_ha_wrapper_resource_state: _ Started
-                tripleo_ha_wrapper_puppet_config_volume: triliovaultwlmcron
-                tripleo_ha_wrapper_puppet_execute: 'include ::tripleo::profile::base::pacemaker; include ::trilio::wlmapi::wlm_cron_bundle'
-                tripleo_ha_wrapper_puppet_tags: 'pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ip,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation'
-                tripleo_ha_wrapper_puppet_debug: {get_param: ConfigDebug}
-                tripleo_ha_wrapper_config_suffix: .triliovault_wlm_cron_previous_run
-                tripleo_ha_wrapper_minor_update: 'true'
+              command: /var/lib/container-config-scripts/pacemaker_restart_bundle.sh triliovault_wlm_cron triliovault-wlm-cron triliovault-wlm-cron _ Started
               when:
                 - old_triliovault_wlm_cron_image_id.stdout != new_triliovault_wlm_cron_image_id.stdout
 
