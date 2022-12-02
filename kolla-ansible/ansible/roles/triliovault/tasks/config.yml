@@ -84,6 +84,10 @@
     mode: "0755"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
 
 - name: Ensuring "{{ triliovault_parent_data_directory }}/triliovault-mounts"  directory exist
   become: true
@@ -95,6 +99,10 @@
     mode: "0755"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
 
 - include_tasks: copy-certs.yml
   when:
