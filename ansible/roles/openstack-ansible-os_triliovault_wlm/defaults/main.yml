@@ -180,6 +180,7 @@ triliovault_cfg_dir: "/etc/triliovault-wlm"
 triliovault_opt_dir: "/opt/triliovault-wlm"
 triliovault_virt_env: "/home/stack/wlm-venv"
 
+## Log Conf & Log File Location
 wlm_log_file: "{{ triliovault_log_dir }}/triliovault-workloadmgr.log"
 wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
@@ -189,6 +190,7 @@ OBJECT_STORE_LOG_CFG: "/etc/triliovault-object-store/object_store_logging.conf"
 signing_dir: "/var/cache/workloadmgr"
 state_path: "/opt/stack/data/triliovault-wlm"
 
+TRILIOVAULT_RC: "/opt/triliovault-cloudrc"
 NFS_OPTIONS: "nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3"
 
 ## NOVA UID & GID insync with compute node
