@@ -385,35 +385,9 @@ outputs:
           with_items:
             - { 'path': /var/log/containers/triliovault-wlm-cron, 'setype': svirt_sandbox_file_t }
       deploy_steps_tasks:
-        - name: Triliovault Wlm Cron Container Image tag for pacemaker
-          when: step|int == 1
-          import_role:
-            name: tripleo-container-tag
-          vars:
-            container_image: {get_param: ContainerTriliovaultWlmImage}
-            container_image_latest: *triliovault_wlm_cron_image_pcmklatest
         - name: Triliovault Wlm Cron HA Wrappers Step
           when: step|int == 5
           block: &triliovault_wlm_cron_puppet_bundle
-            - name: TrilioVault Wlm Cron puppet bundle
-              import_role:
-                name: tripleo_ha_wrapper
-              vars:
-                tripleo_ha_wrapper_service_name: triliovault_wlm_cron
-                tripleo_ha_wrapper_resource_name: triliovault-wlm-cron
-                tripleo_ha_wrapper_bundle_name: triliovault-wlm-cron
-                tripleo_ha_wrapper_resource_state: _ Started
-                tripleo_ha_wrapper_puppet_config_volume: triliovaultwlmcron
-                tripleo_ha_wrapper_puppet_execute: 'include ::tripleo::profile::base::pacemaker; include ::trilio::wlmapi::wlm_cron_bundle'
-                tripleo_ha_wrapper_puppet_tags: 'pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ip,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation'
-                tripleo_ha_wrapper_puppet_debug: {get_param: ConfigDebug}
-                tripleo_ha_wrapper_config_suffix: .triliovault_wlm_cron_previous_run
-
-
-      update_tasks:
-        - name: triliovault_wlm_cron fetch and retag container image for pacemaker
-          when: step|int == 5
-          block: &triliovault_wlm_cron_fetch_retag_container_tasks
             - name: Get container triliovault_wlm_cron image
               set_fact:
                 triliovault_wlm_cron_image: {get_param: ContainerTriliovaultWlmImage}
@@ -431,21 +405,34 @@ outputs:
             - name: Get new triliovault_wlm_cron image id
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
               register: new_triliovault_wlm_cron_image_id
-            - name: Retag pcmklatest to latest triliovault_wlm_cron image
+              failed_when: false
+            - name: Tag pcmklatest to latest triliovault_wlm_cron image
               include_role:
                 name: tripleo-container-tag
               vars:
                 container_image: "{{triliovault_wlm_cron_image}}"
                 container_image_latest: "{{triliovault_wlm_cron_image_latest}}"
+            - name: Create triliovault-wlm-cron pacemaker resource and start
+              import_role:
+                name: tripleo_ha_wrapper
+              vars:
+                tripleo_ha_wrapper_service_name: triliovault_wlm_cron
+                tripleo_ha_wrapper_resource_name: triliovault-wlm-cron
+                tripleo_ha_wrapper_bundle_name: triliovault-wlm-cron
+                tripleo_ha_wrapper_resource_state: _ Started
+                tripleo_ha_wrapper_puppet_config_volume: triliovaultwlmcron
+                tripleo_ha_wrapper_puppet_execute: 'include ::tripleo::profile::base::pacemaker; include ::trilio::wlmapi::wlm_cron_bundle'
+                tripleo_ha_wrapper_puppet_tags: 'pacemaker::resource::bundle,pacemaker::property,pacemaker::resource::ip,pacemaker::resource::ocf,pacemaker::constraint::order,pacemaker::constraint::colocation'
+                tripleo_ha_wrapper_puppet_debug: {get_param: ConfigDebug}
+                tripleo_ha_wrapper_config_suffix: .triliovault_wlm_cron_previous_run
+              when:
+                - old_triliovault_wlm_cron_image_id.stdout == new_triliovault_wlm_cron_image_id.stdout
+            - name: Update triliovault-wlm-cron pacemaker resource and restart
+              command: /var/lib/container-config-scripts/pacemaker_restart_bundle.sh triliovault_wlm_cron triliovault-wlm-cron triliovault-wlm-cron _ Started
               when:
                 - old_triliovault_wlm_cron_image_id.stdout != new_triliovault_wlm_cron_image_id.stdout
 
-      post_update_tasks:
-        - name: Triliovault Wlm Cron bundle post update
-          when: step|int == 1
-          block: *triliovault_wlm_cron_puppet_bundle
-          vars:
-            tripleo_ha_wrapper_minor_update: true
 
-
+      update_tasks: []
+      post_update_tasks: []
       upgrade_tasks: []
