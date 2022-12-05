@@ -1,22 +1,40 @@
 
+- set_fact:
+    sys_nova_pth: /openstack/venvs/nova-{{ venv_tag }}
+
 - name: Get nova venv path
-  shell: echo /openstack/venvs/nova-{{ venv_tag }}
-  register: pre_check_nova
+  shell: echo {{ sys_nova_pth }}
+  register: pre_def_pth
   when: nova_virtual_env is undefined
 
 - name: Get nova venv path when nova_virtual_env is passed
   shell: echo {{ nova_virtual_env }}
-  register: pre_check_nova
+  register: pre_usr_pth
   when: nova_virtual_env is defined
 
-- name: Get stats nova virtual path
+- name: Check stat default nova virt path
   stat:
-    path: "{{ pre_check_nova.stdout }}"
-  register: check_venv_path
+    path: "{{ sys_nova_pth }}"
+  register: chk_def_pth
+  when: nova_virtual_env is undefined
    
-- set_fact: virtual_env_path={{pre_check_nova.stdout}}
+- name: Check stat user provided nova virt path
+  stat:
+    path: "{{ nova_virtual_env }}"
+  register: chk_usr_pth
+  when: nova_virtual_env is defined
+
+- set_fact: 
+    virtual_env_path: "{{ pre_def_pth.stdout }}"
   when:
-    - check_venv_path.stat.exists == True 
+    - chk_def_pth.stat.exists == true
+    - nova_virtual_env is undefined
+
+- set_fact: 
+    virtual_env_path: "{{ pre_usr_pth.stdout }}"
+  when:
+    - chk_usr_pth.stat.exists == true
+    - nova_virtual_env is defined
 
 - set_fact:
     virtual_env: ". {{virtual_env_path}}/bin/activate"
