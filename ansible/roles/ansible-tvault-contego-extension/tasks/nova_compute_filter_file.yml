@@ -1,15 +1,22 @@
 
 - name: Get nova venv path
   shell: echo /openstack/venvs/nova-{{ venv_tag }}
-  register: venv_path
+  register: pre_check_nova
   when: nova_virtual_env is undefined
 
 - name: Get nova venv path when nova_virtual_env is passed
   shell: echo {{ nova_virtual_env }}
-  register: venv_path
+  register: pre_check_nova
   when: nova_virtual_env is defined
 
-- set_fact: virtual_env_path={{venv_path.stdout}}
+- name: Get stats nova virtual path
+  stat:
+    path: "{{ pre_check_nova.stdout }}"
+  register: check_venv_path
+   
+- set_fact: virtual_env_path={{pre_check_nova.stdout}}
+  when:
+    - check_venv_path.stat.exists == True 
 
 - set_fact:
     virtual_env: ". {{virtual_env_path}}/bin/activate"
