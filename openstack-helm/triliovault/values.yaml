@@ -926,8 +926,6 @@ conf:
       taskflow_path: /var/lib/workloadmgr/taskflow
       # max cache size to keep up-to entries in memory
       taskflow_max_cache_size: 1024
-      # max age in days to retain taskflow data
-      taskflow_max_age: 10
     clients:
       client_retry_limit: 3
       insecure: False
