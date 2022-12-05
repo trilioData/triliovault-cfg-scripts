@@ -10,6 +10,9 @@
 - name: Remove trilio yum repo
   file: path="{{trilio_yum_repo_file_path}}" state=absent
 
+- name: Clean cache
+  command: yum clean all
+
 - name: uninstall tvault contego extension | python3-s3fuse-plugin | centos-release-openstack-{{OPENSTACK_DIST}} packages when using python3
   package:
     name:
