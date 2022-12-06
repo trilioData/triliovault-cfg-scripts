@@ -3,16 +3,16 @@
 - name: Copy Triliovault-cloudrc into WLM container
   template:
     src: triliovault-cloudrc
-    dest: /root/cloudrc
+    dest: "{{ TRILIOVAULT_RC }}"
     mode: '0777'
 
 - name: Verify cloudrc is present or not
-  stat: path="/root/cloudrc"
+  stat: path = "{{ TRILIOVAULT_RC }}"
   register: cld_rc_output
   delegate_to: localhost
 
 - name: Get workloadmgr intenral endpoint ID
-  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface internal --insecure -f value -c ID"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint list --insecure --service workloadmgr --interface internal --insecure -f value -c ID"
   register: int_endpt_id
   ignore_errors: True
   delegate_to: localhost
@@ -24,7 +24,7 @@
   ignore_errors: True
 
 - name: Get workloadmgr admin endpoint ID
-  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface admin --insecure -f value -c ID"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint list --insecure --service workloadmgr --interface admin --insecure -f value -c ID"
   register: admn_endpt_id
   ignore_errors: True
   delegate_to: localhost
@@ -36,7 +36,7 @@
   ignore_errors: True
 
 - name: Get workloadmgr public endpoint ID
-  shell: ". /root/triliovault-cloudrc && openstack endpoint list --insecure --service workloadmgr --interface public --insecure -f value -c ID"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint list --insecure --service workloadmgr --interface public --insecure -f value -c ID"
   register: pub_endpt_id
   ignore_errors: True
   delegate_to: localhost
@@ -48,7 +48,7 @@
   ignore_errors: True
 
 - name: Delete workloadmgr internal endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_INTERNAL_ID }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint delete --insecure {{ WLM_INTERNAL_ID }}"
   ignore_errors: True
   delegate_to: localhost
   when:
@@ -56,7 +56,7 @@
     - cld_rc_output.stat.exists == true
 
 - name: Delete workloadmgr admin endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_ADMN_ID }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint delete --insecure {{ WLM_ADMN_ID }}"
   ignore_errors: True
   delegate_to: localhost
   when:
@@ -64,7 +64,7 @@
     - cld_rc_output.stat.exists == true
 
 - name: Delete workloadmgr public endpoint
-  shell: ". /root/triliovault-cloudrc && openstack endpoint delete --insecure {{ WLM_PUB_ID }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack endpoint delete --insecure {{ WLM_PUB_ID }}"
   ignore_errors: True
   delegate_to: localhost
   when:
