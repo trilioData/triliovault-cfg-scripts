@@ -1,12 +1,12 @@
 --- 
 
-- name: Verify /root/triliovault-cloudrc is present or not
-  stat: path="/root/triliovault-cloudrc"
+- name: Verify {{ TRILIOVAULT_RC }} is present or not
+  stat: path = "{{ TRILIOVAULT_RC }}"
   register: trilio_rc
   delegate_to: localhost
 
 - name: GET CLOUD_ADMIN_USER_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ CLOUD_ADMIN_DOMAIN_NAME }} -f value -c id {{ CLOUD_ADMIN_USERNAME }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack user show --insecure --domain {{ CLOUD_ADMIN_DOMAIN_NAME }} -f value -c id {{ CLOUD_ADMIN_USERNAME }}"
   register: admin_usr_id
   delegate_to: localhost
   when:
@@ -16,7 +16,7 @@
     cloud_admin_user_id: "{{ admin_usr_id.stdout }}"
 
 - name: GET CLOUD_ADMIN_DOMAIN_ID
-  shell: ". /root/triliovault-cloudrc && openstack domain show --insecure -f value -c id {{ CLOUD_ADMIN_DOMAIN_NAME }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack domain show --insecure -f value -c id {{ CLOUD_ADMIN_DOMAIN_NAME }}"
   register: admin_domain_id
   delegate_to: localhost
   when:
@@ -26,7 +26,7 @@
     cloud_admin_domain_id: "{{ admin_domain_id.stdout }}"
 
 - name: GET CLOUD_UNIQUE_ID
-  shell: ". /root/triliovault-cloudrc && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c id {{ wlm_service_user_name }}"
+  shell: ". {{ TRILIOVAULT_RC }} && openstack user show --insecure --domain {{ wlm_service_project_domain_id }} -f value -c id {{ wlm_service_user_name }}"
   register: wlm_usr_id
   delegate_to: localhost
   when:
