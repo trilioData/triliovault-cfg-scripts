@@ -71,7 +71,6 @@ neutron_production_url = https://{{ kolla_internal_fqdn }}:9696
 # The path to store the taskflow data
 taskflow_path = /var/lib/workloadmgr/taskflow
 taskflow_max_cache_size = 1024
-taskflow_max_age = 10
 
 rabbit_virtual_host = {{ triliovault_wlm_rpc_vhost }}
 compute_driver = libvirt.LibvirtDriver
