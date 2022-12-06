@@ -3,11 +3,24 @@ Steps to upgrade TVO packages to Yoga release from 4.2 GA / 4.2 HF
 ============================================================================
 
 1. Download the hf_upgrade.sh script to your TVO appliance.
-2. Make sure that it is having executable permissions. If not the apply executable permissions.
+2. Make sure that it is having executable permissions. If not then apply executable permissions.
 	chmod +x ./hf_upgrade.sh
 3. hf_upgrade.sh having command line options as, 
 	--downloadonly | -d  (It will only download the package and extract it in current folder)
 	--installonly  | -i  (It will install the package available in current directory. If machine is not on network then copy required package "offline_pkgs.tar.gz" in the current directory)
 	--all 	       | -a  (It will download and install the package on the current TVO appliance.)
+
+Example:
+	1. Customer wants to download the package only to copy it to some other machine. 
+		./hf_upgrade.sh --downloadonly
+		./hf_upgrade.sh -d
+
+	2. Customer wants to install the package which is copied / downloaded on the TVO appliance.
+		./hf_upgrade.sh --installonly
+		./hf_upgrade.sh -i
+
+	3. Customer is having network (internet connection) and wants to download + Install the upgrade package.
+		./hf_upgrade.sh --all
+		./hf_upgrade.sh -a
 
 
