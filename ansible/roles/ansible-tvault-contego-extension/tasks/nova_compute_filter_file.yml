@@ -1,44 +1,24 @@
 
-- set_fact:
-    sys_nova_pth: /openstack/venvs/nova-{{ venv_tag }}
-
-- name: Check stat default nova virt path
-  stat:
-    path: "{{ sys_nova_pth }}"
-  register: chk_def_pth
-  when: nova_virtual_env is undefined
-   
-- name: Check stat user provided nova virt path
-  stat:
-    path: "{{ nova_virtual_env }}"
-  register: chk_usr_pth
-  when: nova_virtual_env is defined
-
-- name: Failed when nova virt env not found
-  fail: 
-    msg: "Anisble Failed Cause Path {{ sys_nova_pth }} Not Found"
-  when: >
-        ( nova_virtual_env is undefined ) and
-        ( chk_def_pth.stat.exists == false )
-
-- name: Failed when nova virt env not found
-  fail: 
-    msg: "Anisble Failed Cause Path {{ nova_virtual_env }} Not Found"
-  when: > 
-        ( nova_virtual_env is defined ) and
-        ( chk_usr_pth.stat.exists == false )
-
 - set_fact: 
-    virtual_env_path: "{{ sys_nova_pth }}"
+    virtual_env_path: "/openstack/venvs/nova-{{ venv_tag }}"
   when: >
-        ( nova_virtual_env is undefined ) and
-        ( chk_def_pth.stat.exists == true )
+        ( nova_virtual_env is undefined )
 
 - set_fact: 
     virtual_env_path: "{{ nova_virtual_env }}"
   when: > 
-        ( nova_virtual_env is defined ) and
-        ( chk_usr_pth.stat.exists == true )
+        ( nova_virtual_env is defined )
+
+- name: Check stat virtual env path
+  stat:
+    path: "{{ virtual_env_path }}"
+  register: chk_nova_pth
+
+- name: Failed when nova virt env not found
+  fail: 
+    msg: "Anisble Failed Cause Path {{ virtual_env_path }} Not Found"
+  when: > 
+        ( chk_nova_pth.stat.exists == false )
 
 - set_fact:
     virtual_env: ". {{virtual_env_path}}/bin/activate"
