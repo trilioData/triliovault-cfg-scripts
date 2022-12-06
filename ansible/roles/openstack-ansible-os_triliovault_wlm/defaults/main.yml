@@ -180,8 +180,6 @@ triliovault_cfg_dir: "/etc/triliovault-wlm"
 triliovault_opt_dir: "/opt/triliovault-wlm"
 triliovault_virt_env: "/home/stack/wlm-venv"
 
-## Log Conf & Log File Location
-wlm_log_file: "{{ triliovault_log_dir }}/triliovault-workloadmgr.log"
 wlm_log_cfg: "/etc/triliovault-wlm/wlm_logging.conf"
 
 OBJECT_STORE_LOG_FILE: "{{ triliovault_log_dir }}/tvault-object-store.log"
