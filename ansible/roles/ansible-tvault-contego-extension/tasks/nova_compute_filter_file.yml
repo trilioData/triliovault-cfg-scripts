@@ -14,6 +14,20 @@
   register: chk_usr_pth
   when: nova_virtual_env is defined
 
+- name: Failed when nova virt env not found
+  fail: 
+    msg: "Anisble Failed Cause Path {{ sys_nova_pth }} Not Found"
+  when: >
+        ( nova_virtual_env is undefined ) and
+        ( chk_def_pth.stat.exists == false )
+
+- name: Failed when nova virt env not found
+  fail: 
+    msg: "Anisble Failed Cause Path {{ nova_virtual_env }} Not Found"
+  when: > 
+        ( nova_virtual_env is defined ) and
+        ( chk_usr_pth.stat.exists == false )
+
 - set_fact: 
     virtual_env_path: "{{ sys_nova_pth }}"
   when: >
