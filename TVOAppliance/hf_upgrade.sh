@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/bin/bash 
 
 BASE_DIR="$(pwd)"
+PYTHON_VERSION="Python 3.8.12"
 
 #function to display usage...
 function usage()
@@ -50,10 +51,18 @@ function install_package()
 	cd $BASE_DIR
 
 	#extract Python-3.8.12.tgz
-	extract_python_pkg=`tar -xf Python-3.8.12.tgz`
-	cd Python-3.8.12*/
-	config_cmd=`./configure --enable-optimizations`
-	make_cmd=`sudo make altinstall`
+	python_version=`python3 --version`
+	if [ "$python_version" == "$PYTHON_VERSION" ]; then
+	  echo "Python 3.8.12 package is already installed. We can skip Python package installation."
+	else
+	  echo "Python 3.8.12 package is missing. We need to install Python package."
+
+	  #Install python 3.8.12 package on the TVO appliance.
+	  extract_python_pkg=`tar -xf Python-3.8.12.tgz`
+	  cd Python-3.8.12*/
+          config_cmd=`./configure --enable-optimizations`
+          make_cmd=`sudo make altinstall`
+	fi
 
 	#move to base dir again
 	cd $BASE_DIR
@@ -96,7 +105,7 @@ if [ $# -le 1 ]; then
 fi
 
 
-while [ $# -gt 0 ]; do
+if [ $# -gt 0 ]; then
   case "$1" in
     -h|--help) usage; exit;;
     -d|--downloadonly) download_package ;;
@@ -104,5 +113,5 @@ while [ $# -gt 0 ]; do
     -a|--all) download_package; install_package ;;
   esac
   shift
-done
+fi
 
