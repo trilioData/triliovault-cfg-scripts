@@ -28,6 +28,31 @@ function download_package()
 	extract_packages=`tar -xzf $outfile`	
 }
 
+function check_package_status()
+{
+        all_pkgs=`ls -1`
+
+	# iterate through all packages to check installation status.
+        for pkg_name in $all_pkgs
+        do
+                if [[ $pkg_name = *"rpm"* ]]; then
+                        #remove last 4 chars of (.rpm)
+                        total_len="${#pkg_name}"
+                        rpm_pkg_info="${pkg_name:0:$total_len-4}"
+
+                        #check result for this package
+                        rpm_result=`rpm -qa | grep $rpm_pkg_info`
+                        result=$?
+                        if [[ $result == 1 ]]; then
+                                echo "Package $rpm_pkg_info not found on the system."
+				# perform yum command to install package.
+				install_cmd=`yum -y install $rpm_pkg_info.rpm`	
+			else
+				echo "Package $rpm_pkg_info.rpm present on the system."
+                        fi
+                fi
+        done
+}
 
 #function to install the package on the system...
 function install_package()
@@ -56,7 +81,9 @@ function install_package()
 	  #extract offline_dist_pkgs.tar.gz file to install dependancy packages first.
 	  extract_offline_dist_pkg=`tar -xzf offline_dist_pkgs.tar.gz`
 	  cd offline_dist_pkgs*/
-	  install_cmd=`yum -y install ./*.rpm`
+
+	  #check if the packages are already installed or not. call function check_package_status() 
+	  check_package_status
 
 	  #move to base dir again
 	  cd $BASE_DIR
