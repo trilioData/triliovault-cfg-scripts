@@ -11,12 +11,7 @@ export OS_USER_DOMAIN_NAME={{ cloud_admin_domainname }}
 export OS_PROJECT_DOMAIN_ID={{ cloud_admin_domainid }}
 
 export OS_INTERFACE={{ os_endpoint_type }}
-
-{% if os_ca_cert_path != "" %}
-export OS_CACERT={{ os_ca_cert_path }}
-{% else %}
-export OS_CACERT=
-{% endif %}
+export OS_CACERT={{ openstack_cacert }}
 
 export OS_IDENTITY_API_VERSION=3
 unset OS_TENANT_ID
