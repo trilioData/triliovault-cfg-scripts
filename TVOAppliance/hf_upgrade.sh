@@ -24,8 +24,6 @@ function download_package()
 	#run the wget command to download the package.
 	wget_command=`wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=$fileid' -O- | sed -rn 's/.confirm=([0-9A-Za-z_]+)./\1\n/p')&id=$fileid" -O $outfile && rm -rf /tmp/cookies.txt`
 
-	#now the package is downloaded. Extract the package.
-	extract_packages=`tar -xzf $outfile`	
 }
 
 function check_package_status()
@@ -62,6 +60,11 @@ function install_package()
 	if [[ -f $outfile ]]
 	then
 		echo "$outfile present. we can continue with the installation."
+
+		echo "Extracting $outfile now"
+		#now the package is downloaded. Extract the package.
+		extract_packages=`tar -xzf $outfile`
+	
 	else
 		echo "$outfile is not present. Cannot proceed with the installation. Exiting."
 		exit 2
@@ -81,7 +84,6 @@ function install_package()
 	  #extract offline_dist_pkgs.tar.gz file to install dependancy packages first.
 	  extract_offline_dist_pkg=`tar -xzf offline_dist_pkgs.tar.gz`
 	  cd offline_dist_pkgs*/
-
 	  #check if the packages are already installed or not. call function check_package_status() 
 	  check_package_status
 
