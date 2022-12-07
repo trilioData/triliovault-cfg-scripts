@@ -42,26 +42,31 @@ function install_package()
 		exit 2
 	fi
 
-	#extract offline_dist_pkgs.tar.gz file
-	extract_offline_dist_pkg=`tar -xzf offline_dist_pkgs.tar.gz`
-	cd offline_dist_pkgs*/
-	install_cmd=`yum -y install ./*.rpm`
-
-	#move to base dir again
+	#make sure to be in base directory for installation.
 	cd $BASE_DIR
 
-	#extract Python-3.8.12.tgz
+	#extract Python-3.8.12.tgz - first check if python 3.8.12 version is availble or not.
 	python_version=`python3 --version`
 	if [ "$python_version" == "$PYTHON_VERSION" ]; then
 	  echo "Python 3.8.12 package is already installed. We can skip Python package installation."
+
 	else
 	  echo "Python 3.8.12 package is missing. We need to install Python package."
+
+	  #extract offline_dist_pkgs.tar.gz file to install dependancy packages first.
+	  extract_offline_dist_pkg=`tar -xzf offline_dist_pkgs.tar.gz`
+	  cd offline_dist_pkgs*/
+	  install_cmd=`yum -y install ./*.rpm`
+
+	  #move to base dir again
+	  cd $BASE_DIR
 
 	  #Install python 3.8.12 package on the TVO appliance.
 	  extract_python_pkg=`tar -xf Python-3.8.12.tgz`
 	  cd Python-3.8.12*/
           config_cmd=`./configure --enable-optimizations`
           make_cmd=`sudo make altinstall`
+
 	fi
 
 	#move to base dir again
