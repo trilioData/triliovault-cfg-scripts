@@ -21,6 +21,8 @@ function download_package()
 	fileid=16JM1Z1jZvISwmo0Bqnj0wJSUu2C1ZJ7G
 	outfile="offline_pkgs.tar.gz"
 
+	echo "Downloading $outfile for Yoga release"
+
 	#run the wget command to download the package.
 	wget_command=`wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=$fileid' -O- | sed -rn 's/.confirm=([0-9A-Za-z_]+)./\1\n/p')&id=$fileid" -O $outfile && rm -rf /tmp/cookies.txt`
 
@@ -55,6 +57,7 @@ function check_package_status()
 #function to install the package on the system...
 function install_package()
 {
+
 	#it is expected that package is available in current directory.
 	outfile="$BASE_DIR/offline_pkgs.tar.gz"
 	if [[ -f $outfile ]]
@@ -69,6 +72,8 @@ function install_package()
 		echo "$outfile is not present. Cannot proceed with the installation. Exiting."
 		exit 2
 	fi
+	
+	echo "Installing $outfile for Yoga release"
 
 	#make sure to be in base directory for installation.
 	cd $BASE_DIR
