@@ -153,11 +153,7 @@ user_domain_id = default
 
 auth_plugin = password
 
-{% if os_ca_cert_path != "" %}
-cafile = /etc/triliovault-wlm/tls-ca-bundle.pem
-{% else %}
-cafile =
-{% endif %}
+cafile = {{ openstack_cacert }}
 
 insecure = False
 service_token_roles_required = True
@@ -166,11 +162,7 @@ service_token_roles_required = True
 client_retry_limit = 3
 endpoint_type = internal
 
-{% if os_ca_cert_path != "" %}
-cafile = /etc/triliovault-wlm/tls-ca-bundle.pem
-{% else %}
-cafile =
-{% endif %}
+cafile = {{ openstack_cacert }}
 insecure = False
 
 [alembic]
