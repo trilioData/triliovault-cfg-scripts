@@ -1,7 +1,8 @@
 --- 
 
 - name: Verify {{ TRILIOVAULT_RC }} is present or not
-  stat: path = "{{ TRILIOVAULT_RC }}"
+  stat: 
+    path: "{{ TRILIOVAULT_RC }}"
   register: trilio_rc
   delegate_to: localhost
 
