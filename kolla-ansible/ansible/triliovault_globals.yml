@@ -10,8 +10,6 @@ cloud_admin_domainname: ""
 cloud_admin_domainid: ""
 
 os_endpoint_type: ""
-## Ensure OS CA CERT is present on specified path
-os_ca_cert: ""
 
 # ## Project name in which triliovault keystone resources will get created
 # TriliovaultKeystoneServiceProjectName: "service"
