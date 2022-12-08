@@ -20,6 +20,7 @@
       auth: "{{ openstack_triliovault_auth }}"
       interface: "{{ openstack_interface }}"
       cacert: "{{ openstack_cacert }}"
+  run_once: True
   with_items: "{{ triliovault_ks_users }}"
   loop_control:
     label:
