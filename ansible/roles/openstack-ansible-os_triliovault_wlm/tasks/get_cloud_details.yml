@@ -1,7 +1,8 @@
 --- 
 
 - name: Verify /root/triliovault-cloudrc is present or not
-  stat: path="/root/triliovault-cloudrc"
+  stat: 
+    path: "/root/triliovault-cloudrc"
   register: trilio_rc
   delegate_to: localhost
 
