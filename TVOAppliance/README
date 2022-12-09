@@ -24,3 +24,7 @@ Example:
 		./hf_upgrade.sh -a
 
 
+==============================================================================
+Rev 1.1 changes:
+- URL changed to -  http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-qual2-4-2/offlinePkgs/$OFFLINE_PKG_NAME
+- Package name changed to - 4.2-offlinePkgs.tar.gz

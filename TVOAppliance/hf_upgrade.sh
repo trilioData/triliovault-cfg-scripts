@@ -2,6 +2,8 @@
 
 BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
+OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
+PKG_DIR_NAME="4.2.64-dev-qual2-8-offlinePkgs"
 
 #function to display usage...
 function usage()
@@ -17,14 +19,10 @@ function usage()
 #function to download the package and extract...
 function download_package()
 {
-	#define file id and filename which we want to download.
-	fileid=16JM1Z1jZvISwmo0Bqnj0wJSUu2C1ZJ7G
-	outfile="offline_pkgs.tar.gz"
+	echo "Downloading $OFFLINE_PKG_NAME for Yoga release"
 
-	echo "Downloading $outfile for Yoga release"
-
-	#run the wget command to download the package.
-	wget_command=`wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=$fileid' -O- | sed -rn 's/.confirm=([0-9A-Za-z_]+)./\1\n/p')&id=$fileid" -O $outfile && rm -rf /tmp/cookies.txt`
+	#run the wget command to download the package from rpm server.
+	wget_command_rpm_server=`wget --backups 0 http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-qual2-4-2/offlinePkgs/$OFFLINE_PKG_NAME`
 
 }
 
@@ -57,26 +55,24 @@ function check_package_status()
 #function to install the package on the system...
 function install_package()
 {
-
 	#it is expected that package is available in current directory.
-	outfile="$BASE_DIR/offline_pkgs.tar.gz"
+	outfile="$BASE_DIR/$OFFLINE_PKG_NAME"
 	if [[ -f $outfile ]]
 	then
 		echo "$outfile present. we can continue with the installation."
 
 		echo "Extracting $outfile now"
 		#now the package is downloaded. Extract the package.
-		extract_packages=`tar -xzf $outfile`
-	
+		extract_packages=`tar -xzf $outfile`	
 	else
 		echo "$outfile is not present. Cannot proceed with the installation. Exiting."
 		exit 2
 	fi
-	
+
 	echo "Installing $outfile for Yoga release"
 
 	#make sure to be in base directory for installation.
-	cd $BASE_DIR
+	cd $BASE_DIR/$PKG_DIR_NAME
 
 	#extract Python-3.8.12.tgz - first check if python 3.8.12 version is availble or not.
 	python_version=`python3 --version`
@@ -93,7 +89,7 @@ function install_package()
 	  check_package_status
 
 	  #move to base dir again
-	  cd $BASE_DIR
+	  cd $BASE_DIR/$PKG_DIR_NAME
 
 	  #Install python 3.8.12 package on the TVO appliance.
 	  extract_python_pkg=`tar -xf Python-3.8.12.tgz`
@@ -103,8 +99,8 @@ function install_package()
 
 	fi
 
-	#move to base dir again
-	cd $BASE_DIR
+	#move to base dir/4.2.64-dev-qual2-8-offlinePkgs again for furthe installation.
+	cd $BASE_DIR/$PKG_DIR_NAME
 
 	#now move existing myansible enviornment
 	date=`date '+%Y-%m-%d-%H:%M:%S'`
