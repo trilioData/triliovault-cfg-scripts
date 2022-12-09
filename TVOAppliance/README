@@ -28,3 +28,9 @@ Example:
 Rev 1.1 changes:
 - URL changed to -  http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-qual2-4-2/offlinePkgs/$OFFLINE_PKG_NAME
 - Package name changed to - 4.2-offlinePkgs.tar.gz
+- Make sure uuidgen utility is available on the system (it comes default with the package util-linux) 
+- This utility uuidgen is used to create unique folder for extraction of package and further installation.
+  Example - root@test_folder]# which uuidgen
+            /usr/bin/uuidgen
+            root@test_folder]# usr/bin/uuidgen --version
+            uuidgen from util-linux X.XX.XXXXX VERSION_NUM

@@ -1,9 +1,11 @@
-#!/bin/bash 
+#!/bin/bash
 
 BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
-PKG_DIR_NAME="4.2.64-dev-qual2-8-offlinePkgs"
+PKG_DIR_NAME="4.2.64"
+BRANCH_NAME="triliodata-dev-qual2-4-2"
+UUID_NUM=`uuidgen`
 
 #function to display usage...
 function usage()
@@ -19,10 +21,10 @@ function usage()
 #function to download the package and extract...
 function download_package()
 {
-	echo "Downloading $OFFLINE_PKG_NAME for Yoga release"
+	echo "Downloading $outfile for Yoga release"
 
 	#run the wget command to download the package from rpm server.
-	wget_command_rpm_server=`wget --backups 0 http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-qual2-4-2/offlinePkgs/$OFFLINE_PKG_NAME`
+	wget_command_rpm_server=`wget --backups 0 http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/$BRANCH_NAME/offlinePkgs/$OFFLINE_PKG_NAME`
 
 }
 
@@ -63,7 +65,10 @@ function install_package()
 
 		echo "Extracting $outfile now"
 		#now the package is downloaded. Extract the package.
-		extract_packages=`tar -xzf $outfile`	
+		#1. create directory with unique number and extract package inside it. 
+		mkdir $UUID_NUM
+
+		extract_packages=`tar -xzf $outfile -C $UUID_NUM/`	
 	else
 		echo "$outfile is not present. Cannot proceed with the installation. Exiting."
 		exit 2
@@ -72,7 +77,7 @@ function install_package()
 	echo "Installing $outfile for Yoga release"
 
 	#make sure to be in base directory for installation.
-	cd $BASE_DIR/$PKG_DIR_NAME
+	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
 	#extract Python-3.8.12.tgz - first check if python 3.8.12 version is availble or not.
 	python_version=`python3 --version`
@@ -89,7 +94,7 @@ function install_package()
 	  check_package_status
 
 	  #move to base dir again
-	  cd $BASE_DIR/$PKG_DIR_NAME
+	  cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
 	  #Install python 3.8.12 package on the TVO appliance.
 	  extract_python_pkg=`tar -xf Python-3.8.12.tgz`
@@ -99,8 +104,8 @@ function install_package()
 
 	fi
 
-	#move to base dir/4.2.64-dev-qual2-8-offlinePkgs again for furthe installation.
-	cd $BASE_DIR/$PKG_DIR_NAME
+	#move to base dir/UUID_NUM/4.2.64-dev-qual2-8-offlinePkgs again for furthe installation.
+	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
 	#now move existing myansible enviornment
 	date=`date '+%Y-%m-%d-%H:%M:%S'`
