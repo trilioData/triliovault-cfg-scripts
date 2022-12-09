@@ -104,7 +104,7 @@ function install_package()
 
 	fi
 
-	#move to base dir/UUID_NUM/4.2.64-dev-qual2-8-offlinePkgs again for furthe installation.
+	#move to base dir/UUID_NUM/PKG_DIR_NAME again for further installation.
 	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
 	#now move existing myansible enviornment
