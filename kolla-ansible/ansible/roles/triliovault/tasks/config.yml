@@ -74,7 +74,7 @@
     - item.value.enabled | bool
   with_dict: "{{ triliovault_services }}"
 
-- name: Ensuring /Var/trilio directory exist
+- name: Ensuring /var/trilio directory exist
   become: true
   file:
     path: "{{ triliovault_parent_data_directory }}"
