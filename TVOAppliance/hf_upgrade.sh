@@ -76,6 +76,10 @@ function install_package()
 
 	echo "Installing $outfile for Yoga release"
 
+	echo "Before installation disable mariadb and rabbitmq-server"
+	disable_rabbitmq_server=`yum-config-manager --disable bintray-rabbitmq-server`
+	disable_mariadb_server=`yum-config-manager --disable mariadb`
+
 	#make sure to be in base directory for installation.
 	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
@@ -137,6 +141,7 @@ fi
 eval set -- "$CMDLINE_ARGUMENTS"
 
 echo "TVO Upgrade for Yoga release from previous 4.2GA/4.2HF"
+
 
 #command line arguments.
 if [ $# -le 1 ]; then
