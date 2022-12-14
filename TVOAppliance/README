@@ -26,6 +26,7 @@ Example:
 
 ==============================================================================
 Rev 1.1 changes:
+- Disable mariadb and rabbitmq-server by default before installing packages. 
 - URL changed to -  http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/triliodata-dev-qual2-4-2/offlinePkgs/$OFFLINE_PKG_NAME
 - Package name changed to - 4.2-offlinePkgs.tar.gz
 - Make sure uuidgen utility is available on the system (it comes default with the package util-linux) 
@@ -34,3 +35,5 @@ Rev 1.1 changes:
             /usr/bin/uuidgen
             root@test_folder]# usr/bin/uuidgen --version
             uuidgen from util-linux X.XX.XXXXX VERSION_NUM
+
+
