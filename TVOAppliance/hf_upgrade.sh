@@ -76,7 +76,7 @@ function install_package()
 
 	echo "Installing $outfile for Yoga release"
 
-	echo "Before installation disable mariadb and rabbitmq-server"
+	echo "Before installation disabling old and deleted MariaDB and Rabbitmq-server yum repositories"
 	disable_rabbitmq_server=`yum-config-manager --disable bintray-rabbitmq-server`
 	disable_mariadb_server=`yum-config-manager --disable mariadb`
 
