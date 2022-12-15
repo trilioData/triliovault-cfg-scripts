@@ -16,7 +16,7 @@
       tags: [ 'never', 'tvault_pre_install']
 
 - name: Installation and setup of dmapi conatiner
-  hosts: tvault-dmapi_all 
+  hosts: dmapi_all 
   gather_facts: "{{ osa_gather_facts | default(True) }}"
   user: root
   environment: "{{ deployment_environment_variables | default({}) }}"
