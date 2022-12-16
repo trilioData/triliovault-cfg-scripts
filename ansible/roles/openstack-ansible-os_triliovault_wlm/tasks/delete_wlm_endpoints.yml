@@ -7,7 +7,8 @@
     mode: '0777'
 
 - name: Verify cloudrc is present or not
-  stat: path = "{{ TRILIOVAULT_RC }}"
+  stat: 
+    path: "{{ TRILIOVAULT_RC }}"
   register: cld_rc_output
   delegate_to: localhost
 
