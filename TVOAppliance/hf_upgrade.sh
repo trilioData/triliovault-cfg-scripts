@@ -54,6 +54,16 @@ function check_package_status()
         done
 }
 
+#function to reconfigure s3 service path...
+function reconfigure_s3_service_path()
+{
+	file_name="/etc/systemd/system/tvault-object-store.service"
+	src_string="ExecStart=/home/stack/myansible/bin/python3 /home/stack/myansible/lib/python3.6/site-packages/s3fuse/s3vaultfuse.py --config-file=/etc/workloadmgr/workloadmgr.conf"
+	dest_string="ExecStart=/home/stack/myansible/bin/python /home/stack/myansible/bin/s3vaultfuse.py --config-file=/etc/workloadmgr/s3-fuse.conf"
+
+	sed  -i "s~$src_string~$dest_string~g" $file_name
+
+}
 #function to install the package on the system...
 function install_package()
 {
@@ -124,6 +134,12 @@ function install_package()
 
 	#restart the services post install
 	service_restart_cmd=`systemctl restart tvault-config wlm-workloads wlm-api wlm-cron wlm-workloads`
+
+	#before restarting service replace the service path in tvault-object-store.service file
+	reconfigure_s3_service_path
+
+	#before restarting the s3 service reload the modified service file. 
+	daemon_reload_cmd=`sytemctl daemon-reload`
 
 	#restart s3 related services.
 	service_restart_s3_cmd=`systemctl restart tvault-object-store`
