@@ -1,5 +1,24 @@
 ---
 
+- name: Installation dmapi on bare metal
+  hosts: tvault-dmapi_containers 
+  gather_facts: "{{ osa_gather_facts | default(True) }}"
+  user: root
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  vars_files:
+    - "defaults/repo_packages/openstack_services.yml"
+    - "defaults/{{ install_method }}_install.yml"
+  pre_tasks:
+    - include_tasks: "common-tasks/os-{{ container_tech | default('lxc') }}-container-setup.yml"
+      when: is_metal
+
+    - include_tasks: common-tasks/unbound-clients.yml
+      when:
+        - hostvars['localhost']['resolvconf_enabled'] | bool
+  roles:
+    - role: ansible-datamover-api
+      when: is_metal
+
 - name: Installation and setup of dmapi conatiner
   hosts: dmapi_all 
   gather_facts: "{{ osa_gather_facts | default(True) }}"
@@ -17,6 +36,7 @@
         - hostvars['localhost']['resolvconf_enabled'] | bool
   roles:
     - role: ansible-datamover-api
+      when: not is_metal
 
 - hosts: tvault_compute_hosts
   roles:
