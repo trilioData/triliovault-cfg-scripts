@@ -1,22 +1,26 @@
 ---
 
-- hosts: localhost
-  become: true
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-  tasks:
-    - name: Install lxc packages
-      package:
-        update_cache: yes
-        name:
-          - "lxc"
-          - "python3-lxc"
-          - "lxc-templates"
-        state: present
-      tags: [ 'never', 'tvault_pre_install']
+- name: Installation dmapi on bare metal
+  hosts: tvault-dmapi_containers 
+  gather_facts: "{{ osa_gather_facts | default(True) }}"
+  user: root
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  vars_files:
+    - "defaults/repo_packages/openstack_services.yml"
+    - "defaults/{{ install_method }}_install.yml"
+  pre_tasks:
+    - include_tasks: "common-tasks/os-{{ container_tech | default('lxc') }}-container-setup.yml"
+      when: is_metal
+
+    - include_tasks: common-tasks/unbound-clients.yml
+      when:
+        - hostvars['localhost']['resolvconf_enabled'] | bool
+  roles:
+    - role: ansible-datamover-api
+      when: is_metal
 
 - name: Installation and setup of dmapi conatiner
-  hosts: tvault-dmapi_all 
+  hosts: dmapi_all 
   gather_facts: "{{ osa_gather_facts | default(True) }}"
   user: root
   environment: "{{ deployment_environment_variables | default({}) }}"
@@ -32,6 +36,7 @@
         - hostvars['localhost']['resolvconf_enabled'] | bool
   roles:
     - role: ansible-datamover-api
+      when: not is_metal
 
 - hosts: tvault_compute_hosts
   roles:
