@@ -8,20 +8,19 @@
     - name: Add & enable epel repo
       yum_repository:
         name: epel
-        description: EPEL YUM REPO
-        baseurl: https://download.fedoraproject.org/pub/epel/8/$basearch/
-        async: true
-        enabled: yes
+        description: EPEL YUM Repo
+        baseurl: https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch/
       when: >
-            (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
             (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
     - name: Install snapd package
-      dnf:
+      package:
+        update_cache: yes
         name: snapd
         state: present
       when: >
-            (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
             (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
     - name: Enable service httpd snapd
@@ -29,21 +28,10 @@
         name: snapd
         enabled: yes
       when: >
-            (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
             (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
 
-    - name: Install RPM lxc packages
-      dnf:
-        name:
-          - "lxc"
-          - "python3-lxc"
-          - "lxc-templates"
-        state: present
-      when: >
-            (ansible_distribution_major_version>="7" and ansible_distribution=="CentOS") or
-            (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
-
-    - name: Install Debian lxc packages
+    - name: Install lxc packages
       package:
         update_cache: yes
         name:
@@ -51,5 +39,3 @@
           - "python3-lxc"
           - "lxc-templates"
         state: present
-      when: >
-            (ansible_distribution_major_version>="20.04" and ansible_distribution=="Debian")
