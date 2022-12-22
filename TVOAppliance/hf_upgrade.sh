@@ -4,7 +4,7 @@ BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
 PKG_DIR_NAME="4.2.64"
-BRANCH_NAME="triliodata-dev-qual2-4-2"
+BRANCH_NAME="triliodata-hotfix-4-2"
 UUID_NUM=`uuidgen`
 
 #function to display usage...
