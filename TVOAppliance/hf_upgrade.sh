@@ -4,7 +4,7 @@ BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
 PKG_DIR_NAME="4.2.64"
-BRANCH_NAME="triliodata-dev-qual2-4-2"
+BRANCH_NAME="triliodata-4-2"
 UUID_NUM=`uuidgen`
 
 #function to display usage...
@@ -54,12 +54,38 @@ function check_package_status()
         done
 }
 
+#function to restart wlm-cron on primary node only...
+function restart_wlm_cron_on_primary_node()
+{
+	FILE="/etc/tvault-config/tvault-config.conf"
+	#find primary node first.
+	if [ -f "$FILE" ]; then
+		external_virtual_ip=`grep -i 'virtual_ip\ ' $FILE | cut -d ' ' -f 3`
+		#check the last command status.
+		if [ $? -eq 0 ]; then
+			current_node_ip=`ip a | grep $external_virtual_ip`
+			#check the last command status.
+			if [ $? -eq 0 ]; then
+				echo Restart wlm-cron service here.
+
+				#This is primary node so disable and enable the wlm-cron service.
+				pcs resource disable wlm-cron
+				pcs resource enable wlm-cron
+			else
+				echo Not required to restart wlm-cron service here.
+			fi
+		else
+			echo Not able to find $FILE file.
+		fi
+	fi
+}
+
 #function to reconfigure s3 service path...
 function reconfigure_s3_service_path()
 {
 	file_name="/etc/systemd/system/tvault-object-store.service"
 	src_string="ExecStart=/home/stack/myansible/bin/python3 /home/stack/myansible/lib/python3.6/site-packages/s3fuse/s3vaultfuse.py --config-file=/etc/workloadmgr/workloadmgr.conf"
-	dest_string="ExecStart=/home/stack/myansible/bin/python /home/stack/myansible/bin/s3vaultfuse.py --config-file=/etc/workloadmgr/s3-fuse.conf"
+	dest_string="ExecStart=/home/stack/myansible/bin/python3 /home/stack/myansible/bin/s3vaultfuse.py --config-file=/etc/workloadmgr/workloadmgr.conf"
 
 	sed  -i "s~$src_string~$dest_string~g" $file_name
 
@@ -87,8 +113,8 @@ function install_package()
 	echo "Installing $outfile for Yoga release"
 
 	echo "Before installation disabling old and deleted MariaDB and Rabbitmq-server yum repositories"
-	disable_rabbitmq_server=`yum-config-manager --disable bintray-rabbitmq-server`
-	disable_mariadb_server=`yum-config-manager --disable mariadb`
+	yum-config-manager --disable bintray-rabbitmq-server
+	yum-config-manager --disable mariadb
 
 	#make sure to be in base directory for installation.
 	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
@@ -130,19 +156,22 @@ function install_package()
 	extract_myansible_pkg=`tar -xzf myansible_py38.tar.gz -C /`
 
 	#set the default python3
-	update_python_cmd=`update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0`
+	update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0
 
 	#restart the services post install
-	service_restart_cmd=`systemctl restart tvault-config wlm-workloads wlm-api wlm-cron wlm-workloads`
+	systemctl restart tvault-config wlm-workloads wlm-api wlm-workloads
 
-	#before restarting service replace the service path in tvault-object-store.service file
+	#call function - restart wlm-cron service on primary node only.
+	restart_wlm_cron_on_primary_node
+
+	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
 
 	#before restarting the s3 service reload the modified service file. 
-	daemon_reload_cmd=`sytemctl daemon-reload`
+	systemctl daemon-reload
 
 	#restart s3 related services.
-	service_restart_s3_cmd=`systemctl restart tvault-object-store`
+	systemctl restart tvault-object-store
 	
 }
 
