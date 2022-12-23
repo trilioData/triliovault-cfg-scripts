@@ -52,4 +52,10 @@ Make the above mentioned change in hf_upgrade.sh script with following steps,
 	- Save the changes and run the hf_upgade.sh script using -d option / -i option / -a option.
 
 
+Note:
+	If end user is running this script manually on TVM then please make sure you run it on the primary node so that wlm-cron service will get reloaded properly. 
+	To make sure if it is a primary node or not, perform following commands.
+	- Run pcs status command on TVM
+	- Check the output and see the value of Current DC:
+	- Run the hostname command the check the value with Current DC output. If it is matched then it is a primary node. 
 
