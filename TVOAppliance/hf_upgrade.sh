@@ -60,7 +60,7 @@ function restart_wlm_cron_on_primary_node()
 	FILE="/etc/tvault-config/tvault-config.conf"
 	#find primary node first.
 	if [ -f "$FILE" ]; then
-		external_virtual_ip=`grep -i 'virtual_ip\ '  /etc/tvault-config/tvault-config.conf | cut -d ' ' -f 3`
+		external_virtual_ip=`grep -i 'virtual_ip\ ' $FILE | cut -d ' ' -f 3`
 		#check the last command status.
 		if [ $? -eq 0 ]; then
 			current_node_ip=`ip a | grep $external_virtual_ip`
@@ -69,8 +69,8 @@ function restart_wlm_cron_on_primary_node()
 				echo Restart wlm-cron service here.
 
 				#This is primary node so disable and enable the wlm-cron service.
-				disable_wlm_cron=`pcs resource disable wlm-cron`
-				enable_wlm_cron=`pcs resource enable wlm-cron`
+				pcs resource disable wlm-cron
+				pcs resource enable wlm-cron
 			else
 				echo Not required to restart wlm-cron service here.
 			fi
