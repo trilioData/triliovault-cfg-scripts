@@ -4,7 +4,7 @@ BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
 PKG_DIR_NAME="4.2.64"
-BRANCH_NAME="triliodata-hotfix-4-2"
+BRANCH_NAME="triliodata-4-2"
 UUID_NUM=`uuidgen`
 
 #function to display usage...
@@ -52,6 +52,32 @@ function check_package_status()
                         fi
                 fi
         done
+}
+
+#function to restart wlm-cron on primary node only...
+function restart_wlm_cron_on_primary_node()
+{
+	FILE="/etc/tvault-config/tvault-config.conf"
+	#find primary node first.
+	if [ -f "$FILE" ]; then
+		external_virtual_ip=`grep -i 'virtual_ip\ '  /etc/tvault-config/tvault-config.conf | cut -d ' ' -f 3`
+		#check the last command status.
+		if [ $? -eq 0 ]; then
+			current_node_ip=`ip a | grep $external_virtual_ip`
+			#check the last command status.
+			if [ $? -eq 0 ]; then
+				echo Restart wlm-cron service here.
+
+				#This is primary node so disable and enable the wlm-cron service.
+				disable_wlm_cron=`pcs resource disable wlm-cron`
+				enable_wlm_cron=`pcs resource enable wlm-cron`
+			else
+				echo Not required to restart wlm-cron service here.
+			fi
+		else
+			echo Not able to find $FILE file.
+		fi
+	fi
 }
 
 #function to reconfigure s3 service path...
@@ -133,7 +159,10 @@ function install_package()
 	update_python_cmd=`update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0`
 
 	#restart the services post install
-	service_restart_cmd=`systemctl restart tvault-config wlm-workloads wlm-api wlm-cron wlm-workloads`
+	service_restart_cmd=`systemctl restart tvault-config wlm-workloads wlm-api wlm-workloads`
+
+	#restart wlm-cron service on primary node only.
+	restart_wlm_cron_on_primary_node
 
 	#before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
