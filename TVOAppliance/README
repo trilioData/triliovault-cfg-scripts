@@ -37,3 +37,21 @@ Rev 1.1 changes:
             uuidgen from util-linux X.XX.XXXXX VERSION_NUM
 
 
+===============================================================================
+Rev 1.2 changes:
+While running hf_upgrade.sh script in offline mode. We need to change the BRANCH_NAME inside hf_upgrade.sh script to download the package from correct location.
+
+For end customer usage set BRANCH_NAME="triliodata-4-2" inside hf_upgade.sh script.
+For internal testing set BRANCH_NAME="triliodata-hotfix-4-2" inside hf_upgrade.sh script.
+
+Make the above mentioned change in hf_upgrade.sh script with following steps, 
+	- open hf_upgrade.sh script using any familier editor
+	- Go to line number#7 in hf_upgrade.sh script and edit the file to change the value for BRANCH_NAME
+	- For end customer usage set it to BRANCH_NAME="triliodata-4-2"
+	- For internal testing set it to BRANCH_NAME="triliodata-hotfix-4-2"
+	- Save the changes and run the hf_upgade.sh script using -d option / -i option / -a option.
+
+
+Note:
+	- restart_services function restart following services. If any of the service name mentioned below is in inactive mode then it will not perform restart operation on the respective service.
+	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron
