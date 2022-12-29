@@ -53,9 +53,5 @@ Make the above mentioned change in hf_upgrade.sh script with following steps,
 
 
 Note:
-	If end user is running this script manually on TVM then please make sure you run it on the primary node so that wlm-cron service will get reloaded properly. 
-	To make sure if it is a primary node or not, perform following commands.
-	- Run pcs status command on TVM
-	- Check the output and see the value of Current DC:
-	- Run the hostname command the check the value with Current DC output. If it is matched then it is a primary node. 
-
+	- restart_services function restart following services. If any of the service name mentioned below is in inactive mode then it will not perform restart operation on the respective service.
+	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron
