@@ -54,31 +54,26 @@ function check_package_status()
         done
 }
 
-#function to restart wlm-cron on primary node only...
-function restart_wlm_cron_on_primary_node()
+#function to restart the services.
+function restart_services()
 {
-	FILE="/etc/tvault-config/tvault-config.conf"
-	#find primary node first.
-	if [ -f "$FILE" ]; then
-		external_virtual_ip=`grep -i 'virtual_ip\ ' $FILE | cut -d ' ' -f 3`
-		#check the last command status.
-		if [ $? -eq 0 ]; then
-			current_node_ip=`ip a | grep $external_virtual_ip`
-			#check the last command status.
-			if [ $? -eq 0 ]; then
-				echo Restart wlm-cron service here.
+	#get the service name passed.
+        service_name=$1
 
-				#This is primary node so disable and enable the wlm-cron service.
-				pcs resource disable wlm-cron
-				pcs resource enable wlm-cron
-			else
-				echo Not required to restart wlm-cron service here.
-			fi
-		else
-			echo Not able to find $FILE file.
-		fi
-	fi
+        #check if the service is in active state or not.
+        systemctl is-active $service_name
+
+	#check the result code. 0 - Success AND 3 - Inactive 
+        if [ $? -eq 0 ]
+        then
+                #restart the service as it is in active state.
+                systemctl restart $service_name
+        else
+		#print failure message and continue ahead.
+                echo "Service {$service_name} is in Inactive state. Cannot restart the service"
+        fi
 }
+
 
 #function to reconfigure s3 service path...
 function reconfigure_s3_service_path()
@@ -158,11 +153,13 @@ function install_package()
 	#set the default python3
 	update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0
 
-	#restart the services post install
-	systemctl restart tvault-config wlm-workloads wlm-api wlm-workloads
 
-	#call function - restart wlm-cron service on primary node only.
-	restart_wlm_cron_on_primary_node
+	#restart all active services
+	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron')
+	for service in "${SERVICE_NAMES[@]}"
+	do
+        	restart_services $service
+	done
 
 	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
