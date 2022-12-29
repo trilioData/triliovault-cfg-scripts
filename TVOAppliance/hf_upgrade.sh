@@ -153,23 +153,20 @@ function install_package()
 	#set the default python3
 	update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0
 
-
-	#restart all active services
-	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron')
-	for service in "${SERVICE_NAMES[@]}"
-	do
-        	restart_services $service
-	done
-
 	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
 
 	#before restarting the s3 service reload the modified service file. 
 	systemctl daemon-reload
 
-	#restart s3 related services.
-	systemctl restart tvault-object-store
-	
+	#restart all active services
+	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store')
+	for service in "${SERVICE_NAMES[@]}"
+	do
+        	restart_services $service
+	done
+
+
 }
 
 ########  Start of the script.  ########
