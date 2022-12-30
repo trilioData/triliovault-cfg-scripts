@@ -77,15 +77,21 @@
 
 - name: Create wlm_logging.conf
   template:
-     src: wlm_logging.conf
-     dest: "{{ wlm_log_cfg }}"
+    src: wlm_logging.conf
+    dest: "{{ wlm_log_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
   tags:
     - update_cfg
 
 - name: Create object_store_logging.conf
   template:
-     src: object_store_logging.conf.j2
-     dest: "{{ OBJECT_STORE_LOG_CFG }}"
+    src: object_store_logging.conf.j2
+    dest: "{{ OBJECT_STORE_LOG_CFG }}"
+    owner: root
+    group: nova
+    mode: '0640'
   when: 
     - NFS == False
   tags:
@@ -95,22 +101,31 @@
 
 - name: Copy triliovault-wlm.conf
   template:
-     src: triliovault-wlm.conf.j2
-     dest: "{{ wlm_cfg }}"
+    src: triliovault-wlm.conf.j2
+    dest: "{{ wlm_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
   tags:
     - update_cfg
 
 - name: Copy workloadmgr api-paste.ini 
   template:
-     src: api-paste.ini.j2
-     dest: "{{ wlm_api_paste }}"
+    src: api-paste.ini.j2
+    dest: "{{ wlm_api_paste }}"
+    owner: root
+    group: nova
+    mode: '0640'
   tags:
     - update_cfg
 
 - name: Copy triliovault-object-store.conf
   template:
-     src: triliovault-object-store.conf.j2
-     dest: "{{ triliovault_obj_sotre_cfg }}"
+    src: triliovault-object-store.conf.j2
+    dest: "{{ triliovault_obj_sotre_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
   when: NFS == False
   tags:
     - update_cfg
@@ -141,7 +156,7 @@
     dest: "{{WLM_S3_SSL_CERT_PATH}}"
     owner: nova
     group: nova
-    mode: '640'
+    mode: '0640'
   when:
     - VAULT_S3_SSL_CERT != ""
     - S3|bool == True

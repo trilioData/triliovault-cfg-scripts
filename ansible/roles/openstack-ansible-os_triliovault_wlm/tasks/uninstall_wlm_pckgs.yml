@@ -27,15 +27,12 @@
 - name: Remove trilio yum repo
   file: path="{{trilio_yum_repo_file_path}}" state=absent
   ignore_errors: True
-  when: >
-    (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
-    (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
+  when: ansible_distribution == "CentOS"
 
 - name: Remove trilio apt repo
   file: path="{{trilio_apt_repo_file_path}}" state=absent
   ignore_errors: True
-  when: >
-    (ansible_distribution_major_version>="20.04" and ansible_distribution=="Ubuntu")
+  when: ansible_distribution == "Ubuntu"
 
 - name: Uninstall workloadmgr packages from Debian
   package:
@@ -45,8 +42,7 @@
       - python3-contegoclient
     state: absent
   ignore_errors: True
-  when: >
-    (ansible_distribution_major_version>="20.04" and ansible_distribution=="Ubuntu")
+  when: ansible_distribution == "Ubuntu"
 
 - name: Uninstall workloadmgr packages from CentOS/RHEL
   package:
@@ -56,29 +52,18 @@
       - python3-contegoclient-el8
     state: absent
   ignore_errors: True
-  when: >
-    (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
-    (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat") 
+  when: ansible_distribution == "CentOS"
 
 - name: Uninstall python3-s3fuse-plugin packages from CentOS/RHEL
   package:
     name: 
       - python3-s3fuse-plugin
     state: absent
-  when: >
-    (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
-    (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat") 
+  when: ansible_distribution == "CentOS"
 
 - name: Uninstall python3-s3-fuse-plugin packages from Debian
   package:
     name: 
       - python3-s3-fuse-plugin
     state: absent
-  when: >
-    (ansible_distribution_major_version>="20.04" and ansible_distribution=="Ubuntu")
-
-- name: Remove files from {{ triliovault_cfg_dir }}  dir
-  file:
-    path: "{{ triliovault_cfg_dir }}"
-    state: absent
-  ignore_errors: True
+  when: ansible_distribution == "Ubuntu"

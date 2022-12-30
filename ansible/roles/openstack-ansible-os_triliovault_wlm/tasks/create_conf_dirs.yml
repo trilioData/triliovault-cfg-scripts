@@ -8,15 +8,6 @@
     group: nova
     state: directory
 
-- name: Create triliovault conf dir
-  file:
-    path: "{{ triliovault_cfg_dir }}"
-    mode: '0755'
-    recurse: yes
-    owner: root
-    group: nova
-    state: directory
-
 - name: Create triliovault mount dir
   file:
     path: "{{ triliovault_mnt_dir }}"
