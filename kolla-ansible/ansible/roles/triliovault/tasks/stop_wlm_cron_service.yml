@@ -1,0 +1,10 @@
+---
+- name: Stop wlm_cron service
+  vars:
+    triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
+  become: true
+  kolla_docker:
+    action: "stop_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ triliovault_wlm_cron.container_name }}"
+  when: inventory_hostname in groups[triliovault_wlm_cron_group]

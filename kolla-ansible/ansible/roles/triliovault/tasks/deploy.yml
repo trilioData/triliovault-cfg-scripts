@@ -19,6 +19,9 @@
 - name: Flush handlers
   meta: flush_handlers
 
+- include_tasks: stop_wlm_cron_service.yml
+  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+
 - include_tasks: wlm_cloud_trust.yml
   when: inventory_hostname in groups[triliovault_wlm_api_group]
   run_once: True
