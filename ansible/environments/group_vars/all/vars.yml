@@ -112,6 +112,13 @@ ceph_backend_enabled: False
 ## e.g. '/openstack/venvs/horizon-23.1.0'
 horizon_virtual_env: '/openstack/venvs/horizon*'
 
+## When More Than One Nova Virtual Env. On Compute Node(s) and
+## User Wants To Specify Specific Nova Virtual Env. From Existing
+## Then Only Uncomment the var nova_virtual_env and pass value like 'openstack/venvs/nova-23.2.0'
+
+##nova_virtual_env: 'openstack/venvs/nova-23.2.0'
+
+
 #Set verbosity level and run playbooks with -vvv option to display custom debug messages
 verbosity_level: 3
 
