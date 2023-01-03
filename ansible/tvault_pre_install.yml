@@ -1,0 +1,41 @@
+---
+
+- hosts: localhost
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Add & enable epel repo
+      yum_repository:
+        name: epel
+        description: EPEL YUM Repo
+        baseurl: https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch/
+      when: >
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
+
+    - name: Install snapd package
+      package:
+        update_cache: yes
+        name: snapd
+        state: present
+      when: >
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
+
+    - name: Enable service httpd snapd
+      service:
+        name: snapd
+        enabled: yes
+      when: >
+            (ansible_distribution_major_version>="8" and ansible_distribution=="CentOS") or
+            (ansible_distribution_major_version>="8" and ansible_distribution=="RedHat")
+
+    - name: Install lxc packages
+      package:
+        update_cache: yes
+        name:
+          - "lxc"
+          - "python3-lxc"
+          - "lxc-templates"
+        state: present
