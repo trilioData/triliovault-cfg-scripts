@@ -160,7 +160,7 @@ function install_package()
 	systemctl daemon-reload
 
 	#restart all active services
-	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store')
+	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
 	for service in "${SERVICE_NAMES[@]}"
 	do
         	restart_services $service
