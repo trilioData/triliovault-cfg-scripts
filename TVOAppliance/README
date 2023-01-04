@@ -54,4 +54,5 @@ Make the above mentioned change in hf_upgrade.sh script with following steps,
 
 Note:
 	- restart_services function restart following services. If any of the service name mentioned below is in inactive mode then it will not perform restart operation on the respective service.
-	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron
+	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron, wlm-scheduler
+
