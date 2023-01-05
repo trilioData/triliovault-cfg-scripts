@@ -54,4 +54,11 @@ Make the above mentioned change in hf_upgrade.sh script with following steps,
 
 Note:
 	- restart_services function restart following services. If any of the service name mentioned below is in inactive mode then it will not perform restart operation on the respective service.
-	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron
+	  Service Names - tvault-config, wlm-workloads, wlm-api, wlm-workloads, wlm-cron, wlm-scheduler
+
+=================================================================================
+Rev 1.3 changes:
+Take backup of /etc/tvault /etc/tvault-config /etc/workloadmgr before installation.
+Take backup of user json file and copy it to the new myansible env installed.
+Copy the user.json file from old venv to new env post installation before restarting services.
+
