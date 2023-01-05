@@ -108,7 +108,7 @@ function install_package()
 	echo "Installing $outfile for Yoga release"
 	
 	#get the current date and time. 
-	date=`date '+%Y-%m-%d-%H:%M:%S'`
+	date=`date '+%Y-%m-%d-%H-%M-%S'`
 
 	#before performing further installation take backup.
 	tar -czvf /home/stack/tvault_backup_$date.tar.gz /etc/tvault /etc/tvault-config /etc/workloadmgr
