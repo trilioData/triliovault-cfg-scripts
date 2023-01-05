@@ -106,6 +106,12 @@ function install_package()
 	fi
 
 	echo "Installing $outfile for Yoga release"
+	
+	#get the current date and time. 
+	date=`date '+%Y-%m-%d-%H:%M:%S'`
+
+	#before performing further installation take backup.
+	tar -czvf /home/stack/tvault_backup_$date.tar.gz /etc/tvault /etc/tvault-config /etc/workloadmgr
 
 	echo "Before installation disabling old and deleted MariaDB and Rabbitmq-server yum repositories"
 	yum-config-manager --disable bintray-rabbitmq-server
@@ -142,8 +148,7 @@ function install_package()
 	#move to base dir/UUID_NUM/PKG_DIR_NAME again for further installation.
 	cd $BASE_DIR/$UUID_NUM/$PKG_DIR_NAME*/
 
-	#now move existing myansible enviornment
-	date=`date '+%Y-%m-%d-%H:%M:%S'`
+	#move myansible env to myansible_old_$date folder.
 	mv /home/stack/myansible /home/stack/myansible_old_$date
 	mkdir -p /home/stack/myansible 
 
@@ -153,6 +158,14 @@ function install_package()
 	#set the default python3
 	update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 0
 
+	#get the OLD and NEW user json. 
+	USER_JSON_OLD=`/home/stack/myansible_old_$date/bin/python3 -c 'import tvault_configurator; print(tvault_configurator.__path__[0])'`/conf/users.json
+
+	USER_JSON_NEW=`/home/stack/myansible/bin/python3 -c 'import tvault_configurator; print(tvault_configurator.__path__[0])'`/conf/users.json
+
+	#replace / copy the user.json file from USER_JSON_OLD to USER_JSON_NEW path. 
+	cp USER_JSON_OLD USER_JSON_NEW --backup=numbered
+	
 	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
 
@@ -160,7 +173,7 @@ function install_package()
 	systemctl daemon-reload
 
 	#restart all active services
-	SERVICE_NAMES=('tvault-config' 'wlm-workloads' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
+	SERVICE_NAMES=('tvault-config' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
 	for service in "${SERVICE_NAMES[@]}"
 	do
         	restart_services $service
