@@ -164,7 +164,7 @@ function install_package()
 	USER_JSON_NEW=`/home/stack/myansible/bin/python3 -c 'import tvault_configurator; print(tvault_configurator.__path__[0])'`/conf/users.json
 
 	#replace / copy the user.json file from USER_JSON_OLD to USER_JSON_NEW path. 
-	cp USER_JSON_OLD USER_JSON_NEW --backup=numbered
+	yes | cp $USER_JSON_OLD $USER_JSON_NEW --backup=numbered
 	
 	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
