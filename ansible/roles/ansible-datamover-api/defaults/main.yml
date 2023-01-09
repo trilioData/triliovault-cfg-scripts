@@ -3,7 +3,7 @@ dmapi_galera_address: "{{ galera_address | default('127.0.0.1') }}"
 dmapi_galera_database: dmapi
 dmapi_galera_user: dmapi
 dmapi_galera_use_ssl: "{{ galera_use_ssl | default(False) }}"
-dmapi_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-ca.pem') }}"
+dmapi_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('') }}"
 dmapi_galera_password: "{{DMAPI_MYSQL_PASSWORD}}"
 dmapi_galera_port: 3306
 
