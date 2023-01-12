@@ -1,5 +1,4 @@
 variables:
-  openstack-origin: &openstack-origin cloud:bionic-train
   triliovault-pkg-source: &pkg-source "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /"
 
 series: bionic
@@ -18,7 +17,8 @@ applications:
     num_units: 1
     options:
        triliovault-pkg-source: *pkg-source
-       openstack-origin: *openstack-origin
+       openstack-origin: cloud:bionic-train
+       verbose: True
     to:
       - 'lxd:1'
   trilio-horizon-plugin:
@@ -26,6 +26,7 @@ applications:
     channel: 4.2/stable
     options:
        triliovault-pkg-source: *pkg-source
+       verbose: True
   trilio-wlm-hacluster:
     charm: hacluster
   trilio-wlm:
@@ -34,7 +35,7 @@ applications:
     num_units: 3
     options:
        triliovault-pkg-source: *pkg-source
-       openstack-origin: *openstack-origin
+       openstack-origin: distro
        nfs-shares: <NFS server IP>:<NFS share path>
        nfs-options: nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3
        worker-multiplier: 0.1
