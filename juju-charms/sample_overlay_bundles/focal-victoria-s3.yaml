@@ -32,6 +32,7 @@ applications:
     options:
        triliovault-pkg-source: *pkg-source
        openstack-origin: *openstack-origin
+       verbose: True
     to:
       - 'lxd:1'
   trilio-dm-api-mysql-router:
@@ -42,6 +43,7 @@ applications:
     options:
        triliovault-pkg-source: *pkg-source
        openstack-encryption-support: True
+       verbose: True
   trilio-wlm-mysql-router:
     charm: mysql-router
   trilio-wlm:
