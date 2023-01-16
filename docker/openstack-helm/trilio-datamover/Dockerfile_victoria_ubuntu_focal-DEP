@@ -1,0 +1,74 @@
+#ARG FROM=openstackhelm/nova:victoria-ubuntu_focal
+#FROM ${FROM}
+FROM openstackhelm/nova:victoria-ubuntu_focal
+MAINTAINER  kanav.malhotra@trilio.io
+
+LABEL name="trilio/triliovault-datamover" \
+      version="5.0.1" \
+      release="5.0" \
+      vendor="TrilioData" \
+      summary="TrilioData Datamover" \
+      description="TrilioData Datamover container image" \
+      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+
+ARG UID=42424
+ARG GID=42424
+ARG PROJECT_DIR=triliovault-datamover
+ARG TRILIO_MOUNT_DIR=/var/trilio/triliovault-mounts
+ARG OPENSTACK_REPO=cloud-archive:victoria
+
+# Switch to root and install a custom RPM, etc.
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+
+# Install pre-requisite packages 
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        software-properties-common  apt-utils vim  less  iputils-ping
+
+
+# Install datamover packages
+COPY trilio.list /etc/apt/sources.list.d/
+
+RUN set -ex \
+    && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
+        python3-tvault-contego \
+        fuse \
+        python3-s3-fuse-plugin \
+        nfs-common
+
+# Configuring the Nova user
+COPY nova_userid.sh /opt/${PROJECT_DIR}/
+
+# Split thesse since all three are dependent operations
+RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
+    && sed -i -r "s/^(group_id=).*/\1${GID}/" /opt/${PROJECT_DIR}/nova_userid.sh
+RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_userid.sh
+
+#RUN mkdir /etc/udev/rules.d
+RUN echo 'KERNEL=="rbd[0-9]*", PROGRAM="/usr/bin/ceph-rbdnamer %n", SYMLINK+="rbd/%c{1}/%c{2}"' > /etc/udev/rules.d/trilio-rbd.rules
+
+# Copy conf files
+ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+RUN usermod -aG disk nova \
+    && usermod -aG kvm nova
+
+RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store \
+    && chown nova.nova -R ${TRILIO_MOUNT_DIR} \
+        /var/triliovault \
+        /etc/${PROJECT_DIR} \
+        /opt/${PROJECT_DIR} \
+        /var/log/${PROJECT_DIR} \
+        /etc/triliovault-object-store \
+    && chmod 777 ${TRILIO_MOUNT_DIR} /var/triliovault
+
+ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+
+# Add license
+RUN mkdir /licenses
+
+# Become nova user for further operations
+USER nova

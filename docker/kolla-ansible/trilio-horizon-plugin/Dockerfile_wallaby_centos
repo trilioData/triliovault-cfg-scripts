@@ -1,0 +1,37 @@
+FROM kolla/centos-binary-horizon:wallaby
+MAINTAINER Trilio shiwanand.bicchewar@trilio.io
+
+LABEL name="centos-binary-trilio-horizon-plugin" \
+      maintainer="shiwanand.bicchewar@trilio.io" \
+      vendor="Trilio" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on centos platform"
+
+##Add Trilio RPM repo
+ADD trilio.repo /etc/yum.repos.d/
+RUN dnf config-manager --set-enabled epel
+
+#Install Required Packages
+RUN set -ex \
+    && dnf update -y \
+    && dnf install -y epel-release \
+    && dnf install -y centos-release-openstack-wallaby
+
+##Install Triliovault-Horizon-Plugin packages
+RUN dnf install python3-tvault-horizon-plugin-el8 python3-workloadmgrclient-el8 python3-contegoclient-el8 -y
+RUN rm /etc/yum.repos.d/trilio.repo
+RUN dnf config-manager --set-disabled epel
+
+##Copy necessary files
+RUN cp -r /usr/lib/python3.6/site-packages/trilio_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+RUN cp -r /usr/lib/python3.6/site-packages/trilio_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+
+RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/share/openstack-dashboard/manage.py compress --force
+
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses

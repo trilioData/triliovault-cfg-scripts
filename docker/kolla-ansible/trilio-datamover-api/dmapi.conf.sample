@@ -1,0 +1,50 @@
+[DEFAULT]
+dmapi_workers = 2
+transport_url = rabbit://openstack:PiTBwZyWUOPVhws2RdaM7IiB1cBV8mjAPqx3FO5b@192.168.122.150:5672
+dmapi_link_prefix = https://192.168.122.151:8784
+dmapi_enabled_ssl_apis =
+dmapi_listen_port = 8784
+dmapi_enabled_apis = dmapi
+bindir = /usr/bin
+instance_name_template = instance-%08x
+dmapi_listen = 192.168.122.150
+my_ip = 192.168.122.150
+rootwrap_config = /etc/dmapi/rootwrap.conf
+debug = True
+log_file = /var/log/kolla/trilio-datamover-api/dmapi.log
+log_dir = /var/log/kolla/trilio-datamover-api
+
+[wsgi]
+ssl_cert_file =
+ssl_key_file =
+api_paste_config = /etc/dmapi/api-paste.ini
+
+[database]
+connection = mysql+pymysql://nova:j4VnZXx5yZ5bN9ziaoBr1xGyRZSayFevd0hzV80r@192.168.122.151:3306/nova
+
+[api_database]
+connection = mysql+pymysql://nova_api:4nrCV5Jg56mJHp0jZUGzPoMcrtnpTgYQNQzFrZQS@192.168.122.151:3306/nova_api
+
+[keystone_authtoken]
+memcached_servers = 192.168.122.150:11211
+signing_dir = /var/cache/dmapi
+cafile =
+project_name = service
+project_domain_id = default
+user_domain_name = Default
+username = nova
+password = P7mBA60BBDfP4Wo2eeVBWmzLDBln6Vke16UUEV9N
+auth_uri = http://192.168.122.151:5000
+auth_url = http://192.168.122.151:35357
+auth_type = password
+user_domain_id = default
+memcache_security_strategy = ENCRYPT
+memcache_secret_key = zXNAkiAP96xgFkEjoYlg5wWUJJVitvc2axTB3jRb
+insecure = True
+
+[oslo_messaging_notifications]
+transport_url = rabbit://openstack:PiTBwZyWUOPVhws2RdaM7IiB1cBV8mjAPqx3FO5b@192.168.122.150:5672
+driver = noop
+
+[oslo_middleware]
+enable_proxy_headers_parsing = true

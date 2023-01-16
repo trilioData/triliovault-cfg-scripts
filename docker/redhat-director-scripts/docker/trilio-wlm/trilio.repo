@@ -1,0 +1,5 @@
+[triliovault-5-0]
+name=triliovault-5-0
+baseurl={RPM_REPO_URL}
+gpgcheck=0
+enabled=1

@@ -1,0 +1,27 @@
+FROM kolla/ubuntu-binary-horizon:ussuri
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="4.1.0" \
+      release="4.1" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
+
+##Install datamover packages
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt update -y 
+RUN apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient --allow-unauthenticated
+
+
+##Move necessary files
+ADD usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+ADD usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
+
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
