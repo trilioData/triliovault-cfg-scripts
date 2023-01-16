@@ -13,7 +13,7 @@ LABEL name="triliovault-horizon-helm" \
 ## Become root
 USER root
 ARG fury_repo="triliodata-dev-stable-5-0/"
-RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL=https://pypi.fury.io/${fury_repo} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL={PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
 
 RUN cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/enabled/ && \
     cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/templatetags/ && \
