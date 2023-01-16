@@ -1,0 +1,37 @@
+FROM kolla/centos-binary-nova-api:ussuri
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="4.1.0" \
+      release="4.1" \
+      summary="TrilioData trilio-datamover-api" \
+      description="TrilioData trilio-datamover-api"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+# temporary fix
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Install datamover packages
+ADD trilio.repo /etc/yum.repos.d/
+RUN yum install python3-dmapi -y
+
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+RUN usermod -a -G kolla dmapi
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Copy license file
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+##Become nova user for further operations
+USER dmapi

@@ -1,0 +1,41 @@
+FROM docker.io/openstackhelm/horizon:train-ubuntu_bionic
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="4.2.0" \
+      release="4.2" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
+
+ARG OPENSTACK_REPO=cloud-archive:train
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+# Install pre-requisite packages 
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        software-properties-common  apt-utils vim  less  iputils-ping
+
+
+##Install datamover packages
+ADD trilio.list /etc/apt/sources.list.d/
+ADD manage.py  /tmp/
+RUN chmod 777 /tmp/manage.py
+
+RUN mkdir -p /var/lib/openstack/share/openstack-dashboard && \
+    cp /tmp/manage.py /var/lib/openstack/share/openstack-dashboard 
+RUN . /var/lib/openstack/bin/activate
+    
+
+RUN apt update -y  && \
+    apt-add-repository ${OPENSTACK_REPO} && \
+    apt-get install  -y python3-tvault-horizon-plugin python3-workloadmgrclient  --allow-unauthenticated
+
+
+ RUN cp /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /var/lib/openstack/lib/python3.6/site-packages/openstack_dashboard/enabled/
+ RUN cp /usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /var/lib/openstack/lib/python3.6/site-packages/openstack_dashboard/templatetags/
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
