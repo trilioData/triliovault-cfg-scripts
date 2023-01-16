@@ -1,0 +1,2 @@
+nova ALL = (root) NOPASSWD: /usr/bin/privsep-helper *
+nova ALL = (root) NOPASSWD: /var/lib/kolla/venv/bin/privsep-helper *

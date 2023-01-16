@@ -1,0 +1,34 @@
+FROM kolla/ubuntu-binary-nova-api:victoria
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="TrilioData trilio-datamover-api" \
+      description="TrilioData trilio-datamover-api"
+
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+##Install datamover packages
+
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+RUN apt-get install -y python3-dmapi --allow-unauthenticated
+
+
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+RUN usermod -a -G kolla dmapi
+
+
+##Copy license file
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+##Become nova user for further operations
+USER dmapi

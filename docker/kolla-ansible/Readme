@@ -1,0 +1,12 @@
+Command to build Kolla Ansible Images ( all services ) 
+
+./build_containers.sh <triliovault_version> <openstack_release>
+e.g.
+./build_containers.sh 5.0 wallaby
+
+
+Command to publish Kolla Ansible Images ( all services ) 
+
+./publish_containers.sh <triliovault_version> <openstack_release>
+e.g.
+./publish_containers.sh 5.0 wallaby

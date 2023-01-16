@@ -1,0 +1,67 @@
+FROM registry.redhat.io/rhosp-rhel8/openstack-base:16.2
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="Red Hat OpenStack Platform 16.2 nova-compute TrilioData Datamover" \
+      description="Red Hat OpenStack Platform 16.2 nova-compute TrilioData Datamover"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+## Setup repos
+ADD trilio.repo /etc/yum.repos.d/
+RUN dnf clean all && dnf config-manager \
+  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --enable fast-datapath-for-rhel-8-x86_64-rpms
+
+## Install triliovault datamover packages
+RUN dnf install openstack-nova-common python3-nova python3-novaclient udev fuse -y
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
+RUN dnf install python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt-7.0.0-1.module+el8.4.0+9469+2eaf72bc python3-cinderclient  qemu-kvm-block-rbd -y
+RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt
+
+
+
+#Copy executable files
+RUN mkdir -p /opt/triliovault/
+ADD start_triliovault_datamover_s3 start_triliovault_datamover_nfs start_triliovault_object_store /opt/triliovault/
+RUN chown -R nova:nova /opt/triliovault/
+RUN chmod -R 755 /opt/triliovault
+
+##Copy conf files
+ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+ADD log-rotate-conf /etc/logrotate.d/triliovault-datamover.conf
+RUN chown root:root /etc/sudoers.d/nova-sudoers \
+  && chown root:nova /usr/share/nova/nova-dist.conf
+  
+## Create conf directories
+RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-datamover /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-datamover /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault \
+    && chmod -R 755 /var/lib/nova
+
+
+##Disable repos and Clean subscription
+RUN dnf config-manager \
+  --disable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-baseos-rpms \
+  --disable advanced-virt-for-rhel-8-x86_64-rpms \
+  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --disable fast-datapath-for-rhel-8-x86_64-rpms
+RUN yum clean all && rm -f /etc/yum.repos.d/trilio.repo
+
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
+##Become nova user for further operations
+USER nova
