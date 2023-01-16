@@ -1,0 +1,5 @@
+[{VERSION}]
+name={VERSION}
+baseurl={RPM_REPO_URL}
+gpgcheck=0
+enabled=1
