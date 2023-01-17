@@ -11,9 +11,9 @@ LABEL name="ubuntu-binary-trilio-horizon-plugin" \
       description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
 
 ##Install datamover packages
-ARG fury_repo="triliodata-dev-qual2-4-2/"
-#Eg. fury_repo : triliodata-dev-5-0
-RUN export PIP_EXTRA_INDEX_URL={PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+ARG PIP_INDEX_URL="DEFAULT"
+
+RUN export PIP_EXTRA_INDEX_URL=${PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
 RUN cp /var/lib/kolla/venv/lib/python3.8/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/kolla/venv/lib/python3.8/site-packages/openstack_dashboard/enabled/
 RUN cp /var/lib/kolla/venv/lib/python3.8/site-packages/trilio_dashboard/templatetags/*.py /var/lib/kolla/venv/lib/python3.8/site-packages/openstack_dashboard/templatetags/
 
