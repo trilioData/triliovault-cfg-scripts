@@ -398,10 +398,20 @@ outputs:
               retries: 3
               delay: 3
               until: result.rc == 0
-            - name: Get previous triliovault_wlm_cron image id
+            - name: Check if triliovault-wlm-cron pacemaker resource exists
+              shell: "pcs resource config triliovault-wlm-cron"
+              register: is_triliovault_wlm_cron_pacemaker_resource_exists
+              failed_when: false
+            - name: Get previous triliovault_wlm_cron image id, in case of wlm cron resource already exists
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image_latest}}"
               register: old_triliovault_wlm_cron_image_id
               failed_when: false
+              when: is_triliovault_wlm_cron_pacemaker_resource_exists.rc == 0
+            - name: Set old image id, in case of wlm cron resource does not exists
+              shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
+              register: old_triliovault_wlm_cron_image_id
+              failed_when: false
+              when: is_triliovault_wlm_cron_pacemaker_resource_exists.rc != 0
             - name: Get new triliovault_wlm_cron image id
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
               register: new_triliovault_wlm_cron_image_id
