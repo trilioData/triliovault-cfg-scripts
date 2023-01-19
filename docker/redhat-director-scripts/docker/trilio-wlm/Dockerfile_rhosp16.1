@@ -48,8 +48,8 @@ RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla no
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
-    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault \
-    && chmod -R 755 /var/lib/nova
+    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
+    && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
 
 ##Clean subscription
 RUN yum clean all
