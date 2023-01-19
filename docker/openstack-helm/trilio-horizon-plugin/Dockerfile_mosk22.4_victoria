@@ -11,9 +11,9 @@ LABEL name="triliovault-horizon-helm" \
 
 ## Become root
 USER root
-ARG PIP_INDEX_URL="DEFAULT"
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
 
-RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL=${PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
 
 
 RUN cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/enabled/ && \
