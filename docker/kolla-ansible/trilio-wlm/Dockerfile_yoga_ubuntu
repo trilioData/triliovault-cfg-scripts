@@ -34,9 +34,9 @@ RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workload
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault 
-RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault \
+RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
     && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
-RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store \
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 
 ## Kolla specific settings

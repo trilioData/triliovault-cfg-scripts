@@ -75,7 +75,7 @@ RUN apt install -y python3-neutronclient python3-glanceclient python3-attr \
     && chmod 777 /var/trilio \
     && chmod 777 /var/trilio/triliovault-mounts
 
-RUN chown -R nova.nova /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /var/triliovault-mounts /etc/triliovault-object-store/
+RUN chown -R nova.nova /var/lib/workloadmgr /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /var/triliovault-mounts /etc/triliovault-object-store/
 RUN usermod -aG disk nova
 
 ADD log-rotate-conf /etc/logrotate.d/workloadmgr-api.conf
