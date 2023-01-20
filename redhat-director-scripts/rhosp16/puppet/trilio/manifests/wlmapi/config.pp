@@ -116,6 +116,13 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           group  => '42436',
           mode   => '0644',
       }->
+      file { "/etc/triliovault-wlm/fuse.conf":
+          ensure  => present,
+          content => template('trilio/fuse.conf.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
+      }->
       file { "/etc/triliovault-object-store/triliovault-object-store.conf":
           ensure  => present,
           content => template('trilio/triliovault_object_store_conf.erb'),
