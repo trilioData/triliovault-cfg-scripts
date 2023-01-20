@@ -343,6 +343,10 @@ outputs:
               dest: "/"
               merge: true
               preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliovaultwlmworkloads/etc/triliovault-wlm/fuse.conf"
+              dest: "/etc/fuse.conf"
+              merge: true
+              preserve_properties: true
           permissions:
             - path: /var/log/triliovault/
               owner: nova:nova
@@ -371,6 +375,8 @@ outputs:
                   - /var/lib/kolla/config_files/triliovault_wlm_workloads.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/triliovaultwlmworkloads/:/var/lib/kolla/config_files/triliovaultwlmworkloads:ro
                   - /var/log/containers/triliovault-wlm-workloads:/var/log/triliovault:z
+                  - /dev:/dev
+                  - /lib/modules:/lib/modules
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
