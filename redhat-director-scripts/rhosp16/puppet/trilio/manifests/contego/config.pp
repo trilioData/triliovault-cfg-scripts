@@ -40,6 +40,13 @@ class trilio::contego::config inherits trilio::contego {
         mode   => '0644',
         source => 'puppet:///modules/trilio/s3-cert.pem',
     }
+    file { "/etc/triliovault-datamover/fuse.conf":
+        ensure  => present,
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        content => template('trilio/fuse.conf.erb'),
+    }->
     file { '/opt/triliovault/':
         ensure => 'directory',
         owner  => '42436',

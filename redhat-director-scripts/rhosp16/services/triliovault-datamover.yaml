@@ -178,6 +178,10 @@ outputs:
               dest: "/"
               merge: true
               preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliovaultdm/etc/triliovault-datamover/fuse.conf"
+              dest: "/etc/fuse.conf"
+              merge: true
+              preserve_properties: true
             - source: "/var/lib/kolla/config_files/src-iscsid/*"
               dest: "/etc/iscsi/"
               merge: true
