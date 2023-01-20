@@ -404,6 +404,10 @@ outputs:
               dest: "/"
               merge: true
               preserve_properties: true
+            - source: "/var/lib/kolla/config_files/triliovaultwlmapi/etc/triliovault-wlm/fuse.conf"
+              dest: "/etc/fuse.conf"
+              merge: true
+              preserve_properties: true
           permissions:
             - path: /var/log/triliovault/
               owner: nova:nova
