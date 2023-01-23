@@ -28,7 +28,7 @@
 - name: copy fuse conf file
   become: true
   template:
-    src: fuse.conf
+    src: fuse.conf.j2
     dest: "/etc/fuse.conf"
     owner: "42436"
     group: "42436"
