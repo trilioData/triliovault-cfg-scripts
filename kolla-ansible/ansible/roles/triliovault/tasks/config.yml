@@ -30,8 +30,8 @@
   template:
     src: fuse.conf
     dest: "/etc/fuse.conf"
-    owner: root
-    group: root
+    owner: "42436"
+    group: "42436"
     mode: "0644"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
