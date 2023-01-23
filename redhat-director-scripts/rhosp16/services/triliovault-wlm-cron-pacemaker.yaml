@@ -404,14 +404,16 @@ outputs:
               failed_when: false
             - name: Get previous triliovault_wlm_cron image id, in case of wlm cron resource already exists
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image_latest}}"
-              register: old_triliovault_wlm_cron_image_id
+              register: old_triliovault_wlm_cron_image_id_1
               failed_when: false
               when: is_triliovault_wlm_cron_pacemaker_resource_exists.rc == 0
             - name: Set old image id, in case of wlm cron resource does not exists
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
-              register: old_triliovault_wlm_cron_image_id
+              register: old_triliovault_wlm_cron_image_id_2
               failed_when: false
               when: is_triliovault_wlm_cron_pacemaker_resource_exists.rc != 0
+            - set_fact:
+                old_triliovault_wlm_cron_image_id: "{{ old_triliovault_wlm_cron_image_id_1 if old_triliovault_wlm_cron_image_id_2 is skipped else old_triliovault_wlm_cron_image_id_2 }}"
             - name: Get new triliovault_wlm_cron image id
               shell: "{{container_cli}} inspect --format '{{'{{'}}.Id{{'}}'}}' {{triliovault_wlm_cron_image}}"
               register: new_triliovault_wlm_cron_image_id
