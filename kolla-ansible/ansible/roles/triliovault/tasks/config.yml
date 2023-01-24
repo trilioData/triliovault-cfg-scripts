@@ -25,6 +25,20 @@
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
+- name: copy fuse conf file
+  become: true
+  template:
+    src: fuse.conf.j2
+    dest: "/etc/fuse.conf"
+    owner: "42436"
+    group: "42436"
+    mode: "0644"
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+
 - name: triliovault - load nbd module
   become: true
   modprobe:
