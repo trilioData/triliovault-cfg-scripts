@@ -17,6 +17,13 @@
 			"dest": "/etc/triliovault-wlm/api-paste.ini",
 			"owner": "nova",
 			"perm": "0755"
+
+                },
+ 		{
+			"source": "{{ container_config_directory }}/fuse.conf",
+			"dest": "/etc/fuse.conf",
+			"owner": "nova",
+			"perm": "0644"
 		}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
 	        {
         	        "source": "{{ triliovault_s3_ssl_cert_file_path }}",
