@@ -18,7 +18,8 @@ triliovault_services:
         port: "{{ triliovault_datamover_api_port }}"
         frontend_http_extra:
           - "retries 5"
-          - "timeout http-request 10m"
+          - "timeout http-request {{ trilio_datamover_api_haproxy_http_request_timeout }}"
+          - "timeout http-keep-alive {{ trilio_datamover_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -36,7 +37,8 @@ triliovault_services:
         port: "{{ triliovault_datamover_api_port }}"
         frontend_http_extra:
           - "retries 5"
-          - "timeout http-request 10m"
+          - "timeout http-request {{ trilio_datamover_api_haproxy_http_request_timeout }}"
+          - "timeout http-keep-alive {{ trilio_datamover_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -71,7 +73,8 @@ triliovault_services:
         port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
-          - "timeout http-request 10m"
+          - "timeout http-request {{ trilio_wlm_api_haproxy_http_request_timeout }}"
+          - "timeout http-keep-alive {{ trilio_wlm_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -89,7 +92,8 @@ triliovault_services:
         port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
-          - "timeout http-request 10m"
+          - "timeout http-request {{ trilio_wlm_api_haproxy_http_request_timeout }}"
+          - "timeout http-keep-alive {{ trilio_wlm_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -262,6 +266,16 @@ triliovault_datamover_api_listen_port: "{{ triliovault_datamover_api_port }}"
 
 triliovault_wlm_api_port: 8781
 triliovault_wlm_api_listen_port: 8781
+
+
+
+#####################
+# HAproxy
+#####################
+trilio_datamover_api_haproxy_http_request_timeout: "10m"
+trilio_datamover_api_haproxy_http_keep_alive_timeout: "10m"
+trilio_wlm_api_haproxy_http_request_timeout: "10m"
+trilio_wlm_api_haproxy_http_keep_alive_timeout: "10m"
 
 
 ####################
