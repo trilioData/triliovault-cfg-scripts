@@ -187,9 +187,6 @@ parameters:
     default: false
     description: S3 ssl enabled
     type: boolean
-  S3SslCert:
-    description: S3 SSL certificate file path
-    type: string
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
@@ -268,7 +265,6 @@ outputs:
         trilio::wlmapi::s3_signature_version: {get_param: S3SignatureVersion}
         trilio::wlmapi::s3_auth_version: {get_param: S3AuthVersion}
         trilio::wlmapi::s3_ssl_enabled: {get_param: S3SslEnabled}
-        trilio::wlmapi::s3_ssl_cert: {get_param: S3SslCert}
         trilio::wlmapi::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
