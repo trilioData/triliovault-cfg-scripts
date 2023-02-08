@@ -90,10 +90,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
-      }->
-      exec{ "get keystone resources":
-          command => '/etc/triliovault-wlm/get_keystone_resources.sh',
-          provider => shell,
       }
       file { "/etc/triliovault-wlm/s3-cert.pem":
           ensure => 'present',
