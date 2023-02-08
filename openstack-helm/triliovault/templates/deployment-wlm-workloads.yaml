@@ -104,10 +104,6 @@ spec:
                   - stop
           volumeMounts:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
-            - name: pod-shared-triliovault-wlm-workloads
-              mountPath: /etc/workloadmgr/workloadmgr.conf
-              subPath: triliovault-wlm-ids.conf
-              readOnly: true
             - name: pod-tmp
               mountPath: /tmp
             - name: dev
