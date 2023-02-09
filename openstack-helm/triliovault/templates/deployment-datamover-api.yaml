@@ -128,7 +128,7 @@ spec:
             defaultMode: 0444
         - name: triliovault-datamover-bin
           configMap:
-            name: triliovault-bin
+            name: triliovault-bin-datamover-api
             defaultMode: 0555
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}
