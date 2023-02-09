@@ -20,7 +20,7 @@ helm.sh/hook-weight: "-6"
 {{- if .Values.manifests.job_wlm_db_drop }}
 {{- $serviceName := "triliovault_wlm" -}}
 {{- $dbToDrop := dict "adminSecret" .Values.secrets.oslo_db.admin "configFile" (printf "/etc/%s/%s.conf" "triliovault-wlm" "triliovault-wlm" ) "logConfigFile" (printf "/etc/%s/logging.conf" "triliovault-wlm" ) "configDbSection" "DEFAULT" "configDbKey" "sql_connection" -}}
-{{- $dbDropJob := dict "configMapBin" "triliovault-bin" "configMapEtc" "triliovault-etc" "envAll" . "serviceName" $serviceName "dbToDrop" $dbToDrop -}}
+{{- $dbDropJob := dict "configMapBin" "triliovault-bin-wlm" "configMapEtc" "triliovault-etc-wlm" "envAll" . "serviceName" $serviceName "dbToDrop" $dbToDrop -}}
 {{- if .Values.manifests.certificates -}}
 {{- $_ := set $dbDropJob "dbAdminTlsSecret" .Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal -}}
 {{- end -}}

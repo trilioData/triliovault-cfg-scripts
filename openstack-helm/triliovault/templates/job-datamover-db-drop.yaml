@@ -20,7 +20,7 @@ helm.sh/hook-weight: "-6"
 {{- if .Values.manifests.job_datamover_db_drop }}
 {{- $serviceName := "triliovault_datamover" -}}
 {{- $dbToDrop := dict "adminSecret" .Values.secrets.oslo_db.admin "configFile" (printf "/etc/%s/%s.conf" "triliovault-datamover" "triliovault-datamover-api" ) "logConfigFile" (printf "/etc/%s/logging.conf" "triliovault-datamover" ) "configDbSection" "database" "configDbKey" "connection" -}}
-{{- $dbDropJob := dict "configMapBin" "triliovault-bin" "configMapEtc" "triliovault-etc" "envAll" . "serviceName" $serviceName "dbToDrop" $dbToDrop -}}
+{{- $dbDropJob := dict "configMapBin" "triliovault-bin-datamover-api" "configMapEtc" "triliovault-etc-datamover-api" "envAll" . "serviceName" $serviceName "dbToDrop" $dbToDrop -}}
 {{- if .Values.manifests.certificates -}}
 {{- $_ := set $dbDropJob "dbAdminTlsSecret" .Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal -}}
 {{- end -}}
