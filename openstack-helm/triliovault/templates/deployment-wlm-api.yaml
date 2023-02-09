@@ -47,8 +47,8 @@ spec:
 {{ tuple $envAll "triliovault" "wlm-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-wlm-hash: {{ tuple "configmap-bin-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-wlm-hash: {{ tuple "configmap-etc-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
