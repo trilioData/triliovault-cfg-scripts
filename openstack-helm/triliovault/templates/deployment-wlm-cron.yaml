@@ -144,7 +144,7 @@ spec:
             defaultMode: 0444
         - name: triliovault-wlm-bin
           configMap:
-            name: triliovault-bin
+            name: triliovault-bin-wlm
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
