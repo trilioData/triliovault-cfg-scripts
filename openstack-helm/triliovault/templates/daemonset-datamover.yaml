@@ -60,8 +60,8 @@ spec:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" $envAll | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" $envAll | include "helm-toolkit.utils.hash" }}
+        configmap-bin-datamover-hash: {{ tuple "configmap-bin-datamover.yaml" $envAll | include "helm-toolkit.utils.hash" }}
+        configmap-etc-datamover-hash: {{ tuple "configmap-etc-datamover.yaml" $envAll | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -339,8 +339,8 @@ spec:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-datamover-hash: {{ tuple "configmap-bin-datamover.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-datamover-hash: {{ tuple "configmap-etc-datamover.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
