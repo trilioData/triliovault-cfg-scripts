@@ -186,7 +186,7 @@ spec:
             path: /lib/modules
         - name: triliovault-wlm-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-wlm
             defaultMode: 0444
         - name: triliovault-wlm-bin
           configMap:
