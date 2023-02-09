@@ -124,7 +124,7 @@ spec:
           emptyDir: {}
         - name: triliovault-datamover-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-datamover-api
             defaultMode: 0444
         - name: triliovault-datamover-bin
           configMap:

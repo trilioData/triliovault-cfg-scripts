@@ -256,7 +256,7 @@ spec:
             path: /var/log/triliovault
         - name: triliovault-datamover-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-datamover
             defaultMode: 0444
         - name: triliovault-datamover-bin
           configMap:
@@ -541,7 +541,7 @@ spec:
             path: /var/log/triliovault
         - name: triliovault-datamover-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-datamover
             defaultMode: 0444
         - name: triliovault-datamover-bin
           configMap:
