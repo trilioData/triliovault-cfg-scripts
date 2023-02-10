@@ -41,8 +41,8 @@ spec:
 {{ tuple $envAll "triliovault" "datamover-api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-datamover-api-hash: {{ tuple "configmap-bin-datamover-api.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-datamover-api-hash: {{ tuple "configmap-etc-datamover-api.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -124,11 +124,11 @@ spec:
           emptyDir: {}
         - name: triliovault-datamover-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-datamover-api
             defaultMode: 0444
         - name: triliovault-datamover-bin
           configMap:
-            name: triliovault-bin
+            name: triliovault-bin-datamover-api
             defaultMode: 0555
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}

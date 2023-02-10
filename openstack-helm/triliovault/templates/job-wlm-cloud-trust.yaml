@@ -106,7 +106,7 @@ spec:
           emptyDir: {}
         - name: triliovault-wlm-cloud-trust-sh
           configMap:
-            name: "triliovault-bin"
+            name: "triliovault-bin-wlm"
             defaultMode: 0555
 {{- dict "enabled" true "name" $tlsSecret | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- end }}
