@@ -48,8 +48,8 @@ spec:
 {{ tuple $envAll "triliovault" "wlm-cron" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-wlm-hash: {{ tuple "configmap-bin-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-wlm-hash: {{ tuple "configmap-etc-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -105,9 +105,6 @@ spec:
                   - stop
           volumeMounts:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
-            - name: pod-shared-triliovault-wlm-cron
-              mountPath: /etc/workloadmgr/workloadmgr.conf
-              subPath: triliovault-wlm-ids.conf
             - name: pod-tmp
               mountPath: /tmp
             - name: varlogtriliovault
@@ -143,11 +140,11 @@ spec:
             path: /var/log/triliovault
         - name: triliovault-wlm-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-wlm
             defaultMode: 0444
         - name: triliovault-wlm-bin
           configMap:
-            name: triliovault-bin
+            name: triliovault-bin-wlm
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
