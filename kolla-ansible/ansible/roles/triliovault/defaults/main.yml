@@ -19,7 +19,6 @@ triliovault_services:
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request {{ trilio_datamover_api_haproxy_http_request_timeout }}"
-          - "timeout http-keep-alive {{ trilio_datamover_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -38,7 +37,6 @@ triliovault_services:
         frontend_http_extra:
           - "retries 5"
           - "timeout http-request {{ trilio_datamover_api_haproxy_http_request_timeout }}"
-          - "timeout http-keep-alive {{ trilio_datamover_api_haproxy_http_keep_alive_timeout }}"
           - "timeout queue 10m"
           - "timeout connect 10m"
           - "timeout client 10m"
@@ -273,9 +271,7 @@ triliovault_wlm_api_listen_port: 8781
 # HAproxy
 #####################
 trilio_datamover_api_haproxy_http_request_timeout: "10m"
-trilio_datamover_api_haproxy_http_keep_alive_timeout: "10m"
 trilio_wlm_api_haproxy_http_request_timeout: "10m"
-trilio_wlm_api_haproxy_http_keep_alive_timeout: "10m"
 
 
 ####################
