@@ -2024,7 +2024,7 @@ data:
     
     
     set -ex
-    exec alembic --config /etc/workloadmgr/workloadmgr.conf upgrade head
+    exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
   db-drop.py: |    
     #!/usr/bin/env python
     
@@ -4230,10 +4230,6 @@ spec:
               mountPath: /tmp
             - name: vartrilio
               mountPath: /var/trilio/
-            - name: triliovault-wlm-etc
-              mountPath: /etc/workloadmgr/workloadmgr.conf
-              subPath: triliovault-wlm.conf
-              readOnly: true
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf

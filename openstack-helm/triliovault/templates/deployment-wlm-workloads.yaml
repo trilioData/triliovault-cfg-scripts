@@ -49,8 +49,8 @@ spec:
 {{ tuple $envAll "triliovault" "wlm-workloads" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
-        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
-        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-wlm-hash: {{ tuple "configmap-bin-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-wlm-hash: {{ tuple "configmap-etc-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -104,10 +104,6 @@ spec:
                   - stop
           volumeMounts:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
-            - name: pod-shared-triliovault-wlm-workloads
-              mountPath: /etc/workloadmgr/workloadmgr.conf
-              subPath: triliovault-wlm-ids.conf
-              readOnly: true
             - name: pod-tmp
               mountPath: /tmp
             - name: dev
@@ -190,11 +186,11 @@ spec:
             path: /lib/modules
         - name: triliovault-wlm-etc
           secret:
-            secretName: triliovault-etc
+            secretName: triliovault-etc-wlm
             defaultMode: 0444
         - name: triliovault-wlm-bin
           configMap:
-            name: triliovault-bin
+            name: triliovault-bin-wlm
             defaultMode: 0555
         {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) }}
         {{- $share_ip := index .Values.conf.triliovault.nfs.multi_ip_nfs_shares "triliovault-control-plane" "ip" }}
