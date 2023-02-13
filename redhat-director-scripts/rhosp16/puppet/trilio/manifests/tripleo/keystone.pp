@@ -30,10 +30,6 @@ class trilio::tripleo::keystone (
     }
     if hiera('triliovault_wlm_api_enabled', false) {
       include ::trilio::wlmapi::keystone::auth
-      exec{ "get keystone resources":
-          command => '/etc/triliovault-wlm/get_keystone_resources.sh',
-          provider => shell,
-      }
     }
   }
 }
