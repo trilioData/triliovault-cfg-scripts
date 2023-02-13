@@ -380,7 +380,7 @@ outputs:
             config_image: {get_param: ContainerKeystoneConfigImage}
             volumes:
                 - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
-                - /var/lib/config-data/puppet-generated/triliovaultwlmapi/etc/triliovault-wlm:/etc/triliovault-wlm:rw
+                - /var/lib/config-data/puppet-generated/triliovaultwlmcron/etc/triliovault-wlm:/etc/triliovault-wlm:rw
       host_prep_tasks:
         - name: create triliovault wlm cron log directory
           file:

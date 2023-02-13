@@ -365,7 +365,7 @@ outputs:
             config_image: {get_param: ContainerKeystoneConfigImage}
             volumes:
                 - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
-                - /var/lib/config-data/puppet-generated/triliovaultwlmapi/etc/triliovault-wlm:/etc/triliovault-wlm:rw
+                - /var/lib/config-data/puppet-generated/triliovaultwlmscheduler/etc/triliovault-wlm:/etc/triliovault-wlm:rw
         step_5:
           triliovault_wlm_scheduler:
             image: {get_param: ContainerTriliovaultWlmImage}
