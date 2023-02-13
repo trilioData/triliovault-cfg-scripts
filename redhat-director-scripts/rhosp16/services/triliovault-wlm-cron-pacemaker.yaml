@@ -372,15 +372,6 @@ outputs:
             volumes:
               - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
             command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']
-        step_4:
-          wlm_cron_config_dynamic:
-            config_volume: 'triliovault_wlm_api_config_dynamic_tasks'
-            puppet_tags: 'wlmapiconfigdynamic'
-            step_config: 'include ::trilio::wlmapi::config_dynamic'
-            config_image: {get_param: ContainerKeystoneConfigImage}
-            volumes:
-                - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
-                - /var/lib/config-data/puppet-generated/triliovaultwlmapi/etc/triliovault-wlm:/etc/triliovault-wlm:rw
       host_prep_tasks:
         - name: create triliovault wlm cron log directory
           file:
