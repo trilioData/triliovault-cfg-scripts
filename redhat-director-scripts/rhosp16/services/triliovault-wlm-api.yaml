@@ -421,44 +421,34 @@ outputs:
               recurse: true
       container_puppet_tasks:
         step_3:
-          map_merge:
-            - wlm_api_keystone_init:
-              config_volume: 'triliovault_wlm_api_keystone_init_tasks'
-              puppet_tags: 'keystone_config'
-              step_config: 'include ::trilio::tripleo::keystone'
-              config_image: {get_param: ContainerKeystoneConfigImage}
-              volumes:
-                  - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
-            - config_volume: 'triliovault_wlm_api_mysql_init_bundle'
-              puppet_tags: 'mysql_database,mysql_grant,mysql_user'
-              step_config: 'include ::trilio::tripleo::mysql_wlmapi'
-              config_image: {get_param: ContainerMysqlConfigImage}
-              volumes:
-                list_concat:
-                -
-                  - /var/lib/mysql:/var/lib/mysql/:rw
-                  - /var/log/containers/mysql:/var/log/mariadb
-                  - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
-                - if:
-                  - internal_tls_enabled
-                  -
-                    - list_join:
-                      - ':'
-                      - - {get_param: InternalTLSCAFile}
-                        - {get_param: InternalTLSCAFile}
-                        - 'ro'
-                    - /etc/pki/tls/certs/mysql.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/mysql.crt:ro
-                    - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
-                  - null
+          config_volume: 'triliovault_wlm_api_mysql_init_bundle'
+          puppet_tags: 'mysql_database,mysql_grant,mysql_user'
+          step_config: 'include ::trilio::tripleo::mysql_wlmapi'
+          config_image: {get_param: ContainerMysqlConfigImage}
+          volumes:
+            list_concat:
+            -
+              - /var/lib/mysql:/var/lib/mysql/:rw
+              - /var/log/containers/mysql:/var/log/mariadb
+              - /var/lib/config-data/puppet-generated/mysql/root:/root:rw
+            - if:
+              - internal_tls_enabled
+              -
+                - list_join:
+                  - ':'
+                  - - {get_param: InternalTLSCAFile}
+                    - {get_param: InternalTLSCAFile}
+                    - 'ro'
+                - /etc/pki/tls/certs/mysql.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/mysql.crt:ro
+                - /etc/pki/tls/private/mysql.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/mysql.key:ro
+              - null          
         step_4:
-          wlm_api_config_dynamic:
-            config_volume: 'triliovault_wlm_api_config_dynamic_tasks'
-            puppet_tags: 'wlmapiconfigdynamic'
-            step_config: 'include ::trilio::wlmapi::config_dynamic'
-            config_image: {get_param: ContainerKeystoneConfigImage}
-            volumes:
-                - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
-                - /var/lib/config-data/puppet-generated/triliovaultwlmapi/etc/triliovault-wlm:/etc/triliovault-wlm:rw
+          config_volume: 'triliovault_wlm_api_keystone_init_tasks'
+          puppet_tags: 'keystone_config'
+          step_config: 'include ::trilio::tripleo::keystone'
+          config_image: {get_param: ContainerKeystoneConfigImage}
+          volumes:
+              - /var/lib/config-data/puppet-generated/keystone/etc/keystone:/etc/keystone:rw
       docker_config:
         step_2:
           triliovault_wlm_api_init_log:
