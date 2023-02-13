@@ -372,6 +372,7 @@ outputs:
             volumes:
               - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
             command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']
+      container_puppet_tasks:
         step_4:
           wlm_cron_config_dynamic:
             config_volume: 'triliovault_wlm_api_config_dynamic_tasks'
