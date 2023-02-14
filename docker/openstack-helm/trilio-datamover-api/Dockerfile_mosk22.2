@@ -1,0 +1,47 @@
+#ARG FROM=openstackhelm/nova:victoria-ubuntu_focal
+#FROM ${FROM}
+FROM openstackhelm/nova:victoria-ubuntu_focal
+MAINTAINER  kanav.malhotra@trilio.io
+LABEL name="trilio/trilio-datamover-api" \
+      version="5.0.1" \
+      release="5.0" \
+      vendor="TrilioData" \
+      summary="TrilioData Datamover API" \
+      description="TrilioData Datamover API container image" \
+      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+
+ARG PROJECT_DIR=trilio-datamover
+ARG OPENSTACK_REPO=cloud-archive:victoria
+
+
+# Switch to root and install a custom RPM, etc.
+USER root
+
+# Install the pre-requisite packages 
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        apt-utils \
+        software-properties-common \
+        ca-certificates  \
+        vim  \
+        less  \
+        iputils-ping
+
+# Install datamover packages
+COPY trilio.list /etc/apt/sources.list.d/
+
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+RUN set -ex \
+    && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
+       python3-dmapi 
+
+RUN mkdir -p /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} \
+    && chown -R dmapi.dmapi /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR}
+
+# Copy license file
+RUN mkdir /licenses
+
+# Become dmapi user for further operations
+USER dmapi

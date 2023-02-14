@@ -3,7 +3,7 @@
 - name: Collect static files for horizon
   shell: "{{virtual_env}} && {{PYTHON_VERSION}} {{ MANAGE_FILE }}  collectstatic --noinput"
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: compress the collected files
   shell: "{{virtual_env}} && nohup {{PYTHON_VERSION}} {{ MANAGE_FILE }} compress --force"
@@ -12,7 +12,7 @@
   register: compress_result
   until: compress_result.rc == 0
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: write content into destination file - sync_static.py
   template: src="sync_static.py" dest="/tmp/sync_static.py"
@@ -30,7 +30,7 @@
   args:
     chdir: "{{HORIZON_PATH}}"
   notify:
-     - restart webserver
+    - restart webserver
 
 - name: remove temporary file - sync_static.py
   file: path=/tmp/sync_static.py state=absent
@@ -61,28 +61,6 @@
   when:
     - (os_local_settings_path != '')
     - (loc_sett_path_len|int == 1)
-
-- set_fact: 
-    OPENSTACK_ENCRYPTION: >
-      {{ 'True' if ((groups['key-manager_hosts'] is defined) and (groups['key-manager_hosts'] | length > 0)) and
-      (os_local_settings_path != "") else 'False' }}
-
-- name: SET OPENSTACK_ENCRYPTION_SUPPORT
-  lineinfile:
-    path: "/etc/horizon/local_settings.py"
-    regexp: "^OPENSTACK_ENCRYPTION_SUPPORT ="
-    line: OPENSTACK_ENCRYPTION_SUPPORT = {{ OPENSTACK_ENCRYPTION }}
-
-- set_fact: 
-    TRILIO_ENCRYPTION: >
-      {{ 'False' if (ansible_distribution == 'CentOS' and ansible_distribution_major_version | int <= 7) or
-      (ansible_distribution == 'RedHat' and ansible_distribution_major_version | int <= 7) else 'True' }}
-
-- name: SET TRILIO_ENCRYPTION_SUPPORT
-  lineinfile:
-    path: "/etc/horizon/local_settings.py"
-    regexp: "^TRILIO_ENCRYPTION_SUPPORT ="
-    line: TRILIO_ENCRYPTION_SUPPORT = {{ TRILIO_ENCRYPTION }}
 
 - name: Display local_settings.d path
   debug:

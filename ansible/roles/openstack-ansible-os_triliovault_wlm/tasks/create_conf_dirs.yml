@@ -1,0 +1,19 @@
+---
+- name: Create triliovault log dir
+  file:
+    path: "{{ triliovault_log_dir }}"
+    mode: '0755'
+    recurse: yes
+    owner: nova
+    group: nova
+    state: directory
+
+- name: Create triliovault mount dir
+  file:
+    path: "{{ triliovault_mnt_dir }}"
+    state: directory
+    mode: '0777'
+    recurse: yes
+    owner: nova
+    group: nova
+    state: directory

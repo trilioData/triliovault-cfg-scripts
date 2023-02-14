@@ -1,21 +1,21 @@
-- name: ensure that {{TVAULT_DATA_DIR}} is present
-  file: name="{{TVAULT_DATA_DIR}}" mode={{TVAULT_DATA_DIR_MODE}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
+- name: ensure that {{TRILIOVAULT_MNT_DIR}} is present
+  file: name="{{TRILIOVAULT_MNT_DIR}}" mode={{TRILIOVAULT_MNT_DIR_MODE}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
 
 - block:
-  - name: TVAULT_DATA_DIR_OLD present or not
-    stat: path="{{TVAULT_DATA_DIR_OLD}}"
+  - name: TRILIOVAULT_MNT_DIR_OLD present or not
+    stat: path="{{TRILIOVAULT_MNT_DIR_OLD}}"
     register: tvault_data_dir_old
 
-  - name: Remove file from TVAULT_DATA_DIR_OLD
-    shell: rm -rf {{TVAULT_DATA_DIR_OLD}}/*
+  - name: Remove file from TRILIOVAULT_MNT_DIR_OLD
+    shell: rm -rf {{TRILIOVAULT_MNT_DIR_OLD}}/*
     when: tvault_data_dir_old.stat.exists == True
 
-  - name: Ensure TVAULT_DATA_DIR_OLD directory has permission
-    file: name="{{TVAULT_DATA_DIR_OLD}}" owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}}
+  - name: Ensure TRILIOVAULT_MNT_DIR_OLD directory has permission
+    file: name="{{TRILIOVAULT_MNT_DIR_OLD}}" owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}}
     when: tvault_data_dir_old.stat.exists == True
 
-  - name: ensure that {{TVAULT_DATA_DIR_OLD}} is present
-    file: name="{{TVAULT_DATA_DIR_OLD}}" mode={{TVAULT_DATA_DIR_MODE}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
+  - name: ensure that {{TRILIOVAULT_MNT_DIR_OLD}} is present
+    file: name="{{TRILIOVAULT_MNT_DIR_OLD}}" mode={{TRILIOVAULT_MNT_DIR_MODE}} owner={{TVAULT_CONTEGO_EXT_USER}} group={{TVAULT_CONTEGO_EXT_GROUP}} state=directory
   when: NFS != True
 
 - name: create logrotate file for tvault-contego.log

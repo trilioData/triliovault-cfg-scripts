@@ -1,7 +1,4 @@
 ---
-- name: Removing Contego from virtual environment
-  file: path=/home/tvault/.virtenv/lib/python2.7/site-packages/contego state=absent
-
 - import_tasks: get_venv.yml
 
 - name: Remove tvault-contego-virtenv.tar.gz

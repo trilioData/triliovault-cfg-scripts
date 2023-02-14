@@ -1,0 +1,26 @@
+## Version of Nova virtual env to deploy into
+nova_venv_tag: "{{ venv_tag | default('untagged') }}"
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
+
+## Required Directories
+TRILIOVAULT_MNT_DIR: "/var/triliovault-mounts"
+TRILIOVAULT_OBJ_STR: "/etc/triliovault-object-store"
+
+TRILIOVAULT_LOG_DIR: "/var/log/triliovault"
+TRILIOVAULT_CFG_DIR: "/etc/triliovault-datamover"
+
+TRILIOVAULT_MNT_DIR_OLD: "/var/triliovault"
+TRILIOVAULT_MNT_DIR_MODE: 0775
+
+DATAMOVER_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-datamover.log"
+DATAMOVER_LOG_CONF: "{{ TRILIOVAULT_CFG_DIR }}/datamover_logging.conf"
+
+OBJECTSTORE_LOG_CONF: "{{ TRILIOVAULT_OBJ_STR }}/object_store_logging.conf"
+OBJECTSTORE_LOG_FILE: "{{ TRILIOVAULT_LOG_DIR }}/triliovault-object-store.log"
+
+## Triliovault Debian Repo string
+TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
+
+### Triliovault RHEL Repo string
+TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"

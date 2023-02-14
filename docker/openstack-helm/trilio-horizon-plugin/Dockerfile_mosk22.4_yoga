@@ -1,0 +1,27 @@
+FROM mirantis.azurecr.io/openstack/horizon:yoga-focal-20220905101550
+
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="triliovault-horizon-helm" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="5.0.0" \
+      release="5.0" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Mirantis OpenStack on Kubernetes 22.4 Yoga"
+
+## Become root
+USER root
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+
+RUN cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/enabled/ && \
+    cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/templatetags/ && \
+    cp /var/lib/openstack/lib/python3.8/site-packages/trilio_dashboard/local/local_settings.d/_001_trilio_dashboard.py /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/local/local_settings.d/
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+## Become horizon user
+USER horizon

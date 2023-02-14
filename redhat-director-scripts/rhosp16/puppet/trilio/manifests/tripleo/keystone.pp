@@ -25,8 +25,15 @@ class trilio::tripleo::keystone (
   }
 
   if $manage_endpoint {
-    if hiera('trilio_datamover_api_enabled', false) {
-      include ::trilio::keystone::auth
+    if hiera('triliovault_datamover_api_enabled', false) {
+      include ::trilio::dmapi::keystone::auth
+    }
+    if hiera('triliovault_wlm_api_enabled', false) {
+      include ::trilio::wlmapi::keystone::auth
+      exec{ "get keystone resources":
+          command => '/etc/triliovault-wlm/get_keystone_resources.sh',
+          provider => shell,
+      }
     }
   }
 }

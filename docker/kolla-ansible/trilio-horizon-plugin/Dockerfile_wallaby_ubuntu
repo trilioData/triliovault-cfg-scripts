@@ -1,0 +1,28 @@
+FROM kolla/ubuntu-binary-horizon:wallaby
+MAINTAINER Trilio shiwanand.bicchewar@trilio.io
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shiwanand.bicchewar@trilio.io" \
+      vendor="Trilio" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
+
+##Install horizon packages
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt update -y
+
+##Install Triliovault-Horizon-Plugin packages
+RUN apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient python3-contegoclient --allow-unauthenticated
+
+##Copy necessary files
+RUN cp -r /usr/lib/python3/dist-packages/trilio_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+RUN cp -r /usr/lib/python3/dist-packages/trilio_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses

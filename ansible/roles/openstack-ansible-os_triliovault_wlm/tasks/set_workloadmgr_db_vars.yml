@@ -1,0 +1,7 @@
+---
+
+- set_fact:
+     wlm_db_setup_host: "{{ openstack_db_setup_host | default('localhost') }}"
+
+- set_fact:
+     wlm_db_setup_python_interpreter: "{{ openstack_db_setup_python_interpreter | default((wlm_db_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable'])) }}"

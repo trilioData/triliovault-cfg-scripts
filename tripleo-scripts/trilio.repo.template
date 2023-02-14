@@ -1,5 +1,0 @@
-[trilio]
-name=Trilio Repository
-baseurl=http://TVAULTIP:8085/yum-repo/
-enabled=1
-gpgcheck=0

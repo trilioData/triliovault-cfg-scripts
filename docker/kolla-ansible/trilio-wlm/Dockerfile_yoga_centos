@@ -1,0 +1,56 @@
+FROM quay.io/openstack.kolla/centos-source-nova-api:yoga
+MAINTAINER Trilio shyam.biradar@trilio.io
+
+LABEL name="trilio/triliovault-wlm" \
+      org.opencontainers.image.authors="shyam.biradar@trilio.io" \
+      vendor="Trilio" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="Kolla Ansible Openstack CentOS-Stream-8 nova-api Trilio TrilioVaultWLM" \
+      description="Kolla Ansible Openstack CentOS-Stream-8 nova-api Trilio TrilioVaultWLM container image"
+
+
+# switch to root and install a custom RPM packages, etc.
+USER root
+
+# temporary fix
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Add trilio.repo which contains the path for TrilioVaultWLM RPM packages
+ADD trilio.repo /etc/yum.repos.d/
+
+## INSTALL REQUIRED PACKAGES
+RUN set -ex \
+     && dnf update -y \
+     && dnf install -y centos-release-openstack-wallaby python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
+     && dnf install -y epel-release fuse python3-neutronclient python3-retrying python3-cryptography
+
+RUN yum config-manager --set-enabled powertools
+RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock && pip3 install jinja2
+RUN dnf -y install python3-tzlocal
+
+
+# Installing TrilioVaultWLM packages
+RUN dnf install workloadmgr python3-workloadmgrclient-el8  python3-contegoclient-el8 python3-s3fuse-plugin -y
+
+##Copy conf files
+RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
+RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
+    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store  /var/lib/workloadmgr \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+
+## Kolla specific settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
+
+## Nova user changes
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
+
+##Clean subscription
+RUN dnf clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Become nova user for further operations
+USER nova

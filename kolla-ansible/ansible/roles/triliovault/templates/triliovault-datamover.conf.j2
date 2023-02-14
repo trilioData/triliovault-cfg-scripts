@@ -21,7 +21,7 @@ vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
 vault_s3_region_name = {{ triliovault_s3_region_name }}
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
-vault_s3_auth_version = {{ triliovault_s3_auth_version }}
+{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl_cert =
 
 {% elif triliovault_backup_target == "other_s3_compatible" %}
@@ -35,15 +35,17 @@ vault_s3_region_name = {{ triliovault_s3_region_name }}
 vault_s3_bucket = {{ triliovault_s3_bucket_name }}
 vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
-vault_s3_auth_version = {{ triliovault_s3_auth_version }}
+{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
-vault_s3_ssl_cert = /etc/tvault-contego/{{ triliovault_s3_ssl_cert_file_name }}
+vault_s3_ssl_cert = /etc/triliovault-datamover/triliovault-s3.pem
 
 {% endif %}
 
 vault_data_directory_old = /var/triliovault
 vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
-log_file = /var/log/kolla/triliovault-datamover/tvault-contego.log
+
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+
 debug = False
 verbose = True
 max_uploads_pending = 3
@@ -52,7 +54,7 @@ max_commit_pending = 3
 dmapi_transport_url = {{ rpc_transport_url }}
 
 [dmapi_database]
-connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_database_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
 
 {% if cinder_backend_ceph == "yes" %}
 

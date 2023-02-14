@@ -1,0 +1,28 @@
+---
+- name: Create triliovault datamover log dir
+  file:
+    path: "{{ TRILIOVAULT_LOG_DIR }}"
+    mode: '0755'
+    recurse: yes
+    owner: nova
+    group: nova
+    state: directory
+
+- name: Create triliovault datamover conf dir
+  file:
+    path: "{{ TRILIOVAULT_CFG_DIR }}"
+    mode: '0755'
+    recurse: yes
+    owner: root
+    group: nova
+    state: directory
+
+- name: Create triliovault datamover mount dir
+  file:
+    path: "{{ TRILIOVAULT_MNT_DIR }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+    owner: nova
+    group: nova
+    state: directory 

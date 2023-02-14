@@ -13,43 +13,52 @@ class trilio::contego::config inherits trilio::contego {
       })
 
 
-    file { '/etc/tvault-contego/':
+    file { '/etc/triliovault-datamover/':
         ensure => 'directory',
-    }
-
-    if $backup_target_type == 'nfs' {
-        file { "/etc/tvault-contego/tvault-contego.conf":
-            ensure  => present,
-            content => template('trilio/contego_nfs_conf.erb'),
-        }    
-    }
-    elsif $backup_target_type == 's3' {
-        if $s3_type == 'amazon_s3' {
-            file { "/etc/tvault-contego/tvault-contego.conf":
-                ensure  => present,
-                content => template('trilio/contego_amazon_s3_conf.erb'),
-            }    
-        }
-        elsif $s3_type == 'ceph_s3' {
-            file { "/etc/tvault-contego/tvault-contego.conf":
-                ensure  => present,
-                content => template('trilio/contego_ceph_s3_conf.erb'),
-            }    
-        }
-        else {
-            fail("s3_type is not valid")
-        }
-    }
-    else {
-         fail("backup_target_type is not valid")
-    }
-
-    file { "/etc/tvault-contego/s3-cert.pem":
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+    }->
+    file { "/etc/triliovault-datamover/triliovault-datamover.conf":
+        ensure  => present,
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        content => template('trilio/triliovault_datamover_conf.erb'),
+    }->
+    file { "/etc/triliovault-datamover/datamover_logging.conf":
+        ensure  => present,
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        content => template('trilio/datamover_logging_conf.erb'),
+    }->
+    file { "/etc/triliovault-datamover/s3-cert.pem":
         ensure => 'present',
         owner  => '42436',
         group  => '42436',
         mode   => '0644',
         source => 'puppet:///modules/trilio/s3-cert.pem',
+    }
+    file { "/etc/triliovault-datamover/fuse.conf":
+        ensure  => present,
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0644',
+        content => template('trilio/fuse.conf.erb'),
+    }->
+    file { '/opt/triliovault/':
+        ensure => 'directory',
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
+    }->
+    file { "/opt/triliovault/start_triliovault_datamover.sh":
+        ensure  => present,
+        content => template('trilio/start_triliovault_datamover_sh.erb'),
+        owner  => '42436',
+        group  => '42436',
+        mode   => '0755',
     }
 }
 

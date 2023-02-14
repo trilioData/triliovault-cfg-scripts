@@ -6,3 +6,15 @@ compute
 
 [triliovault-horizon:children]
 horizon
+
+[triliovault-wlm-api:children]
+control
+
+[triliovault-wlm-workloads:children]
+control
+
+[triliovault-wlm-scheduler:children]
+control
+
+[triliovault-wlm-cron:children]
+control

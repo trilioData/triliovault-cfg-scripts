@@ -1,0 +1,47 @@
+FROM kolla/centos-binary-nova-api:wallaby
+MAINTAINER Trilio shiwanand.bicchewar@tReporilio.io
+
+LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
+      maintainer="shiwanand.bicchewar@trilio.io" \
+      vendor="Trilio" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="Trilio trilio-datamover-api" \
+      description="Trilio trilio-datamover-api"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+# temporary fix
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Add Trilio RPM Repo
+ADD trilio.repo /etc/yum.repos.d/
+
+##Install Required Packages
+RUN set -ex \
+    && dnf update -y \
+    && dnf install -y epel-release \
+    && dnf install -y centos-release-openstack-wallaby python3-devel python3-nova
+
+##Install Triliovault-datamover-api packages
+RUN dnf install python3-dmapi -y
+
+## Create Config Dir
+RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
+    && chown -R dmapi:dmapi /var/log/triliovault \
+    && chown -R root:dmapi /etc/triliovault-datamover \
+    && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover
+
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+RUN usermod -aG kolla dmapi
+
+##Clean subscription
+RUN dnf clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Become nova user for further operations
+USER dmapi

@@ -1,0 +1,184 @@
+[DEFAULT]
+log_config_append = {{ wlm_log_cfg }}
+
+triliovault_hostnames = {{container_address}}
+config_status = configured
+
+state_path = {{ state_path }}
+rootwrap_config = {{ rootwrap_config }}
+
+wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
+api_paste_config = {{ wlm_api_paste }}
+
+sql_connection = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
+
+osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
+
+
+##OS Details
+cloud_admin_user_id = {{ cloud_admin_user_id }}
+cloud_admin_project_id = {{ CLOUD_ADMIN_PROJECT_ID }}
+
+cloud_admin_domain = {{ CLOUD_ADMIN_DOMAIN_ID }}
+cloud_admin_role = {{ wlm_service_role_name }}
+
+trustee_role  = {{ trustee_role }}
+domain_name = {{ CLOUD_ADMIN_DOMAIN_ID }}
+
+triliovault_user_domain_id = {{ wlm_service_user_domain_id }}
+cloud_unique_id = {{ wlm_user_id }}
+
+region_name_for_services = {{ wlm_service_region }}
+global_job_scheduler_override = False
+
+transport_url = {{ wlm_oslomsg_rpc_transport }}://{% for host in wlm_oslomsg_rpc_servers.split(',') %}{{ wlm_oslomsg_rpc_userid }}:{{ wlm_oslomsg_rpc_password }}@{{ host }}:{{ wlm_oslomsg_rpc_port }}{% if not loop.last %},{% else %}/{{ wlm_oslomsg_rpc_vhost }}{% if wlm_oslomsg_rpc_use_ssl | bool %}?ssl=1&ssl_version={{ wlm_oslomsg_rpc_ssl_version }}&ssl_ca_file={{ wlm_oslomsg_rpc_ssl_ca_file }}{% else %}?ssl=0{% endif %}{% endif %}{% endfor %}
+
+api_workers = 4
+workloads_workers = {{ workloads_workers }}
+
+glance_production_host = {{ internal_lb_vip_address }}
+glance_production_api_servers = {{ glance_endpoint_url }} 
+glance_api_version = {{ glance_api_version }}
+
+keystone_endpoint_url = {{ OS_AUTH_URL }}
+keystone_auth_version = 3
+
+cinder_production_endpoint_template = {{ cinder_endpoint_url }}
+
+nova_admin_auth_url = {{ OS_AUTH_URL }}
+nova_production_endpoint_template = {{ nova_endpoint_url }}
+
+neutron_admin_auth_url = {{ OS_AUTH_URL }}
+neutron_production_url = {{ neutron_endpoint_url }}
+
+
+# The path to store the taskflow data
+taskflow_path = {{ TASKFLOW_PATH }}
+
+# max cache size to keep up-to entries in memory
+taskflow_max_cache_size = {{ TASKFLOW_CACHE }}
+
+rabbit_virtual_host = {{wlm_oslomsg_rpc_vhost}}
+compute_driver = libvirt.LibvirtDriver
+
+vault_storage_das_device = none
+
+{% if (NFS|bool == True) and (S3|bool == False)%}
+
+vault_storage_type = nfs
+vault_storage_nfs_export = {{ NFS_SHARES|join(' ')}}
+
+vault_storage_nfs_options = {{ NFS_OPTIONS }}
+{% endif %}
+
+{% if S3|bool == True %}
+
+vault_storage_type = s3
+vault_storage_nfs_export = TrilioVault
+vault_s3_access_key_id = {{ VAULT_S3_ACCESS_KEY }}
+vault_s3_secret_access_key = {{ VAULT_S3_SECRET_ACCESS_KEY }}
+vault_s3_region_name = {{ VAULT_S3_REGION_NAME }}
+vault_s3_bucket = {{ VAULT_S3_BUCKET }}
+
+{% if s3_type == Other_S3_Compatible %}
+{% if VAULT_S3_SIGNATURE_VERSION is defined and VAULT_S3_SIGNATURE_VERSION != "" %}
+vault_s3_signature_version = {{ VAULT_S3_SIGNATURE_VERSION }}
+{% else %}
+vault_s3_signature_version = default
+{% endif %}
+{% if VAULT_S3_AUTH_VERSION is defined and VAULT_S3_AUTH_VERSION != "" %}
+vault_s3_auth_version = {{ VAULT_S3_AUTH_VERSION }}
+{% else %}
+vault_s3_auth_version = DEFAULT
+{% endif %}
+vault_s3_ssl = {{VAULT_S3_SECURE}}
+{% endif %}
+vault_enable_threadpool = True
+vault_s3_support_empty_dir = False
+{% endif %}
+
+{% if VAULT_S3_SSL_CERT != "" and s3_type == Other_S3_Compatible %}
+vault_s3_ssl_cert = {{WLM_S3_SSL_CERT_PATH}}
+{% else %}
+vault_s3_ssl_cert =
+{% endif %}
+
+
+vault_data_directory_old = /var/triliovault
+vault_data_directory = {{ triliovault_mnt_dir }}
+
+#The amount of time(in hrs) that snapshot upload operation should wait for the upload
+max_wait_for_upload = {{ max_wait_upload }}
+
+neutron_api_insecure = false
+
+[global_job_scheduler]
+# misfire_grace_time is the grace time in which the global job scheduler will consider to
+# trigger the missed snapshots
+# The value is in seconds
+misfire_grace_time = {{ misfire_grace_time }}
+
+[s3fuse_sys_admin]
+helper_command = sudo {{ workloadmgr_rootwrap }} {{ rootwrap_config }} privsep-helper
+
+[keystone_authtoken]
+admin_tenant_name = {{ wlm_service_project_name }}
+signing_dir = {{ signing_dir }}
+
+project_name = {{ wlm_service_project_name }}
+auth_url = {{ OS_AUTH_URL }}/v3
+
+www_authenticate_uri = {{ keystone_service_internaluri }}/v3
+auth_type = {{ auth_type }}
+
+username = {{ wlm_service_user_name }}
+password = {{ wlm_service_password }}
+
+admin_user = {{ wlm_service_user_name }}
+admin_password = {{ wlm_service_password }}
+
+project_domain_id = {{ wlm_service_project_domain_id }}
+user_domain_id = {{ wlm_service_user_domain_id }}
+
+auth_plugin = {{ wlm_keystone_auth_plugin }}
+
+#Uncomment to add self signed cert file path otherwise by default public root certificates will be used.
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_SSL_CERT_PATH }}
+{% else %}
+#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+{% endif %}
+ 
+insecure = False
+
+[clients]
+client_retry_limit = {{ client_retry_limit }}
+endpoint_type  = {{ OS_ENDPOINT_TYPE }}
+
+{% if OS_CA_CERT != "" %}
+cafile = {{ OS_SSL_CERT_PATH }}
+{% else %}
+#cafile = {{ wlm_oslomsg_rpc_ssl_ca_file }}
+{% endif %}
+insecure = false
+
+
+[alembic]
+{% if venv_path is defined  and venv_path|length > 0 %}
+script_location = {{ venv_path }}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo
+version_locations = {{venv_path}}/lib/python3.6/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions
+
+{% else %}
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
+
+{% endif %}
+sqlalchemy.url = mysql+pymysql://{{ wlm_galera_user }}:{{ wlm_galera_password }}@{{ wlm_galera_address }}/{{ wlm_galera_database }}?charset=utf8{% if wlm_galera_use_ssl | bool %}&ssl_ca={{ wlm_galera_ssl_ca_cert }}{% endif %}
+
+
+[filesearch]
+process_timeout = {{ process_timeout }}
+
+[barbican]
+encryption_support = {{ barbican_encryption }}
+

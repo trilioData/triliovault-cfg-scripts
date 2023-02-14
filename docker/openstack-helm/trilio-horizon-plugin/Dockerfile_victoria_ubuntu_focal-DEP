@@ -1,0 +1,44 @@
+FROM docker.io/openstackhelm/horizon:victoria-ubuntu_focal
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="4.2.0" \
+      release="4.2" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Mosk deployed OpenStack on ubuntu platform"
+
+ARG OPENSTACK_REPO=cloud-archive:victoria
+    
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+# Install pre-requisite packages 
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        software-properties-common  apt-utils vim  less  iputils-ping
+
+
+##Install triliovault-horizon plugin packages
+ADD trilio.list /etc/apt/sources.list.d/
+RUN mkdir -p /var/lib/openstack/share/openstack-dashboard
+ADD manage.py  /var/lib/openstack/share/openstack-dashboard 
+RUN chmod 777 /var/lib/openstack/share/openstack-dashboard/manage.py
+
+RUN . /var/lib/openstack/bin/activate
+
+RUN apt update -y
+RUN ln -s /var/lib/openstack/bin/python /usr/bin/python
+RUN echo "/var/lib/openstack/lib/python3.8/site-packages" > /usr/lib/python3/dist-packages/trilio_horizon.pth
+
+RUN  apt-add-repository ${OPENSTACK_REPO} 
+RUN apt-get install  -y python3-tvault-horizon-plugin python3-workloadmgrclient  --allow-unauthenticated
+RUN rm -f /var/lib/openstack/share/openstack-dashboard/manage.py
+
+RUN cp /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/enabled/
+RUN cp /usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /var/lib/openstack/lib/python3.8/site-packages/openstack_dashboard/templatetags/
+
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses

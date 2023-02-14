@@ -63,3 +63,20 @@ dmapi_service_publicurl: "{{ dmapi_service_publicuri_proto }}://{{ external_lb_v
 dmapi_service_internalurl: "{{ dmapi_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ dmapi_service_port }}"
 dmapi_service_adminurl: "{{ dmapi_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ dmapi_service_port }}"
 
+## New Vars
+trilio_apt_repo_file_path: /etc/apt/sources.list.d/trilio.list
+trilio_yum_repo_file_path: /etc/yum.repos.d/trilio.repo
+
+DMAPI_LOG_DIR: "/var/log/triliovault"
+DMAPI_LOG_FILE: "{{ DMAPI_LOG_DIR }}/triliovault-datamover-api.log"
+DMAPI_LOG_CONF: "/etc/triliovault-datamover/datamover_api_logging.conf"
+
+
+dmapi_cfg_dir: "/etc/triliovault-datamover"
+dmapi_cfg_file: "{{ dmapi_cfg_dir }}/triliovault-datamover-api.conf"
+
+## Triliovault Debian Repo string
+TRILIOVAULT_DEB_REPO_STRING: "triliodata-dev-stable-5-0"
+
+### Triliovault RHEL Repo string
+TRILIOVAULT_RPM_REPO_STRING: "triliodata-dev-stable-5-0"
