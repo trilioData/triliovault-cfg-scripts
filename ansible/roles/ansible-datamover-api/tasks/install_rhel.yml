@@ -12,11 +12,15 @@
       - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
     state: latest
 
-- name: install packages on datamover api container | {{ PYTHON_VERSION }} devel and nova packages
-  yum:
-    update_cache: yes
+- name: Install {{ PYTHON_VERSION }} devel package
+  package:
     name:
       - "{{ PYTHON_VERSION }}-devel"
+    state: latest
+
+- name: Install {{ PYTHON_VERSION }} nova package
+  package:
+    name:
       - "{{ PYTHON_VERSION }}-nova"
     state: latest
 
@@ -25,23 +29,18 @@
      src: datamover_url
      dest: /tmp/datamover_url
 
-- name: install tvault-datamover-api rpm package when using python2
-  yum:
-    update_cache: yes
-    name: dmapi
-    state: latest
-  notify:
-      - restart tvault-datamover-api
-  when: PYTHON_VERSION=="python2"
-      
-- name: install tvault-datamover-api rpm package when using python3
-  yum:
-    update_cache: yes
+- name: Install tvault-datamover-api RPM package
+  package:
     name: python3-dmapi
     state: latest
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
   when: PYTHON_VERSION=="python3"
+
+- name: create datamover_api_logging.conf file
+  template:
+    src: datamover_api_logging.conf.j2
+    dest: "{{ DMAPI_LOG_CONF }}"
 
 - name: Create dmapi group
   group:
@@ -61,31 +60,35 @@
 - name: change permission of datamover log file 
   file: path={{datamover_log_dir}} owner={{DMAPI_USR}} group={{DMAPI_GRP}} state=directory recurse=yes
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
 
 - name: find out path of dmapi bianry 
   shell: which dmapi-api
   register: dmapi_bin
 
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != ""
+
 - name: execute populate-conf binary
   shell: populate-conf
   register: populate_conf
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
 
 - name: create tvault-datamover-api service in systemd if ansible_distribution is Centos/RHEL
   template:
-     src: tvault_datamover_service.j2
-     dest: "{{datamover_service_file_path}}"
+    src: tvault_datamover_service.j2
+    dest: "{{datamover_service_file_path}}"
   register: create_systemd
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
 
 - name: enable and daemon reload tvault-datamover-api service
   shell: systemctl daemon-reload && systemctl enable tvault-datamover-api.service
   when: populate_conf.changed or create_systemd.changed
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
 
 - name: ensure /tmp/datamover_url file is deleted
   file: path="/tmp/datamover_url" state=absent

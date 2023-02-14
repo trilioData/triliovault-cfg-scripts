@@ -1,0 +1,239 @@
+---
+
+- name: Copy triliovault-yum-repo file
+  template:
+     src: trilio.repo
+     dest: "{{ trilio_yum_repo_file_path }}"
+
+- name: Install centos-release-openstack-{{OPENSTACK_DIST}}
+  package:
+    name:
+      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
+    state: latest
+
+- name: Install python36-devel
+  package:
+    name:
+      - "python36-devel"
+    state: latest
+   
+- name: Install libxslt-devel
+  package:
+    name:
+      - "libxslt-devel" 
+    state: latest
+
+- name: Install swig
+  package:
+    name:
+      - "swig" 
+    state: latest
+
+- name: Install libguestfs-tools
+  package:
+    name:
+      - "libguestfs-tools"
+    state: latest
+
+
+- name: Install pre-requisites packages for m2crypto
+  package:
+    name:
+      - "gcc"
+      - "gcc-c++"
+      - "make"
+      - "openssl-devel"
+    state: latest
+
+- name: Install m2crypto
+  pip:
+    name:
+      - "m2crypto" 
+    state: latest
+
+- name: Install epel-release
+  package:
+    name:
+      - "epel-release" 
+    state: latest
+
+- name: Install & upgrade pip
+  pip:
+    name: pip
+    executable: pip3
+    state: latest
+
+- name: Install jinja2
+  pip:
+    name: jinja2
+    state: latest
+
+- name: Install igraph
+  pip:
+    name: igraph
+    state: latest
+
+- name: Install namedatomiclock
+  pip:
+    name: namedatomiclock
+    state: latest
+
+- name: Install python3-tzlocal
+  dnf:
+    name: python3-tzlocal
+    state: latest
+
+- import_tasks: update_nova_uid_gid.yml
+
+- name: Install workloadmgr and python3-s3fuse-plugin packages
+  package:
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient-el8
+      - python3-contegoclient-el8
+      - python3-s3fuse-plugin
+    state: latest
+
+- import_tasks: create_conf_dirs.yml
+
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != ""
+
+- name: Create wlm_logging.conf
+  template:
+    src: wlm_logging.conf
+    dest: "{{ wlm_log_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
+  tags:
+    - update_cfg
+
+- name: Create object_store_logging.conf
+  template:
+    src: object_store_logging.conf.j2
+    dest: "{{ OBJECT_STORE_LOG_CFG }}"
+    owner: root
+    group: nova
+    mode: '0640'
+  when: 
+    - NFS == False
+  tags:
+    - update_cfg
+
+- import_tasks: get_cloud_details.yml
+
+- name: Copy workloadmgr.conf
+  template:
+    src: triliovault-wlm.conf.j2
+    dest: "{{ wlm_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
+  tags:
+    - update_cfg
+
+- name: Copy workloadmgr api-paste.ini 
+  template:
+    src: api-paste.ini.j2
+    dest: "{{ wlm_api_paste }}"
+    owner: root
+    group: nova
+    mode: '0640'
+  tags:
+    - update_cfg
+
+- name: Copy triliovault-object-store.conf
+  template:
+    src: triliovault-object-store.conf.j2
+    dest: "{{ triliovault_obj_sotre_cfg }}"
+    owner: root
+    group: nova
+    mode: '0640'
+  when: NFS == False
+  tags:
+    - update_cfg
+
+- name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+  file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
+
+- name: Check {{VAULT_S3_SSL_CERT}} is present OR not
+  stat: path="{{VAULT_S3_SSL_CERT}}"
+  register: tvault_ssl_cert_output
+  delegate_to: localhost
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
+
+- name: Deploy user provided S3-Cert {{VAULT_S3_SSL_CERT}}
+  copy:
+    src: "{{VAULT_S3_SSL_CERT}}"
+    dest: "{{WLM_S3_SSL_CERT_PATH}}"
+    owner: nova
+    group: nova
+    mode: '640'
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+    - tvault_ssl_cert_output.stat.exists == true 
+  tags:
+    - update_cfg
+
+- import_tasks: triliovault_db_sync.yml 
+
+- name: Start triliovault-object-store service
+  service:
+    name: tvault-object-store.service
+    state: restarted
+    enabled: yes
+  when: NFS == False
+
+- name: service Start Workloadmgr services
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  with_items:
+    - wlm-api
+    - wlm-workloads
+    - wlm-scheduler
+  tags:
+    - update_cfg
+
+- name: Start wlm-cron service on {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  with_items:
+    - wlm-cron
+  tags:
+    - update_cfg
+  when:
+    - "'{{ physical_host}}' == '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
+    - WLM_CRON_CONTROLLER_HOSTNAME != ""
+
+- name: Disable wlm-cron service except {{WLM_CRON_CONTROLLER_HOSTNAME}} host
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - wlm-cron
+  tags:
+    - update_cfg
+  when:
+    - "'{{ physical_host}}' != '{{ WLM_CRON_CONTROLLER_HOSTNAME }}'"
+    - WLM_CRON_CONTROLLER_HOSTNAME != ""
+

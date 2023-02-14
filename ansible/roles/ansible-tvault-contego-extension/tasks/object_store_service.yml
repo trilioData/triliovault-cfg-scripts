@@ -5,85 +5,76 @@
 
 - debug: msg="external s3:{{TVAULT_CONTEGO_EXT_S3}}" verbosity={{verbosity_level}}
 
-- name: Install tvault-object-store layer on centos/RedHat if Python2
-  yum:
-    update_cache: yes
-    name:
-      - python-s3fuse-plugin-cent7
-    state: latest
-  when: >
-      ((ansible_distribution_major_version=="7" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="7" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python2") or
-      (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python2"))
-
-- name: Install packages on compute node | centos-release-openstack-{{OPENSTACK_DIST}}
-  yum:
-    update_cache: yes
-    name:
-      - "centos-release-openstack-{{OPENSTACK_DIST | lower}}"
-    state: latest
-  when: >
-    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
-    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
-
-
-- name: Install tvault-object-store layer on centos/RedHat-8 if Python3
-  yum:
-    update_cache: yes
-    name:
-      - python3-s3fuse-plugin
-    state: latest
-  when: >
-    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="centos" and PYTHON_VERSION=="python3") or
-    (ansible_distribution_major_version=="8" and ansible_distribution | lower =="redhat" and PYTHON_VERSION=="python3")
-
-- block:
-  - name: Install tvault-object-store layer on Ubuntu if Python2
-    shell: |
-      curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-      dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
-      rm -rf s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
-    when: PYTHON_VERSION=="python2"
-
-  - name: Install tvault-object-store layer on Ubuntu if python3
-    shell: |
-        curl -Og6 http://{{IP_ADDRESS}}:{{ PORT_NO }}/deb-repo/deb-repo/python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-        dpkg --configure -a && apt-get -o Dpkg::Options::="--force-confold" install ./python3-s3-fuse-plugin_{{ TVAULT_PACKAGE_VERSION  }}_all.deb -y
-        rm -rf python3-s3-fuse-plugin_{{TVAULT_PACKAGE_VERSION}}_all.deb
-    when: PYTHON_VERSION=="python3"
-  when: ansible_distribution == ubuntu
-
-- block:
-  - name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
-    file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
-
-  - name: check {{VAULT_S3_SSL_CERT}} is present or not
-    stat: path="{{VAULT_S3_SSL_CERT}}"
-    register: tvault_ssl_cert_output
-    delegate_to: localhost
-
-  - name: Deploy user provided Tvault s3 {{VAULT_S3_SSL_CERT}}
-    copy:
-      src: "{{VAULT_S3_SSL_CERT}}"
-      dest: "{{VAULT_S3_SSL_CERT_PATH}}"
-    when:
-      - tvault_ssl_cert_output.stat.exists == true
-
+- name: Create {{VAULT_S3_SSL_CERT_DIR}} directory
+  file: name="{{VAULT_S3_SSL_CERT_DIR}}"  state=directory
   when:
       - VAULT_S3_SSL_CERT != ""
       - S3|bool == True
       - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
 
+- name: check {{VAULT_S3_SSL_CERT}} is present or not
+  stat: path="{{VAULT_S3_SSL_CERT}}"
+  register: tvault_ssl_cert_output
+  delegate_to: localhost
+  when:
+      - VAULT_S3_SSL_CERT != ""
+      - S3|bool == True
+      - s3_type == Other_S3_Compatible
+  tags:
+    - update_cfg
+
+- name: Deploy user provided Tvault s3 {{VAULT_S3_SSL_CERT}}
+  copy:
+    src: "{{VAULT_S3_SSL_CERT}}"
+    dest: "{{VAULT_S3_SSL_CERT_PATH}}"
+    owner: nova
+    group: nova
+    mode: '640'
+  when:
+    - VAULT_S3_SSL_CERT != ""
+    - S3|bool == True
+    - s3_type == Other_S3_Compatible
+    - tvault_ssl_cert_output.stat.exists == true
+  tags:
+    - update_cfg
 
 - name: populate object store parameters in conf file
   template:
     src: tvault-object-store.conf.j2
     dest: "{{TVAULT_OBJECT_STORE_CONF}}"
+    owner: root
+    group: nova
+    mode: '755'
+  tags:
+    - update_cfg
 
-- block:
-  - shell: systemctl daemon-reload
-  - name: enable tvault-object-store service and reload it
-    service: name=tvault-object-store.service  state=started enabled=yes
+- name: populate object store logging config parameters
+  template:
+    src: object_store_logging.conf.j2
+    dest: "{{OBJECTSTORE_LOG_CONF}}"
+    owner: root
+    group: nova
+    mode: '755'
+  tags:
+    - update_cfg
+- name: systemd to reread configs
+  systemd:
+    daemon_reload: yes
+  when:
+    - S3|bool == True
+  tags:
+    - update_cfg
+
+- name: Start triliovault-object-store service
+  service:
+    name: tvault-object-store
+    state: started
   ignore_errors: yes
+  when:
+    - S3|bool == True
+  tags:
+    - update_cfg
+
 

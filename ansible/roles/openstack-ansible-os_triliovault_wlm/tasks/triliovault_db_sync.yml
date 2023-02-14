@@ -1,0 +1,4 @@
+---
+- name: Populate workloadmgr database
+  command: alembic --config {{ wlm_cfg }} upgrade head
+  run_once: True

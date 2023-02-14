@@ -1,0 +1,15 @@
+FROM docker.io/openstackhelm/heat:victoria-ubuntu_focal
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="trilio/trilio-common" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="TrilioVault Common Image" \
+      description="TrilioVault Common Image"
+
+
+## Install python mysql module
+RUN apt-get update -y
+RUN apt-get install -y python3-mysqldb

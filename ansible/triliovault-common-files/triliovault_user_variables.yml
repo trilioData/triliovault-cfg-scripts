@@ -1,0 +1,22 @@
+haproxy_extra_services:
+  - service:
+      haproxy_service_name: datamover_service
+      haproxy_backend_nodes: "{{ groups['dmapi_all'] | default([]) }}"
+      haproxy_ssl: "{{ haproxy_ssl }}"
+      haproxy_port: 8784
+      haproxy_balance_type: http
+      haproxy_balance_alg: roundrobin
+      haproxy_timeout_client: 10m
+      haproxy_timeout_server: 10m
+      haproxy_backend_options:
+        - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
+
+  - service:
+      haproxy_service_name: workloadmgr
+      haproxy_backend_nodes: "{{ groups['triliovault-wlm'] | default([]) }}"
+      haproxy_ssl: "{{ haproxy_ssl }}"
+      haproxy_port: 8781
+      haproxy_balance_type: http
+      haproxy_backend_options:
+        - "httpchk GET / HTTP/1.0\\r\\nUser-agent:\\ osa-haproxy-healthcheck"
+

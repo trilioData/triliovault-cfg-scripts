@@ -1,0 +1,69 @@
+---
+
+- name: Stop wlm-api service
+  service:
+    name: wlm-api
+    state: stopped
+  ignore_errors: True
+
+- name: Stop wlm-workloads service
+  service:
+    name: wlm-workloads
+    state: stopped
+  ignore_errors: True
+
+- name: Stop wlm-scheduler service
+  service:
+    name: wlm-scheduler
+    state: stopped
+  ignore_errors: True
+
+- name: Stop wlm-cron service
+  service:
+    name: wlm-cron
+    state: stopped
+  ignore_errors: True
+
+- name: Remove trilio yum repo
+  file: path="{{trilio_yum_repo_file_path}}" state=absent
+  ignore_errors: True
+  when: ansible_distribution == "CentOS"
+
+- name: Remove trilio apt repo
+  file: path="{{trilio_apt_repo_file_path}}" state=absent
+  ignore_errors: True
+  when: ansible_distribution == "Ubuntu"
+
+- name: Uninstall workloadmgr packages from Debian
+  package:
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient
+      - python3-contegoclient
+    state: absent
+  ignore_errors: True
+  when: ansible_distribution == "Ubuntu"
+
+- name: Uninstall workloadmgr packages from CentOS/RHEL
+  package:
+    name: 
+      - workloadmgr
+      - python3-workloadmgrclient-el8
+      - python3-contegoclient-el8
+    state: absent
+  ignore_errors: True
+  when: ansible_distribution == "CentOS"
+
+- name: Uninstall python3-s3fuse-plugin packages from CentOS/RHEL
+  package:
+    name: 
+      - python3-s3fuse-plugin
+    state: absent
+  when: ansible_distribution == "CentOS"
+
+- name: Uninstall python3-s3-fuse-plugin packages from Debian
+  package:
+    name: 
+      - python3-s3-fuse-plugin
+    state: absent
+  when: ansible_distribution == "Ubuntu"

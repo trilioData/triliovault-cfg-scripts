@@ -1,7 +1,7 @@
 class trilio::contego (
     $backup_target_type                   = 'nfs',
-    $nfs_shares				              = undef,
-    $nfs_options			              = 'nolock,soft,timeo=180,intr',
+    $nfs_shares                           = undef,
+    $nfs_options                          = 'nolock,soft,vers=3,timeo=180,intr,lookupcache=none',
     $s3_type                              = 'amazon_s3',
     $s3_accesskey                         = undef,
     $s3_secretkey                         = undef,
@@ -11,7 +11,6 @@ class trilio::contego (
     $s3_signature_version                 = 'default',
     $s3_auth_version                      = 'DEFAULT',
     $s3_ssl_enabled                       = 'False',
-    $s3_ssl_cert                          = undef,
     $database_connection                  = undef,
     $oslomsg_rpc_proto                    = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
     $oslomsg_rpc_hosts                    = any2array(hiera('oslo_messaging_rpc_node_names', undef)),
@@ -22,12 +21,14 @@ class trilio::contego (
     $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
     $cinder_http_retries                  = 10,
+    $nfs_map                              = {},
+    $multi_ip_nfs_enabled                 = false,
 ) {
 
 
     $contego_user                         = 'nova'
     $contego_group                        = 'nova'
-    $contego_conf_file                    = "/etc/tvault-contego/tvault-contego.conf"
+    $contego_conf_file                    = "/etc/triliovault-datamover/triliovault-datamover.conf"
     $contego_groups                       = ['kvm','qemu','disk']
     $vault_data_dir                       = "/var/lib/nova/triliovault-mounts"
     $vault_data_dir_old                   = "/var/triliovault"

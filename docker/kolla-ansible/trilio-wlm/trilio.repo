@@ -1,0 +1,5 @@
+[trilio]
+name=Triliovault Repository
+baseurl={RPM_REPO_URL}
+enabled=1
+gpgcheck=0

@@ -1,0 +1,64 @@
+FROM registry.redhat.io/rhosp-rhel8/openstack-base:16.2
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="trilio/openstack-nova-api-triliodata-triliovault-wlm-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="Red Hat OpenStack Platform 16.2 nova-api TrilioData TrilioVault WLM" \
+      description="Red Hat OpenStack Platform 16.2 nova-api TrilioData TrilioVault WLM"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+## Configure dnf repos
+ADD trilio.repo /etc/yum.repos.d/
+RUN dnf clean all
+
+RUN dnf config-manager \
+  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --enable fast-datapath-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-highavailability-rpms \
+  --enable rhel-8-for-x86_64-appstream-rpms
+
+## Install dependencies
+## Install dependencies
+RUN dnf -y install openstack-nova-common python3-nova python3-novaclient udev \
+  fuse python3-neutronclient python3-retrying python3-cryptography \
+  python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
+  pacemaker-remote resource-agents pcs
+
+RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
+
+## Install Triliovault wlm packages
+RUN dnf -y install workloadmgr python3-s3fuse-plugin
+
+## Install important security patches
+RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt
+
+## Disable reposs and clean pip tool
+RUN dnf config-manager --disable openstack-16.1-for-rhel-8-x86_64-rpms --disable rhel-8-for-x86_64-baseos-rpms --disable advanced-virt-for-rhel-8-x86_64-rpms --disable rhceph-4-tools-for-rhel-8-x86_64-rpms --disable fast-datapath-for-rhel-8-x86_64-rpms
+
+## Nova user changes
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
+
+##Copy conf files
+RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
+    && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
+##Become nova user for further operations
+USER nova

@@ -14,15 +14,20 @@
         tasks_from: loadbalancer
       when:
         - inventory_hostname in groups['triliovault-datamover-api']
+        - inventory_hostname in groups['triliovault-wlm-api']
         - enable_haproxy | bool
         - enable_triliovault | bool
         - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
-
+    
 - name: Apply role triliovault
   gather_facts: false
   hosts:
     - triliovault-datamover-api
     - triliovault-datamover
+    - triliovault-wlm-api
+    - triliovault-wlm-workloads
+    - triliovault-wlm-scheduler
+    - triliovault-wlm-cron
     - enable_triliovault | bool
   serial: '{{ kolla_serial|default("0") }}'
   roles:

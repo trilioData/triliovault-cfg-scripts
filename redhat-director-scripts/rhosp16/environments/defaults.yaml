@@ -1,0 +1,81 @@
+resource_registry:
+  OS::TripleO::Services::TrilioDatamover: ../services/triliovault-datamover.yaml
+  OS::TripleO::Services::TrilioDatamoverApi: ../services/triliovault-datamover-api.yaml
+  OS::TripleO::Services::TrilioWlmApi: ../services/triliovault-wlm-api.yaml
+  OS::TripleO::Services::TrilioWlmWorkloads: ../services/triliovault-wlm-workloads.yaml
+  OS::TripleO::Services::TrilioWlmScheduler: ../services/triliovault-wlm-scheduler.yaml
+  OS::TripleO::Services::TrilioWlmCron: ../services/triliovault-wlm-cron-pacemaker.yaml
+  # NOTE: If there are addition customizations to the endpoint map (e.g. for
+  # other integratiosn), this will need to be regenerated.
+  OS::TripleO::EndpointMap: endpoint_map.yaml
+
+parameter_defaults:
+
+   ## Enable TrilioVault's quota functionality on horizon. Don't change this parameter
+   ExtraConfig:
+     horizon::customization_module: 'dashboards.overrides'
+
+   ## Define network map for trilio datamover api service
+   ServiceNetMap:
+       TriliovaultDatamoverApiNetwork: internal_api
+       TriliovaultWlmApiNetwork: internal_api
+   ## Don't edit following parameter
+   EnablePackageInstall: True
+
+   ## Load 'rbd' kernel module on all compute nodes
+   ComputeParameters:
+     ExtraKernelModules:
+       rbd: {}
+
+   ## Configure 'dmapi_workers' parameter of '/etc/triliovault-datamover/triliovault-datamover-api.conf' file
+   ## This parameter value used to spawn the number of datamover api processes to handle the incoming api requests.
+   ## If your datamover api node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
+   ## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
+   DatamoverApiWorkers: 16
+
+   ## Project name in which triliovault keystone resources will get created
+   TriliovaultKeystoneServiceProjectName: 'service'
+   TriliovaultKeystoneUserDomainName: "Default"
+   TriliovaultKeystoneUserRoleName: "admin"
+
+   ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
+   ## Valid values: internal, public, admin
+   Interface: "internal"
+   
+   ## Provide any role name as your preference. 
+   ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
+   TrusteeRole: "creator"
+
+############################### DONE #####################################################
+
+
+
+
+
+
+   
+############### DO NOT EDIT FOLLOWING PARAMETERS.######################################################
+   ## Project name in which triliovault keystone resources will get created
+   
+   ## Triliovault Wlm Api Service port
+   WlmApiHaproxyPort: "8781"
+   WlmApiPort: "8780"
+   WlmApiSslPort: "13781"
+   DatamoverApiPort: "8784"
+   DatamoverApiSslPort: "13784"
+
+   ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
+   WlmApiDbUserName: "workloadmgr"
+   WlmApiDbName: "workloadmgr"
+   WlmApiKeystoneUserName: "triliovault"
+   WlmApiKeystoneServiceName: "TrilioVaultWLM"
+   WlmApiKeystoneServiceType: "workloads"
+   ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
+
+   ## TrilioVault Datamover Service's Database, Keystone and rabbitmq user names
+   DatamoverApiDbUserName: "dmapi"
+   DatamoverApiDbName: "dmapi"
+   DatamoverApiKeystoneUserName: "dmapi"
+   DatamoverApiKeystoneServiceName: "dmapi"
+   DatamoverApiKeystoneServiceType: "datamover"
+###################################################################

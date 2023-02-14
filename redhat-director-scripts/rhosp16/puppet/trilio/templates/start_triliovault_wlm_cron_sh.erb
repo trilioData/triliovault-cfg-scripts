@@ -1,0 +1,13 @@
+#!/bin/bash
+set -ex
+
+## Start triliovaut-wlm-api service
+/usr/bin/python3 /usr/bin/workloadmgr-cron \
+  --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
+  --config-file=/etc/triliovault-wlm/triliovault-wlm-ids.conf
+
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start triliovaut-wlm-cron: $status"
+  exit $status
+fi

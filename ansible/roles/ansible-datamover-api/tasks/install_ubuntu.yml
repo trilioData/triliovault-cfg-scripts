@@ -1,6 +1,15 @@
 ---
+
 - name: install packages on datamover api container | Install Tzdata package
   shell: "export DEBIAN_FRONTEND=noninteractive && apt install -y tzdata"
+
+- name: Copy repo file
+  template:
+     src: trilio.list
+     dest: "{{ trilio_apt_repo_file_path }}"
+
+- name: update cache
+  command: apt-get update
 
 - name: install packages on datamover api container | software-properties-common | python-dev | python-nova | curl
   apt:
@@ -29,19 +38,20 @@
      src: datamover_url
      dest: /tmp/datamover_url
 
-- name: install tvault-datamover-api deb package when using python2
-  shell: |
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/dmapi_{{ TVAULT_PACKAGE_VERSION  }}_all.deb
-          apt-get install ./dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
-          rm -rf dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-  when: PYTHON_VERSION=="python2"
-
-- name: install tvault-datamover-api deb package when using python3
-  shell: |
-          curl -Og6 http://{{ IP_ADDRESS }}:{{ PORT_NO }}/deb-repo/deb-repo/python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
-          apt-get install ./python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb -y
-          rm -rf python3-dmapi_{{ TVAULT_PACKAGE_VERSION }}_all.deb
+- name: Install python3-dmapi pckg
+  package:
+    name: python3-dmapi
+    state: latest
   when: PYTHON_VERSION=="python3"
+
+- name: create datamover_api_logging.conf file
+  template:
+     src: datamover_api_logging.conf.j2
+     dest: "{{ DMAPI_LOG_CONF }}"
+
+- import_tasks: store_os_ssl_cert.yml
+  when:
+    - OS_CA_CERT != "" 
 
 - name: find out path of dmapi bianry
   shell: which dmapi-api
@@ -51,7 +61,7 @@
   shell: populate-conf
   register: populate_conf_ubuntu
   notify:
-      - restart tvault-datamover-api
+    - restart tvault-datamover-api
 
 - name: ensure /tmp/datamover_url file is deleted
   file: path="/tmp/datamover_url" state=absent

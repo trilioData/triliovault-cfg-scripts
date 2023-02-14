@@ -29,10 +29,13 @@ podman login registry.connect.redhat.com
 podman pull registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
+podman pull registry.connect.redhat.com/trilio/trilio-wlm:${tag}
 
 openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 
 openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
+
+openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-wlm:${tag}
 
 openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
 
@@ -40,8 +43,10 @@ openstack tripleo container image push --local registry.connect.redhat.com/trili
 ## Update image locations in env file
 trilio_dm_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover:${tag}"
 trilio_dmapi_image="${undercloud_hostname}:8787\/trilio\/trilio-datamover-api:${tag}"
+trilio_wlmapi_image="${undercloud_hostname}:8787\/trilio\/trilio-wlm:${tag}"
 trilio_horizon_image="${undercloud_hostname}:8787\/trilio\/trilio-horizon-plugin:${tag}"
 
-sed  -i "s/.*DockerTrilioDatamoverImage.*/\   DockerTrilioDatamoverImage:\ ${trilio_dm_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
-sed  -i "s/.*DockerTrilioDmApiImage.*/   DockerTrilioDmApiImage: ${trilio_dmapi_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
+sed  -i "s/.*ContainerTriliovaultDatamoverImage.*/\   ContainerTriliovaultDatamoverImage:\ ${trilio_dm_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
+sed  -i "s/.*ContainerTriliovaultDatamoverApiImage.*/   ContainerTriliovaultDatamoverApiImage: ${trilio_dmapi_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
+sed  -i "s/.*ContainerTriliovaultWlmImage.*/   ContainerTriliovaultWlmImage: ${trilio_wlmapi_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml
 sed  -i "s/.*ContainerHorizonImage.*/   ContainerHorizonImage: ${trilio_horizon_image}/g" $SCRIPT_DIR/../environments/trilio_env.yaml

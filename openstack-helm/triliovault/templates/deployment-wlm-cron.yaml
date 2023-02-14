@@ -1,0 +1,155 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.deployment_wlm_cron }}
+{{- $envAll := . }}
+
+{{- $mounts_triliovault_wlm_cron := .Values.pod.mounts.triliovault_wlm_cron.triliovault_wlm_cron }}
+{{- $mounts_triliovault_wlm_cron_init := .Values.pod.mounts.triliovault_wlm_cron.init_container }}
+
+{{- $tlsSecret := "" -}}
+{{- if .Values.manifests.certificates -}}
+{{- $tlsSecret := .Values.secrets.tls.workloads.wlm_api.internal -}}
+{{- end -}}
+
+
+
+{{- $serviceAccountName := "triliovault-wlm-cron" }}
+{{ tuple $envAll "wlm_cron" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-wlm-cron
+  annotations:
+    {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
+  labels:
+{{ tuple $envAll "triliovault" "wlm-cron" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_cron }}
+  selector:
+    matchLabels:
+{{ tuple $envAll "triliovault" "wlm-cron" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "triliovault" "wlm-cron" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+      annotations:
+{{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
+        configmap-bin-wlm-hash: {{ tuple "configmap-bin-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-wlm-hash: {{ tuple "configmap-etc-wlm.yaml" . | include "helm-toolkit.utils.hash" }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      securityContext:
+        runAsUser: 42424
+        fsGroup: 42424
+      affinity:
+{{ tuple $envAll "triliovault" "api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      nodeSelector:
+        {{ .Values.labels.wlm_cron.node_selector_key }}: {{ .Values.labels.wlm_cron.node_selector_value }}
+      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.wlm_cron.timeout | default "30" }}
+      hostPID: true
+      hostIPC: true
+{{ if .Values.conf.triliovault.docker_registry_auth_enabled }}
+      imagePullSecrets:
+        - name: triliovault-image-registry
+{{ end }}
+      initContainers:
+{{ tuple $envAll "wlm_cron" $mounts_triliovault_wlm_cron_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+        - name: triliovault-wlm-cron-init
+{{ tuple $envAll "triliovault_wlm_cron" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_wlm_init" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          env:
+{{- with $env := dict "ksUserSecret" .Values.secrets.identity.admin "useCA" (ne $tlsSecret "") }}
+{{- include "helm-toolkit.snippets.keystone_openrc_env_vars" $env | indent 12 }}
+{{- end }}
+            - name: POD_NAME
+              value: "triliovault-wlm-cron"
+          command:
+            - /tmp/triliovault-wlm-cron-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: varlogtriliovault
+              mountPath: /var/log/triliovault
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-cron-init.sh
+              subPath: triliovault-wlm-init.sh
+              readOnly: true
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron
+      containers:
+        - name: triliovault-wlm-cron
+{{ tuple $envAll "triliovault_wlm_cron" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ tuple $envAll $envAll.Values.pod.resources.wlm_cron | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_wlm_cron" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          command:
+            - /tmp/triliovault-wlm-cron.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /tmp/triliovault-wlm-cron.sh
+                  - stop
+          volumeMounts:
+{{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: varlogtriliovault
+              mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-wlm/wlm_logging.conf
+              name: triliovault-wlm-etc
+              readOnly: true
+              subPath: wlm_logging.conf
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
+              subPath: triliovault-wlm.conf
+              readOnly: true
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/api-paste.ini
+              subPath: api-paste.ini
+              readOnly: true
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-cron.sh
+              subPath: triliovault-wlm-cron.sh
+              readOnly: true
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.workloads.wlm_api.internal "path" "/etc/triliovault_wlm/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{ if $mounts_triliovault_wlm_cron.volumeMounts }}{{ toYaml $mounts_triliovault_wlm_cron.volumeMounts | indent 12 }}{{ end }}
+      volumes:
+{{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
+        - name: pod-tmp
+          emptyDir: {}
+        - name: varlogtriliovault
+          hostPath:
+            path: /var/log/triliovault
+        - name: triliovault-wlm-etc
+          secret:
+            secretName: triliovault-etc-wlm
+            defaultMode: 0444
+        - name: triliovault-wlm-bin
+          configMap:
+            name: triliovault-bin-wlm
+            defaultMode: 0555
+        - name: pod-shared-triliovault-wlm-cron
+          emptyDir: {}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{ if $mounts_triliovault_wlm_cron.volumes }}{{ toYaml $mounts_triliovault_wlm_cron.volumes | indent 8 }}{{ end }}
+{{- end }}
