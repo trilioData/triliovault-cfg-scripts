@@ -1,13 +1,16 @@
 - name: Apply haproxy config for triliovault services
+  gather_facts: false
   hosts:
-    - haproxy
-    - '&enable_haproxy_True'
+    - loadbalancer
+    - '&enable_loadbalancer_True'
   serial: '{{ kolla_serial|default("0") }}'
   tags:
     - haproxy
+    - keepalived
+    - loadbalancer
   roles:
-    - { role: haproxy,
-        when: enable_haproxy | bool }
+    - { role: loadbalancer,
+        when: enable_loadbalancer | bool }
   tasks:
     - include_role:
         name: triliovault
@@ -18,7 +21,7 @@
         - enable_haproxy | bool
         - enable_triliovault | bool
         - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
-    
+
 - name: Apply role triliovault
   gather_facts: false
   hosts:
