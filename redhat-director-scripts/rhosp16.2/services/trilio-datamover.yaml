@@ -110,11 +110,11 @@ parameters:
   NovaComputeOptVolumes:
     default: []
     description: list of optional vo
-    type: yaml list format
+    type: comma_delimited_list
   TrilioDatamoverOptVolumes:
     default: []
     description: list of optional volumes to be mounted
-    type: yaml list format
+    type: comma_delimited_list
   TrilioDatamoverNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set

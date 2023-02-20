@@ -4,5 +4,5 @@ parameter_defaults:
 
 # Example:
 #  TrilioDatamoverOptVolumes:
-#   - /opt/dir1:/opt/dir1
-#   - /mnt/dir2:/var/dir2
+#    - /opt/dir1:/opt/dir1
+#    - /mnt/dir2:/var/dir2
