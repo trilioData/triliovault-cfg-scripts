@@ -374,7 +374,6 @@ outputs:
              'timeout client': '10m'
              'timeout server': '10m'
              'timeout check': '10m'
-             'timeout http-keep-alive': '65s'
         keystone:
           trilio::wlmapi::keystone::auth::tenant: {get_param: TriliovaultKeystoneServiceProjectName}
           trilio::wlmapi::keystone::auth::service_name: {get_param: WlmApiKeystoneServiceName}
