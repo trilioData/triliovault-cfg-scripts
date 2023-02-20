@@ -110,7 +110,11 @@ parameters:
   NovaComputeOptVolumes:
     default: []
     description: list of optional vo
-    type: comma_delimited_list
+    type: yaml list format
+  TrilioDatamoverOptVolumes:
+    default: []
+    description: list of optional volumes to be mounted
+    type: yaml list format
   TrilioDatamoverNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set
@@ -218,6 +222,7 @@ outputs:
               list_concat:
                 - {get_attr: [ContainersCommon, volumes]}
                 - {get_param: NovaComputeOptVolumes}
+                - {get_param: TrilioDatamoverOptVolumes}
                 -
                   - /var/lib/kolla/config_files/trilio_dm.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
