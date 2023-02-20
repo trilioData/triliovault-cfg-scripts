@@ -1,0 +1,8 @@
+parameter_defaults:
+  ## User can specify list of extra volumes that he/she wants to mount on 'trilio_datamover' container.
+  TrilioDatamoverOptVolumes:
+
+# Example:
+#  TrilioDatamoverOptVolumes:
+#    - /opt/dir1:/opt/dir1
+#    - /mnt/dir2:/var/dir2
