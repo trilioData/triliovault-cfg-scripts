@@ -374,7 +374,6 @@ outputs:
              'timeout client': '10m'
              'timeout server': '10m'
              'timeout check': '10m'
-             'timeout http-keep-alive': '65s'
         keystone:
           trilio::wlmapi::keystone::auth::tenant: {get_param: TriliovaultKeystoneServiceProjectName}
           trilio::wlmapi::keystone::auth::service_name: {get_param: WlmApiKeystoneServiceName}
@@ -475,7 +474,21 @@ outputs:
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault
             command: "/usr/bin/bootstrap_host_exec triliovault_wlm_api /bin/bash -c '/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head'"
             environment:
-              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}              
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+          triliovault_wlm_api_config_dynamic:
+            image: {get_param: ContainerKeystoneConfigImage}
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/puppet-generated/triliovaultwlmapi/etc/triliovault-wlm:/etc/triliovault-wlm:rw
+            command: "/etc/triliovault-wlm/get_keystone_resources.sh"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
         step_5:
           triliovault_wlm_api:
             start_order: 5
