@@ -85,3 +85,9 @@ ssl = false
 
 [cinder]
 http_retries = {{ cinder_http_retries }}
+
+[barbican]
+barbican_endpoint_type = internal
+verify_ssl = true
+verify_ssl_path = {{ openstack_cacert }}
+
