@@ -27,7 +27,7 @@ RUN set -ex \
      && dnf install -y epel-release fuse python3-neutronclient python3-retrying python3-cryptography
 
 RUN yum config-manager --set-enabled powertools
-RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock && pip3 install jinja2
+RUN /usr/bin/pip3 install --upgrade pip && /usr/bin/pip3 install igraph && /usr/bin/pip3 install namedatomiclock && /usr/bin/pip3 install jinja2
 RUN dnf -y install python3-tzlocal
 
 
