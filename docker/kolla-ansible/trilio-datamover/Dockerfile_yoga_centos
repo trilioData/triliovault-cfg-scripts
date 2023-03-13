@@ -1,14 +1,14 @@
 FROM quay.io/openstack.kolla/centos-source-nova-compute:yoga
-MAINTAINER TrilioData shyam.biradar@trilio.io
+MAINTAINER Trilio shiwanand.bicchewar@trilio.io
 
 LABEL name="kolla/trilio-datamover" \
-      maintainer="shyam.biradar@trilio.io" \
-      vendor="TrilioData" \
-      version="4.2.0" \
-      release="4.2" \
+      maintainer="shiwanand.bicchewar@trilio.io" \
+      vendor="Trilio" \
+      version="5.0.X" \
+      release="5.0" \
       type="source" \
-      summary="TrilioData Datamover" \
-      description="TrilioData Datamover"
+      summary="Trilio Datamover" \
+      description="Trilio Datamover"
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -16,17 +16,31 @@ USER root
 RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
-##Install datamover packages in CentOS 8
+##Copy RPM Repo
 ADD trilio.repo /etc/yum.repos.d/
+
+##Install Required Packages
+RUN set -ex \
+    && dnf update -y \
+    && dnf install -y epel-release \
+    && dnf install -y centos-release-openstack-wallaby
+
+##Add nova user into the disk and kvm group
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
+
+## Create Config Dir.
+RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
+    && chown -R nova:nova /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault \
+    && chown -R root:nova /etc/triliovault-datamover  /etc/triliovault-object-store \
+    && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+	
+##Install datamover packages
 RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
     && dnf install python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 
-RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
-
-
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
-
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/ 
@@ -37,24 +51,12 @@ RUN chown -R nova:nova /opt/tvault/ \
 ##Copy conf files
 ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers
 ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
-
-RUN mkdir -p /var/triliovault-mounts \
- && chown nova:nova /var/triliovault-mounts \
- && mkdir -p /var/triliovault \
- && chmod 777 /var/triliovault-mounts \
- && chown nova:nova /var/triliovault \
- && chmod 777 /var/triliovault
-
-ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+COPY log-rotate-conf /etc/logrotate.d/tvault-contego
 
 ##Clean subscription
 RUN dnf clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
-##Add license
-RUN mkdir /licenses
-COPY licensing.txt /licenses
-
-
 ##Become nova user for further operations
 USER nova
+
