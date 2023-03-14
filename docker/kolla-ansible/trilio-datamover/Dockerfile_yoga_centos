@@ -23,7 +23,7 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
     && dnf update -y \
     && dnf install -y epel-release \
-    && dnf install -y centos-release-openstack-wallaby
+    && dnf install -y centos-release-openstack-yoga
 
 ##Add nova user into the disk and kvm group
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
