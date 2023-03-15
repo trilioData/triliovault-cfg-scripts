@@ -24,7 +24,7 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
     && dnf update -y \
     && dnf install -y epel-release \
-    && dnf install -y centos-release-openstack-wallaby python3-devel python3-nova
+    && dnf install -y centos-release-openstack-yoga python3-devel python3-nova
 	
 ##Install datamover packages
 RUN dnf install python3-dmapi python3-nova -y
