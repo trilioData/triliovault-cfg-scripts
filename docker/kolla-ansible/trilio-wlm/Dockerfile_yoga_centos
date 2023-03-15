@@ -23,7 +23,7 @@ ADD trilio.repo /etc/yum.repos.d/
 ## INSTALL REQUIRED PACKAGES
 RUN set -ex \
      && dnf update -y \
-     && dnf install -y centos-release-openstack-wallaby python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
+     && dnf install -y centos-release-openstack-yoga python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
      && dnf install -y epel-release fuse python3-neutronclient python3-retrying python3-cryptography
 
 RUN yum config-manager --set-enabled powertools
