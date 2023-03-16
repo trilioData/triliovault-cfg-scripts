@@ -86,7 +86,7 @@ spec:
               readOnly: true
             - name: pod-shared-triliovault-wlm-workloads
               mountPath: /tmp/pod-shared-triliovault-wlm-workloads
-            - name: varlogtriliovault
+            - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
       containers:
         - name: triliovault-wlm-workloads
@@ -114,7 +114,7 @@ spec:
             - mountPath: /lib/modules
               name: libmodules
               readOnly: true
-            - name: varlogtriliovault
+            - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
@@ -178,9 +178,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
-        - name: varlogtriliovault
+        - name: varlogtriliovaultwlm
           hostPath:
-            path: /var/log/triliovault
+            path: /var/log/triliovault-wlm
         - name: libmodules
           hostPath:
             path: /lib/modules

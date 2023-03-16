@@ -16,6 +16,8 @@ limitations under the License.
 
 set -ex
 
+chown -R dmapi:dmapi /var/log/triliovault
+
 touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf
 
 host_interface="{{- .Values.conf.my_ip.host_interface -}}"

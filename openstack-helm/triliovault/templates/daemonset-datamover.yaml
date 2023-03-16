@@ -95,7 +95,7 @@ spec:
               mountPath: /var/trilio
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
-            - name: varlogtriliovault
+            - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-bin
               mountPath: /tmp/triliovault-datamover-init.sh
@@ -149,7 +149,7 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
-            - name: varlogtriliovault
+            - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
@@ -253,9 +253,9 @@ spec:
         - name: vartrilio
           hostPath:
             path: /var/trilio
-        - name: varlogtriliovault
+        - name: varlogtriliovaultdatamover
           hostPath:
-            path: /var/log/triliovault
+            path: /var/log/triliovault-datamover
         - name: triliovault-datamover-etc
           secret:
             secretName: triliovault-etc-datamover
@@ -371,7 +371,7 @@ spec:
           volumeMounts:
             - name: vartrilio
               mountPath: /var/trilio
-            - name: varlogtriliovault
+            - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-bin
               mountPath: /tmp/triliovault-datamover-init.sh
@@ -427,7 +427,7 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
-            - name: varlogtriliovault
+            - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
@@ -540,9 +540,9 @@ spec:
         - name: vartrilio
           hostPath:
             path: /var/trilio
-        - name: varlogtriliovault
+        - name: varlogtriliovaultdatamover
           hostPath:
-            path: /var/log/triliovault
+            path: /var/log/triliovault-datamover
         - name: triliovault-datamover-etc
           secret:
             secretName: triliovault-etc-datamover
