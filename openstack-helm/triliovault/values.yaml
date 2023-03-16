@@ -116,7 +116,7 @@ pod:
           runAsGroup: 42424
         triliovault_datamover_api_init:
           readOnlyRootFilesystem: false
-          runAsUser: 63630
+          runAsUser: 0
           runAsGroup: 63630
         triliovault_datamover_init:
           readOnlyRootFilesystem: false
