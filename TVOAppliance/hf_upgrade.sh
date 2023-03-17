@@ -24,7 +24,7 @@ function download_package()
 	echo "Downloading $outfile for Yoga release"
 
 	#run the wget command to download the package from rpm server.
-	wget_command_rpm_server=`wget --backups 0 http://trilio:XpmkpMFviqSe@repos.trilio.io:8283/$BRANCH_NAME/offlinePkgs/$OFFLINE_PKG_NAME`
+	wget_command_rpm_server=`wget --backups 0 http://repos.trilio.io:8283/$BRANCH_NAME/offlinePkgs/$OFFLINE_PKG_NAME`
 
 }
 
