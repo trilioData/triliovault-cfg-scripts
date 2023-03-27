@@ -78,7 +78,7 @@ spec:
             - /tmp/triliovault-wlm-api-init.sh
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
-            - name: varlogtriliovault
+            - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api-init.sh
@@ -113,7 +113,7 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
-            - name: varlogtriliovault
+            - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
             - mountPath: /etc/triliovault-wlm/wlm_logging.conf
               name: triliovault-wlm-etc
@@ -159,9 +159,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
-        - name: varlogtriliovault
+        - name: varlogtriliovaultwlm
           hostPath:
-            path: /var/log/triliovault
+            path: /var/log/triliovault-wlm
         - name: triliovault-wlm-etc
           secret:
             secretName: triliovault-etc-wlm

@@ -372,6 +372,21 @@ outputs:
             volumes:
               - /var/log/containers/triliovault-wlm-cron:/var/log/triliovault:z
             command: ['/bin/bash', '-c', 'chown -R nova:nova /var/log/triliovault']
+        step_4:
+          triliovault_wlm_cron_config_dynamic:
+            image: {get_param: ContainerKeystoneConfigImage}
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/puppet-generated/triliovaultwlmcron/etc/triliovault-wlm:/etc/triliovault-wlm:rw
+            command: "/etc/triliovault-wlm/get_keystone_resources.sh"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
       host_prep_tasks:
         - name: create triliovault wlm cron log directory
           file:
