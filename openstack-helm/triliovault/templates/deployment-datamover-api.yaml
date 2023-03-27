@@ -72,6 +72,8 @@ spec:
               readOnly: true
             - name: pod-shared-triliovault-datamover-api
               mountPath: /tmp/pod-shared-triliovault-datamover-api
+            - name: varlogtriliovaultdatamoverapi
+              mountPath: /var/log/triliovault
 {{ if $mounts_triliovault_datamover_api.volumeMounts }}{{ toYaml $mounts_triliovault_datamover_api.volumeMounts | indent 12 }}{{ end }}
       containers:
         - name: triliovault-datamover-api
@@ -100,6 +102,8 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: varlogtriliovaultdatamoverapi
+              mountPath: /var/log/triliovault
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/triliovault-datamover-api.conf
               subPath: triliovault-datamover-api.conf
@@ -130,6 +134,9 @@ spec:
           configMap:
             name: triliovault-bin-datamover-api
             defaultMode: 0555
+        - name: varlogtriliovaultdatamoverapi
+          hostPath:
+            path: /var/log/triliovault-datamover-api
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
