@@ -80,3 +80,6 @@ parameter_defaults:
     SwiftAdmin: {protocol: 'http', port: '8080', host: 'IP_ADDRESS'}
     SwiftInternal: {protocol: 'http', port: '8080', host: 'IP_ADDRESS'}
     SwiftPublic: {protocol: 'https', port: '13808', host: 'CLOUDNAME'}
+    TrilioDatamoverAdmin: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
+    TrilioDatamoverInternal: {protocol: 'http', port: '8784', host: 'IP_ADDRESS'}
+    TrilioDatamoverPublic: {protocol: 'https', port: '13784', host: 'CLOUDNAME'}
