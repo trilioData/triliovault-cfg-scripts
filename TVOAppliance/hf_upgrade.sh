@@ -53,12 +53,10 @@ function check_package_status()
                 fi
         done
 }
-#function to change system settings
+#function to change system settings (set sshd option UseDNS to "no")
 function change_system_settings()
 {
-	grep -i dns /etc/ssh/sshd_config
 	sed -i '/UseDNS/c UseDNS no' /etc/ssh/sshd_config
-	grep -i dns /etc/ssh/sshd_config
 }
 
 #function to restart the services.
@@ -173,7 +171,7 @@ function install_package()
 	#replace / copy the user.json file from USER_JSON_OLD to USER_JSON_NEW path. 
 	yes | cp $USER_JSON_OLD $USER_JSON_NEW --backup=numbered
 	
-	#function to change system settings
+	#function to change system settings (set sshd option UseDNS to "no")
 	change_system_settings
 	
 	#call function - before restarting service replace the service path in tvault-object-store.service file
