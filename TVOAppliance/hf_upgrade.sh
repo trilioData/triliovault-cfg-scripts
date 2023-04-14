@@ -53,6 +53,13 @@ function check_package_status()
                 fi
         done
 }
+#function to change UseDNS setting to No
+function change_system_settings()
+{
+	grep -i dns sshd_config
+	sed -i '/UseDNS/c UseDNS no' sshd_config
+	grep -i dns sshd_config
+}
 
 #function to restart the services.
 function restart_services()
@@ -166,9 +173,12 @@ function install_package()
 	#replace / copy the user.json file from USER_JSON_OLD to USER_JSON_NEW path. 
 	yes | cp $USER_JSON_OLD $USER_JSON_NEW --backup=numbered
 	
+	#function to change DNS setting to No
+	change_system_settings
+	
 	#call function - before restarting service replace the service path in tvault-object-store.service file
 	reconfigure_s3_service_path
-
+	
 	#before restarting the s3 service reload the modified service file. 
 	systemctl daemon-reload
 
