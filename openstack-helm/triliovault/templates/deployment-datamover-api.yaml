@@ -104,11 +104,11 @@ spec:
               mountPath: /tmp
             - name: varlogtriliovaultdatamoverapi
               mountPath: /var/log/triliovault
-            - name: triliovault-datamover-etc
+            - name: triliovault-datamover-api-etc
               mountPath: /etc/triliovault-datamover/triliovault-datamover-api.conf
               subPath: triliovault-datamover-api.conf
               readOnly: true
-            - name: triliovault-datamover-etc
+            - name: triliovault-datamover-api-etc
               mountPath: /etc/triliovault-datamover/datamover_api_logging.conf
               subPath: datamover_api_logging.conf
               readOnly: true
@@ -126,7 +126,7 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
-        - name: triliovault-datamover-etc
+        - name: triliovault-datamover-api-etc
           secret:
             secretName: triliovault-etc-datamover-api
             defaultMode: 0444
