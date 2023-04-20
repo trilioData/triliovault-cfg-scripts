@@ -11,4 +11,4 @@ helm template -f triliovault/values_overrides/admin_creds.yaml \
 -f triliovault/values_overrides/triliovault_passwords.yaml \
 -f triliovault/values_overrides/db_drop.yaml \
 -f triliovault/values_overrides/admin_creds.yaml \
---debug triliovault > triliovault/utils/manifest.yaml
+--debug triliovault > /tmp/triliovault-manifest.yaml

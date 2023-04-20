@@ -592,6 +592,9 @@ endpoints:
       default: memcached
     host_fqdn_override:
       default: null
+    statefulset:
+      name: openstack-memcached-memcached
+      replicas: 3
     port:
       memcache:
         default: 11211
