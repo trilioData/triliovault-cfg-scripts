@@ -1,0 +1,4 @@
+- op: replace
+  path: "/metadata/ownerReferences/0/blockOwnerDeletion"
+  value: false
+
