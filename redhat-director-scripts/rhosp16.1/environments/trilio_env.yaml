@@ -12,9 +12,10 @@ parameter_defaults:
    ExtraConfig:
      horizon::customization_module: 'dashboards.overrides'
 
-   ## Define network map for trilio datamover api service
+   ## Define network map for trilio datamover api service. 
+   ## Valid Values: ['internal_api', 'ctlplane']
    ServiceNetMap:
-       TrilioDatamoverApiNetwork: internal_api
+       TrilioDatamoverApiNetwork: ctlplane
 
    ## TrilioVault Datamover Password for keystone and database
    TrilioDatamoverPassword: "test1234"
