@@ -25,7 +25,7 @@ connection = <%= @database_connection %>
 <% if @cinder_backend_ceph == true -%>
 
 [libvirt]
-images_rbd_ceph_conf = /etc/ceph/ceph.conf
+images_rbd_ceph_conf = <%= @libvirt_images_rbd_ceph_conf %>
 rbd_user = <%= @ceph_cinder_user %>
 
 [ceph]

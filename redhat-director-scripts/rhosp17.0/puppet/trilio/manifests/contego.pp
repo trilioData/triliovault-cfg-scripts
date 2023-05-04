@@ -24,6 +24,7 @@ class trilio::contego (
     $cinder_http_retries                  = 10,
     $nfs_map                              = {},
     $multi_ip_nfs_enabled                 = false,
+    $libvirt_images_rbd_ceph_conf         = '/etc/ceph/ceph.conf',
 ) {
 
 
