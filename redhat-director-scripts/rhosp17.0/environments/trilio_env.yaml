@@ -2,6 +2,7 @@ resource_registry:
   OS::TripleO::Services::TrilioDatamover: ../services/trilio-datamover.yaml
   OS::TripleO::Services::TrilioDatamoverApi: ../services/trilio-datamover-api.yaml
   OS::TripleO::Services::TrilioHorizon: ../services/trilio-horizon.yaml
+
   # NOTE: If there are addition customizations to the endpoint map (e.g. for
   # other integratiosn), this will need to be regenerated.
   OS::TripleO::EndpointMap: endpoint_map.yaml
@@ -12,9 +13,10 @@ parameter_defaults:
    ExtraConfig:
      horizon::customization_module: 'dashboards.overrides'
 
-   ## Define network map for trilio datamover api service. 
+   ## Define network map for trilio datamover api service
+   ## Valid Values: ['internal_api', 'ctlplane']
    ServiceNetMap:
-       TrilioDatamoverApiNetwork: internal_api
+       TrilioDatamoverApiNetwork: ctlplane
 
    ## TrilioVault Datamover Password for keystone and database
    TrilioDatamoverPassword: "test1234"
@@ -77,6 +79,7 @@ parameter_defaults:
 
    ## Don't edit following parameter
    EnablePackageInstall: True
+
 
    ## Load 'rbd' kernel module on all compute nodes
    ComputeParameters:
