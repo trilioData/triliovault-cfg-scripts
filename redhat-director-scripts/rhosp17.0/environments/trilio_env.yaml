@@ -15,7 +15,7 @@ parameter_defaults:
 
    ## Define network map for trilio datamover api service
    ServiceNetMap:
-       TrilioDatamoverApiNetwork: internal_api
+       TrilioDatamoverApiNetwork: ctlplane
 
    ## TrilioVault Datamover Password for keystone and database
    TrilioDatamoverPassword: "test1234"
