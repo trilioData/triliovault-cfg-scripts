@@ -13,7 +13,7 @@ parameter_defaults:
 
    ## Enable TrilioVault's quota functionality on horizon. Don't change this parameter
    ExtraConfig:
-     horizon::customization_module: 'dashboards.overrides'
+     horizon::customization_module: 'trilio_dashboard.overrides'
 
    ## Define network map for trilio datamover api service
    ServiceNetMap:
