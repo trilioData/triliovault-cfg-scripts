@@ -15,7 +15,7 @@ parameter_defaults:
 
    ## Define network map for trilio datamover api service
    ServiceNetMap:
-       TrilioDatamoverApiNetwork: {{ _service_nets.get('internal_api', 'ctlplane') }}
+       TrilioDatamoverApiNetwork: ctlplane
 
    ## TrilioVault Datamover Password for keystone and database
    TrilioDatamoverPassword: "test1234"
