@@ -12,7 +12,7 @@ parameter_defaults:
    ExtraConfig:
      horizon::customization_module: 'dashboards.overrides'
 
-   ## Define network map for trilio datamover api service
+   ## Define network map for trilio datamover api service. 
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
