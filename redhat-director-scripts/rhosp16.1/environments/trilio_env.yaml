@@ -13,7 +13,6 @@ parameter_defaults:
      horizon::customization_module: 'dashboards.overrides'
 
    ## Define network map for trilio datamover api service. 
-   ## Valid Values: ['internal_api', 'ctlplane']
    ServiceNetMap:
        TrilioDatamoverApiNetwork: internal_api
 
