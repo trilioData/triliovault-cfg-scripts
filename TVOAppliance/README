@@ -28,6 +28,6 @@ Note:
 While running hf_upgrade.sh script in offline mode. We need to change the BRANCH_NAME inside hf_upgrade.sh script to download the package from correct location.
 
 For end customer usage set BRANCH_NAME="triliodata-4-2" inside hf_upgade.sh script.
-For internal testing set BRANCH_NAME="triliodata-hotfix-4-2" inside hf_upgrade.sh script.
+For internal testing in trilio lab, set BRANCH_NAME as fury repo instead of 'triliodata-4-2' inside hf_upgrade.sh script.
 
 
