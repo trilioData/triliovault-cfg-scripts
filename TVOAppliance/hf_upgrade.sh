@@ -3,7 +3,7 @@
 BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
-PKG_DIR_NAME="4.2.64"
+PKG_DIR_NAME="4.2.*offlinePkgs"
 BRANCH_NAME="triliodata-4-2"
 UUID_NUM=`uuidgen`
 
@@ -21,7 +21,7 @@ function usage()
 #function to download the package and extract...
 function download_package()
 {
-	echo "Downloading $outfile for Yoga release"
+	echo "Downloading $outfile for 4.2 maintenance release"
 
 	#run the wget command to download the package from rpm server.
 	wget_command_rpm_server=`wget --backups 0 http://repos.trilio.io:8283/$BRANCH_NAME/offlinePkgs/$OFFLINE_PKG_NAME`
@@ -91,7 +91,7 @@ function reconfigure_s3_service_path()
 
 }
 #function to install the package on the system...
-function install_package()
+function install_upgrade_package()
 {
 	#it is expected that package is available in current directory.
 	outfile="$BASE_DIR/$OFFLINE_PKG_NAME"
@@ -110,7 +110,7 @@ function install_package()
 		exit 2
 	fi
 
-	echo "Installing $outfile for Yoga release"
+	echo "Installing $outfile for 4.2 maintenance release"
 	
 	#get the current date and time. 
 	date=`date '+%Y-%m-%d-%H-%M-%S'`
@@ -186,7 +186,12 @@ function install_package()
 	do
         	restart_services $service
 	done
-
+       
+        #DB upgrade to be performed post upgrade of all packages is successful and services restarted
+        WORKLOADMGR_CONF=/etc/workloadmgr/workloadmgr.conf
+        sed -i "/script_location = /c \script_location = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
+        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
+        source /home/stack/myansible/bin/activate && alembic -c /etc/workloadmgr/workloadmgr.conf  upgrade head
 
 }
 
@@ -200,7 +205,7 @@ fi
 
 eval set -- "$CMDLINE_ARGUMENTS"
 
-echo "TVO Upgrade for Yoga release from previous 4.2GA/4.2HF"
+echo "TVO Upgrade from current release to latest 4.2 maintenance release"
 
 
 #command line arguments.
@@ -214,8 +219,8 @@ if [ $# -gt 0 ]; then
   case "$1" in
     -h|--help) usage; exit;;
     -d|--downloadonly) download_package ;;
-    -i|--installonly)  install_package ;;
-    -a|--all) download_package; install_package ;;
+    -i|--installonly)  install_upgrade_package ;;
+    -a|--all) download_package; install_upgrade_package ;;
   esac
   shift
 fi
