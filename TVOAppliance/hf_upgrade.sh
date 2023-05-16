@@ -53,10 +53,14 @@ function check_package_status()
                 fi
         done
 }
-#function to change system settings (set sshd option UseDNS to "no")
+#function to change system settings
 function change_system_settings()
 {
+	#set sshd option UseDNS to "no"
 	sed -i '/UseDNS/c UseDNS no' /etc/ssh/sshd_config
+	#Create task flow dir and change permissions. Implemented from TVO-4.2.7 release
+	mkdir -p /var/lib/workloadmgr/taskflow
+	chown -R nova:nova /var/lib/workloadmgr/
 }
 
 #function to restart the services.
