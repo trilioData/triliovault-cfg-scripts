@@ -190,18 +190,23 @@ function install_upgrade_package()
 	do
         	restart_services $service
 	done
-       
-        #DB upgrade to be performed post upgrade of all packages is successful and services restarted
-        WORKLOADMGR_CONF=/etc/workloadmgr/workloadmgr.conf
-        sed -i "/script_location = /c \script_location = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
-        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
-        source /home/stack/myansible/bin/activate && alembic -c /etc/workloadmgr/workloadmgr.conf  upgrade head
 
+	if [ $(grep config_status ${TVAULT_CONF} | cut -d"=" -f2 | sed 's/ //g') == "configured" ];then
+        	#DB upgrade to be performed post upgrade of all packages is successful and services restarted only if TVO is already configured
+	        sed -i "/script_location = /c \script_location = \ 
+			/home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
+	        sed -i "/version_locations = /c \version_locations = \
+			/home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
+        	source /home/stack/myansible/bin/activate && alembic -c ${TVAULT_CONF} upgrade head
+	fi
 }
 
 ########  Start of the script.  ########
 
+WORKLOADMGR_CONF=/etc/workloadmgr/workloadmgr.conf
+TVAULT_CONF=/etc/tvault-config/tvault-config.conf
 CMDLINE_ARGUMENTS=$(getopt -o hdia --long help,downloadonly,installonly,all -- "$@")
+
 CMD_OUTPUT=$?
 if [ "$CMD_OUTPUT" != "0" ]; then
   usage
