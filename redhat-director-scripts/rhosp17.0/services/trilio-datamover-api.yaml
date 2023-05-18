@@ -121,6 +121,18 @@ outputs:
     description: Role data for the Trilio Datamover role.
     value:
       service_name: trilio_datamover_api
+      firewall_rules:
+        '240 trilio_datamover_api':
+          dport:
+            - 8784
+      firewall_frontend_rules:
+        '100 trilio_datamover_api_haproxy_frontend':
+          dport:
+            - 8784
+      firewall_ssl_frontend_rules:
+        '100 trilio_datamover_api_haproxy_frontend_ssl':
+          dport:
+            - 13784
       keystone_resources:
         dmapi:
           endpoints:
@@ -145,11 +157,6 @@ outputs:
         trilio::dmapi::user_domain_name: 'Default'
         trilio::dmapi::project_domain_name: 'Default'
         trilio::dmapi::dmapi_workers: {get_param: DmApiWorkers}
-        tripleo::trilio_datamover_api::firewall_rules:
-              '240 trilio-datamover-api':
-                dport:
-                  - 8784
-                  - 13784
         trilio::dmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
