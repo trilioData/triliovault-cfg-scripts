@@ -191,7 +191,7 @@ function install_upgrade_package()
         	restart_services $service
 	done
 
-	if [ $(grep config_status ${TVAULT_CONF} | cut -d"=" -f2 | sed 's/ //g') == "configured" ];then
+	if [ $(awk -F "=" '/config_status/ {print $2}' ${TVAULT_CONF} | xargs ) == "configured" ];then
 		echo "Performing DB upgrade steps"
         	#DB upgrade to be performed post upgrade of all packages is successful and services restarted only if TVO is already configured
 	        sed -i "/script_location = /c \script_location = \ 
