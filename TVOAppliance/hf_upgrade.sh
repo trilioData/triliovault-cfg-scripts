@@ -192,6 +192,7 @@ function install_upgrade_package()
 	done
 
 	if [ $(grep config_status ${TVAULT_CONF} | cut -d"=" -f2 | sed 's/ //g') == "configured" ];then
+		echo "Performing DB upgrade steps"
         	#DB upgrade to be performed post upgrade of all packages is successful and services restarted only if TVO is already configured
 	        sed -i "/script_location = /c \script_location = \ 
 			/home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
