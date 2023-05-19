@@ -194,11 +194,9 @@ function install_upgrade_package()
 	if [ $(awk -F "=" '/config_status/ {print $2}' ${TVAULT_CONF} | xargs ) == "configured" ];then
 		echo "Performing DB upgrade steps"
         	#DB upgrade to be performed post upgrade of all packages is successful and services restarted only if TVO is already configured
-	        sed -i "/script_location = /c \script_location = \ 
-			/home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
-	        sed -i "/version_locations = /c \version_locations = \
-			/home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
-        	source /home/stack/myansible/bin/activate && alembic -c ${TVAULT_CONF} upgrade head
+	        sed -i "/script_location = /c \script_location = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
+	        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
+        	source /home/stack/myansible/bin/activate && alembic -c ${WORKLOADMGR_CONF} upgrade head
 	fi
 }
 
