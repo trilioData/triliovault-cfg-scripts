@@ -75,6 +75,7 @@ function restart_services()
 	#check the result code. 0 - Success AND 3 - Inactive 
         if [ $? -eq 0 ]
         then
+		echo "Service {$service_name} is in active state. Restarting {$service_name} service"
                 #restart the service as it is in active state.
                 systemctl restart $service_name
         else
@@ -198,6 +199,7 @@ function install_upgrade_package()
 	        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
         	source /home/stack/myansible/bin/activate && alembic -c ${WORKLOADMGR_CONF} upgrade head
 	fi
+	echo "TVO appliance upgrade is complete. If TVO configuration is not done, please proceed with the same."
 }
 
 ########  Start of the script.  ########
