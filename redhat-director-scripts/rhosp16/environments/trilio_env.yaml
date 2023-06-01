@@ -55,3 +55,11 @@ parameter_defaults:
 
    ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
    S3SslEnabled: False
+
+   ## User can specify list of extra volumes that they want to mount on 'trilio_datamover' container.sssss
+   # Example:
+   #  TrilioDatamoverOptVolumes:
+   #    - /opt/dir1:/opt/dir1
+   #    - /mnt/dir2:/var/dir2
+
+   TrilioDatamoverOptVolumes:
