@@ -117,6 +117,10 @@ parameters:
     default: false
     description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
     type: boolean
+  TrilioDatamoverOptVolumes:
+    default: []
+    description: list of optional volumes to be mounted
+    type: comma_delimited_list
 
 conditions:
 
@@ -214,6 +218,7 @@ outputs:
               list_concat:
                 - {get_attr: [ContainersCommon, volumes]}
                 - {get_param: NovaComputeOptVolumes}
+                - {get_param: TrilioDatamoverOptVolumes}
                 -
                   - /var/lib/kolla/config_files/triliovault_datamover.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
