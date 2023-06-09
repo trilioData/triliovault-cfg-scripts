@@ -60,7 +60,7 @@ function change_system_settings()
 	sed -i '/UseDNS/c UseDNS no' /etc/ssh/sshd_config
 	#Create task flow dir and change permissions. Implemented from TVO-4.2.7 release
 	mkdir -p /var/lib/workloadmgr/taskflow
-	chown -R nova:nova /var/lib/workloadmgr/
+	chown -R nova:nova /var/lib/workloadmgr/ /var/lib/workloadmgr/taskflow
 }
 
 #function to restart the services.
