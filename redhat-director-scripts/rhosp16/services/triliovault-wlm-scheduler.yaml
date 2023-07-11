@@ -219,6 +219,20 @@ parameters:
     default: 'creator'	
     description: This is the role to allow using triliovault features 
     type: string
+  VcenterUrl:
+    description: This is Vcenter Server URL
+    type: string
+  VcenterUsername:
+    description: This is Vcenter Username
+    type: string
+  VcenterPassword:
+    description: This is Vcenter Password
+    type: string
+  VcenterNoSsl:
+    default: false
+    description: Indicates if Vcenter has NoSSL enabled or not. If set false, it means SSL is enabled on Vcenter
+                 If set true, SSL is disabled on Vcenter
+    type: boolean
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -305,6 +319,10 @@ outputs:
         trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
+        trilio::wlmapi:vcenter_url: {get_param: VcenterUrl }
+        trilio::wlmapi:vcenter_username: {get_param: VcenterUsername }
+        trilio::wlmapi:vcenter_password: {get_param: VcenterPassword }
+        trilio::wlmapi:vcenter_nossl: {get_param: VcenterNoSsl }
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
