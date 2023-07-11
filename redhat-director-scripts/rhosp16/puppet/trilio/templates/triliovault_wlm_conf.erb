@@ -152,3 +152,10 @@ memcached_servers = <%= @memcached_servers %>
 
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+
+
+[vcenter_migration]
+vcenter_url= <%= @vcenter_url %>
+vcenter_username= <%= @vcenter_username %>
+vcenter_password= <%= @vcenter_password %>
+vcenter_nossl= <%= @vcenter_nossl %>
