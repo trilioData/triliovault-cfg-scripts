@@ -23,6 +23,8 @@ class trilio::contego (
     $cinder_http_retries                  = 10,
     $nfs_map                              = {},
     $multi_ip_nfs_enabled                 = false,
+    $vddk_file_name                       = 'vddk.tar.gz',
+    $vddk_extract_command                 = 'tar xfz %s --strip-components=1',
 ) {
 
 

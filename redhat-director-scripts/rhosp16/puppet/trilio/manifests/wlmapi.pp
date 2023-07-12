@@ -74,6 +74,10 @@ class trilio::wlmapi (
   $auth_host_public                = undef,
   $auth_port_public                = undef,
   $auth_protocol_public            = undef,
+  $vcenter_url                     = undef,
+  $vcenter_username                = undef,
+  $vcenter_password                = undef,
+  $vcenter_nossl                   = false,
 ) {
     tag 'wlmapiconfig'
     
