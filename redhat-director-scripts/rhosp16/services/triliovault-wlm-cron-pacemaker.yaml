@@ -310,10 +310,10 @@ outputs:
         trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
-        trilio::wlmapi:vcenter_url: {get_param: VcenterUrl }
-        trilio::wlmapi:vcenter_username: {get_param: VcenterUsername }
-        trilio::wlmapi:vcenter_password: {get_param: VcenterPassword }
-        trilio::wlmapi:vcenter_nossl: {get_param: VcenterNoSsl }
+        trilio::wlmapi::vcenter_url: {get_param: VcenterUrl }
+        trilio::wlmapi::vcenter_username: {get_param: VcenterUsername }
+        trilio::wlmapi::vcenter_password: {get_param: VcenterPassword }
+        trilio::wlmapi::vcenter_nossl: {get_param: VcenterNoSsl }
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
