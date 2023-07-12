@@ -63,3 +63,10 @@ parameter_defaults:
    #    - /mnt/dir2:/var/dir2
 
    TrilioDatamoverOptVolumes: []
+
+   ## Following details are optional and only needed for VMware to OpenStack migration feature
+   ## If you don't want to use this migration feature, you can leave these parameters as it is.
+   VcenterUrl: ''
+   VcenterUsername: ''
+   VcenterPassword: ''
+   VcenterNoSsl: False
