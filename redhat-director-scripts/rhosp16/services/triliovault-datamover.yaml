@@ -121,6 +121,11 @@ parameters:
     default: []
     description: list of optional volumes to be mounted
     type: comma_delimited_list
+  VmwareToOpenstackMigrationEnabled:
+    default: false
+    description: Whether to enable VMware to OpenStack migration feature or not
+    type: boolean
+
 
 conditions:
 
@@ -151,6 +156,7 @@ outputs:
         trilio::contego::s3_ssl_enabled: {get_param: S3SslEnabled}
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
+        trilio::contego::vmware_to_openstack_migration_enabled: {get_param: VmwareToOpenstackMigrationEnabled}
         trilio::contego::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
