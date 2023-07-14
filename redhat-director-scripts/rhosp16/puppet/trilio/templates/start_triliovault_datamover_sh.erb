@@ -1,6 +1,13 @@
 #!/bin/bash
 
-set -ex
+<% if @vmware_to_openstack_migration_enabled -%>
+if [ -f "/opt/vddk.tar.gz" ]; then
+    mkdir -p /opt/vmware-vix-disklib-distrib
+    tar xfz /opt/vddk.tar.gz --strip-components=1 -C /opt/vmware-vix-disklib-distrib
+    chown -R 42426:42426 /opt/vmware-vix-disklib-distrib 2> /dev/null
+fi
+<% end -%>
+
 
 ## Start triliovault-object-store service if backup target type is s3
 <% if @backup_target_type == "s3" -%>
