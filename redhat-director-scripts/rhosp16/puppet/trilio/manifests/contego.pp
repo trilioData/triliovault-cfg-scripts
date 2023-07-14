@@ -24,7 +24,7 @@ class trilio::contego (
     $nfs_map                              = {},
     $multi_ip_nfs_enabled                 = false,
     $vddk_file_name                       = 'vddk.tar.gz',
-    $vddk_extract_command                 = 'tar xfz %s --strip-components=1',
+    $vmware_to_openstack_migration_enabled= false,
 ) {
 
 
