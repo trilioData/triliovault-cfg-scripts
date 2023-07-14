@@ -60,26 +60,21 @@ class trilio::contego::config inherits trilio::contego {
         group  => '42436',
         mode   => '0755',
     }
-    file { '/opt/vmware-vix-disklib-distrib/':
-        ensure => 'directory',
-        owner  => '42436',
-        group  => '42436',
-        mode   => '0755',
-    }->
-    file { "/tmp/$vddk_file_name":
-        ensure => 'present',
-        owner  => '42436',
-        group  => '42436',
-        mode   => '0644',
-        source => "puppet:///modules/trilio/$vddk_file_name",
-    }->
-    archive { "/tmp/$vddk_file_name":
-      ensure          => present,
-      extract         => true,
-      extract_command => "$vddk_extract_command",
-      extract_path    => '/opt/vmware-vix-disklib-distrib',
-      cleanup         => true,
-      creates         => '/opt/vmware-vix-disklib-distrib/include',
+
+    if $vmware_to_openstack_migration_enabled {
+      file { '/opt/vmware-vix-disklib-distrib/':
+          ensure => 'directory',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+      }->
+      file { "/opt/vddk.tar.gz":
+          ensure => 'present',
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0755',
+          source => "puppet:///modules/trilio/$vddk_file_name",
+      }
     }
 }
 
