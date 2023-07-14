@@ -19,8 +19,7 @@ RUN dnf clean all && dnf config-manager \
   --enable rhel-8-for-x86_64-baseos-rpms \
   --enable advanced-virt-for-rhel-8-x86_64-rpms \
   --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
-  --enable fast-datapath-for-rhel-8-x86_64-rpms \
-  --enable rhel-8-for-x86_64-appstream-eus-rpms
+  --enable fast-datapath-for-rhel-8-x86_64-rpms
 
 ## Install triliovault datamover packages
 RUN dnf install openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v nbdkit -y
