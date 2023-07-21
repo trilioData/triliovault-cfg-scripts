@@ -131,7 +131,9 @@ outputs:
             dmapi:
               password: {get_param: TrilioDatamoverPassword}
           region: {get_param: KeystoneRegion}
-          service: 'datamover'      
+          service: 'datamover'
+        TrilioVaultWLM:
+          service: 'workloads'
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DmApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DmApiSslPort}
