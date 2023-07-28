@@ -29,7 +29,7 @@ RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.n
 
 ## Install dependencies
 ## Install dependencies
-RUN dnf -y install ntfs-3g openstack-nova-common python3-nova python3-novaclient udev \
+RUN dnf -y install openstack-nova-common python3-nova python3-novaclient udev \
   fuse python3-neutronclient python3-retrying python3-cryptography \
   python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
   pacemaker-remote resource-agents pcs
