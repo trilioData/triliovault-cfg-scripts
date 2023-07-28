@@ -25,9 +25,11 @@ RUN dnf config-manager \
   --enable rhel-8-for-x86_64-highavailability-rpms \
   --enable rhel-8-for-x86_64-appstream-rpms
 
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
 ## Install dependencies
 ## Install dependencies
-RUN dnf -y install openstack-nova-common python3-nova python3-novaclient udev \
+RUN dnf -y install ntfs-3g openstack-nova-common python3-nova python3-novaclient udev \
   fuse python3-neutronclient python3-retrying python3-cryptography \
   python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
   pacemaker-remote resource-agents pcs
@@ -52,7 +54,7 @@ RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliov
     && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
 
 ##Clean subscription
-RUN yum clean all
+RUN yum clean all && dnf remove -y epel-release-*.el8.noarch
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Add license
