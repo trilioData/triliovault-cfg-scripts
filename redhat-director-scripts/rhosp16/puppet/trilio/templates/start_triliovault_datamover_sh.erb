@@ -4,7 +4,7 @@
 if [ -f "/opt/vddk.tar.gz" ]; then
     mkdir -p /opt/vmware-vix-disklib-distrib
     tar xfz /opt/vddk.tar.gz --strip-components=1 -C /opt/vmware-vix-disklib-distrib
-    chown -R 42426:42426 /opt/vmware-vix-disklib-distrib 2> /dev/null
+    chown -R nova:nova /opt/vmware-vix-disklib-distrib 2> /dev/null
 fi
 <% end -%>
 
