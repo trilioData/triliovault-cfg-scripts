@@ -115,17 +115,23 @@ triliovault_datamover_api_port: 8784
 triliovault_datamover_api_listen_port: "{{ triliovault_datamover_api_port }}"
 
 
+
+
+
 ####################
 # Keystone
 ####################
+triliovault_datamover_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
+
+triliovault_datamover_api_service_endpoints:
+   - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
+   - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+
 triliovault_ks_services:
   - name: "dmapi"
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
-    endpoints:
-      - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
-      - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
-      - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
 
 triliovault_keystone_user: "dmapi"	
 
