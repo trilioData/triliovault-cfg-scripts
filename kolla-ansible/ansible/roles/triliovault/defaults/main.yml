@@ -131,7 +131,7 @@ triliovault_ks_services:
   - name: "dmapi"
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
-    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([ ] if openstack_release != 'zed' else []) }}"
+    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
 
 triliovault_keystone_user: "dmapi"	
 
