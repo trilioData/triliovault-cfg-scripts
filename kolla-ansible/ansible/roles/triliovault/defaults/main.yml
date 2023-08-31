@@ -184,6 +184,9 @@ triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}/triliovault-
 ## Following is the default value for kolla_install_type variable.
 kolla_install_type: "source"
 
+## Container engine default value
+kolla_container_engine: "docker"
+
 ############ Following variables are user configurable ##########
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
