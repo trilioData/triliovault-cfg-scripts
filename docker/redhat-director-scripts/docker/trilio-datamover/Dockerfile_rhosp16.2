@@ -24,7 +24,8 @@ RUN dnf config-manager \
   --enable rhel-8-for-x86_64-baseos-tus-rpms \
   --enable rhel-8-for-x86_64-appstream-tus-rpms \
   --enable advanced-virt-for-rhel-8-x86_64-rpms \
-  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --enable codeready-builder-for-rhel-8-x86_64-rpms
 
 ## Install triliovault datamover packages
 RUN dnf install --releasever 8.4 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v nbdkit -y
@@ -60,7 +61,8 @@ RUN dnf config-manager \
   --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
   --disable fast-datapath-for-rhel-8-x86_64-rpms \
   --disable rhel-8-for-x86_64-baseos-tus-rpms \
-  --disable rhel-8-for-x86_64-appstream-tus-rpms
+  --disable rhel-8-for-x86_64-appstream-tus-rpms \
+  --disable codeready-builder-for-rhel-8-x86_64-rpms
   
 RUN yum clean all && rm -f /etc/yum.repos.d/trilio.repo
 
