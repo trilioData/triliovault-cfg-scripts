@@ -10,9 +10,22 @@ LABEL name="trilio/openstack-horizon-triliodata-plugin" \
       description="Red Hat OpenStack Platform 16.2 horizon TrilioData TrilioVault Horizon Plugin"
 
 ##Install datamover packages
+RUN dnf clean all
+
+RUN dnf config-manager --set-disabled '*'
+
+RUN dnf config-manager \
+  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --enable fast-datapath-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-tus-rpms \
+  --enable rhel-8-for-x86_64-appstream-tus-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --enable codeready-builder-for-rhel-8-x86_64-rpms
+
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install python3-tvault-horizon-plugin-el8 -y
-RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+RUN dnf install --releasever 8.4 python3-tvault-horizon-plugin-el8 -y
+RUN dnf --releasever 8.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Copy necessary files
@@ -21,6 +34,19 @@ RUN cp -r /usr/lib/python3.6/site-packages/trilio_dashboard/templatetags/* /usr/
 
 RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
 RUN /usr/share/openstack-dashboard/manage.py compress --force
+
+
+
+## Clean repos
+RUN dnf clean all
+RUN dnf config-manager \
+  --disable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --disable advanced-virt-for-rhel-8-x86_64-rpms \
+  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --disable fast-datapath-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-baseos-tus-rpms \
+  --disable rhel-8-for-x86_64-appstream-tus-rpms \
+  --disable codeready-builder-for-rhel-8-x86_64-rpms
 
 ## Add license
 RUN mkdir /licenses

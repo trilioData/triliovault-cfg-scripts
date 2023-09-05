@@ -17,17 +17,40 @@ USER root
 ##Install datamover packages
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf clean all && dnf config-manager \
+  --disable rhel-8-for-x86_64-baseos-rpms \
+  --disable rhel-8-for-x86_64-appstream-rpms
+
+RUN dnf config-manager \
   --enable openstack-16.1-for-rhel-8-x86_64-rpms \
-  --enable fast-datapath-for-rhel-8-x86_64-rpms
-RUN dnf -y install python3-nova python3-retrying
-RUN dnf install python3-dmapi -y
-RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+  --enable fast-datapath-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-tus-rpms \
+  --enable rhel-8-for-x86_64-appstream-tus-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms
+
+
+RUN dnf --releasever 8.2 -y install python3-nova python3-retrying
+RUN dnf install --releasever 8.2 python3-dmapi -y
+RUN dnf --releasever 8.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 RUN  rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
+
+##Clean subscription
+RUN dnf config-manager \
+  --disable openstack-16.1-for-rhel-8-x86_64-rpms \
+  --disable advanced-virt-for-rhel-8-x86_64-rpms \
+  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --disable fast-datapath-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-baseos-tus-rpms \
+  --disable rhel-8-for-x86_64-appstream-tus-rpms
+
+RUN dnf clean all && rm -f /etc/yum.repos.d/trilio.repo
+
 
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses
+
 
 ##Become nova user for further operations
 USER dmapi
