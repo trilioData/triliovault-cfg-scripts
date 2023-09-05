@@ -29,7 +29,7 @@ RUN dnf config-manager \
 
 RUN dnf install --releasever 8.2 openstack-nova-common python3-nova python3-novaclient udev fuse -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
-RUN dnf install --releasever 8.2 python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt-6.0.0-1.module+el8.3.0+6423+e4cb6418 python3-cinderclient qemu-kvm-block-rbd -y
+RUN dnf install --releasever 8.2 python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 RUN dnf --releasever 8.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt
 
 
