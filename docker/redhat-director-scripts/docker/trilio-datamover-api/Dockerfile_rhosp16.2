@@ -19,11 +19,32 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN dnf clean all && dnf config-manager \
   --enable openstack-16.2-for-rhel-8-x86_64-rpms \
   --enable fast-datapath-for-rhel-8-x86_64-rpms
-RUN dnf -y install python3-nova python3-retrying
-RUN dnf install python3-dmapi -y
-RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
-RUN  rm -f /etc/yum.repos.d/trilio.repo
+
+RUN dnf config-manager \
+  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --enable fast-datapath-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-tus-rpms \
+  --enable rhel-8-for-x86_64-appstream-tus-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms
+
+RUN dnf --releasever 8.4 -y install python3-nova python3-retrying
+RUN dnf install --releasever 8.4 python3-dmapi -y
+RUN dnf --releasever 8.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
+RUN rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
+
+
+##Disable repos and Clean subscription
+RUN dnf config-manager \
+  --disable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --disable advanced-virt-for-rhel-8-x86_64-rpms \
+  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --disable fast-datapath-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-baseos-tus-rpms \
+  --disable rhel-8-for-x86_64-appstream-tus-rpms
+  
+RUN yum clean all && rm -f /etc/yum.repos.d/trilio.repo
 
 ##Copy license file
 RUN mkdir /licenses
