@@ -10,7 +10,6 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       summary="TrilioData trilio-datamover-api" \
       description="TrilioData trilio-datamover-api"
 
-
 # switch to root and install a custom RPM, etc.
 USER root
 
@@ -33,3 +32,4 @@ COPY licensing.txt /licenses
 
 ##Become nova user for further operations
 USER dmapi
+

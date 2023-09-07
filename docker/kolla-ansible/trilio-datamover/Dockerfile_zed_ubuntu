@@ -38,9 +38,6 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova \
  && usermod -aG kvm nova
 
-# ADD tvault-contego.conf /etc/tvault-contego/tvault-contego.conf
-# RUN chown nova:nova /etc/tvault-contego/tvault-contego.conf
-
 RUN mkdir -p /var/triliovault-mounts \
  && chown nova:nova /var/triliovault-mounts \
  && mkdir -p /var/triliovault \
