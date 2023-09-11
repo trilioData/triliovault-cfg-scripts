@@ -23,11 +23,10 @@ ADD trilio.repo /etc/yum.repos.d/
 ##Install Required Packages
 RUN set -ex \
     && dnf update -y \
-    && dnf install -y epel-release \
-    && dnf install -y centos-release-openstack-yoga python3-devel python3-nova
+    && dnf install -y epel-release
 	
 ##Install datamover packages
-RUN dnf install python3-dmapi python3-nova -y
+RUN dnf install python3-dmapi-el9 python3-nova python3-devel -y
 
 ## Create Config Dir
 RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \

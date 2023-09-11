@@ -21,9 +21,7 @@ ADD trilio.repo /etc/yum.repos.d/
 
 ##Install Required Packages
 RUN set -ex \
-    && dnf update -y \
-    && dnf install -y epel-release \
-    && dnf install -y centos-release-openstack-yoga
+    && dnf update -y
 
 ##Add nova user into the disk and kvm group
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
@@ -37,7 +35,7 @@ RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovaul
 	
 ##Install datamover packages
 RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
-    && dnf install python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
+    && dnf install python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start

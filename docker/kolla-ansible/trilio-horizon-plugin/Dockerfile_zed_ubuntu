@@ -14,8 +14,8 @@ LABEL name="ubuntu-binary-trilio-horizon-plugin" \
 ARG TRILIO_FURY_REPO="DEFAULT"
 #Eg. TRILIO_FURY_REPO : triliodata-dev-5-0
 RUN export PIP_EXTRA_INDEX_URL=https://pypi.fury.io/${TRILIO_FURY_REPO} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
-RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/dashboards/local/enabled/*.py /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/enabled/
-RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/dashboards/templatetags/*.py /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/templatetags/
+RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/enabled/
+RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/templatetags/
 
 
 #
