@@ -20,7 +20,7 @@ ssl_key_file =
 api_paste_config = /etc/triliovault-datamover/api-paste.ini
 
 [database]
-connection = mysql+pymysql://{{ triliovault_db_details[0].triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_db_details[0].triliovault_database_address }}/{{ triliovault_db_details[0].triliovault_database_name }}
+connection = mysql+pymysql://{{ triliovault_db_details[0].triliovault_datamover_database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].triliovault_datamover_database_address }}/{{ triliovault_db_details[0].triliovault_datamover_database_name }}
 
 [keystone_authtoken]
 www_authenticate_uri = {{ keystone_internal_url }}
@@ -28,7 +28,7 @@ auth_url = {{ keystone_admin_url }}
 auth_type = password
 project_name = service
 username = {{ triliovault_datamover_keystone_user }}
-password = {{ triliovault_datamover_api_ks_password }}
+password = {{ triliovault_datamover_keystone_password }}
 cafile = {{ openstack_cacert }}
 memcache_security_strategy = ENCRYPT
 memcache_secret_key = {{ memcache_secret_key }}
