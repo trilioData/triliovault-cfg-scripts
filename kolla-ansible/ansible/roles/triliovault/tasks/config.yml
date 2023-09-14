@@ -34,32 +34,18 @@
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
 
-- name: Create triliovault-datamover-api log dir
+- name: Create log directories
   become: true
   file:
-    path: "/var/log/kolla/triliovault-datamover-api"
-    mode: '0755'
-    recurse: yes
-    owner: "63630"
-    group: "63630"
-    state: directory
-  delegate_to: localhost
-
-- name: Create triliovault-wlm services logs dir
-  become: true
-  file:
-    path: "/var/log/kolla/{{ item }}"
-    mode: '0755'
-    recurse: yes
-    owner: "42436"
-    group: "42436"
-    state: directory
-  with_items:
-    - triliovault-wlm-api
-    - triliovault-wlm-workloads
-    - triliovault-wlm-scheduler
-    - triliovault-wlm-cron
-  delegate_to: localhost
+    path: "/var/log/kolla/{{ item.key }}"
+    state: "directory"
+    owner: "{{ item.value.user }}"
+    group: "{{ item.value.group }}"
+    mode: "0755"
+  when:
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+  with_dict: "{{ triliovault_services }}"
 
 - name: Ensuring config directories exist
   become: true
