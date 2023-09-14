@@ -335,10 +335,6 @@ triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | s
 
 ###### Optional configurable
 ## TrilioVault database user
-triliovault_datamover_database_user: "dmapi"
-triliovault_datamover_database_name: "dmapi"
-triliovault_datamover_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
 
 triliovault_db_details:
   - group_name:  "triliovault-datamover-api"
