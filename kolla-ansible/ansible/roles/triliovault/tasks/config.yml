@@ -39,8 +39,8 @@
   file:
     path: "/var/log/kolla/{{ item.key }}"
     state: "directory"
-    owner: "{{ item.value.user }}"
-    group: "{{ item.value.group }}"
+    owner: "{{ item.value.run_user }}"
+    group: "{{ item.value.run_group }}"
     mode: "0755"
   when:
     - inventory_hostname in groups[item.value.group]
