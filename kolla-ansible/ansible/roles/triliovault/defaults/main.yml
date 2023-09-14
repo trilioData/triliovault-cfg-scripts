@@ -51,6 +51,7 @@ triliovault_services:
     container_name: "triliovault_datamover"
     group: "{{ triliovault_datamover_group }}"
     image: "{{ triliovault_datamover_image_full }}"
+    ipc_mode: "host"
     enabled: True
     privileged: True
     volumes: "{{ triliovault_datamover_default_volumes }}"
@@ -281,19 +282,22 @@ triliovault_datamover_api_service_endpoints:
    - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
    - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
 
+triliovault_wlm_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_wlm_api_admin_endpoint }}'}
+
+triliovault_wlm_api_service_endpoints:
+   - {'interface': 'internal', 'url': '{{ triliovault_wlm_api_internal_endpoint }}'}
+   - {'interface': 'public', 'url': '{{ triliovault_wlm_api_public_endpoint }}'}
+
 triliovault_ks_services:
   - name: "dmapi"
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
-    endpoints:
-      - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
-      - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
-      - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
     triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
-    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
+    endpoints: "{{ triliovault_wlm_api_service_endpoints + ([triliovault_wlm_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
     triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
@@ -335,20 +339,18 @@ triliovault_datamover_database_user: "dmapi"
 triliovault_datamover_database_name: "dmapi"
 triliovault_datamover_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
-triliovault_wlm_database_user: "workloadmgr"
-triliovault_wlm_database_name: "workloadmgr"
-triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
 
 triliovault_db_details:
   - group_name:  "triliovault-datamover-api"
-    triliovault_datamover_database_user: "dmapi"
-    triliovault_datamover_database_name: "dmapi"
-    triliovault_datamover_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
+    database_user: "dmapi"
+    database_password: "{{ triliovault_datamover_database_password }}"
+    database_name: "dmapi"
+    database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
   - group_name:  "triliovault-wlm-api"
-    triliovault_wlm_database_name: "workloadmgr"
-    triliovault_wlm_database_user: "workloadmgr"
-    triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
+    database_name: "workloadmgr"
+    database_user: "workloadmgr"
+    database_password: "{{ triliovault_wlm_database_password }}"
+    database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 
 ####################

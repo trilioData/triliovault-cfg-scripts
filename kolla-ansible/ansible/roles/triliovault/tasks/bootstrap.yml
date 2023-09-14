@@ -9,7 +9,7 @@
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ item.triliovault_datamover_database_name }}"
+      name: "{{ item.database_name }}"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0] }}"
   with_items:
@@ -21,13 +21,14 @@
 - name: Create database for triliovault services for zed and next releases
   become: true
   kolla_toolbox:
+    container_engine: "{{ kolla_container_engine }}"
     module_name: mysql_db
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ item.triliovault_datamover_database_name }}"
+      name: "{{ item.database_name }}"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0] }}"
   with_items:
@@ -45,10 +46,10 @@
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ item.triliovault_wlm_database_user }}"
-      password: "{{ triliovault_wlm_database_password }}"
+      name: "{{ item.database_user }}"
+      password: "{{ item.database_password }}"
       host: "%"
-      priv: "{{ item.triliovault_wlm_database_name }}.*:ALL"
+      priv: "{{ item.database_name }}.*:ALL"
       append_privs: "yes"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0]  }}"
@@ -60,16 +61,17 @@
 
 - name: Create triliovault database users and ser permissions for zed and next releases
   kolla_toolbox:
+    container_engine: "{{ kolla_container_engine }}"
     module_name: mysql_user
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ database_port }}"
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
-      name: "{{ item.triliovault_wlm_database_user }}"
-      password: "{{ triliovault_wlm_database_password }}"
+      name: "{{ item.database_user }}"
+      password: "{{ item.database_password }}"
       host: "%"
-      priv: "{{ item.triliovault_wlm_database_name }}.*:ALL"
+      priv: "{{ item.database_name }}.*:ALL"
       append_privs: "yes"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0]  }}"
