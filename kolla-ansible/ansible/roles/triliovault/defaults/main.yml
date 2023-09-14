@@ -10,6 +10,8 @@ triliovault_services:
     privileged: False
     volumes: "{{ triliovault_datamover_api_default_volumes }}"
     dimensions: "{{ triliovault_datamover_api_dimensions }}"
+    user: "63630"
+    group: "63630"
     haproxy:
       triliovault_datamover_api:
         enabled: "{{ enable_triliovault }}"
@@ -54,6 +56,8 @@ triliovault_services:
     ipc_mode: "host"
     enabled: True
     privileged: True
+    user: "42436"
+    group: "42436"
     volumes: "{{ triliovault_datamover_default_volumes }}"
     dimensions: "{{ triliovault_datamover_dimensions }}"
   triliovault-wlm-api:
@@ -62,6 +66,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    user: "42436"
+    group: "42436"
     volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
     haproxy:
@@ -107,6 +113,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    user: "42436"
+    group: "42436"
     volumes: "{{ triliovault_wlm_workloads_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-scheduler:
@@ -115,6 +123,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    user: "42436"
+    group: "42436"
     volumes: "{{ triliovault_wlm_scheduler_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-cron:
@@ -123,6 +133,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    user: "42436"
+    group: "42436"
     volumes: "{{ triliovault_wlm_cron_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
 
@@ -178,7 +190,7 @@ triliovault_datamover_default_volumes:
   - "{{ node_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
-  - "kolla_logs:/var/log/"
+  - "/var/log/kolla/triliovault-datamover:/var/log/triliovault:rw"
   - "/dev:/dev"
   - "/lib/modules:/lib/modules:ro"
   - "/run:/run:shared"
