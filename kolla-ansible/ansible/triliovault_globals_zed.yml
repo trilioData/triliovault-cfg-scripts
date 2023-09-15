@@ -16,6 +16,9 @@ os_endpoint_type: ""
 # TriliovaultKeystoneUserDomainName: "Default"
 # TriliovaultKeystoneUserRoleName: "admin"
 
+## Do not change this parameter value
+kolla_install_type: "source"
+
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
@@ -56,7 +59,7 @@ triliovault_backup_target: 'nfs'
 triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
 ## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
 ## Keep default values, unless you have a special need.
-triliovault_nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
 ## Valid for 'nfs' backup target only.
 ## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then 

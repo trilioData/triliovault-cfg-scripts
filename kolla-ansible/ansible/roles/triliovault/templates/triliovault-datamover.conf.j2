@@ -54,7 +54,7 @@ max_commit_pending = 3
 dmapi_transport_url = {{ rpc_transport_url }}
 
 [dmapi_database]
-connection = mysql+pymysql://{{ triliovault_database_user }}:{{ triliovault_datamover_api_db_password }}@{{ triliovault_database_address }}/{{ triliovault_database_name }}
+connection = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
 
 {% if cinder_backend_ceph == "yes" %}
 
