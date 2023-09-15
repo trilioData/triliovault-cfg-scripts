@@ -10,6 +10,8 @@ triliovault_services:
     privileged: False
     volumes: "{{ triliovault_datamover_api_default_volumes }}"
     dimensions: "{{ triliovault_datamover_api_dimensions }}"
+    run_user: "63630"
+    run_group: "63630"
     haproxy:
       triliovault_datamover_api:
         enabled: "{{ enable_triliovault }}"
@@ -51,8 +53,11 @@ triliovault_services:
     container_name: "triliovault_datamover"
     group: "{{ triliovault_datamover_group }}"
     image: "{{ triliovault_datamover_image_full }}"
+    ipc_mode: "host"
     enabled: True
     privileged: True
+    run_user: "42436"
+    run_group: "42436"
     volumes: "{{ triliovault_datamover_default_volumes }}"
     dimensions: "{{ triliovault_datamover_dimensions }}"
   triliovault-wlm-api:
@@ -61,6 +66,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    run_user: "42436"
+    run_group: "42436"
     volumes: "{{ triliovault_wlm_api_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
     haproxy:
@@ -106,6 +113,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    run_user: "42436"
+    run_group: "42436"
     volumes: "{{ triliovault_wlm_workloads_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-scheduler:
@@ -114,6 +123,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    run_user: "42436"
+    run_group: "42436"
     volumes: "{{ triliovault_wlm_scheduler_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
   triliovault-wlm-cron:
@@ -122,6 +133,8 @@ triliovault_services:
     image: "{{ triliovault_wlm_image_full }}"
     enabled: True
     privileged: True
+    run_user: "42436"
+    run_group: "42436"
     volumes: "{{ triliovault_wlm_cron_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
 
@@ -177,7 +190,7 @@ triliovault_datamover_default_volumes:
   - "{{ node_config_directory }}/triliovault-datamover/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
-  - "kolla_logs:/var/log/"
+  - "/var/log/kolla/triliovault-datamover:/var/log/triliovault:rw"
   - "/dev:/dev"
   - "/lib/modules:/lib/modules:ro"
   - "/run:/run:shared"
@@ -275,22 +288,28 @@ trilio_wlm_api_haproxy_http_request_timeout: "10m"
 ####################
 # Keystone
 ####################
+triliovault_datamover_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
+
+triliovault_datamover_api_service_endpoints:
+   - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
+   - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+
+triliovault_wlm_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_wlm_api_admin_endpoint }}'}
+
+triliovault_wlm_api_service_endpoints:
+   - {'interface': 'internal', 'url': '{{ triliovault_wlm_api_internal_endpoint }}'}
+   - {'interface': 'public', 'url': '{{ triliovault_wlm_api_public_endpoint }}'}
+
 triliovault_ks_services:
   - name: "dmapi"
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
-    endpoints:
-      - {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
-      - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
-      - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
+    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
     triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
-    endpoints:
-      - {'interface': 'admin', 'url': '{{ triliovault_wlm_api_admin_endpoint }}'}
-      - {'interface': 'internal', 'url': '{{ triliovault_wlm_api_internal_endpoint }}'}
-      - {'interface': 'public', 'url': '{{ triliovault_wlm_api_public_endpoint }}'}
+    endpoints: "{{ triliovault_wlm_api_service_endpoints + ([triliovault_wlm_api_service_admin_endpoint_full] if openstack_release != 'zed' else []) }}"
     triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
@@ -306,11 +325,11 @@ service_ks_register_delay: 10
 triliovault_ks_users:
   - project: "service"
     user: "{{ triliovault_datamover_keystone_user }}"
-    password: "{{ triliovault_datamover_api_ks_password }}"
+    password: "{{ triliovault_datamover_keystone_password }}"
     role: "admin"
   - project: "service"
     user: "{{ triliovault_wlm_keystone_user }}"
-    password: "{{ triliovault_wlm_api_ks_password }}"
+    password: "{{ triliovault_wlm_keystone_password }}"
     role: "admin"
 
 ####################
@@ -328,26 +347,18 @@ triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | s
 
 ###### Optional configurable
 ## TrilioVault database user
-triliovault_database_user: "dmapi"
-triliovault_database_name: "dmapi"
-triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
-triliovault_wlm_database_user: "workloadmgr"
-triliovault_wlm_database_name: "workloadmgr"
-triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
 
 triliovault_db_details:
   - group_name:  "triliovault-datamover-api"
-    triliovault_database_user: "dmapi"
-    triliovault_database_name: "dmapi"
-    triliovault_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-
-triliovault_wlm_db_details:
+    database_user: "dmapi"
+    database_password: "{{ triliovault_datamover_database_password }}"
+    database_name: "dmapi"
+    database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
   - group_name:  "triliovault-wlm-api"
-    triliovault_wlm_database_name: "workloadmgr"
-    triliovault_wlm_database_user: "workloadmgr"
-    triliovault_wlm_database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
+    database_name: "workloadmgr"
+    database_user: "workloadmgr"
+    database_password: "{{ triliovault_wlm_database_password }}"
+    database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
 
 ####################
@@ -379,10 +390,17 @@ triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}"
 triliovault_wlm_api_log_dir: "{{ triliovault_kolla_log_dir }}"
 
 
+## Initializing kolla_install_type parameter as Zed release have removed this parameter.
+## Following is the default value for kolla_install_type variable.
+kolla_install_type: "source"
+
 ############ Following variables are user configurable ##########
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
+
+## Container engine default value
+kolla_container_engine: "docker"
 
 ## TrilioVault's containers tag
 triliovault_tag: "5.0.X-wallaby"
