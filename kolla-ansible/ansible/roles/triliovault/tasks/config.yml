@@ -113,18 +113,35 @@
 
 ##config
 
-- name: Copying triliovault conf files
+- name: Copying triliovault wlm conf file
   become: true
   template:
-    src: "{{ item.key }}.conf.j2"
-    dest: "{{ node_config_directory }}/{{ item.key }}/{{item.key}}.conf"
+    src: "triliovault-wlm.conf.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/{{ item }}.conf"
     mode: "0660"
   when:
-    - inventory_hostname in groups[item.value.group]
-    - item.value.enabled | bool
-  with_dict: "{{ triliovault_services }}"
+    - inventory_hostname in groups[item]
+  with_items:
+    - triliovault-wlm-api
+    - triliovault-wlm-cron
+    - triliovault-wlm-scheduler
+    - triliovault-wlm-workloads
   notify:
-    - "Restart {{ item.key }} container"
+    - "Restart {{ item }} container"
+
+- name: Copying triliovault datamover and datamover api conf files
+  become: true
+  template:
+    src: "{{ item }}.conf.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/{{ item }}.conf"
+    mode: "0660"
+  when:
+    - inventory_hostname in groups[item]
+  with_items:
+    - triliovault-datamover-api
+    - triliovault-datamover
+  notify:
+    - "Restart {{ item }} container"
 
 - name: Copying triliovault-object-store conf files
   become: true
