@@ -42,7 +42,7 @@
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
-            "source": "{{ node_config_directory }}/triliovault-datamover/triliovault-s3.pem",
+            "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
             "dest": "/etc/triliovault-datamover/triliovault-s3.pem",
             "owner": "nova",
             "perm": "0600"
