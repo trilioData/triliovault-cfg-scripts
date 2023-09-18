@@ -43,7 +43,7 @@
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
-            "dest": "/etc/triliovault-datamover/triliovault-s3.pem",
+            "dest": "/etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}",
             "owner": "nova",
             "perm": "0600"
         }{% endif %}
