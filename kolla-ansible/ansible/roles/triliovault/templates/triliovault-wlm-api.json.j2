@@ -26,7 +26,7 @@
 			"perm": "0644"
 		}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
 	        {
-        	        "source": "{{ node_config_directory }}/triliovault-wlm-api/triliovault-s3.pem",
+        	        "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
 	                "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
         	        "owner": "nova",
 	                "perm": "0600"
