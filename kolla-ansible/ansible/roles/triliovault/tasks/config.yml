@@ -308,33 +308,56 @@
   when:
     - cinder_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
-
-- name: Copy over triliovault backup target certs - ceph s3
+- name: Copy over triliovault backup target certs - ceph s3 for triliovault-datamover
   copy:
-    src: "{{ triliovault_s3_ssl_cert_file_path }}"
+    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
     dest: "{{ node_config_directory }}/triliovault-datamover/triliovault-s3.pem"
     mode: "0660"
   become: true
   when:
     - triliovault_copy_ceph_s3_ssl_cert | bool
     - inventory_hostname in groups[triliovault_datamover_group]
-    - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
-    - Restart triliovault-datamover container  
-    
-- name: Copy over triliovault-wlm backup target certs - ceph s3
+    - Restart triliovault-datamover container
+- name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-api
   copy:
-    src: "{{ triliovault_s3_ssl_cert_file_path }}"
+    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
     dest: "{{ node_config_directory }}/triliovault-wlm-api/triliovault-s3.pem"
     mode: "0660"
   become: true
   when:
     - triliovault_copy_ceph_s3_ssl_cert | bool
     - inventory_hostname in groups[triliovault_wlm_api_group]
-    - triliovault_services['triliovault-wlm-api'].enabled | bool
   notify:
-    - Restart triliovault-wlm-api container  
-      
+    - Restart triliovault-wlm-api container
+
+
+- name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-workloads
+  copy:
+    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/triliovault-s3.pem"
+    mode: "0660"
+  become: true
+  when:
+    - triliovault_copy_ceph_s3_ssl_cert | bool
+    - inventory_hostname in groups[triliovault_wlm_workloads_group]
+  notify:
+    - Restart triliovault-wlm-workloads container
+
+
+- name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-scheduler
+  copy:
+    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
+    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/triliovault-s3.pem"
+    mode: "0660"
+  become: true
+  when:
+    - triliovault_copy_ceph_s3_ssl_cert | bool
+    - inventory_hostname in groups[triliovault_wlm_scheduler_group]
+  notify:
+    - Restart triliovault-wlm-scheduler container
+
+
 - name: Copying over nova.conf for triliovault datamover service
   become: true
   vars:
