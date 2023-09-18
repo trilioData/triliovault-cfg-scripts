@@ -311,7 +311,7 @@
 - name: Copy over triliovault backup target certs - ceph s3 for triliovault-datamover
   copy:
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/triliovault-datamover/triliovault-s3.pem"
+    dest: "{{ node_config_directory }}/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}"
     mode: "0660"
   become: true
   when:
@@ -322,7 +322,7 @@
 - name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-api
   copy:
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/triliovault-wlm-api/triliovault-s3.pem"
+    dest: "{{ node_config_directory }}/triliovault-wlm-api/{{ triliovault_s3_ssl_cert_file_name }}"
     mode: "0660"
   become: true
   when:
@@ -335,7 +335,7 @@
 - name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-workloads
   copy:
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/triliovault-s3.pem"
+    dest: "{{ node_config_directory }}/triliovault-wlm-workloads/t{{ triliovault_s3_ssl_cert_file_name }}"
     mode: "0660"
   become: true
   when:
@@ -348,7 +348,7 @@
 - name: Copy over triliovault backup target certs - ceph s3 for triliovault-wlm-scheduler
   copy:
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/triliovault-s3.pem"
+    dest: "{{ node_config_directory }}/triliovault-wlm-scheduler/{{ triliovault_s3_ssl_cert_file_name }}"
     mode: "0660"
   become: true
   when:
