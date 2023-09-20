@@ -47,3 +47,7 @@ chown  root:$user_name /etc/workloadmgr/tvault_key.pem
 if [ -d /var/triliovault-mounts ]; then
     chown -R $user_name:$user_name /var/triliovault-mounts
 fi
+
+if [ -d /var/lib/workloadmgr ]; then
+    chown -R $user_name:$user_name /var/lib/workloadmgr
+fi
