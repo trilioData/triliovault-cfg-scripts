@@ -26,11 +26,8 @@ RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-com
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
-#Copy executable files
-RUN mkdir -p /opt/tvault/ 
-ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
-RUN chown -R nova:nova /opt/tvault/ \
-   && chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
 ##Copy conf files
 ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers

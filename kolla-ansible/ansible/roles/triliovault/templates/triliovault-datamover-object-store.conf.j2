@@ -44,50 +44,10 @@ vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_n
 vault_data_directory_old = /var/triliovault
 vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
 
-log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+log_config_append = /etc/triliovault-object-store/triliovault-object-store.conf
 
-debug = False
 verbose = True
-max_uploads_pending = 3
-max_commit_pending = 3
-
-dmapi_transport_url = {{ rpc_transport_url }}
-
-[dmapi_database]
-connection = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
-
-{% if cinder_backend_ceph == "yes" %}
-
-[libvirt]
-images_rbd_ceph_conf = /etc/ceph/ceph.conf
-rbd_user = {{ ceph_cinder_user }}
-
-[ceph]
-keyring_ext = .{{ ceph_cinder_user }}.keyring
-
-{% endif %}
-
-[contego_sys_admin]
-helper_command = sudo /usr/bin/privsep-helper
-
-{% if triliovault_backup_target == "other_s3_compatible" or triliovault_backup_target == "amazon_s3" %}
+vault_s3_max_pool_connections = 500
 
 [s3fuse_sys_admin]
-helper_command = sudo /usr/bin/privsep-helper
-
-{% endif %}
-
-[conductor]
-use_local = True
-
-[oslo_messaging_rabbit]
-ssl = false
-
-[cinder]
-http_retries = {{ cinder_http_retries }}
-
-[barbican]
-barbican_endpoint_type = internal
-verify_ssl = true
-verify_ssl_path = {{ openstack_cacert }}
-
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper

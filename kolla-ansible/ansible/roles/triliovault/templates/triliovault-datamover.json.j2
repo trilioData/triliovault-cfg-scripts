@@ -1,8 +1,14 @@
 {    
     {% set triliovault_backup_target_type = 's3' if triliovault_backup_target in ['amazon_s3', 'other_s3_compatible'] else 'nfs' %}	
 
-    "command": "/opt/tvault/start_datamover_{{ triliovault_backup_target_type }}",
+    "command": "/opt/triliovault/start-triliovault-datamover.sh",
     "config_files": [
+		{
+			"source": "{{ container_config_directory }}/start-triliovault-datamover.sh",
+			"dest": "/opt/triliovault/start-triliovault-datamover.sh",
+			"owner": "nova",
+			"perm": "0755"
+		},
         {
             "source": "{{ container_config_directory }}/nova.conf",
             "dest": "/etc/nova/nova.conf",
@@ -43,7 +49,7 @@
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
-            "dest": "/etc/triliovault-datamover/triliovault-s3.pem",
+            "dest": "/etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}",
             "owner": "nova",
             "perm": "0600"
         }{% endif %}
