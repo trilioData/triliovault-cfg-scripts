@@ -25,6 +25,8 @@ COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
 RUN usermod -a -G kolla dmapi
 
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
 ##Copy license file
 RUN mkdir /licenses

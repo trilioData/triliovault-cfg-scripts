@@ -44,6 +44,9 @@ RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-obje
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
 
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
 ## Nova user changes
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
 
