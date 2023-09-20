@@ -301,6 +301,27 @@
   notify:
     - "Restart triliovault-datamover container"
 
+
+- name: Copy TrilioVault Service Start Scripts
+  copy:
+    src: "start-{{ item }}.sh.j2""
+    dest: "{{ node_config_directory }}/{{ item }}/start-{{ item }}.sh"
+    mode: "0755"
+  become: true
+  when:
+    - inventory_hostname in groups[item]
+  with_items:
+    - triliovault-datamover
+    - triliovault-datamover-api
+    - triliovault-wlm-api
+    - triliovault-wlm-cron
+    - triliovault-wlm-scheduler
+    - triliovault-wlm-workloads
+  notify:
+    - "Restart {{ item }} container"
+
 - include_tasks: check-containers.yml
   when: kolla_action != "config"
+
+
 

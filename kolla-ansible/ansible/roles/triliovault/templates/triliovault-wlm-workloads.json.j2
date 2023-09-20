@@ -1,5 +1,5 @@
 {
-	"command": "/usr/bin/python3 /usr/bin/workloadmgr-workloads --config-file=/etc/triliovault-wlm/triliovault-wlm.conf",
+	"command": "/opt/triliovault/start-triliovault-wlm-workloads.sh",
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-wlm-workloads.conf",
 			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
@@ -23,7 +23,13 @@
                         "dest": "/etc/fuse.conf",
                         "owner": "nova",
                         "perm": "0644"
-                }{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
+                },
+		{
+			"source": "{{ container_config_directory }}/start-triliovault-wlm-workloads.sh",
+			"dest": "/opt/triliovault/start-triliovault-wlm-workloads.sh",
+			"owner": "nova",
+			"perm": "0755"
+		}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
                 {
                         "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
                         "dest": "/etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}",

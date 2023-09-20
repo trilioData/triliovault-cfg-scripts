@@ -1,5 +1,5 @@
 {
-	"command": "/usr/bin/python3 /usr/bin/dmapi-api",
+	"command": "/opt/triliovault/start-triliovault-datamover-api.sh",
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-datamover-api.conf",
 			"dest": "/etc/triliovault-datamover/triliovault-datamover-api.conf",
@@ -10,6 +10,12 @@
 			"source": "{{ container_config_directory }}/triliovault-datamover-api-logging.conf",
 			"dest": "/etc/triliovault-datamover/datamover_api_logging.conf",
 			"owner": "dmapi",
+			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/start-triliovault-datamover-api.sh",
+			"dest": "/opt/triliovault/start-triliovault-datamover-api.sh",
+			"owner": "nova",
 			"perm": "0755"
 		}
 	],
