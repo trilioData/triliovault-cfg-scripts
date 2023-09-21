@@ -44,7 +44,7 @@ vault_s3_ssl_cert = /etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}
 vault_data_directory_old = /var/triliovault
 vault_data_directory = {{ triliovault_parent_data_directory }}/triliovault-mounts
 
-log_config_append = /etc/triliovault-object-store/triliovault-object-store.conf
+log_config_append = /etc/triliovault-object-store/object_store_logging.conf
 
 verbose = True
 vault_s3_max_pool_connections = 500
