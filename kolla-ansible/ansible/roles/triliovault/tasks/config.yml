@@ -147,7 +147,7 @@
   become: true
   template:
     src: "triliovault-wlm-object-store.conf.j2"
-    dest: "/etc/kolla/{item}/triliovault-object-store.conf"
+    dest: "/etc/kolla/{{ item }}/triliovault-object-store.conf"
     mode: "0660"
   when:
     - inventory_hostname in groups[item]
@@ -303,8 +303,8 @@
 
 
 - name: Copy TrilioVault Service Start Scripts
-  copy:
-    src: "start-{{ item }}.sh.j2""
+  template:
+    src: "start-{{ item }}.sh.j2"
     dest: "{{ node_config_directory }}/{{ item }}/start-{{ item }}.sh"
     mode: "0755"
   become: true
