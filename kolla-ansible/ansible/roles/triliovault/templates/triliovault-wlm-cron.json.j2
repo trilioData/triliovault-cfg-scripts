@@ -18,6 +18,12 @@
                         "owner": "nova",
                         "perm": "0755"
         },
+        {
+            "source": "{{ container_config_directory }}/triliovault-object-store.conf",
+            "dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
+            "owner": "nova",
+            "perm": "0600"
+        },
 		{
 			"source": "{{ container_config_directory }}/start-triliovault-wlm-cron.sh",
 			"dest": "/opt/triliovault/start-triliovault-wlm-cron.sh",

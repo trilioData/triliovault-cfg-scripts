@@ -1,5 +1,5 @@
 {
-	"command": "opt/triliovault/start-triliovault-wlm-api.sh",
+	"command": "/opt/triliovault/start-triliovault-wlm-api.sh",
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-wlm-api.conf",
 			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
@@ -18,6 +18,12 @@
 			"owner": "nova",
 			"perm": "0755"
 
+        },
+        {
+            "source": "{{ container_config_directory }}/triliovault-object-store.conf",
+            "dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
+            "owner": "nova",
+            "perm": "0600"
         },
  		{
 			"source": "{{ container_config_directory }}/fuse.conf",
