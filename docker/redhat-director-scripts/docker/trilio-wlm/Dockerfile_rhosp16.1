@@ -24,7 +24,7 @@ RUN dnf config-manager \
   --enable advanced-virt-for-rhel-8-x86_64-rpms \
   --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
   --enable codeready-builder-for-rhel-8-x86_64-rpms \
-  --enable rhel-8-for-x86_64-highavailability-rpms
+  --enable rhel-8-for-x86_64-highavailability-tus-rpms
 
 RUN dnf install --releasever 8.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
@@ -64,7 +64,7 @@ RUN dnf config-manager \
   --disable rhel-8-for-x86_64-baseos-tus-rpms \
   --disable rhel-8-for-x86_64-appstream-tus-rpms \
   --disable codeready-builder-for-rhel-8-x86_64-rpms \
-  --disable rhel-8-for-x86_64-highavailability-rpms
+  --disable rhel-8-for-x86_64-highavailability-tus-rpms
 
 ##Add license
 RUN mkdir /licenses
