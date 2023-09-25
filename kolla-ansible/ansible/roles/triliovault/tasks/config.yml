@@ -260,7 +260,7 @@
     - triliovault-wlm-scheduler
     - triliovault-wlm-workloads
   notify:
-    - "Restart {{ item }}} container"
+    - "Restart {{ item }} container"
 
 - include_tasks: ceph_cinder.yml
   when:
