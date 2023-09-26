@@ -1,5 +1,5 @@
 {
-	"command": "/usr/bin/python3 /usr/bin/workloadmgr-cron --config-file=/etc/triliovault-wlm/triliovault-wlm.conf",
+	"command": "/opt/triliovault/start-triliovault-wlm-cron.sh",
 	"config_files": [{
 			"source": "{{ container_config_directory }}/triliovault-wlm-cron.conf",
 			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
@@ -17,13 +17,19 @@
                         "dest": "/etc/triliovault-wlm/api-paste.ini",
                         "owner": "nova",
                         "perm": "0755"
-                }{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
-                {
-                        "source": "{{ triliovault_s3_ssl_cert_file_path }}",
-                        "dest": "/etc/triliovault-wlm/triliovault-s3.pem",
-                        "owner": "nova",
-                        "perm": "0600"
-                }{% endif %}
+        },
+        {
+            "source": "{{ container_config_directory }}/triliovault-object-store.conf",
+            "dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
+            "owner": "nova",
+            "perm": "0600"
+        },
+		{
+			"source": "{{ container_config_directory }}/start-triliovault-wlm-cron.sh",
+			"dest": "/opt/triliovault/start-triliovault-wlm-cron.sh",
+			"owner": "nova",
+			"perm": "0755"
+		}
 	],
 	"permissions": [{
 		"path": "/var/log/triliovault",

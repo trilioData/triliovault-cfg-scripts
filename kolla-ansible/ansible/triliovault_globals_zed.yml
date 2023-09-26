@@ -16,6 +16,9 @@ os_endpoint_type: ""
 # TriliovaultKeystoneUserDomainName: "Default"
 # TriliovaultKeystoneUserRoleName: "admin"
 
+## Do not change this parameter value
+kolla_install_type: "source"
+
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
 enable_triliovault: "yes"
