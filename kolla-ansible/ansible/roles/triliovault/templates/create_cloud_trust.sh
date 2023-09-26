@@ -10,19 +10,23 @@ if [[ -f "$cloudrc" ]]; then
         for attempt in {1..5};
         do
                 echo -e "Attempting to create wlm-cloud admin trust, Attempt Number: $attempt"
-                workloadmgr trust-create --is_cloud_trust True admin --insecure
+                command_output=$(workloadmgr trust-create --is_cloud_trust True admin --insecure 2>&1)
+                echo "Command output: $command_output"
                 status=$?
-                if [ $status -eq 0 ]; then
-                        echo -e "wlm cloud admin trust created successfully"
-                        break
-                else
-                        echo -e "wlm cloud admin trust create command failed. Will re-try after 30 seconds"
+                if [[ $command_output == *"Service Unavailable"* ]]; then
+                        echo -e "wlm cloud admin trust create command failed due to wlm service unavailability. Will re-try after 30 seconds"
                         if [ $attempt -eq 5 ]; then
                            echo -e "Five attempts done, but wlm cloud trust creation still failing. Exiting."
                            exit $status
                         fi
                         sleep 30s
                         continue
+                elif [ $status -eq 0 ]; then
+                        echo -e "wlm cloud admin trust created successfully"
+                        break
+                else
+                        echo -e "wlm cloud admin trust creation failed, exiting"
+                        break
                 fi
         done
 else
