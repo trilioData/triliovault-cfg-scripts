@@ -1,6 +1,7 @@
 [DEFAULT]
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 
+
 {% if glance_enable_tls_backend | bool %}
 my_ip = 127.0.0.1
 {% else %}
@@ -12,7 +13,6 @@ osapi_workloads_listen = 127.0.0.1
 {% else %}
 osapi_workloads_listen = {{ api_interface_address }}
 {% endif %}
-
 
 {% if glance_enable_tls_backend | bool %}
 triliovault_hostnames = 127.0.0.1
@@ -28,7 +28,7 @@ rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
 
-sql_connection = mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address  }}/{{  triliovault_wlm_db_details[0].triliovault_wlm_database_user }}
+sql_connection = mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address  }}/{{  triliovault_db_details[1].database_user }}
 
 osapi_workloads_listen_port = {{ triliovault_wlm_api_listen_port }}
 
@@ -114,7 +114,7 @@ vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
 {# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
-vault_s3_ssl_cert = /etc/triliovault-wlm/triliovault-s3.pem
+vault_s3_ssl_cert = /etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}
 
 {% endif %}
 
@@ -144,17 +144,17 @@ www_authenticate_uri = https://{{ kolla_internal_fqdn }}:5000/v3
 auth_type = password
 
 username = {{ triliovault_wlm_keystone_user }}
-password = {{ triliovault_wlm_api_ks_password }}
+password = {{ triliovault_wlm_keystone_password }}
 
 admin_user = {{ triliovault_wlm_keystone_user }} 
-admin_password = {{ triliovault_wlm_api_ks_password }}
+admin_password = {{ triliovault_wlm_keystone_password }}
 
 project_domain_id = default
 user_domain_id = default
 
 auth_plugin = password
 
-cafile = {{ openstack_cacert }}
+cafile = {{ openstack_cacert }} 
 
 insecure = False
 service_token_roles_required = True
@@ -163,7 +163,7 @@ service_token_roles_required = True
 client_retry_limit = 3
 endpoint_type = internal
 
-cafile = {{ openstack_cacert }}
+cafile = {{ openstack_cacert }} 
 
 insecure = False
 
@@ -171,7 +171,7 @@ insecure = False
 script_location = /usr/share/workloadmgr/migrate_repo
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 
-sqlalchemy.url= mysql+pymysql://{{ triliovault_wlm_db_details[0].triliovault_wlm_database_user }}:{{ triliovault_wlm_api_db_password }}@{{ triliovault_wlm_db_details[0].triliovault_wlm_database_address }}/{{ triliovault_wlm_db_details[0].triliovault_wlm_database_name }}
+sqlalchemy.url= mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address }}/{{ triliovault_db_details[1].database_name }}
 
 
 [filesearch]
