@@ -16,7 +16,7 @@ USER root
 
 # temporary fix
 RUN dnf clean all
-RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true && dnf config-manager --disable epel epel-cisco-openh264
 
 ##Add trilio.repo which contains the path for TrilioVaultWLM RPM packages
 ADD trilio.repo /etc/yum.repos.d/
@@ -25,7 +25,13 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
      && dnf update -y \
      && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
-     && dnf install -y fuse python3-neutronclient python3-retrying python3-cryptography python3-mysqlclient
+     && dnf install -y fuse python3-neutronclient python3-retrying python3-cryptography
+
+RUN dnf install -y python3-novaclient \
+    && dnf remove -y --noautoremove python3-novaclient \
+    && dnf install -y python3-novaclient --repo=centos-openstack-zed
+
+RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient
 
 RUN /usr/bin/pip3 install --upgrade pip && /usr/bin/pip3 install igraph && /usr/bin/pip3 install namedatomiclock \
     && /usr/bin/pip3 install jinja2
