@@ -1,0 +1,79 @@
+FROM registry.redhat.io/rhosp-rhel9/openstack-base:17.1
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="trilio/openstack-nova-api-triliodata-triliovault-wlm-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.0.X" \
+      release="5.0" \
+      summary="Red Hat OpenStack Platform 16.2 nova-api TrilioData TrilioVault WLM" \
+      description="Red Hat OpenStack Platform 16.2 nova-api TrilioData TrilioVault WLM"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+## Configure dnf repos
+RUN dnf clean all && dnf config-manager --set-disabled '*'
+ADD trilio.repo /etc/yum.repos.d/
+
+
+RUN dnf config-manager \
+  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --enable fast-datapath-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-baseos-tus-rpms \
+  --enable rhel-8-for-x86_64-appstream-tus-rpms \
+  --enable advanced-virt-for-rhel-8-x86_64-rpms \
+  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --enable codeready-builder-for-rhel-8-x86_64-rpms \
+  --enable rhel-8-for-x86_64-highavailability-tus-rpms
+  
+
+## Epel repo is needed for ntfs-3g package
+RUN dnf install --releasever 8.4 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+## Install dependencies
+## Install dependencies
+
+RUN dnf --releasever 8.4 -y install openstack-nova-common python3-nova python3-novaclient udev \
+  fuse python3-neutronclient python3-retrying python3-cryptography \
+  python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
+  pacemaker-remote resource-agents pcs
+
+RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
+
+## Install Triliovault wlm packages
+RUN dnf -y --releasever 8.4 install workloadmgr python3-s3fuse-plugin
+
+## Install important security patches
+RUN dnf -y --releasever 8.4 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
+
+
+## Nova user changes
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
+
+##Copy conf files
+RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
+    && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
+
+##Clean subscription
+RUN yum clean all & dnf remove -y epel-release-*.el8.noarch
+RUN rm -f /etc/yum.repos.d/trilio.repo
+RUN dnf config-manager \
+  --disable openstack-16.2-for-rhel-8-x86_64-rpms \
+  --disable advanced-virt-for-rhel-8-x86_64-rpms \
+  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
+  --disable fast-datapath-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-baseos-tus-rpms \
+  --disable rhel-8-for-x86_64-appstream-tus-rpms \
+  --disable codeready-builder-for-rhel-8-x86_64-rpms \
+  --disable rhel-8-for-x86_64-highavailability-tus-rpms
+
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
+##Become nova user for further operations
+USER nova
