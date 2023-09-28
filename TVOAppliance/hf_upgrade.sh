@@ -210,10 +210,10 @@ function install_upgrade_package()
 	#before restarting the s3 service reload the modified service file. 
 	systemctl daemon-reload
 
-    #restrict access to tls1_2
-    limit_access_to_tls1_2	
+        #restrict access to tls1_2
+        limit_access_to_tls1_2	
         
-    #restart all active services
+        #restart all active services
 	SERVICE_NAMES=('tvault-config' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
 	for service in "${SERVICE_NAMES[@]}"
 	do
