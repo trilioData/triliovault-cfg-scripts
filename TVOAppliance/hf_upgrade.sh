@@ -95,6 +95,31 @@ function reconfigure_s3_service_path()
 	sed  -i "s~$src_string~$dest_string~g" $file_name
 
 }
+
+#function to keep only tls1_2 access
+function limit_access_to_tls1_2()
+{
+	config_file="/etc/nginx/nginx.conf"
+	config_line="ssl_protocols TLSv1.2;"
+
+	# Check if the line already exists in the file
+	if grep -q "$config_line" "$config_file"; then
+		echo "Line already exists in $config_file"
+	else
+	  # Add the line to the http section
+	  	sed -i '/^\s*http {/a \    ssl_protocols TLSv1.2;' "$config_file"
+	  	echo "Added line to $config_file"
+	  	pcs resource restart lb_nginx-clone
+	  	if [ $? -ne 0 ]; then
+	    		echo "Failed to restart resource"
+	  	else
+	    		echo "Resource restarted successfully"
+	  	fi
+	fi
+
+}
+
+
 #function to install the package on the system...
 function install_upgrade_package()
 {
@@ -185,7 +210,10 @@ function install_upgrade_package()
 	#before restarting the s3 service reload the modified service file. 
 	systemctl daemon-reload
 
-	#restart all active services
+    #restrict access to tls1_2
+    limit_access_to_tls1_2	
+        
+    #restart all active services
 	SERVICE_NAMES=('tvault-config' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
 	for service in "${SERVICE_NAMES[@]}"
 	do
