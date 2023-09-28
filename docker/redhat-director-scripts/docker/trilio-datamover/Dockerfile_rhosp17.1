@@ -59,8 +59,7 @@ RUN dnf config-manager \
   --disable fast-datapath-for-rhel-9-x86_64-rpms \
   --disable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
-  
-RUN yum clean all && rm -f /etc/yum.repos.d/trilio.repo
+RUN dnf clean all
 
 
 ##Add license
