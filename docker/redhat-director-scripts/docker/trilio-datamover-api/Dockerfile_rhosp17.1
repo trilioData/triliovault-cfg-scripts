@@ -4,10 +4,10 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="rhosp16/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.0.X" \
-      release="5.0" \
-      summary="Red Hat OpenStack Platform 16.2 nova-api TrilioData trilio-datamover-api" \
-      description="Red Hat OpenStack Platform 16.2 nova-api TrilioData trilio-datamover-api"
+      version="5.2.0" \
+      release="5.2" \
+      summary="Red Hat OpenStack Platform 17.1 nova-api TrilioData trilio-datamover-api" \
+      description="Red Hat OpenStack Platform 17.1 nova-api TrilioData trilio-datamover-api"
 
 
 # switch to root and install a custom RPM, etc.
@@ -15,36 +15,35 @@ USER root
 
 
 ##Install datamover packages
+RUN dnf clean all && dnf config-manager --set-disabled \*
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf clean all && dnf config-manager \
-  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
-  --enable fast-datapath-for-rhel-8-x86_64-rpms
 
 RUN dnf config-manager \
-  --enable openstack-16.2-for-rhel-8-x86_64-rpms \
-  --enable fast-datapath-for-rhel-8-x86_64-rpms \
-  --enable rhel-8-for-x86_64-baseos-tus-rpms \
-  --enable rhel-8-for-x86_64-appstream-tus-rpms \
-  --enable advanced-virt-for-rhel-8-x86_64-rpms \
-  --enable rhceph-4-tools-for-rhel-8-x86_64-rpms
+  --enable rhel-9-for-x86_64-baseos-eus-rpms \
+  --enable rhel-9-for-x86_64-appstream-eus-rpms \
+  --enable rhel-9-for-x86_64-highavailability-eus-rpms \
+  --enable openstack-17.1-for-rhel-9-x86_64-rpms \
+  --enable fast-datapath-for-rhel-9-x86_64-rpms \
+  --enable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
-RUN dnf --releasever 8.4 -y install python3-nova python3-retrying
-RUN dnf install --releasever 8.4 python3-dmapi -y
-RUN dnf --releasever 8.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
+
+RUN dnf --releasever 9.2 -y install python3-nova python3-retrying
+RUN dnf install --releasever 9.2 python3-dmapi-el9 -y
+RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
 RUN rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
 
 
 ##Disable repos and Clean subscription
 RUN dnf config-manager \
-  --disable openstack-16.2-for-rhel-8-x86_64-rpms \
-  --disable advanced-virt-for-rhel-8-x86_64-rpms \
-  --disable rhceph-4-tools-for-rhel-8-x86_64-rpms \
-  --disable fast-datapath-for-rhel-8-x86_64-rpms \
-  --disable rhel-8-for-x86_64-baseos-tus-rpms \
-  --disable rhel-8-for-x86_64-appstream-tus-rpms
-  
-RUN yum clean all && rm -f /etc/yum.repos.d/trilio.repo
+  --disable rhel-9-for-x86_64-baseos-eus-rpms \
+  --disable rhel-9-for-x86_64-appstream-eus-rpms \
+  --disable rhel-9-for-x86_64-highavailability-eus-rpms \
+  --disable openstack-17.1-for-rhel-9-x86_64-rpms \
+  --disable fast-datapath-for-rhel-9-x86_64-rpms \
+  --disable rhceph-6-tools-for-rhel-9-x86_64-rpms
+
+RUN dnf clean all
 
 ##Copy license file
 RUN mkdir /licenses
