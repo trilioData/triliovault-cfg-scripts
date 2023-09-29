@@ -21,13 +21,20 @@ RUN dnf config-manager \
   --enable rhel-9-for-x86_64-appstream-eus-rpms \
   --enable rhel-9-for-x86_64-highavailability-eus-rpms \
   --enable openstack-17.1-for-rhel-9-x86_64-rpms \
+  --enable openstack-17-for-rhel-9-x86_64-rpms \
   --enable fast-datapath-for-rhel-9-x86_64-rpms \
   --enable rhceph-6-tools-for-rhel-9-x86_64-rpms \
   --enable codeready-builder-for-rhel-9-x86_64-rpms
   
 
+RUN dnf install --releasever 9.2 -y python3-editor
+
+RUN dnf config-manager --disable openstack-17-for-rhel-9-x86_64-rpms
+
 ## Epel repo is needed for ntfs-3g package
-RUN dnf install --releasever 9.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+RUN dnf install --releasever 9.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
+    && dnf config-manager --disable epel-cisco-openh264
 
 ## Install dependencies
 RUN dnf --releasever 9.2 -y install openstack-nova-common python3-nova python3-novaclient udev \
