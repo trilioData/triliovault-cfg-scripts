@@ -1,0 +1,13 @@
+#!/bin/bash -x
+
+systemctl disable tripleo_triliovault_wlm_api.service
+systemctl stop tripleo_triliovault_wlm_api.service
+
+systemctl disable tripleo_triliovault_wlm_scheduler.service
+systemctl stop tripleo_triliovault_wlm_scheduler.service
+
+systemctl disable tripleo_triliovault_wlm_cron.service
+systemctl stop tripleo_triliovault_wlm_cron.service
+
+systemctl disable tripleo_triliovault_wlm_workloads.service
+systemctl stop tripleo_triliovault_wlm_workloads.service
