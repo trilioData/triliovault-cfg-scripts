@@ -1,0 +1,161 @@
+[DEFAULT]
+triliovault_hostnames = <%= @my_ip %>
+api_paste_config = /etc/triliovault-wlm/api-paste.ini
+api_workers = 4
+cloud_admin_role = admin
+compute_driver = libvirt.LibvirtDriver
+config_status = configured
+glance_api_version = 2
+global_job_scheduler_override = false
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+keystone_auth_version = 3
+log_config_append = /etc/triliovault-wlm/wlm_logging.conf
+max_wait_for_upload = 48
+neutron_api_insecure = false
+
+cloud_unique_id =
+
+<% if @interface == "public" -%>
+neutron_production_url =  <%= @neutron_public_auth_url %>
+nova_production_endpoint_template = <%= @nova_public_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_public_auth_url %>
+glance_production_api_servers = <%= @glance_public_auth_url %>
+keystone_endpoint_url = <%= @keystone_public_auth_url %>
+neutron_admin_auth_url = <%= @keystone_public_auth_url %>
+nova_admin_auth_url = <%= @keystone_public_auth_url %>
+<% elsif @interface == "admin" -%>
+neutron_production_url =  <%= @neutron_admin_auth_url %>
+nova_production_endpoint_template = <%= @nova_admin_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_admin_auth_url %>
+glance_production_api_servers = <%= @glance_admin_auth_url %>
+keystone_endpoint_url = <%= @keystone_admin_auth_url %>
+neutron_admin_auth_url = <%= @keystone_admin_auth_url %>
+nova_admin_auth_url = <%= @keystone_admin_auth_url %>
+<% else -%>
+neutron_production_url =  <%= @neutron_internal_auth_url %>
+nova_production_endpoint_template = <%= @nova_internal_auth_url %>%(project_id)s
+cinder_production_endpoint_template = <%= @cinder_internal_auth_url %>
+glance_production_api_servers = <%= @glance_internal_auth_url %>
+keystone_endpoint_url = <%= @keystone_internal_auth_url %>
+neutron_admin_auth_url = <%= @keystone_internal_auth_url %>
+nova_admin_auth_url = <%= @keystone_internal_auth_url %>
+<% end -%>
+
+osapi_workloads_listen_port = <%= @port %>
+region_name_for_services = <%= @region_name %>
+rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
+sql_connection = <%= @database_connection %>
+state_path = /opt/stack/data/workloadmgr
+taskflow_max_cache_size = 1024
+transport_url = <%= @default_transport_url %>
+trustee_role  = <%= @trustee_role %>
+use_syslog = false
+vault_data_directory = <%= @vault_data_dir %>
+vault_data_directory_old = /var/triliovault
+
+vault_storage_type = <%= @backup_target_type %>
+
+<% if @backup_target_type == "s3" -%>
+
+vault_s3_access_key_id = <%= @s3_accesskey %>
+vault_s3_secret_access_key = <%= @s3_secretkey  %>
+vault_s3_bucket = <%= @s3_bucket %>
+vault_s3_region_name = <%= @s3_region_name %>
+vault_s3_auth_version = <%= @s3_auth_version %>
+vault_s3_signature_version = <%= @s3_signature_version %>
+vault_s3_ssl = <%= @s3_ssl_enabled %>
+<% if @s3_ssl_enabled -%>
+vault_s3_ssl_cert = /etc/triliovault-datamover/s3-cert.pem
+<% else -%>
+vault_s3_ssl_cert =
+<% end -%>
+
+
+<% if @s3_type == "ceph_s3" -%>
+vault_s3_endpoint_url = <%= @s3_endpoint_url %>
+<% else -%>
+vault_s3_endpoint_url =
+<% end -%>
+
+vault_storage_das_device = none
+vault_storage_nfs_export = TrilioVault
+vault_storage_nfs_options =
+
+<% else -%>
+
+<% if @multi_ip_nfs_enabled -%>
+vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
+<% else -%>
+vault_storage_nfs_export = <%= @nfs_shares %>
+<% end -%>
+
+vault_storage_das_device = none
+vault_storage_nfs_options = <%= @nfs_options %>
+
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_bucket = 
+vault_s3_region_name = 
+vault_s3_auth_version = 
+vault_s3_signature_version = 
+vault_s3_ssl = 
+vault_s3_ssl_cert = 
+vault_s3_endpoint_url =
+
+<% end -%>
+
+workloads_workers = 4
+[alembic]
+script_location = /usr/share/workloadmgr/migrate_repo
+sqlalchemy.url = <%= @database_connection %>
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
+[barbican]
+encryption_support = true
+[clients]
+client_retry_limit = 3
+endpoint_type  = internal
+#insecure = false
+cafile = /etc/pki/tls/certs/ca-bundle.crt
+[filesearch]
+process_timeout = 300
+[global_job_scheduler]
+misfire_grace_time = 600
+
+[keystone_authtoken]
+
+<% if @interface == "public" -%>
+auth_url = <%= @keystone_public_auth_url %>
+www_authenticate_uri = <%= @keystone_public_auth_uri %>/v3
+<% elsif @interface == "admin" -%>
+auth_url = <%= @keystone_admin_auth_url %>
+www_authenticate_uri = <%= @keystone_admin_auth_uri %>/v3
+<% else -%>
+auth_url = <%= @keystone_internal_auth_url %>
+www_authenticate_uri = <%= @keystone_internal_auth_uri %>/v3
+<% end -%>
+
+admin_password = <%= @password %>
+admin_tenant_name = <%= @project_name %>
+admin_user = <%= @keystone_username %>
+auth_plugin = password
+auth_type = password
+auth_version = v3
+cafile = /etc/pki/tls/certs/ca-bundle.crt
+#insecure = false
+password = <%= @password %>
+project_name = <%= @project_name %>
+region_name = <%= @region_name %>
+service_token_roles_required = true
+signing_dir = /var/cache/workloadmgr
+username = <%= @keystone_username %>
+memcached_servers = <%= @memcached_servers %>
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+
+
+[vcenter_migration]
+vcenter_url= <%= @vcenter_url %>
+vcenter_username= <%= @vcenter_username %>
+vcenter_password= <%= @vcenter_password %>
+vcenter_nossl= <%= @vcenter_nossl %>
