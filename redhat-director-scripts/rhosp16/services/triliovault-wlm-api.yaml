@@ -241,6 +241,9 @@ parameters:
     description: Indicates if Vcenter has NoSSL enabled or not. If set false, it means SSL is enabled on Vcenter
                  If set true, SSL is disabled on Vcenter
     type: boolean
+  VcenterCACertFileName:
+    description: This is Vcenter CA Cert File Name
+    type: string
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -347,6 +350,7 @@ outputs:
         trilio::wlmapi::vcenter_username: {get_param: VcenterUsername }
         trilio::wlmapi::vcenter_password: {get_param: VcenterPassword }
         trilio::wlmapi::vcenter_nossl: {get_param: VcenterNoSsl }
+        trilio::wlmapi::vcenter_cert_file_name: {get_param: VcenterCACertFileName }
         tripleo::triliovault_wlm_api::firewall_rules:
               '241 triliovault-wlm-api':
                 dport:
