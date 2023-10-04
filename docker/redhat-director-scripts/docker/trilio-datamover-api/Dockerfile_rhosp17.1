@@ -1,0 +1,53 @@
+FROM registry.redhat.io/rhosp-rhel9/openstack-base:17.1
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="rhosp16/openstack-nova-api-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.2.0" \
+      release="5.2" \
+      summary="Red Hat OpenStack Platform 17.1 nova-api TrilioData trilio-datamover-api" \
+      description="Red Hat OpenStack Platform 17.1 nova-api TrilioData trilio-datamover-api"
+
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+
+##Install datamover packages
+RUN dnf clean all && dnf config-manager --set-disabled \*
+ADD trilio.repo /etc/yum.repos.d/
+
+RUN dnf config-manager \
+  --enable rhel-9-for-x86_64-baseos-eus-rpms \
+  --enable rhel-9-for-x86_64-appstream-eus-rpms \
+  --enable rhel-9-for-x86_64-highavailability-eus-rpms \
+  --enable openstack-17.1-for-rhel-9-x86_64-rpms \
+  --enable fast-datapath-for-rhel-9-x86_64-rpms \
+  --enable rhceph-6-tools-for-rhel-9-x86_64-rpms
+
+
+RUN dnf --releasever 9.2 -y install python3-nova python3-retrying
+RUN dnf install --releasever 9.2 python3-dmapi-el9 -y
+RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
+RUN rm -f /etc/yum.repos.d/trilio.repo
+RUN usermod -a -G kolla dmapi
+
+
+##Disable repos and Clean subscription
+RUN dnf config-manager \
+  --disable rhel-9-for-x86_64-baseos-eus-rpms \
+  --disable rhel-9-for-x86_64-appstream-eus-rpms \
+  --disable rhel-9-for-x86_64-highavailability-eus-rpms \
+  --disable openstack-17.1-for-rhel-9-x86_64-rpms \
+  --disable fast-datapath-for-rhel-9-x86_64-rpms \
+  --disable rhceph-6-tools-for-rhel-9-x86_64-rpms
+
+RUN dnf clean all
+
+##Copy license file
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+##Become nova user for further operations
+USER dmapi
