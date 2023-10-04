@@ -1,0 +1,75 @@
+[DEFAULT]
+
+vault_data_directory = <%= @vault_data_dir %>
+vault_data_directory_old = /var/triliovault
+vault_storage_type = <%= @backup_target_type %>
+
+<% if @backup_target_type == "s3" -%>
+vault_s3_access_key_id = <%= @s3_accesskey %>
+vault_s3_secret_access_key = <%= @s3_secretkey  %>
+vault_s3_bucket = <%= @s3_bucket %>
+vault_s3_region_name = <%= @s3_region_name %>
+vault_s3_auth_version = <%= @s3_auth_version %>
+vault_s3_signature_version = <%= @s3_signature_version %>
+vault_s3_ssl = <%= @s3_ssl_enabled %>
+<% if @s3_ssl_enabled -%>
+vault_s3_ssl_cert = /etc/triliovault-datamover/s3-cert.pem
+<% else -%>
+vault_s3_ssl_cert =
+<% end -%>
+<% if @s3_type == "ceph_s3" -%>
+vault_s3_endpoint_url = <%= @s3_endpoint_url %>
+<% else -%>
+vault_s3_endpoint_url =
+<% end -%>
+vault_storage_das_device = none
+vault_storage_nfs_export = TrilioVault
+vault_storage_nfs_options =
+<% else -%>
+
+<% if @multi_ip_nfs_enabled -%>
+vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
+<% else -%>
+vault_storage_nfs_export = <%= @nfs_shares %>
+<% end -%>
+vault_storage_das_device = none
+vault_storage_nfs_options = <%= @nfs_options %>
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_bucket = 
+vault_s3_region_name = 
+vault_s3_auth_version = 
+vault_s3_signature_version = 
+vault_s3_ssl = 
+vault_s3_ssl_cert = 
+vault_s3_endpoint_url =
+<% end -%>
+
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+max_uploads_pending = 3
+max_commit_pending = 3
+dmapi_transport_url = <%= @default_transport_url %>
+<% if @cinder_backend_ceph == true -%>
+[libvirt]
+images_rbd_ceph_conf = <%= @libvirt_images_rbd_ceph_conf %>
+rbd_user = <%= @ceph_cinder_user %>
+[ceph]
+keyring_ext = .<%= @ceph_cinder_user %>.keyring
+<% end -%>
+[dmapi_database]
+connection = <%= @database_connection %>
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
+
+[oslo_messaging_rabbit]
+ssl = <%= @oslomsg_rpc_use_ssl %>
+
+[cinder]
+http_retries = <%= @cinder_http_retries %>
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
