@@ -1,0 +1,25 @@
+#!/bin/bash
+
+<% if @vmware_to_openstack_migration_enabled -%>
+if [ -f "/opt/vddk.tar.gz" ]; then
+    mkdir -p /opt/vmware-vix-disklib-distrib
+    tar xfz /opt/vddk.tar.gz --strip-components=1 -C /opt/vmware-vix-disklib-distrib
+    chown -R nova:nova /opt/vmware-vix-disklib-distrib 2> /dev/null
+fi
+<% end -%>
+
+
+## Start triliovault-object-store service if backup target type is s3
+<% if @backup_target_type == "s3" -%>
+/usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-datamover/triliovault-datamover.conf  &
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start triliovault-object-store service: $status"
+  exit $status
+fi
+sleep 20s
+<% end -%>
+
+/usr/bin/python3 /usr/bin/tvault-contego \
+--config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf \
+--config-file=/etc/triliovault-datamover/triliovault-datamover.conf
