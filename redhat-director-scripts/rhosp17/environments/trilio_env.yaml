@@ -72,3 +72,5 @@ parameter_defaults:
    VcenterUsername: ''
    VcenterPassword: ''
    VcenterNoSsl: False
+   VcenterCACertFileName: ''
+   
