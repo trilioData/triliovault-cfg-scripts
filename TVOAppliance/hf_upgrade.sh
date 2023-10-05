@@ -2,9 +2,9 @@
 
 BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
-OFFLINE_PKG_NAME="4.2-offlinePkgs.tar.gz"
-PKG_DIR_NAME="4.2.*offlinePkgs"
-BRANCH_NAME="triliodata-4-2"
+OFFLINE_PKG_NAME="4.3-offlinePkgs.tar.gz"
+PKG_DIR_NAME="4.3.*offlinePkgs"
+BRANCH_NAME="trilio-4-3"
 UUID_NUM=`uuidgen`
 
 #function to display usage...
@@ -21,7 +21,7 @@ function usage()
 #function to download the package and extract...
 function download_package()
 {
-	echo "Downloading $outfile for 4.2 maintenance release"
+	echo "Downloading $outfile for 4.3 release"
 
 	#run the wget command to download the package from rpm server.
 	wget_command_rpm_server=`wget --backups 0 http://repos.trilio.io:8283/$BRANCH_NAME/offlinePkgs/$OFFLINE_PKG_NAME`
@@ -115,7 +115,7 @@ function install_upgrade_package()
 		exit 2
 	fi
 
-	echo "Installing $outfile for 4.2 maintenance release"
+	echo "Installing $outfile for 4.3 release"
 	
 	#get the current date and time. 
 	date=`date '+%Y-%m-%d-%H-%M-%S'`
@@ -215,7 +215,7 @@ fi
 
 eval set -- "$CMDLINE_ARGUMENTS"
 
-echo "TVO Upgrade from current release to latest 4.2 maintenance release"
+echo "TVO Upgrade from current release to latest 4.3 release"
 
 
 #command line arguments.
