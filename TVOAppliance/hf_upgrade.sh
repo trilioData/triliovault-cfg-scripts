@@ -3,7 +3,7 @@
 BASE_DIR="$(pwd)"
 PYTHON_VERSION="Python 3.8.12"
 OFFLINE_PKG_NAME="4.3-offlinePkgs.tar.gz"
-PKG_DIR_NAME="4.3.*offlinePkgs"
+PKG_DIR_NAME="4.3*offlinePkgs"
 BRANCH_NAME="trilio-4-3"
 UUID_NUM=`uuidgen`
 
