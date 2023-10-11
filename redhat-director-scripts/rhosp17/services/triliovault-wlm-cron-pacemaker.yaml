@@ -450,7 +450,7 @@ outputs:
               failed_when: false
             - name: Tag pcmklatest to latest triliovault_wlm_cron image
               include_role:
-                name: tripleo-container-tag
+                name: tripleo_container_tag
               vars:
                 container_image: "{{triliovault_wlm_cron_image}}"
                 container_image_latest: "{{triliovault_wlm_cron_image_latest}}"
