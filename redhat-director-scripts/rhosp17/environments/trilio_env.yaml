@@ -69,6 +69,6 @@ parameter_defaults:
    VcenterUrl: ''
    VcenterUsername: ''
    VcenterPassword: ''
-   VcenterNoSsl: False
+   VcenterNoSsl: True
    VcenterCACertFileName: ''
    
