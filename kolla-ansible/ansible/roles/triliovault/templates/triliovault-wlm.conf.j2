@@ -53,21 +53,23 @@ transport_url = {{ rpc_transport_url }}
 api_workers = 4
 workloads_workers = 4
 
-glance_production_host = {{ kolla_internal_fqdn }}
-glance_production_api_servers = https://{{ kolla_internal_fqdn }}:9292
+
+glance_production_api_servers = {{ glance_internal_endpoint }}
 glance_api_version = 2
 
 ## Keystone URL for internal authentication
-keystone_endpoint_url = https://{{ kolla_internal_fqdn }}:5000
+keystone_endpoint_url = {{ keystone_internal_url }}
 keystone_auth_version = 3
 
-cinder_production_endpoint_template = https://{{ kolla_internal_fqdn }}:8776/v2/%(tenant_id)s
+cinder_production_endpoint_template = "{{ internal_protocol }}://{{ cinder_internal_fqdn | put_address_in_context('url') }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
 
-nova_admin_auth_url = https://{{ kolla_internal_fqdn }}:5000
-nova_production_endpoint_template = "https://{{ kolla_internal_fqdn }} :8774/v2.1/%(project_id)s"
+nova_admin_auth_url = {{ keystone_internal_url }}
+nova_production_endpoint_template = "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ nova_api_port }}/v2.1"
 
-neutron_admin_auth_url = https://{{ kolla_internal_fqdn }}:5000
-neutron_production_url = https://{{ kolla_internal_fqdn }}:9696
+neutron_admin_auth_url = {{ keystone_internal_url }}
+neutron_production_url = {{ neutron_internal_endpoint }}
+
+
 
 # The path to store the taskflow data
 taskflow_path = /var/lib/workloadmgr/taskflow
@@ -138,9 +140,9 @@ admin_tenant_name = service
 project_name = service
 
 signing_dir = /var/cache/workloadmgr
-auth_url = https://{{ kolla_internal_fqdn }}:5000/v3
+auth_url = {{ keystone_internal_url }}
 
-www_authenticate_uri = https://{{ kolla_internal_fqdn }}:5000/v3
+www_authenticate_uri = {{ keystone_internal_url }}
 auth_type = password
 
 username = {{ triliovault_wlm_keystone_user }}
