@@ -9,7 +9,8 @@ cloud_admin_projectid: ""
 cloud_admin_domainname: ""
 cloud_admin_domainid: ""
 
-os_endpoint_type: ""
+trustee_role: "creator"
+os_endpoint_type: "internal"
 
 # ## Project name in which triliovault keystone resources will get created
 # TriliovaultKeystoneServiceProjectName: "service"
