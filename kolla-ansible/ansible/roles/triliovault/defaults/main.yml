@@ -402,11 +402,6 @@ enable_triliovault: "yes"
 ## Container engine default value
 kolla_container_engine: "docker"
 
-## Interface type that triliovault will use to communicate with other openstack service endpoints.
-## Valid values: ["internal", "public", "admin"]
-## Default value: internal
-interface: "internal"
-
 ## TrilioVault's containers tag
 triliovault_tag: "5.0.X-wallaby"
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
