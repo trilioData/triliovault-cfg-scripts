@@ -48,5 +48,15 @@ topics = {{ triliovault_enabled_notification_topics | map(attribute='name') | jo
 driver = noop
 {% endif %}
 
+[oslo_messaging_rabbit]
+heartbeat_in_pthread = False
+{% if om_enable_rabbitmq_tls | bool %}
+ssl = true
+ssl_ca_file = {{ om_rabbitmq_cacert }}
+{% endif %}
+{% if om_enable_rabbitmq_high_availability | bool %}
+amqp_durable_queues = true
+{% endif %}
+
 [oslo_middleware]
 enable_proxy_headers_parsing = True

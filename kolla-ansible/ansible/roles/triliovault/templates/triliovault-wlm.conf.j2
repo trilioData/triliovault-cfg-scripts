@@ -39,7 +39,7 @@ cloud_admin_project_id = {{ cloud_admin_projectid }}
 cloud_admin_domain = {{ cloud_admin_domainid }}
 cloud_admin_role = {{ cloud_admin_role }}
 
-trustee_role = creator
+trustee_role = {{ trustee_role }}
 domain_name = {{ cloud_admin_domainid }}
 
 triliovault_user_domain_id = default 
@@ -181,3 +181,13 @@ process_timeout = 300
 
 [barbican]
 encryption_support = True
+
+[oslo_messaging_rabbit]
+heartbeat_in_pthread = False
+{% if om_enable_rabbitmq_tls | bool %}
+ssl = true
+ssl_ca_file = {{ om_rabbitmq_cacert }}
+{% endif %}
+{% if om_enable_rabbitmq_high_availability | bool %}
+amqp_durable_queues = true
+{% endif %}
