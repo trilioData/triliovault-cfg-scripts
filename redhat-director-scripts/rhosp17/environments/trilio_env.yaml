@@ -24,7 +24,7 @@ parameter_defaults:
 
    ## For backup target 'nfs'
    NfsShares: '192.168.122.101:/opt/tvault'
-   NfsOptions: 'nolock,soft,timeo=180,intr,lookupcache=none'
+   NfsOptions: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
 
    ## For backup target 's3'
    ## S3 type: amazon_s3/ceph_s3
