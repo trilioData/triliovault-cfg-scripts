@@ -77,8 +77,8 @@ class trilio::wlmapi (
   $vcenter_url                     = undef,
   $vcenter_username                = undef,
   $vcenter_password                = undef,
-  $vcenter_nossl                   = false,
-  $vcenter_cert_file_name          = undef,
+  $vcenter_nossl                   = true,
+  $vcenter_cert_file_name          = 'default-vcenter-cert',
 ) {
     tag 'wlmapiconfig'
     
