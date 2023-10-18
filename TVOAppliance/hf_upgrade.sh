@@ -104,17 +104,11 @@ function limit_access_to_tls1_2()
 
 	# Check if the line already exists in the file
 	if grep -q "$config_line" "$config_file"; then
-		echo "Line already exists in $config_file"
+		echo "SSL protocol set to TLSv1.2 already."
 	else
 	  # Add the line to the http section
 	  	sed -i '/^\s*http {/a \    ssl_protocols TLSv1.2;' "$config_file"
-	  	echo "Added line to $config_file"
-	  	pcs resource restart lb_nginx-clone
-	  	if [ $? -ne 0 ]; then
-	    		echo "Failed to restart resource"
-	  	else
-	    		echo "Resource restarted successfully"
-	  	fi
+	  	echo "Setting the SSL protocol to TLSv1.2"
 	fi
 
 }
@@ -226,6 +220,12 @@ function install_upgrade_package()
 	        sed -i "/script_location = /c \script_location = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
 	        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
         	source /home/stack/myansible/bin/activate && alembic -c ${WORKLOADMGR_CONF} upgrade head
+                pcs resource restart lb_nginx-clone
+                if [ $? -ne 0 ]; then
+	    		echo "Failed to restart pcs resource: lb_nginx-clone"
+	  	else
+	    		echo "PCS resource: lb_nginx-clone restarted successfully"
+	  	fi
 	fi
 	echo "TVO appliance upgrade is complete. If TVO configuration is not done, please proceed with the same."
 }
