@@ -95,6 +95,25 @@ function reconfigure_s3_service_path()
 	sed  -i "s~$src_string~$dest_string~g" $file_name
 
 }
+
+#function to keep only tls1_2 access
+function limit_access_to_tls1_2()
+{
+	config_file="/etc/nginx/nginx.conf"
+	config_line="ssl_protocols TLSv1.2;"
+
+	# Check if the line already exists in the file
+	if grep -A4 "http\s*{" "$config_file" | grep -q "$config_line"; then
+		echo "SSL protocol set to TLSv1.2 already."
+	else
+	  # Add the line to the http section
+	    sed -i '/^\s*http\s*{/a \ ssl_protocols TLSv1.2;' "$config_file"	
+	  	echo "Setting the SSL protocol to TLSv1.2"
+	fi
+
+}
+
+
 #function to install the package on the system...
 function install_upgrade_package()
 {
@@ -185,7 +204,10 @@ function install_upgrade_package()
 	#before restarting the s3 service reload the modified service file. 
 	systemctl daemon-reload
 
-	#restart all active services
+        #restrict access to tls1_2
+        limit_access_to_tls1_2	
+        
+        #restart all active services
 	SERVICE_NAMES=('tvault-config' 'wlm-api' 'wlm-workloads' 'wlm-cron' 'tvault-object-store' 'wlm-scheduler')
 	for service in "${SERVICE_NAMES[@]}"
 	do
@@ -198,6 +220,12 @@ function install_upgrade_package()
 	        sed -i "/script_location = /c \script_location = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo" $WORKLOADMGR_CONF
 	        sed -i "/version_locations = /c \version_locations = /home/stack/myansible/lib/python3.8/site-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions" $WORKLOADMGR_CONF
         	source /home/stack/myansible/bin/activate && alembic -c ${WORKLOADMGR_CONF} upgrade head
+                pcs resource restart lb_nginx-clone
+                if [ $? -ne 0 ]; then
+	    		echo "Failed to restart pcs resource: lb_nginx-clone"
+	  	else
+	    		echo "PCS resource: lb_nginx-clone restarted successfully"
+	  	fi
 	fi
 	echo "TVO appliance upgrade is complete. If TVO configuration is not done, please proceed with the same."
 }
