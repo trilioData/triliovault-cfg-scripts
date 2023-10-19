@@ -103,11 +103,11 @@ function limit_access_to_tls1_2()
 	config_line="ssl_protocols TLSv1.2;"
 
 	# Check if the line already exists in the file
-	if grep -q "$config_line" "$config_file"; then
+	if grep -A4 "http\s*{" "$config_file" | grep -q "$config_line"; then
 		echo "SSL protocol set to TLSv1.2 already."
 	else
 	  # Add the line to the http section
-	  	sed -i '/^\s*http {/a \    ssl_protocols TLSv1.2;' "$config_file"
+	    sed -i '/^\s*http\s*{/a \ ssl_protocols TLSv1.2;' "$config_file"	
 	  	echo "Setting the SSL protocol to TLSv1.2"
 	fi
 
