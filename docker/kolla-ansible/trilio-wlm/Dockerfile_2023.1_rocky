@@ -29,7 +29,7 @@ RUN set -ex \
 
 RUN dnf install -y python3-novaclient \
     && dnf remove -y --noautoremove python3-novaclient \
-    && dnf install -y python3-novaclient --repo=centos-openstack-zed
+    && dnf install -y python3-novaclient
 
 RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient
 
