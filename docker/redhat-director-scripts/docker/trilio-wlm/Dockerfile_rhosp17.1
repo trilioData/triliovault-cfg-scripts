@@ -16,6 +16,13 @@ USER root
 RUN dnf clean all && dnf config-manager --set-disabled \*
 ADD trilio.repo /etc/yum.repos.d/
 
+## Epel repo is needed for ntfs-3g package
+RUN dnf install --releasever 9.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
+    && dnf config-manager --disable epel-cisco-openh264
+RUN dnf install --releasever 9.2 -y ntfs-3g python3-pyvmomi
+RUN dnf erase --releasever 9.2 -y epel-release
+
 RUN dnf config-manager \
   --enable rhel-9-for-x86_64-baseos-eus-rpms \
   --enable rhel-9-for-x86_64-appstream-eus-rpms \
@@ -28,13 +35,8 @@ RUN dnf config-manager \
   
 
 RUN dnf install --releasever 9.2 -y python3-editor
-
 RUN dnf config-manager --disable openstack-17-for-rhel-9-x86_64-rpms
 
-## Epel repo is needed for ntfs-3g package
-RUN dnf install --releasever 9.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
-    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
-    && dnf config-manager --disable epel-cisco-openh264
 
 ## Install dependencies
 RUN dnf --releasever 9.2 -y install openstack-nova-common python3-nova python3-novaclient udev \
