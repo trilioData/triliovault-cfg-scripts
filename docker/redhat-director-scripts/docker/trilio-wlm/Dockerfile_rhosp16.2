@@ -17,6 +17,11 @@ RUN dnf clean all && dnf config-manager --set-disabled '*'
 ADD trilio.repo /etc/yum.repos.d/
 
 
+## Epel repo is needed for ntfs-3g package
+RUN dnf install --releasever 8.4 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+RUN dnf install --releasever 8.4 -y ntfs-3g -y
+RUN dnf erase --releasever 8.4 -y epel-release -y
+
 RUN dnf config-manager \
   --enable openstack-16.2-for-rhel-8-x86_64-rpms \
   --enable fast-datapath-for-rhel-8-x86_64-rpms \
@@ -28,10 +33,7 @@ RUN dnf config-manager \
   --enable rhel-8-for-x86_64-highavailability-tus-rpms
   
 
-## Epel repo is needed for ntfs-3g package
-RUN dnf install --releasever 8.4 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
-## Install dependencies
 ## Install dependencies
 
 RUN dnf --releasever 8.4 -y install openstack-nova-common python3-nova python3-novaclient udev \
