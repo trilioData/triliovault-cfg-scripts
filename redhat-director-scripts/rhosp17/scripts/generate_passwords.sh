@@ -12,8 +12,6 @@ KEYSTONE_WLM_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42}
 cd ../
 
 tee > environments/passwords.yaml  << EOF
-resource_registry:
-
 parameter_defaults:
 
    ## Passwords for triliovault service's keystone, database, rabbitmq users
