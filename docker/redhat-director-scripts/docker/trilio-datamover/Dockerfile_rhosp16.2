@@ -28,7 +28,7 @@ RUN dnf config-manager \
   --enable codeready-builder-for-rhel-8-x86_64-rpms
 
 ## Install triliovault datamover packages
-RUN dnf install --releasever 8.8 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v nbdkit --nobest -y
+RUN dnf install --releasever 8.8 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN dnf install --releasever 8.8 python3-tvault-contego python3-s3fuse-plugin qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 RUN dnf --releasever 8.8 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
