@@ -1,5 +1,4 @@
 # Trilio endpoint map file
-
 TriliovaultDatamover:
     Internal:
         net_param: TriliovaultDatamoverApi
@@ -18,13 +17,14 @@ TriliovaultWlm:
     Internal:
         net_param: TriliovaultWlmApi
         uri_suffixes:
-            '': /v2
+            '': /v1/%(tenant_id)s
     Public:
         net_param: Public
         uri_suffixes:
-            '': /v2
+            '': /v1/%(tenant_id)s
     Admin:
         net_param: TriliovaultWlmApi
         uri_suffixes:
-            '': /v2
+            '': /v1/%(tenant_id)s
     port: 8781
+
