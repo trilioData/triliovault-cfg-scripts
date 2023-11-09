@@ -97,11 +97,11 @@ parameters:
         host: IP_ADDRESS
       GlanceAdmin:
         protocol: http
-        port: '9292'
+        port: '9293'
         host: IP_ADDRESS
       GlanceInternal:
         protocol: http
-        port: '9292'
+        port: '9293'
         host: IP_ADDRESS
       GlancePublic:
         protocol: http
@@ -311,7 +311,7 @@ parameters:
         protocol: http
         port: '8781'
         host: IP_ADDRESS
-      TriliovaultlmPublic:
+      TriliovaultWlmPublic:
         protocol: http
         port: '8781'
         host: IP_ADDRESS
@@ -11452,7 +11452,7 @@ outputs:
                   - TriliovaultWlmAdmin
                   - port
                 path: /v1/
-            - '$(tenant_id)s'
+            - '%(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:
@@ -11583,7 +11583,7 @@ outputs:
                   - TriliovaultWlmInternal
                   - port
                 path: /v1/
-            - '$(tenant_id)s'
+            - '%(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:
@@ -11714,7 +11714,7 @@ outputs:
                   - TriliovaultWlmPublic
                   - port
                 path: /v1/
-            - '$(tenant_id)s'
+            - '%(tenant_id)s'
         uri_no_suffix:
           make_url:
             scheme:
@@ -11751,4 +11751,3 @@ outputs:
               - EndpointMap
               - TriliovaultWlmPublic
               - port
-
