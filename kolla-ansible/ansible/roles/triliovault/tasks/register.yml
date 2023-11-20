@@ -8,6 +8,7 @@
   tags: register
 
 - name: "triliovault | Creating keystone users"
+  become: true
   kolla_toolbox:
     module_name: "os_user"
     module_args:
@@ -34,6 +35,7 @@
     - openstack_release in ["victoria", "wallaby", "yoga"]
 
 - name: "triliovault | Creating keystone users"
+  become: true
   kolla_toolbox:
     container_engine: "{{ kolla_container_engine }}"
     module_name: "os_user"
