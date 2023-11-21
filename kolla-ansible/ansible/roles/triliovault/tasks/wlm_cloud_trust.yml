@@ -1,6 +1,7 @@
 ---
 
 - name: Create Cloud Admin Trust
+  become: true
   docker_container:
     name: wlm_cloud_trust
     image: "{{ triliovault_wlm_image_full }}"
