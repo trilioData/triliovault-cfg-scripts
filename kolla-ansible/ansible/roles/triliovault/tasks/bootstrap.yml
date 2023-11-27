@@ -39,6 +39,7 @@
 
 
 - name: Create triliovault database users and ser permissions
+  become: true
   kolla_toolbox:
     module_name: mysql_user
     module_args:
@@ -60,6 +61,7 @@
     - openstack_release in ["victoria", "wallaby", "yoga"]
 
 - name: Create triliovault database users and ser permissions for zed and next releases
+  become: true
   kolla_toolbox:
     container_engine: "{{ kolla_container_engine }}"
     module_name: mysql_user
