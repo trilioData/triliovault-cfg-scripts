@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="4.2.0" \
-      release="4.2" \
+      version="5.2.0" \
+      release="5.2" \
       type="source" \
       summary="TrilioData trilio-datamover-api" \
       description="TrilioData trilio-datamover-api"
@@ -26,6 +26,8 @@ COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
 RUN usermod -a -G kolla dmapi
 
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
 ##Copy license file
 RUN mkdir /licenses

@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="ubuntu-binary-trilio-horizon-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="4.2.0" \
-      release="4.2" \
+      version="5.2.0" \
+      release="5.2" \
       type="source" \
       summary="TrilioVault Horizon Plugin" \
       description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
