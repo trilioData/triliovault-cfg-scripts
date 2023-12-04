@@ -4,8 +4,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="4.2.0" \
-      release="4.2" \
+      version="5.2.0" \
+      release="5.2" \
       type="source" \
       summary="TrilioData Datamover" \
       description="TrilioData Datamover"
@@ -26,11 +26,8 @@ RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-com
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
-#Copy executable files
-RUN mkdir -p /opt/tvault/ 
-ADD start_datamover_s3 start_datamover_nfs start_tvault_object_store /opt/tvault/
-RUN chown -R nova:nova /opt/tvault/ \
-   && chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
 ##Copy conf files
 ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers
@@ -55,23 +52,3 @@ COPY licensing.txt /licenses
 
 ##Become nova user for further operations
 USER nova
-
-##################
-# REQUIRED MOUNTS#
-##################
-# /etc/kolla/datamover/nova.conf:/etc/nova/nova.conf
-# /etc/kolla/datamover/tvault-contego.conf:/etc/tvault-contego/tvault-contego.conf
-# /etc/kolla/datamova/ceph.conf:/etc/ceph/ceph.conf
-# /etc/kolla/datamova/ceph.client.nova.keyring:/etc/ceph/ceph.client.nova.keyring
-# iscsi_info:/etc/iscsi:rw
-# /dev:/dev:rw
-# nova_compute:/var/lib/nova/:rw
-# /var/run/libvirt
-# /etc/kolla/datamover/start_datamover_nfs:/opt/tvault/start_datamover_nfs
-
-## start_datamover_nfs was needed because it wasn't using NFS correctly
-
-##############
-# RUN COMMAND#
-##############
-# docker run --network host --name trilio_datamover -d -v /etc/kolla/dmapi/nova.conf:/etc/nova/nova.conf -v /etc/kolla/datamover/tvault-contego.conf:/etc/tvault-contego/tvault-contego.conf kolla/ubuntu-source-trilio-datamover:pike
