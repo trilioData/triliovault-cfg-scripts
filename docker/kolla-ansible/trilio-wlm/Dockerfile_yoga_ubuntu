@@ -4,8 +4,8 @@ MAINTAINER Trilio shyam.biradar@trilio.io
 LABEL name="trilio/triliovault-wlm" \
       org.opencontainers.image.authors="shyam.biradar@trilio.io" \
       vendor="Trilio" \
-      version="5.0.X" \
-      release="5.0" \
+      version="5.2.X" \
+      release="5.2" \
       summary="Kolla Ansible Openstack Ubuntu-20.04 nova-api Trilio TrilioVaultWLM" \
       description="Kolla Ansible Openstack Ubuntu-20.04 nova-api Trilio TrilioVaultWLM container image"
 
@@ -42,6 +42,9 @@ RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-obje
 ## Kolla specific settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
+
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
 ## Nova user changes
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
