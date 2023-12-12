@@ -84,6 +84,7 @@ class trilio::wlmapi (
   $vcenter_password                = undef,
   $vcenter_nossl                   = true,
   $vcenter_cert_file_name          = 'default-vcenter-cert',
+  $step                            = lookup('step'),
 ) {
     tag 'wlmapiconfig'
     
