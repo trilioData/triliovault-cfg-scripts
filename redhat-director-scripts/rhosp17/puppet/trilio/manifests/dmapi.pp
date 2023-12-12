@@ -18,7 +18,7 @@ class trilio::dmapi (
   $memcached_hosts                 = hiera('memcached_node_names', []),
   $memcached_port                  = hiera('memcached_authtoken_port', 11211),
   $memcached_ipv6                  = hiera('memcached_ipv6', false),
-  $security_strategy               = hiera('memcached_authtoken_security_strategy', undef),
+  $memcache_security_strategy      = hiera('memcached_authtoken_security_strategy', undef),
   $secret_key                      = hiera('memcached_authtoken_secret_key', undef),
   $memcached_ips                   = hiera('memcached_node_ips', undef),
   $my_ip                           = undef,	  
