@@ -23,20 +23,30 @@ class trilio::dmapi::config inherits trilio::dmapi {
         'ssl'       => $oslomsg_notify_use_ssl_real,
       })
 
-      $memcached_hosts_real = any2array(pick($memcached_ips, $memcached_hosts))
-      if $step >= 3 {
+        $memcached_hosts_real = any2array(pick($memcached_ips, $memcached_hosts))
+        if $step >= 3 {
             if $memcached_ipv6 or $memcached_hosts_real[0] =~ Stdlib::Compat::Ipv6 {
-            $memcache_servers = $memcached_hosts_real.map |$server| { "inet6:[${server}]:${memcached_port}" }
+            $memcached_servers = $memcached_hosts_real.map |$server| { "inet6:[${server}]:${memcached_port}" }
             } else {
-            $memcache_servers = suffix($memcached_hosts_real, ":${memcached_port}")
+            $memcached_servers = suffix($memcached_hosts_real, ":${memcached_port}")
             }
 
             if $secret_key {
-            $hashed_secret_key = sha256("${secret_key}+triliovault_datamover_api")
+            $memcache_secret_key = sha256("${secret_key}+triliovault_wlm_api")
             } else {
-            $hashed_secret_key = undef
+            $memcache_secret_key = undef
             }
-      }
+        }
+
+        if !is_service_default($memcached_servers) and !empty($memcached_servers){
+            $memcached_servers_array = $memcached_servers ? {
+            String  => split($memcached_servers, ','),
+            default => $memcached_servers
+            }
+            $memcached_servers_real = join(any2array(inet6_prefix($memcached_servers_array)), ',')
+        } else {
+            $memcached_servers_real = $::os_service_default
+        }
       file { '/etc/triliovault-datamover/':
           ensure => 'directory',
           mode   => '0644',
