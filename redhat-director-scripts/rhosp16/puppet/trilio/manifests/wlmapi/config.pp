@@ -23,7 +23,20 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
         'ssl'       => $oslomsg_notify_use_ssl_real,
       })
  
-      $memcached_servers = join(suffix(any2array(normalize_ip_for_uri($memcached_ips)), ':11211'), ',')
+      $memcached_hosts_real = any2array(pick($memcached_ips, $memcached_hosts))
+      if $step >= 3 {
+            if $memcached_ipv6 or $memcached_hosts_real[0] =~ Stdlib::Compat::Ipv6 {
+            $memcache_servers = $memcached_hosts_real.map |$server| { "inet6:[${server}]:${memcached_port}" }
+            } else {
+            $memcache_servers = suffix($memcached_hosts_real, ":${memcached_port}")
+            }
+
+            if $secret_key {
+            $hashed_secret_key = sha256("${secret_key}+triliovault_wlm_api")
+            } else {
+            $hashed_secret_key = undef
+            }
+      }
       file { '/opt/triliovault':
           ensure => 'directory',
           owner  => '42436',

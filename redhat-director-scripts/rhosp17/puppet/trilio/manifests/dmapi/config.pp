@@ -36,12 +36,6 @@ class trilio::dmapi::config inherits trilio::dmapi {
             } else {
             $hashed_secret_key = undef
             }
-
-            class { 'nova::keystone::authtoken':
-            memcached_servers          => $memcache_servers,
-            memcache_security_strategy => $security_strategy,
-            memcache_secret_key        => $hashed_secret_key,
-            }
       }
       file { '/etc/triliovault-datamover/':
           ensure => 'directory',
