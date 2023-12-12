@@ -32,6 +32,7 @@ class trilio::dmapi (
   $notification_driver             = 'messagingv2',
   $enable_proxy_headers_parsing    = false,
   $dmapi_workers                   = 16,
+  $step                            = lookup('step'),
 ) {
     tag 'dmapiconfig'
     
