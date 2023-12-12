@@ -22,7 +22,7 @@ api_paste_config = /etc/triliovault-datamover/api-paste.ini
 connection = <%= @database_connection %>
 
 [keystone_authtoken]
-memcached_servers = <%= @memcached_servers %>
+memcached_servers = <%= @memcached_servers_real %>
 signing_dir = /var/cache/dmapi
 cafile = /etc/pki/tls/certs/ca-bundle.crt
 project_domain_name = <%= @project_domain_name %>

@@ -16,6 +16,11 @@ class trilio::wlmapi (
   $oslomsg_notify_username         = hiera('oslo_messaging_notify_user_name', 'guest'),
   $oslomsg_notify_use_ssl          = hiera('oslo_messaging_notify_use_ssl', '0'),
   $memcached_ips                   = hiera('memcached_node_ips', undef),
+  $memcached_hosts                 = hiera('memcached_node_names', []),
+  $memcached_port                  = hiera('memcached_authtoken_port', 11211),
+  $memcached_ipv6                  = hiera('memcached_ipv6', false),
+  $memcache_security_strategy      = hiera('memcached_authtoken_security_strategy', undef),
+  $secret_key                      = hiera('memcached_authtoken_secret_key', undef),
   $my_ip                           = undef,	  
   $database_connection             = undef,
   $cloud_admin_user_name           = undef,
@@ -79,6 +84,7 @@ class trilio::wlmapi (
   $vcenter_password                = undef,
   $vcenter_nossl                   = true,
   $vcenter_cert_file_name          = 'default-vcenter-cert',
+  $step                            = lookup('step'),
 ) {
     tag 'wlmapiconfig'
     
