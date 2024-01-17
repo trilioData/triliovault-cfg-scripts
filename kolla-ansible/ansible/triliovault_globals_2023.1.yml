@@ -93,6 +93,9 @@ triliovault_s3_auth_version: 'DEFAULT'
 ## then change it to 'True', otherwise keep it as 'False'
 triliovault_s3_ssl_enabled: False
 
+## Whether to verify ceph s3 SSL/TLS certificate or not.
+triliovault_s3_ssl_verify: True
+
 ## Valid for 'other_s3_compatible' backup target only, if endpoints on 'https' ie SSL Enabled
 ## then user needs to copy the 's3 certificate file' to "/etc/kolla/config/triliovault/" 
 ## directory on ansible server. You need to create this directory if not exists already.
@@ -103,3 +106,5 @@ triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
 ## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
 ## Type: Boolean
 triliovault_copy_ceph_s3_ssl_cert: False
+
+
