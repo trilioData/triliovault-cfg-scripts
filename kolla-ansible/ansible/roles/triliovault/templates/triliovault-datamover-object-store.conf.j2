@@ -23,6 +23,7 @@ vault_s3_bucket = {{ triliovault_s3_bucket_name }}
 vault_s3_signature_version = {{ triliovault_s3_version }}
 {# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl_cert =
+vault_s3_ssl_verify = {{ triliovault_s3_ssl_verify }}
 
 {% elif triliovault_backup_target == "other_s3_compatible" %}
 
@@ -38,7 +39,7 @@ vault_s3_signature_version = {{ triliovault_s3_version }}
 {# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
 vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
 vault_s3_ssl_cert = /etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}
-
+vault_s3_ssl_verify = {{ triliovault_s3_ssl_verify }}
 {% endif %}
 
 vault_data_directory_old = /var/triliovault
