@@ -26,6 +26,7 @@ class trilio::contego (
     $vddk_file_name                       = 'vddk.tar.gz',
     $vmware_to_openstack_migration_enabled= false,
     $libvirt_images_rbd_ceph_conf         = '/etc/ceph/ceph.conf',
+    $s3_ssl_verify                        = true,
 ) {
 
 
