@@ -7,6 +7,7 @@ vault_s3_region_name = <%= @s3_region_name %>
 vault_s3_auth_version = <%= @s3_auth_version %>
 vault_s3_signature_version = <%= @s3_signature_version %>
 vault_s3_ssl = <%= @s3_ssl_enabled %>
+vault_s3_ssl_verify = <%= @s3_ssl_verify %>
 
 <% if @s3_ssl_enabled -%>
 vault_s3_ssl_cert = /etc/triliovault-wlm/s3-cert.pem
@@ -29,6 +30,7 @@ vault_s3_signature_version =
 vault_s3_ssl = 
 vault_s3_ssl_cert = 
 vault_s3_endpoint_url =
+
 <% end -%>
 
 vault_s3_max_pool_connections = 500
