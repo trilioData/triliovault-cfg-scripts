@@ -25,6 +25,7 @@ class trilio::contego (
     $multi_ip_nfs_enabled                 = false,
     $vddk_file_name                       = 'vddk.tar.gz',
     $vmware_to_openstack_migration_enabled= false,
+    $s3_ssl_verify                        = true,
 ) {
 
 
