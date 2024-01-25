@@ -9,9 +9,11 @@
     src: create_cloud_trust.sh
     dest: "{{ item }}"
     mode: '0777'
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
     - "/tmp/create_cloud_trust.sh"
-  delegate_to: localhost
+
 
 - name: Copy Triliovault-cloudrc Ansible Node
   template:
