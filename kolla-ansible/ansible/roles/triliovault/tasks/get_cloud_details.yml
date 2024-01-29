@@ -15,27 +15,20 @@
     - "/tmp/create_cloud_trust.sh"
 
 
-- name: Copy Triliovault-cloudrc Ansible Node
+- name: Copy Triliovault-cloudrc to openstack controller node
   template:
     src: triliovault-cloudrc
-    dest: "{{ item }}"
+    dest: "{{ cloudrc_dest }}"
     mode: '0777'
-  with_items:
-    - "{{ cloudrc_dest }}"
-  delegate_to: localhost
-
-- name: Verify triliovault-cloudrc is present or not
-  stat: 
-    path: "{{ cloudrc_dest }}"
-  register: trilio_rc
-  delegate_to: localhost
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
 
 - name: GET CLOUD_ADMIN_USER_ID
   shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"
   register: admin_usr_id
-  delegate_to: localhost
+  run_once: true
   when:
-    - trilio_rc.stat.exists == true
+    - inventory_hostname in groups[triliovault_wlm_api_group]
 
 - set_fact:
     Cloud_Admin_UserID: "{{ admin_usr_id.stdout }}"
@@ -43,9 +36,9 @@
 - name: GET CLOUD_UNIQUE_ID
   shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
   register: wlm_usr_id
-  delegate_to: localhost
+  run_once: true
   when:
-    - trilio_rc.stat.exists == true
+    - inventory_hostname in groups[triliovault_wlm_api_group]
 
 - set_fact:
     Triliovault_Wlm_User_ID: "{{ wlm_usr_id.stdout }}"
