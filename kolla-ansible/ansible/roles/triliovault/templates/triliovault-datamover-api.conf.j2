@@ -24,7 +24,7 @@ connection = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ tr
 
 [keystone_authtoken]
 www_authenticate_uri = {{ keystone_internal_url }}
-auth_url = {{ keystone_admin_url }}
+auth_url = {{ keystone_internal_url }}
 auth_type = password
 project_name = service
 username = {{ triliovault_datamover_keystone_user }}
