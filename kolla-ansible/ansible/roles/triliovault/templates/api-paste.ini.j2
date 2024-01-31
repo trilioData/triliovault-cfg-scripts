@@ -37,7 +37,7 @@ paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContex
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
 auth_host = {{ kolla_internal_fqdn }}
-auth_port = 35357
+auth_port = 5000
 auth_protocol = https
 admin_tenant_name = service
 admin_user = {{ triliovault_wlm_keystone_user }}
