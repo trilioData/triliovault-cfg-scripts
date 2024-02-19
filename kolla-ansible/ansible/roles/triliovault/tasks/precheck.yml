@@ -5,13 +5,25 @@
     service_precheck_services: "{{ triliovault_services }}"
     service_name: "{{ project_name }}"
 
-- name: Get container facts
+- name: Get container facts for openstack release earlier than zed
+  become: true
+  kolla_container_facts:
+    name:
+      - triliovault_datamover_api
+  register: container_facts
+  when:
+    - openstack_release in ["victoria", "wallaby", "yoga"]
+
+
+- name: Get container facts for openstack release zed onwards
   become: true
   kolla_container_facts:
     container_engine: "{{ kolla_container_engine }}"
     name:
       - triliovault_datamover_api
   register: container_facts
+  when:
+    - openstack_release in ["zed", "antelope", "bobcat"]
 
 - name: Checking free port for TrilioVault Datamover API
   vars:
