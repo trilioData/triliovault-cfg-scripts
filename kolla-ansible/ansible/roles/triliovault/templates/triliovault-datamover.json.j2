@@ -38,21 +38,7 @@
             "dest": "/etc/triliovault-datamover/datamover_logging.conf",
             "owner": "nova",
             "perm": "0755"
-        }{% if cinder_backend_ceph | bool %},
-        {
-            "source": "{{ container_config_directory }}/{{ ceph_cinder_keyring }}",
-            "dest": "/etc/ceph/{{ ceph_cinder_keyring }}",
-            "owner": "nova",
-            "perm": "0600",
-            "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
-        },
-		{
-            "source": "{{ container_config_directory }}/ceph.conf",
-            "dest": "/etc/ceph/ceph.conf",
-            "owner": "nova",
-            "perm": "0600",
-            "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
-        }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
+        }{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
             "dest": "/etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}",
