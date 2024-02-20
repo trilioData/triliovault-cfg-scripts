@@ -195,7 +195,7 @@ triliovault_datamover_default_volumes:
   - "/lib/modules:/lib/modules:ro"
   - "/run:/run:shared"
   - "libvirtd:/var/lib/libvirt"
-  - "{% if cinder_backend_ceph | bool %}/etc/ceph:/etc/ceph{% endif %}"
+  - "{% if cinder_backend_ceph | bool %}/etc/ceph:{{ container_config_directory }}/ceph{% endif %}"
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
