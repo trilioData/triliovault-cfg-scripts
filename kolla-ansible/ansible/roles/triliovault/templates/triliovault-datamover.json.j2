@@ -26,25 +26,24 @@
             "dest": "/etc/triliovault-datamover/triliovault-datamover.conf",
             "owner": "nova",
             "perm": "0755"
-	},
+	    },
         {
             "source": "{{ container_config_directory }}/fuse.conf",
             "dest": "/etc/fuse.conf",
             "owner": "nova",
             "perm": "0644"
         },
-	{
+	    {
             "source": "{{ container_config_directory }}/triliovault-datamover-logging.conf",
             "dest": "/etc/triliovault-datamover/datamover_logging.conf",
             "owner": "nova",
             "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
         {
-            "source": "{{ container_config_directory }}/ceph/",
             "dest": "/etc/ceph/",
-            "owner": "nova",
-            "perm": "0644",
-            "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
+            "merge": true,
+            "preserve_properties": true,
+            "source": "/var/lib/kolla/src-ceph/"
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
@@ -58,6 +57,11 @@
             "path": "/var/log/triliovault-datamover",
             "owner": "nova:nova",
             "recurse": true
-        }
+        },
+        {
+            "path": "/etc/ceph",
+            "owner": "nova:nova",
+            "recurse": true
+        }       
     ]
 }
