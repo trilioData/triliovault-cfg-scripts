@@ -4,7 +4,7 @@
   vars:
     triliovault_datamover_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
@@ -25,7 +25,7 @@
   vars:
     triliovault_wlm_api: "{{ triliovault_services['triliovault-wlm-api'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
@@ -46,7 +46,7 @@
   vars:
     triliovault_wlm_workloads: "{{ triliovault_services['triliovault-wlm-workloads'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
@@ -67,7 +67,7 @@
   vars:
     triliovault_wlm_scheduler: "{{ triliovault_services['triliovault-wlm-scheduler'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
@@ -88,7 +88,7 @@
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False

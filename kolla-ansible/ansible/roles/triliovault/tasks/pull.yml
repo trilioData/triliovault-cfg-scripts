@@ -1,7 +1,7 @@
 ---
 - name: Pulling triliovault images
   become: true
-  kolla_docker:
+  kolla_container:
     action: "pull_image"
     common_options: "{{ docker_common_options }}"
     image: "{{ item.value.image }}"
@@ -16,7 +16,7 @@
 
 - name: Pulling triliovault horizon image
   become: true
-  kolla_docker:
+  kolla_container:
     action: "pull_image"
     common_options: "{{ docker_common_options }}"
     image: "{{ triliovault_horizon_image_full  }}"
