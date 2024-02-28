@@ -1,0 +1,50 @@
+--- 
+
+- name: set vars
+  set_fact:
+    cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
+
+- name: Copy Create Cloud Trust Ansible Node
+  template:
+    src: create_cloud_trust.sh
+    dest: "{{ item }}"
+    mode: '0777'
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+  with_items:
+    - "/tmp/create_cloud_trust.sh"
+
+
+- name: Copy Triliovault-cloudrc to localhost
+  become: true
+  template:
+    src: triliovault-cloudrc
+    dest: "{{ cloudrc_dest }}"
+    mode: '0777'
+  delegate_to: localhost
+
+
+- name: Copy Triliovault-cloudrc to openstack controller node
+  become: true
+  template:
+    src: triliovault-cloudrc
+    dest: "{{ cloudrc_dest }}"
+    mode: '0777'
+  when:
+    - inventory_hostname in groups[triliovault_wlm_api_group]
+
+- name: GET CLOUD_ADMIN_USER_ID
+  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"
+  register: admin_usr_id
+  delegate_to: localhost
+
+- set_fact:
+    Cloud_Admin_UserID: "{{ admin_usr_id.stdout }}"
+
+- name: GET CLOUD_UNIQUE_ID
+  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
+  register: wlm_usr_id
+  delegate_to: localhost
+
+- set_fact:
+    Triliovault_Wlm_User_ID: "{{ wlm_usr_id.stdout }}"

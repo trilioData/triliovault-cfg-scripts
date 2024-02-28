@@ -3,7 +3,7 @@
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "stop_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ triliovault_wlm_cron.container_name }}"
@@ -13,7 +13,7 @@
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     image: "{{ triliovault_wlm_cron.image }}"
