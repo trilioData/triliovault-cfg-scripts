@@ -1,23 +1,5 @@
 ---
 
-- name: Create database for triliovault services
-  become: true
-  kolla_toolbox:
-    module_name: mysql_db
-    module_args:
-      login_host: "{{ database_address }}"
-      login_port: "{{ database_port }}"
-      login_user: "{{ database_user }}"
-      login_password: "{{ database_password }}"
-      name: "{{ item.database_name }}"
-  run_once: True
-  delegate_to: "{{ groups[item.group_name][0] }}"
-  with_items:
-     - "{{ triliovault_db_details }}"
-  when:
-    - not use_preconfigured_databases | bool
-    - openstack_release in ["victoria", "wallaby", "yoga"]
-
 - name: Create database for triliovault services for zed and next releases
   become: true
   kolla_toolbox:
@@ -35,30 +17,6 @@
      - "{{ triliovault_db_details }}"
   when:
     - not use_preconfigured_databases | bool
-    - openstack_release in ["zed", "2023.1"]
-
-
-- name: Create triliovault database users and ser permissions
-  become: true
-  kolla_toolbox:
-    module_name: mysql_user
-    module_args:
-      login_host: "{{ database_address }}"
-      login_port: "{{ database_port }}"
-      login_user: "{{ database_user }}"
-      login_password: "{{ database_password }}"
-      name: "{{ item.database_user }}"
-      password: "{{ item.database_password }}"
-      host: "%"
-      priv: "{{ item.database_name }}.*:ALL"
-      append_privs: "yes"
-  run_once: True
-  delegate_to: "{{ groups[item.group_name][0]  }}"
-  with_items:
-     - "{{ triliovault_db_details }}"
-  when:
-    - not use_preconfigured_databases | bool
-    - openstack_release in ["victoria", "wallaby", "yoga"]
 
 - name: Create triliovault database users and ser permissions for zed and next releases
   become: true
@@ -81,7 +39,6 @@
      - "{{ triliovault_db_details }}"
   when:
     - not use_preconfigured_databases | bool
-    - openstack_release in ["zed", "2023.1"]
 
 - import_tasks: rabbitmq.yml
 

@@ -10,33 +10,6 @@
 - name: "triliovault | Creating keystone users"
   become: true
   kolla_toolbox:
-    module_name: "os_user"
-    module_args:
-      default_project: "{{ item.project }}"
-      name: "{{ item.user }}"
-      password: "{{ item.password }}"
-      update_password: always
-      domain: "{{ service_ks_register_domain }}"
-      region_name: "{{ openstack_region_name }}"
-      auth: "{{ openstack_triliovault_auth }}"
-      interface: "{{ openstack_interface }}"
-      cacert: "{{ openstack_cacert }}"
-  run_once: True
-  with_items: "{{ triliovault_ks_users }}"
-  loop_control:
-    label:
-      user: "{{ item.user }}"
-      project: "{{ item.project }}"
-      register: service_ks_register_result
-  until: service_ks_register_result is success
-  retries: "{{ service_ks_register_retries }}"
-  delay: "{{ service_ks_register_delay }}"
-  when:
-    - openstack_release in ["victoria", "wallaby", "yoga"]
-
-- name: "triliovault | Creating keystone users"
-  become: true
-  kolla_toolbox:
     container_engine: "{{ kolla_container_engine }}"
     module_name: "os_user"
     module_args:
@@ -52,13 +25,10 @@
   run_once: True
   with_items: "{{ triliovault_ks_users }}"
   loop_control:
-    label:
-      user: "{{ item.user }}"
-      project: "{{ item.project }}"
-      register: service_ks_register_result
+    label: "{{ item.user }} {{ item.project }}"
+  register: service_ks_register_result
   until: service_ks_register_result is success
   retries: "{{ service_ks_register_retries }}"
   delay: "{{ service_ks_register_delay }}"
-  when:
-    - openstack_release in ["zed", "2023.1"]
+  
 
