@@ -4,7 +4,7 @@
     service_name: "triliovault-datamover-api"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
@@ -23,7 +23,7 @@
     service_name: "triliovault-datamover"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
@@ -43,7 +43,7 @@
     service_name: "triliovault-wlm-api"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
@@ -62,7 +62,7 @@
     service_name: "triliovault-wlm-workloads"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
@@ -81,7 +81,7 @@
     service_name: "triliovault-wlm-scheduler"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
@@ -100,7 +100,7 @@
     service_name: "triliovault-wlm-cron"
     service: "{{ triliovault_services[service_name] }}"
   become: true
-  kolla_docker:
+  kolla_container:
     action: "recreate_or_restart_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ service.container_name }}"
