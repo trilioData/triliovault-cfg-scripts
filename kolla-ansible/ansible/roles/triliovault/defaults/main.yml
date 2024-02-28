@@ -257,15 +257,11 @@ triliovault_wlm_cron_default_volumes:
 # OpenStack
 ####################
 
-triliovault_datamover_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
+
 triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
-
-triliovault_wlm_api_admin_endpoint: "{{ admin_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
-
 triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
-
 triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
 
 
@@ -289,13 +285,10 @@ trilio_wlm_api_haproxy_http_request_timeout: "10m"
 ####################
 # Keystone
 ####################
-triliovault_datamover_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_datamover_api_admin_endpoint }}'}
 
 triliovault_datamover_api_service_endpoints:
    - {'interface': 'internal', 'url': '{{ triliovault_datamover_api_internal_endpoint }}'}
    - {'interface': 'public', 'url': '{{ triliovault_datamover_api_public_endpoint }}'}
-
-triliovault_wlm_api_service_admin_endpoint_full: {'interface': 'admin', 'url': '{{ triliovault_wlm_api_admin_endpoint }}'}
 
 triliovault_wlm_api_service_endpoints:
    - {'interface': 'internal', 'url': '{{ triliovault_wlm_api_internal_endpoint }}'}
@@ -305,12 +298,12 @@ triliovault_ks_services:
   - name: "dmapi"
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
-    endpoints: "{{ triliovault_datamover_api_service_endpoints + ([triliovault_datamover_api_service_admin_endpoint_full] if ( openstack_release != 'zed' and openstack_release != '2023.1') else []) }}"
+    endpoints: "{{ triliovault_datamover_api_service_endpoints }}"
     triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
-    endpoints: "{{ triliovault_wlm_api_service_endpoints + ([triliovault_wlm_api_service_admin_endpoint_full] if ( openstack_release != 'zed' and openstack_release != '2023.1') else []) }}"
+    endpoints: "{{ triliovault_wlm_api_service_endpoints }}"
     triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
 
 triliovault_datamover_keystone_user: "dmapi"	
