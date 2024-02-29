@@ -1,0 +1,5 @@
+---
+- debug:
+    msg: "System {{ inventory_hostname }} has uuid {{ ansible_product_uuid }} going to invoke {{ kolla_action }}"
+
+- include_tasks: "{{ kolla_action }}.yml"
