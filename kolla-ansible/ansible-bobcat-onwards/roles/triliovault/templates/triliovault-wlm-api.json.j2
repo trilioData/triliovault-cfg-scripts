@@ -1,0 +1,51 @@
+{
+	"command": "/opt/triliovault/start-triliovault-wlm-api.sh",
+	"config_files": [{
+			"source": "{{ container_config_directory }}/triliovault-wlm-api.conf",
+			"dest": "/etc/triliovault-wlm/triliovault-wlm.conf",
+			"owner": "nova",
+			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/triliovault-wlm-logging.conf",
+			"dest": "/etc/triliovault-wlm/wlm_logging.conf",
+			"owner": "nova",
+			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/api-paste.ini",
+			"dest": "/etc/triliovault-wlm/api-paste.ini",
+			"owner": "nova",
+			"perm": "0755"
+
+        },
+        {
+            "source": "{{ container_config_directory }}/triliovault-object-store.conf",
+            "dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
+            "owner": "nova",
+            "perm": "0600"
+        },
+ 		{
+			"source": "{{ container_config_directory }}/fuse.conf",
+			"dest": "/etc/fuse.conf",
+			"owner": "nova",
+			"perm": "0644"
+		},
+		{
+			"source": "{{ container_config_directory }}/start-triliovault-wlm-api.sh",
+			"dest": "/opt/triliovault/start-triliovault-wlm-api.sh",
+			"owner": "nova",
+			"perm": "0755"
+		}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
+	        {
+        	        "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
+	                "dest": "/etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}",
+        	        "owner": "nova",
+	                "perm": "0600"
+        	}{% endif %}
+	],
+	"permissions": [{
+		        "path": "/var/log/triliovault",
+		        "owner": "nova:nova"
+	}]
+}

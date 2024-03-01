@@ -1,0 +1,20 @@
+#!/bin/bash
+set -ex
+
+
+## Start TTrilioVault Object Store Service
+{% if triliovault_backup_target == "amazon_s3"  or  triliovault_backup_target == "other_s3_compatible" %}
+
+/usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
+
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start triliovault-object-store service: $status"
+  exit $status
+fi
+sleep 20s
+
+{% endif %}
+
+## Start Triliovault Wlm Workloads Service
+/usr/bin/python3 /usr/bin/workloadmgr-workloads --config-file=/etc/triliovault-wlm/triliovault-wlm.conf

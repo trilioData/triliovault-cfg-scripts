@@ -1,0 +1,39 @@
+- name: Apply haproxy config for triliovault services
+  gather_facts: false
+  hosts:
+    - loadbalancer
+    - '&enable_loadbalancer_True'
+  serial: '{{ kolla_serial|default("0") }}'
+  tags:
+    - haproxy
+    - keepalived
+    - loadbalancer
+  roles:
+    - { role: loadbalancer,
+        when: enable_loadbalancer | bool }
+  tasks:
+    - include_role:
+        name: triliovault
+        tasks_from: loadbalancer
+      when:
+        - inventory_hostname in groups['triliovault-datamover-api']
+        - inventory_hostname in groups['triliovault-wlm-api']
+        - enable_haproxy | bool
+        - enable_triliovault | bool
+        - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
+
+- name: Apply role triliovault
+  gather_facts: false
+  hosts:
+    - triliovault-datamover-api
+    - triliovault-datamover
+    - triliovault-wlm-api
+    - triliovault-wlm-workloads
+    - triliovault-wlm-scheduler
+    - triliovault-wlm-cron
+    - enable_triliovault | bool
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - { role: triliovault,
+        tags: triliovault,
+        when: enable_triliovault | bool }
