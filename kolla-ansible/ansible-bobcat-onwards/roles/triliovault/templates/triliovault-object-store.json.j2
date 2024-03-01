@@ -1,0 +1,21 @@
+{
+	"command": "/usr/bin/python3 /usr/bin/triliovault-object-store",
+	"config_files": [{
+			"source": "{{ container_config_directory }}/triliovault-object-store.conf",
+			"dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
+			"owner": "root",
+			"perm": "0755"
+		},
+        {
+			"source": "{{ container_config_directory }}/object_store_logging.conf",
+			"dest": "/etc/triliovault-object-store/object_store_logging.conf",
+			"owner": "root",
+			"perm": "0755"
+		}
+	],
+	"permissions": [{
+		"path": "/var/log/kolla/triliovault",
+		"owner": "nova:nova",
+		"recurse": true
+	}]
+}
