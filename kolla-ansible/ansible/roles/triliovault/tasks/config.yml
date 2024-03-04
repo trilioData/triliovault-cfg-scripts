@@ -269,7 +269,7 @@
 
 - include_tasks: ceph_nova.yml
   when:
-    - nova_backend == "rbd"
+    - nova_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
 
 - name: Copy over triliovault backup target certs - ceph s3 
