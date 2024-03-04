@@ -195,7 +195,6 @@ triliovault_datamover_default_volumes:
   - "/lib/modules:/lib/modules:ro"
   - "/run:/run:shared"
   - "libvirtd:/var/lib/libvirt"
-  - /etc/ceph:/var/lib/kolla/src-ceph:ro
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
