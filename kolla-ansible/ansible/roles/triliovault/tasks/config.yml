@@ -267,7 +267,7 @@
     - cinder_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
 
-- include_tasks: nova_cinder.yml
+- include_tasks: ceph_nova.yml
   when:
     - nova_backend == "rbd"
     - inventory_hostname in groups[triliovault_datamover_group]
