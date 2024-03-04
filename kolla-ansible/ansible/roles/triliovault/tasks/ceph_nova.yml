@@ -7,7 +7,7 @@
   become: true
   when:
     - external_ceph_cephx_enabled | bool
-    - nova_backend == "rbd"
+    - nova_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
     - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
