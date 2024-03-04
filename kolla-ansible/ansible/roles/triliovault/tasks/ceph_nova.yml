@@ -1,5 +1,5 @@
 ---
-- name: Copy over Ceph keyring files for triliovault-datamover
+- name: Copy over nova ceph keyring files for triliovault-datamover
   copy:
     src: "{{ node_custom_config }}/nova/{{ ceph_nova_keyring }}"
     dest: "{{ node_config_directory }}/triliovault-datamover/"
@@ -13,7 +13,7 @@
   notify:
     - Restart triliovault-datamover container
 
-- name: Ensuring config directory has correct owner and permission
+- name: Ensuring config directory has correct owner and permission for nova keyring
   become: true
   file:
     path: "{{ node_config_directory }}/{{ item }}"
