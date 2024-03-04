@@ -267,6 +267,11 @@
     - cinder_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
 
+- include_tasks: nova_cinder.yml
+  when:
+    - nova_backend == "rbd"
+    - inventory_hostname in groups[triliovault_datamover_group]
+
 - name: Copy over triliovault backup target certs - ceph s3 
   copy:
     src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"

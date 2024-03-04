@@ -52,6 +52,12 @@
             "owner": "nova",
             "perm": "0600",
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
+        }{% endif %}{% if nova_backend == "rbd" %},
+        {
+            "source": "{{ container_config_directory }}/{{ ceph_nova_keyring }}",
+            "dest": "/etc/ceph/{{ ceph_nova_keyring }}",
+            "owner": "nova",
+            "perm": "0600"
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
