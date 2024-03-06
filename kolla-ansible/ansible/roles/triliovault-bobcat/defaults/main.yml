@@ -162,6 +162,13 @@ triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 # triliovault_wlm_ks_user_domain_name: "Default"
 ###### END OF WORKLOADMGR ####
 
+## These parameters are from cinder and nova roles.
+cinder_ceph_backends:
+  - name: "rbd-1"
+    cluster: "ceph"
+    enabled: "{{ cinder_backend_ceph | bool }}"
+	
+nova_ceph_cluster: "ceph"
 
 
 ## Under this directory, triliovault datamover will mount the backup target.

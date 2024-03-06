@@ -1,33 +1,59 @@
 ---
-- name: Copying over ceph.conf for Cinder
+
+- name: Ensuring cinder service ceph config subdirs exists
   vars:
+    service: "{{ triliovault_services['triliovault-datamover'] }}"
+  file:
+    path: "{{ node_config_directory }}/triliovault-datamover/ceph"
+    state: "directory"
+    owner: "{{ config_owner_user }}"
+    group: "{{ config_owner_group }}"
+    mode: "0770"
+  become: true
+  when:
+    - inventory_hostname in groups[service.group]
+    - service.enabled | bool
+	
+- name: Copying over ceph.conf for triliovault-datamover service
+  vars:
+    cluster: "{{ item.cluster }}"
     services_need_config:
       - "triliovault-datamover"
   merge_configs:
     sources:
-      - "{{ node_custom_config }}/cinder/ceph.conf"
-      - "{{ node_custom_config }}/cinder/cinder-volume/ceph.conf"
-    dest: "{{ node_config_directory }}/triliovault-datamover/ceph.conf"
+      - "{{ node_custom_config }}/cinder/{{ cluster }}.conf"
+      - "{{ node_custom_config }}/cinder/cinder-volume/{{ cluster }}.conf"
+    dest: "{{ node_config_directory }}/triliovault-datamover/ceph/{{ cluster }}.conf"
     mode: "0660"
   become: true
+  with_items: "{{ cinder_ceph_backends }}"
   when:
     - inventory_hostname in groups[triliovault_datamover_group]
     - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
     - Restart triliovault-datamover container
 
-- name: Copy over Ceph keyring files for triliovault-datamover
-  copy:
-    src: "{{ node_custom_config }}/cinder/cinder-volume/{{ ceph_cinder_keyring }}"
-    dest: "{{ node_config_directory }}/triliovault-datamover/"
+
+- name: Copy over cinder ceph keyring files for triliovault datamover
+  vars:
+    keyring: "{{ item.cluster }}.{{ ceph_cinder_keyring }}"
+  template:
+    src: "{{ node_custom_config }}/cinder/cinder-volume/{{ keyring }}"
+    dest: "{{ node_config_directory }}/triliovault-datamover/ceph/{{ keyring }}"
     mode: "0660"
   become: true
+  with_items: "{{ cinder_ceph_backends }}"
   when:
     - external_ceph_cephx_enabled | bool
     - inventory_hostname in groups[triliovault_datamover_group]
     - triliovault_services['triliovault-datamover'].enabled | bool
   notify:
     - Restart triliovault-datamover container
+
+
+
+
+
 
 - name: Ensuring config directory has correct owner and permission
   become: true
