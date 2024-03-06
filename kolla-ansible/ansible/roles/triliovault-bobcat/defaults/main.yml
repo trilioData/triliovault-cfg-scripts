@@ -167,7 +167,6 @@ cinder_ceph_backends:
   - name: "rbd-1"
     cluster: "ceph"
     enabled: "{{ cinder_backend_ceph | bool }}"
-	
 nova_ceph_cluster: "ceph"
 
 
