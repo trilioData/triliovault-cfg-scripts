@@ -40,10 +40,10 @@
             "perm": "0755"
         }{% if cinder_backend_ceph | bool %},
         {
-            "dest": "/etc/ceph/",
-            "merge": true,
-            "preserve_properties": true,
-            "source": "/var/lib/kolla/src-ceph/"
+            "source": "{{ container_config_directory }}/ceph",
+            "dest": "/etc/ceph",
+            "owner": "nova",
+            "perm": "0600"
         }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
         {
             "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
