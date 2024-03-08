@@ -1,9 +1,0 @@
-CLOUD_ADMIN_KEYSTONE_AUTH_URL=https://kolla-wallaby-ubuntu20-2.triliodata.demo:5000
-CLOUD_ADMIN_USER_NAME=cloudadmin
-CLOUD_ADMIN_USER_PASSWORD=xxxxxxxxxx
-CLOUD_ADMIN_PROJECT_NAME=cloudproject
-CLOUD_ADMIN_DOMAIN_NAME=clouddomain
-CLOUD_ADMIN_PROJECT_ID=807860693f2443d6b9a2df6aadbddb95
-WLM_PROJECT_DOMAIN_NAME=service
-WLM_USER_NAME=triliovault
-~                             
