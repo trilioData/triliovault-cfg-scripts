@@ -55,7 +55,7 @@ dmapi_transport_url = <%= @default_transport_url %>
 images_rbd_ceph_conf = /etc/ceph/ceph.conf
 rbd_user = <%= @ceph_cinder_user %>
 [ceph]
-keyring_ext = .<%= @ceph_cinder_user %>.keyring
+keyring_ext = .keyring
 <% end -%>
 [dmapi_database]
 connection = <%= @database_connection %>
