@@ -40,7 +40,7 @@ parameter_defaults:
 
    ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
    ## Valid values: internal, public, admin
-   Interface: "internal"
+   TrilioInterface: "internal"
    
    ## Provide any role name as your preference. 
    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 

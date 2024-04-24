@@ -22,9 +22,17 @@ parameter_defaults:
    ## set this parameter to True. Otherwise keep it False.
    MultiIPNfsEnabled: False
 
-   ## For backup target 'nfs'
-   NfsShares: '192.168.122.101:/opt/tvault'
-   NfsOptions: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+   ## For backup target 'nfs'.
+   ## Example: NfsShares: '192.168.122.101:/opt/tvault'
+   ## If you are using S3 as backup target type, please do not change anything here.
+   ## If you are using NFS as backup target type, please uncomment following parameter and set correct value.
+   #NfsShares: ''
+
+   ## NFS options.
+   ## If you are using S3 as backup target type, please do not change anything here. 
+   ## If you are using NFS as backup target type, please uncomment following parameter and keep the default value as it is. If you want any other specific option you can edit the parameter.
+   #NfsOptions: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+
 
    ## For backup target 's3'
    ## S3 type: amazon_s3/ceph_s3

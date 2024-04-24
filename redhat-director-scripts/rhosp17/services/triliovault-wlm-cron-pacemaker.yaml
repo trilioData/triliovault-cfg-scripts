@@ -57,7 +57,7 @@ parameters:
     description: >
       Setting this to a unique value will re-run any deployment tasks which
       perform configuration on a Heat stack-update.
-  Interface:
+  TrilioInterface:
     default: 'internal'
     description: OpenStack endpoint type on which triliovault will communicate
     type: string
@@ -159,10 +159,11 @@ parameters:
     description:
     type: string
   NfsShares:
+    default: ''
     description: Provide comma separated list of NFS shares to use as backup target
     type: string
   NfsOptions:
-    default: 'nolock,soft,timeo=180,intr'
+    default: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
     description: NFS mount otpions
     type: string
   S3Type:

@@ -33,7 +33,7 @@ parameters:
   DefaultPasswords:
     default: {}
     type: json
-  Interface:
+  TrilioInterface:
     default: 'internal'
     description: OpenStack endpoint type on which triliovault will communicate
     type: string
@@ -159,10 +159,11 @@ parameters:
     description:
     type: string
   NfsShares:
+    default: ''
     description: Provide comma separated list of NFS shares to use as backup target
     type: string
   NfsOptions:
-    default: 'nolock,soft,timeo=180,intr'
+    default: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
     description: NFS mount otpions
     type: string
   S3Type:
@@ -326,7 +327,7 @@ outputs:
         trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
         trilio::wlmapi::ssl_port: {get_param: WlmApiSslPort}
-        trilio::wlmapi::interface: {get_param: Interface}
+        trilio::wlmapi::interface: {get_param: TrilioInterface}
         trilio::wlmapi::keystone_username: {get_param: WlmApiKeystoneUserName}
         trilio::wlmapi::password: {get_param: WlmApiKeystoneUserPassword}
         trilio::wlmapi::keystone_internal_auth_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
