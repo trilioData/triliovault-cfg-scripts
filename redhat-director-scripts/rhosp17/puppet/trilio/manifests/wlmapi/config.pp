@@ -23,6 +23,9 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
         'ssl'       => $oslomsg_notify_use_ssl_real,
       })
 
+      $enabled_backends = join($backup_targets.map |$target| { $target['backup_target_name'] }, ',')
+
+      
         $memcached_hosts_real = any2array(pick($memcached_ips, $memcached_hosts))
         if $step >= 3 {
             if $memcached_ipv6 or $memcached_hosts_real[0] =~ Stdlib::Compat::Ipv6 {

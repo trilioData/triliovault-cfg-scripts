@@ -1,5 +1,6 @@
 [DEFAULT]
 triliovault_hostnames = <%= @my_ip %>
+enabled_backends = <%= @enabled_backends %>
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
 api_workers = 4
 cloud_admin_role = admin
@@ -14,6 +15,42 @@ max_wait_for_upload = 48
 neutron_api_insecure = false
 
 cloud_unique_id =
+
+
+<% backup_targets.each do |target| %>
+
+[<%= target['backup_target_name'] %>]
+
+vault_s3_bucket = <%= target['s3_bucket'] %>
+vault_storage_type = <%= target['backup_target_type'] %>
+
+<% if target['backup_target_type'] == 's3' %>
+vault_storage_type = s3
+vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>
+vault_s3_bucket = <%= target['s3_bucket'] %>
+
+<% if target['s3_type'] == 'amazon_s3' %>
+vault_storage_nfs_export = <%= target['s3_bucket'] %>
+<% else -%>
+<% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
+vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
+<% end %
+
+<% else -%>
+vault_storage_type = nfs
+vault_storage_nfs_export = <%= target['nfs_shares'] %>
+vault_storage_nfs_options = <%= target['nfs_options'] %>
+<% end %>
+
+<% if target['is_default'] %>
+is_default = 1
+<% else -%>
+is_default = 0
+<% end %>
+
+<% end %>
+
+
 
 <% if @interface == "public" -%>
 neutron_production_url =  <%= @neutron_public_auth_url %>
@@ -55,54 +92,6 @@ vault_data_directory_old = /var/triliovault
 
 vault_storage_type = <%= @backup_target_type %>
 
-<% if @backup_target_type == "s3" -%>
-
-vault_s3_access_key_id = <%= @s3_accesskey %>
-vault_s3_secret_access_key = <%= @s3_secretkey  %>
-vault_s3_bucket = <%= @s3_bucket %>
-vault_s3_region_name = <%= @s3_region_name %>
-vault_s3_auth_version = <%= @s3_auth_version %>
-vault_s3_signature_version = <%= @s3_signature_version %>
-vault_s3_ssl = <%= @s3_ssl_enabled %>
-<% if @s3_ssl_enabled -%>
-vault_s3_ssl_cert = /etc/triliovault-datamover/s3-cert.pem
-<% else -%>
-vault_s3_ssl_cert =
-<% end -%>
-
-
-<% if @s3_type == "ceph_s3" -%>
-vault_s3_endpoint_url = <%= @s3_endpoint_url %>
-<% else -%>
-vault_s3_endpoint_url =
-<% end -%>
-
-vault_storage_das_device = none
-vault_storage_nfs_export = TrilioVault
-vault_storage_nfs_options =
-
-<% else -%>
-
-<% if @multi_ip_nfs_enabled -%>
-vault_storage_nfs_export = <%= @nfs_map[@hostname] %>
-<% else -%>
-vault_storage_nfs_export = <%= @nfs_shares %>
-<% end -%>
-
-vault_storage_das_device = none
-vault_storage_nfs_options = <%= @nfs_options %>
-
-vault_s3_access_key_id = 
-vault_s3_secret_access_key = 
-vault_s3_bucket = 
-vault_s3_region_name = 
-vault_s3_auth_version = 
-vault_s3_signature_version = 
-vault_s3_ssl = 
-vault_s3_ssl_cert = 
-vault_s3_endpoint_url =
-
-<% end -%>
 
 workloads_workers = 4
 [alembic]

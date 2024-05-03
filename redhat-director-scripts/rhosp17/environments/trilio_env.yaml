@@ -6,65 +6,37 @@ parameter_defaults:
    CloudAdminDomainName: "default"
    CloudAdminPassword: "KFYTWkFa4ufdiR6S7blZTdfgR"
 
-
    ## TrilioVault container Images.
    ContainerTriliovaultDatamoverImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover:4.0.41-rhosp16
    ContainerTriliovaultDatamoverApiImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
    ContainerTriliovaultWlmImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-datamover-api:4.0.41-rhosp16
 
    ## If you do not want Trilio's horizon plugin to replace your horizon container, just comment following line.
-   ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
+   ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16   
 
-   ## Backup target type nfs/s3, used to store snapshots taken by triliovault
-   BackupTargetType: 'nfs'
-
-   ## If backup target NFS share support multiple IPs and you want to use those IPs(more than one) then
-   ## set this parameter to True. Otherwise keep it False.
-   MultiIPNfsEnabled: False
-
-   ## For backup target 'nfs'.
-   ## Example: NfsShares: '192.168.122.101:/opt/tvault'
-   ## If you are using S3 as backup target type, please do not change anything here.
-   ## If you are using NFS as backup target type, please uncomment following parameter and set correct value.
-   #NfsShares: ''
-
-   ## NFS options.
-   ## If you are using S3 as backup target type, please do not change anything here. 
-   ## If you are using NFS as backup target type, please uncomment following parameter and keep the default value as it is. If you want any other specific option you can edit the parameter.
-   #NfsOptions: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
-
-
-   ## For backup target 's3'
-   ## S3 type: amazon_s3/ceph_s3
-   S3Type: 'amazon_s3'
-
-   ## S3 access key
-   S3AccessKey: ''
-
-   ## S3 secret key
-   S3SecretKey: ''
-
-   ## S3 region, if your s3 does not have any region, just keep the parameter as it is
-   S3RegionName: ''
-
-   ## S3 bucket name
-   S3Bucket: ''
-
-   ## S3 endpoint url, not required for Amazon S3, keep it as it is
-   S3EndpointUrl: ''
-
-   ## S3 signature version
-   S3SignatureVersion: 'default'
-
-   ## S3 Auth version
-   S3AuthVersion: 'DEFAULT'
-
-   ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
-   S3SslEnabled: False
-
-   ## Whether to verify Ceph SSL/TLS certificate or not
-   S3SslVerify: True
-
+   ## List of Backup Targets to store backup data, you can configure multiple S3, nfs backup targets here.
+   ## For more details about each parameter, please check documentation.
+   TrilioBackupTargets:
+   - backup_target_name: 'BT1_NFS_Eample'
+     backup_target_type: 's3'
+     is_default: True
+     s3_type: 'amazon_s3'
+     s3_access_key: ''
+     s3_secret_key: ''
+     s3_region_name: ''
+     s3_bucket: ''
+     s3_endpoint_url: ''
+     S3SignatureVersion: 'default'
+     s3_auth_version: 'DEFAULT'
+     s3_ssl_enabled: false
+     s3_ssl_verify: true
+   - backup_target_name: 'BT2_NFS_Eample'
+     backup_target_type: 'nfs'
+     is_default: false
+     nfs_shares: ''
+     nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+     multi_ip_nfs_enabled: false
+  
    ## User can specify list of extra volumes that they want to mount on 'trilio_datamover' container.
    # Example:
    #  TrilioDatamoverOptVolumes:

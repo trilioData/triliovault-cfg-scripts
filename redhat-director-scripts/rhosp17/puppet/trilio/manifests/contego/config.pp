@@ -61,6 +61,7 @@ class trilio::contego::config inherits trilio::contego {
         mode   => '0755',
     }
 
+
     if $vmware_to_openstack_migration_enabled {
       file { '/opt/vmware-vix-disklib-distrib/':
           ensure => 'directory',
