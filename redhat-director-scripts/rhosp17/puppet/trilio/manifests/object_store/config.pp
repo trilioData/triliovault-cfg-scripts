@@ -1,7 +1,18 @@
-class trilio::wlmapi::config inherits trilio::wlmapi {
+class trilio::object_store::config inherits trilio::object_store {
     tag 'trilioobjectstoreconfig'
 
-
+      file { '/etc/triliovault-object-store/':
+          ensure => 'directory',
+          owner  => '42436',
+          group  => '42436',
+      }->
+      file { "/etc/triliovault-object-store/object_store_logging.conf":
+          ensure  => present,
+          content => template('trilio/object_store_logging_conf.erb'),
+          owner  => '42436',
+          group  => '42436',
+          mode   => '0644',
+      }
 
 # Iterate over backup_targets parameter
     $backup_targets.each |$target| {
@@ -13,6 +24,7 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
         file { $conf_file_name:
           ensure  => present,
           content => epp('trilio/triliovault_object_store.conf.epp', {
+            backup_target_type    => $target['backup_target_type'],
             backup_target_name    => $target['backup_target_name'],
             s3_accesskey          => $target['s3_access_key'],
             s3_secretkey          => $target['s3_secret_key'],
@@ -32,25 +44,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
 
 
 
-      file { '/etc/triliovault-object-store/':
-          ensure => 'directory',
-          owner  => '42436',
-          group  => '42436',
-      }->
-      file { "/etc/triliovault-object-store/triliovault-object-store.conf":
-          ensure  => present,
-          content => template('trilio/triliovault_object_store_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }
-      file { "/etc/triliovault-object-store/object_store_logging.conf":
-          ensure  => present,
-          content => template('trilio/object_store_logging_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }
 
 
 }
