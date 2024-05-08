@@ -56,7 +56,7 @@ class trilio::wlmapi (
   $interface                       = 'internal',
   $trustee_role                    = 'creator',
   $vault_data_dir                  = "/var/lib/nova/triliovault-mounts",
-  $backup_targets                  = [],
+  $backup_targets_1                  = [],
   $backup_target_type              = 'nfs',
   $nfs_shares                      = undef,
   $nfs_options                     = 'nolock,soft,vers=3,timeo=180,intr,lookupcache=none',
@@ -89,6 +89,7 @@ class trilio::wlmapi (
   $s3_ssl_verify                   = true,
 ) {
     tag 'wlmapiconfig'
+
     
       class {'trilio::wlmapi::config':}
 }

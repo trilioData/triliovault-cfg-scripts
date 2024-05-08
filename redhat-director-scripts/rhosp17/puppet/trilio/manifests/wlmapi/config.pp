@@ -1,6 +1,39 @@
 class trilio::wlmapi::config inherits trilio::wlmapi {
     tag 'wlmapiconfig'
 
+$backup_targets = [
+  {
+    backup_target_name    => 'S3_BT1',
+    backup_target_type    => 's3',
+    is_default            => true,
+    s3_type               => 'ceph_s3',
+    s3_access_key         => 'ACCESSKEY1',
+    s3_secret_key         => 'SECRETKEY1',
+    s3_region_name        => 'REGION1',
+    s3_bucket             => 'trilio-qa',
+    s3_endpoint_url       => 'https://cephs3.triliodata.demo',
+    s3_signature_version  => 'default',
+    s3_auth_version       => 'DEFAULT',
+    s3_ssl_enabled        => true,
+    s3_ssl_verify         => true
+  },
+  {
+    backup_target_name    => 'S3_BT2',
+    backup_target_type    => 's3',
+    is_default            => true,
+    s3_type               => 'amazon_s3',
+    s3_access_key         => 'ACCESSKEY2',
+    s3_secret_key         => 'SECRETKEY2',
+    s3_region_name        => 'REGION2',
+    s3_bucket             => 'trilio-qa',
+    s3_endpoint_url       => 'ENDPOINT_URL2',
+    s3_signature_version  => 'default',
+    s3_auth_version       => 'DEFAULT',
+    s3_ssl_enabled        => true,
+    s3_ssl_verify         => true
+  }
+]
+
 
       $oslomsg_rpc_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_rpc_use_ssl)))
       $oslomsg_notify_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_notify_use_ssl)))
@@ -97,11 +130,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
       }->
-      file { '/etc/triliovault-object-store/':
-          ensure => 'directory',
-          owner  => '42436',
-          group  => '42436',
-      }->
       file { "/etc/triliovault-wlm/cloud_admin_rc":
           ensure  => present,
           content => template('trilio/cloud_admin_rc.erb'),
@@ -118,13 +146,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
-      }
-      file { "/etc/triliovault-wlm/s3-cert.pem":
-          ensure => 'present',
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-          source => 'puppet:///modules/trilio/s3-cert.pem',
       }
       if $vcenter_nossl == false {
         file { "/etc/triliovault-wlm/${vcenter_cert_file_name}":
@@ -156,23 +177,9 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           group  => '42436',
           mode   => '0644',
       }->
-      file { "/etc/triliovault-object-store/triliovault-object-store.conf":
-          ensure  => present,
-          content => template('trilio/triliovault_object_store_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }->
       file { "/etc/triliovault-wlm/wlm_logging.conf":
           ensure  => present,
           content => template('trilio/wlm_logging_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }
-      file { "/etc/triliovault-object-store/object_store_logging.conf":
-          ensure  => present,
-          content => template('trilio/object_store_logging_conf.erb'),
           owner  => '42436',
           group  => '42436',
           mode   => '0644',

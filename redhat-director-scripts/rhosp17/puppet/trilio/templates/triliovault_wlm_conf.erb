@@ -17,38 +17,31 @@ neutron_api_insecure = false
 cloud_unique_id =
 
 
-<% backup_targets.each do |target| %>
-
-[<%= target['backup_target_name'] %>]
-
+<% @backup_targets.each do |target| -%>
+[ <%= target['backup_target_name'] %> ]
 vault_s3_bucket = <%= target['s3_bucket'] %>
 vault_storage_type = <%= target['backup_target_type'] %>
-
 <% if target['backup_target_type'] == 's3' %>
 vault_storage_type = s3
 vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>
 vault_s3_bucket = <%= target['s3_bucket'] %>
-
 <% if target['s3_type'] == 'amazon_s3' %>
 vault_storage_nfs_export = <%= target['s3_bucket'] %>
 <% else -%>
 <% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
 vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
-<% end %
-
+<% end %>
 <% else -%>
 vault_storage_type = nfs
 vault_storage_nfs_export = <%= target['nfs_shares'] %>
 vault_storage_nfs_options = <%= target['nfs_options'] %>
 <% end %>
-
 <% if target['is_default'] %>
 is_default = 1
 <% else -%>
 is_default = 0
 <% end %>
-
-<% end %>
+<% end -%>
 
 
 

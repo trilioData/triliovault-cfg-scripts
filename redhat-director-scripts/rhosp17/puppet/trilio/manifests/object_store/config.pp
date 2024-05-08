@@ -20,12 +20,14 @@ class trilio::object_store::config inherits trilio::object_store {
       if $target['backup_target_type'] == 's3' {
         if $target['s3_type'] == 'amazon_s3' {
           $backup_target_mount_point = base64('encode', $target['s3_bucket'])
+          $vault_storage_nfs_export = $target['s3_bucket']
         }
         else {
           $s3_domain_name = regsubst($target['s3_endpoint_url'], '^https?://', '')
           $bucket_name = $target['s3_bucket']
           $ceph_s3_str = "$s3_domain_name/$bucket_name"
           $backup_target_mount_point = base64('encode', $ceph_s3_str)
+          $vault_storage_nfs_export = $ceph_s3_str
         }
         file { "/etc/triliovault-object-store/s3-cert-${target['backup_target_name']}.pem":
           ensure => 'present',
@@ -58,6 +60,7 @@ class trilio::object_store::config inherits trilio::object_store {
             s3_type               => $target['s3_type'],
             s3_endpoint_url       => $target['s3_endpoint_url'],
             vault_data_dir        => $vault_data_dir,
+            vault_storage_nfs_export => $vault_storage_nfs_export,
           }),
         }
       }
