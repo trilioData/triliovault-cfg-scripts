@@ -1,16 +1,4 @@
 class trilio::contego (
-    $backup_target_type                   = 'nfs',
-    $nfs_shares                           = undef,
-    $nfs_options                          = 'nolock,soft,vers=3,timeo=180,intr,lookupcache=none',
-    $s3_type                              = 'amazon_s3',
-    $s3_accesskey                         = undef,
-    $s3_secretkey                         = undef,
-    $s3_region_name                       = undef,
-    $s3_bucket                            = undef,
-    $s3_endpoint_url                      = undef,
-    $s3_signature_version                 = 'default',
-    $s3_auth_version                      = 'DEFAULT',
-    $s3_ssl_enabled                       = 'False',
     $database_connection                  = undef,
     $oslomsg_rpc_proto                    = hiera('oslo_messaging_rpc_scheme', 'rabbit'),
     $oslomsg_rpc_hosts                    = any2array(hiera('oslo_messaging_rpc_node_names', undef)),
@@ -26,7 +14,6 @@ class trilio::contego (
     $vddk_file_name                       = 'vddk.tar.gz',
     $vmware_to_openstack_migration_enabled= false,
     $libvirt_images_rbd_ceph_conf         = '/etc/ceph/ceph.conf',
-    $s3_ssl_verify                        = true,
 ) {
 
 

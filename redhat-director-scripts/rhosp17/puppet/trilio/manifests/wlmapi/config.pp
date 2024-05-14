@@ -14,7 +14,7 @@ $backup_targets = [
     s3_endpoint_url       => 'https://cephs3.triliodata.demo',
     s3_signature_version  => 'default',
     s3_auth_version       => 'DEFAULT',
-    s3_ssl_enabled        => true,
+    s3_ssl_enabled        => false,
     s3_ssl_verify         => true
   },
   {
@@ -31,7 +31,22 @@ $backup_targets = [
     s3_auth_version       => 'DEFAULT',
     s3_ssl_enabled        => true,
     s3_ssl_verify         => true
+  },
+  {
+     backup_target_name => 'NFS_BT3',
+     backup_target_type => 'nfs',
+     is_default => false,
+     nfs_shares => '172.30.1.9:/mnt/rhosptargetnfs',
+     nfs_options => 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+  },
+  {
+     backup_target_name => 'NFS_BT4',
+     backup_target_type => 'nfs',
+     is_default => false,
+     nfs_shares => '172.30.1.8:/mnt/rhosptargetnfs',
+     nfs_options => 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
   }
+
 ]
 
 

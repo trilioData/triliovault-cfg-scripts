@@ -1,19 +1,17 @@
+<% require 'base64' %>
 #!/bin/bash
 set -ex
-
-## Start triliovault-object-store service if backup target type is s3
-<% if @backup_target_type == "s3" -%>
-/usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
-status=$?
-if [ $status -ne 0 ]; then
-  echo "Failed to start triliovault-object-store service: $status"
-  exit $status
-fi
-sleep 20s
-
+<% @backup_targets.each do |target| -%>
+<% if target['backup_target_type'] == 'nfs' -%>
+<% nfs_share = target['nfs_shares'] -%>
+<% nfs_dir = nfs_share.split(':')[1] -%>
+<% base64_mount_point = Base64.strict_encode64(nfs_dir) -%>
+<% nfs_options = target['nfs_options'] -%>
+mkdir -p <%= @vault_data_dir %>/<%= base64_mount_point %>
+mount -t nfs <%= nfs_share %> <%= @vault_data_dir %>/<%= base64_mount_point %> -o <%= nfs_options %>
 <% end -%>
 
-
+<% end -%>
 ## Start triliovaut-wlm-api service
 /usr/bin/python3 /usr/bin/workloadmgr-api \
   --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
