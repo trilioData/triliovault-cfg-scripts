@@ -82,6 +82,10 @@ parameters:
     default: []
     description: list of optional volumes to be mounted
     type: list
+  TrilioBackupTargets:
+    default: []
+    description: List of backup targets for TrilioVault
+    type: list
   VmwareToOpenstackMigrationEnabled:
     default: false
     description: Whether to enable VMware to OpenStack migration feature or not
@@ -103,6 +107,7 @@ outputs:
     value:
       service_name: triliovault_datamover
       config_settings:
+        trilio::contego::backup_targets: {get_param: TrilioBackupTargets}
         trilio::contego::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::contego::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::contego::vmware_to_openstack_migration_enabled: {get_param: VmwareToOpenstackMigrationEnabled}

@@ -37,7 +37,7 @@ class trilio::object_store::config inherits trilio::object_store {
           source => "puppet:///modules/trilio/s3-cert-${target['backup_target_name']}.pem",
         }
 
-        $conf_file_name = "/etc/triliovault-object-store/triliovault-object-store_${target['backup_target_name']}.conf"
+        $conf_file_name = "/etc/triliovault-object-store/triliovault-object-store-${target['backup_target_name']}.conf"
 
         # Create conf file
         file { $conf_file_name:

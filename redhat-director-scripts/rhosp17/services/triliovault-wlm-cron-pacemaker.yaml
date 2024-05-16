@@ -155,51 +155,10 @@ parameters:
       description: >
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
-  BackupTargetType:
-    description:
-    type: string
-  NfsShares:
-    default: ''
-    description: Provide comma separated list of NFS shares to use as backup target
-    type: string
-  NfsOptions:
-    default: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
-    description: NFS mount otpions
-    type: string
-  S3Type:
-    description: S3 type like Amazon/Ceph/Minio
-    type: string
-  S3AccessKey:
-    description: S3 access key
-    type: string
-  S3SecretKey:
-    description: S3 secret key
-    type: string
-  S3RegionName:
-    description: S3 region name
-    type: string
-  S3Bucket:
-    description: S3 bucket name
-    type: string
-  S3EndpointUrl:
-    description: S3 endpoint url
-    type: string
-  S3SignatureVersion:
-    default: 'default'
-    description: S3 Signature Version
-    type: string
-  S3AuthVersion:
-    default: 'DEFAULT'
-    description: S3 Auth Version
-    type: string
-  S3SslEnabled:
-    default: false
-    description: S3 ssl enabled
-    type: boolean
-  S3SslVerify:
-    default: false
-    description: Whether to verify S3 SSL certificate or not
-    type: boolean
+  TrilioBackupTargets:
+    default: []
+    description: List of backup targets for TrilioVault
+    type: list
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
