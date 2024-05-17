@@ -91,14 +91,14 @@ for target in s3_backup_targets:
 
     docker_config_step5 = CommentedMap({
         f"triliovault_object_store_{backup_target_name}": {
-            "image": PreservedScalarString("{get_param: ContainerTriliovaultWlmImage}"),
+            "image": CommentedMap([("get_param", "ContainerTriliovaultWlmImage")]),
             "net": "host",
             "privileged": True,
             "user": "nova",
             "restart": "always",
             "volumes": {
                     "list_concat": [
-                        "{get_attr: [ContainersCommon, volumes]}",
+                        CommentedMap([("get_attr", ["ContainersCommon", "volumes"])]),
                         [
                             f"/var/lib/kolla/config_files/triliovault_object_store_{backup_target_name}.json:/var/lib/kolla/config_files/config.json:ro",
                             "/var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro",

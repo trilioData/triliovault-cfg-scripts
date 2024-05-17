@@ -85,7 +85,7 @@ resources:
     type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
 
   MySQLClient:
-    type:
+    type: 
       /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
 
 conditions:
@@ -146,15 +146,17 @@ outputs:
             command: [/bin/bash, -c, chown -R nova:nova /var/log/triliovault]
         step_5:
           triliovault_object_store_S3_BT1:
-            image: |-
-              {get_param: ContainerTriliovaultWlmImage}
+            image:
+              get_param: ContainerTriliovaultWlmImage
             net: host
             privileged: true
             user: nova
             restart: always
             volumes:
               list_concat:
-                - '{get_attr: [ContainersCommon, volumes]}'
+                - get_attr:
+                    - ContainersCommon
+                    - volumes
                 -   - /var/lib/kolla/config_files/triliovault_object_store_S3_BT1.json:/var/lib/kolla/config_files/config.json:ro
                     - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
                     - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
@@ -163,15 +165,17 @@ outputs:
             environment:
               KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
           triliovault_object_store_S3_BT2:
-            image: |-
-              {get_param: ContainerTriliovaultWlmImage}
+            image:
+              get_param: ContainerTriliovaultWlmImage
             net: host
             privileged: true
             user: nova
             restart: always
             volumes:
               list_concat:
-                - '{get_attr: [ContainersCommon, volumes]}'
+                - get_attr:
+                    - ContainersCommon
+                    - volumes
                 -   - /var/lib/kolla/config_files/triliovault_object_store_S3_BT2.json:/var/lib/kolla/config_files/config.json:ro
                     - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
                     - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
