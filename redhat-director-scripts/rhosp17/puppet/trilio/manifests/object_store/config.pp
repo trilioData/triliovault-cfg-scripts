@@ -28,14 +28,18 @@ class trilio::object_store::config inherits trilio::object_store {
           $ceph_s3_str = "$s3_domain_name/$bucket_name"
           $backup_target_mount_point = base64('encode', $ceph_s3_str)
           $vault_storage_nfs_export = $ceph_s3_str
+          if $s3_ssl_enabled and $s3_self_signed_cert {
+            file { "/etc/triliovault-object-store/s3-cert-${target['backup_target_name']}.pem":
+              ensure => 'present',
+              owner  => '42436',
+              group  => '42436',
+              mode   => '0644',
+              source => "puppet:///modules/trilio/s3-cert-${target['backup_target_name']}.pem",
+            }
+          }
         }
-        file { "/etc/triliovault-object-store/s3-cert-${target['backup_target_name']}.pem":
-          ensure => 'present',
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-          source => "puppet:///modules/trilio/s3-cert-${target['backup_target_name']}.pem",
-        }
+
+
 
         $conf_file_name = "/etc/triliovault-object-store/triliovault-object-store-${target['backup_target_name']}.conf"
 
@@ -56,6 +60,7 @@ class trilio::object_store::config inherits trilio::object_store {
             s3_auth_version       => $target['s3_auth_version'],
             s3_signature_version  => $target['s3_signature_version'],
             s3_ssl_enabled        => $target['s3_ssl_enabled'],
+            s3_self_signed_cert   => $target['s3_self_signed_cert'],
             s3_ssl_verify         => $target['s3_ssl_verify'],
             s3_type               => $target['s3_type'],
             s3_endpoint_url       => $target['s3_endpoint_url'],
