@@ -28,7 +28,7 @@ class trilio::object_store::config inherits trilio::object_store {
           $ceph_s3_str = "$s3_domain_name/$bucket_name"
           $backup_target_mount_point = base64('encode', $ceph_s3_str)
           $vault_storage_nfs_export = $ceph_s3_str
-          if $s3_ssl_enabled and $s3_self_signed_cert {
+          if $target['s3_ssl_enabled'] and $target['s3_self_signed_cert'] {
             file { "/etc/triliovault-object-store/s3-cert-${target['backup_target_name']}.pem":
               ensure => 'present',
               owner  => '42436',
