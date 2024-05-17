@@ -72,7 +72,7 @@ parameters:
   NovaComputeOptVolumes:
     default: []
     description: list of optional vo
-    type: list
+    type: comma_delimited_list
   TriliovaultMultiIPNfsMap:
     default: {}
     description: Mapping of datamover node -> NFS share. Typically set
@@ -81,11 +81,11 @@ parameters:
   TrilioDatamoverOptVolumes:
     default: []
     description: list of optional volumes to be mounted
-    type: list
+    type: comma_delimited_list
   TrilioBackupTargets:
     default: []
     description: List of backup targets for TrilioVault
-    type: list
+    type: comma_delimited_list
   VmwareToOpenstackMigrationEnabled:
     default: false
     description: Whether to enable VMware to OpenStack migration feature or not
@@ -119,7 +119,6 @@ outputs:
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
         trilio::contego::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
-        trilio::contego::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
         trilio::contego::libvirt_images_rbd_ceph_conf:
           list_join:
           - ''

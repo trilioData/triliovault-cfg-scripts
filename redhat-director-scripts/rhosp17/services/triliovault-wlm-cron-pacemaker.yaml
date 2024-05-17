@@ -158,7 +158,7 @@ parameters:
   TrilioBackupTargets:
     default: []
     description: List of backup targets for TrilioVault
-    type: list
+    type: comma_delimited_list
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
@@ -176,10 +176,6 @@ parameters:
     description: Mapping of triliovault node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  MultiIPNfsEnabled:
-    default: false
-    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
-    type: boolean
   TrusteeRole: 
     default: 'creator'
     description: This is the role to allow using triliovault features
