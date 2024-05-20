@@ -15,36 +15,6 @@ max_wait_for_upload = 48
 neutron_api_insecure = false
 
 cloud_unique_id =
-
-
-<% @backup_targets.each do |target| -%>
-[ <%= target['backup_target_name'] %> ]
-vault_s3_bucket = <%= target['s3_bucket'] %>
-vault_storage_type = <%= target['backup_target_type'] %>
-<% if target['backup_target_type'] == 's3' %>
-vault_storage_type = s3
-vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>
-vault_s3_bucket = <%= target['s3_bucket'] %>
-<% if target['s3_type'] == 'amazon_s3' %>
-vault_storage_nfs_export = <%= target['s3_bucket'] %>
-<% else -%>
-<% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
-vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
-<% end %>
-<% else -%>
-vault_storage_type = nfs
-vault_storage_nfs_export = <%= target['nfs_shares'] %>
-vault_storage_nfs_options = <%= target['nfs_options'] %>
-<% end %>
-<% if target['is_default'] %>
-is_default = 1
-<% else -%>
-is_default = 0
-<% end %>
-<% end -%>
-
-
-
 <% if @interface == "public" -%>
 neutron_production_url =  <%= @neutron_public_auth_url %>
 nova_production_endpoint_template = <%= @nova_public_auth_url %>%(project_id)s
@@ -83,10 +53,38 @@ use_syslog = false
 vault_data_directory = <%= @vault_data_dir %>
 vault_data_directory_old = /var/triliovault
 
-vault_storage_type = <%= @backup_target_type %>
-
-
 workloads_workers = 4
+
+
+
+
+<% @backup_targets.each do |target| -%>
+[ <%= target['backup_target_name'] %> ]
+<% if target['backup_target_type'] == 's3' %>
+vault_storage_type = s3
+vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>
+vault_s3_bucket = <%= target['s3_bucket'] %>
+<% if target['s3_type'] == 'amazon_s3' %>
+vault_storage_nfs_export = <%= target['s3_bucket'] %>
+<% else -%>
+<% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
+vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
+<% end %>
+<% else -%>
+vault_storage_type = nfs
+vault_storage_nfs_export = <%= target['nfs_shares'] %>
+vault_storage_nfs_options = <%= target['nfs_options'] %>
+<% end %>
+<% if target['is_default'] %>
+is_default = 1
+<% else -%>
+is_default = 0
+<% end %>
+<% end -%>
+
+
+
+
 [alembic]
 script_location = /usr/share/workloadmgr/migrate_repo
 sqlalchemy.url = <%= @database_connection %>

@@ -150,7 +150,7 @@ parameters:
   TrilioBackupTargets:
     default: []
     description: List of backup targets for TrilioVault
-    type: comma_delimited_list
+    type: json
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not

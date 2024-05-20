@@ -8,7 +8,7 @@ set -ex
 <% base64_mount_point = Base64.strict_encode64(nfs_dir) -%>
 <% nfs_options = target['nfs_options'] -%>
 mkdir -p <%= @vault_data_dir %>/<%= base64_mount_point %>
-mount -t nfs <%= nfs_share %> <%= @vault_data_dir %>/<%= base64_mount_point %> -o <%= nfs_options %>
+sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs <%= nfs_share %> <%= @vault_data_dir %>/<%= base64_mount_point %> -o <%= nfs_options %>
 <% end -%>
 
 <% end -%>

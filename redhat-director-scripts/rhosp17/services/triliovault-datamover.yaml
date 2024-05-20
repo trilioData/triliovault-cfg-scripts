@@ -85,7 +85,7 @@ parameters:
   TrilioBackupTargets:
     default: []
     description: List of backup targets for TrilioVault
-    type: comma_delimited_list
+    type: json
   VmwareToOpenstackMigrationEnabled:
     default: false
     description: Whether to enable VMware to OpenStack migration feature or not

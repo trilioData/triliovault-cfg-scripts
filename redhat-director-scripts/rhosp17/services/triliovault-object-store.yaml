@@ -67,7 +67,7 @@ parameters:
     constraints:
       - allowed_values: [docker, podman]
   TrilioBackupTargets:
-    default: []
+    default: json
     description: List of backup targets for TrilioVault
     type: comma_delimited_list
   ClusterCommonTag:
