@@ -479,6 +479,7 @@ outputs:
                   - /var/lib/kolla/config_files/triliovault_wlm_api.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/triliovaultwlmapi/:/var/lib/kolla/config_files/triliovaultwlmapi:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault:z
+                  - /var/lib/nova:/var/lib/nova:shared
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro

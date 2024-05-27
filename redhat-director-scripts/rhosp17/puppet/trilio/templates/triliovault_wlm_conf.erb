@@ -59,7 +59,7 @@ workloads_workers = 4
 
 
 <% @backup_targets.each do |target| -%>
-[ <%= target['backup_target_name'] %> ]
+[<%= target['backup_target_name'] %>]
 <% if target['backup_target_type'] == 's3' %>
 vault_storage_type = s3
 vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>

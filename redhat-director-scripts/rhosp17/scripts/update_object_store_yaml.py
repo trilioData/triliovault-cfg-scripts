@@ -103,6 +103,7 @@ for target in s3_backup_targets:
                             f"/var/lib/kolla/config_files/triliovault_object_store_{backup_target_name}.json:/var/lib/kolla/config_files/config.json:ro",
                             "/var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro",
                             "/var/log/containers/triliovault-object-store:/var/log/triliovault:z",
+                            "/var/lib/nova:/var/lib/nova:shared",
                             "/dev:/dev",
                             "/lib/modules:/lib/modules"
                         ]
