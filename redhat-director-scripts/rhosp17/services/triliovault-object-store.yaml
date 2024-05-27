@@ -1,0 +1,194 @@
+heat_template_version: wallaby
+
+description: >
+  TrilioVault Object Store containerized service
+parameters:
+  ContainerTriliovaultWlmImage:
+    default: ''
+    description: The location of Trilio Datamover container image
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set via parameter_defaults
+      in the resource registry.  This mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set via parameter_defaults
+      in the resource registry.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  NotificationDriver:
+    type: string
+    default: messagingv2
+    description: Driver or drivers to handle sending notifications.
+  ContainerMysqlConfigImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: /etc/ipa/ca.crt
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for services
+      in the internal network.
+  ConfigDebug:
+    default: false
+    description: Whether to run config management (e.g. Puppet) in debug mode.
+    type: boolean
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  ContainerCli:
+    type: string
+    default: podman
+    description: CLI tool used to manage containers.
+    constraints:
+      - allowed_values: [docker, podman]
+  TrilioBackupTargets:
+    default: json
+    description: List of backup targets for TrilioVault
+    type: comma_delimited_list
+  ClusterCommonTag:
+    default: false
+    description: When set to false, a pacemaker service is configured to use a floating
+      tag for its container image name, e.g. 'REGISTRY/NAMESPACE/IMAGENAME:pcmklatest'.
+      When set to true, the service uses a floating prefix as well, e.g. 'cluster.common.tag/IMAGENAME:pcmklatest'.
+    type: boolean
+
+
+
+resources:
+
+  ContainersCommon:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/containers-common.yaml
+
+  MySQLClient:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/database/mysql-client.yaml
+
+conditions:
+  puppet_debug_enabled: {get_param: ConfigDebug}
+  internal_tls_enabled: {equals: [get_param: EnableInternalTLS, true]}
+  docker_enabled: {equals: [get_param: ContainerCli, docker]}
+  common_tag_enabled: {equals: [get_param: ClusterCommonTag, true]}
+
+
+outputs:
+  role_data:
+    description: Role data for the TrilioVault Object Store Service role.
+    value:
+      service_name: triliovault_object_store
+      config_settings:
+        trilio::object_store::backup_targets: {get_param: TrilioBackupTargets}
+      puppet_config:
+        config_volume: triliovaultobjectstore
+        puppet_tags: trilioobjectstoreconfig
+        step_config:
+          list_join:
+            - "\n"
+            -   - include ::trilio::object_store
+                - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerTriliovaultWlmImage}
+      kolla_config:
+        /var/lib/kolla/config_files/triliovault_object_store_S3_BT1.json:
+          command: /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store-S3_BT1.conf
+          config_files:
+            - source: /var/lib/kolla/config_files/triliovaultobjectstore/*
+              dest: /
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/triliovault/
+              owner: nova:nova
+              recurse: true
+        /var/lib/kolla/config_files/triliovault_object_store_S3_BT2.json:
+          command: /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store-S3_BT2.conf
+          config_files:
+            - source: /var/lib/kolla/config_files/triliovaultobjectstore/*
+              dest: /
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/triliovault/
+              owner: nova:nova
+              recurse: true
+      docker_config:
+        step_2:
+          triliovault_object_store_init_log:
+            image: {get_param: ContainerTriliovaultWlmImage}
+            start_order: 0
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
+            command: [/bin/bash, -c, chown -R nova:nova /var/log/triliovault]
+        step_5:
+          triliovault_object_store_S3_BT1:
+            image:
+              get_param: ContainerTriliovaultWlmImage
+            net: host
+            privileged: true
+            user: nova
+            restart: always
+            volumes:
+              list_concat:
+                - get_attr:
+                    - ContainersCommon
+                    - volumes
+                -   - /var/lib/kolla/config_files/triliovault_object_store_S3_BT1.json:/var/lib/kolla/config_files/config.json:ro
+                    - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
+                    - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
+                    - /var/lib/nova:/var/lib/nova:shared
+                    - /dev:/dev
+                    - /lib/modules:/lib/modules
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          triliovault_object_store_S3_BT2:
+            image:
+              get_param: ContainerTriliovaultWlmImage
+            net: host
+            privileged: true
+            user: nova
+            restart: always
+            volumes:
+              list_concat:
+                - get_attr:
+                    - ContainersCommon
+                    - volumes
+                -   - /var/lib/kolla/config_files/triliovault_object_store_S3_BT2.json:/var/lib/kolla/config_files/config.json:ro
+                    - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
+                    - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
+                    - /dev:/dev
+                    - /lib/modules:/lib/modules
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create triliovault object store log directory
+          file:
+            path: '{{ item.path }}'
+            state: directory
+            setype: '{{ item.setype }}'
+          with_items:
+            - {path: /var/log/containers/triliovault-object-store, setype: svirt_sandbox_file_t}
+      upgrade_tasks: []

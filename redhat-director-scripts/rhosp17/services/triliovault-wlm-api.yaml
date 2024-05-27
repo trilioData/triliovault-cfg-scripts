@@ -155,51 +155,10 @@ parameters:
       description: >
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
-  BackupTargetType:
-    description:
-    type: string
-  NfsShares:
-    default: ''
-    description: Provide comma separated list of NFS shares to use as backup target
-    type: string
-  NfsOptions:
-    default: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
-    description: NFS mount otpions
-    type: string
-  S3Type:
-    description: S3 type like Amazon/Ceph/Minio
-    type: string
-  S3AccessKey:
-    description: S3 access key
-    type: string
-  S3SecretKey:
-    description: S3 secret key
-    type: string
-  S3RegionName:
-    description: S3 region name
-    type: string
-  S3Bucket:
-    description: S3 bucket name
-    type: string
-  S3EndpointUrl:
-    description: S3 endpoint url
-    type: string
-  S3SignatureVersion:
-    default: 'default'
-    description: S3 Signature Version
-    type: string
-  S3AuthVersion:
-    default: 'DEFAULT'
-    description: S3 Auth Version
-    type: string
-  S3SslEnabled:
-    default: false
-    description: S3 ssl enabled
-    type: boolean
-  S3SslVerify:
-    default: false
-    description: Whether to verify S3 SSL certificate or not
-    type: boolean
+  TrilioBackupTargets:
+    default: []
+    description: List of backup targets for TrilioVault
+    type: json
   CinderEnableRbdBackend:
     default: false
     description: Whether ceph cinder backend enabled or not
@@ -224,10 +183,6 @@ parameters:
     description: Mapping of triliovault node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  MultiIPNfsEnabled:
-    default: false
-    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
-    type: boolean
   TrusteeRole: 
     default: 'creator'	
     description: This is the role to allow using triliovault features 
@@ -308,21 +263,7 @@ outputs:
         trilio::wlmapi::cloud_admin_password: {get_param: CloudAdminPassword}
         trilio::wlmapi::cloud_admin_project_name: {get_param: CloudAdminProjectName}
         trilio::wlmapi::cloud_admin_domain_name: {get_param: CloudAdminDomainName}
-        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
-        trilio::wlmapi::nfs_shares: {get_param: NfsShares}
-        trilio::wlmapi::nfs_options: {get_param: NfsOptions}
-        trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
-        trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
-        trilio::wlmapi::s3_type: {get_param: S3Type}
-        trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
-        trilio::wlmapi::s3_secretkey: {get_param: S3SecretKey}
-        trilio::wlmapi::s3_region_name: {get_param: S3RegionName}
-        trilio::wlmapi::s3_bucket: {get_param: S3Bucket}
-        trilio::wlmapi::s3_endpoint_url: {get_param: S3EndpointUrl}
-        trilio::wlmapi::s3_signature_version: {get_param: S3SignatureVersion}
-        trilio::wlmapi::s3_auth_version: {get_param: S3AuthVersion}
-        trilio::wlmapi::s3_ssl_enabled: {get_param: S3SslEnabled}
-        trilio::wlmapi::s3_ssl_verify: {get_param: S3SslVerify}
+        trilio::wlmapi::backup_targets: {get_param: TrilioBackupTargets}
         trilio::wlmapi::cinder_backend_ceph: {get_param: CinderEnableRbdBackend}
         trilio::wlmapi::ceph_cinder_user: {get_param: CephClientUserName}
         trilio::wlmapi::port: {get_param: WlmApiPort}
@@ -538,6 +479,7 @@ outputs:
                   - /var/lib/kolla/config_files/triliovault_wlm_api.json:/var/lib/kolla/config_files/config.json:ro
                   - /var/lib/config-data/puppet-generated/triliovaultwlmapi/:/var/lib/kolla/config_files/triliovaultwlmapi:ro
                   - /var/log/containers/triliovault-wlm-api:/var/log/triliovault:z
+                  - /var/lib/nova:/var/lib/nova:shared
                 - if:
                     - internal_tls_enabled
                     - - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro

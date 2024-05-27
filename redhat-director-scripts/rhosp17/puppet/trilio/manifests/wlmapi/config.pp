@@ -1,7 +1,6 @@
 class trilio::wlmapi::config inherits trilio::wlmapi {
     tag 'wlmapiconfig'
 
-
       $oslomsg_rpc_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_rpc_use_ssl)))
       $oslomsg_notify_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_notify_use_ssl)))
 
@@ -23,6 +22,9 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
         'ssl'       => $oslomsg_notify_use_ssl_real,
       })
 
+      $enabled_backends = join($backup_targets.map |$target| { $target['backup_target_name'] }, ',')
+
+      
         $memcached_hosts_real = any2array(pick($memcached_ips, $memcached_hosts))
         if $step >= 3 {
             if $memcached_ipv6 or $memcached_hosts_real[0] =~ Stdlib::Compat::Ipv6 {
@@ -94,11 +96,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
       }->
-      file { '/etc/triliovault-object-store/':
-          ensure => 'directory',
-          owner  => '42436',
-          group  => '42436',
-      }->
       file { "/etc/triliovault-wlm/cloud_admin_rc":
           ensure  => present,
           content => template('trilio/cloud_admin_rc.erb'),
@@ -115,13 +112,6 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           owner  => '42436',
           group  => '42436',
           mode   => '0644',
-      }
-      file { "/etc/triliovault-wlm/s3-cert.pem":
-          ensure => 'present',
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-          source => 'puppet:///modules/trilio/s3-cert.pem',
       }
       if $vcenter_nossl == false {
         file { "/etc/triliovault-wlm/${vcenter_cert_file_name}":
@@ -153,23 +143,9 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           group  => '42436',
           mode   => '0644',
       }->
-      file { "/etc/triliovault-object-store/triliovault-object-store.conf":
-          ensure  => present,
-          content => template('trilio/triliovault_object_store_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }->
       file { "/etc/triliovault-wlm/wlm_logging.conf":
           ensure  => present,
           content => template('trilio/wlm_logging_conf.erb'),
-          owner  => '42436',
-          group  => '42436',
-          mode   => '0644',
-      }
-      file { "/etc/triliovault-object-store/object_store_logging.conf":
-          ensure  => present,
-          content => template('trilio/object_store_logging_conf.erb'),
           owner  => '42436',
           group  => '42436',
           mode   => '0644',

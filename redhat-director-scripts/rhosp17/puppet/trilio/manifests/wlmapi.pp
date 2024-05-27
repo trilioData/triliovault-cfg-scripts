@@ -53,21 +53,10 @@ class trilio::wlmapi (
   $notification_driver             = 'messagingv2',
   $enable_proxy_headers_parsing    = false,
   $dmapi_workers                   = 16,
-  $interface                        = 'internal',
-  $trustee_role                     = 'creator',
-  $vault_data_dir                   = "/var/lib/nova/triliovault-mounts",
-  $backup_target_type              = 'nfs',
-  $nfs_shares                      = undef,
-  $nfs_options                     = 'nolock,soft,vers=3,timeo=180,intr,lookupcache=none',
-  $s3_type                         = 'amazon_s3',
-  $s3_accesskey                    = undef,
-  $s3_secretkey                    = undef,
-  $s3_region_name                  = undef,
-  $s3_bucket                       = undef,
-  $s3_endpoint_url                 = undef,
-  $s3_signature_version            = 'default',
-  $s3_auth_version                 = 'DEFAULT',
-  $s3_ssl_enabled                  = 'False',
+  $interface                       = 'internal',
+  $trustee_role                    = 'creator',
+  $vault_data_dir                  = "/var/lib/nova/triliovault-mounts",
+  $backup_targets                  = [],
   $nfs_map                         = {},
   $multi_ip_nfs_enabled            = false,
   $auth_host_internal              = undef,
@@ -85,9 +74,9 @@ class trilio::wlmapi (
   $vcenter_nossl                   = true,
   $vcenter_cert_file_name          = 'default-vcenter-cert',
   $step                            = lookup('step'),
-  $s3_ssl_verify                   = true,
 ) {
     tag 'wlmapiconfig'
+
     
       class {'trilio::wlmapi::config':}
 }

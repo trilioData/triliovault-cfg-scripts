@@ -22,4 +22,4 @@ parameter_defaults:
    WlmOsloMessagingRpcUserPassword: "$RABBITMQ_WLM_PASSWORD"
 EOF
 
-echo "Output written to ../environments/passwords.yaml"
+echo "Output written to ../environments/trilio_passwords.yaml"

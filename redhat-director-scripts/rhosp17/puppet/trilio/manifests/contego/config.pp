@@ -1,7 +1,6 @@
 class trilio::contego::config inherits trilio::contego {
     tag 'dmconfig'
 
-
     $oslomsg_rpc_use_ssl_real = sprintf('%s', bool2num(str2bool($oslomsg_rpc_use_ssl)))
     $default_transport_url = os_transport_url({
         'transport' => $oslomsg_rpc_proto,
@@ -33,20 +32,6 @@ class trilio::contego::config inherits trilio::contego {
         mode   => '0644',
         content => template('trilio/datamover_logging_conf.erb'),
     }->
-    file { "/etc/triliovault-datamover/s3-cert.pem":
-        ensure => 'present',
-        owner  => '42436',
-        group  => '42436',
-        mode   => '0644',
-        source => 'puppet:///modules/trilio/s3-cert.pem',
-    }
-    file { "/etc/triliovault-datamover/fuse.conf":
-        ensure  => present,
-        owner  => '42436',
-        group  => '42436',
-        mode   => '0644',
-        content => template('trilio/fuse.conf.erb'),
-    }->
     file { '/opt/triliovault/':
         ensure => 'directory',
         owner  => '42436',
@@ -60,6 +45,7 @@ class trilio::contego::config inherits trilio::contego {
         group  => '42436',
         mode   => '0755',
     }
+
 
     if $vmware_to_openstack_migration_enabled {
       file { '/opt/vmware-vix-disklib-distrib/':

@@ -212,10 +212,6 @@ parameters:
     description: Mapping of triliovault node -> NFS share. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  MultiIPNfsEnabled:
-    default: false
-    description: Whether multiple ip/endpoints based nfs as triliovault backup target used in this deployment of not
-    type: boolean
   TrusteeRole: 
     default: 'creator'	
     description: This is the role to allow using triliovault features 
@@ -255,8 +251,6 @@ outputs:
         trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
-        trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
-        trilio::wlmapi::multi_ip_nfs_enabled: {get_param: MultiIPNfsEnabled}
         trilio::wlmapi::s3_type: {get_param: S3Type}
         trilio::wlmapi::s3_accesskey: {get_param: S3AccessKey}
         trilio::wlmapi::s3_secretkey: {get_param: S3SecretKey}
