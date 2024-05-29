@@ -1,0 +1,6 @@
+#Actual Image tag as shared by Trilio team
+TRILIO_IMAGE_TAG="trilio/trilio-migration-vm2os:5.2.3-dev-maint3-3"
+#nginx port as per setup. Default value 5085
+NGINX_PORT=5085
+#redis port as per setup. Default value 6379
+REDIS_PORT=6379
