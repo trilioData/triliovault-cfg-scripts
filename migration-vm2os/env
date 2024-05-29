@@ -1,0 +1,3 @@
+TRILIO_IMAGE_TAG="trilio/trilio-migration-vm2os:5.2.3-dev-maint3-3"
+NGINX_PORT=5085
+REDIS_PORT=6379
