@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  trilio-vm2os:
+    container_name: trilio_vm2os
+    restart: always
+    image: ${TRILIO_IMAGE_TAG:?err}
+    networks:
+      - web_network
+    depends_on:
+      - worker
+    volumes:
+      - /opt/data:/data
+      - /opt/vmosmapping.conf:/vmosmapping.conf
+
+  nginx:
+    container_name: nginx
+    restart: always
+    image: "nginx:latest"
+    ports:
+      - "${NGINX_PORT:-5085}:5085"
+    volumes:
+      - /opt/nginx:/etc/nginx/conf.d
+    networks:
+      - web_network
+    depends_on:
+      - trilio-vm2os
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    networks:
+      - web_network
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  worker:
+    image: ${TRILIO_IMAGE_TAG:?err}
+    command: ['celery', '-A', 'run.celery_app', 'worker', '--loglevel', 'INFO']
+    environment:
+      - RESULT_BACKEND=redis://redis:${REDIS_PORT:-6379}/0
+      - C_FORCE_ROOT=true
+    depends_on:
+      - redis
+    networks:
+      - web_network
+    volumes:
+      - /opt/data:/data
+      - /opt/vmosmapping.conf:/vmosmapping.conf
+
+networks:
+  web_network:
+    driver: bridge
