@@ -1,0 +1,31 @@
+# permissions for end users to edit tvocontrolplanes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: tvocontrolplane-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: tvo-operator
+    app.kubernetes.io/part-of: tvo-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: tvocontrolplane-editor-role
+rules:
+- apiGroups:
+  - demo.trilio.io
+  resources:
+  - tvocontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - demo.trilio.io
+  resources:
+  - tvocontrolplanes/status
+  verbs:
+  - get
