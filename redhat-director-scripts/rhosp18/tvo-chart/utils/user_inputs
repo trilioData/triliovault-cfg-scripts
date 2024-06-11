@@ -1,0 +1,11 @@
+
+## Common
+SERVICE_PROJECT_NAME=service
+SERVICE_PROJECT_DOMAIN_NAME=Default
+
+
+## Datamover Api Service Inputs
+
+
+
+## Workloadmgr Service Inputs
