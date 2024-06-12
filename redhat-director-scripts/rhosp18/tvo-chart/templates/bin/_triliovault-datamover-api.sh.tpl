@@ -1,3 +1,5 @@
+#!/bin/bash
+
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: triliovault-datamover-api-etc
-type: Opaque
-data:
-  triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
-  datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
+set -ex
+
+COMMAND="${@:-start}"
+
+function start () {
+  exec /var/lib/openstack/bin/python3 /usr/bin/dmapi-api \
+       --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf \
+       --config-file /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf
+}
+
+function stop () {
+  kill -TERM 1
+}
+
+$COMMAND
+

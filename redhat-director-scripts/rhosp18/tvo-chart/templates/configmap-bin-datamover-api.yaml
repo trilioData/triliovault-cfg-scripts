@@ -14,10 +14,12 @@ limitations under the License.
 
 ---
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
-  name: triliovault-datamover-api-etc
-type: Opaque
+  name: triliovault-datamover-api-bin
 data:
-  triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
-  datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
+  triliovault-datamover-api-init.sh: | 
+{{ tuple "bin/_triliovault-datamover-api-init.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+  triliovault-datamover-api.sh: |
+{{ tuple "bin/_triliovault-datamover-api.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+
