@@ -9,13 +9,17 @@ cloud_admin_projectid: ""
 cloud_admin_domainname: ""
 cloud_admin_domainid: ""
 
-trustee_role: "creator"
+
+trustee_role: "_member_, creator"
 os_endpoint_type: "internal"
 
 # ## Project name in which triliovault keystone resources will get created
 # TriliovaultKeystoneServiceProjectName: "service"
 # TriliovaultKeystoneUserDomainName: "Default"
 # TriliovaultKeystoneUserRoleName: "admin"
+
+## Do not change this parameter value
+kolla_install_type: "source"
 
 ############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
 ## Whether to enable TrilioVault or not on OpenStack cloud
@@ -102,3 +106,5 @@ triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
 ## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
 ## Type: Boolean
 triliovault_copy_ceph_s3_ssl_cert: False
+
+

@@ -1,0 +1,25 @@
+---
+- name: Copy over nova ceph keyring files for triliovault-datamover
+  copy:
+    src: "{{ node_custom_config }}/nova/{{ ceph_nova_keyring }}"
+    dest: "{{ node_config_directory }}/triliovault-datamover/"
+    mode: "0660"
+  become: true
+  when:
+    - external_ceph_cephx_enabled | bool
+    - nova_backend_ceph | bool
+    - inventory_hostname in groups[triliovault_datamover_group]
+    - triliovault_services['triliovault-datamover'].enabled | bool
+  notify:
+    - Restart triliovault-datamover container
+
+- name: Ensuring config directory has correct owner and permission for nova keyring
+  become: true
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    recurse: yes
+    owner: "{{ config_owner_user }}"
+    group: "{{ config_owner_group }}"
+  when: inventory_hostname in groups[triliovault_datamover_group]
+  with_items:
+    - "triliovault-datamover"
