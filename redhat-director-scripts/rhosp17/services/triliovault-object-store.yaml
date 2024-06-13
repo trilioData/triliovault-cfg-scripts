@@ -67,9 +67,9 @@ parameters:
     constraints:
       - allowed_values: [docker, podman]
   TrilioBackupTargets:
-    default: json
+    default: []
     description: List of backup targets for TrilioVault
-    type: comma_delimited_list
+    type: json
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured to use a floating
