@@ -67,6 +67,10 @@ images:
       - dep_check
       - image_repo_sync
 
+
+common: 
+  nova_user_id: "42436"
+  nova_group_id: "42436"
 keystone:
   common:
     service_project_name: "service"

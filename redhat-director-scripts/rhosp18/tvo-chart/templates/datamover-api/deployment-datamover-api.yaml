@@ -63,33 +63,33 @@ spec:
         openstack-control-plane: enabled
       terminationGracePeriodSeconds: 30
       initContainers:
-        - name: wait-for-jobs
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              jobs=("triliovault-datamover-api-db-sync" "triliovault-datamover-api-ks-user" "triliovault-datamover-api-ks-endpoints")
-              while true; do
-                all_succeeded=true
-                for job in "${jobs[@]}"; do
-                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
-                    echo "$job succeeded"
-                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
-                    echo "$job failed"
-                    exit 1
-                  else
-                    echo "waiting for $job"
-                    all_succeeded=false
-                  fi
-                done
-                if [ "$all_succeeded" = true ]; then
-                  exit 0
-                fi
-                sleep 5
-              done
+        # - name: wait-for-jobs
+        #   image: busybox
+        #   command:
+        #     - sh
+        #     - -c
+        #     - |
+        #       jobs=("triliovault-datamover-api-db-sync" "triliovault-datamover-api-ks-user" "triliovault-datamover-api-ks-endpoints")
+        #       while true; do
+        #         all_succeeded=true
+        #         for job in "${jobs[@]}"; do
+        #           if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
+        #             echo "$job succeeded"
+        #           elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
+        #             echo "$job failed"
+        #             exit 1
+        #           else
+        #             echo "waiting for $job"
+        #             all_succeeded=false
+        #           fi
+        #         done
+        #         if [ "$all_succeeded" = true ]; then
+        #           exit 0
+        #         fi
+        #         sleep 5
+        #       done
         - name: triliovault-datamover-api-init
-          image: "docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic"
+          image: {{ .Values.images.triliovault_triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:
             - /tmp/triliovault-datamover-api-init.sh
@@ -103,7 +103,7 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-datamover-api
       containers:
         - name: triliovault-datamover-api
-          image: "docker.io/trilio/triliovault-datamover-api-helm:5.0.0-train-ubuntu_bionic"
+          image: {{ .Values.images.triliovault_triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false

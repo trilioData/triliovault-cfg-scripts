@@ -1,3 +1,5 @@
+#!/bin/bash
+
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,14 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: triliovault-datamover-api-bin
-data:
-  triliovault-datamover-api-init.sh: | 
-{{ tuple "bin/_triliovault-datamover-api-init.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
-  triliovault-datamover-api.sh: |
-{{ tuple "bin/_triliovault-datamover-api.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+set -ex
 
+export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
+workloadmgr --insecure trust-create --is_cloud_trust True admin
