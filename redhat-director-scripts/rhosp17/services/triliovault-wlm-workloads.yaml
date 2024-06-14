@@ -376,4 +376,5 @@ outputs:
             setype: "{{ item.setype }}"
           with_items:
             - { 'path': /var/log/containers/triliovault-wlm-workloads, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/nova, 'setype': svirt_sandbox_file_t }
       upgrade_tasks: []

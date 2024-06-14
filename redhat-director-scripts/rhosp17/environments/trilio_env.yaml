@@ -27,7 +27,7 @@ parameter_defaults:
         s3_region_name: 'REGION1'
         s3_bucket: 'BUCKET1'
         s3_endpoint_url: 'ENDPOINT_URL1'
-        S3SignatureVersion: 'default'
+        s3_signature_version: 'default'
         s3_auth_version: 'DEFAULT'
         s3_ssl_enabled: true
         s3_ssl_verify: true
@@ -41,7 +41,7 @@ parameter_defaults:
         s3_region_name: 'REGION2'
         s3_bucket: 'BUCKET2'
         s3_endpoint_url: 'ENDPOINT_URL2'
-        S3SignatureVersion: 'default'
+        s3_signature_version: 'default'
         s3_auth_version: 'DEFAULT'
         s3_ssl_enabled: true
         s3_ssl_verify: true
