@@ -8,7 +8,6 @@ spec:
   ports:
     - name: w-api
       port: 8780
-      
   selector:
     release_group: RELEASE-NAME
     application: triliovault

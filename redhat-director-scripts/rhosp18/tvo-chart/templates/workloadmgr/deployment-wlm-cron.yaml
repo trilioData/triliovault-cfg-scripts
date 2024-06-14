@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triliovault-wlm-api
+  name: triliovault-wlm-cron
   labels:
     application: triliovault
-    component: wlm-api
+    component: wlm-cron
 spec:
-  replicas: {{ .Values.pod.replicas.triliovault_wlm_api }}
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_cron }}
   selector:
     matchLabels:
       application: triliovault
-      component: wlm-api
+      component: wlm-cron
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate
@@ -21,7 +21,7 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: wlm-api
+        component: wlm-cron
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:
@@ -40,7 +40,7 @@ spec:
                   - key: component
                     operator: In
                     values:
-                    - wlm-api
+                    - wlm-cron
               topologyKey: kubernetes.io/hostname
             weight: 10
       nodeSelector:
@@ -48,42 +48,22 @@ spec:
       terminationGracePeriodSeconds: 30
       imagePullSecrets:
         - name: triliovault-image-registry
-      initContainers:
-        - name: triliovault-wlm-api-init
-          image: {{ .Values.images.triliovault_wlm_api }}
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            readOnlyRootFilesystem: false
-            runAsGroup: {{ .Values.common.nova_user_id }}
-            runAsUser: 0
-          command:
-            - /tmp/triliovault-wlm-api-init.sh
-          terminationMessagePath: /var/log/termination-log
-          volumeMounts:
-            - name: varlogtriliovaultwlm
-              mountPath: /var/log/triliovault
-            - name: triliovault-wlm-bin
-              mountPath: /tmp/triliovault-wlm-api-init.sh
-              subPath: triliovault-wlm-init.sh
-              readOnly: true
-            - name: pod-shared-triliovault-wlm-api
-              mountPath: /tmp/pod-shared-triliovault-wlm-api
       containers:
-        - name: triliovault-wlm-api
-          image: {{ .Values.images.triliovault_wlm_api }}
+        - name: triliovault-wlm-cron
+          image: {{ .Values.images.triliovault_wlm-cron }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: 42424
           command:
-            - /tmp/triliovault-wlm-api.sh
+            - /tmp/triliovault-wlm-cron.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
-                  - /tmp/triliovault-wlm-api.sh
+                  - /tmp/triliovault-wlm-cron.sh
                   - stop
           ports:
             - name: w-api
@@ -116,11 +96,11 @@ spec:
               subPath: api-paste.ini
               readOnly: true
             - name: triliovault-wlm-bin
-              mountPath: /tmp/triliovault-wlm-api.sh
-              subPath: triliovault-wlm-api.sh
+              mountPath: /tmp/triliovault-wlm-cron.sh
+              subPath: triliovault-wlm-cron.sh
               readOnly: true
-            - name: pod-shared-triliovault-wlm-api
-              mountPath: /tmp/pod-shared-triliovault-wlm-api            
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron            
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -135,5 +115,5 @@ spec:
           configMap:
             name: triliovault-bin-wlm
             defaultMode: 0555
-        - name: pod-shared-triliovault-wlm-api
+        - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
