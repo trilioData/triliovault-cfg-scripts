@@ -12,14 +12,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
+
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: triliovault-datamover-api-bin
+  name: triliovault-object-store-etc
+type: Opaque
 data:
-  triliovault-datamover-api-init.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api-init.sh.tpl" | indent 4 }}
-  triliovault-datamover-api.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api.sh.tpl" | indent 4 }}
-
+  object_store_logging.conf: {{ include "to_ini" .Values.conf.wlm_logging | b64enc }}
+{{- range .Values.triliovault_backup_targets }}
+  {{- if eq .backup_target_type "s3" }}
+  triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini" (dict "target" . "Values" .Values) | b64enc }}
+  {{- end }}
+{{- end }}
