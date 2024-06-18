@@ -18,9 +18,6 @@ kind: ConfigMap
 metadata:
   name: triliovault-object-store-bin
 data:
-  {{- range .Values.triliovault_backup_targets }}
-    {{- if eq .backup_target_type "s3" }}
-  triliovault-object-store-{{ .backup_target_name | lower }}.sh: |
-    /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store-{{ .backup_target_name | lower }}.conf
-    {{- end }}
-  {{- end }}
+  triliovault-object-store.sh: |
+  {{ .Files.Get "templates/object_store/bin/_triliovault-object-store.sh.tpl" | indent 4 }}
+

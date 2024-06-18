@@ -23,6 +23,6 @@ data:
   object_store_logging.conf: {{ include "to_ini" .Values.conf.wlm_logging | b64enc }}
 {{- range .Values.triliovault_backup_targets }}
   {{- if eq .backup_target_type "s3" }}
-  triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini" (dict "target" . "Values" .Values) | b64enc }}
+  triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini_object_store" (dict "target" . "Values" .Values) | b64enc }}
   {{- end }}
 {{- end }}
