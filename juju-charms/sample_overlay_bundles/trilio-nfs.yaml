@@ -1,0 +1,114 @@
+series: jammy
+variables:
+  openstack-origin: &openstack-origin distro
+  triliovault-pkg-source: &pkg-source       "deb [trusted=yes] https://apt.fury.io/trilio-maint-5-2 /"
+
+machines:
+  '1':
+  '2':
+  '3':
+  '4':
+  '5':
+
+applications:
+  trilio-data-mover:
+    charm: trilio-charmers-trilio-data-mover
+    channel: latest/edge
+    options:
+       triliovault-pkg-source: *pkg-source
+       nfs-shares: <NFS server IP>:<NFS share path>
+       nfs-options: nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3
+       verbose: True
+  trilio-data-mover-mysql-router:
+    charm: mysql-router
+  trilio-dm-api:
+    charm: trilio-charmers-trilio-dm-api
+    channel: latest/edge
+    num_units: 1
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-origin: *openstack-origin
+    to:
+      - 'lxd:1'
+  trilio-dm-api-mysql-router:
+    charm: mysql-router
+  trilio-horizon-plugin:
+    charm: trilio-charmers-trilio-horizon-plugin
+    channel: latest/edge
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-encryption-support: True
+  trilio-wlm-mysql-router:
+    charm: mysql-router
+  trilio-wlm:
+    charm: trilio-charmers-trilio-wlm
+    channel: latest/edge
+    num_units: 1
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-origin: *openstack-origin
+       nfs-shares: <NFS server IP>:<NFS share path>
+       nfs-options: nolock,soft,timeo=180,intr,lookupcache=none,nfsvers=3
+       verbose: True
+       trustee-role: creator
+    to:
+      - '5'
+relations:
+  # Triliovault horizon plugin relations
+  # # relation with openstack-dashboard
+  - - trilio-horizon-plugin:dashboard-plugin
+    - openstack-dashboard:dashboard-plugin
+
+  # Triliovault Datamover-API relations
+  # # relation with keystone
+  - - trilio-dm-api:identity-service
+    - keystone:identity-service
+  # # relation with db router
+  - - trilio-dm-api:shared-db
+    - trilio-dm-api-mysql-router:shared-db
+  # # relation with AMQP server
+  - - trilio-dm-api:amqp
+    - rabbitmq-server:amqp
+  # # relation with vault certificates
+  - - trilio-dm-api:certificates
+    - vault:certificates
+  # # relation with DB server from the router
+  - - trilio-dm-api-mysql-router:db-router
+    - mysql-innodb-cluster:db-router
+
+  # Triliovault Datamover relations
+  # # relation with AMQP server
+  - - trilio-data-mover:amqp
+    - rabbitmq-server:amqp
+  # # relation with nova-compute for sub-ordinating
+  - - trilio-data-mover:juju-info
+    - nova-compute:juju-info
+  # # relation with db router
+  - - trilio-data-mover:shared-db
+    - trilio-data-mover-mysql-router:shared-db
+  # # relation with CEPH
+  - - trilio-data-mover:ceph
+    - ceph-mon:client
+  # # relation with DB server from the router
+  - - trilio-data-mover-mysql-router:db-router
+    - mysql-innodb-cluster:db-router
+  # # A workaround for db router to work for trilio-datamover
+  - - nova-compute:juju-info
+    - trilio-data-mover-mysql-router:juju-info
+
+  # Triliovault Workloadmgr relations
+  # # relation with db router
+  - - trilio-wlm:shared-db
+    - trilio-wlm-mysql-router:shared-db
+  # # relation with AMQP server
+  - - trilio-wlm:amqp
+    - rabbitmq-server:amqp
+  # # relation with keystone
+  - - trilio-wlm:identity-service
+    - keystone:identity-service
+  # # relation with vault certificates
+  - - trilio-wlm:certificates
+    - vault:certificates
+  # # relation with DB server from the router
+  - - mysql-innodb-cluster:db-router
+    - trilio-wlm-mysql-router:db-router
