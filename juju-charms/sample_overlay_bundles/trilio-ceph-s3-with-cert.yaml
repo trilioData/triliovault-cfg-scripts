@@ -1,0 +1,276 @@
+series: jammy
+variables:
+  openstack-origin: &openstack-origin distro
+  triliovault-pkg-source: &pkg-source       "deb [trusted=yes] https://apt.fury.io/trilio-maint-5-2 /"
+
+machines:
+  '1':
+  '2':
+  '3':
+  '4':
+  '5':
+
+applications:
+  trilio-data-mover:
+    charm: trilio-charmers-trilio-data-mover
+    channel: latest/edge
+    options:
+       triliovault-pkg-source: *pkg-source
+       backup-target-type: s3
+       tv-s3-endpoint-url: <S3 URL>
+       tv-s3-secret-key: <Secret key>
+       tv-s3-access-key: <Access key>
+       tv-s3-region-name: <region name>
+       tv-s3-bucket: <bucket name>
+       tv-s3-ssl-cert: |
+            PQRtLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUY5VENDQTkyZ0F3SUJBZ0lDRUFBd0RRWUpL
+            H1pJaHZjTkFRRUxCUUF3Z1pBeEN6QUpCZ05WQkFZVEFrbE8KTVFzd0NRWURWUVFJREFKTlNERU5N
+            PHELQTFVRUJ3d0VVRlZPUlRFUE1BMEdBMVVFQ2d3R1ZGSkpURWxQTVFzdwpDUVlEVlFRTERBSkpW
+            REVhTUJnR0ExVUVBd3dSS2k1MGNtbHNhVzlrWVhSaExtUmxiVzh4S3pBcEJna3Foa2lHCjl3MEJD
+            UUVXSEhCeVlYTm9ZVzUwTG5OaGEyaGhjbXRoY2tCMGNtbHNhVzh1YVc4d0hoY05NVGt3TmpFek1E
+            a3gKTkRFNVdoY05Namt3TmpFd01Ea3hOREU1V2pDQmdURUxNQWtHQTFVRUJoTUNTVTR4Q3pBSkJn
+            TlZCQWdNQWsxSQpNUTh3RFFZRFZRUUtEQVpVVWtsTVNVOHhDekFKQmdOVkJBc01Ba2xVTVJvd0dB
+            WURWUVFEREJFcUxuUnlhV3hwCmIyUmhkR0V1WkdWdGJ6RXJNQ2tHQ1NxR1NJYjNEUUVKQVJZY2NI
+            SmhjMmhoYm5RdWMyRnJhR0Z5YTJGeVFIUnkKYVd4cGJ5NXBiekNDQWlJd0RRWUpLb1pJaHZjTkFR
+            RUJCUUFEZ2dJUEFEQ0NBZ29DZ2dJQkFLME5FOVJLS2NhSQpLeS8ydkk1QWFLWElUTlUvVXZTSTli
+            UXR3cE5NMlBnMGszazBvc00zRmFqSnBqcE5oUUJoNHVsaGVZV1JkVFBVCkV0TXdPeUFMWE9ldzlk
+            cTYwazQ4ZkJSaG5vd2FsNkFhbi9hZnVKamFORWhSbGVpTDBIOWowL2lvL2ZBbkRsNU4KQjdvWUMv
+            VzhMR29xVWptb1VlNWZaSUlBRE5PSGJ1RDdLMllzUjlaM2hRb2dEVHA1dTRhenJsYTkvelFaQUw0
+            SgpzMnhiRGRqcHo1ZmhkQ3MxNG5WSC9FSkFBMVl1OUNJNDFMNUMyVkRyVDJpZU9Da3QvRnJOK0ZO
+            MUVkam0xS0haCnFtNzBUQ2NRTEVsanJpb0tCTVJuak5zbk9mdyt4dXFyNENEMFVCZkdscEVRUHQz
+            K2dhZ0VJa0prelBRWnBwc3oKNjBNTVgwY2lkVmhMVG96MmRwVlh3dXFUSnl2WHBOMHVNdFBvNVFv
+            QXRIL2tWUXdkTk80OFY1N01XUWdsbHJmUQpJU0tuMm5aM3VMU3E0UjdFeXpFUUlsQVVsRmFKdzVV
+            SkRORnBJNlIzZmFTaFVHK2tKWGRYaWJqZXkySmpwZE4zCjEvQ0hKM0MyeVZRUjR6b0JNUFI3cjV0
+            bGV4ZEdVYTIyOGUrL2dhZEZsL2FZNEVTQWJYaUpwRzRqWkdjN2xBbWQKMVk0SkhoamF5aUpodEtq
+            OGNnTzBLRHVuYStQeGgrUmtXQXlPN25PVU1mUnFZN1F1RE1hcE02ZC9kTWV0WmJ6NAp5TVRQWldR
+            aTMxN0haMXJhY0Qwb21yL3NpQ1MwSkNiamplZHB5ejg1eVlucUtMRTA4Z1c5dUIzcDZnemRWdHhO
+            Cm44QmFWeVB0amJ1ZXpGVU5GZmtHUzVNUnVWWWM2QjlMQWdNQkFBR2paakJrTUIwR0ExVWREZ1FX
+            QkJTOXU2RWEKMkowWjNQS3NaNkNMRVRCeE1RVjhqakFmQmdOVkhTTUVHREFXZ0JUTUk2aFNsY0RN
+            Qk5KWkg5aHVIZVVXV1Uycwo5akFTQmdOVkhSTUJBZjhFQ0RBR0FRSC9BZ0VBTUE0R0ExVWREd0VC
+            L3dRRUF3SUJoakFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQWdFQWpiMCtFZFpGbk5IS3ZvMExoRkhH
+            cW5jQ3p2K08wWDh1V3RnSEF4MHAzMDRzTVd5T1YycWUKdEhGaVp0SjQ3TThSdTNqRTgya0w2V3hp
+            ZWljaDdOOXMrQ3JkWEpYUjJFaDZsb0pEdE5CUDhuUUlVVFRJR1NxZQpXbmY0c3FuMmJ3MnB1SUE2
+            QzBEMFBLUHZxNEJGdDdCci9weGZSSjRmTjNrc3I5THRCcWh5MHFjZk1taEM2cXNiCmpoV0NST1p3
+            Qm5UWEhjZDY1ZDFOcDltUm5GVFhlbUFSWDh4NUVYN3VOVnEzd1Q5M2VtZmkzN09reFpNUnE5eEsK
+            Q016Wkt1S1oyVEdBcHJmQWZ0YmE5dXBabUVOOXJsV1hUNG1nRUEyOXFlYnQyL1ZuK1FBQTA2QkxZ
+            NGR5UElnbgpyclJ4NW9nZFJSc3czdVN0a3NjMGVmMU5rL25HUUVJK05jRy9aVFYwZmx0ZjZjNFNJ
+            TXlzUS9xRElzaENVZTVQCnRmeXBCTy9rek5jc2VpWkE2akd5VlNHckttU3dqb3lSZEg3YVQyUG55
+            bU9NWjVKb2NlOGp4RDJUanJuaWVHMFcKNjMvcDAycVI0OHcycWtkM1dlK1cxUzRvMmNaYVMvL280
+            eHI0bXhHNisvcDlmOHViSUR6ZmN0UzUzaHByUXBtdQpFRnh6U1AyUFBVUmF6ZWZEWHk5bm14akh2
+            M1FqckJEYzlxcUk2S2huZWdHRVRCK0FpbytFRUtBLzBucExEdEYxClNQSGdhRkcyN3AxVXFSSk5T
+            K0g3UzlDMGpYQ0VqWlBOSWZuNFA0MkpHaUNsOHRGQVhSQmNISTUrN0ZpUkdhR3oKcndnMktKZnY5
+            UmczWjMyeTdscklkZ2JxRXN5WW92ZTBkNlRwUUFDcDJWUlJYam4rSDBsMXljOD0KLS0tLS1FTkQg
+            Q0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJR0NEQ0NBL0Nn
+            QXdJQkFnSUpBSUtzTUFadUg4cURNQTBHQ1NxR1NJYjNEUUVCQ3dVQU1JR1FNUXN3Q1FZRApWUVFH
+            RXdKSlRqRUxNQWtHQTFVRUNBd0NUVWd4RFRBTEJnTlZCQWNNQkZCVlRrVXhEekFOQmdOVkJBb01C
+            bFJTClNVeEpUekVMTUFrR0ExVUVDd3dDU1ZReEdqQVlCZ05WQkFNTUVTb3VkSEpwYkdsdlpHRjBZ
+            UzVrWlcxdk1Tc3cKS1FZSktvWklodmNOQVFrQkZoeHdjbUZ6YUdGdWRDNXpZV3RvWVhKcllYSkFk
+            LEpwYkdsdkxtbHZNQjRYRFRFNQpNRFl4TXpBNE5UUXlPRm9YRFRNNU1EWXdPREE0TlRReU9Gb3dn
+            WkF4Q3pBSkJnTlZCQVlUQWtsT01Rc3dDUVlEClZRUUlEQUpOU0RFTk1Bc0dBMVVFQnd3RVVGVk9S
+            VEVQTUEwR0ExVUVDZ3dHVkZKSlRFbFBNUXN3Q1FZRFZRUUwKREFKSlZERWFNQmdHQTFVRUF3d1JL
+            aTUwY21sc2FXOWtZWFJoTG1SbGJXOHhLekFwQmdrcWhraUc5dzBCQ1FFVwpISEJ5WVhOb1lXNTBM
+            bk5oYTJoaGNtdGhja0IwY21sc2FXOHVhVzh3Z2dJaU1BMEdDU3FHU0liM0RRRUJBUVVBCkE0SUNE
+            E0F3Z2dJS0FvSUNBUURVUXpxOWtpNEw1L1FoZ0p0eVVRWFRsaS9XeVlsWEY2VHFZYlZVa2wvTjRB
+            TTAKUWtmd0FQRnord1dXM1dEWTF4QVVJdVFNa21mOFY0U25DQSt6RDljUXZUQ3NCNFNjQmVqa252
+            UWlWMjc1bzlUSApEQ3lVeFJ1dVZEVFE5cTB0TFFVT0xhNFJIL3l0YlZ3ZFE5K0cxalUzZWxxUWZH
+            Q3BRd085WkNIU1h3eXBtVkpXCnBsZ1JxcnExRkd4MmZqZ2NoVGF3U0lyRTBFMld0ZDRyVWFZRytq
+            eDZnRDNUbnJ6RHVhcHNUU2FCanljOWJKUm0KZUVKdmtkZS9xOEc5NHFheHVBaytVUWVsWW9SK1Br
+            MUpTUzhPSUxsb0c2UjVUUUpRZjVvNERFbXZaYnYva2FDaQpBQTdlNmt5WWhaOGRUMWdpOHV4OTY1
+            YzFmSURaSDFlNFFtMzBLQ2JKNnBHWWZhUXE5VWx6WkxnZ0grRUZiWFFNCnJHWndXb21ja0NJSUt1
+            bVdORkZ0SjlCcGlyTWptNFRqaE5ablM5RW1qVVFDNDFlQlgvM2J2ajVRbkcxUG5uUEEKODdDbktK
+            RVhsVEVXVnRkejNHK1h1SDRxdmJlVy9wbVY0aHBRL2xta2lkVk1OSWZZdG5UY1cwUWQ3SEc0b2N6
+            YgpCRVRqQ2liRnlNSm5keUloSkRUbXZockVFZkxtSmJtNFAyT1o2WWpiK3lkK2VxSkpoY0N2ZlMz
+            MUo2RXgya01iCnhKRDlNT3lnRHJ0ZGpMVVNscFZkSlRBNmVTRUhnYkdVRG9CdjV3UGUvYnhvdDhj
+            Y2RHeVdqNUNoNUVHVXhKUlEKM1p2c21OcTJlOHkwcklhL01EaDRNSUNOU05NK2xWb0VZZWFldXFM
+            TitNbDE4eVpRTHkvbWY0NEMyQTVPeFFJRApBUUFCbzJNd1lUQWRCZ05WSFE0RUZnUVV6Q09vVXBY
+            QXpBVFNXUi9ZYmgzbEZsbE5yUFl3SHdZRFZSMGpCQmd3CkZvQVV6Q09vVXBYQXpBVFNXUi9ZYmgz
+            bEZsbE5yUFl3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFPQmdOVkhROEIKQWY4RUJBTUNBWVl3RFFZ
+            SktvWklodmNOQVFFTEJRQURnZ0lCQU1YNFRWRG1yVDlOemttS2g2UG5uNmpYN2xmdApscFUrV2V3
+            TU1zOTdWZHdkOGxuQW45bHBCUDlxMHh5QVZ0SnBtY1BWSGM2TmxRQmF6ZjVucWh4MnU5L0xVUE5Q
+            CnpkWVJ6N1gveHU3MWVQelg3VUNoK3M0a2Z0Zi9Ib2t3aTRqRi9RdG5tUnZGUnA3WTgrT0lFZjBz
+            ejZqa1c1NTIKaGo0M1VURkRMcFlXZGZDTmVCSCtqOVJqeldKSEtkdlJ3RVB6cG1ZcC9LYmdCYWdl
+            cnA4QlNRcUVCYzdzUU1YdwpyMFd5aXAzRmFLRW9uK05NTWF2ckZuTmNRQUxNRzY4SVpmNENuRjlY
+            Mk1TVU1UZlpqODZLaVBjcHdiYmZTUndVClJGTDdJYTd1WDkrVXhld0FKZGNqTlZwRVJoVEh1MHVj
+            RkE1RWE1NnNMSy9uZDVrZzVPcjFkNW5vZVRPRGhBRnUKU0FjVDN5Ymx6eG9Yb1YxK3B2bTdQc2xN
+            VldkK1Avenh3dWNhTGI0bGw1QlpXbWw3eFpBZ2MvS0l3bmt5VStZZwp5WC8vUk44UkVHVUFQWXNp
+            MExrck9BSnVibUkxVGJyOGNnbXN4RzJrQ1BNeW95S3BNM0FvY2lXN21IbmV1NkVYClBJaUxXbTg3
+            bytkYmVvUE5pYlRrTkJxTjZ1R3BIR3hzcEVtYS9yODdmVWlNc2pqNzVOeHZHdzhEK05weW5PSWYK
+            RDZ0bWNMU1hhSnJaK1BYa1gyaXFzcytpTTRZNUZIV0hsVFZjcVo0a2NycU5jT3RPMFNVdHBaS0Nr
+            N3VaVkpwYQptUWlIcjNJWDlDTWZHQWdIT1pVY2hBOWd6ejV2aWhnNUFTckNMU2hkd2lmV3JGcXFT
+            V01IRUZWVStBKzg0WWc0CitCV0xDNm94aERFK09FalMKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0t
+            PDLK
+       verbose: True
+  trilio-data-mover-mysql-router:
+    charm: mysql-router
+  trilio-dm-api:
+    charm: trilio-charmers-trilio-dm-api
+    channel: latest/edge
+    num_units: 1
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-origin: *openstack-origin
+    to:
+      - 'lxd:1'
+  trilio-dm-api-mysql-router:
+    charm: mysql-router
+  trilio-horizon-plugin:
+    charm: trilio-charmers-trilio-horizon-plugin
+    channel: latest/edge
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-encryption-support: True
+  trilio-wlm-mysql-router:
+    charm: mysql-router
+  trilio-wlm:
+    charm: trilio-charmers-trilio-wlm
+    channel: latest/edge
+    num_units: 1
+    options:
+       triliovault-pkg-source: *pkg-source
+       openstack-origin: *openstack-origin
+       backup-target-type: s3
+       tv-s3-endpoint-url: <S3 URL>
+       tv-s3-secret-key: <Secret key>
+       tv-s3-access-key: <Access key>
+       tv-s3-region-name: <region name>
+       tv-s3-bucket: <Bucket name>
+       tv-s3-ssl-cert: |
+            PQRtLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUY5VENDQTkyZ0F3SUJBZ0lDRUFBd0RRWUpL
+            H1pJaHZjTkFRRUxCUUF3Z1pBeEN6QUpCZ05WQkFZVEFrbE8KTVFzd0NRWURWUVFJREFKTlNERU5N
+            PHELQTFVRUJ3d0VVRlZPUlRFUE1BMEdBMVVFQ2d3R1ZGSkpURWxQTVFzdwpDUVlEVlFRTERBSkpW
+            REVhTUJnR0ExVUVBd3dSS2k1MGNtbHNhVzlrWVhSaExtUmxiVzh4S3pBcEJna3Foa2lHCjl3MEJD
+            UUVXSEhCeVlYTm9ZVzUwTG5OaGEyaGhjbXRoY2tCMGNtbHNhVzh1YVc4d0hoY05NVGt3TmpFek1E
+            a3gKTkRFNVdoY05Namt3TmpFd01Ea3hOREU1V2pDQmdURUxNQWtHQTFVRUJoTUNTVTR4Q3pBSkJn
+            TlZCQWdNQWsxSQpNUTh3RFFZRFZRUUtEQVpVVWtsTVNVOHhDekFKQmdOVkJBc01Ba2xVTVJvd0dB
+            WURWUVFEREJFcUxuUnlhV3hwCmIyUmhkR0V1WkdWdGJ6RXJNQ2tHQ1NxR1NJYjNEUUVKQVJZY2NI
+            SmhjMmhoYm5RdWMyRnJhR0Z5YTJGeVFIUnkKYVd4cGJ5NXBiekNDQWlJd0RRWUpLb1pJaHZjTkFR
+            RUJCUUFEZ2dJUEFEQ0NBZ29DZ2dJQkFLME5FOVJLS2NhSQpLeS8ydkk1QWFLWElUTlUvVXZTSTli
+            UXR3cE5NMlBnMGszazBvc00zRmFqSnBqcE5oUUJoNHVsaGVZV1JkVFBVCkV0TXdPeUFMWE9ldzlk
+            cTYwazQ4ZkJSaG5vd2FsNkFhbi9hZnVKamFORWhSbGVpTDBIOWowL2lvL2ZBbkRsNU4KQjdvWUMv
+            VzhMR29xVWptb1VlNWZaSUlBRE5PSGJ1RDdLMllzUjlaM2hRb2dEVHA1dTRhenJsYTkvelFaQUw0
+            SgpzMnhiRGRqcHo1ZmhkQ3MxNG5WSC9FSkFBMVl1OUNJNDFMNUMyVkRyVDJpZU9Da3QvRnJOK0ZO
+            MUVkam0xS0haCnFtNzBUQ2NRTEVsanJpb0tCTVJuak5zbk9mdyt4dXFyNENEMFVCZkdscEVRUHQz
+            K2dhZ0VJa0prelBRWnBwc3oKNjBNTVgwY2lkVmhMVG96MmRwVlh3dXFUSnl2WHBOMHVNdFBvNVFv
+            QXRIL2tWUXdkTk80OFY1N01XUWdsbHJmUQpJU0tuMm5aM3VMU3E0UjdFeXpFUUlsQVVsRmFKdzVV
+            SkRORnBJNlIzZmFTaFVHK2tKWGRYaWJqZXkySmpwZE4zCjEvQ0hKM0MyeVZRUjR6b0JNUFI3cjV0
+            bGV4ZEdVYTIyOGUrL2dhZEZsL2FZNEVTQWJYaUpwRzRqWkdjN2xBbWQKMVk0SkhoamF5aUpodEtq
+            OGNnTzBLRHVuYStQeGgrUmtXQXlPN25PVU1mUnFZN1F1RE1hcE02ZC9kTWV0WmJ6NAp5TVRQWldR
+            aTMxN0haMXJhY0Qwb21yL3NpQ1MwSkNiamplZHB5ejg1eVlucUtMRTA4Z1c5dUIzcDZnemRWdHhO
+            Cm44QmFWeVB0amJ1ZXpGVU5GZmtHUzVNUnVWWWM2QjlMQWdNQkFBR2paakJrTUIwR0ExVWREZ1FX
+            QkJTOXU2RWEKMkowWjNQS3NaNkNMRVRCeE1RVjhqakFmQmdOVkhTTUVHREFXZ0JUTUk2aFNsY0RN
+            Qk5KWkg5aHVIZVVXV1Uycwo5akFTQmdOVkhSTUJBZjhFQ0RBR0FRSC9BZ0VBTUE0R0ExVWREd0VC
+            L3dRRUF3SUJoakFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQWdFQWpiMCtFZFpGbk5IS3ZvMExoRkhH
+            cW5jQ3p2K08wWDh1V3RnSEF4MHAzMDRzTVd5T1YycWUKdEhGaVp0SjQ3TThSdTNqRTgya0w2V3hp
+            ZWljaDdOOXMrQ3JkWEpYUjJFaDZsb0pEdE5CUDhuUUlVVFRJR1NxZQpXbmY0c3FuMmJ3MnB1SUE2
+            QzBEMFBLUHZxNEJGdDdCci9weGZSSjRmTjNrc3I5THRCcWh5MHFjZk1taEM2cXNiCmpoV0NST1p3
+            Qm5UWEhjZDY1ZDFOcDltUm5GVFhlbUFSWDh4NUVYN3VOVnEzd1Q5M2VtZmkzN09reFpNUnE5eEsK
+            Q016Wkt1S1oyVEdBcHJmQWZ0YmE5dXBabUVOOXJsV1hUNG1nRUEyOXFlYnQyL1ZuK1FBQTA2QkxZ
+            NGR5UElnbgpyclJ4NW9nZFJSc3czdVN0a3NjMGVmMU5rL25HUUVJK05jRy9aVFYwZmx0ZjZjNFNJ
+            TXlzUS9xRElzaENVZTVQCnRmeXBCTy9rek5jc2VpWkE2akd5VlNHckttU3dqb3lSZEg3YVQyUG55
+            bU9NWjVKb2NlOGp4RDJUanJuaWVHMFcKNjMvcDAycVI0OHcycWtkM1dlK1cxUzRvMmNaYVMvL280
+            eHI0bXhHNisvcDlmOHViSUR6ZmN0UzUzaHByUXBtdQpFRnh6U1AyUFBVUmF6ZWZEWHk5bm14akh2
+            M1FqckJEYzlxcUk2S2huZWdHRVRCK0FpbytFRUtBLzBucExEdEYxClNQSGdhRkcyN3AxVXFSSk5T
+            K0g3UzlDMGpYQ0VqWlBOSWZuNFA0MkpHaUNsOHRGQVhSQmNISTUrN0ZpUkdhR3oKcndnMktKZnY5
+            UmczWjMyeTdscklkZ2JxRXN5WW92ZTBkNlRwUUFDcDJWUlJYam4rSDBsMXljOD0KLS0tLS1FTkQg
+            Q0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJR0NEQ0NBL0Nn
+            QXdJQkFnSUpBSUtzTUFadUg4cURNQTBHQ1NxR1NJYjNEUUVCQ3dVQU1JR1FNUXN3Q1FZRApWUVFH
+            RXdKSlRqRUxNQWtHQTFVRUNBd0NUVWd4RFRBTEJnTlZCQWNNQkZCVlRrVXhEekFOQmdOVkJBb01C
+            bFJTClNVeEpUekVMTUFrR0ExVUVDd3dDU1ZReEdqQVlCZ05WQkFNTUVTb3VkSEpwYkdsdlpHRjBZ
+            UzVrWlcxdk1Tc3cKS1FZSktvWklodmNOQVFrQkZoeHdjbUZ6YUdGdWRDNXpZV3RvWVhKcllYSkFk
+            LEpwYkdsdkxtbHZNQjRYRFRFNQpNRFl4TXpBNE5UUXlPRm9YRFRNNU1EWXdPREE0TlRReU9Gb3dn
+            WkF4Q3pBSkJnTlZCQVlUQWtsT01Rc3dDUVlEClZRUUlEQUpOU0RFTk1Bc0dBMVVFQnd3RVVGVk9S
+            VEVQTUEwR0ExVUVDZ3dHVkZKSlRFbFBNUXN3Q1FZRFZRUUwKREFKSlZERWFNQmdHQTFVRUF3d1JL
+            aTUwY21sc2FXOWtZWFJoTG1SbGJXOHhLekFwQmdrcWhraUc5dzBCQ1FFVwpISEJ5WVhOb1lXNTBM
+            bk5oYTJoaGNtdGhja0IwY21sc2FXOHVhVzh3Z2dJaU1BMEdDU3FHU0liM0RRRUJBUVVBCkE0SUNE
+            E0F3Z2dJS0FvSUNBUURVUXpxOWtpNEw1L1FoZ0p0eVVRWFRsaS9XeVlsWEY2VHFZYlZVa2wvTjRB
+            TTAKUWtmd0FQRnord1dXM1dEWTF4QVVJdVFNa21mOFY0U25DQSt6RDljUXZUQ3NCNFNjQmVqa252
+            UWlWMjc1bzlUSApEQ3lVeFJ1dVZEVFE5cTB0TFFVT0xhNFJIL3l0YlZ3ZFE5K0cxalUzZWxxUWZH
+            Q3BRd085WkNIU1h3eXBtVkpXCnBsZ1JxcnExRkd4MmZqZ2NoVGF3U0lyRTBFMld0ZDRyVWFZRytq
+            eDZnRDNUbnJ6RHVhcHNUU2FCanljOWJKUm0KZUVKdmtkZS9xOEc5NHFheHVBaytVUWVsWW9SK1Br
+            MUpTUzhPSUxsb0c2UjVUUUpRZjVvNERFbXZaYnYva2FDaQpBQTdlNmt5WWhaOGRUMWdpOHV4OTY1
+            YzFmSURaSDFlNFFtMzBLQ2JKNnBHWWZhUXE5VWx6WkxnZ0grRUZiWFFNCnJHWndXb21ja0NJSUt1
+            bVdORkZ0SjlCcGlyTWptNFRqaE5ablM5RW1qVVFDNDFlQlgvM2J2ajVRbkcxUG5uUEEKODdDbktK
+            RVhsVEVXVnRkejNHK1h1SDRxdmJlVy9wbVY0aHBRL2xta2lkVk1OSWZZdG5UY1cwUWQ3SEc0b2N6
+            YgpCRVRqQ2liRnlNSm5keUloSkRUbXZockVFZkxtSmJtNFAyT1o2WWpiK3lkK2VxSkpoY0N2ZlMz
+            MUo2RXgya01iCnhKRDlNT3lnRHJ0ZGpMVVNscFZkSlRBNmVTRUhnYkdVRG9CdjV3UGUvYnhvdDhj
+            Y2RHeVdqNUNoNUVHVXhKUlEKM1p2c21OcTJlOHkwcklhL01EaDRNSUNOU05NK2xWb0VZZWFldXFM
+            TitNbDE4eVpRTHkvbWY0NEMyQTVPeFFJRApBUUFCbzJNd1lUQWRCZ05WSFE0RUZnUVV6Q09vVXBY
+            QXpBVFNXUi9ZYmgzbEZsbE5yUFl3SHdZRFZSMGpCQmd3CkZvQVV6Q09vVXBYQXpBVFNXUi9ZYmgz
+            bEZsbE5yUFl3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFPQmdOVkhROEIKQWY4RUJBTUNBWVl3RFFZ
+            SktvWklodmNOQVFFTEJRQURnZ0lCQU1YNFRWRG1yVDlOemttS2g2UG5uNmpYN2xmdApscFUrV2V3
+            TU1zOTdWZHdkOGxuQW45bHBCUDlxMHh5QVZ0SnBtY1BWSGM2TmxRQmF6ZjVucWh4MnU5L0xVUE5Q
+            CnpkWVJ6N1gveHU3MWVQelg3VUNoK3M0a2Z0Zi9Ib2t3aTRqRi9RdG5tUnZGUnA3WTgrT0lFZjBz
+            ejZqa1c1NTIKaGo0M1VURkRMcFlXZGZDTmVCSCtqOVJqeldKSEtkdlJ3RVB6cG1ZcC9LYmdCYWdl
+            cnA4QlNRcUVCYzdzUU1YdwpyMFd5aXAzRmFLRW9uK05NTWF2ckZuTmNRQUxNRzY4SVpmNENuRjlY
+            Mk1TVU1UZlpqODZLaVBjcHdiYmZTUndVClJGTDdJYTd1WDkrVXhld0FKZGNqTlZwRVJoVEh1MHVj
+            RkE1RWE1NnNMSy9uZDVrZzVPcjFkNW5vZVRPRGhBRnUKU0FjVDN5Ymx6eG9Yb1YxK3B2bTdQc2xN
+            VldkK1Avenh3dWNhTGI0bGw1QlpXbWw3eFpBZ2MvS0l3bmt5VStZZwp5WC8vUk44UkVHVUFQWXNp
+            MExrck9BSnVibUkxVGJyOGNnbXN4RzJrQ1BNeW95S3BNM0FvY2lXN21IbmV1NkVYClBJaUxXbTg3
+            bytkYmVvUE5pYlRrTkJxTjZ1R3BIR3hzcEVtYS9yODdmVWlNc2pqNzVOeHZHdzhEK05weW5PSWYK
+            RDZ0bWNMU1hhSnJaK1BYa1gyaXFzcytpTTRZNUZIV0hsVFZjcVo0a2NycU5jT3RPMFNVdHBaS0Nr
+            N3VaVkpwYQptUWlIcjNJWDlDTWZHQWdIT1pVY2hBOWd6ejV2aWhnNUFTckNMU2hkd2lmV3JGcXFT
+            V01IRUZWVStBKzg0WWc0CitCV0xDNm94aERFK09FalMKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0t
+            PDLK
+       verbose: True
+       trustee-role: creator
+    to:
+      - '5'
+relations:
+  # Triliovault horizon plugin relations
+  # # relation with openstack-dashboard
+  - - trilio-horizon-plugin:dashboard-plugin
+    - openstack-dashboard:dashboard-plugin
+
+  # Triliovault Datamover-API relations
+  # # relation with keystone
+  - - trilio-dm-api:identity-service
+    - keystone:identity-service
+  # # relation with db router
+  - - trilio-dm-api:shared-db
+    - trilio-dm-api-mysql-router:shared-db
+  # # relation with AMQP server
+  - - trilio-dm-api:amqp
+    - rabbitmq-server:amqp
+  # # relation with vault certificates
+  - - trilio-dm-api:certificates
+    - vault:certificates
+  # # relation with DB server from the router
+  - - trilio-dm-api-mysql-router:db-router
+    - mysql-innodb-cluster:db-router
+
+  # Triliovault Datamover relations
+  # # relation with AMQP server
+  - - trilio-data-mover:amqp
+    - rabbitmq-server:amqp
+  # # relation with nova-compute for sub-ordinating
+  - - trilio-data-mover:juju-info
+    - nova-compute:juju-info
+  # # relation with db router
+  - - trilio-data-mover:shared-db
+    - trilio-data-mover-mysql-router:shared-db
+  # # relation with CEPH
+  - - trilio-data-mover:ceph
+    - ceph-mon:client
+  # # relation with DB server from the router
+  - - trilio-data-mover-mysql-router:db-router
+    - mysql-innodb-cluster:db-router
+  # # A workaround for db router to work for trilio-datamover
+  - - nova-compute:juju-info
+    - trilio-data-mover-mysql-router:juju-info
+
+  # Triliovault Workloadmgr relations
+  # # relation with db router
+  - - trilio-wlm:shared-db
+    - trilio-wlm-mysql-router:shared-db
+  # # relation with AMQP server
+  - - trilio-wlm:amqp
+    - rabbitmq-server:amqp
+  # # relation with keystone
+  - - trilio-wlm:identity-service
+    - keystone:identity-service
+  # # relation with vault certificates
+  - - trilio-wlm:certificates
+    - vault:certificates
+  # # relation with DB server from the router
+  - - mysql-innodb-cluster:db-router
+    - trilio-wlm-mysql-router:db-router
