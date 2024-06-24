@@ -396,7 +396,7 @@ outputs:
                 - {get_attr: [ContainersCommon, volumes]}
                 -
                   - /var/lib/config-data/puppet-generated/triliovaultwlmworkloads/etc/triliovault-wlm:/etc/triliovault-wlm:rw
-            command: "/etc/triliovault-wlm/get_keystone_resources.sh"
+            command: "/usr/bin/bootstrap_host_exec triliovault_wlm_workloads /bin/bash -c /etc/triliovault-wlm/get_keystone_resources.sh"
             environment:
               TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
         step_5:
