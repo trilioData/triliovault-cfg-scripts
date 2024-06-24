@@ -28,6 +28,7 @@
   tags: triliovault
 
 - name: Log into triliovault docker registry
+  become: true
   docker_login:
     registry: "{{ triliovault_docker_registry }}"
     username: "{{ triliovault_docker_username }}"
