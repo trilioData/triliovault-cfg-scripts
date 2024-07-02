@@ -35,7 +35,7 @@ sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t n
   # Start workloadmgr api service
   /usr/bin/python3 /usr/bin/workloadmgr-api \
      --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-     --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-ids.conf
+     --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-dynamic.conf
 
   status=$?
   if [ $status -ne 0 ]; then

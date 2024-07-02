@@ -71,15 +71,15 @@ exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
 
 ## Rabbitmq Resources Creation
 # RabbitMQ server credentials and connection details
-RABBITMQ_USER="{{- .Values.rabbitmq.common.admin_user-}}"
-RABBITMQ_PASSWORD="{{- .Values.rabbitmq.common.admin_user-}}"
-RABBITMQ_HOST="{{- .Values.rabbitmq.common.host-}}"
-RABBITMQ_PORT="{{- .Values.rabbitmq.common.port-}}"
+RABBITMQ_USER="{{- .Values.rabbitmq.common.admin_user -}}"
+RABBITMQ_PASSWORD="{{- .Values.rabbitmq.common.admin_user -}}"
+RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
+RABBITMQ_PORT="{{- .Values.rabbitmq.common.port -}}"
 
 # RabbitMQ user to be created
-DMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.wlm_api.user-}}"
-DMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.wlm_api.password-}}"
-DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.wlm_api.vhost-}}"
+DMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.wlm_api.user -}}"
+DMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.wlm_api.password -}}"
+DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.wlm_api.vhost -}}"
 
 # Export credentials for rabbitmqctl
 export RABBITMQ_USER
@@ -105,14 +105,14 @@ echo "RabbitMQ user $DMAPI_RABBITMQ_USER_NAME and vhost $DMAPI_RABBITMQ_VHOST_NA
 OS_SERVICE_DESC="${OS_REGION_NAME}: ${OS_SERVICE_NAME} (${OS_SERVICE_TYPE}) service"
 # Get Service ID if it exists
 unset OS_SERVICE_ID
-CLOUD_ADMIN_USER_NAME="{{- .Values.conf.triliovault.cloud_admin_user_name -}}"
-CLOUD_ADMIN_PROJECT_NAME="{{- .Values.conf.triliovault.cloud_admin_project_name -}}"
-CLOUD_ADMIN_DOMAIN_NAME="{{- .Values.conf.triliovault.cloud_admin_domain_name -}}"
-WLM_USER_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.username -}}"
+CLOUD_ADMIN_USER_NAME="{{- .Values.keystone.common.cloud_admin_user_name -}}"
+CLOUD_ADMIN_PROJECT_NAME="{{- .Values.keystone.common.cloud_admin_project_name -}}"
+CLOUD_ADMIN_DOMAIN_NAME="{{- Values.keystone.common.cloud_admin_domain_name -}}"
+WLM_USER_NAME="{{- Values.keystone.wlm_api.user-}}"
 
-WLM_PROJECT_DOMAIN_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.project_domain_name -}}"
+WLM_PROJECT_DOMAIN_NAME="{{- .Values.keystone.common.service_project_domain_name -}}"
 
-WLM_PROJECT_NAME="{{- .Values.endpoints.identity.auth.triliovault_wlm.project_name -}}"
+WLM_PROJECT_NAME="{{- .Values.keystone.common.service_project_name-}}"
 
 CLOUD_ADMIN_USER_ID=$(openstack user show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" -f value -c id \
                 "${CLOUD_ADMIN_USER_NAME}")
@@ -137,8 +137,24 @@ host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk 
 
 POD_IP=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
 
-tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-ids.conf << EOF
+KEYSTONE_INTERFACE="{{- .Values.keystone.keystone_interface -}}"
+NEUTRON_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service neutron -c URL -f value)
+CINDER_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service cinderv3 -c URL -f value)
+GLANCE_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service glance -c URL -f value)
+KEYSTONE_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service keystone -c URL -f value)
+
+
+tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf << EOF
 [DEFAULT]
+
+neutron_production_url =  $NEUTRON_URL
+nova_production_endpoint_template = ${NOVA_URL}%(project_id)s
+cinder_production_endpoint_template = $CINDER_URL
+glance_production_api_servers = $GLANCE_URL
+keystone_endpoint_url = $KEYSTONE_URL
+neutron_admin_auth_url = $KEYSTONE_URL
+nova_admin_auth_url = $KEYSTONE_URL
+
 triliovault_hostnames = ${POD_IP}
 cloud_admin_user_id = $CLOUD_ADMIN_USER_ID
 cloud_admin_domain = $CLOUD_ADMIN_DOMAIN_ID
