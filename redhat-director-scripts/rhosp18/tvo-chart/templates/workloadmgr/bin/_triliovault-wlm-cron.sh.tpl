@@ -1,3 +1,5 @@
+#!/bin/bash
+
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: triliovault-datamover-api-bin
-data:
-  triliovault-datamover-api-init.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api-init.sh.tpl" | indent 4 }}
-  triliovault-datamover-api.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api.sh.tpl" | indent 4 }}
+set -ex
+COMMAND="${@:-start}"
+
+function start () {
+  exec /usr/bin/python3 /usr/bin/workloadmgr-cron \
+       --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
+       --config-file=/tmp/pod-shared-triliovault-wlm-cron/triliovault-wlm-dynamic.conf
+}
+
+function stop () {
+  kill -TERM 1
+}
+
+$COMMAND
 

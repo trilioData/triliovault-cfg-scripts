@@ -17,9 +17,9 @@ limitations under the License.
 apiVersion: v1
 kind: Secret
 metadata:
-  name: triliovault-etc-wlm
+  name: triliovault-wlm-etc
 type: Opaque
 data:
-  wlm_logging.conf: {{ include "to_ini" .Values.conf.wlm_logging | b64enc }}
-  triliovault-wlm.conf: {{ include "to_ini" .Values.conf.wlm | b64enc }}
-  api-paste.ini: {{ tpl (.Files.Get "templates/workloadmgr/_api-paste.ini.tpl") . | b64enc }}
+  wlm_logging.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_wlm_logging_conf.tpl") . | b64enc }}
+  triliovault-wlm.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_triliovault_wlm_conf.tpl") . | b64enc }}
+  api-paste.ini: {{ tpl (.Files.Get "templates/workloadmgr/bin/_api-paste.ini.tpl") . | b64enc }}

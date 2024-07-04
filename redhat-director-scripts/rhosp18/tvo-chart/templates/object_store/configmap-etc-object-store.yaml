@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +12,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-set -ex
-COMMAND="${@:-start}"
 
-function start () {
-  exec /usr/bin/python3 /usr/bin/workloadmgr-cron \
-       --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-       --config-file=/tmp/pod-shared-triliovault-wlm-cron/triliovault-wlm-ids.conf
-}
-
-function stop () {
-  kill -TERM 1
-}
-
-$COMMAND
-
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: triliovault-object-store-etc
+type: Opaque
+data:
+  object_store_logging.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_object_store_logging_conf.tpl") . | b64enc }}
+{{- range .Values.triliovault_backup_targets }}
+  {{- if eq .backup_target_type "s3" }}
+  triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini_object_store" (dict "target" . "Values" .Values) | b64enc }}
+  {{- end }}
+{{- end }}

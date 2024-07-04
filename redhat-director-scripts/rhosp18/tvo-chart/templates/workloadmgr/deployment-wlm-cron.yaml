@@ -83,10 +83,6 @@ spec:
               name: triliovault-wlm-etc
               readOnly: true
               subPath: wlm_logging.conf
-            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: object_store_logging.conf
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf
@@ -109,11 +105,11 @@ spec:
             path: /var/log/triliovault-wlm
         - name: triliovault-wlm-etc
           secret:
-            secretName: triliovault-etc-wlm
+            secretName: triliovault-wlm-etc
             defaultMode: 0444
         - name: triliovault-wlm-bin
           configMap:
-            name: triliovault-bin-wlm
+            name: triliovault-wlm-bin
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}

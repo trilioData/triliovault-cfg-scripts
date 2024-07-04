@@ -19,27 +19,23 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-
-  {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
-
-  {{ if eq $backup_target_type "s3" }}
-
-  ## Start triliovault object store service if backup target type is s3
-  /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
-  sleep 20s
-  status=$?
-  if [ $status -ne 0 ]; then
-    echo "Failed to start tvault-object-store service: $status"
-    exit $status
-  fi
-
-  {{ end }}
+{{- $vaultDataDir := "/var/lib/nova/triliovault-mounts" }}
+{{- range .Values.triliovault_backup_targets }}
+  {{- if eq .backup_target_type "nfs" }}
+    {{- $nfsShare := .nfs_shares }}
+    {{- $nfsDir := (splitList ":" $nfsShare)._1 }}
+    {{- $base64MountPoint := (b64enc $nfsDir) }}
+    {{- $nfsOptions := .nfs_options }}
+mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
+sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
+  {{- end }}
+{{- end }}
 
   
   # Start workloadmgr api service
   /usr/bin/python3 /usr/bin/workloadmgr-api \
      --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-     --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-ids.conf
+     --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-dynamic.conf
 
   status=$?
   if [ $status -ne 0 ]; then

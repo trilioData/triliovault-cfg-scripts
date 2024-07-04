@@ -16,17 +16,17 @@ limitations under the License.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: triliovault-bin-wlm
+  name: triliovault-wlm-bin
 data:
   triliovault-wlm-init.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-api-init.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-api-init.sh.tpl" | indent 4 }}
   triliovault-wlm-api.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-api.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-api.sh.tpl" | indent 4 }}
   triliovault-wlm-cron.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-cron.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-cron.sh.tpl" | indent 4 }}
   triliovault-wlm-scheduler.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-scheduler.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-scheduler.sh.tpl" | indent 4 }}
   triliovault-wlm-workloads.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-workloads.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-workloads.sh.tpl" | indent 4 }}
   triliovault-wlm-cloud-trust.sh: |
-{{ .Files.Get "templates/workloadmgr/_triliovault-wlm-cloud-trust.sh.tpl" | indent 4 }}
+{{ .Files.Get "templates/workloadmgr/bin/_triliovault-wlm-cloud-trust.sh.tpl" | indent 4 }}
