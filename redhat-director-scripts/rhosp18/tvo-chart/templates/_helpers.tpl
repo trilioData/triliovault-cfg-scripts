@@ -70,6 +70,4 @@ vault_s3_max_pool_connections = 500
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 {{- end -}}
 
-{{- define "to_ini_datamover_api" -}}
 
-{{- end -}}

@@ -130,18 +130,18 @@ keystone:
     service_name: "dmapi"
     servie_type: "datamover"
     service_desc: "TrilioVault Datamover Api Service"
-    internal_endpoint: "EDIT_HTTP_SCHEME://INTERNAL_INTERACE_IP_HOSTNAME:8784/v2"
-    public_endpoint: "EDIT_HTTP_SCHEME://PUBLIC_INTERACE_IP_HOSTNAME:8784/v2"
-    admin_endpoint: "EDIT_HTTP_SCHEME://ADMIN_INTERACE_IP_HOSTNAME:8784/v2"
+    internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2"
+    public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2"
+    admin_endpoint: "ENDPOINT_PROTOCOL_ADMIN://ENDPOINT_HOST_ADMIN:8784/v2"
   wlm_api: 
     user: "triliovault"
     password: "EDIT_PASSWORD"
     service_name: "TrilioVaultWLM"
     servie_type: "workloads"
     service_desc: "TrilioVault Workloadmgr Api Service"
-    internal_endpoint: "EDIT_HTTP_SCHEME://INTERNAL_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
-    public_endpoint: "EDIT_HTTP_SCHEME://PUBLIC_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
-    admin_endpoint: "EDIT_HTTP_SCHEME://ADMIN_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
+    internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
+    public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
+    admin_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_ADMIN:8781/v1/$(tenant_id)s"
   identity:
     
 
