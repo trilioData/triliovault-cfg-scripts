@@ -73,9 +73,3 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 {{- define "to_ini_datamover_api" -}}
 
 {{- end -}}
-
-
-
-{{- define "to_ini_wlm" -}}
-
-{{- end -}}

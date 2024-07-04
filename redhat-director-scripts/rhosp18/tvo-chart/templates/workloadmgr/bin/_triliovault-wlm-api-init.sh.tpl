@@ -144,6 +144,12 @@ GLANCE_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service g
 KEYSTONE_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service keystone -c URL -f value)
 
 
+if [[ $KEYSTONE_URL =~ ^(https?)://([^:/]+)(:([0-9]+))?(/.*)?$ ]]; then
+  auth_protocol=${BASH_REMATCH[1]}
+  auth_host=${BASH_REMATCH[2]}
+  auth_port=${BASH_REMATCH[4]}
+
+
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf << EOF
 [DEFAULT]
 

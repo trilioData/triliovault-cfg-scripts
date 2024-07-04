@@ -121,6 +121,9 @@ keystone:
     region_name: "RegionOne"
     auth_url: ""
     auth_uri: ""
+    keystone_auth_protocol: ""
+    keystone_auth_host: ""
+    keystone_auth_port: ""
   datamover_api: 
     user: "dmapi"
     password: "EDIT_PASSWORD"
@@ -139,6 +142,8 @@ keystone:
     internal_endpoint: "EDIT_HTTP_SCHEME://INTERNAL_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
     public_endpoint: "EDIT_HTTP_SCHEME://PUBLIC_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
     admin_endpoint: "EDIT_HTTP_SCHEME://ADMIN_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
+  identity:
+    
 
 database:
   common:

@@ -1,9 +1,8 @@
-  
 [composite:osapi_workloads]
 use = call:workloadmgr.api:root_app_factory
 / = apiversions
 /v1 = openstack_workloads_api_v1
-    
+
 [composite:openstack_workloads_api_v1]
 use = call:workloadmgr.api.middleware.auth:pipeline_factory
 noauth = faultwrap sizelimit noauth apiv1
@@ -33,13 +32,15 @@ paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContex
 
 [filter:authtoken]
 paste.filter_factory =  keystonemiddleware.auth_token:filter_factory
-auth_host = {{ tuple "identity" .Values.conf.triliovault.interface . | include "helm-toolkit.endpoints.endpoint_host_lookup" }}
-auth_port = {{ tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-auth_protocol = {{ tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_scheme_lookup" }}
-admin_tenant_name = {{ .Values.endpoints.identity.auth.triliovault_wlm.project_name }}
-project_name = {{ .Values.endpoints.identity.auth.triliovault_wlm.project_name }}
-admin_user = {{ .Values.endpoints.identity.auth.triliovault_wlm.username }}
-admin_password = {{ .Values.endpoints.identity.auth.triliovault_wlm.password }}
+auth_protocol = "{{- .Values.keystone.common.keystone_auth_protocol -}}"
+auth_host = "{{- .Values.keystone.common.keystone_auth_host -}}"
+auth_port = "{{- .Values.keystone.common.keystone_auth_port -}}"
+admin_tenant_name = "{{- .Values.keystone.common.service_project_name -}}" 
+project_name = "{{- .Values.keystone.common.service_project_name -}}" 
+admin_user = "{{- .Values.keystone.wlm_api.user -}}"
+admin_password = "{{- .Values.keystone.wlm_api.password -}}" 
 signing_dir = /var/cache/workloadmgr
 insecure = True
-interface = {{ .Values.conf.triliovault.interface }}
+interface = <%= @interface %> 
+insecure = True
+interface = {{ .Values.keystone. }}

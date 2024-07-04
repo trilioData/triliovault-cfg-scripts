@@ -33,7 +33,7 @@ auth_uri = {{- .Values.keystone.common.auth_uri -}}
 #insecure = False
 
 [oslo_messaging_notifications]
-transport_url = "rabbit://{{ .Values.rabbitmq.datamover_api.user }}:{{- .Values.rabbitmq.datamover_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.comoon.port -}}/?ssl=0"
+transport_url = "rabbit://{{- .Values.rabbitmq.datamover_api.user -}}:{{- .Values.rabbitmq.datamover_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.common.port -}}/{{- .Values.rabbitmq.datamover_api.vhost -}}"
 driver = "{{- .Values.rabbitmq.notification_driver -}}"
 
 [oslo_middleware]
