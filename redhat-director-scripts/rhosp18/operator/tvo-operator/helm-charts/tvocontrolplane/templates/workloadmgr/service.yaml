@@ -1,0 +1,13 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: triliovault-wlm-api
+spec:
+  ports:
+    - name: w-api
+      port: 8780
+  selector:
+    application: triliovault
+    component: wlm-api
