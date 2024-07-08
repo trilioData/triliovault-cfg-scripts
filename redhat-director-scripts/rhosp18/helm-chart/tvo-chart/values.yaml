@@ -42,11 +42,11 @@ images:
   dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
   image_repo_sync: docker.io/docker:17.07.0
   triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-  triliovault_wlm_cloud_trust: {{ .Values.images.wlm }}
-  triliovault_object_store: {{ .Values.images.wlm }}
+  triliovault_wlm_cloud_trust: "{{ .Values.images.wlm }}"
+  triliovault_object_store: "{{ .Values.images.wlm }}"
   triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
-  triliovault_datamover_db_sync: {{ .Values.images.triliovault_datamover_api }}
-  triliovault_wlm_db_sync: {{ .Values.images.wlm }}
+  triliovault_datamover_db_sync: "{{ .Values.images.triliovault_datamover_api }}"
+  triliovault_wlm_db_sync: "{{ .Values.images.wlm }}"
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
