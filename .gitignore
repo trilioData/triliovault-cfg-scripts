@@ -5,7 +5,6 @@
 *.pyc
 # Charm build artifacts
 .tox/
-build/
 builds/
 deps/
 .stestr/
