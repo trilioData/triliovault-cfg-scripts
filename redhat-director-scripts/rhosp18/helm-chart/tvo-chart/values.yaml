@@ -103,6 +103,10 @@ triliovault_backup_targets:
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: true
+    s3_ssl_ca_cert: |
+       CERT_LINE1
+       CERT_LINE2
+       CERT_LINE_N
   - backup_target_name: 'NFS_BT3'
     backup_target_type: 'nfs'
     is_default: False

@@ -1,7 +1,7 @@
 images:
   tags:
-    triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm: docker.io/trilio/trilio-datamover-wlm:6.0.0-1-rhosp18
+    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api:6.0.0-1-rhosp18
 
 common: 
   trustee_role: "creator"
@@ -52,34 +52,15 @@ keystone:
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
-  datamover_api: 
-    password: "EDIT_PASSWORD"
-    internal_endpoint: "EDIT_HTTP_SCHEME://INTERNAL_INTERACE_IP_HOSTNAME:8784/v2"
-    public_endpoint: "EDIT_HTTP_SCHEME://PUBLIC_INTERACE_IP_HOSTNAME:8784/v2"
-    admin_endpoint: "EDIT_HTTP_SCHEME://ADMIN_INTERACE_IP_HOSTNAME:8784/v2"
-  wlm_api: 
-    password: "EDIT_PASSWORD"
-    internal_endpoint: "EDIT_HTTP_SCHEME://INTERNAL_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
-    public_endpoint: "EDIT_HTTP_SCHEME://PUBLIC_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
-    admin_endpoint: "EDIT_HTTP_SCHEME://ADMIN_INTERACE_IP_HOSTNAME:8781/v1/$(tenant_id)s"
-
 database:
   common:
     root_user_name: "root"
     root_password: "EDIT_PASSWORD"
     host_name: "EDIT_DB_HOSTNAME"
-  datamover_api: 
-    password: "EDIT_PASSWORD"
-  wlm_api: 
-    password: "EDIT_PASSWORD"
-    
+    port: "3306"
 rabbitmq:
   common: 
     admin_user: "admin"
     admin_password: "EDIT_PASSWORD"
     host: "EDIT_HOST"
     port: "5672"
-  datamover_api: 
-    password: "EDIT_PASSWORD"
-  wlm_api: 
-    password: "EDIT_PASSWORD"

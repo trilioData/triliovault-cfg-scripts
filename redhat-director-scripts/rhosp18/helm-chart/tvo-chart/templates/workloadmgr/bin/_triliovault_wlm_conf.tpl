@@ -24,7 +24,7 @@ neutron_api_insecure = false
 osapi_workloads_listen_port = 8781
 region_name_for_services = "{{- .Values.keystone.common.region_name-}}"
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
-sql_connection = "mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}/{{- .Values.database.wlm_api.database -}}"
+sql_connection = "mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port-}}/{{- .Values.database.wlm_api.database -}}"
 state_path = /opt/stack/data/workloadmgr
 taskflow_max_cache_size = 1024
 transport_url = "rabbit://{{- .Values.rabbitmq.wlm_api.user -}}:{{- .Values.rabbitmq.wlm_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.common.port -}}/{{- .Values.rabbitmq.wlm_api.vhost -}}"
@@ -62,7 +62,7 @@ is_default = 0
 
 [alembic]
 script_location = /usr/share/workloadmgr/migrate_repo
-sqlalchemy.url = "mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}/{{- .Values.database.wlm_api.database -}}"
+sqlalchemy.url = "mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port-}}/{{- .Values.database.wlm_api.database -}}"
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 [barbican]
 encryption_support = true

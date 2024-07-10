@@ -80,6 +80,10 @@ spec:
               mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
               subPath: triliovault-object-store-{{ .backup_target_name | lower }}.conf
               readOnly: true
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .backup_target_name | lower }}.pem
+              readOnly: true
             - name: triliovault-object-store-bin
               mountPath: /tmp/triliovault-object-store.sh
               subPath: triliovault-object-store.sh
