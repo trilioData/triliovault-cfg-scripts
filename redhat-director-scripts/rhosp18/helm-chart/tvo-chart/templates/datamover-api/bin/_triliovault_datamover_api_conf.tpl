@@ -21,7 +21,7 @@ connection = "mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .V
 [keystone_authtoken]
 memcached_servers = {{- .Values.common.memcached_servers -}}
 signing_dir = /var/cache/dmapi
-cafile = /etc/pki/tls/certs/ca-bundle.crt
+cafile = /etc/triliovault-datamover/ca-cert.pem
 project_domain_name = {{- .Values.keystone.common.service_project_domain_name -}}
 project_name = {{- .Values.keystone.common.service_project_name -}}
 user_domain_name = {{- .Values.keystone.common.service_project_domain_name -}}

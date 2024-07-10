@@ -23,3 +23,5 @@ data:
   wlm_logging.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_wlm_logging_conf.tpl") . | b64enc }}
   triliovault-wlm.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_triliovault_wlm_conf.tpl") . | b64enc }}
   api-paste.ini: {{ tpl (.Files.Get "templates/workloadmgr/bin/_api-paste.ini.tpl") . | b64enc }}
+  ca-cert.pem: |-
+    {{ .Values.keystone.common.ca_cert | indent 4 }}

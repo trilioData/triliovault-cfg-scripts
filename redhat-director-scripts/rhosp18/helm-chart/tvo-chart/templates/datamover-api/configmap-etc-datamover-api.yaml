@@ -21,3 +21,6 @@ type: Opaque
 data:
   triliovault-datamover-api.conf: {{ tpl (.Files.Get "templates/datamover-api/bin/_triliovault_datamover_api_conf.tpl") . | b64enc }}
   datamover_api_logging.conf: {{ tpl (.Files.Get "templates/datamover-api/bin/_datamover_api_logging_conf.tpl") . | b64enc }}
+  ca-cert.pem: |-
+    {{ .Values.keystone.common.ca_cert | indent 4 }}
+      

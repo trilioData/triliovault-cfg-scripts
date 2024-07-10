@@ -104,9 +104,9 @@ triliovault_backup_targets:
     s3_ssl_verify: true
     s3_self_signed_cert: true
     s3_ssl_ca_cert: |
-       CERT_LINE1
-       CERT_LINE2
-       CERT_LINE_N
+       SSL_CERT_LINE_1
+       SSL_CERT_LINE_2
+       SSL_CERT_LINE_N
   - backup_target_name: 'NFS_BT3'
     backup_target_type: 'nfs'
     is_default: False
@@ -128,6 +128,10 @@ keystone:
     keystone_auth_protocol: ""
     keystone_auth_host: ""
     keystone_auth_port: ""
+    ca_cert: |
+      KEYSTONE_SSL_CA_CERT_LINE_1
+      KEYSTONE_SSL_CA_CERT_LINE_2
+      KEYSTONE_SSL_CA_CERT_LINE_N
   datamover_api: 
     user: "dmapi"
     password: "EDIT_PASSWORD"
