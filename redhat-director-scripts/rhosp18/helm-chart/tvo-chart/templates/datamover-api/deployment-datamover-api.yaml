@@ -62,6 +62,8 @@ spec:
       nodeSelector:
         openstack-control-plane: enabled
       terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
       initContainers:
         # - name: wait-for-jobs
         #   image: busybox

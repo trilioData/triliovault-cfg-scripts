@@ -47,7 +47,7 @@ spec:
         triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
       imagePullSecrets:
-        - name: triliovault-image-registry
+        - name: triliovault-image-pull-secret
       containers:
         - name: triliovault-wlm-cron
           image: {{ .Values.images.triliovault_wlm-cron }}
