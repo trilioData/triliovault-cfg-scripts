@@ -16,7 +16,7 @@ ssl_key_file =
 api_paste_config = /etc/triliovault-datamover/api-paste.ini
 
 [database]
-connection = "mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Values.database.datamover_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port-}}/{{- .Values.database.datamover_api.database -}}"
+connection = "mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Values.database.datamover_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.datamover_api.database -}}"
 
 [keystone_authtoken]
 memcached_servers = {{- .Values.common.memcached_servers -}}

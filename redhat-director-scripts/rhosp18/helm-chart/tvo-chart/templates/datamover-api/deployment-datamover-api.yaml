@@ -41,8 +41,8 @@ spec:
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
-        runAsUser: {{ .Values.pod.security_context.container.triliovault_datamover_api.runAsUser }}
-        fsGroup: {{ .Values.pod.security_context.container.triliovault_datamover_api.runAsGroup }}
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

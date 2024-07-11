@@ -107,12 +107,12 @@ OS_SERVICE_DESC="${OS_REGION_NAME}: ${OS_SERVICE_NAME} (${OS_SERVICE_TYPE}) serv
 unset OS_SERVICE_ID
 CLOUD_ADMIN_USER_NAME="{{- .Values.keystone.common.cloud_admin_user_name -}}"
 CLOUD_ADMIN_PROJECT_NAME="{{- .Values.keystone.common.cloud_admin_project_name -}}"
-CLOUD_ADMIN_DOMAIN_NAME="{{- Values.keystone.common.cloud_admin_domain_name -}}"
-WLM_USER_NAME="{{- Values.keystone.wlm_api.user-}}"
+CLOUD_ADMIN_DOMAIN_NAME="{{- .Values.keystone.common.cloud_admin_domain_name -}}"
+WLM_USER_NAME="{{- .Values.keystone.wlm_api.user -}}"
 
 WLM_PROJECT_DOMAIN_NAME="{{- .Values.keystone.common.service_project_domain_name -}}"
 
-WLM_PROJECT_NAME="{{- .Values.keystone.common.service_project_name-}}"
+WLM_PROJECT_NAME="{{- .Values.keystone.common.service_project_name -}}"
 
 CLOUD_ADMIN_USER_ID=$(openstack user show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" -f value -c id \
                 "${CLOUD_ADMIN_USER_NAME}")

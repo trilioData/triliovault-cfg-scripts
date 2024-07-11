@@ -96,15 +96,15 @@ exec /var/lib/openstack/bin/python3 /usr/bin/dmapi-dbsync --config-file /etc/tri
 
 ## Rabbitmq Resources Creation
 # RabbitMQ server credentials and connection details
-RABBITMQ_USER="{{- .Values.rabbitmq.common.admin_user-}}"
-RABBITMQ_PASSWORD="{{- .Values.rabbitmq.common.admin_user-}}"
-RABBITMQ_HOST="{{- .Values.rabbitmq.common.host-}}"
-RABBITMQ_PORT="{{- .Values.rabbitmq.common.port-}}"
+RABBITMQ_USER="{{- .Values.rabbitmq.common.admin_user -}}"
+RABBITMQ_PASSWORD="{{- .Values.rabbitmq.common.admin_user -}}"
+RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
+RABBITMQ_PORT="{{- .Values.rabbitmq.common.port -}}"
 
 # RabbitMQ user to be created
-DMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.datamover_api.user-}}"
-DMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.datamover_api.password-}}"
-DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.datamover_api.vhost-}}"
+DMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.datamover_api.user -}}"
+DMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.datamover_api.password -}}"
+DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.datamover_api.vhost -}}"
 
 # Export credentials for rabbitmqctl
 export RABBITMQ_USER

@@ -27,8 +27,8 @@ spec:
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
-        runAsUser: {{ .Values.common.nova_user_id }}
-        fsGroup: {{ .Values.common.nova_group_id }}
+        runAsUser: {{ $.Values.common.nova_user_id }}
+        fsGroup: {{ $.Values.common.nova_group_id }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -52,7 +52,7 @@ spec:
         - name: triliovault-image-pull-secret
       containers:
         - name: triliovault-object-store-{{ .backup_target_name | lower }}
-          image: {{ .Values.images.triliovault_object_store }}
+          image: {{ $.Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
@@ -108,3 +108,4 @@ spec:
           emptyDir: {}
   {{- end }}
 {{- end }}
+

@@ -26,7 +26,7 @@ data:
   triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini_object_store" (dict "target" . "Values" .Values) | b64enc }}
   {{- if .s3_self_signed_cert }}
   s3-cert-{{ .backup_target_name | lower }}.pem: |-
-      {{ .Values.s3_ssl_ca_cert | indent 4 }}
+          {{ .s3_ssl_ca_cert | indent 4 }}
   {{- end }}
   {{- end }}
 {{- end }}

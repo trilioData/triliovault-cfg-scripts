@@ -50,7 +50,7 @@ spec:
         - name: triliovault-image-pull-secret
       containers:
         - name: triliovault-wlm-cron
-          image: {{ .Values.images.triliovault_wlm-cron }}
+          image: {{ .Values.images.triliovault_wlm_cron }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
