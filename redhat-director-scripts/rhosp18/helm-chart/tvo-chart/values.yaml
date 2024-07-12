@@ -42,15 +42,15 @@ images:
   dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
   image_repo_sync: docker.io/docker:17.07.0
   triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-  triliovault_wlm_api: "{{ .Values.images.wlm }}"
-  triliovault_wlm_scheduler: "{{ .Values.images.wlm }}"
-  triliovault_wlm_cron: "{{ .Values.images.wlm }}"
-  triliovault_wlm_workloads: "{{ .Values.images.wlm }}"
-  triliovault_wlm_cloud_trust: "{{ .Values.images.wlm }}"
-  triliovault_object_store: "{{ .Values.images.wlm }}"
+  triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_object_store: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
-  triliovault_datamover_db_sync: "{{ .Values.images.triliovault_datamover_api }}"
-  triliovault_wlm_db_sync: "{{ .Values.images.wlm }}"
+  triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -109,8 +109,6 @@ triliovault_backup_targets:
     s3_self_signed_cert: true
     s3_ssl_ca_cert: |
        SSL_CERT_LINE_1
-       SSL_CERT_LINE_2
-       SSL_CERT_LINE_N
   - backup_target_name: 'NFS_BT3'
     backup_target_type: 'nfs'
     is_default: False
@@ -132,7 +130,8 @@ keystone:
     keystone_auth_protocol: ""
     keystone_auth_host: ""
     keystone_auth_port: ""
-    ca_cert: ""
+    ca_cert: |
+      CERT MULTIPLE LINES
   datamover_api: 
     user: "dmapi"
     password: "EDIT_PASSWORD"

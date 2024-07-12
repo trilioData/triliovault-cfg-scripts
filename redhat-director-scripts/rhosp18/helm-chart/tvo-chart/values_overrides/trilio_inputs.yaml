@@ -1,7 +1,6 @@
 images:
-  tags:
-    triliovault_wlm: docker.io/trilio/trilio-datamover-wlm:6.0.0-1-rhosp18
-    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api:6.0.0-1-rhosp18
+  triliovault_wlm: docker.io/trilio/trilio-datamover-wlm:6.0.0-1-rhosp18
+  triliovault_datamover_api: docker.io/trilio/trilio-datamover-api:6.0.0-1-rhosp18
 
 common: 
   trustee_role: "creator"
@@ -57,9 +56,9 @@ keystone:
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
     ca_cert: |
-      KEYSTONE_SSL_CA_CERT_LINE_1
-      KEYSTONE_SSL_CA_CERT_LINE_2
-      KEYSTONE_SSL_CA_CERT_LINE_N
+       S3_SSL_CERT_LINE_1
+       S3_SSL_CERT_LINE_2
+       S3_SSL_CERT_LINE_N
 database:
   common:
     root_user_name: "root"
