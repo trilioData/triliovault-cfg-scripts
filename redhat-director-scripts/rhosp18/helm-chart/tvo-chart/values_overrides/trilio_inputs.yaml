@@ -4,13 +4,6 @@ images:
 
 common: 
   trustee_role: "creator"
-vmware_migration:
-  is_vmware_to_openstack_migration_enabled: False
-  vcenter_url: ""
-  vcenter_username: ""
-  vcenter_password: ""
-  vcenter_no_ssl: True
-  vcenter_ca_cert_file_name: ""
 triliovault_backup_targets:
   - backup_target_name: 'S3_BT1'
     backup_target_type: 's3'
