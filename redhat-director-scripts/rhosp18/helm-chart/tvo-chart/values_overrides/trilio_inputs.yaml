@@ -42,8 +42,6 @@ triliovault_backup_targets:
     s3_self_signed_cert: true
     s3_ssl_ca_cert: |
        S3_SSL_CERT_LINE_1
-       S3_SSL_CERT_LINE_2
-       S3_SSL_CERT_LINE_N
   - backup_target_name: 'NFS_BT3'
     backup_target_type: 'nfs'
     is_default: False
@@ -57,8 +55,6 @@ keystone:
     cloud_admin_domain_name: "Default"
     ca_cert: |
        S3_SSL_CERT_LINE_1
-       S3_SSL_CERT_LINE_2
-       S3_SSL_CERT_LINE_N
 database:
   common:
     root_user_name: "root"

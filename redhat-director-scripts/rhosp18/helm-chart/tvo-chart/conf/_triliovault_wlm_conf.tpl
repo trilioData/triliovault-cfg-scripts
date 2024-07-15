@@ -98,10 +98,3 @@ memcached_servers = "{{- .Values.common.memcached_servers -}}"
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 
-
-[vcenter_migration]
-vcenter_url= "{{- .Values.common.vmware_migration.vcenter_url -}}"
-vcenter_username=  "{{- .Values.common.vmware_migration.vcenter_username -}}"
-vcenter_password=  "{{- .Values.common.vmware_migration.vcenter_password -}}"
-vcenter_nossl=  "{{- .Values.common.vmware_migration.vcenter_no_ssl -}}"
-vcenter_cert_path= "/etc/triliovault-wlm/ {{- .Values.common.vmware_migration.vcenter_ca_cert_file_name -}}"

@@ -71,13 +71,6 @@ common:
     # If this parameter is not set, then script will find interface name through default route.
     # This is used in datamover api conf file.
     host_interface:
-vmware_migration:
-  is_vmware_to_openstack_migration_enabled: False
-  vcenter_url: ""
-  vcenter_username: ""
-  vcenter_password: ""
-  vcenter_no_ssl: True
-  vcenter_ca_cert_file_name: "vcenter-cert.pem"
 triliovault_backup_targets:
   - backup_target_name: 'S3_BT1'
     backup_target_type: 's3'

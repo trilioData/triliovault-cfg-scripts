@@ -19,7 +19,7 @@ metadata:
   name: triliovault-datamover-api-bin
 data:
   triliovault-datamover-api-init.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api-init.sh.tpl" | indent 4 }}
+  {{ tpl (.Files.Get "bin/_triliovault-datamover-api-init.sh.tpl") . | b64enc | indent 4 }}
   triliovault-datamover-api.sh: |-
-{{ .Files.Get "templates/datamover_api/bin/_triliovault-datamover-api.sh.tpl" | indent 4 }}
+  {{ tpl (.Files.Get "bin/_triliovault-datamover-api.sh.tpl") . | b64enc | indent 4 }}
 

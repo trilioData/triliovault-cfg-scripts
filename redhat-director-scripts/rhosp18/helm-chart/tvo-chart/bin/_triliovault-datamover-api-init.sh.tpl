@@ -49,12 +49,7 @@ fi
 ## datamover api conf file for my_ip parameter
 chown -R dmapi:dmapi /var/log/triliovault
 touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf
-host_interface="{{- .Values.conf.my_ip.host_interface -}}"
-if [[ -z $host_interface ]]; then
-    # search for interface with default routing
-    # If there is not default gateway, exit
-    host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk '{ print $1 }') || exit 1
-fi
+host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk '{ print $1 }') || exit 1
 datamover_api_ip_address=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
 if [ -z "${datamover_api_ip_address}" ] ; then
   echo "Var my_ip is empty"
