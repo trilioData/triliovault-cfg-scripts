@@ -26,5 +26,4 @@ data:
   {{ tpl (.Files.Get "conf/_triliovault_wlm_conf.tpl") . | b64enc | indent 4 }} 
   api-paste.ini: |
   {{ tpl (.Files.Get "conf/_api-paste.ini.tpl") . | b64enc | indent 4 }}
-  ca-cert.pem: |-
-    {{ .Values.keystone.common.ca_cert | indent 4 }}
+  ca-cert.pem: {{ .Values.keystone.common.ca_cert | b64enc }}

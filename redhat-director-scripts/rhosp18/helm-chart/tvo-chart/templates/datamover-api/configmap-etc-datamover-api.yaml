@@ -9,10 +9,4 @@ data:
   {{ tpl (.Files.Get "conf/_triliovault_datamover_api_conf.tpl") . | b64enc | indent 4 }}
   datamover_api_logging.conf: |
   {{ tpl (.Files.Get "conf/_datamover_api_logging_conf.tpl") . | b64enc | indent 4 }}
-  ca_cert.pem: |-
-    {{- if .Values.keystone.common.ca_cert }}
-    {{ .Values.keystone.common.ca_cert | indent 4 }}
-    {{- else }}
-    {{ "default content for ca_cert.pem" | indent 4 }}
-    {{- end }}
-
+  ca_cert.pem: {{ .Values.keystone.common.ca_cert | b64enc }}
