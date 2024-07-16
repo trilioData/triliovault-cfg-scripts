@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /8781/v1(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: triliovault-wlm-api
+                port:
+                  number: 8781
+          - path: /8784/v2(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: triliovault-datamover-api
+                port:
+                  number: 8784

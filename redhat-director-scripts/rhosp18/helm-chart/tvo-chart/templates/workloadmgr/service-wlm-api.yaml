@@ -6,7 +6,7 @@ metadata:
   name: triliovault-wlm-api
 spec:
   ports:
-    - name: w-api
+    - name: wlm-api
       port: 8780
   selector:
     application: triliovault

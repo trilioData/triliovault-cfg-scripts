@@ -86,7 +86,7 @@ spec:
                   - /tmp/triliovault-wlm-workloads.sh
                   - stop
           ports:
-            - name: w-api
+            - name: wlm-api
               containerPort: 8780
           readinessProbe:
             tcpSocket:
