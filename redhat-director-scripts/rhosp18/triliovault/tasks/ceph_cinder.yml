@@ -1,0 +1,41 @@
+---
+- name: Copying over ceph.conf for Cinder
+  vars:
+    services_need_config:
+      - "triliovault-datamover"
+  merge_configs:
+    sources:
+      - "{{ node_custom_config }}/cinder/ceph.conf"
+      - "{{ node_custom_config }}/cinder/cinder-volume/ceph.conf"
+    dest: "{{ node_config_directory }}/triliovault-datamover/ceph.conf"
+    mode: "0660"
+  become: true
+  when:
+    - inventory_hostname in groups[triliovault_datamover_group]
+    - triliovault_services['triliovault-datamover'].enabled | bool
+  notify:
+    - Restart triliovault-datamover container
+
+- name: Copy over Ceph keyring files for triliovault-datamover
+  copy:
+    src: "{{ node_custom_config }}/cinder/cinder-volume/{{ ceph_cinder_keyring }}"
+    dest: "{{ node_config_directory }}/triliovault-datamover/"
+    mode: "0660"
+  become: true
+  when:
+    - external_ceph_cephx_enabled | bool
+    - inventory_hostname in groups[triliovault_datamover_group]
+    - triliovault_services['triliovault-datamover'].enabled | bool
+  notify:
+    - Restart triliovault-datamover container
+
+- name: Ensuring config directory has correct owner and permission
+  become: true
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    recurse: yes
+    owner: "{{ config_owner_user }}"
+    group: "{{ config_owner_group }}"
+  when: inventory_hostname in groups[triliovault_datamover_group]
+  with_items:
+    - "triliovault-datamover"

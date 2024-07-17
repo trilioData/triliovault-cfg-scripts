@@ -1,0 +1,26 @@
+---
+triliovault_datamover_image: docker.io/trilio/trilio-datamover:savitha-test-rhosp18.0
+
+## List of Backup Targets to store backup data, you can configure multiple S3, nfs backup targets here.
+## For more details about each parameter, please check documentation.
+
+triliovault_backup_targets:
+   - backup_target_name: 'S3_BT1'
+     backup_target_type: 's3'
+     is_default: True
+     s3_type: 'amazon_s3'
+     s3_access_key: 'AKIAWUJH2GMJDS56M5C3'
+     s3_secret_key: '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'
+     s3_region_name: 'us-west-2'
+     s3_bucket: 'shyam-trilio-bucket'
+     s3_endpoint_url: ''
+     s3_signature_version: 'default'
+     s3_auth_version: 'DEFAULT'
+     s3_ssl_enabled: true
+     s3_ssl_verify: true
+     s3_self_signed_certs: false
+   - backup_target_name: 'NFS_BT3'
+     backup_target_type: 'nfs'
+     is_default: False
+     nfs_shares: '172.30.1.11:/rhospnfs18'
+     nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
