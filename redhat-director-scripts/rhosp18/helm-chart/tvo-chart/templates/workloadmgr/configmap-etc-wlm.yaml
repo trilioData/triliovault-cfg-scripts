@@ -20,10 +20,10 @@ metadata:
   name: triliovault-wlm-etc
 type: Opaque
 data:
-  triliovault-wlm.conf: |
-  {{ tpl (.Files.Get "conf/_triliovault_wlm_conf.tpl") . | b64enc | indent 4 }} 
   wlm_logging.conf: |
   {{ tpl (.Files.Get "conf/_wlm_logging_conf.tpl") . | b64enc | indent 4 }}
+  triliovault-wlm.conf: |
+  {{ tpl (.Files.Get "conf/_triliovault_wlm_conf.tpl") . | b64enc | indent 4 }} 
   api-paste.ini: |
   {{ tpl (.Files.Get "conf/_api-paste.ini.tpl") . | b64enc | indent 4 }}
   ca-cert.pem: {{ .Values.keystone.common.ca_cert | b64enc }}

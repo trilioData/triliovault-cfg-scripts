@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: triliovault-wlm-ingress
+  name: triliovault-wlm
 spec:
   ports:
     - name: http
@@ -11,4 +11,3 @@ spec:
       port: 443
   selector:
     app: ingress-api
-

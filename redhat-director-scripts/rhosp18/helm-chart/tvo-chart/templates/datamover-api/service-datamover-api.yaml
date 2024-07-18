@@ -4,7 +4,7 @@ metadata:
   name: triliovault-datamover-api
 spec:
   ports:
-    - name: dm-api
+    - name: d-api
       port: 8784
   selector:
     application: triliovault
