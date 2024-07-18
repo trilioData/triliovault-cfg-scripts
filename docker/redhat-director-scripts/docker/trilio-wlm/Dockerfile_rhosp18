@@ -41,7 +41,9 @@ RUN dnf config-manager --disable openstack-17-for-rhel-9-x86_64-rpms
 RUN dnf --releasever 9.4 -y install openstack-nova-common python3-nova python3-novaclient udev \
   fuse python3-neutronclient python3-retrying python3-cryptography \
   python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
-  pacemaker-remote resource-agents pcs
+  pacemaker-remote resource-agents pcs mysql
+
+RUN curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin && chmod +x /usr/local/bin/rabbitmqadmin
 
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
