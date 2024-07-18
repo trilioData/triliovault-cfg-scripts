@@ -49,6 +49,31 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-pull-secret
       initContainers:
+        - name: wait-for-wlm-api-jobs
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              jobs=("job-triliovault-wlm-db-init" "job-triliovault-wlm-keystone-init" "job-triliovault-wlm-rabbitmq-init")
+              while true; do
+                all_succeeded=true
+                for job in "${jobs[@]}"; do
+                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
+                    echo "$job succeeded"
+                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
+                    echo "$job failed"
+                    exit 1
+                  else
+                    echo "waiting for $job"
+                    all_succeeded=false
+                  fi
+                done
+                if [ "$all_succeeded" = true ]; then
+                  exit 0
+                fi
+                sleep 5
+              done
         - name: triliovault-wlm-api-init
           image: {{ .Values.images.triliovault_wlm_api }}
           imagePullPolicy: IfNotPresent
@@ -65,9 +90,15 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api-init.sh
               subPath: triliovault-wlm-init.sh
-              readOnly: true
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
             - name: pod-shared-triliovault-wlm-api
               mountPath: /tmp/pod-shared-triliovault-wlm-api
+            - name: triliovault-wlm-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
       containers:
         - name: triliovault-wlm-api
           image: {{ .Values.images.triliovault_wlm_api }}
@@ -118,7 +149,6 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api.sh
               subPath: triliovault-wlm-api.sh
-              readOnly: true
             - name: pod-shared-triliovault-wlm-api
               mountPath: /tmp/pod-shared-triliovault-wlm-api            
       volumes:

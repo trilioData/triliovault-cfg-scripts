@@ -21,4 +21,4 @@ metadata:
 type: Opaque
 data:
   object_store_logging.conf: |
-     {{ tpl (.Files.Get "conf/_object_store_logging_conf.tpl") . | b64enc | indent 4 }}
+     {{ tpl (.Files.Get "conf/_object_store_logging_conf.tpl") . | b64enc }}

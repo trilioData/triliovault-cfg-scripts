@@ -4,16 +4,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triliovault-object-store-{{ .backup_target_name | lower }}
+  name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
-    component: object-store-{{ .backup_target_name | lower }}
+    component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
 spec:
   replicas: 1
   selector:
     matchLabels:
       application: triliovault
-      component: object-store-{{ .backup_target_name | lower }}
+      component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,7 +23,7 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: object-store-{{ .backup_target_name | lower }}
+        component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
@@ -51,7 +51,7 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-pull-secret
       containers:
-        - name: triliovault-object-store-{{ .backup_target_name | lower }}
+        - name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
           image: {{ $.Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -87,7 +87,6 @@ spec:
             - name: triliovault-object-store-bin
               mountPath: /tmp/triliovault-object-store.sh
               subPath: triliovault-object-store.sh
-              readOnly: true
             - name: pod-shared-triliovault-object-store
               mountPath: /tmp/pod-shared-triliovault-object-store            
       volumes:
@@ -104,7 +103,7 @@ spec:
           configMap:
             name: triliovault-bin-object-store
             defaultMode: 0555
-        - name: pod-shared-triliovault-object-store-api
+        - name: pod-shared-triliovault-object-store
           emptyDir: {}
   {{- end }}
 {{- end }}

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,92 +15,9 @@ limitations under the License.
 
 set -ex
 
-## Keystone Resources Creation
-USER_NAME="{{- .Values.keystone.wlm_api.user -}}"
-PASSWORD="{{- .Values.keystone.wlm_api.password -}}"
-SERVICE_DOMAIN="{{- .Values.keystone.common.service_project_domain_name -}}"
-SERVICE_PROJECT="{{- .Values.keystone.common.service_project_name -}}"
-ADMIN_ROLE_NAME="{{- .Values.keystone.common.admin_role_name -}}"
-SERVICE_NAME="{{- .Values.keystone.wlm_api.service_name -}}"
-REGION_NAME="{{- .Values.keystone.common.region_name -}}"
-## Create keystone user if it does not exists
-if openstack user list --domain $SERVICE_DOMAIN -f value -c Name | grep -qw $USER_NAME; then
-  echo "User $USER_NAME already exists in domain $SERVICE_DOMAIN."
-else
-  openstack user create --domain $SERVICE_DOMAIN --password $PASSWORD $USER_NAME
-fi
-openstack role add --project $SERVICE_PROJECT --user $USER_NAME $ADMIN_ROLE_NAME
-
-# Create keystone service if it does not exists
-if openstack service list -f value -c Name | grep -qw $SERVICE_NAME; then
-  echo "Service $SERVICE_NAME already exists."
-else
-  # Create the service if it does not exist
-  openstack service create --name $SERVICE_NAME --description "{{- .Values.keystone.wlm_api.service_desc -}}" "{{- .Values.keystone.wlm_api.service_type -}}"
-  openstack endpoint create --region $REGION_NAME $SERVICE_NAME public "{{- .Values.keystone.wlm_api.public_endpoint -}}"
-  openstack endpoint create --region $REGION_NAME $SERVICE_NAME internal "{{- .Values.keystone.wlm_api.internal_endpoint -}}"
-  openstack endpoint create --region $REGION_NAME $SERVICE_NAME admin "{{- .Values.keystone.wlm_api.admin_endpoint -}}"
-
-  echo "Service $SERVICE_NAME and its endpoints have been created."
-fi
-
-## Database Resources Creation
-
-# Database credentials
-DB_ROOT_USER="{{- .Values.database.common.root_user_name -}}"
-DB_ROOT_PASSWORD="{{- .Values.database.common.root_password -}}"
-DB_HOST="{{- .Values.database.common.host_name -}}"
-DB_NAME="{{- .Values.database.wlm_api.database -}}"
-DB_USER="{{- .Values.database.wlm_api.user -}}"
-DB_PASSWORD="{{- .Values.database.wlm_api.password -}}"
-# Create the database
-mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
-
-# Create the user
-mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
-
-# Grant privileges
-mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
-mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
-# Flush privileges
-mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "FLUSH PRIVILEGES;"
-
-# Database Sync
-exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
-
-## Rabbitmq Resources Creation
-# RabbitMQ server credentials and connection details
-RABBITMQ_USER="{{- .Values.rabbitmq.common.admin_user -}}"
-RABBITMQ_PASSWORD="{{- .Values.rabbitmq.common.admin_user -}}"
-RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
-RABBITMQ_PORT="{{- .Values.rabbitmq.common.port -}}"
-
-# RabbitMQ user to be created
-DMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.wlm_api.user -}}"
-DMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.wlm_api.password -}}"
-DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.wlm_api.vhost -}}"
-
-# Export credentials for rabbitmqctl
-export RABBITMQ_USER
-export RABBITMQ_PASSWORD
-export RABBITMQ_URL="amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/"
-
-# Add the RabbitMQ user
-rabbitmqctl add_user $DMAPI_RABBITMQ_USER_NAME $DMAPI_RABBITMQ_USER_PASSWORD
-
-# Create the virtual host
-rabbitmqctl add_vhost $DMAPI_RABBITMQ_VHOST_NAME
-
-# Set permissions for the user on the virtual host
-rabbitmqctl set_permissions -p $DMAPI_RABBITMQ_VHOST_NAME $DMAPI_RABBITMQ_USER_NAME ".*" ".*" ".*"
-
-echo "RabbitMQ user $DMAPI_RABBITMQ_USER_NAME and vhost $DMAPI_RABBITMQ_VHOST_NAME have been created with the specified permissions."
-
-
-
 #### wlm api conf file
 
-# Service boilerplate description
+source /tmp/triliovault-cloudrc
 OS_SERVICE_DESC="${OS_REGION_NAME}: ${OS_SERVICE_NAME} (${OS_SERVICE_TYPE}) service"
 # Get Service ID if it exists
 unset OS_SERVICE_ID

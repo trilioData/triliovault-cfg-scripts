@@ -6,7 +6,7 @@ metadata:
 type: Opaque
 data:
   triliovault-datamover-api.conf: |
-  {{ tpl (.Files.Get "conf/_triliovault_datamover_api_conf.tpl") . | b64enc | indent 4 }}
+    {{ tpl (.Files.Get "conf/_triliovault_datamover_api_conf.tpl") . | b64enc }}
   datamover_api_logging.conf: |
-  {{ tpl (.Files.Get "conf/_datamover_api_logging_conf.tpl") . | b64enc | indent 4 }}
+    {{ tpl (.Files.Get "conf/_datamover_api_logging_conf.tpl") . | b64enc }}
   ca_cert.pem: {{ .Values.keystone.common.ca_cert | b64enc }}

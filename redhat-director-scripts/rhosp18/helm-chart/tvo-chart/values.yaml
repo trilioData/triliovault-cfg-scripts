@@ -116,6 +116,7 @@ keystone:
     cloud_admin_user_name: "admin"
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
+    cloud_admin_project_id: ""
     cloud_admin_domain_name: "Default"
     region_name: "RegionOne"
     auth_url: ""
@@ -123,6 +124,7 @@ keystone:
     keystone_auth_protocol: ""
     keystone_auth_host: ""
     keystone_auth_port: ""
+    is_self_signed_ssl_cert: True
     ca_cert: |
       CERT MULTIPLE LINES
   datamover_api: 

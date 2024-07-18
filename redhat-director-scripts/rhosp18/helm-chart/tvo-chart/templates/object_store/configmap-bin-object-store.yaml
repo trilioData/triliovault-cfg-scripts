@@ -19,5 +19,5 @@ metadata:
   name: triliovault-object-store-bin
 data:
   triliovault-object-store.sh: |
-  {{ tpl (.Files.Get "bin/_triliovault-object-store.sh.tpl") . | b64enc | indent 4 }}
+    {{ tpl (.Files.Get "bin/_triliovault-object-store.sh.tpl") . | nindent 4 }}
 

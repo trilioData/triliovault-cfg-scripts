@@ -48,6 +48,32 @@ spec:
       terminationGracePeriodSeconds: 30
       imagePullSecrets:
         - name: triliovault-image-pull-secret
+      initContainers:
+        - name: wait-for-wlm-scheduler-jobs
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              jobs=("job-triliovault-wlm-db-init" "job-triliovault-wlm-keystone-init" "job-triliovault-wlm-rabbitmq-init")
+              while true; do
+                all_succeeded=true
+                for job in "${jobs[@]}"; do
+                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
+                    echo "$job succeeded"
+                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
+                    echo "$job failed"
+                    exit 1
+                  else
+                    echo "waiting for $job"
+                    all_succeeded=false
+                  fi
+                done
+                if [ "$all_succeeded" = true ]; then
+                  exit 0
+                fi
+                sleep 5
+              done
       containers:
         - name: triliovault-wlm-scheduler
           image: {{ .Values.images.triliovault_wlm_scheduler }}
@@ -98,7 +124,6 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-scheduler.sh
               subPath: triliovault-wlm-scheduler.sh
-              readOnly: true
             - name: pod-shared-triliovault-wlm-scheduler
               mountPath: /tmp/pod-shared-triliovault-wlm-scheduler            
       volumes:
