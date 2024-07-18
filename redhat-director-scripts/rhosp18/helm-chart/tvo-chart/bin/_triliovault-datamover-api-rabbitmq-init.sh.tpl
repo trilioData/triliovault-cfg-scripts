@@ -1,7 +1,7 @@
 #!/bin/bash -x
 set -ex
 RABBITMQ_ADMIN_USER="{{- .Values.rabbitmq.common.admin_user -}}"
-RABBITMQ_ADMIN_PASSWORD="{{- .Values.rabbitmq.common.admin_user -}}"
+RABBITMQ_ADMIN_PASSWORD="{{- .Values.rabbitmq.common.admin_password -}}"
 RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
 RABBITMQ_PORT="{{- .Values.rabbitmq.common.port -}}"
 
@@ -13,7 +13,7 @@ DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.datamover_api.vhost -}}"
 # Export credentials for rabbitmqctl
 export RABBITMQ_ADMIN_USER
 export RABBITMQ_ADMIN_PASSWORD
-export RABBITMQ_URL="amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/"
+#export RABBITMQ_URL="amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/"
 
 # Add the RabbitMQ user
 #rabbitmqctl add_user $DMAPI_RABBITMQ_USER_NAME $DMAPI_RABBITMQ_USER_PASSWORD

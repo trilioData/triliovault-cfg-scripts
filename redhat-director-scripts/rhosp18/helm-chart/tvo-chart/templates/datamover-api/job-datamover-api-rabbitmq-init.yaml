@@ -21,7 +21,7 @@ metadata:
     component: datamover-api-rabbitmq-init
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "-2"
+    helm.sh/hook-weight: "-4"
 spec:
   backoffLimit: 1000
   template:
@@ -31,8 +31,8 @@ spec:
         component: datamover-api-rabbitmq-init
     spec:
       securityContext:
-        runAsUser: {{ .Values.common.nova_user_id }}
-        fsGroup: {{ .Values.common.nova_group_id }}
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
       serviceAccountName: triliovault-datamover-api
       restartPolicy: OnFailure
       nodeSelector:
@@ -43,7 +43,7 @@ spec:
         - name: "datamover-api-rabbitmq-init"
           securityContext:
             readOnlyRootFilesystem: false
-            runAsUser: {{ .Values.common.nova_user_id }}
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:
@@ -53,7 +53,7 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: triliovault-bin-datamover-api
+            - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-datamover-api-rabbitmq-init.sh
               subPath: triliovault-datamover-api-rabbitmq-init.sh
       volumes:

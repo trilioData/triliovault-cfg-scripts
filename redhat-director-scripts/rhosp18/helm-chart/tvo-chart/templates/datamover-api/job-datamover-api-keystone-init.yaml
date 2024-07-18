@@ -43,7 +43,7 @@ spec:
         - name: "datamover-api-keystone-init"
           securityContext:
             readOnlyRootFilesystem: false
-            runAsUser: {{ .Values.common.nova_user_id }}
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:

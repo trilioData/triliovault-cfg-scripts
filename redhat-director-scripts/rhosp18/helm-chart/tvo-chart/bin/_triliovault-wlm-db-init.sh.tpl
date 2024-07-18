@@ -17,7 +17,7 @@ mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVI
 #mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
 # Flush privileges
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "FLUSH PRIVILEGES;"
-sleep 200m
+sleep 5s
 # Database Sync
 exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
 status=$?

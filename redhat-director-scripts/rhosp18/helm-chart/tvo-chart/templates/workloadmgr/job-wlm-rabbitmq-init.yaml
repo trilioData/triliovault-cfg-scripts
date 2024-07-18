@@ -21,7 +21,7 @@ metadata:
     component: wlm-rabbitmq-init
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "-2"
+    helm.sh/hook-weight: "-4"
 spec:
   backoffLimit: 1000
   template:
@@ -53,7 +53,7 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: triliovault-bin-wlm
+            - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-rabbitmq-init.sh
               subPath: triliovault-wlm-rabbitmq-init.sh
       volumes:
