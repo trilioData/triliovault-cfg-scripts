@@ -97,11 +97,11 @@ spec:
             path: /var/log/triliovault-object-store
         - name: triliovault-object-store-etc
           secret:
-            secretName: triliovault-etc-object-store
+            secretName: triliovault-object-store-etc
             defaultMode: 0444
         - name: triliovault-object-store-bin
           configMap:
-            name: triliovault-bin-object-store
+            name: triliovault-object-store-bin
             defaultMode: 0555
         - name: pod-shared-triliovault-object-store
           emptyDir: {}
