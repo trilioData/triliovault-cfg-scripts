@@ -10,3 +10,4 @@ deps/
 .stestr/
 results.txt
 *.db
+tvo-chart-manifest.yaml

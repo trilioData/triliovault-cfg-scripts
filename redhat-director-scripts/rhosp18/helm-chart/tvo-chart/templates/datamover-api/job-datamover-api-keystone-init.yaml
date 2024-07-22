@@ -1,0 +1,76 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-datamover-api-keystone-init"
+  labels:
+    application: triliovault
+    component: datamover-api-keystone-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: datamover-api-keystone-init
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
+      serviceAccountName: triliovault-datamover-api
+      restartPolicy: OnFailure
+      nodeSelector:
+        triliovault-control-plane: enabled
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
+      containers:
+        - name: "datamover-api-keystone-init"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+          image: {{ .Values.images.triliovault_datamover_api }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-datamover-api-keystone-init.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-datamover-api-keystone-init.sh
+              subPath: triliovault-datamover-api-keystone-init.sh
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - name: triliovault-datamover-api-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-datamover-api-bin
+          configMap:
+            name: "triliovault-datamover-api-bin"
+            defaultMode: 0555
+        - name: triliovault-datamover-api-etc
+          secret:
+            secretName: triliovault-datamover-api-etc
+            defaultMode: 0444

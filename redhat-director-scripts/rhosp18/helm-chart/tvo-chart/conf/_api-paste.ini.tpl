@@ -41,6 +41,4 @@ admin_user = "{{- .Values.keystone.wlm_api.user -}}"
 admin_password = "{{- .Values.keystone.wlm_api.password -}}" 
 signing_dir = /var/cache/workloadmgr
 insecure = True
-interface = <%= @interface %> 
-insecure = True
-interface = {{ .Values.keystone. }}
+interface = {{ .Values.keystone.keystone_interface }}

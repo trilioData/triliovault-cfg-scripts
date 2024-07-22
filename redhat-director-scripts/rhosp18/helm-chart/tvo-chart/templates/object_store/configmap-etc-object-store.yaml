@@ -20,9 +20,16 @@ metadata:
   name: triliovault-object-store-etc
 type: Opaque
 data:
-  object_store_logging.conf: {{ tpl (.Files.Get "templates/workloadmgr/bin/_object_store_logging_conf.tpl") . | b64enc }}
-{{- range .Values.triliovault_backup_targets }}
-  {{- if eq .backup_target_type "s3" }}
-  triliovault-object-store-{{ .backup_target_name | lower }}.conf: {{ include "to_ini_object_store" (dict "target" . "Values" .Values) | b64enc }}
+  object_store_logging.conf: |
+     {{ tpl (.Files.Get "conf/_object_store_logging_conf.tpl") . | b64enc }}
+  {{- range .Values.triliovault_backup_targets }}
+    {{- if eq .backup_target_type "s3" }}
+  triliovault-object-store-{{ .backup_target_name | lower }}.conf: |
+    {{- $target := . }}
+    {{ include "to_ini_object_store" (dict "target" $target) | b64enc }}
+      {{- if .s3_self_signed_cert }}
+  s3-cert-{{ .backup_target_name | lower }}.pem: |
+    {{ .s3_ssl_ca_cert | b64enc }}
+      {{- end }}
+    {{- end }}
   {{- end }}
-{{- end }}

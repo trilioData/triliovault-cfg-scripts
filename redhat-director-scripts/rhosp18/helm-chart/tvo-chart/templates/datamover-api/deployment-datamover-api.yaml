@@ -41,8 +41,8 @@ spec:
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
-        runAsUser: {{ .Values.pod.security_context.container.triliovault_datamover_api.runAsUser }}
-        fsGroup: {{ .Values.pod.security_context.container.triliovault_datamover_api.runAsGroup }}
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -62,34 +62,36 @@ spec:
       nodeSelector:
         openstack-control-plane: enabled
       terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
       initContainers:
-        # - name: wait-for-jobs
-        #   image: busybox
-        #   command:
-        #     - sh
-        #     - -c
-        #     - |
-        #       jobs=("triliovault-datamover-api-db-sync" "triliovault-datamover-api-ks-user" "triliovault-datamover-api-ks-endpoints")
-        #       while true; do
-        #         all_succeeded=true
-        #         for job in "${jobs[@]}"; do
-        #           if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
-        #             echo "$job succeeded"
-        #           elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
-        #             echo "$job failed"
-        #             exit 1
-        #           else
-        #             echo "waiting for $job"
-        #             all_succeeded=false
-        #           fi
-        #         done
-        #         if [ "$all_succeeded" = true ]; then
-        #           exit 0
-        #         fi
-        #         sleep 5
-        #       done
+        - name: wait-for-datamover-jobs
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              jobs=("job-triliovault-datamover-api-db-init" "job-triliovault-datamover-api-keystone-init" "job-triliovault-datamover-api-rabbitmq-init")
+              while true; do
+                all_succeeded=true
+                for job in "${jobs[@]}"; do
+                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
+                    echo "$job succeeded"
+                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
+                    echo "$job failed"
+                    exit 1
+                  else
+                    echo "waiting for $job"
+                    all_succeeded=false
+                  fi
+                done
+                if [ "$all_succeeded" = true ]; then
+                  exit 0
+                fi
+                sleep 5
+              done
         - name: triliovault-datamover-api-init
-          image: {{ .Values.images.triliovault_triliovault_datamover_api }}
+          image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:
             - /tmp/triliovault-datamover-api-init.sh
@@ -98,12 +100,18 @@ spec:
             - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-datamover-api-init.sh
               subPath: triliovault-datamover-api-init.sh
-              readOnly: true
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
             - name: pod-shared-triliovault-datamover-api
               mountPath: /tmp/pod-shared-triliovault-datamover-api
+            - name: triliovault-datamover-api-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
       containers:
         - name: triliovault-datamover-api
-          image: {{ .Values.images.triliovault_triliovault_datamover_api }}
+          image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
@@ -118,7 +126,7 @@ spec:
                   - /tmp/triliovault-datamover-api.sh
                   - stop
           ports:
-            - name: triliovault-datamover-api
+            - name: dm-api
               containerPort: 8784
           readinessProbe:
             tcpSocket:
@@ -137,10 +145,13 @@ spec:
               mountPath: /etc/triliovault-datamover/datamover_api_logging.conf
               subPath: datamover_api_logging.conf
               readOnly: true
+            - name: triliovault-datamover-api-etc
+              mountPath: /etc/triliovault-datamover/ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
             - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-datamover-api.sh
               subPath: triliovault-datamover-api.sh
-              readOnly: true
             - name: pod-shared-triliovault-datamover-api
               mountPath: /tmp/pod-shared-triliovault-datamover-api
             - name: varlogtriliovaultdatamoverapi
