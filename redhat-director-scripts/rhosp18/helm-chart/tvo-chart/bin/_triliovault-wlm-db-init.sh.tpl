@@ -19,7 +19,7 @@ mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVI
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "FLUSH PRIVILEGES;"
 sleep 5s
 # Database Sync
-exec alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
+/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
 status=$?
 if [ $status -ne 0 ]; then
   echo "TrilioVault wlm database init failed"

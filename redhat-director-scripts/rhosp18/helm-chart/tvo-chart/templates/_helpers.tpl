@@ -19,7 +19,9 @@
     {{- $backupTargetMountPoint = (b64enc $target.s3_bucket) }}
     {{- $vaultStorageNfsExport = $target.s3_bucket }}
   {{- else }}
-    {{- $s3DomainName := regexReplaceAllLiteral "^https?://" "" $target.s3_endpoint_url }}
+    {{- $s3_endpoint_url := $target.s3_endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
     {{- $cephS3Str := printf "%s/%s" $s3DomainName $target.s3_bucket }}
     {{- $backupTargetMountPoint = (b64enc $cephS3Str) }}
     {{- $vaultStorageNfsExport = $cephS3Str }}
@@ -33,12 +35,12 @@ vault_s3_secret_access_key = {{ $target.s3_secret_key }}
 vault_s3_bucket = {{ $target.s3_bucket }}
 vault_s3_region_name = {{ $target.s3_region_name }}
 vault_s3_auth_version = {{ $target.s3_auth_version }}
-vault_s3_signature_version = {{ $target.S3SignatureVersion }}
+vault_s3_signature_version = {{ $target.s3_signature_version }}
 vault_s3_ssl = {{ $target.s3_ssl_enabled }}
 vault_s3_ssl_verify = {{ $target.s3_ssl_verify }}
 vault_storage_nfs_export = {{ $vaultStorageNfsExport }}
 
-{{- if and $target.s3_ssl_enabled $target.s3_self_signed_certs }}
+{{- if and $target.s3_ssl_enabled $target.s3_self_signed_cert }}
 vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ $target.backup_target_name | lower }}.pem
 {{- else }}
 vault_s3_ssl_cert =
