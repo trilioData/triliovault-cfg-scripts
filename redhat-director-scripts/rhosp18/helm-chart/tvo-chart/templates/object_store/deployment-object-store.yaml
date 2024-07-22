@@ -1,19 +1,19 @@
 {{- range .Values.triliovault_backup_targets }}
   {{- if eq .backup_target_type "s3" }}
-
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triliovault-object-store-{{ .backup_target_name | lower }}
+  name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
-    component: object-store-{{ .backup_target_name | lower }}
+    component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
 spec:
   replicas: 1
   selector:
     matchLabels:
       application: triliovault
-      component: object-store-{{ .backup_target_name | lower }}
+      component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,12 +23,12 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: object-store-{{ .backup_target_name | lower }}
+        component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
-        runAsUser: {{ .Values.common.nova_user_id }}
-        fsGroup: {{ .Values.common.nova_group_id }}
+        runAsUser: {{ $.Values.common.nova_user_id }}
+        fsGroup: {{ $.Values.common.nova_group_id }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -49,15 +49,15 @@ spec:
         triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
       imagePullSecrets:
-        - name: triliovault-image-registry
+        - name: triliovault-image-pull-secret
       containers:
-        - name: triliovault-object-store-{{ .backup_target_name | lower }}
-          image: {{ .Values.images.triliovault_object_store }}
+        - name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+          image: {{ $.Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
-            runAsUser: 42424
+            runAsUser: {{ $.Values.common.nova_user_id }}
           command:
             - /tmp/triliovault-object-store.sh
             - start
@@ -80,10 +80,15 @@ spec:
               mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
               subPath: triliovault-object-store-{{ .backup_target_name | lower }}.conf
               readOnly: true
+            {{- if .s3_self_signed_cert }}
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .backup_target_name | lower }}.pem
+              readOnly: true
+            {{- end }}
             - name: triliovault-object-store-bin
               mountPath: /tmp/triliovault-object-store.sh
               subPath: triliovault-object-store.sh
-              readOnly: true
             - name: pod-shared-triliovault-object-store
               mountPath: /tmp/pod-shared-triliovault-object-store            
       volumes:
@@ -94,13 +99,14 @@ spec:
             path: /var/log/triliovault-object-store
         - name: triliovault-object-store-etc
           secret:
-            secretName: triliovault-etc-object-store
+            secretName: triliovault-object-store-etc
             defaultMode: 0444
         - name: triliovault-object-store-bin
           configMap:
-            name: triliovault-bin-object-store
+            name: triliovault-object-store-bin
             defaultMode: 0555
-        - name: pod-shared-triliovault-object-store-api
+        - name: pod-shared-triliovault-object-store
           emptyDir: {}
   {{- end }}
 {{- end }}
+

@@ -15,65 +15,51 @@ limitations under the License.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "triliovault-wlm-cloud-trust"
+  name: "job-triliovault-datamover-api-rabbitmq-init"
   labels:
     application: triliovault
-    component: cloud-trust
+    component: datamover-api-rabbitmq-init
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "1"
+    helm.sh/hook-weight: "-4"
 spec:
   backoffLimit: 1000
   template:
     metadata:
       labels:
         application: triliovault
-        component: wlm-cloud-trust
+        component: datamover-api-rabbitmq-init
     spec:
       securityContext:
-        runAsUser: {{ .Values.common.nova_user_id }}
-        fsGroup: {{ .Values.common.nova_group_id }}
-      serviceAccountName: triliovault-wlm-cloud-trust
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
+      serviceAccountName: triliovault-datamover-api
       restartPolicy: OnFailure
       nodeSelector:
         triliovault-control-plane: enabled
       imagePullSecrets:
         - name: triliovault-image-pull-secret
-      initContainers:
-        - name: wait-for-triliovault-wlm-api
-          image: busybox
-          command:
-          - /bin/sh
-          - -c
-          - |
-            while [ "$(kubectl get pods -l application=triliovault,component=wlm-api -o jsonpath='{.items[0].status.containerStatuses[0].ready}')" != "true" ]; do
-              echo "Waiting for triliovault-wlm-api to be ready"
-              sleep 5
-            done
-            echo "triliovault-wlm-api is ready. Waiting for 10 seconds..."
-            sleep 10
       containers:
-        - name: "wlm-cloud-trust-creation"
+        - name: "datamover-api-rabbitmq-init"
           securityContext:
             readOnlyRootFilesystem: false
-            runAsUser: {{ .Values.common.nova_user_id }}
-          image: {{ .Values.images.triliovault_wlm_api }}
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+          image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
             - -c
-            - /tmp/triliovault-wlm-cloud-trust.sh
+            - /tmp/triliovault-datamover-api-rabbitmq-init.sh
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: triliovault-wlm-cloud-trust-sh
-              mountPath: /tmp/triliovault-wlm-cloud-trust.sh
-              subPath: triliovault-wlm-cloud-trust.sh
-              readOnly: true
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-datamover-api-rabbitmq-init.sh
+              subPath: triliovault-datamover-api-rabbitmq-init.sh
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: triliovault-wlm-cloud-trust-sh
+        - name: triliovault-datamover-api-bin
           configMap:
-            name: "triliovault-bin-wlm"
+            name: triliovault-datamover-api-bin
             defaultMode: 0555

@@ -42,11 +42,15 @@ images:
   dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
   image_repo_sync: docker.io/docker:17.07.0
   triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-  triliovault_wlm_cloud_trust: "{{ .Values.images.wlm }}"
-  triliovault_object_store: "{{ .Values.images.wlm }}"
+  triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_object_store: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
-  triliovault_datamover_db_sync: "{{ .Values.images.triliovault_datamover_api }}"
-  triliovault_wlm_db_sync: "{{ .Values.images.wlm }}"
+  triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -67,13 +71,6 @@ common:
     # If this parameter is not set, then script will find interface name through default route.
     # This is used in datamover api conf file.
     host_interface:
-vmware_migration:
-  is_vmware_to_openstack_migration_enabled: False
-  vcenter_url: ""
-  vcenter_username: ""
-  vcenter_password: ""
-  vcenter_no_ssl: True
-  vcenter_ca_cert_file_name: "vcenter-cert.pem"
 triliovault_backup_targets:
   - backup_target_name: 'S3_BT1'
     backup_target_type: 's3'
@@ -103,6 +100,8 @@ triliovault_backup_targets:
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: true
+    s3_ssl_ca_cert: |
+       SSL_CERT_LINE_1
   - backup_target_name: 'NFS_BT3'
     backup_target_type: 'nfs'
     is_default: False
@@ -117,6 +116,7 @@ keystone:
     cloud_admin_user_name: "admin"
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
+    cloud_admin_project_id: ""
     cloud_admin_domain_name: "Default"
     region_name: "RegionOne"
     auth_url: ""
@@ -124,6 +124,9 @@ keystone:
     keystone_auth_protocol: ""
     keystone_auth_host: ""
     keystone_auth_port: ""
+    is_self_signed_ssl_cert: True
+    ca_cert: |
+      CERT MULTIPLE LINES
   datamover_api: 
     user: "dmapi"
     password: "EDIT_PASSWORD"

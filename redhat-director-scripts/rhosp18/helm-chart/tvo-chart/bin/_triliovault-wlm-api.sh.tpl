@@ -23,7 +23,8 @@ function start () {
 {{- range .Values.triliovault_backup_targets }}
   {{- if eq .backup_target_type "nfs" }}
     {{- $nfsShare := .nfs_shares }}
-    {{- $nfsDir := (splitList ":" $nfsShare)._1 }}
+    {{- $nfsParts := splitList ":" $nfsShare }}
+    {{- $nfsDir := index $nfsParts 0 }}
     {{- $base64MountPoint := (b64enc $nfsDir) }}
     {{- $nfsOptions := .nfs_options }}
 mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}

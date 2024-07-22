@@ -47,27 +47,33 @@ spec:
         triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
       imagePullSecrets:
-        - name: triliovault-image-registry
+        - name: triliovault-image-pull-secret
       initContainers:
-        - name: triliovault-wlm-workloads-init
-          image: {{ .Values.images.triliovault_wlm_workloads }}
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            readOnlyRootFilesystem: false
-            runAsGroup: {{ .Values.common.nova_user_id }}
-            runAsUser: 0
+        - name: wait-for-wlm-workloads-jobs
+          image: busybox
           command:
-            - /tmp/triliovault-wlm-workloads-init.sh
-          terminationMessagePath: /var/log/termination-log
-          volumeMounts:
-            - name: varlogtriliovaultwlm
-              mountPath: /var/log/triliovault
-            - name: triliovault-wlm-bin
-              mountPath: /tmp/triliovault-wlm-workloads-init.sh
-              subPath: triliovault-wlm-init.sh
-              readOnly: true
-            - name: pod-shared-triliovault-wlm-workloads
-              mountPath: /tmp/pod-shared-triliovault-wlm-workloads
+            - sh
+            - -c
+            - |
+              jobs=("job-triliovault-wlm-db-init" "job-triliovault-wlm-keystone-init" "job-triliovault-wlm-rabbitmq-init")
+              while true; do
+                all_succeeded=true
+                for job in "${jobs[@]}"; do
+                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
+                    echo "$job succeeded"
+                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
+                    echo "$job failed"
+                    exit 1
+                  else
+                    echo "waiting for $job"
+                    all_succeeded=false
+                  fi
+                done
+                if [ "$all_succeeded" = true ]; then
+                  exit 0
+                fi
+                sleep 5
+              done
       containers:
         - name: triliovault-wlm-workloads
           image: {{ .Values.images.triliovault_wlm_workloads }}
@@ -108,13 +114,16 @@ spec:
               subPath: triliovault-wlm.conf
               readOnly: true
             - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
+            - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
               readOnly: true
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-workloads.sh
               subPath: triliovault-wlm-workloads.sh
-              readOnly: true
             - name: pod-shared-triliovault-wlm-workloads
               mountPath: /tmp/pod-shared-triliovault-wlm-workloads            
       volumes:
