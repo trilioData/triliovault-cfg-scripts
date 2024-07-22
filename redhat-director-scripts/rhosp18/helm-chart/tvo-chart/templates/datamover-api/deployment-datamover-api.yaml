@@ -65,35 +65,12 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-pull-secret
       initContainers:
-        - name: wait-for-datamover-jobs
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              jobs=("job-triliovault-datamover-api-db-init" "job-triliovault-datamover-api-keystone-init" "job-triliovault-datamover-api-rabbitmq-init")
-              while true; do
-                all_succeeded=true
-                for job in "${jobs[@]}"; do
-                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
-                    echo "$job succeeded"
-                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
-                    echo "$job failed"
-                    exit 1
-                  else
-                    echo "waiting for $job"
-                    all_succeeded=false
-                  fi
-                done
-                if [ "$all_succeeded" = true ]; then
-                  exit 0
-                fi
-                sleep 5
-              done
         - name: triliovault-datamover-api-init
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-datamover-api-init.sh
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
@@ -117,12 +94,16 @@ spec:
             readOnlyRootFilesystem: false
             runAsUser: 0
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-datamover-api.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
+                  - /bin/bash
+                  - -c
                   - /tmp/triliovault-datamover-api.sh
                   - stop
           ports:

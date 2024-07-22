@@ -49,31 +49,6 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-pull-secret
       initContainers:
-        - name: wait-for-wlm-api-jobs
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              jobs=("job-triliovault-wlm-db-init" "job-triliovault-wlm-keystone-init" "job-triliovault-wlm-rabbitmq-init")
-              while true; do
-                all_succeeded=true
-                for job in "${jobs[@]}"; do
-                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
-                    echo "$job succeeded"
-                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
-                    echo "$job failed"
-                    exit 1
-                  else
-                    echo "waiting for $job"
-                    all_succeeded=false
-                  fi
-                done
-                if [ "$all_succeeded" = true ]; then
-                  exit 0
-                fi
-                sleep 5
-              done
         - name: triliovault-wlm-api-init
           image: {{ .Values.images.triliovault_wlm_api }}
           imagePullPolicy: IfNotPresent
@@ -81,7 +56,12 @@ spec:
             readOnlyRootFilesystem: false
             runAsGroup: {{ .Values.common.nova_user_id }}
             runAsUser: 0
+          env:
+            - name: POD_NAME
+              value: "triliovault-wlm-api"
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-wlm-api-init.sh
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
@@ -106,14 +86,18 @@ spec:
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
-            runAsUser: 42424
+            runAsUser: {{ .Values.common.nova_user_id }}
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-wlm-api.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
+                  - /bin/bash
+                  - -c
                   - /tmp/triliovault-wlm-api.sh
                   - stop
           ports:

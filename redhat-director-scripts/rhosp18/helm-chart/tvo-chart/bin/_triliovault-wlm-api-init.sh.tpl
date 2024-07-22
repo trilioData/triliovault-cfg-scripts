@@ -18,7 +18,7 @@ set -ex
 #### wlm api conf file
 
 source /tmp/triliovault-cloudrc
-OS_SERVICE_DESC="${OS_REGION_NAME}: ${OS_SERVICE_NAME} (${OS_SERVICE_TYPE}) service"
+OS_SERVICE_DESC="TrilioVault Workloadmanager service"
 # Get Service ID if it exists
 unset OS_SERVICE_ID
 CLOUD_ADMIN_USER_NAME="{{- .Values.keystone.common.cloud_admin_user_name -}}"
@@ -36,16 +36,16 @@ CLOUD_ADMIN_USER_ID=$(openstack user show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" 
 CLOUD_ADMIN_DOMAIN_ID=$(openstack domain show -f value -c id \
                 "${CLOUD_ADMIN_DOMAIN_NAME}")
 
-CLOUD_ADMIN_PROJECT_ID=$(openstack project show --domain "${CLOUD_ADMIN_DOMAIN_NAME}" -f value -c id \
+CLOUD_ADMIN_PROJECT_ID=$(openstack project show -f value -c id \
                 "${CLOUD_ADMIN_PROJECT_NAME}")
 
-WLM_PROJECT_DOMAIN_ID=$(openstack project show --domain "${WLM_PROJECT_DOMAIN_NAME}" -f value -c domain_id \
+WLM_PROJECT_DOMAIN_ID=$(openstack project show -f value -c domain_id \
                 "${WLM_PROJECT_NAME}")
 
-WLM_USER_ID=$(openstack user show --domain "${WLM_PROJECT_DOMAIN_NAME}" -f value -c id \
+WLM_USER_ID=$(openstack user show -f value -c id \
                 "${WLM_USER_NAME}")
 
-WLM_USER_DOMAIN_ID=$(openstack user show --domain "${WLM_PROJECT_DOMAIN_NAME}" -f value -c domain_id \
+WLM_USER_DOMAIN_ID=$(openstack user show -f value -c domain_id \
                 "${WLM_USER_NAME}")
 
 
@@ -64,7 +64,7 @@ if [[ $KEYSTONE_URL =~ ^(https?)://([^:/]+)(:([0-9]+))?(/.*)?$ ]]; then
   auth_protocol=${BASH_REMATCH[1]}
   auth_host=${BASH_REMATCH[2]}
   auth_port=${BASH_REMATCH[4]}
-
+fi
 
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf << EOF
 [DEFAULT]
@@ -91,6 +91,7 @@ user_domain_id = $WLM_USER_DOMAIN_ID
 
 EOF
 
-chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-wlm-ids.conf
+chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf
 mkdir -p /var/log/triliovault/wlm-api /var/log/triliovault/wlm-workloads /var/log/triliovault/wlm-scheduler
 chown -R nova:nova /var/log/triliovault/
+

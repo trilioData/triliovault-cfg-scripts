@@ -59,12 +59,16 @@ spec:
             readOnlyRootFilesystem: false
             runAsUser: {{ $.Values.common.nova_user_id }}
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-object-store.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
+                  - /bin/bash
+                  - -c
                   - /tmp/triliovault-object-store.sh
                   - stop
           volumeMounts:

@@ -49,31 +49,37 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-pull-secret
       initContainers:
-        - name: wait-for-wlm-workloads-jobs
-          image: busybox
+        - name: triliovault-wlm-workloads-init
+          image: {{ .Values.images.triliovault_wlm_workloads }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsGroup: {{ .Values.common.nova_user_id }}
+            runAsUser: 0
+          env:
+            - name: POD_NAME
+              value: "triliovault-wlm-workloads"
+
           command:
-            - sh
+            - /bin/bash
             - -c
-            - |
-              jobs=("job-triliovault-wlm-db-init" "job-triliovault-wlm-keystone-init" "job-triliovault-wlm-rabbitmq-init")
-              while true; do
-                all_succeeded=true
-                for job in "${jobs[@]}"; do
-                  if kubectl get job $job -o jsonpath="{.status.succeeded}" | grep -q "1"; then
-                    echo "$job succeeded"
-                  elif kubectl get job $job -o jsonpath="{.status.failed}" | grep -q "1"; then
-                    echo "$job failed"
-                    exit 1
-                  else
-                    echo "waiting for $job"
-                    all_succeeded=false
-                  fi
-                done
-                if [ "$all_succeeded" = true ]; then
-                  exit 0
-                fi
-                sleep 5
-              done
+            - /tmp/triliovault-wlm-api-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: varlogtriliovaultwlm
+              mountPath: /var/log/triliovault
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-api-init.sh
+              subPath: triliovault-wlm-init.sh
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - name: pod-shared-triliovault-wlm-workloads
+              mountPath: /tmp/pod-shared-triliovault-wlm-workloads
+            - name: triliovault-wlm-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
       containers:
         - name: triliovault-wlm-workloads
           image: {{ .Values.images.triliovault_wlm_workloads }}
@@ -81,25 +87,20 @@ spec:
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
-            runAsUser: 42424
+            runAsUser: {{ .Values.common.nova_user_id }}
           command:
+            - /bin/bash
+            - -c
             - /tmp/triliovault-wlm-workloads.sh
             - start
           lifecycle:
             preStop:
               exec:
                 command:
+                  - /bin/bash
+                  - -c
                   - /tmp/triliovault-wlm-workloads.sh
                   - stop
-          ports:
-            - name: w-api
-              containerPort: 8780
-          readinessProbe:
-            tcpSocket:
-              port: 8780
-          livenessProbe:
-            tcpSocket:
-              port: 8780
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

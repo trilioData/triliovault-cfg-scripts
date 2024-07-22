@@ -24,7 +24,7 @@ function start () {
   # Start workloadmgr workloads service
   /usr/bin/python3 /usr/bin/workloadmgr-workloads \
      --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-     --config-file=/tmp/pod-shared-triliovault-wlm-workloads/triliovault-wlm-ids.conf
+     --config-file=/tmp/pod-shared-triliovault-wlm-workloads/triliovault-wlm-dynamic.conf
 
 }
 
