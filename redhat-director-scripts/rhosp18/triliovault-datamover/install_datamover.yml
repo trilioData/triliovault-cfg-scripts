@@ -1,0 +1,108 @@
+---
+
+- hosts: localhost
+  collections:
+    - containers.podman
+  tasks:
+    - include_vars: trilio_env.yml
+
+    - name: Ensuring /etc/triliovault directory exist
+      become: true
+      file:
+        path: "/etc/triliovault"
+        state: directory
+        owner: 42436
+        group: 42436
+        mode: "0755"
+
+    - name: Ensuring /var/lib/nova/triliovault-mounts  directory exist
+      become: true
+      file:
+        path: "/var/lib/nova/triliovault-mounts"
+        state: directory
+        owner: 42436
+        group: 42436
+        mode: "0755"
+
+    - name: Copying triliovault datamover conf files
+      become: true
+      template:
+        src: "{{ item }}.j2"
+        dest: "/etc/triliovault/{{ item }}"
+        mode: "0660"
+      with_items:
+        - "triliovault-datamover.conf"
+        - "triliovault-datamover-logging.conf"
+
+#    - name: Copying triliovault datamover object store conf files
+#      become: true
+#      template:
+#        src: "{{ item }}.j2"
+#        dest: "/etc/triliovault/{{ item }}"
+#        mode: "0660"
+#      with_items:
+#        - "triliovault-datamover-object-store.conf"
+#        - "triliovault-object-store-logging.conf"
+
+    - name: Copying triliovault datamover service start script
+      become: true
+      template:
+        src: "start-triliovault-datamover.sh.j2"
+        dest: "/etc/triliovault/start-triliovault-datamover.sh"
+        mode: "0660"
+
+#    - name: Copying triliovault datamover object store service start script
+#      become: true
+#      template:
+#        src: "start-triliovault-datamover-object-store.sh.j2"
+#        dest: "/etc/triliovault/start-triliovault-datamover-object-store.sh"
+#        mode: "0660"
+
+    - name: Create and start triliovault datamover container using podman module
+      podman_container:
+        name: "{{ triliovault_datamover_container }}"
+        image: "{{ triliovault_datamover_image }}"
+        privileged: True
+        volumes:
+          - /var/lib/kolla/config_files/triliovault_datamover.json:/var/lib/kolla/config_files/config.json:ro
+          - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+          - /var/lib/config-data/puppet-generated/triliovaultdm/:/var/lib/kolla/config_files/triliovaultdm:ro
+          - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+          - /dev:/dev
+          - /var/run/libvirt/:/var/run/libvirt/
+          - /var/log/containers/triliovault-datamover:/var/log/triliovault:z
+          - /var/lib/nova:/var/lib/nova:shared
+          - /etc/ssh/ssh_known_hosts:/etc/ssh/ssh_known_hosts:ro
+          - /lib/modules:/lib/modules:ro
+          - /run:/run
+          - /var/lib/iscsi:/var/lib/iscsi:z
+          - /var/lib/libvirt:/var/lib/libvirt:shared
+          - /sys/class/net:/sys/class/net
+          - /sys/bus/pci:/sys/bus/pci
+          - /boot:/boot:ro
+        ipc_mode: host
+        user: nova
+        restart_policy: always
+        env:
+          KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+
+    - name: Create and start triliovault datamover object store container using podman module
+      podman_container:
+        name: "{{ triliovault_object_store_container }}-{{ item.backup_target_name }}"
+        image: "{{ triliovault_object_store_image }}"
+        privileged: True
+        volumes:
+#          - "/var/lib/kolla/config_files/triliovault_object_store_{{ item.backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro"
+          - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
+          - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
+          - /var/lib/nova:/var/lib/nova:shared
+          - /dev:/dev
+          - /lib/modules:/lib/modules
+        ipc_mode: host
+        user: nova
+        restart_policy: always
+        env:
+          KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
