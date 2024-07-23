@@ -6,14 +6,17 @@
   tasks:
     - include_vars: trilio_env.yml
 
-    - name: Ensuring /etc/triliovault directory exist
+    - name: Ensuring triliovault directories exist
       become: true
       file:
-        path: "/etc/triliovault"
+        path: "{{ item }}"
         state: directory
         owner: 42436
         group: 42436
         mode: "0755"
+      with_items:
+        - "/etc/triliovault-object-store"
+        - "/etc/triliovault"
 
     - name: Ensuring /var/lib/nova/triliovault-mounts  directory exist
       become: true
@@ -81,7 +84,7 @@
     - name: Create triliovault-object-store conf files
       template:
         src: "triliovault-object-store.conf.j2"
-        dest: "triliovault-object-store-{{ item.backup_target_name }}"
+        dest: "/etc/triliovault-object-store/triliovault-object-store-{{ item.backup_target_name }}.conf"
         mode: "0660"
       loop: "{{ triliovault_backup_targets }}"
       when: item.backup_target_type|lower == "s3"
@@ -89,7 +92,7 @@
     - name: Create triliovault object store config.json files
       template:
         src: "triliovault_object_store.json.j2"
-        dest: "/var/lib/kolla/config_files/triliovault_object_store-{{ item.backup_target_name }}.json"
+        dest: "/var/lib/kolla/config_files/triliovault_object_store_{{ item.backup_target_name }}.json"
         mode: "0660"
       loop: "{{ triliovault_backup_targets }}"
       when: item.backup_target_type|lower == "s3"
