@@ -34,29 +34,21 @@
         - "triliovault-datamover.conf"
         - "triliovault-datamover-logging.conf"
 
-#    - name: Copying triliovault datamover object store conf files
-#      become: true
-#      template:
-#        src: "{{ item }}.j2"
-#        dest: "/etc/triliovault/{{ item }}"
-#        mode: "0660"
-#      with_items:
-#        - "triliovault-datamover-object-store.conf"
-#        - "triliovault-object-store-logging.conf"
-
     - name: Copying triliovault datamover service start script
       become: true
       template:
         src: "start-triliovault-datamover.sh.j2"
         dest: "/etc/triliovault/start-triliovault-datamover.sh"
         mode: "0660"
+    
+    - name: Create triliovault datamover config.json file
+      become: true
+      template:
+        src: "triliovault_datamover.json.j2"
+        dest: "/var/lib/kolla/config_files/triliovault_datamover.json"
+        mode: "0660"
 
-#    - name: Copying triliovault datamover object store service start script
-#      become: true
-#      template:
-#        src: "start-triliovault-datamover-object-store.sh.j2"
-#        dest: "/etc/triliovault/start-triliovault-datamover-object-store.sh"
-#        mode: "0660"
+# create /var/lib/config-data/puppet-generated/triliovaultdm/ directory
 
     - name: Create and start triliovault datamover container using podman module
       podman_container:
@@ -86,13 +78,31 @@
         env:
           KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
 
+    - name: Create triliovault-object-store conf files
+      template:
+        src: "triliovault-object-store.conf.j2"
+        dest: "triliovault-object-store-{{ item.backup_target_name }}"
+        mode: "0660"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
+    - name: Create triliovault object store config.json files
+      template:
+        src: "triliovault_object_store.json.j2"
+        dest: "/var/lib/kolla/config_files/triliovault_object_store-{{ item.backup_target_name }}.json"
+        mode: "0660"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
+# create /var/lib/config-data/puppet-generated/triliovaultobjectstore/ directory
+
     - name: Create and start triliovault datamover object store container using podman module
       podman_container:
         name: "{{ triliovault_object_store_container }}-{{ item.backup_target_name }}"
         image: "{{ triliovault_object_store_image }}"
         privileged: True
         volumes:
-#          - "/var/lib/kolla/config_files/triliovault_object_store_{{ item.backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro"
+          - "/var/lib/kolla/config_files/triliovault_object_store_{{ item.backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro"
           - /var/lib/config-data/puppet-generated/triliovaultobjectstore/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
           - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
           - /var/lib/nova:/var/lib/nova:shared

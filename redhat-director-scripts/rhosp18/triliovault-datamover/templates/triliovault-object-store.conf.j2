@@ -1,0 +1,41 @@
+[DEFAULT]
+
+vault_s3_access_key_id = {{ item.s3_access_key }}
+vault_s3_secret_access_key = {{ item.s3_secret_key }}
+vault_s3_bucket = {{ item.s3_bucket }}
+vault_s3_region_name = {{ item.s3_region_name }}
+vault_s3_auth_version = {{ item.s3_auth_version }}
+vault_s3_signature_version = {{ item.s3_signature_version }}
+vault_s3_ssl = {{ item.s3_ssl_enabled }}
+vault_s3_ssl_verify = {{ item.s3_ssl_verify }}
+
+{% if item.s3_type == "amazon_s3" %}
+backup_target_mount_point = {{ item.s3_bucket | b64encode }}
+vault_storage_nfs_export = {{ item.s3_bucket }}
+{% else %}
+{% set s3_domain_name=item.s3_endpoint_url.split('/')[2] %}
+{% set ceph_s3_str=s3_domain_name + '/' + item.s3_bucket %}
+backup_target_mount_point = {{ ceph_s3_str | b64encode }}
+vault_storage_nfs_export = {{ ceph_s3_str }}
+{% endif %}
+
+{% if item.s3_ssl_enabled and item.s3_self_signed_certs %}
+vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ item.backup_target_name }}.pem
+{% else %}
+vault_s3_ssl_cert =
+{% endif %}
+
+{% if item.s3_type == "ceph_s3" %}
+vault_s3_endpoint_url = {{ item.s3_endpoint_url }}
+{% else %}
+vault_s3_endpoint_url =
+{% endif %}
+
+vault_s3_max_pool_connections = 500
+vault_data_directory_old = /var/triliovault
+log_config_append = /etc/triliovault-object-store/object_store_logging.conf
+vault_s3_max_pool_connections = 500
+
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
