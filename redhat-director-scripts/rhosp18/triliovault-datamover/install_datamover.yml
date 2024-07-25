@@ -35,7 +35,7 @@
       template:
         src: "{{ item }}.j2"
         dest: "/etc/triliovault-dm/etc/triliovault-datamover/{{ item }}"
-        mode: "0660"
+        mode: "0644"
       with_items:
         - "triliovault-datamover.conf"
         - "triliovault-datamover-logging.conf"
@@ -44,8 +44,10 @@
       become: true
       template:
         src: "start-triliovault-datamover.sh.j2"
-        dest: "/etc/triliovault-dm/opt/triliovault/start-triliovault-datamover.sh"
-        mode: "0660"
+        dest: "/etc/triliovault-dm/opt/triliovault/start_triliovault_datamover.sh"
+        owner: 42436
+        group: 42436
+        mode: "0755"
     
     - name: Create triliovault datamover config.json file
       become: true
@@ -86,7 +88,7 @@
       template:
         src: "triliovault-object-store.conf.j2"
         dest: "/etc/triliovault-object-store/etc/triliovault-object-store/triliovault-object-store-{{ item.backup_target_name }}.conf"
-        mode: "0660"
+        mode: "0644"
       loop: "{{ triliovault_backup_targets }}"
       when: item.backup_target_type|lower == "s3"
 
