@@ -10,7 +10,7 @@ vault_s3_ssl = {{ item.s3_ssl_enabled }}
 vault_s3_ssl_verify = {{ item.s3_ssl_verify }}
 
 {% if item.s3_type == "amazon_s3" %}
-backup_target_mount_point = {{ item.s3_bucket | b64encode }}
+{% set backup_target_mount_point = item.s3_bucket | b64encode %}
 vault_storage_nfs_export = {{ item.s3_bucket }}
 {% else %}
 {% set s3_domain_name=item.s3_endpoint_url.split('/')[2] %}
