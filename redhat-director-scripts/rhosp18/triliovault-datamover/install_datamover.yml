@@ -80,7 +80,6 @@
           - /boot:/boot:ro
         ipc_mode: host
         user: nova
-        restart_policy: always
         env:
           KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
 
@@ -114,7 +113,6 @@
           - /lib/modules:/lib/modules
         ipc_mode: host
         user: nova
-        restart_policy: always
         env:
           KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
       loop: "{{ triliovault_backup_targets }}"

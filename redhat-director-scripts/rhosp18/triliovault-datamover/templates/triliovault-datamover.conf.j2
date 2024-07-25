@@ -2,18 +2,20 @@
 
 vault_data_directory = /var/lib/nova/triliovault-mounts
 vault_data_directory_old = /var/triliovault
-
-log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+log_config_append = /etc/triliovault-datamover/triliovault-datamover-logging.conf
 max_uploads_pending = 3
 max_commit_pending = 3
 dmapi_transport_url = rabbit://guest:96hkIp3wIZ490DEpHPBgoaaHX@overcloud-controller-0.ctlplane.trilio.local:5672/?ssl=0
+
 [libvirt]
 images_rbd_ceph_conf = /etc/ceph/ceph.conf
 rbd_user = cinder
+
 [ceph]
 keyring_ext = .keyring
+
 [dmapi_database]
-connection = mysql+pymysql://dmapi:okbfJ0uSBAM9fo27Gu9Shr7ipln1020I1ExdGRivtJ%3D@172.30.3.42/dmapi
+connection = mysql+pymysql://dmapi:G0hi8FJKU5hJpfqhrdZmXDHt1GN6Z3Pfx646VJVf15%3D@172.30.3.42/dmapi
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
