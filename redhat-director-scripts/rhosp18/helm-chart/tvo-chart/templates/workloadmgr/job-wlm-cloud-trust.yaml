@@ -15,10 +15,10 @@ limitations under the License.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "triliovault-wlm-cloud-trust"
+  name: job-triliovault-wlm-cloud-trust
   labels:
     application: triliovault
-    component: cloud-trust
+    component: wlm-cloud-trust
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "1"
@@ -33,25 +33,12 @@ spec:
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
-      serviceAccountName: triliovault-wlm-cloud-trust
+      serviceAccountName: triliovault-wlm
       restartPolicy: OnFailure
       nodeSelector:
         triliovault-control-plane: enabled
       imagePullSecrets:
         - name: triliovault-image-pull-secret
-      initContainers:
-        - name: wait-for-triliovault-wlm-api
-          image: busybox
-          command:
-          - /bin/sh
-          - -c
-          - |
-            while [ "$(kubectl get pods -l application=triliovault,component=wlm-api -o jsonpath='{.items[0].status.containerStatuses[0].ready}')" != "true" ]; do
-              echo "Waiting for triliovault-wlm-api to be ready"
-              sleep 5
-            done
-            echo "triliovault-wlm-api is ready. Waiting for 10 seconds..."
-            sleep 10
       containers:
         - name: "wlm-cloud-trust-creation"
           securityContext:
@@ -66,14 +53,16 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: triliovault-wlm-cloud-trust-sh
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-cloud-trust.sh
               subPath: triliovault-wlm-cloud-trust.sh
-              readOnly: true
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: triliovault-wlm-cloud-trust-sh
+        - name: triliovault-wlm-bin
           configMap:
-            name: "triliovault-bin-wlm"
+            name: "triliovault-wlm-bin"
             defaultMode: 0555
