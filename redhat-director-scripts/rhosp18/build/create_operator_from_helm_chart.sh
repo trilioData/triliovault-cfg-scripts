@@ -1,5 +1,7 @@
 #!/bin/bash
-
+rm -rf ../operator/tvo-operator
+mkdir -p ../operator/tvo-operator
+cd ../operator/tvo-operator
 
 ## Pre-requistes
 #1. Operator SDK CLI installed
@@ -13,4 +15,4 @@ operator-sdk init \
     --group=tvo \
     --version=v1 \
     --kind=TVOControlPlane \
-    --helm-chart ../helm-chart/tvo-chart/
+    --helm-chart ../../helm-chart/tvo-chart
