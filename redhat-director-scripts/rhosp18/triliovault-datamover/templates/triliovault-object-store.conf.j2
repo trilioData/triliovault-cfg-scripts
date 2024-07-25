@@ -15,7 +15,7 @@ vault_storage_nfs_export = {{ item.s3_bucket }}
 {% else %}
 {% set s3_domain_name=item.s3_endpoint_url.split('/')[2] %}
 {% set ceph_s3_str=s3_domain_name + '/' + item.s3_bucket %}
-backup_target_mount_point = {{ ceph_s3_str | b64encode }}
+{% set backup_target_mount_point = ceph_s3_str | b64encode %}
 vault_storage_nfs_export = {{ ceph_s3_str }}
 {% endif %}
 
@@ -33,6 +33,7 @@ vault_s3_endpoint_url =
 
 vault_s3_max_pool_connections = 500
 vault_data_directory_old = /var/triliovault
+vault_data_directory = {{ vault_data_dir }}/{{ backup_target_mount_point }}
 log_config_append = /etc/triliovault-object-store/object_store_logging.conf
 vault_s3_max_pool_connections = 500
 
