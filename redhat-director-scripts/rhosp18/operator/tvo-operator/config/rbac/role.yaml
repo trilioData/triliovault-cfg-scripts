@@ -1,15 +1,103 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: manager-role
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: tvo-operator
-    app.kubernetes.io/part-of: tvo-operator
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
+##
+## Base operator rules
+##
+# We need to get namespaces so the operator can read namespaces to ensure they exist
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+# We need to manage Helm release secrets
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - "*"
+# We need to create events on CRs about things happening during reconciliation
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+
+##
+## Rules for tvo.trilio.io/v1, Kind: TVOControlPlane
+##
+- apiGroups:
+  - tvo.trilio.io
+  resources:
+  - tvocontrolplanes
+  - tvocontrolplanes/status
+  - tvocontrolplanes/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+# Permissions for managing configmaps, secrets, serviceaccounts, services
+- verbs:
+  - "*"
+  apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  - serviceaccounts
+  - services
+
+# Permissions for managing rolebindings and roles
+- verbs:
+  - "*"
+  apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+
+# Permissions for managing deployments
+- verbs:
+  - "*"
+  apiGroups:
+  - apps
+  resources:
+  - deployments
+
+# Permissions for managing PodSecurityPolicies
+- apiGroups:
+  - policy
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+  resourceNames:
+  - privileged-psp
+
+# Additional permissions for privileged operations
 - apiGroups: [""]
-  resources: ["pods"]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes"]
   verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes/proxy"]
+  verbs: ["get", "list"]
+- apiGroups: ["extensions"]
+  resources: ["daemonsets"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+

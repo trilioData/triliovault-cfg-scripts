@@ -85,7 +85,7 @@ triliovault_backup_targets:
     s3_auth_version: 'DEFAULT'
     s3_ssl_enabled: true
     s3_ssl_verify: true
-    s3_self_signed_certs: false
+    s3_self_signed_cert: false
   - backup_target_name: 'S3_BT2'
     backup_target_type: 's3'
     is_default: True
@@ -189,7 +189,7 @@ pod:
         runAsUser: 42424
         image_pull_secrets:
           default:
-            - name: triliovault-image-registry
+            - name: triliovault-image-pull-secret
       container:
         triliovault_datamover_api:
           readOnlyRootFilesystem: false

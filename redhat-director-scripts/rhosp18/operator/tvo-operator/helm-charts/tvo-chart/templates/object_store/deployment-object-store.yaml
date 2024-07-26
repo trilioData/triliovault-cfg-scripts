@@ -1,0 +1,116 @@
+{{- range .Values.triliovault_backup_targets }}
+  {{- if eq .backup_target_type "s3" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+  labels:
+    application: triliovault
+    component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: triliovault
+      component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+    spec:
+      serviceAccountName: triliovault-object-store
+      securityContext:
+        runAsUser: {{ $.Values.common.nova_user_id }}
+        fsGroup: {{ $.Values.common.nova_group_id }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: application
+                    operator: In
+                    values:
+                    - triliovault
+                  - key: component
+                    operator: In
+                    values:
+                    - object-store
+              topologyKey: kubernetes.io/hostname
+            weight: 10
+      nodeSelector:
+        triliovault-control-plane: enabled
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
+      containers:
+        - name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+          image: {{ $.Values.images.triliovault_object_store }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ $.Values.common.nova_user_id }}
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-object-store.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-object-store.sh
+                  - stop
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: varlogtriliovaultobjectstore
+              mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
+              name: triliovault-object-store-etc
+              readOnly: true
+              subPath: object_store_logging.conf
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
+              subPath: triliovault-object-store-{{ .backup_target_name | lower }}.conf
+              readOnly: true
+            {{- if .s3_self_signed_cert }}
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .backup_target_name | lower }}.pem
+              readOnly: true
+            {{- end }}
+            - name: triliovault-object-store-bin
+              mountPath: /tmp/triliovault-object-store.sh
+              subPath: triliovault-object-store.sh
+            - name: pod-shared-triliovault-object-store
+              mountPath: /tmp/pod-shared-triliovault-object-store            
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: varlogtriliovaultobjectstore
+          hostPath:
+            path: /var/log/triliovault-object-store
+        - name: triliovault-object-store-etc
+          secret:
+            secretName: triliovault-object-store-etc
+            defaultMode: 0444
+        - name: triliovault-object-store-bin
+          configMap:
+            name: triliovault-object-store-bin
+            defaultMode: 0555
+        - name: pod-shared-triliovault-object-store
+          emptyDir: {}
+  {{- end }}
+{{- end }}
+

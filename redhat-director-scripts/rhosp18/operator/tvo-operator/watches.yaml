@@ -1,6 +1,6 @@
 # Use the 'create api' subcommand to add watches to this file.
-- group: demo.trilio.io
-  version: v1alpha1
+- group: tvo.trilio.io
+  version: v1
   kind: TVOControlPlane
-  chart: helm-charts/triliovault
+  chart: helm-charts/tvo-chart
 #+kubebuilder:scaffold:watch

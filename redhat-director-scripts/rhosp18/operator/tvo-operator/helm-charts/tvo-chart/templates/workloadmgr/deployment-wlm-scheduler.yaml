@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-wlm-scheduler
+  labels:
+    application: triliovault
+    component: wlm-scheduler
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_scheduler }}
+  selector:
+    matchLabels:
+      application: triliovault
+      component: wlm-scheduler
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-scheduler
+    spec:
+      serviceAccountName: triliovault-wlm
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: application
+                    operator: In
+                    values:
+                    - triliovault
+                  - key: component
+                    operator: In
+                    values:
+                    - wlm-scheduler
+              topologyKey: kubernetes.io/hostname
+            weight: 10
+      nodeSelector:
+        triliovault-control-plane: enabled
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
+      initContainers:
+        - name: triliovault-wlm-scheduler-init
+          image: {{ .Values.images.triliovault_wlm_scheduler }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsGroup: {{ .Values.common.nova_user_id }}
+            runAsUser: 0
+          env:
+            - name: POD_NAME
+              value: "triliovault-wlm-scheduler"
+
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-api-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: varlogtriliovaultwlm
+              mountPath: /var/log/triliovault
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-api-init.sh
+              subPath: triliovault-wlm-init.sh
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - name: pod-shared-triliovault-wlm-scheduler
+              mountPath: /tmp/pod-shared-triliovault-wlm-scheduler
+            - name: triliovault-wlm-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
+      containers:
+        - name: triliovault-wlm-scheduler
+          image: {{ .Values.images.triliovault_wlm_scheduler }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-scheduler.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-wlm-scheduler.sh
+                  - stop
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: varlogtriliovaultwlm
+              mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-wlm/wlm_logging.conf
+              name: triliovault-wlm-etc
+              readOnly: true
+              subPath: wlm_logging.conf
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
+              subPath: triliovault-wlm.conf
+              readOnly: true
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/api-paste.ini
+              subPath: api-paste.ini
+              readOnly: true
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-scheduler.sh
+              subPath: triliovault-wlm-scheduler.sh
+            - name: pod-shared-triliovault-wlm-scheduler
+              mountPath: /tmp/pod-shared-triliovault-wlm-scheduler            
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: varlogtriliovaultwlm
+          hostPath:
+            path: /var/log/triliovault-wlm
+        - name: triliovault-wlm-etc
+          secret:
+            secretName: triliovault-wlm-etc
+            defaultMode: 0444
+        - name: triliovault-wlm-bin
+          configMap:
+            name: triliovault-wlm-bin
+            defaultMode: 0555
+        - name: pod-shared-triliovault-wlm-scheduler
+          emptyDir: {}

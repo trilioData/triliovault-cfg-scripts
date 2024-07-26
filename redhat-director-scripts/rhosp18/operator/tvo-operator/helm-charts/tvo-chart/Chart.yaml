@@ -1,0 +1,12 @@
+apiVersion: v2
+appVersion: 6.0.0
+description: TrilioVault for OpenStack Helm Chart for Kubernetes
+home: https://docs.trilio.io/openstack
+icon: https://asset.brandfetch.io/idGK8s6yAt/id71ulaWGz.jpeg
+maintainers:
+- name: Trilio Data, Inc
+name: tvo-chart
+sources:
+- https://github.com/trilioData/triliovault-cfg-scripts/
+type: application
+version: 0.1.0

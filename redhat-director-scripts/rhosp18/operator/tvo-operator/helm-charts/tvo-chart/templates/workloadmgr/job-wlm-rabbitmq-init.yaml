@@ -1,0 +1,65 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-wlm-rabbitmq-init"
+  labels:
+    application: triliovault
+    component: wlm-rabbitmq-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-rabbitmq-init
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      serviceAccountName: triliovault-wlm
+      restartPolicy: OnFailure
+      nodeSelector:
+        triliovault-control-plane: enabled
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
+      containers:
+        - name: "wlm-rabbitmq-init"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          image: {{ .Values.images.triliovault_wlm_api }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-rabbitmq-init.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-rabbitmq-init.sh
+              subPath: triliovault-wlm-rabbitmq-init.sh
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-wlm-bin
+          configMap:
+            name: "triliovault-wlm-bin"
+            defaultMode: 0555
