@@ -91,6 +91,13 @@
       loop: "{{ triliovault_backup_targets }}"
       when: item.backup_target_type|lower == "s3"
 
+    - name: Copy s3 cert files
+      copy:
+        src: "files/s3-cert-{{ item.backup_target_name }}.pem"
+        dest: "/etc/triliovault-object-store/etc/triliovault-object-store/s3-cert-{{ item.backup_target_name }}.pem"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3" and item.s3_ssl_enabled and item.s3_self_signed_cert
+
     - name: Create triliovault object store config.json files
       template:
         src: "triliovault_object_store.json.j2"
