@@ -45,27 +45,59 @@ rules:
   - patch
   - update
   - watch
+
+# Permissions for managing configmaps, secrets, serviceaccounts, services
 - verbs:
   - "*"
   apiGroups:
   - ""
   resources:
-  - "configmaps"
-  - "secrets"
-  - "serviceaccounts"
-  - "services"
-- verbs:
-  - "*"
-  apiGroups:
-  - "rbac.authorization.k8s.io"
-  resources:
-  - "rolebindings"
-  - "roles"
-- verbs:
-  - "*"
-  apiGroups:
-  - "apps"
-  resources:
-  - "deployments"
+  - configmaps
+  - secrets
+  - serviceaccounts
+  - services
 
-#+kubebuilder:scaffold:rules
+# Permissions for managing rolebindings and roles
+- verbs:
+  - "*"
+  apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+
+# Permissions for managing deployments
+- verbs:
+  - "*"
+  apiGroups:
+  - apps
+  resources:
+  - deployments
+
+# Permissions for managing PodSecurityPolicies
+- apiGroups:
+  - policy
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+  resourceNames:
+  - privileged-psp
+
+# Additional permissions for privileged operations
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes/proxy"]
+  verbs: ["get", "list"]
+- apiGroups: ["extensions"]
+  resources: ["daemonsets"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+

@@ -7,4 +7,4 @@ make install
 
 ## Install Operator
 export IMG=docker.io/trilio/tvo-operator:dev2
-make deploy IMG=$IMG
+make undeploy IMG=$IMG
