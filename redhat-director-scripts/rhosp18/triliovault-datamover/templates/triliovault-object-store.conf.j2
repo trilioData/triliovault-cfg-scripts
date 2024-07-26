@@ -19,7 +19,7 @@ vault_storage_nfs_export = {{ item.s3_bucket }}
 vault_storage_nfs_export = {{ ceph_s3_str }}
 {% endif %}
 
-{% if item.s3_ssl_enabled and item.s3_self_signed_certs %}
+{% if item.s3_ssl_enabled and item.s3_self_signed_cert %}
 vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ item.backup_target_name }}.pem
 {% else %}
 vault_s3_ssl_cert =
