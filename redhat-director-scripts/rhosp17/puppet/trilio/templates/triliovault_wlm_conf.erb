@@ -64,6 +64,7 @@ workloads_workers = 4
 vault_storage_type = s3
 vault_s3_endpoint_url = <%= target['s3_endpoint_url'] %>
 vault_s3_bucket = <%= target['s3_bucket'] %>
+bucket_object_lock = True
 <% if target['s3_type'] == 'amazon_s3' %>
 vault_storage_nfs_export = <%= target['s3_bucket'] %>
 <% else -%>
