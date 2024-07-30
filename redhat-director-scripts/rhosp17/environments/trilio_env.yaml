@@ -32,6 +32,7 @@ parameter_defaults:
         s3_ssl_enabled: true
         s3_ssl_verify: true
         s3_self_signed_certs: false
+        s3_bucket_object_lock_enabled: false
       - backup_target_name: 'S3_BT2'
         backup_target_type: 's3'
         is_default: True
@@ -46,6 +47,7 @@ parameter_defaults:
         s3_ssl_enabled: true
         s3_ssl_verify: true
         s3_self_signed_cert: true
+        s3_bucket_object_lock_enabled: false
       - backup_target_name: 'NFS_BT3'
         backup_target_type: 'nfs'
         is_default: False
