@@ -4,15 +4,15 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: triliovault-viewer-role
+    app.kubernetes.io/instance: tvocontrolplane-viewer-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: tvo-operator
     app.kubernetes.io/part-of: tvo-operator
     app.kubernetes.io/managed-by: kustomize
-  name: triliovault-viewer-role
+  name: tvocontrolplane-viewer-role
 rules:
 - apiGroups:
-  - demo.trilio.io
+  - tvo.trilio.io
   resources:
   - tvocontrolplanes
   verbs:
@@ -20,7 +20,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - demo.trilio.io
+  - tvo.trilio.io
   resources:
   - tvocontrolplanes/status
   verbs:

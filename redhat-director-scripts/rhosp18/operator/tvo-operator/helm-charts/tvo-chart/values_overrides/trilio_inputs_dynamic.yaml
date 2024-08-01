@@ -1,0 +1,28 @@
+database:
+  datamover_api:
+    password: wjToSZLso54azFHUg6afZwY2zfYN394hpYYX4HUthj
+  wlm_api:
+    password: wkEmATBDOfog6zcTbnLycn4UBjaDIhpm1azF8Epshj
+rabbitmq:
+  datamover_api:
+    password: ehrPlm8tDVbHrWkOs53U5LknaVoJy2fjjxqck3dsnd
+  wlm_api:
+    password: ememwrLqpc4t98rGc1YEuyFM0gNs0afYRcf9OXsjdn
+keystone:
+  common:
+    auth_url: "http://keystone-api.openstack.svc.cluster.local:5000/"
+    auth_uri: "http://keystone-api.openstack.svc.cluster.local:5000/v3"
+    keystone_auth_protocol: "http"
+    keystone_auth_host: "keystone-api.openstack.svc.cluster.local"
+    keystone_auth_port: "5000"
+  datamover_api:
+    password: sjeUh5U3JqCMyTz2SgzYTgDv01x9wSpZkNBzLydsme
+    internal_endpoint: "http://keystone-api.openstack.svc.cluster.local:8784/v2"
+    public_endpoint: "https://keystone.setup3.triliodata.demo:8784/v2"
+    admin_endpoint: "http://keystone-api.openstack.svc.cluster.local:8784/v2"
+  wlm_api:
+    password: skkc0EXhGkiK1diKRPjbY9RZbdKY0dh6kLHtdMQksd
+    internal_endpoint: "http://keystone-api.openstack.svc.cluster.local:8781/v1/$(tenant_id)s"
+    public_endpoint: "https://keystone.setup3.triliodata.demo:8781/v1/$(tenant_id)s"
+    admin_endpoint: "http://keystone-api.openstack.svc.cluster.local:8781/v1/$(tenant_id)s"
+

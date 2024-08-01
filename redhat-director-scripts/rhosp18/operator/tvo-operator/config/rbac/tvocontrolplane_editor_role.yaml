@@ -4,15 +4,15 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: triliovault-editor-role
+    app.kubernetes.io/instance: tvocontrolplane-editor-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: tvo-operator
     app.kubernetes.io/part-of: tvo-operator
     app.kubernetes.io/managed-by: kustomize
-  name: triliovault-editor-role
+  name: tvocontrolplane-editor-role
 rules:
 - apiGroups:
-  - demo.trilio.io
+  - tvo.trilio.io
   resources:
   - tvocontrolplanes
   verbs:
@@ -24,7 +24,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - demo.trilio.io
+  - tvo.trilio.io
   resources:
   - tvocontrolplanes/status
   verbs:

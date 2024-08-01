@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-datamover-api
+  namespace: triliovault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: default-triliovault-datamover-api
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-datamover-api
+    namespace: triliovault

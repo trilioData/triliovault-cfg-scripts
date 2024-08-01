@@ -1,0 +1,25 @@
+#!/bin/bash
+set -ex
+
+
+{% for bt in triliovault_backup_targets %}
+
+{% if bt.backup_target_type|lower == 'nfs' %}
+
+{% set nfs_share=bt.nfs_shares %}
+{% set nfs_dir=nfs_share.split(':')[1] %}
+{% set base64_mount_point=nfs_dir | b64encode %}
+
+mkdir -p {{ vault_data_dir }}/{{ base64_mount_point }}
+sudo nova-rootwrap /etc/nova/rootwrap.conf mount -t nfs {{ bt.nfs_shares }} {{ vault_data_dir }}/{{ base64_mount_point }} -o {{ bt.nfs_options }}
+
+{% endif %}
+
+{% endfor %}
+
+## Start TrilioVault Datamover Service
+/usr/bin/python3 /usr/bin/tvault-contego \
+--config-file=/usr/share/nova/nova-dist.conf --config-file=/etc/nova/nova.conf \
+--config-file=/etc/triliovault-datamover/triliovault-datamover.conf
+
+

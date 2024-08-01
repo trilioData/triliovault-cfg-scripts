@@ -1,0 +1,447 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# Default values for triliovault.
+#
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+labels:
+  wlm_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_cron:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_scheduler:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_workloads:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  datamover_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+
+images:
+  bootstrap: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  db_init: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  db_drop: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  rabbit_init: docker.io/rabbitmq:3.7-management
+  ks_user: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  ks_service: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  ks_endpoints: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+  dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
+  image_repo_sync: docker.io/docker:17.07.0
+  triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_object_store: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+  triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+  triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  pull_policy: "IfNotPresent"
+  local_registry:
+    active: false
+    exclude:
+      - dep_check
+      - image_repo_sync
+
+
+common: 
+  nova_user_id: "42436"
+  nova_group_id: "42436"
+  trustee_role: "creator"
+  dmapi_workers: "16"
+  memcached_servers: ""
+  oslo_enable_proxy_headers_parsing: false
+  my_ip:
+    # my_ip and other related parameters can be set automatically through this interface name.
+    # If this parameter is not set, then script will find interface name through default route.
+    # This is used in datamover api conf file.
+    host_interface:
+triliovault_backup_targets:
+  - backup_target_name: 'S3_BT1'
+    backup_target_type: 's3'
+    is_default: True
+    s3_type: 'amazon_s3'
+    s3_access_key: 'ACCESSKEY1'
+    s3_secret_key: 'SECRETKEY1'
+    s3_region_name: 'REGION1'
+    s3_bucket: 'BUCKET1'
+    s3_endpoint_url: 'ENDPOINT_URL1'
+    s3_signature_version: 'default'
+    s3_auth_version: 'DEFAULT'
+    s3_ssl_enabled: true
+    s3_ssl_verify: true
+    s3_self_signed_cert: false
+  - backup_target_name: 'S3_BT2'
+    backup_target_type: 's3'
+    is_default: True
+    s3_type: 'amazon_s3'
+    s3_access_key: 'ACCESSKEY2'
+    s3_secret_key: 'SECRETKEY2'
+    s3_region_name: 'REGION2'
+    s3_bucket: 'BUCKET2'
+    s3_endpoint_url: 'ENDPOINT_URL2'
+    s3_signature_version: 'default'
+    s3_auth_version: 'DEFAULT'
+    s3_ssl_enabled: true
+    s3_ssl_verify: true
+    s3_self_signed_cert: true
+    s3_ssl_ca_cert: |
+       SSL_CERT_LINE_1
+  - backup_target_name: 'NFS_BT3'
+    backup_target_type: 'nfs'
+    is_default: False
+    nfs_shares: '11.30.1.10:/mnt/share'
+    nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+keystone:
+  keystone_interface: "internal"
+  common:
+    service_project_name: "service"
+    service_project_domain_name: "Default"
+    admin_role_name: "admin"
+    cloud_admin_user_name: "admin"
+    cloud_admin_user_password: ""
+    cloud_admin_project_name: "admin"
+    cloud_admin_project_id: ""
+    cloud_admin_domain_name: "Default"
+    region_name: "RegionOne"
+    auth_url: ""
+    auth_uri: ""
+    keystone_auth_protocol: ""
+    keystone_auth_host: ""
+    keystone_auth_port: ""
+    is_self_signed_ssl_cert: True
+    ca_cert: |
+      CERT MULTIPLE LINES
+  datamover_api: 
+    user: "dmapi"
+    password: "EDIT_PASSWORD"
+    service_name: "dmapi"
+    servie_type: "datamover"
+    service_desc: "TrilioVault Datamover Api Service"
+    internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2"
+    public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2"
+    admin_endpoint: "ENDPOINT_PROTOCOL_ADMIN://ENDPOINT_HOST_ADMIN:8784/v2"
+  wlm_api: 
+    user: "triliovault"
+    password: "EDIT_PASSWORD"
+    service_name: "TrilioVaultWLM"
+    servie_type: "workloads"
+    service_desc: "TrilioVault Workloadmgr Api Service"
+    internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
+    public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
+    admin_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_ADMIN:8781/v1/$(tenant_id)s"
+  identity:
+    
+
+database:
+  common:
+    root_user_name: "root"
+    root_password: "EDIT_PASSWORD"
+    host: "EDIT_DB_HOSTNAME"
+  datamover_api: 
+    user: "dmapi"
+    password: "EDIT_PASSWORD"
+    database: "dmapi"
+  wlm_api: 
+    user: "workloadmgr"
+    password: "EDIT_PASSWORD"
+    database: "workloadmgr"
+    
+rabbitmq:
+  common: 
+    admin_user: "admin"
+    admin_password: "EDIT_PASSWORD"
+    host: "EDIT_HOST"
+    port: "5672"
+    notification_driver: "messagingv2"
+  datamover_api: 
+    user: "dmapi"
+    password: "EDIT_PASSWORD"
+    vhost: "dmapi"
+  wlm_api: 
+    user: "workloadmgr"
+    password: "EDIT_PASSWORD"
+    vhost: "workloadmgr"
+    transport_url: ""
+
+
+helm3_hook: true
+
+pod:
+  security_context:
+    triliovault:
+      pod:
+        runAsUser: 42424
+        image_pull_secrets:
+          default:
+            - name: triliovault-image-registry
+      container:
+        triliovault_datamover_api:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          runAsUser: 63630
+        triliovault_datamover:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+        triliovault_wlm_api:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+        triliovault_wlm_scheduler:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+        triliovault_wlm_cron:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          runAsUser: 42424
+        triliovault_wlm_workloads:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+        triliovault_wlm_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 42424
+        triliovault_datamover_api_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 63630
+        triliovault_datamover_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 42424
+        wlm_cloud_trust_creation:
+          readOnlyRootFilesystem: false
+          runAsUser: 42424
+          runAsGroup: 42424
+        ceph_keyring_placement_triliovault:
+          readOnlyRootFilesystem: false
+          runAsUser: 42424
+          runAsGroup: 42424
+
+  affinity:
+    anti:
+      type:
+        default: preferredDuringSchedulingIgnoredDuringExecution
+      topologyKey:
+        default: kubernetes.io/hostname
+      weight:
+        default: 10
+  mounts:
+    triliovault_wlm_api:
+      init_container: null
+      triliovault_wlm_api:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_cron:
+      init_container: null
+      triliovault_wlm_cron:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_scheduler:
+      init_container: null
+      triliovault_wlm_scheduler:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_workloads:
+      init_container: null
+      triliovault_wlm_workloads:
+        volumeMounts:
+        volumes:
+    triliovault_datamover_api:
+      init_container: null
+      triliovault_datamover_api:
+        volumeMounts:
+        volumes:
+    triliovault_datamover:
+      init_container: null
+      triliovault_datamover:
+        volumeMounts:
+        volumes:
+    triliovault_tests:
+      init_container: null
+      triliovault_tests:
+        volumeMounts:
+        volumes:
+    triliovault_datamover_db_sync:
+      triliovault_wlm_db_sync:
+        volumeMounts:
+        volumes:
+    triliovault_wlm_db_sync:
+      triliovault_wlm_db_sync:
+        volumeMounts:
+        volumes:
+  lifecycle:
+    upgrades:
+      deployments:
+        revision_history: 3
+        pod_replacement_strategy: RollingUpdate
+        rolling_update:
+          max_unavailable: 1
+          max_surge: 3
+      daemonsets:
+        pod_replacement_strategy: RollingUpdate
+        datamover:
+          enabled: true
+          min_ready_seconds: 0
+          max_unavailable: 1
+    disruption_budget:
+      datamover_api:
+        min_available: 2
+      wlm_api:
+        min_available: 2
+    termination_grace_period:
+      wlm_api:
+        timeout: 30
+      wlm_cron:
+        timeout: 30
+      wlm_scheduler:
+        timeout: 30
+      wlm_workloads:
+        timeout: 30
+      datamover_api:
+        timeout: 30
+      datamover:
+        timeout: 30
+  replicas:
+    triliovault_wlm_api: 3
+    triliovault_datamover_api: 3
+    triliovault_wlm_workloads: 3
+    triliovault_wlm_cron: 1
+    triliovault_wlm_scheduler: 1
+  resources:
+    enabled: false
+    wlm_api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_cron:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_scheduler:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    wlm_workloads:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    datamover_api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    datamover:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    jobs:
+      bootstrap:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      rabbit_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_endpoints:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_service:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_user:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_drop:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      tests:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      image_repo_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+
+
+
+...

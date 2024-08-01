@@ -1,0 +1,127 @@
+---
+
+- hosts: localhost
+  collections:
+    - containers.podman
+  tasks:
+    - include_vars: trilio_env.yml
+
+    - name: Ensuring triliovault directories exist
+      become: true
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: 42436
+        group: 42436
+        mode: "0755"
+      with_items:        
+        - "/etc/triliovault-dm"
+        - "/etc/triliovault-dm/etc/triliovault-datamover"
+        - "/etc/triliovault-dm/opt/triliovault"
+        - "/etc/triliovault-object-store"
+        - "/etc/triliovault-object-store/etc/triliovault-object-store"
+
+    - name: Ensuring /var/lib/nova/triliovault-mounts  directory exist
+      become: true
+      file:
+        path: "/var/lib/nova/triliovault-mounts"
+        state: directory
+        owner: 42436
+        group: 42436
+        mode: "0755"
+
+    - name: Copying triliovault datamover conf files
+      become: true
+      template:
+        src: "{{ item }}.j2"
+        dest: "/etc/triliovault-dm/etc/triliovault-datamover/{{ item }}"
+        mode: "0644"
+      with_items:
+        - "triliovault-datamover.conf"
+        - "triliovault-datamover-logging.conf"
+
+    - name: Copying triliovault datamover service start script
+      become: true
+      template:
+        src: "start-triliovault-datamover.sh.j2"
+        dest: "/etc/triliovault-dm/opt/triliovault/start_triliovault_datamover.sh"
+        owner: 42436
+        group: 42436
+        mode: "0755"
+    
+    - name: Create triliovault datamover config.json file
+      become: true
+      template:
+        src: "triliovault_datamover.json.j2"
+        dest: "/etc/triliovault-dm/triliovault_datamover.json"
+        mode: "0660"
+
+    - name: Create and start triliovault datamover container using podman module
+      podman_container:
+        name: "{{ triliovault_datamover_container }}"
+        image: "{{ triliovault_datamover_image }}"
+        privileged: True
+        volumes:
+          - /etc/triliovault-dm/triliovault_datamover.json:/var/lib/kolla/config_files/config.json:ro
+          - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/nova_libvirt:ro
+          - /etc/triliovault-dm/:/var/lib/kolla/config_files/triliovaultdm:ro
+          - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+          - /dev:/dev
+          - /var/run/libvirt/:/var/run/libvirt/
+          - /var/log/containers/triliovault-datamover:/var/log/triliovault:z
+          - /var/lib/nova:/var/lib/nova:shared
+          - /etc/ssh/ssh_known_hosts:/etc/ssh/ssh_known_hosts:ro
+          - /lib/modules:/lib/modules:ro
+          - /run:/run
+          - /var/lib/iscsi:/var/lib/iscsi:z
+          - /var/lib/libvirt:/var/lib/libvirt:shared
+          - /sys/class/net:/sys/class/net
+          - /sys/bus/pci:/sys/bus/pci
+          - /boot:/boot:ro
+        ipc_mode: host
+        user: nova
+        env:
+          KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+
+    - name: Create triliovault-object-store conf files
+      template:
+        src: "triliovault-object-store.conf.j2"
+        dest: "/etc/triliovault-object-store/etc/triliovault-object-store/triliovault-object-store-{{ item.backup_target_name }}.conf"
+        mode: "0644"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
+    - name: Copy s3 cert files
+      copy:
+        src: "files/s3-cert-{{ item.backup_target_name }}.pem"
+        dest: "/etc/triliovault-object-store/etc/triliovault-object-store/s3-cert-{{ item.backup_target_name }}.pem"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3" and item.s3_ssl_enabled and item.s3_self_signed_cert
+
+    - name: Create triliovault object store config.json files
+      template:
+        src: "triliovault_object_store.json.j2"
+        dest: "/etc/triliovault-object-store/triliovault_object_store_{{ item.backup_target_name }}.json"
+        mode: "0660"
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
+    - name: Create and start triliovault datamover object store container using podman module
+      podman_container:
+        name: "{{ triliovault_object_store_container }}-{{ item.backup_target_name }}"
+        image: "{{ triliovault_object_store_image }}"
+        privileged: True
+        volumes:
+          - "/etc/triliovault-object-store/triliovault_object_store_{{ item.backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro"
+          - /etc/triliovault-object-store/:/var/lib/kolla/config_files/triliovaultobjectstore:ro
+          - /var/log/containers/triliovault-object-store:/var/log/triliovault:z
+          - /var/lib/nova:/var/lib/nova:shared
+          - /dev:/dev
+          - /lib/modules:/lib/modules
+        ipc_mode: host
+        user: nova
+        env:
+          KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      loop: "{{ triliovault_backup_targets }}"
+      when: item.backup_target_type|lower == "s3"
+
