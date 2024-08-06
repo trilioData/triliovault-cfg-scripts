@@ -64,6 +64,7 @@ class trilio::object_store::config inherits trilio::object_store {
             s3_ssl_verify         => $target['s3_ssl_verify'],
             s3_type               => $target['s3_type'],
             s3_endpoint_url       => $target['s3_endpoint_url'],
+            s3_bucket_object_lock_enabled => $target['s3_bucket_object_lock_enabled'],
             vault_data_dir        => $vault_data_dir,
             vault_storage_nfs_export => $vault_storage_nfs_export,
           }),
