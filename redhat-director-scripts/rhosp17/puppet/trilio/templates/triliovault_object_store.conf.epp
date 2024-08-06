@@ -11,11 +11,11 @@ vault_s3_ssl_verify = <%= $s3_ssl_verify %>
 vault_storage_nfs_export = <%= $vault_storage_nfs_export %>
 
 <%- if $s3_bucket_object_lock_enabled { -%>
-bucket_object_lock=True
-use_manifest_suffix=True
+bucket_object_lock=true
+use_manifest_suffix=true
 <%- } else { -%>
-bucket_object_lock=False
-use_manifest_suffix=False
+bucket_object_lock=false
+use_manifest_suffix=false
 <%- } -%>
 
 <%- if $s3_ssl_enabled and $s3_self_signed_cert { -%>
