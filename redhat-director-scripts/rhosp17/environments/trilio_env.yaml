@@ -51,7 +51,7 @@ parameter_defaults:
       - backup_target_name: 'NFS_BT3'
         backup_target_type: 'nfs'
         is_multi_ip_nfs: false
-        is_default: False
+        is_default: false
         nfs_shares: '11.30.1.10:/mnt/share'
         nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
       - backup_target_name: 'MULTI_IP_NFS_BT4'

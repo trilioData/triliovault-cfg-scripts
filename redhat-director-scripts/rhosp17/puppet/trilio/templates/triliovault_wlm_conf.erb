@@ -78,6 +78,7 @@ vault_storage_type = nfs
   <% else -%>
     <% nfs_share = target['nfs_shares'] -%>
   <% end -%>
+
 vault_storage_nfs_export = <%= nfs_share %>
 vault_storage_nfs_options = <%= target['nfs_options'] %>
 <% end %>
