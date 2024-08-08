@@ -57,8 +57,6 @@ class trilio::wlmapi (
   $trustee_role                    = 'creator',
   $vault_data_dir                  = "/var/lib/nova/triliovault-mounts",
   $backup_targets                  = [],
-  $nfs_map                         = {},
-  $multi_ip_nfs_enabled            = false,
   $auth_host_internal              = undef,
   $auth_port_internal              = undef,
   $auth_protocol_internal          = undef,
