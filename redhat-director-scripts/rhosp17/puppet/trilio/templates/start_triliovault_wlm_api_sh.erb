@@ -3,7 +3,7 @@
 set -ex
 <% @backup_targets.each do |target| -%>
 <% if target['backup_target_type'] == 'nfs' -%>
-  <% if target['is_multi_ip_nfs'] -%>
+  <% if target.key?('is_multi_ip_nfs') && target['is_multi_ip_nfs'] -%>
     <% nfs_share = target['multi_ip_nfs_map'][@hostname] -%>
   <% else -%>
     <% nfs_share = target['nfs_shares'] -%>

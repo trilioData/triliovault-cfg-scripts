@@ -73,7 +73,7 @@ vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'
 <% end %>
 <% else -%>
 vault_storage_type = nfs
-  <% if target['is_multi_ip_nfs'] -%>
+  <% if target.key?('is_multi_ip_nfs') && target['is_multi_ip_nfs'] -%>
     <% nfs_share = target['multi_ip_nfs_map'][@hostname] -%>
   <% else -%>
     <% nfs_share = target['nfs_shares'] -%>
