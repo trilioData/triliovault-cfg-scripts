@@ -73,11 +73,6 @@ parameters:
     default: []
     description: list of optional vo
     type: comma_delimited_list
-  TriliovaultMultiIPNfsMap:
-    default: {}
-    description: Mapping of datamover node -> NFS share. Typically set
-                 via parameter_defaults in the resource registry.
-    type: json
   TrilioDatamoverOptVolumes:
     default: []
     description: list of optional volumes to be mounted
@@ -118,7 +113,6 @@ outputs:
             password: {get_param: DatamoverApiDbUserPassword}
             host: {get_param: [EndpointMap, MysqlInternal, host]}
             path: /dmapi
-        trilio::contego::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
         trilio::contego::libvirt_images_rbd_ceph_conf:
           list_join:
           - ''

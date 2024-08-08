@@ -9,7 +9,13 @@ fi
 <% end -%>
 <% @backup_targets.each do |target| -%>
 <% if target['backup_target_type'] == 'nfs' -%>
-<% nfs_share = target['nfs_shares'] -%>
+
+  <% if target.key?('is_multi_ip_nfs') && target['is_multi_ip_nfs']-%>
+    <% nfs_share = target['multi_ip_nfs_map'][@hostname] -%>
+  <% else -%>
+    <% nfs_share = target['nfs_shares'] -%>
+  <% end -%>
+
 <% nfs_dir = nfs_share.split(':')[1] -%>
 <% base64_mount_point = Base64.strict_encode64(nfs_dir) -%>
 <% nfs_options = target['nfs_options'] -%>
