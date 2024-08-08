@@ -10,8 +10,6 @@ class trilio::contego (
     $cinder_backend_ceph                  = false,
     $ceph_cinder_user                     = 'openstack',
     $cinder_http_retries                  = 10,
-    $nfs_map                              = {},
-    $multi_ip_nfs_enabled                 = false,
     $vddk_file_name                       = 'vddk.tar.gz',
     $vmware_to_openstack_migration_enabled= false,
     $libvirt_images_rbd_ceph_conf         = '/etc/ceph/ceph.conf',

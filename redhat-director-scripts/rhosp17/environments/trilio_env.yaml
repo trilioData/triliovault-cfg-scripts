@@ -50,9 +50,22 @@ parameter_defaults:
         s3_bucket_object_lock_enabled: false
       - backup_target_name: 'NFS_BT3'
         backup_target_type: 'nfs'
+        is_multi_ip_nfs: false
         is_default: False
         nfs_shares: '11.30.1.10:/mnt/share'
         nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+      - backup_target_name: 'MULTI_IP_NFS_BT4'
+        backup_target_type: 'nfs'
+        is_multi_ip_nfs: true
+        is_default: False
+        nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+        multi_ip_nfs_map:
+          controller1: 192.168.2.3:/var/nfsshare
+          controller2: 192.168.2.4:/var/nfsshare
+          controller3: 192.168.2.5:/var/nfsshare
+          compute0: 192.168.3.2:/var/nfsshare
+          compute1: 192.168.3.4:/var/nfsshare
+
 
    ## User can specify list of extra volumes that they want to mount on 'trilio_datamover' container.
    # Example:

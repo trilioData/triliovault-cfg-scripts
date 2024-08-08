@@ -178,11 +178,6 @@ parameters:
     default: []
     description: list of optional vo
     type: comma_delimited_list
-  TriliovaultMultiIPNfsMap:
-    default: {}
-    description: Mapping of triliovault node -> NFS share. Typically set
-                 via parameter_defaults in the resource registry.
-    type: json
   TrusteeRole: 
     default: 'creator'	
     description: This is the role to allow using triliovault features 
