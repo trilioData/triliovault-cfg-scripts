@@ -13,7 +13,8 @@ machines:
 applications:
   trilio-data-mover:
     charm: trilio-charmers-trilio-data-mover
-    channel: latest/edge
+    channel: latest/candidate
+    revision: 20
     options:
        triliovault-pkg-source: *pkg-source
        nfs-shares: <NFS server IP>:<NFS share path>
@@ -23,7 +24,8 @@ applications:
     charm: mysql-router
   trilio-dm-api:
     charm: trilio-charmers-trilio-dm-api
-    channel: latest/edge
+    channel: latest/candidate
+    revision: 17
     num_units: 1
     options:
        triliovault-pkg-source: *pkg-source
@@ -34,7 +36,8 @@ applications:
     charm: mysql-router
   trilio-horizon-plugin:
     charm: trilio-charmers-trilio-horizon-plugin
-    channel: latest/edge
+    channel: latest/candidate
+    revision: 10
     options:
        triliovault-pkg-source: *pkg-source
        openstack-encryption-support: True
@@ -42,7 +45,8 @@ applications:
     charm: mysql-router
   trilio-wlm:
     charm: trilio-charmers-trilio-wlm
-    channel: latest/edge
+    channel: latest/candidate
+    revision: 16
     num_units: 1
     options:
        triliovault-pkg-source: *pkg-source
