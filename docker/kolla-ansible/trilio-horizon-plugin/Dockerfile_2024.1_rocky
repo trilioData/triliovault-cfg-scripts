@@ -1,0 +1,27 @@
+FROM quay.io/openstack.kolla/horizon:2024.1-rocky-9
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="centos-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \ 
+      vendor="TrilioData" \
+      version="5.2.0" \
+      release="5.2" \
+      type="source" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on centos platform"
+
+##Install required packages
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+#Eg. TRILIO_PIP_INDEX_URL : https://pypi.fury.io/triliodata-dev-5-0
+RUN export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+RUN cp /var/lib/kolla/venv/lib/python3.9/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/kolla/venv/lib/python3.9/site-packages/openstack_dashboard/enabled/
+RUN cp /var/lib/kolla/venv/lib/python3.9/site-packages/trilio_dashboard/templatetags/*.py /var/lib/kolla/venv/lib/python3.9/site-packages/openstack_dashboard/templatetags/
+
+#
+RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py collectstatic --clear --noinput
+RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py compress --force
+
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
