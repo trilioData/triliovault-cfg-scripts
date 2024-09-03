@@ -8,7 +8,7 @@
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
-    client_timeout: 240
+    client_timeout: 360
     environment:
       KOLLA_BOOTSTRAP:
       KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
@@ -30,7 +30,7 @@
     action: "start_container"
     common_options: "{{ docker_common_options }}"
     detach: False
-    client_timeout: 240
+    client_timeout: 360
     environment:
       KOLLA_BOOTSTRAP:
       KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
