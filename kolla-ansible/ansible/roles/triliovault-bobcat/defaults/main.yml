@@ -335,13 +335,12 @@ triliovault_ks_users:
 ####################
 # Notification
 ####################
-triliovault_notification_topics:
-  - name: notifications
-    enabled: "{{ enable_ceilometer | bool }}"
-{% if enable_vitrage is defined %}
-  - name: vitrage_notifications
-    enabled: "{{ enable_vitrage | bool }}"
-{% endif %}
+triliovault_notification_topics: >
+  {{
+    [{'name': 'notifications', 'enabled': enable_ceilometer | bool}] 
+    + 
+    ([{'name': 'vitrage_notifications', 'enabled': enable_vitrage | bool}] if enable_vitrage is defined else [])
+  }}
 
 
 triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
