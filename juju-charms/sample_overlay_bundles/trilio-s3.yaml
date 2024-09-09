@@ -23,6 +23,8 @@ applications:
        tv-s3-access-key: <Access key>
        tv-s3-region-name: <region name>
        tv-s3-bucket: <bucket name>
+       tv-s3-ssl: True
+       tv-s3-ssl-verify: True
        verbose: True
   trilio-data-mover-mysql-router:
     charm: mysql-router
@@ -61,6 +63,8 @@ applications:
        tv-s3-access-key: <Access key>
        tv-s3-region-name: <region name>
        tv-s3-bucket: <Bucket name>
+       tv-s3-ssl: True
+       tv-s3-ssl-verify: True
        verbose: True
        trustee-role: creator
     to:
