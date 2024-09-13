@@ -2,14 +2,14 @@
 keys = root,contego
 
 [handlers]
-keys = datamover,stdout,stderr,null
+keys = datamover,s3fuse,stdout,stderr,null
 
 [formatters]
 keys = default,advanced,default-utc,advanced-utc
 
 [logger_root]
 level = INFO
-handlers = null
+handlers = s3fuse
 
 [logger_contego]
 level = INFO
@@ -19,6 +19,11 @@ qualname = contego
 [handler_datamover]
 class = logging.handlers.RotatingFileHandler
 args = ('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_s3fuse]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
 formatter = advanced-utc
 
 [handler_stderr]
