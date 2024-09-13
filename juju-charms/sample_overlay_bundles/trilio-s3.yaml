@@ -13,7 +13,7 @@ machines:
 applications:
   trilio-data-mover:
     charm: trilio-charmers-trilio-data-mover
-    channel: latest/candidate
+    channel: latest/stable
     revision: 20
     options:
        triliovault-pkg-source: *pkg-source
@@ -30,7 +30,7 @@ applications:
     charm: mysql-router
   trilio-dm-api:
     charm: trilio-charmers-trilio-dm-api
-    channel: latest/candidate
+    channel: latest/stable
     revision: 17
     num_units: 1
     options:
@@ -42,7 +42,7 @@ applications:
     charm: mysql-router
   trilio-horizon-plugin:
     charm: trilio-charmers-trilio-horizon-plugin
-    channel: latest/candidate
+    channel: latest/stable
     revision: 10
     options:
        triliovault-pkg-source: *pkg-source
@@ -51,7 +51,7 @@ applications:
     charm: mysql-router
   trilio-wlm:
     charm: trilio-charmers-trilio-wlm
-    channel: latest/candidate
+    channel: latest/stablee
     revision: 16
     num_units: 1
     options:
