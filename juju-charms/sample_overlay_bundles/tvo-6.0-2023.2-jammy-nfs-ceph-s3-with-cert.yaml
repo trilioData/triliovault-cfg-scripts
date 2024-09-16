@@ -1,7 +1,7 @@
 series: jammy
 variables:
   openstack-origin: &openstack-origin distro
-  triliovault-pkg-source: &pkg-source       "deb [trusted=yes] https://apt.fury.io/trilio-stable-6-0 /"
+  triliovault-pkg-source: &pkg-source       "deb [trusted=yes] https://apt.fury.io/trilio-maint-5-2 /"
 
 machines:
   '1':
@@ -12,20 +12,65 @@ machines:
 applications:
   trilio-data-mover:
     charm: trilio-charmers-trilio-data-mover
-    channel: latest/candidate
+    channel: 6.0/stable
+    revision: 21
     options:
       triliovault-pkg-source: *pkg-source
-      backup-target-type: s3
-      tv-s3-endpoint-url: <CEPh_S3_URL>
-      tv-s3-secret-key: <SECRET_KEY>
-      tv-s3-access-key: <ACCESS_KEY>
-      tv-s3-region-name: us-east-1
+      trilio-backup-targets: >
+        [
+          {
+            "backup-target-name": "S3_BT1",
+            "backup-target-type": "s3",
+            "is-default": true,
+            "s3-type": "other_s3",
+            "s3-access-key": "",
+            "s3-secret-key": "",
+            "s3-region-name": "",
+            "s3-bucket": "",
+            "s3-endpoint-url": "",
+            "s3-signature-version": "default",
+            "s3-auth-version": "DEFAULT",
+            "s3-ssl-enabled": true,
+            "s3-ssl-verify": true,
+            "s3-self-signed-cert": true,
+            "s3-ssl-ca_cert": "-----BEGIN CERTIFICATE-----
+        feF9TCCA92gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
+        MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
+        CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
+        9w0BCQEWHHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wHhcNMTkwNjEzMDkx
+        EFxzSP2PPURazefDXy9nmxjHv3QjrBDc9qqI6KhnegGETB+Aio+EEKA/0npLDtF1
+        SPHgaFG27p1UqRJNS+H7S9C0jXCEjZPNIfn4P42JGiCl8tFAXRBcHI5+7FiRGaGz
+        rwg2KJfv9Rg3Z32y7lrIdgbqEsyYove0d6TpQACp2VRRXjn+H0l1yioh
+        -----END CERTIFICATE-----
+        -----BEGIN CERTIFICATE-----
+        reGCDCCA/CgAwIBAgIJAIKsMAZuH8qDMA0GCSqGSIb3DQEBCwUAMIGQMQswCQYD
+        VQQGEwJJTjELMAkGA1UECAwCTUgxDTALBgNVBAcMBFBVTkUxDzANBgNVBAoMBlRS
+        SUxJTzELMAkGA1UECwwCSVQxGjAYBgNVBAMMESoudHJpbGlvZGF0YS5kZW1vMSsw
+        KQYJKoZIhvcNAQkBFhxwcmFzaGFudC5zYWtoYXJrYXJAdHJpbGlvLmlvMB4XDTE5
+        SAcT3yblzxoXoV1+pvm7PslMVWd+P/zxwucaLb4ll5BZWml7xZAgc/KIwnkyU+Yg
+        yX//RN8REGUAPYsi0LkrOAJubmI1Tbr8cgmsxG2kCPMyoyKpM3AociW7mHneu6EX
+        PIiLWm87o+dbeoPNibTkNBqN6uGpHGxspEma/r87fUiMsjj75NxvGw8D+NpynOIf
+        D6tmcLSXaJrZ+PXkX2iqss+iM4Y5FHWHlTVcqZ4kcrqNcOtO0SUtpZKCk7uZVJpa
+        mQiHr3IX9CMfGAgHOZUchA9gzz5vihg5ASrCLShdwifWrFqqSWMHEFVU+A+84Yg4
+        +BWLC6oxhDE+Oore
+        -----END CERTIFICATE-----",
+            "s3-bucket-object-lock-enabled": false
+          },
+          {
+            "backup-target-name": "NFS_BT3",
+            "backup-target-type": "nfs",
+            "is-default": false,
+            "nfs-shares": "192.2.1.33:/var/nsfshare1",
+            "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+          }
+        ]
       verbose: True
   trilio-data-mover-mysql-router:
     charm: mysql-router
   trilio-dm-api:
     charm: trilio-charmers-trilio-dm-api
-    channel: latest/candidate
+    channel: 6.0/stable
+    revision: 17
     num_units: 1
     options:
        triliovault-pkg-source: *pkg-source
@@ -36,14 +81,17 @@ applications:
     charm: mysql-router
   trilio-horizon-plugin:
     charm: trilio-charmers-trilio-horizon-plugin
-    channel: latest/candidate
+    channel: 6.0/stable
+    revision: 10
     options:
        triliovault-pkg-source: *pkg-source
        openstack-encryption-support: True
   trilio-wlm-mysql-router:
     charm: mysql-router
   trilio-wlm:
-    charm: /root/shyam/dev/charm-trilio-wlm/
+    charm: trilio-charmers-trilio-wlm
+    channel: 6.0/stable
+    revision: 17
     num_units: 1
     options:
       triliovault-pkg-source: *pkg-source
@@ -54,40 +102,37 @@ applications:
             "backup-target-name": "S3_BT1",
             "backup-target-type": "s3",
             "is-default": true,
-            "s3-type": "amazon_s3",
-            "s3-access-key": "<ACCESS_KEY>",
-            "s3-secret-key": "<SECRET_KEY>",
-            "s3-region-name": "us-west-2",
-            "s3-bucket": "<BUCKET_NAME>",
-            "s3-endpoint-url": "",
-            "s3-signature-version": "default",
-            "s3-auth-version": "DEFAULT",
-            "s3-ssl-enabled": true,
-            "s3-ssl-verify": true,
-            "s3-self-signed-cert": false,
-            "s3-ssl-ca_cert": "",
-            "s3-bucket-object-lock-enabled": false
-          },
-          {
-            "backup-target-name": "S3_BT1",
-            "backup-target-type": "s3",
-            "is-default": true,
             "s3-type": "other_s3",
-            "s3-access-key": "<ACCESS_KEY>",
-            "s3-secret-key": "<SECRET_KEY>",
+            "s3-access-key": "",
+            "s3-secret-key": "",
             "s3-region-name": "us-east-1",
-            "s3-bucket": "<BUCKET_NAME>",
-            "s3-endpoint-url": "<CEPH_S3_URL>",
+            "s3-bucket": "",
+            "s3-endpoint-url": "",
             "s3-signature-version": "default",
             "s3-auth-version": "DEFAULT",
             "s3-ssl-enabled": true,
             "s3-ssl-verify": true,
             "s3-self-signed-cert": true,
             "s3-ssl-ca_cert": "-----BEGIN CERTIFICATE-----
-        SHKLLEffdfdfdfggdgdrrasbgnYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
+        feF9TCCA92gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
         MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
         CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
-        9w0BCQEWHHBnqewlrodhssaksldgffegegrgmfvvdkcsoejdHhcNMTkwNjEzMDkx
+        9w0BCQEWHHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wHhcNMTkwNjEzMDkx
+        EFxzSP2PPURazefDXy9nmxjHv3QjrBDc9qqI6KhnegGETB+Aio+EEKA/0npLDtF1
+        SPHgaFG27p1UqRJNS+H7S9C0jXCEjZPNIfn4P42JGiCl8tFAXRBcHI5+7FiRGaGz
+        rwg2KJfv9Rg3Z32y7lrIdgbqEsyYove0d6TpQACp2VRRXjn+H0l1yioh
+        -----END CERTIFICATE-----
+        -----BEGIN CERTIFICATE-----
+        reGCDCCA/CgAwIBAgIJAIKsMAZuH8qDMA0GCSqGSIb3DQEBCwUAMIGQMQswCQYD
+        VQQGEwJJTjELMAkGA1UECAwCTUgxDTALBgNVBAcMBFBVTkUxDzANBgNVBAoMBlRS
+        SUxJTzELMAkGA1UECwwCSVQxGjAYBgNVBAMMESoudHJpbGlvZGF0YS5kZW1vMSsw
+        KQYJKoZIhvcNAQkBFhxwcmFzaGFudC5zYWtoYXJrYXJAdHJpbGlvLmlvMB4XDTE5
+        SAcT3yblzxoXoV1+pvm7PslMVWd+P/zxwucaLb4ll5BZWml7xZAgc/KIwnkyU+Yg
+        yX//RN8REGUAPYsi0LkrOAJubmI1Tbr8cgmsxG2kCPMyoyKpM3AociW7mHneu6EX
+        PIiLWm87o+dbeoPNibTkNBqN6uGpHGxspEma/r87fUiMsjj75NxvGw8D+NpynOIf
+        D6tmcLSXaJrZ+PXkX2iqss+iM4Y5FHWHlTVcqZ4kcrqNcOtO0SUtpZKCk7uZVJpa
+        mQiHr3IX9CMfGAgHOZUchA9gzz5vihg5ASrCLShdwifWrFqqSWMHEFVU+A+84Yg4
+        +BWLC6oxhDE+Oore
         -----END CERTIFICATE-----",
             "s3-bucket-object-lock-enabled": false
           },
@@ -95,7 +140,7 @@ applications:
             "backup-target-name": "NFS_BT3",
             "backup-target-type": "nfs",
             "is-default": false,
-            "nfs-shares": "<NFS_SHARE>",
+            "nfs-shares": "192.2.1.33:/var/nsfshare1",
             "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
           }
         ]
