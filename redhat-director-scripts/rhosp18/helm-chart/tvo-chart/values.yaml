@@ -195,46 +195,34 @@ pod:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 63630
-        triliovault_datamover:
-          readOnlyRootFilesystem: false
-          privileged: true
-          runAsUser: 42424
         triliovault_wlm_api:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_scheduler:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_cron:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_workloads:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
-          runAsGroup: 42424
+          runAsGroup: 42436
         triliovault_datamover_api_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
           runAsGroup: 63630
-        triliovault_datamover_init:
-          readOnlyRootFilesystem: false
-          runAsUser: 0
-          runAsGroup: 42424
         wlm_cloud_trust_creation:
           readOnlyRootFilesystem: false
-          runAsUser: 42424
-          runAsGroup: 42424
-        ceph_keyring_placement_triliovault:
-          readOnlyRootFilesystem: false
-          runAsUser: 42424
-          runAsGroup: 42424
+          runAsUser: 42436
+          runAsGroup: 42436
 
   affinity:
     anti:
@@ -244,50 +232,6 @@ pod:
         default: kubernetes.io/hostname
       weight:
         default: 10
-  mounts:
-    triliovault_wlm_api:
-      init_container: null
-      triliovault_wlm_api:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_cron:
-      init_container: null
-      triliovault_wlm_cron:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_scheduler:
-      init_container: null
-      triliovault_wlm_scheduler:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_workloads:
-      init_container: null
-      triliovault_wlm_workloads:
-        volumeMounts:
-        volumes:
-    triliovault_datamover_api:
-      init_container: null
-      triliovault_datamover_api:
-        volumeMounts:
-        volumes:
-    triliovault_datamover:
-      init_container: null
-      triliovault_datamover:
-        volumeMounts:
-        volumes:
-    triliovault_tests:
-      init_container: null
-      triliovault_tests:
-        volumeMounts:
-        volumes:
-    triliovault_datamover_db_sync:
-      triliovault_wlm_db_sync:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_db_sync:
-      triliovault_wlm_db_sync:
-        volumeMounts:
-        volumes:
   lifecycle:
     upgrades:
       deployments:
@@ -357,13 +301,6 @@ pod:
         memory: "1024Mi"
         cpu: "2000m"
     datamover_api:
-      requests:
-        memory: "128Mi"
-        cpu: "100m"
-      limits:
-        memory: "1024Mi"
-        cpu: "2000m"
-    datamover:
       requests:
         memory: "128Mi"
         cpu: "100m"

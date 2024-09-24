@@ -1,6 +1,8 @@
 #!/bin/bash -x
 set -ex
 
+## Note: Please source openstack cloud admin rc file before running this script
+
 if [ -z "$1" ]; then
   echo "Usage: $0 <keystone_interface>"
   exit 1
