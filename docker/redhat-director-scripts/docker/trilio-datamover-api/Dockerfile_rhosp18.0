@@ -1,4 +1,4 @@
-FROM registry.redhat.io/rhoso-beta/openstack-base-rhel9:18.0.0
+FROM registry.redhat.io/rhoso/openstack-base-rhel9:18.0.0
 
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
