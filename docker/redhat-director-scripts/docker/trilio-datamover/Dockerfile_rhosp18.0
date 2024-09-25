@@ -16,7 +16,6 @@ USER root
 ## Setup repos
 RUN dnf clean all && dnf config-manager --set-disabled \*
 ADD trilio.repo /etc/yum.repos.d/
-ADD rhoso18.repo /etc/yum.repos.d/
 ADD virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm /tmp/
 RUN dnf repolist
 
