@@ -42,18 +42,18 @@ vault_storage_type = s3
 vault_s3_endpoint_url = {{ .s3_endpoint_url }}
 vault_s3_bucket = {{ .s3_bucket }}
 {{- if eq .s3_type "amazon_s3" }}
-vault_storage_nfs_export = {{ .s3_bucket }}
+vault_storage_filesystem_export = {{ .s3_bucket }}
 {{- else }}
 
 {{- $s3_endpoint_url := .s3_endpoint_url | trimSuffix "/" }}
 {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
 {{- $s3_endpoint_domain_name := $s3_endpoint_url_no_http | replace "https://" "" }}
-vault_storage_nfs_export = {{ $s3_endpoint_domain_name }}/{{ .s3_bucket }}
+vault_storage_filesystem_export = {{ $s3_endpoint_domain_name }}/{{ .s3_bucket }}
 
 {{- end }}
 {{- else }}
 vault_storage_type = nfs
-vault_storage_nfs_export = {{ .nfs_shares }}
+vault_storage_filesystem_export = {{ .nfs_shares }}
 vault_storage_nfs_options = {{ .nfs_options }}
 {{- end }}
 {{- if .is_default }}
