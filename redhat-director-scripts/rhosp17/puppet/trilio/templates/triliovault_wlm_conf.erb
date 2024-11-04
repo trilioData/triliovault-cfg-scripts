@@ -70,10 +70,10 @@ immutable = 1
 immutable = 0
 <% end %>
 <% if target['s3_type'] == 'amazon_s3' %>
-vault_storage_nfs_export = <%= target['s3_bucket'] %>
+vault_storage_filesystem_export = <%= target['s3_bucket'] %>
 <% else -%>
 <% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
-vault_storage_nfs_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
+vault_storage_filesystem_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
 <% end %>
 <% else -%>
 vault_storage_type = nfs
@@ -83,7 +83,7 @@ vault_storage_type = nfs
     <% nfs_share = target['nfs_shares'] -%>
   <% end -%>
 
-vault_storage_nfs_export = <%= nfs_share %>
+vault_storage_filesystem_export = <%= nfs_share %>
 vault_storage_nfs_options = <%= target['nfs_options'] %>
 <% end %>
 <% if target['is_default'] %>
