@@ -41,7 +41,7 @@ RUN dnf config-manager --disable openstack-17-for-rhel-9-x86_64-rpms
 RUN dnf --releasever 9.2 -y install openstack-nova-common python3-nova python3-novaclient udev \
   fuse python3-neutronclient python3-retrying python3-cryptography \
   python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
-  pacemaker-remote resource-agents pcs
+  pacemaker-remote resource-agents pcs parted
 
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
