@@ -147,7 +147,7 @@ applications:
       verbose: True
       trustee-role: creator,member
     to:
-      - '1'
+      - 'lxd:1'
 relations:
   # Triliovault horizon plugin relations
   # # relation with openstack-dashboard
