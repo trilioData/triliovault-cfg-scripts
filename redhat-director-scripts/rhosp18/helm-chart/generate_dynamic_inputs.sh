@@ -9,7 +9,7 @@ WLM_DB_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42} | hea
 
 RABBIT_HOST=`oc get secret rabbitmq-default-user -o jsonpath='{.data.host}' | base64 --decode`
 RABBIT_PORT=`oc get secret rabbitmq-default-user -o jsonpath='{.data.port}' | base64 --decode`
-DB_ROOT_PASSWORD=""
+DB_ROOT_PASSWORD=`oc get secret osp-secret -o jsonpath='{.data.DbRootPassword}' | base64 --decode`
 DB_HOST=""
 DB_PORT=""
 RABBIT_ADMIN_PASSWORD=""
