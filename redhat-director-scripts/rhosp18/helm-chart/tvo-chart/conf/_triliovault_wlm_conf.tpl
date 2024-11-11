@@ -41,6 +41,13 @@ workloads_workers = 4
 vault_storage_type = s3
 vault_s3_endpoint_url = {{ .s3_endpoint_url }}
 vault_s3_bucket = {{ .s3_bucket }}
+
+{{- if .s3_bucket_object_lock_enabled }}
+immutable = 1
+{{- else }}
+immutable = 0
+{{- end }}
+
 {{- if eq .s3_type "amazon_s3" }}
 vault_storage_filesystem_export = {{ .s3_bucket }}
 {{- else }}

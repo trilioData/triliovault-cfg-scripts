@@ -40,6 +40,14 @@ vault_s3_ssl = {{ $target.s3_ssl_enabled }}
 vault_s3_ssl_verify = {{ $target.s3_ssl_verify }}
 vault_storage_nfs_export = {{ $vaultStorageNfsExport }}
 
+{{- if $target.s3_bucket_object_lock_enabled }}
+bucket_object_lock=true
+use_manifest_suffix=true
+{{- else }}
+bucket_object_lock=false
+use_manifest_suffix=false
+{{- end }}
+
 {{- if and $target.s3_ssl_enabled $target.s3_self_signed_cert }}
 vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ $target.backup_target_name | lower }}.pem
 {{- else }}
