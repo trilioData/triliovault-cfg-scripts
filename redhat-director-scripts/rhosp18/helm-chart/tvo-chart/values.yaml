@@ -83,6 +83,7 @@ triliovault_backup_targets:
     s3_endpoint_url: 'ENDPOINT_URL1'
     s3_signature_version: 'default'
     s3_auth_version: 'DEFAULT'
+    s3_bucket_object_lock_enabled: false
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: false
@@ -97,6 +98,7 @@ triliovault_backup_targets:
     s3_endpoint_url: 'ENDPOINT_URL2'
     s3_signature_version: 'default'
     s3_auth_version: 'DEFAULT'
+    s3_bucket_object_lock_enabled: false
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: true
