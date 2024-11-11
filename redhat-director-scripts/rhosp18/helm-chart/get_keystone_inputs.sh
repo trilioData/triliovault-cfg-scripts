@@ -85,3 +85,5 @@ keystone:
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${AUTH_HOST_PUBLIC}:8781/v1/\$(tenant_id)s"
     admin_endpoint: "${AUTH_PROTOCOL_ADMIN}://${AUTH_HOST_ADMIN}:8781/v1/\$(tenant_id)s"
 EOF
+
+echo -e "Output written in file ${SCRIPT_DIR}/trilio_inputs_keystone.yaml"

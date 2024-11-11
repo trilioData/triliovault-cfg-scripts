@@ -15,10 +15,13 @@ DB_PORT=""
 RABBIT_ADMIN_PASSWORD=""
 
 
-
+MEMCACHED_SERVERS=`oc get memcached -o jsonpath='{.items[*].status.serverList[*]}' | tr ' ' ','`
 KEYSTONE_CA_CERT=`oc get secret rootca-internal -o jsonpath='{.data.ca\.crt}' | base64 --decode`
+TRANSPORT_URL=`oc get secret rabbitmq-transport-url-cinder-cinder-transport -o jsonpath='{.data.transport_url}' | base64 --decode`
 
 tee > ${SCRIPT_DIR}/tvo-chart/values_overrides/trilio_inputs_dynamic.yaml << EOF
+common:
+  memcached_servers: $MEMCACHED_SERVERS
 database:
   common:
     root_user_name: "root"
@@ -36,8 +39,10 @@ rabbitmq:
     host: $RABBIT_HOST
     port: $RABBIT_PORT
   datamover_api:
+    transport_url: $TRANSPORT_URL
     password: $DMAPI_RABBIT_PASSWORD
   wlm_api:
+    transport_url: $TRANSPORT_URL
     password: $WLM_RABBIT_PASSWORD
 keystone:
   common:
@@ -45,4 +50,4 @@ keystone:
 $(echo "$KEYSTONE_CA_CERT" | sed 's/^/      /')
 EOF
 
-echo -e "Dynamic values are generated and copied to file ${SCRIPT_DIR}/trilio_inputs_dynamic.yaml"
+echo -e "Dynamic values are generated and copied to file ${SCRIPT_DIR}/tvo-chart/values_overrides/trilio_inputs_dynamic.yaml"
