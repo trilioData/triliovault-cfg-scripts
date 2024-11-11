@@ -171,11 +171,13 @@ rabbitmq:
     host: "EDIT_HOST"
     port: "5672"
     notification_driver: "messagingv2"
-  datamover_api: 
+  datamover_api:
+    transport_url: ""
     user: "dmapi"
     password: "EDIT_PASSWORD"
     vhost: "dmapi"
-  wlm_api: 
+  wlm_api:
+    transport_url: ""
     user: "workloadmgr"
     password: "EDIT_PASSWORD"
     vhost: "workloadmgr"

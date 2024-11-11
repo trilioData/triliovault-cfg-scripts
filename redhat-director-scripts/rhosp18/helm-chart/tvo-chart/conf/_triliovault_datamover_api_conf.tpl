@@ -1,6 +1,6 @@
 [DEFAULT]
 dmapi_workers = {{ .Values.common.dmapi_workers }}
-transport_url = "rabbit://{{- .Values.rabbitmq.datamover_api.user -}}:{{- .Values.rabbitmq.datamover_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.common.port -}}/{{- .Values.rabbitmq.datamover_api.vhost }}"
+transport_url = "{{ .Values.rabbitmq.datamover_api.transport_url }}"
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = 8784
 dmapi_enabled_apis = dmapi
@@ -37,7 +37,7 @@ auth_uri = {{ .Values.keystone.common.auth_uri }}
 #insecure = False
 
 [oslo_messaging_notifications]
-transport_url = "rabbit://{{- .Values.rabbitmq.datamover_api.user -}}:{{- .Values.rabbitmq.datamover_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.common.port -}}/{{- .Values.rabbitmq.datamover_api.vhost }}"
+transport_url = "{{ .Values.rabbitmq.datamover_api.transport_url }}"
 driver = "{{- .Values.rabbitmq.notification_driver }}"
 
 [oslo_middleware]
