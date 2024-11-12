@@ -59,7 +59,10 @@ spec:
           env:
             - name: POD_NAME
               value: "triliovault-wlm-scheduler"
-
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           command:
             - /bin/bash
             - -c

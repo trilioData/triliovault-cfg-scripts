@@ -49,10 +49,6 @@ WLM_USER_DOMAIN_ID=$(openstack user show -f value -c domain_id \
                 "${WLM_USER_NAME}")
 
 
-host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk '{ print $1 }') || exit 1
-
-POD_IP=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
-
 KEYSTONE_INTERFACE="{{- .Values.keystone.keystone_interface -}}"
 NEUTRON_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service neutron -c URL -f value)
 CINDER_URL=$(openstack endpoint list --interface $KEYSTONE_INTERFACE --service cinderv3 -c URL -f value)
