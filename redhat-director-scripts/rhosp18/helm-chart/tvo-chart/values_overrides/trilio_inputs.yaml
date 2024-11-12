@@ -126,5 +126,4 @@ keystone:
     cloud_admin_user_password: "password"
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
-    cloud_admin_project_id: "gbtb21bc95fd42da86e57c610dc6b55d"
 
