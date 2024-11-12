@@ -9,6 +9,7 @@ WLM_DB_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42} | hea
 
 RABBIT_HOST=`oc get secret rabbitmq-default-user -o jsonpath='{.data.host}' | base64 --decode`
 RABBIT_PORT=`oc get secret rabbitmq-default-user -o jsonpath='{.data.port}' | base64 --decode`
+RABBIT_DRIVER=$(oc get secret nova-api-config-data -o jsonpath='{.data.01-nova\.conf}' | base64 --decode | grep "^driver" | awk -F"=" '{print $2}' | xargs)
 DB_ROOT_PASSWORD=`oc get secret osp-secret -o jsonpath='{.data.DbRootPassword}' | base64 --decode`
 DB_HOST=""
 DB_PORT=""
@@ -38,6 +39,7 @@ rabbitmq:
     admin_password: $RABBIT_ADMIN_PASSWORD
     host: $RABBIT_HOST
     port: $RABBIT_PORT
+    driver: $RABBIT_DRIVER
   datamover_api:
     transport_url: $TRANSPORT_URL
     password: $DMAPI_RABBIT_PASSWORD

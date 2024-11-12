@@ -66,10 +66,6 @@ WLM_KEYSTONE_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42}
 
 tee > ${SCRIPT_DIR}/trilio_inputs_keystone.yaml << EOF
 keystone:
-  datamover_api:
-    password: $DMAPI_KEYSTONE_PASSWORD
-  wlm_api:
-    password: $WLM_KEYSTONE_PASSWORD
   common:
     auth_url: "$KEYSTONE_URL"
     auth_uri: "$AUTH_URI"
@@ -77,10 +73,12 @@ keystone:
     keystone_auth_host: "$AUTH_HOST"
     keystone_auth_port: "$AUTH_PORT"
   datamover_api:
+    password: $DMAPI_KEYSTONE_PASSWORD
     internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://${AUTH_HOST_INTERNAL}:8784/v2"
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${AUTH_HOST_PUBLIC}:8784/v2"
     admin_endpoint: "${AUTH_PROTOCOL_ADMIN}://${AUTH_HOST_ADMIN}:8784/v2"
   wlm_api:
+    password: $WLM_KEYSTONE_PASSWORD
     internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://${AUTH_HOST_INTERNAL}:8781/v1/\$(tenant_id)s"
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${AUTH_HOST_PUBLIC}:8781/v1/\$(tenant_id)s"
     admin_endpoint: "${AUTH_PROTOCOL_ADMIN}://${AUTH_HOST_ADMIN}:8781/v1/\$(tenant_id)s"
