@@ -38,7 +38,7 @@ auth_uri = {{ .Values.keystone.common.auth_uri }}
 
 [oslo_messaging_notifications]
 transport_url = {{ .Values.rabbitmq.datamover_api.transport_url }}
-driver = {{- .Values.rabbitmq.common.driver }}
+driver = {{ .Values.rabbitmq.common.driver }}
 
 [oslo_middleware]
 enable_proxy_headers_parsing = {{  .Values.common.oslo_enable_proxy_headers_parsing }}
