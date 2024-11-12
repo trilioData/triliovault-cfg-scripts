@@ -16,7 +16,7 @@ ssl_key_file =
 api_paste_config = /etc/triliovault-datamover/api-paste.ini
 
 [database]
-connection = "mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Values.database.datamover_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.datamover_api.database }}"
+connection = mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Values.database.datamover_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.datamover_api.database }}
 
 [keystone_authtoken]
 memcached_servers = {{ .Values.common.memcached_servers }}
@@ -34,11 +34,11 @@ username = {{ .Values.keystone.datamover_api.user }}
 auth_url = {{ .Values.keystone.common.auth_url }}
 auth_type = password
 auth_uri = {{ .Values.keystone.common.auth_uri }}
-#insecure = False
+
 
 [oslo_messaging_notifications]
 transport_url = "{{ .Values.rabbitmq.datamover_api.transport_url }}"
-driver = "{{- .Values.rabbitmq.notification_driver }}"
+driver = "{{- .Values.rabbitmq.driver }}"
 
 [oslo_middleware]
 enable_proxy_headers_parsing = {{  .Values.common.oslo_enable_proxy_headers_parsing }}

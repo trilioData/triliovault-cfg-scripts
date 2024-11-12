@@ -170,7 +170,7 @@ rabbitmq:
     admin_password: "EDIT_PASSWORD"
     host: "EDIT_HOST"
     port: "5672"
-    notification_driver: "messagingv2"
+    driver: "messagingv2"
   datamover_api:
     transport_url: ""
     user: "dmapi"
