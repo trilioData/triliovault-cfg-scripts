@@ -72,6 +72,11 @@ spec:
             - /bin/bash
             - -c
             - /tmp/triliovault-datamover-api-init.sh
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: triliovault-datamover-api-bin

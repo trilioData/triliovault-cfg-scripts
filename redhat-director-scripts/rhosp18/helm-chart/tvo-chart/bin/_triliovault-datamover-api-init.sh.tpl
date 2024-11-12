@@ -19,19 +19,13 @@ set -ex
 
 ## datamover api conf file for my_ip parameter
 chown -R dmapi:dmapi /var/log/triliovault
-touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf
-host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk '{ print $1 }') || exit 1
-datamover_api_ip_address=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
-if [ -z "${datamover_api_ip_address}" ] ; then
-  echo "Var my_ip is empty"
-  exit 1
-fi
+touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-dynamic.conf
 
-tee > /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf << EOF
+tee > /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-dynamic.conf << EOF
 [DEFAULT]
-dmapi_link_prefix = http://${datamover_api_ip_address}:8784
-dmapi_listen = $datamover_api_ip_address
-my_ip = $datamover_api_ip_address
+dmapi_link_prefix = http://${POD_IP}:8784
+dmapi_listen = $POD_IP
+my_ip = $POD_IP
 EOF
 
 
