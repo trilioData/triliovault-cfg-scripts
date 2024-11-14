@@ -22,7 +22,7 @@ connection = mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Va
 memcached_servers = {{ .Values.common.memcached_servers }}
 signing_dir = /var/cache/dmapi
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/triliovault-datamover/ca-cert.pem
+cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
 {{- else }}
 cafile =
 {{- end }}

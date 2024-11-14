@@ -132,7 +132,7 @@ spec:
               subPath: datamover_api_logging.conf
               readOnly: true
             - name: triliovault-datamover-api-etc
-              mountPath: /etc/triliovault-datamover/ca-cert.pem
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
             - name: triliovault-datamover-api-bin

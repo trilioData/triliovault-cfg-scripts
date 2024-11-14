@@ -126,4 +126,7 @@ keystone:
     cloud_admin_user_password: "password"
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
+    service_project_name: "service"
+    service_project_domain_name: "Default"
+
 

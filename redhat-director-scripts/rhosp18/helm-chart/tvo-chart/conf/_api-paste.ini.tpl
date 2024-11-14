@@ -40,5 +40,5 @@ project_name = {{ .Values.keystone.common.service_project_name }}
 admin_user = {{ .Values.keystone.wlm_api.user }}
 admin_password = {{ .Values.keystone.wlm_api.password }}
 signing_dir = /var/cache/workloadmgr
-insecure = True
+insecure = False
 interface = {{ .Values.keystone.keystone_interface }}
