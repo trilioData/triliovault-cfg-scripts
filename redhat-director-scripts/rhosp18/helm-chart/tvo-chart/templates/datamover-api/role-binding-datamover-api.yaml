@@ -27,3 +27,17 @@ subjects:
   - kind: ServiceAccount
     name: triliovault-datamover-api
     namespace: triliovault
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-datamover-api-privileged
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-datamover-api
+    namespace: triliovault
