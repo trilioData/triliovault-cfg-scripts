@@ -41,11 +41,11 @@ vault_s3_ssl_verify = {{ $target.s3_ssl_verify }}
 vault_storage_nfs_export = {{ $vaultStorageNfsExport }}
 
 {{- if $target.s3_bucket_object_lock_enabled }}
-bucket_object_lock=true
-use_manifest_suffix=true
+bucket_object_lock = true
+use_manifest_suffix = true
 {{- else }}
-bucket_object_lock=false
-use_manifest_suffix=false
+bucket_object_lock = false
+use_manifest_suffix = false
 {{- end }}
 
 {{- if and $target.s3_ssl_enabled $target.s3_self_signed_cert }}
@@ -75,7 +75,6 @@ vault_s3_max_pool_connections = 500
 vault_data_directory_old = /var/triliovault
 vault_data_directory = {{ $vaultDataDir }}/{{ $backupTargetMountPoint }}
 log_config_append = /etc/triliovault-object-store/object_store_logging.conf
-vault_s3_max_pool_connections = 500
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
 {{- end -}}
