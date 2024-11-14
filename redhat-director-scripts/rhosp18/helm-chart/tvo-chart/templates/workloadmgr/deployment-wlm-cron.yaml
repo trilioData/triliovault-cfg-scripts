@@ -59,7 +59,10 @@ spec:
           env:
             - name: POD_NAME
               value: "triliovault-wlm-cron"
-
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           command:
             - /bin/bash
             - -c
@@ -115,7 +118,7 @@ spec:
               subPath: triliovault-wlm.conf
               readOnly: true
             - name: triliovault-wlm-etc
-              mountPath: /etc/triliovault-wlm/ca-cert.pem
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
             - name: triliovault-wlm-etc

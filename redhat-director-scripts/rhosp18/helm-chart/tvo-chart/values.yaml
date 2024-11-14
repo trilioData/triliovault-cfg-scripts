@@ -118,7 +118,6 @@ keystone:
     cloud_admin_user_name: "admin"
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
-    cloud_admin_project_id: ""
     cloud_admin_domain_name: "Default"
     region_name: "RegionOne"
     auth_url: ""
@@ -170,12 +169,14 @@ rabbitmq:
     admin_password: "EDIT_PASSWORD"
     host: "EDIT_HOST"
     port: "5672"
-    notification_driver: "messagingv2"
-  datamover_api: 
+    driver: "messagingv2"
+  datamover_api:
+    transport_url: ""
     user: "dmapi"
     password: "EDIT_PASSWORD"
     vhost: "dmapi"
-  wlm_api: 
+  wlm_api:
+    transport_url: ""
     user: "workloadmgr"
     password: "EDIT_PASSWORD"
     vhost: "workloadmgr"

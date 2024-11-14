@@ -14,7 +14,6 @@ images:
 
 common: 
   trustee_role: "creator"
-  memcached_servers: "openstack-memcached-memcached-0.memcached.openstack.svc.cluster.local:11211,openstack-memcached-memcached-1.memcached.openstack.svc.cluster.local:11211,openstack-memcached-memcached-2.memcached.openstack.svc.cluster.local:11211"
 triliovault_backup_targets:
     - backup_target_name: 'S3_BT1'
       backup_target_type: 's3'
@@ -27,6 +26,7 @@ triliovault_backup_targets:
       s3_endpoint_url: 'URL'
       s3_signature_version: 'default'
       s3_auth_version: 'DEFAULT'
+      s3_bucket_object_lock_enabled: false
       s3_ssl_enabled: true
       s3_ssl_verify: true
       s3_self_signed_cert: false
@@ -41,6 +41,7 @@ triliovault_backup_targets:
       s3_endpoint_url: 'URL'
       s3_signature_version: 'default'
       s3_auth_version: 'DEFAULT'
+      s3_bucket_object_lock_enabled: false
       s3_ssl_enabled: true
       s3_ssl_verify: true
       s3_self_signed_cert: true
@@ -125,73 +126,7 @@ keystone:
     cloud_admin_user_password: "password"
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
-    cloud_admin_project_id: "gbtb21bc95fd42da86e57c610dc6b55d"
-    ca_cert: |
-      -----BEGIN CERTIFICATE-----
-      sakJ/zCCBeegAwIBAgIURpJjcZlX1J5ode80aHI5STuc57MwDQYJKoZIhvcNAQEL
-      sakwgY4xCzAJBgNVBAYTAklOMQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUHVuZTEP
-      MA0GA1UECgwGVHJpbGlvMQswCQYDVQQLDAJJVDEfMB0GA1UEAwwWc2V0dXAzLnRy
-      askpb2RhdGEuZGVtbzEkMCIGCSqGSIb3DQEJARYVcm9oaXQucGF0aWxAdHJpbGlv
-      LmlvMB4XDTI0MDUxNzExMzExOVoXDTM0MDUxNTExMzExOVowgY4xCzAJBgNVBAYT
-      AklOMQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUHVuZTEPMA0GA1UECgwGVHJpbGlv
-      MQswCQYDVQQLDAJJVDEfMB0GA1UEAwwWc2V0dXAzLnRyaWxpb2RhdGEuZGVtbzEk
-      MCIGCSqGSIb3DQEJARYVcm9oaXQucGF0aWxAdHJpbGlvLmlvMIIEIjANBgkqhkiG
-      9w0BAQEFAAOCBA8AMIIECgKCBAEA2rOfIFUZj5RNx1hcK4+V28HrpcJFSxRtdqhe
-      lQXNwT86gkJQ9uh9uvAsYxOXUW8dVUZNIwmb+fvFlNTjiGGanO/H6q7vqPopnLbC
-      METvI32cUd8G6ksurqNVJBuvhAmpYa0wrzYHT2jMNnuz3bS2Cm7xrEXJMWDQQaeP
-      ific2vwYzyvAIc+V9xEW2DJhIeKzWFDe5D00savZAhNWK1RP+n1KAaDZeJAY2rD5
-      VzK31c7OwHomt+uimnJX3uMwC2MquaFAJtr6L8W+jJ7EJXtWZScHRo2AhTMswbxe
-      NQdgUsnjZQ0oGx2Oq7FX2jiilKHLXiedKTAzs/KJcRJMy6xlEi57V/Jl2sk23NPK
-      Fsdtf7R3aXSSbO+rOUZqtkMj6Slo9vnbwK3dQDWnWu9GIvFLZifABebSvOI3iYXK
-      /9hNu4R/sPFsTrTTD/JnGMF5G/V1dk2Eqrb8HI2QtHv0xUW0tizyZsGHYO2gGQel
-      bwbCgvZrh6ley6vROk06HaI/oyFYdAW2Dm/D/vcvPPVrbHgQx0AOX12wRWsn0EEB
-      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
-      w+U0gxl1PLGiC8FcW01zYGBask
-      -----END CERTIFICATE-----
-database:
-  common:
-    root_user_name: "root"
-    root_password: "password"
-    host: "mariadb.openstack.svc.cluster.local"
-    port: "3306"
-rabbitmq:
-  common: 
-    admin_user: "rabbitmq"
-    admin_password: "password"
-    host: "rabbitmq.openstack.svc.cluster.local"
-    port: "15672"
+    service_project_name: "service"
+    service_project_domain_name: "Default"
+
+

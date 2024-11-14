@@ -24,11 +24,11 @@ neutron_api_insecure = false
 osapi_workloads_listen_port = 8780
 region_name_for_services = "{{ .Values.keystone.common.region_name }}"
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
-sql_connection = "mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.wlm_api.database }}"
+sql_connection = mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.wlm_api.database }}
 state_path = /opt/stack/data/workloadmgr
 taskflow_max_cache_size = 1024
-transport_url = "rabbit://{{- .Values.rabbitmq.wlm_api.user -}}:{{- .Values.rabbitmq.wlm_api.password -}}@{{- .Values.rabbitmq.common.host -}}:{{- .Values.rabbitmq.common.port -}}/{{- .Values.rabbitmq.wlm_api.vhost }}"
-trustee_role  = "{{ .Values.common.trustee_role }}"
+transport_url = {{ .Values.rabbitmq.wlm_api.transport_url }}
+trustee_role  = {{ .Values.common.trustee_role }}
 use_syslog = false
 vault_data_directory = /var/lib/nova/triliovault-mounts
 vault_data_directory_old = /var/triliovault
@@ -80,8 +80,7 @@ encryption_support = true
 [clients]
 client_retry_limit = 3
 endpoint_type  = internal
-#insecure = false
-cafile = /etc/pki/tls/certs/ca-bundle.crt
+cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
 [filesearch]
 process_timeout = 300
 [global_job_scheduler]
@@ -98,7 +97,7 @@ auth_plugin = password
 auth_type = password
 auth_version = v3
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/triliovault-wlm/ca-cert.pem
+cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
 {{- else }}
 cafile = 
 {{- end }}
@@ -108,7 +107,7 @@ service_token_roles_required = true
 signing_dir = /var/cache/workloadmgr
 username = {{ .Values.keystone.wlm_api.user }}
 password = {{ .Values.keystone.wlm_api.password }}
-memcached_servers = "{{ .Values.common.memcached_servers }}"
+memcached_servers = {{ .Values.common.memcached_servers }}
 
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
