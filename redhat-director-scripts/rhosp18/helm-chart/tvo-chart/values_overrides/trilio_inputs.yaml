@@ -128,5 +128,6 @@ keystone:
     cloud_admin_domain_name: "Default"
     service_project_name: "service"
     service_project_domain_name: "Default"
+    region_name: "regionOne"
 
 
