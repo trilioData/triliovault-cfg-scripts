@@ -19,9 +19,8 @@ keystone:
     password: sjeUh5U3JqCMyTz2SgzYTgDv01x9wSpZkNBzLydsme
     internal_endpoint: "http://keystone-api.openstack.svc.cluster.local:8784/v2"
     public_endpoint: "https://keystone.setup3.triliodata.demo:8784/v2"
-    admin_endpoint: "http://keystone-api.openstack.svc.cluster.local:8784/v2"
   wlm_api:
     password: skkc0EXhGkiK1diKRPjbY9RZbdKY0dh6kLHtdMQksd
     internal_endpoint: "http://keystone-api.openstack.svc.cluster.local:8781/v1/$(tenant_id)s"
     public_endpoint: "https://keystone.setup3.triliodata.demo:8781/v1/$(tenant_id)s"
-    admin_endpoint: "http://keystone-api.openstack.svc.cluster.local:8781/v1/$(tenant_id)s"
+
