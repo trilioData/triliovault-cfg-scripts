@@ -99,7 +99,7 @@ spec:
         - name: pod-tmp
           emptyDir: {}
         - name: trilio-logs
-           emptyDir: {}
+          emptyDir: {}
         - name: triliovault-object-store-etc
           secret:
             secretName: triliovault-object-store-etc

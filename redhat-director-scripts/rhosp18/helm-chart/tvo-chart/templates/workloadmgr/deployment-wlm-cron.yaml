@@ -134,7 +134,7 @@ spec:
         - name: pod-tmp
           emptyDir: {}
         - name: trilio-logs
-           emptyDir: {}
+          emptyDir: {}
         - name: triliovault-wlm-etc
           secret:
             secretName: triliovault-wlm-etc

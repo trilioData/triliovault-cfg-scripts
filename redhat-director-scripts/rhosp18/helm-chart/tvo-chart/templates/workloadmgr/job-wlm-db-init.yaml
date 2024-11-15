@@ -87,4 +87,4 @@ spec:
             secretName: triliovault-wlm-etc
             defaultMode: 0444
         - name: trilio-logs
-           emptyDir: {}
+          emptyDir: {}

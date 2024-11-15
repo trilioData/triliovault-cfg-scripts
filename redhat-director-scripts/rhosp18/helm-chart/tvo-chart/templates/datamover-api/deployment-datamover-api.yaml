@@ -154,6 +154,6 @@ spec:
             name: triliovault-datamover-api-bin
             defaultMode: 0555
         - name: trilio-logs
-           emptyDir: {}
+          emptyDir: {}
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}

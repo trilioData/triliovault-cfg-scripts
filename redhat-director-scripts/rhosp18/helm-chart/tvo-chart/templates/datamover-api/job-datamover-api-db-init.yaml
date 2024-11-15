@@ -74,7 +74,7 @@ spec:
         - name: pod-tmp
           emptyDir: {}
         - name: trilio-logs
-           emptyDir: {}
+          emptyDir: {}
         - name: triliovault-datamover-api-bin
           configMap:
             name: triliovault-datamover-api-bin
