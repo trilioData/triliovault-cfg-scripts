@@ -140,7 +140,7 @@ spec:
               subPath: triliovault-datamover-api.sh
             - name: pod-shared-triliovault-datamover-api
               mountPath: /tmp/pod-shared-triliovault-datamover-api
-            - name: varlogtriliovaultdatamoverapi
+            - name: trilio-logs
               mountPath: /var/log/triliovault
       volumes:
         - name: pod-tmp
@@ -153,8 +153,7 @@ spec:
           configMap:
             name: triliovault-datamover-api-bin
             defaultMode: 0555
-        - name: varlogtriliovaultdatamoverapi
-          hostPath:
-            path: /var/log/triliovault-datamover-api
+        - name: trilio-logs
+           emptyDir: {}
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}

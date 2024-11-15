@@ -74,7 +74,7 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: varlogtriliovaultobjectstore
+            - name: trilio-logs
               mountPath: /var/log/triliovault
             - mountPath: /etc/triliovault-object-store/object_store_logging.conf
               name: triliovault-object-store-etc
@@ -98,9 +98,8 @@ spec:
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: varlogtriliovaultobjectstore
-          hostPath:
-            path: /var/log/triliovault-object-store
+        - name: trilio-logs
+           emptyDir: {}
         - name: triliovault-object-store-etc
           secret:
             secretName: triliovault-object-store-etc
