@@ -35,8 +35,8 @@ RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovaul
 	
 ##Install datamover packages
 RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
-    && dnf install python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
-    && dnf install virt-v2v virtio-win nbdkit
+    && dnf install python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
+    && dnf install virt-v2v virtio-win nbdkit -y
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
