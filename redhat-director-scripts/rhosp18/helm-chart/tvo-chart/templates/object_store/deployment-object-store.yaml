@@ -9,7 +9,7 @@ metadata:
     application: triliovault
     component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.pod.replicas.triliovault_object_store }}
   selector:
     matchLabels:
       application: triliovault

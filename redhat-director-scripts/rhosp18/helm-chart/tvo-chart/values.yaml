@@ -270,7 +270,8 @@ pod:
     triliovault_datamover_api: 3
     triliovault_wlm_workloads: 3
     triliovault_wlm_cron: 1
-    triliovault_wlm_scheduler: 1
+    triliovault_wlm_scheduler: 3
+    triliovault_object_store: 3
   resources:
     enabled: false
     wlm_api:
