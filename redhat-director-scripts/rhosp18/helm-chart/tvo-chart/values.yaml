@@ -119,7 +119,7 @@ keystone:
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
     cloud_admin_domain_name: "Default"
-    region_name: "RegionOne"
+    region_name: "regionOne"
     auth_url: ""
     auth_uri: ""
     keystone_auth_protocol: ""
@@ -132,20 +132,18 @@ keystone:
     user: "dmapi"
     password: "EDIT_PASSWORD"
     service_name: "dmapi"
-    servie_type: "datamover"
+    service_type: "datamover"
     service_desc: "TrilioVault Datamover Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2"
-    admin_endpoint: "ENDPOINT_PROTOCOL_ADMIN://ENDPOINT_HOST_ADMIN:8784/v2"
   wlm_api: 
     user: "triliovault"
     password: "EDIT_PASSWORD"
     service_name: "TrilioVaultWLM"
-    servie_type: "workloads"
+    service_type: "workloads"
     service_desc: "TrilioVault Workloadmgr Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
-    admin_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_ADMIN:8781/v1/$(tenant_id)s"
   identity:
     
 
@@ -272,7 +270,8 @@ pod:
     triliovault_datamover_api: 3
     triliovault_wlm_workloads: 3
     triliovault_wlm_cron: 1
-    triliovault_wlm_scheduler: 1
+    triliovault_wlm_scheduler: 3
+    triliovault_object_store: 3
   resources:
     enabled: false
     wlm_api:

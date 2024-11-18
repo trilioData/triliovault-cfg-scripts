@@ -118,7 +118,7 @@ triliovault_backup_targets:
     - backup_target_name: 'NFS_BT3'
       backup_target_type: 'nfs'
       is_default: false
-      nfs_shares: '170.20.2.8:/mnt/nfs_share
+      nfs_shares: '170.20.2.8:/mnt/nfs_share'
       nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
 keystone:
   common:
@@ -128,5 +128,6 @@ keystone:
     cloud_admin_domain_name: "Default"
     service_project_name: "service"
     service_project_domain_name: "Default"
+    region_name: "regionOne"
 
 

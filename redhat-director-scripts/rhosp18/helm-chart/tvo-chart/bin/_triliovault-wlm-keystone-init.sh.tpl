@@ -26,7 +26,7 @@ else
   openstack service create --name $SERVICE_NAME --description "{{- .Values.keystone.wlm_api.service_desc -}}" "{{- .Values.keystone.wlm_api.service_type -}}"
   openstack endpoint create --region $REGION_NAME $SERVICE_NAME public "{{- .Values.keystone.wlm_api.public_endpoint -}}"
   openstack endpoint create --region $REGION_NAME $SERVICE_NAME internal "{{- .Values.keystone.wlm_api.internal_endpoint -}}"
-  openstack endpoint create --region $REGION_NAME $SERVICE_NAME admin "{{- .Values.keystone.wlm_api.admin_endpoint -}}"
+  
 
   echo "Service $SERVICE_NAME and its endpoints have been created."
 fi
