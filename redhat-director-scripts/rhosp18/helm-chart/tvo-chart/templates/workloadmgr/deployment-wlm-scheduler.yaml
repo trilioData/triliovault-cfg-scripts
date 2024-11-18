@@ -54,6 +54,7 @@ spec:
           image: {{ .Values.images.triliovault_wlm_scheduler }}
           imagePullPolicy: IfNotPresent
           securityContext:
+            privileged: true
             readOnlyRootFilesystem: false
             runAsGroup: {{ .Values.common.nova_user_id }}
             runAsUser: 0
