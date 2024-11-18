@@ -27,6 +27,7 @@ spec:
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
+        privileged: true
         runAsUser: {{ $.Values.common.nova_user_id }}
         fsGroup: {{ $.Values.common.nova_group_id }}
       affinity:
