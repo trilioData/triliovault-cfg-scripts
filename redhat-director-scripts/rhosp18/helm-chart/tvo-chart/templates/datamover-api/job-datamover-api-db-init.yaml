@@ -68,10 +68,12 @@ spec:
               mountPath: /etc/triliovault-datamover/datamover_api_logging.conf
               subPath: datamover_api_logging.conf
               readOnly: true
-            - name: varlogtriliovaultdatamoverapi
+            - name: trilio-logs
               mountPath: /var/log/triliovault
       volumes:
         - name: pod-tmp
+          emptyDir: {}
+        - name: trilio-logs
           emptyDir: {}
         - name: triliovault-datamover-api-bin
           configMap:
@@ -81,6 +83,3 @@ spec:
           secret:
             secretName: triliovault-datamover-api-etc
             defaultMode: 0444
-        - name: varlogtriliovaultdatamoverapi
-          hostPath:
-            path: /var/log/triliovault-datamover-api

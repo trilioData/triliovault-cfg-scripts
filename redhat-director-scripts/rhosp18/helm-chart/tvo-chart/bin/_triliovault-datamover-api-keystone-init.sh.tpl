@@ -25,7 +25,7 @@ else
   openstack service create --name $SERVICE_NAME --description "{{- .Values.keystone.datamover_api.service_desc -}}" "{{- .Values.keystone.datamover_api.service_type -}}"
   openstack endpoint create --region "{{- .Values.keystone.common.region_name -}}"  $SERVICE_NAME public "{{- .Values.keystone.datamover_api.public_endpoint -}}"
   openstack endpoint create --region "{{- .Values.keystone.common.region_name -}}" $SERVICE_NAME internal "{{- .Values.keystone.datamover_api.internal_endpoint -}}"
-  openstack endpoint create --region "{{- .Values.keystone.common.region_name -}}" $SERVICE_NAME admin "{{- .Values.keystone.datamover_api.admin_endpoint -}}"
+  
 
   echo "Service $SERVICE_NAME and its endpoints have been created."
 fi

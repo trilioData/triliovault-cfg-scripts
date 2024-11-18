@@ -59,6 +59,10 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-cloud-trust.sh
               subPath: triliovault-wlm-cloud-trust.sh
+            - name: triliovault-wlm-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -66,3 +70,7 @@ spec:
           configMap:
             name: "triliovault-wlm-bin"
             defaultMode: 0555
+        - name: triliovault-wlm-etc
+          secret:
+            secretName: triliovault-wlm-etc
+            defaultMode: 0444
