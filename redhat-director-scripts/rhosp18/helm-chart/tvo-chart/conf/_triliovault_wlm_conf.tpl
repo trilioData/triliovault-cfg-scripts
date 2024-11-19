@@ -21,7 +21,7 @@ log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
 neutron_api_insecure = false
 
-osapi_workloads_listen_port = 8780
+osapi_workloads_listen_port = 8781
 region_name_for_services = "{{ .Values.keystone.common.region_name }}"
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 sql_connection = mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.wlm_api.database }}

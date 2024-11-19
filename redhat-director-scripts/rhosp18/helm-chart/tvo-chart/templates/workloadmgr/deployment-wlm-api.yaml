@@ -11,6 +11,8 @@ spec:
     matchLabels:
       application: triliovault
       component: wlm-api
+      owner: triliovault-wlm
+      service: triliovault-wlm
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate

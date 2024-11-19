@@ -62,6 +62,11 @@ AUTH_URI="${KEYSTONE_URL%/}/v3"
 DMAPI_KEYSTONE_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42} | head -n 1`
 WLM_KEYSTONE_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42} | head -n 1`
 
+# Generate TRILIOVAULT_WLM_AUTH_HOST_PUBLIC
+TRILIOVAULT_WLM_AUTH_HOST_PUBLIC=$(echo "$AUTH_HOST_PUBLIC" | sed 's/keystone/triliovault-wlm/' | sed 's/openstack/triliovault/')
+
+# Generate TRILIOVAULT_DM_AUTH_HOST_PUBLIC
+TRILIOVAULT_DM_AUTH_HOST_PUBLIC=$(echo "$AUTH_HOST_PUBLIC" | sed 's/keystone/triliovault-dm/' | sed 's/openstack/triliovault/')
 
 
 tee > ${SCRIPT_DIR}/trilio_inputs_keystone.yaml << EOF
@@ -74,14 +79,12 @@ keystone:
     keystone_auth_port: "$AUTH_PORT"
   datamover_api:
     password: $DMAPI_KEYSTONE_PASSWORD
-    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://${AUTH_HOST_INTERNAL}:8784/v2"
-    public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${AUTH_HOST_PUBLIC}:8784/v2"
-    admin_endpoint: "${AUTH_PROTOCOL_ADMIN}://${AUTH_HOST_ADMIN}:8784/v2"
+    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-dm-default-internal.triliovault.svc:8784/v2"
+    public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${TRILIOVAULT_DM_AUTH_HOST_PUBLIC}:8784/v2"
   wlm_api:
     password: $WLM_KEYSTONE_PASSWORD
-    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://${AUTH_HOST_INTERNAL}:8781/v1/\$(tenant_id)s"
-    public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${AUTH_HOST_PUBLIC}:8781/v1/\$(tenant_id)s"
-    admin_endpoint: "${AUTH_PROTOCOL_ADMIN}://${AUTH_HOST_ADMIN}:8781/v1/\$(tenant_id)s"
+    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-wlm-default-internal.triliovault.svc:8781/v1/\$(tenant_id)s"
+    public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${TRILIOVAULT_WLM_AUTH_HOST_PUBLIC}:8781/v1/\$(tenant_id)s"
 EOF
 
 echo -e "Output written in file ${SCRIPT_DIR}/trilio_inputs_keystone.yaml"
