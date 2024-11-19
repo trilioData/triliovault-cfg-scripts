@@ -112,13 +112,13 @@ spec:
                   - stop
           ports:
             - name: w-api
-              containerPort: 8780
+              containerPort: 8781
           readinessProbe:
             tcpSocket:
-              port: 8780
+              port: 8781
           livenessProbe:
             tcpSocket:
-              port: 8780
+              port: 8781
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
