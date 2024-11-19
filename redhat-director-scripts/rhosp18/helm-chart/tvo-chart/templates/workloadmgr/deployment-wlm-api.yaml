@@ -24,6 +24,8 @@ spec:
       labels:
         application: triliovault
         component: wlm-api
+        owner: triliovault-wlm
+        service: triliovault-wlm
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:

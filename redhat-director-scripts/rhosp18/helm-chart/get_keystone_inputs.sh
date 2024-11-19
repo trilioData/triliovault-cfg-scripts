@@ -79,11 +79,11 @@ keystone:
     keystone_auth_port: "$AUTH_PORT"
   datamover_api:
     password: $DMAPI_KEYSTONE_PASSWORD
-    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-dm-default-internal.triliovault.svc:8784/v2"
+    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-dm-internal.triliovault.svc:8784/v2"
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${TRILIOVAULT_DM_AUTH_HOST_PUBLIC}:8784/v2"
   wlm_api:
     password: $WLM_KEYSTONE_PASSWORD
-    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-wlm-default-internal.triliovault.svc:8781/v1/\$(tenant_id)s"
+    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-wlm-internal.triliovault.svc:8781/v1/\$(tenant_id)s"
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${TRILIOVAULT_WLM_AUTH_HOST_PUBLIC}:8781/v1/\$(tenant_id)s"
 EOF
 
