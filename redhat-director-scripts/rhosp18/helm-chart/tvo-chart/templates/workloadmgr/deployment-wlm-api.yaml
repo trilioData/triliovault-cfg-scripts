@@ -5,14 +5,14 @@ metadata:
   labels:
     application: triliovault
     component: wlm-api
+    owner: triliovault-wlm
+    service: triliovault-wlm
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_wlm_api }}
   selector:
     matchLabels:
       application: triliovault
       component: wlm-api
-      owner: triliovault-wlm
-      service: triliovault-wlm
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate
