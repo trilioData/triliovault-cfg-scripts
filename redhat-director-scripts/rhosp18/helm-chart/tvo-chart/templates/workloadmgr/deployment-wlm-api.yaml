@@ -5,6 +5,8 @@ metadata:
   labels:
     application: triliovault
     component: wlm-api
+    owner: triliovault-wlm
+    service: triliovault-wlm
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_wlm_api }}
   selector:
@@ -22,6 +24,8 @@ spec:
       labels:
         application: triliovault
         component: wlm-api
+        owner: triliovault-wlm
+        service: triliovault-wlm
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:
