@@ -3,11 +3,35 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: triliovault-wlm-api
+  name: triliovault-wlm-internal
+  namespace: triliovault
+  labels:
+    endpoint: internal
+    osctlplane: ""
+    osctlplane-service: triliovault-wlm
+    owner: triliovault-wlm
+    service: triliovault-wlm
+  annotations:
+    core.openstack.org/ingress_create: "false"
+    dnsmasq.network.openstack.org/hostname: triliovault-wlm-internal.triliovault.svc
+    endpoint: internal
+    metallb.universe.tf/address-pool: internalapi
+    metallb.universe.tf/allow-shared-ip: internalapi
+    metallb.universe.tf/ip-allocated-from-pool: internalapi
 spec:
-  ports:
-    - name: w-api
-      port: 8780
   selector:
-    application: triliovault
-    component: wlm-api
+    owner: triliovault-wlm
+    service: triliovault-wlm
+  type: LoadBalancer
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: triliovault-wlm-internal
+      port: 8781 # TrilioVault WLM service port
+      protocol: TCP
+      targetPort: 8781
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+
+
