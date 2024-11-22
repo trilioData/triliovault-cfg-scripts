@@ -28,10 +28,42 @@ spec:
     - IPv4
   ports:
     - name: triliovault-wlm-internal
-      port: 8781 # TrilioVault WLM service port
+      port: 8781
       protocol: TCP
       targetPort: 8781
   sessionAffinity: None
   externalTrafficPolicy: Cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    core.openstack.org/ingress_create: "true"
+    endpoint: public
+  labels:
+    component: triliovault-wlm-api
+    endpoint: public
+    osctlplane: ""
+    osctlplane-service: triliovault-wlm
+    service: triliovault-wlm
+  name: triliovault-wlm-public
+  namespace: triliovault
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: triliovault-wlm-public
+    port: 8781
+    protocol: TCP
+    targetPort: 8781
+  selector:
+    component: wlm-api
+    service: triliovault-wlm
+  sessionAffinity: None
+  type: ClusterIP
+
 
 
