@@ -10,3 +10,13 @@ oc create -f cert-triliovault-wlm-internal-svc.yaml
 
 oc describe secret cert-triliovault-wlm-public-svc
 oc describe secret cert-triliovault-wlm-internal-svc
+
+
+oc get secret cert-triliovault-datamover-public-svc -n openstack -o yaml > cert-triliovault-datamover-public-svc.yaml
+oc get secret cert-triliovault-datamover-internal-svc -n openstack -o yaml > cert-triliovault-datamover-internal-svc.yaml
+
+oc create -f cert-triliovault-datamover-public-svc.yaml
+oc create -f cert-triliovault-datamover-internal-svc.yaml
+
+oc describe secret cert-triliovault-datamover-public-svc
+oc describe secret cert-triliovault-datamover-internal-svc

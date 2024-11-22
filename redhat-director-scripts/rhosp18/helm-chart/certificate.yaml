@@ -31,3 +31,36 @@ spec:
   dnsNames:
     - triliovault-wlm-internal.triliovault.svc
     - triliovault-wlm-internal.triliovault.svc.cluster.local
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: triliovault-datamover-public-svc
+  namespace: openstack
+spec:
+  secretName: cert-triliovault-datamover-public-svc
+  issuerRef:
+    name: rootca-public
+    kind: Issuer
+  commonName: triliovault-datamover-public.triliovault.svc
+  dnsNames:
+    - triliovault-datamover-public.triliovault.svc
+    - triliovault-datamover-public.triliovault.svc.cluster.local
+    - triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: triliovault-datamover-internal-svc
+  namespace: openstack
+spec:
+  secretName: cert-triliovault-datamover-internal-svc  
+  issuerRef:
+    name: rootca-internal
+    kind: Issuer
+  commonName: triliovault-datamover-internal.triliovault.svc
+  dnsNames:
+    - triliovault-datamover-internal.triliovault.svc
+    - triliovault-datamover-internal.triliovault.svc.cluster.local
