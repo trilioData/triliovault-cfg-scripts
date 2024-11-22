@@ -31,7 +31,7 @@ RUN dnf install --releasever 9.4 python3-dmapi-el9 -y
 RUN curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin && chmod +x /usr/local/bin/rabbitmqadmin
 RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
 RUN rm -f /etc/yum.repos.d/trilio.repo
-RUN usermod -a -G kolla dmapi
+RUN usermod -a -G kolla dmapi && rm -f /etc/httpd/conf.d/ssl.conf
 
 ##Disable repos and Clean subscription
 RUN dnf config-manager \
