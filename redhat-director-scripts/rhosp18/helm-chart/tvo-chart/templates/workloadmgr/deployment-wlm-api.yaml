@@ -142,6 +142,10 @@ spec:
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
               readOnly: true
+            - name: triliovault-wlm-etc
+              mountPath: /etc/httpd/conf.d/triliovault_wlm_httpd.conf
+              subPath: triliovault_wlm_httpd.conf
+              readOnly: true             
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api.sh
               subPath: triliovault-wlm-api.sh
