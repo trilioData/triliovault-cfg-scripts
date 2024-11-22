@@ -3,7 +3,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: triliovault-wlm-public-svc
-  namespace: triliovault
+  namespace: openstack
 spec:
   secretName: cert-triliovault-wlm-public-svc
   issuerRef:
@@ -21,7 +21,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: triliovault-wlm-internal-svc
-  namespace: triliovault
+  namespace: openstack
 spec:
   secretName: cert-triliovault-wlm-internal-svc  
   issuerRef:
