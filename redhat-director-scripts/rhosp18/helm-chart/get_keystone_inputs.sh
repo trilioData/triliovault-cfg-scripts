@@ -66,7 +66,7 @@ WLM_KEYSTONE_PASSWORD=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${11:-42}
 TRILIOVAULT_WLM_AUTH_HOST_PUBLIC=$(echo "$AUTH_HOST_PUBLIC" | sed 's/keystone/triliovault-wlm/' | sed 's/openstack/triliovault/')
 
 # Generate TRILIOVAULT_DM_AUTH_HOST_PUBLIC
-TRILIOVAULT_DM_AUTH_HOST_PUBLIC=$(echo "$AUTH_HOST_PUBLIC" | sed 's/keystone/triliovault-dm/' | sed 's/openstack/triliovault/')
+TRILIOVAULT_DM_AUTH_HOST_PUBLIC=$(echo "$AUTH_HOST_PUBLIC" | sed 's/keystone/triliovault-datamover/' | sed 's/openstack/triliovault/')
 
 
 tee > ${SCRIPT_DIR}/trilio_inputs_keystone.yaml << EOF
@@ -79,7 +79,7 @@ keystone:
     keystone_auth_port: "$AUTH_PORT"
   datamover_api:
     password: $DMAPI_KEYSTONE_PASSWORD
-    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-dm-internal.triliovault.svc:8784/v2"
+    internal_endpoint: "${AUTH_PROTOCOL_INTERNAL}://triliovault-datamover-internal.triliovault.svc:8784/v2"
     public_endpoint: "${AUTH_PROTOCOL_PUBLIC}://${TRILIOVAULT_DM_AUTH_HOST_PUBLIC}:8784/v2"
   wlm_api:
     password: $WLM_KEYSTONE_PASSWORD

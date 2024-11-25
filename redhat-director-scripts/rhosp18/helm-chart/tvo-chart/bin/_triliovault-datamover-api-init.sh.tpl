@@ -23,9 +23,9 @@ touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-dynami
 
 tee > /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-dynamic.conf << EOF
 [DEFAULT]
-dmapi_link_prefix = http://${POD_IP}:8784
-dmapi_listen = $POD_IP
-my_ip = $POD_IP
+dmapi_link_prefix = http://0.0.0.0:8784
+dmapi_listen = 0.0.0.0
+my_ip = 0.0.0.0
 EOF
 
 

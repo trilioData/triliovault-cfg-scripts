@@ -33,6 +33,15 @@ sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t n
 {{- end }}
 
   
+  # Start httpd in background
+  httpd -k start
+
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "Failed to start httpd service: $status"
+    exit $status
+  fi
+
   # Start workloadmgr api service
   /usr/bin/python3 /usr/bin/workloadmgr-api \
      --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
@@ -40,7 +49,7 @@ sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t n
 
   status=$?
   if [ $status -ne 0 ]; then
-    echo "Failed to start tvault contego service: $status"
+    echo "Failed to start tvault workloadmgr service: $status"
     exit $status
   fi
 }

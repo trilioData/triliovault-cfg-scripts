@@ -2,7 +2,7 @@
 dmapi_workers = {{ .Values.common.dmapi_workers }}
 transport_url = "{{ .Values.rabbitmq.datamover_api.transport_url }}"
 dmapi_enabled_ssl_apis =
-dmapi_listen_port = 8784
+dmapi_listen_port = 8783
 dmapi_enabled_apis = dmapi
 bindir = /usr/bin
 instance_name_template = instance-%08x

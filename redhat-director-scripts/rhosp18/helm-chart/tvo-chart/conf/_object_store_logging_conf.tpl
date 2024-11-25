@@ -1,5 +1,5 @@
 [loggers]
-keys = root
+keys = root,s3fuse
 
 [handlers]
 keys = s3fuse,stdout,stderr,null
@@ -10,6 +10,11 @@ keys = default,advanced,default-utc,advanced-utc
 [logger_root]
 level = INFO
 handlers = s3fuse
+
+[logger_s3fuse]
+level = INFO
+handlers = s3fuse,stdout,stderr
+qualname = s3fuse
 
 [handler_s3fuse]
 class = logging.handlers.RotatingFileHandler
