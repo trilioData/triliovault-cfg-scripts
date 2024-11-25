@@ -1,4 +1,3 @@
-Listen 8784
 <VirtualHost *:8784>
   ServerName triliovault-datamover-internal.triliovault.svc
 
