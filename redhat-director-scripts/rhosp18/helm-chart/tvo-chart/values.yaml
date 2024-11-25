@@ -196,7 +196,7 @@ pod:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 63630
-          runAsGroup: 63630
+          runAsGroup: 0
         triliovault_wlm_api:
           readOnlyRootFilesystem: false
           privileged: true
