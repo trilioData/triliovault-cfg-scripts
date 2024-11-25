@@ -101,7 +101,6 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
-            runAsUser: 0
           command:
             - /bin/bash
             - -c
