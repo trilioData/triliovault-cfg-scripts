@@ -1,6 +1,5 @@
-Listen 8771
-<VirtualHost *:8781>
-  ServerName triliovault-wlm-internal.triliovault.svc
+<VirtualHost *:8784>
+  ServerName triliovault-datamover-internal.triliovault.svc
 
   ## Logging
   ErrorLog /dev/stdout
@@ -15,15 +14,16 @@ Listen 8771
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass /v1/s http://127.0.0.1:8780/v1/s
-  ProxyPassReverse /v1/s http://127.0.0.1:8780/v1/s
+  ProxyPass / http://127.0.0.1:8783/
+  ProxyPassReverse / http://127.0.0.1:8783/
+
 
   Timeout 60
 </VirtualHost>
 
-# Public vhost configuration for https://triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2:8781/v1/s
-<VirtualHost *:8781>
-  ServerName triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2
+# Public vhost configuration for https://triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2:8781/v1/s
+<VirtualHost *:8784>
+  ServerName triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2
 
   ## Logging
   ErrorLog /dev/stdout
@@ -38,8 +38,9 @@ Listen 8771
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass /v1/s http://127.0.0.1:8780/v1/s
-  ProxyPassReverse /v1/s http://127.0.0.1:8780/v1/s
+  ProxyPass / http://127.0.0.1:8783/
+  ProxyPassReverse / http://127.0.0.1:8783/
+
 
   Timeout 60
 </VirtualHost>
