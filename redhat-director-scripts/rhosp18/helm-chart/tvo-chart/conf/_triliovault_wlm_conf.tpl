@@ -89,10 +89,10 @@ misfire_grace_time = 600
 [keystone_authtoken]
 auth_url = {{ .Values.keystone.common.auth_url }}
 {{- $auth_url := .Values.keystone.common.auth_url | trimSuffix "/" }}
-www_authenticate_uri = "{{ $auth_url }}/v3"
-admin_password = "{{ .Values.keystone.wlm_api.password }}"
-admin_tenant_name = "{{ .Values.keystone.common.service_project_name }}"
-admin_user = "{{ .Values.keystone.wlm_api.user }}"
+www_authenticate_uri = {{ $auth_url }}/v3
+admin_password = {{ .Values.keystone.wlm_api.password }}
+admin_tenant_name = {{ .Values.keystone.common.service_project_name }}
+admin_user = {{ .Values.keystone.wlm_api.user }}
 auth_plugin = password
 auth_type = password
 auth_version = v3
