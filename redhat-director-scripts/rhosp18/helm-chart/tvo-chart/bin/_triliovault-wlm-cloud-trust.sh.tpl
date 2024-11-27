@@ -18,7 +18,7 @@ set -ex
 source /tmp/triliovault-cloudrc
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
 
-sleep 120s
+sleep 4m
 for attempt in {1..10};
 do
         echo -e "Attempting to create wlm-cloud admin trust, Attempt Number: $attempt"
