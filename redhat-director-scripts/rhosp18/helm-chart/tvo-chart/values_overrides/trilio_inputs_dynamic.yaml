@@ -3,7 +3,7 @@ common:
 database:
   common:
     root_user_name: "root"
-    root_password: openstack
+    root_password: testpass
     host: openstack.openstack.svc
     port: 3306
   datamover_api:
