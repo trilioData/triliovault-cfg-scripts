@@ -23,7 +23,7 @@ RUN dnf config-manager \
 
 ADD trilio.repo /etc/yum.repos.d/
 RUN dnf install --releasever 9.4 python3-tvault-horizon-plugin-el9 -y
-RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-django
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Copy necessary files
