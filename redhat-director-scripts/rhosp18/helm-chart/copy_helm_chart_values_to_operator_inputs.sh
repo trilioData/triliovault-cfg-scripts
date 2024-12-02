@@ -11,10 +11,10 @@ OPERATOR_INPUTS="tvo-operator-inputs.yaml"
 # Temporary file for merged values
 MERGED_VALUES=$(mktemp)
 
-# Start with the base values.yaml
+# Start with an empty YAML file for the merged values
 cp "$VALUES_FILE" "$MERGED_VALUES"
 
-# Merge override files one by one
+# Merge override files one by one, including the base values.yaml
 OVERRIDE_FILES=(
     "$OVERRIDES_DIR/trilio_inputs.yaml"
     "$OVERRIDES_DIR/trilio_inputs_dynamic.yaml"
@@ -27,9 +27,18 @@ for override in "${OVERRIDE_FILES[@]}"; do
     mv "${MERGED_VALUES}.tmp" "$MERGED_VALUES"
 done
 
-# Insert the merged values into tvo-operator-inputs.yaml under the spec.common section
-echo "Inserting merged values into $OPERATOR_INPUTS..."
-yq eval --inplace ".spec.common |= load(\"$MERGED_VALUES\")" "$OPERATOR_INPUTS"
+# Create a fresh tvo-operator-inputs.yaml file
+cat <<EOF > "$OPERATOR_INPUTS"
+apiVersion: tvo.trilio.io/v1
+kind: TVOControlPlane
+metadata:
+  name: tvocontrolplane-v60
+spec:
+EOF
+
+# Append the merged values into the .spec section of tvo-operator-inputs.yaml
+yq eval ".spec |= load(\"$MERGED_VALUES\")" "$OPERATOR_INPUTS" > "${OPERATOR_INPUTS}.tmp"
+mv "${OPERATOR_INPUTS}.tmp" "$OPERATOR_INPUTS"
 
 # Cleanup temporary files
 rm -f "$MERGED_VALUES"
