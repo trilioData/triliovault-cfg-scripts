@@ -3,34 +3,34 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: triliovault-wlm-internal
+  name: triliovault-datamover-internal
   namespace: triliovault
   labels:
     endpoint: internal
     osctlplane: ""
-    osctlplane-service: triliovault-wlm
-    owner: triliovault-wlm
-    service: triliovault-wlm
+    osctlplane-service: triliovault-datamover
+    owner: triliovault-datamover
+    service: triliovault-datamover
   annotations:
     core.openstack.org/ingress_create: "false"
-    dnsmasq.network.openstack.org/hostname: triliovault-wlm-internal.triliovault.svc
+    dnsmasq.network.openstack.org/hostname: triliovault-datamover-internal.triliovault.svc
     endpoint: internal
     metallb.universe.tf/address-pool: internalapi
     metallb.universe.tf/allow-shared-ip: internalapi
     metallb.universe.tf/ip-allocated-from-pool: internalapi
 spec:
   selector:
-    owner: triliovault-wlm
-    service: triliovault-wlm
+    owner: triliovault-datamover
+    service: triliovault-datamover
   type: LoadBalancer
   ipFamilyPolicy: SingleStack
   ipFamilies:
     - IPv4
   ports:
-    - name: triliovault-wlm-internal
-      port: 8781
+    - name: triliovault-datamover-internal
+      port: 8784
       protocol: TCP
-      targetPort: 8781
+      targetPort: 8784
   sessionAffinity: None
   externalTrafficPolicy: Cluster
 
@@ -42,12 +42,12 @@ metadata:
     core.openstack.org/ingress_create: "true"
     endpoint: public
   labels:
-    component: triliovault-wlm-api
+    component: triliovault-datamover-api
     endpoint: public
     osctlplane: ""
-    osctlplane-service: triliovault-wlm
-    service: triliovault-wlm
-  name: triliovault-wlm-public
+    osctlplane-service: triliovault-datamover
+    service: triliovault-datamover
+  name: triliovault-datamover-public
   namespace: triliovault
 spec:
   internalTrafficPolicy: Cluster
@@ -55,12 +55,12 @@ spec:
   - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-  - name: triliovault-wlm-public
-    port: 8781
+  - name: triliovault-datamover-public
+    port: 8784
     protocol: TCP
-    targetPort: 8781
+    targetPort: 8784
   selector:
-    component: wlm-api
-    service: triliovault-wlm
+    component: datamover-api
+    service: triliovault-datamover
   sessionAffinity: None
   type: ClusterIP

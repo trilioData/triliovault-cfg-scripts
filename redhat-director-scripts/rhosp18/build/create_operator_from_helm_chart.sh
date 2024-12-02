@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
+
+set -e 
 rm -rf ../operator/tvo-operator
 mkdir -p ../operator/tvo-operator
 cd ../operator/tvo-operator
@@ -16,3 +18,11 @@ operator-sdk init \
     --version=v1 \
     --kind=TVOControlPlane \
     --helm-chart ../../helm-chart/tvo-chart
+
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start httpd service: $status"
+  exit $status
+fi
+
+echo -e "Successfully created operator from given helm chart. Copied at ../operator/tvo-operator/"

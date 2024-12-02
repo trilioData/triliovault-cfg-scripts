@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: triliovault-datamover-public
+  namespace: triliovault
+  labels:
+    osctlplane-service: triliovault-datamover
+spec:
+  host: triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2
+  to:
+    kind: Service
+    name: triliovault-datamover-public
+    weight: 100
+  port:
+    targetPort: triliovault-datamover-public
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

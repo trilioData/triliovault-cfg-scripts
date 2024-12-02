@@ -83,6 +83,7 @@ triliovault_backup_targets:
     s3_endpoint_url: 'ENDPOINT_URL1'
     s3_signature_version: 'default'
     s3_auth_version: 'DEFAULT'
+    s3_bucket_object_lock_enabled: false
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: false
@@ -97,6 +98,7 @@ triliovault_backup_targets:
     s3_endpoint_url: 'ENDPOINT_URL2'
     s3_signature_version: 'default'
     s3_auth_version: 'DEFAULT'
+    s3_bucket_object_lock_enabled: false
     s3_ssl_enabled: true
     s3_ssl_verify: true
     s3_self_signed_cert: true
@@ -116,9 +118,8 @@ keystone:
     cloud_admin_user_name: "admin"
     cloud_admin_user_password: ""
     cloud_admin_project_name: "admin"
-    cloud_admin_project_id: ""
     cloud_admin_domain_name: "Default"
-    region_name: "RegionOne"
+    region_name: "regionOne"
     auth_url: ""
     auth_uri: ""
     keystone_auth_protocol: ""
@@ -131,20 +132,18 @@ keystone:
     user: "dmapi"
     password: "EDIT_PASSWORD"
     service_name: "dmapi"
-    servie_type: "datamover"
+    service_type: "datamover"
     service_desc: "TrilioVault Datamover Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2"
-    admin_endpoint: "ENDPOINT_PROTOCOL_ADMIN://ENDPOINT_HOST_ADMIN:8784/v2"
   wlm_api: 
     user: "triliovault"
     password: "EDIT_PASSWORD"
     service_name: "TrilioVaultWLM"
-    servie_type: "workloads"
+    service_type: "workloads"
     service_desc: "TrilioVault Workloadmgr Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
-    admin_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_ADMIN:8781/v1/$(tenant_id)s"
   identity:
     
 
@@ -168,12 +167,14 @@ rabbitmq:
     admin_password: "EDIT_PASSWORD"
     host: "EDIT_HOST"
     port: "5672"
-    notification_driver: "messagingv2"
-  datamover_api: 
+    driver: "messagingv2"
+  datamover_api:
+    transport_url: ""
     user: "dmapi"
     password: "EDIT_PASSWORD"
     vhost: "dmapi"
-  wlm_api: 
+  wlm_api:
+    transport_url: ""
     user: "workloadmgr"
     password: "EDIT_PASSWORD"
     vhost: "workloadmgr"
@@ -189,52 +190,41 @@ pod:
         runAsUser: 42424
         image_pull_secrets:
           default:
-            - name: triliovault-image-registry
+            - name: triliovault-image-pull-secret
       container:
         triliovault_datamover_api:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 63630
-        triliovault_datamover:
-          readOnlyRootFilesystem: false
-          privileged: true
-          runAsUser: 42424
+          runAsGroup: 0
         triliovault_wlm_api:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_scheduler:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_cron:
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_workloads:
           readOnlyRootFilesystem: false
           privileged: true
-          runAsUser: 42424
+          runAsUser: 42436
         triliovault_wlm_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
-          runAsGroup: 42424
+          runAsGroup: 42436
         triliovault_datamover_api_init:
           readOnlyRootFilesystem: false
           runAsUser: 0
           runAsGroup: 63630
-        triliovault_datamover_init:
-          readOnlyRootFilesystem: false
-          runAsUser: 0
-          runAsGroup: 42424
         wlm_cloud_trust_creation:
           readOnlyRootFilesystem: false
-          runAsUser: 42424
-          runAsGroup: 42424
-        ceph_keyring_placement_triliovault:
-          readOnlyRootFilesystem: false
-          runAsUser: 42424
-          runAsGroup: 42424
+          runAsUser: 42436
+          runAsGroup: 42436
 
   affinity:
     anti:
@@ -244,50 +234,6 @@ pod:
         default: kubernetes.io/hostname
       weight:
         default: 10
-  mounts:
-    triliovault_wlm_api:
-      init_container: null
-      triliovault_wlm_api:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_cron:
-      init_container: null
-      triliovault_wlm_cron:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_scheduler:
-      init_container: null
-      triliovault_wlm_scheduler:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_workloads:
-      init_container: null
-      triliovault_wlm_workloads:
-        volumeMounts:
-        volumes:
-    triliovault_datamover_api:
-      init_container: null
-      triliovault_datamover_api:
-        volumeMounts:
-        volumes:
-    triliovault_datamover:
-      init_container: null
-      triliovault_datamover:
-        volumeMounts:
-        volumes:
-    triliovault_tests:
-      init_container: null
-      triliovault_tests:
-        volumeMounts:
-        volumes:
-    triliovault_datamover_db_sync:
-      triliovault_wlm_db_sync:
-        volumeMounts:
-        volumes:
-    triliovault_wlm_db_sync:
-      triliovault_wlm_db_sync:
-        volumeMounts:
-        volumes:
   lifecycle:
     upgrades:
       deployments:
@@ -325,7 +271,8 @@ pod:
     triliovault_datamover_api: 3
     triliovault_wlm_workloads: 3
     triliovault_wlm_cron: 1
-    triliovault_wlm_scheduler: 1
+    triliovault_wlm_scheduler: 3
+    triliovault_object_store: 3
   resources:
     enabled: false
     wlm_api:
@@ -357,13 +304,6 @@ pod:
         memory: "1024Mi"
         cpu: "2000m"
     datamover_api:
-      requests:
-        memory: "128Mi"
-        cpu: "100m"
-      limits:
-        memory: "1024Mi"
-        cpu: "2000m"
-    datamover:
       requests:
         memory: "128Mi"
         cpu: "100m"
