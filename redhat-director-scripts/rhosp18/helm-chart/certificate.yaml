@@ -13,7 +13,7 @@ spec:
   dnsNames:
     - triliovault-wlm-public.triliovault.svc
     - triliovault-wlm-public.triliovault.svc.cluster.local
-    - triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2
+    - {{ .Values.keystone.wlm_api.public_auth_host }}
 
 ---
 
@@ -47,7 +47,7 @@ spec:
   dnsNames:
     - triliovault-datamover-public.triliovault.svc
     - triliovault-datamover-public.triliovault.svc.cluster.local
-    - triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2
+    - {{ .Values.keystone.datamover_api.public_auth_host }}
 
 ---
 apiVersion: cert-manager.io/v1
