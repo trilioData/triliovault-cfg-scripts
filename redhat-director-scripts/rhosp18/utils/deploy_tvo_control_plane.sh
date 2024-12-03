@@ -1,5 +1,6 @@
 #!/bin/bash -x
 
 ## Install TVO Control Plane Services
-kubectl -n triliovault apply -f ./tvo-operator-inputs.yaml
+oc create -f operator-rbac.yaml
+oc -n triliovault apply -f ./tvo-operator-inputs.yaml
 
