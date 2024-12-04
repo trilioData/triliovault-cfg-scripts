@@ -165,6 +165,10 @@ spec:
               name: public-tls-certs
               readOnly: true
               subPath: tls.key
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -188,3 +192,7 @@ spec:
           secret:
             secretName: cert-triliovault-datamover-internal-svc
             defaultMode: 0640
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

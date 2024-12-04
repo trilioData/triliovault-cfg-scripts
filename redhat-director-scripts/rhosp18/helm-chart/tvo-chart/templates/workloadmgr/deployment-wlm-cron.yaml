@@ -130,6 +130,10 @@ spec:
               subPath: triliovault-wlm-cron.sh
             - name: pod-shared-triliovault-wlm-cron
               mountPath: /tmp/pod-shared-triliovault-wlm-cron
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -145,3 +149,7 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

@@ -137,6 +137,10 @@ spec:
             - name: var-lib-nova
               mountPath: /var/lib/nova
               mountPropagation: Bidirectional
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -156,3 +160,7 @@ spec:
           hostPath:
             path: /var/lib/nova
             type: DirectoryOrCreate
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
