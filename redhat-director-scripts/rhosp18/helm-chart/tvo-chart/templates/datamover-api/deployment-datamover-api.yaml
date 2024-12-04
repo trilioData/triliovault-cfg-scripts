@@ -23,6 +23,10 @@ metadata:
     component: datamover-api
     owner: triliovault-datamover
     service: triliovault-datamover
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_datamover_api }}
   selector:

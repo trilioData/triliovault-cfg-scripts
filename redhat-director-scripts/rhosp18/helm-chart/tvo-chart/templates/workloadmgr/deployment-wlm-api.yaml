@@ -7,6 +7,10 @@ metadata:
     component: wlm-api
     owner: triliovault-wlm
     service: triliovault-wlm
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_wlm_api }}
   selector:
