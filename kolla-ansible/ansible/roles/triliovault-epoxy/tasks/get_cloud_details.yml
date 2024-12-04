@@ -1,10 +1,13 @@
 ---
 - name: set vars
   set_fact:
-    cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
+    localhost_cloudrc_dest: "{{ node_custom_config }}/triliovault-cloudrc"
+
+- name: set vars
+  set_fact:
+    cloudrc_dest: "{{ node_config_directory }}/triliovault-cloudrc"
 
 - name: Copy Create Cloud Trust Ansible Node
-  become: true
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
@@ -15,23 +18,13 @@
     - "/etc/kolla/triliovault-wlm-api/create_cloud_trust.sh"
   become: true
 
-- name: Ensure cloudrc_dest directory exists on localhost
-  file:
-    path: "{{ cloudrc_dest | dirname }}"
-    state: directory
-    mode: '0755'
-  delegate_to: localhost
-  become: true
-  run_once: true
-
 - name: Copy Triliovault-cloudrc to localhost
   become: true
   template:
     src: triliovault-cloudrc
-    dest: "{{ cloudrc_dest }}"
-    mode: "0777"
+    dest: "{{ localhost_cloudrc_dest }}"
+    mode: '0777'
   delegate_to: localhost
-  become: true
 
 - name: Copy Triliovault-cloudrc to openstack controller node
   become: true
@@ -44,7 +37,7 @@
   become: true
 
 - name: GET CLOUD_ADMIN_USER_ID
-  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"
+  shell: ". {{ localhost_cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"
   register: admin_usr_id
   delegate_to: localhost
 
@@ -52,7 +45,7 @@
     Cloud_Admin_UserID: "{{ admin_usr_id.stdout }}"
 
 - name: GET CLOUD_UNIQUE_ID
-  shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
+  shell: ". {{ localhost_cloudrc_dest }} && openstack user show --insecure --domain default -f value -c id {{ triliovault_wlm_keystone_user }}"
   register: wlm_usr_id
   delegate_to: localhost
 
