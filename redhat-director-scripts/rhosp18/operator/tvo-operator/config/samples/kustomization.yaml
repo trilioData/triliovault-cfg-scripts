@@ -1,4 +1,4 @@
 ## Append samples of your project ##
 resources:
 - tvo_v1_tvocontrolplane.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
+# +kubebuilder:scaffold:manifestskustomizesamples

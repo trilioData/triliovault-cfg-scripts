@@ -19,22 +19,22 @@ metadata:
   name: triliovault-wlm-bin
 data:
   triliovault-wlm-init.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-api-init.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-api-init.sh.tpl") . | indent 4 }}
   triliovault-cloudrc: |
-{{ tpl (.Files.Get "bin/_triliovault-cloudrc.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-cloudrc.tpl") . | indent 4 }}
   triliovault-wlm-api.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-api.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-api.sh.tpl") . | indent 4 }}
   triliovault-wlm-cron.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-cron.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-cron.sh.tpl") . | indent 4 }}
   triliovault-wlm-scheduler.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-scheduler.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-scheduler.sh.tpl") . | indent 4 }}
   triliovault-wlm-workloads.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-workloads.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-workloads.sh.tpl") . | indent 4 }}
   triliovault-wlm-cloud-trust.sh: |
-{{ tpl (.Files.Get "bin/_triliovault-wlm-cloud-trust.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-cloud-trust.sh.tpl") . | indent 4 }}
   triliovault-wlm-keystone-init.sh: |-
-{{ tpl (.Files.Get "bin/_triliovault-wlm-keystone-init.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-keystone-init.sh.tpl") . | indent 4 }}
   triliovault-wlm-db-init.sh: |-
-{{ tpl (.Files.Get "bin/_triliovault-wlm-db-init.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-db-init.sh.tpl") . | indent 4 }}
   triliovault-wlm-rabbitmq-init.sh: |-
-{{ tpl (.Files.Get "bin/_triliovault-wlm-rabbitmq-init.sh.tpl") . | indent 4 }}
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-rabbitmq-init.sh.tpl") . | indent 4 }}

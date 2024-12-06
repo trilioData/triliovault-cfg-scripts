@@ -37,8 +37,6 @@ spec:
       restartPolicy: OnFailure
       nodeSelector:
         triliovault-control-plane: enabled
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       containers:
         - name: "wlm-db-init"
           securityContext:
@@ -56,7 +54,7 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-db-init.sh
               subPath: triliovault-wlm-db-init.sh
-            - name: varlogtriliovaultwlm
+            - name: trilio-logs
               mountPath: /var/log/triliovault
             - mountPath: /etc/triliovault-wlm/wlm_logging.conf
               name: triliovault-wlm-etc
@@ -86,6 +84,5 @@ spec:
           secret:
             secretName: triliovault-wlm-etc
             defaultMode: 0444
-        - name: varlogtriliovaultwlm
-          hostPath:
-            path: /var/log/triliovault-wlm
+        - name: trilio-logs
+          emptyDir: {}

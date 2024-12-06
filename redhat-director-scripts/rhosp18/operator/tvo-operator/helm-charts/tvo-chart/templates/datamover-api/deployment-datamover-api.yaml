@@ -21,6 +21,12 @@ metadata:
   labels:
     application: triliovault
     component: datamover-api
+    owner: triliovault-datamover
+    service: triliovault-datamover
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_datamover_api }}
   selector:
@@ -38,6 +44,8 @@ spec:
       labels:
         application: triliovault
         component: datamover-api
+        owner: triliovault-datamover
+        service: triliovault-datamover
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
@@ -60,10 +68,8 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 10
       nodeSelector:
-        openstack-control-plane: enabled
+        triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       initContainers:
         - name: triliovault-datamover-api-init
           image: {{ .Values.images.triliovault_datamover_api }}
@@ -72,6 +78,11 @@ spec:
             - /bin/bash
             - -c
             - /tmp/triliovault-datamover-api-init.sh
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: triliovault-datamover-api-bin
@@ -92,7 +103,6 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
-            runAsUser: 0
           command:
             - /bin/bash
             - -c
@@ -108,13 +118,13 @@ spec:
                   - stop
           ports:
             - name: dm-api
-              containerPort: 8784
+              containerPort: 8783
           readinessProbe:
             tcpSocket:
-              port: 8784
+              port: 8783
           livenessProbe:
             tcpSocket:
-              port: 8784
+              port: 8783
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
@@ -127,7 +137,11 @@ spec:
               subPath: datamover_api_logging.conf
               readOnly: true
             - name: triliovault-datamover-api-etc
-              mountPath: /etc/triliovault-datamover/ca-cert.pem
+              mountPath: /etc/httpd/conf.d/triliovault_datamover_httpd.conf
+              subPath: triliovault_datamover_httpd.conf
+              readOnly: true  
+            - name: triliovault-datamover-api-etc
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
             - name: triliovault-datamover-api-bin
@@ -135,8 +149,28 @@ spec:
               subPath: triliovault-datamover-api.sh
             - name: pod-shared-triliovault-datamover-api
               mountPath: /tmp/pod-shared-triliovault-datamover-api
-            - name: varlogtriliovaultdatamoverapi
+            - name: trilio-logs
               mountPath: /var/log/triliovault
+            - mountPath: /etc/pki/tls/certs/internal.crt
+              name: internal-tls-certs
+              readOnly: true
+              subPath: tls.crt
+            - mountPath: /etc/pki/tls/private/internal.key
+              name: internal-tls-certs
+              readOnly: true
+              subPath: tls.key
+            - mountPath: /etc/pki/tls/certs/public.crt
+              name: public-tls-certs
+              readOnly: true
+              subPath: tls.crt
+            - mountPath: /etc/pki/tls/private/public.key
+              name: public-tls-certs
+              readOnly: true
+              subPath: tls.key
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -148,8 +182,19 @@ spec:
           configMap:
             name: triliovault-datamover-api-bin
             defaultMode: 0555
-        - name: varlogtriliovaultdatamoverapi
-          hostPath:
-            path: /var/log/triliovault-datamover-api
+        - name: trilio-logs
+          emptyDir: {}
         - name: pod-shared-triliovault-datamover-api
           emptyDir: {}
+        - name: public-tls-certs
+          secret:
+            secretName: cert-triliovault-datamover-public-svc
+            defaultMode: 0640
+        - name: internal-tls-certs
+          secret:
+            secretName: cert-triliovault-datamover-internal-svc
+            defaultMode: 0640
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

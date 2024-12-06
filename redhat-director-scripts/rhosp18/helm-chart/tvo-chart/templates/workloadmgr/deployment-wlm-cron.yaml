@@ -5,6 +5,10 @@ metadata:
   labels:
     application: triliovault
     component: wlm-cron
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_wlm_cron }}
   selector:
@@ -130,6 +134,10 @@ spec:
               subPath: triliovault-wlm-cron.sh
             - name: pod-shared-triliovault-wlm-cron
               mountPath: /tmp/pod-shared-triliovault-wlm-cron
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -145,3 +153,7 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

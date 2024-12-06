@@ -21,7 +21,7 @@ metadata:
     component: wlm-cloud-trust
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "1"
+    helm.sh/hook-weight: "150"
 spec:
   backoffLimit: 1000
   template:

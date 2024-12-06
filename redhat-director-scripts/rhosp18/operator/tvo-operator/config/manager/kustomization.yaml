@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: docker.io/trilio/tvo-operator
-  newTag: dev-shyam-1
+  newTag: tv6297-dev-12

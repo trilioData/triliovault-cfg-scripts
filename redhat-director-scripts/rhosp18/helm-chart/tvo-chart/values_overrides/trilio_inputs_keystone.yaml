@@ -1,0 +1,15 @@
+keystone:
+  common:
+    auth_url: "https://keystone-internal.openstack.svc:5000"
+    auth_uri: "https://keystone-internal.openstack.svc:5000/v3"
+    keystone_auth_protocol: "https"
+    keystone_auth_host: "keystone-internal.openstack.svc"
+    keystone_auth_port: "5000"
+  datamover_api:
+    password: geewrH5LmmSskahtTSVEGFqzfIxewFgjJngdgefed
+    internal_endpoint: "https://triliovault-datamover-internal.triliovault.svc:8784/v2"
+    public_endpoint: "https://triliovault-datamover-public-triliovault.apps.demo.triliodemo.demosite:8784/v2"
+  wlm_api:
+    password: gwdwdrDaEEUenMbqRSVvXjszkjPLWd1GtfxjmKi73w
+    internal_endpoint: "https://triliovault-wlm-internal.triliovault.svc:8781/v1/$(tenant_id)s"
+    public_endpoint: "https://triliovault-wlm-public-triliovault.apps.demo.triliodemo.demosite:8781/v1/$(tenant_id)s"

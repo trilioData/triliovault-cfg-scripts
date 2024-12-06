@@ -13,22 +13,22 @@ handlers = null
 
 [logger_workloadmgr-cron]
 level = INFO
-handlers = workloadmgr-cron
+handlers = workloadmgr-cron,stdout,stderr
 qualname = workloadmgr-cron
 
 [logger_workloadmgr-scheduler]
 level = INFO
-handlers = workloadmgr-scheduler
+handlers = workloadmgr-scheduler,stdout,stderr
 qualname = workloadmgr-scheduler
 
 [logger_workloadmgr-workloads]
 level = INFO
-handlers = workloadmgr-workloads
+handlers = workloadmgr-workloads,stdout,stderr
 qualname = workloadmgr-workloads
 
 [logger_workloadmgr-api]
 level = INFO
-handlers = workloadmgr-api
+handlers = workloadmgr-api,stdout,stderr
 qualname = workloadmgr-api
 
 [handler_workloadmgr-api]

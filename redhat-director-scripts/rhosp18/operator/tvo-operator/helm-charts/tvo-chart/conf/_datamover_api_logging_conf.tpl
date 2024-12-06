@@ -13,7 +13,7 @@ handlers = null
 
 [logger_dmapi]
 level = INFO
-handlers = dmapi
+handlers = dmapi,stdout,stderr
 qualname = dmapi
 
 [handler_dmapi]
