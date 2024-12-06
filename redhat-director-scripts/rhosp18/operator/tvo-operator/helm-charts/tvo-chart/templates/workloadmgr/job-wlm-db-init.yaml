@@ -37,8 +37,6 @@ spec:
       restartPolicy: OnFailure
       nodeSelector:
         triliovault-control-plane: enabled
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       containers:
         - name: "wlm-db-init"
           securityContext:

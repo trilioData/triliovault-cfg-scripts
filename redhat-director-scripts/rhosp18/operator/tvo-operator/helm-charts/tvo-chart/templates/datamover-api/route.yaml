@@ -6,7 +6,7 @@ metadata:
   labels:
     osctlplane-service: triliovault-datamover
 spec:
-  host: triliovault-datamover-public-triliovault.apps.trilio.trilio.bos2
+  host: {{ .Values.keystone.datamover_api.public_auth_host }}
   to:
     kind: Service
     name: triliovault-datamover-public

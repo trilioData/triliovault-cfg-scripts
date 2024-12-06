@@ -74,6 +74,7 @@ spec:
     datamover_api:
       internal_endpoint: ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2
       password: EDIT_PASSWORD
+      public_auth_host: ""
       public_endpoint: ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2
       service_desc: TrilioVault Datamover Api Service
       service_name: dmapi
@@ -84,6 +85,7 @@ spec:
     wlm_api:
       internal_endpoint: ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s
       password: EDIT_PASSWORD
+      public_auth_host: ""
       public_endpoint: ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s
       service_desc: TrilioVault Workloadmgr Api Service
       service_name: TrilioVaultWLM
@@ -298,9 +300,6 @@ spec:
             runAsGroup: 42436
             runAsUser: 42436
         pod:
-          image_pull_secrets:
-            default:
-            - name: triliovault-image-pull-secret
           runAsUser: 42424
   rabbitmq:
     common:

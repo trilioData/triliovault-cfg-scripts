@@ -48,8 +48,6 @@ spec:
       nodeSelector:
         triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       containers:
         - name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
           image: {{ $.Values.images.triliovault_object_store }}

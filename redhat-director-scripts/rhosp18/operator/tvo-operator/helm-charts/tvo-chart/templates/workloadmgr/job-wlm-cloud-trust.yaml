@@ -21,7 +21,7 @@ metadata:
     component: wlm-cloud-trust
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "1"
+    helm.sh/hook-weight: "150"
 spec:
   backoffLimit: 1000
   template:
@@ -37,8 +37,6 @@ spec:
       restartPolicy: OnFailure
       nodeSelector:
         triliovault-control-plane: enabled
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       containers:
         - name: "wlm-cloud-trust-creation"
           securityContext:

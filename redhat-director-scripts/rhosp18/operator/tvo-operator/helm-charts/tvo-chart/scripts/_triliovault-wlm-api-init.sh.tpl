@@ -16,7 +16,7 @@ limitations under the License.
 set -ex
 
 #### wlm api conf file
-sleep 3m
+
 source /tmp/triliovault-cloudrc
 OS_SERVICE_DESC="TrilioVault Workloadmanager service"
 # Get Service ID if it exists

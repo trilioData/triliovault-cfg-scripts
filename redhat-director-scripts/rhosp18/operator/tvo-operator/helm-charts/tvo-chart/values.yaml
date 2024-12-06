@@ -136,6 +136,7 @@ keystone:
     service_desc: "TrilioVault Datamover Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8784/v2"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8784/v2"
+    public_auth_host: ""
   wlm_api: 
     user: "triliovault"
     password: "EDIT_PASSWORD"
@@ -144,6 +145,7 @@ keystone:
     service_desc: "TrilioVault Workloadmgr Api Service"
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
+    public_auth_host: ""
   identity:
     
 
@@ -188,9 +190,6 @@ pod:
     triliovault:
       pod:
         runAsUser: 42424
-        image_pull_secrets:
-          default:
-            - name: triliovault-image-pull-secret
       container:
         triliovault_datamover_api:
           readOnlyRootFilesystem: false

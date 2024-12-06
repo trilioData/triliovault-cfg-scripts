@@ -2,7 +2,7 @@
 
 if [ $# -lt 2 ];then
    echo "Script takes exactly 2 arguments"
-   echo -e "./create-image-pull-secret-for-horizon.sh <DOCKER_REGISTRY_USER> <DOCKER_REGISTRY_PASSWORD>"
+   echo -e "./create-image-pull-secret.sh <TRILIO_IMAGE_REGISTRY_USER> <TRILIO_IMAGE_REGISTRY_PASSWORD>"
    exit 1
 fi
 

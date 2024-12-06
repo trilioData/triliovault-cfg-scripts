@@ -26,3 +26,6 @@ if [ $status -ne 0 ]; then
 fi
 
 echo -e "Successfully created operator from given helm chart. Copied at ../operator/tvo-operator/"
+echo -e "Removing values_overrides yaml from operator code"
+
+rm -f ../operator/tvo-operator/helm-charts/tvo-chart/values_overrides/*.yaml

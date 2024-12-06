@@ -97,7 +97,7 @@ auth_plugin = password
 auth_type = password
 auth_version = v3
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
+cafile = /etc/pki/tls/cert.pem
 {{- else }}
 cafile = 
 {{- end }}

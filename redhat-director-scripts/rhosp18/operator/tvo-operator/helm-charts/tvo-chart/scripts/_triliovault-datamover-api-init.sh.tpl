@@ -16,7 +16,7 @@ limitations under the License.
 
 set -ex
 
-sleep 3m
+
 ## datamover api conf file for my_ip parameter
 chown -R dmapi:dmapi /var/log/triliovault
 touch /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-dynamic.conf

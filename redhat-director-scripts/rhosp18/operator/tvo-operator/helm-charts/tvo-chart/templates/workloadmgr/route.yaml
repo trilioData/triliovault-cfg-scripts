@@ -6,7 +6,7 @@ metadata:
   labels:
     osctlplane-service: triliovault-wlm
 spec:
-  host: triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2
+  host: {{ .Values.keystone.wlm_api.public_auth_host }}
   to:
     kind: Service
     name: triliovault-wlm-public

@@ -24,7 +24,7 @@ Listen 8781
 
 # Public vhost configuration for https://triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2:8781/v1/s
 <VirtualHost *:8781>
-  ServerName triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2
+  ServerName {{ .Values.keystone.wlm_api.public_auth_host }}
 
   ## Logging
   ErrorLog /dev/stdout
