@@ -1,0 +1,68 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-full-access-clusterrole
+rules:
+  # Grant access to all resources within the cluster
+  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io", "route.openshift.io", "*"]
+    resources: ["*"]
+    verbs: ["*"]
+  # Explicit permissions for Role, RoleBinding, and Routes for cluster-wide scope
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: ["route.openshift.io"]
+    resources:
+      - routes
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-full-access-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: tvo-operator-controller-manager
+    namespace: tvo-operator-system
+roleRef:
+  kind: ClusterRole
+  name: operator-full-access-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: operator-full-access-role
+  namespace: triliovault
+rules:
+  # Grant access to all resources within the namespace
+  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io", "route.openshift.io", "*"]
+    resources: ["*"]
+    verbs: ["*"]
+  # Explicit permissions for Role, RoleBinding, and Routes within namespace scope
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: ["route.openshift.io"]
+    resources:
+      - routes
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: operator-full-access-rolebinding
+  namespace: triliovault
+subjects:
+  - kind: ServiceAccount
+    name: tvo-operator-controller-manager
+    namespace: tvo-operator-system
+roleRef:
+  kind: Role
+  name: operator-full-access-role
+  apiGroup: rbac.authorization.k8s.io

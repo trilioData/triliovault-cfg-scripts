@@ -5,6 +5,10 @@ metadata:
   labels:
     application: triliovault
     component: wlm-cron
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   replicas: {{ .Values.pod.replicas.triliovault_wlm_cron }}
   selector:
@@ -46,8 +50,6 @@ spec:
       nodeSelector:
         triliovault-control-plane: enabled
       terminationGracePeriodSeconds: 30
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
       initContainers:
         - name: triliovault-wlm-cron-init
           image: {{ .Values.images.triliovault_wlm_cron }}
@@ -59,14 +61,17 @@ spec:
           env:
             - name: POD_NAME
               value: "triliovault-wlm-cron"
-
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           command:
             - /bin/bash
             - -c
             - /tmp/triliovault-wlm-api-init.sh
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
-            - name: varlogtriliovaultwlm
+            - name: trilio-logs
               mountPath: /var/log/triliovault
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api-init.sh
@@ -104,7 +109,7 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: varlogtriliovaultwlm
+            - name: trilio-logs
               mountPath: /var/log/triliovault
             - mountPath: /etc/triliovault-wlm/wlm_logging.conf
               name: triliovault-wlm-etc
@@ -115,7 +120,7 @@ spec:
               subPath: triliovault-wlm.conf
               readOnly: true
             - name: triliovault-wlm-etc
-              mountPath: /etc/triliovault-wlm/ca-cert.pem
+              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
             - name: triliovault-wlm-etc
@@ -126,13 +131,16 @@ spec:
               mountPath: /tmp/triliovault-wlm-cron.sh
               subPath: triliovault-wlm-cron.sh
             - name: pod-shared-triliovault-wlm-cron
-              mountPath: /tmp/pod-shared-triliovault-wlm-cron            
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: varlogtriliovaultwlm
-          hostPath:
-            path: /var/log/triliovault-wlm
+        - name: trilio-logs
+          emptyDir: {}
         - name: triliovault-wlm-etc
           secret:
             secretName: triliovault-wlm-etc
@@ -143,3 +151,7 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-cron
           emptyDir: {}
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

@@ -3,11 +3,64 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: triliovault-wlm-api
+  name: triliovault-wlm-internal
+  namespace: triliovault
+  labels:
+    endpoint: internal
+    osctlplane: ""
+    osctlplane-service: triliovault-wlm
+    owner: triliovault-wlm
+    service: triliovault-wlm
+  annotations:
+    core.openstack.org/ingress_create: "false"
+    dnsmasq.network.openstack.org/hostname: triliovault-wlm-internal.triliovault.svc
+    endpoint: internal
+    metallb.universe.tf/address-pool: internalapi
+    metallb.universe.tf/allow-shared-ip: internalapi
+    metallb.universe.tf/ip-allocated-from-pool: internalapi
 spec:
-  ports:
-    - name: w-api
-      port: 8780
   selector:
-    application: triliovault
+    owner: triliovault-wlm
+    service: triliovault-wlm
+  type: LoadBalancer
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: triliovault-wlm-internal
+      port: 8781
+      protocol: TCP
+      targetPort: 8781
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    core.openstack.org/ingress_create: "true"
+    endpoint: public
+  labels:
+    component: triliovault-wlm-api
+    endpoint: public
+    osctlplane: ""
+    osctlplane-service: triliovault-wlm
+    service: triliovault-wlm
+  name: triliovault-wlm-public
+  namespace: triliovault
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: triliovault-wlm-public
+    port: 8781
+    protocol: TCP
+    targetPort: 8781
+  selector:
     component: wlm-api
+    service: triliovault-wlm
+  sessionAffinity: None
+  type: ClusterIP

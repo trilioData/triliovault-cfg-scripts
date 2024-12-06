@@ -19,15 +19,15 @@ metadata:
   name: triliovault-datamover-api-bin
 data:
   triliovault-datamover-api-init.sh: |-
-    {{ tpl (.Files.Get "bin/_triliovault-datamover-api-init.sh.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-init.sh.tpl") . | nindent 4 }}
   triliovault-cloudrc: |
-    {{ tpl (.Files.Get "bin/_triliovault-cloudrc.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-cloudrc.tpl") . | nindent 4 }}
   triliovault-datamover-api.sh: |-
-    {{ tpl (.Files.Get "bin/_triliovault-datamover-api.sh.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api.sh.tpl") . | nindent 4 }}
   triliovault-datamover-api-keystone-init.sh: |-
-    {{ tpl (.Files.Get "bin/_triliovault-datamover-api-keystone-init.sh.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-keystone-init.sh.tpl") . | nindent 4 }}
   triliovault-datamover-api-db-init.sh: |-
-    {{ tpl (.Files.Get "bin/_triliovault-datamover-api-db-init.sh.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-db-init.sh.tpl") . | nindent 4 }}
   triliovault-datamover-api-rabbitmq-init.sh: |-
-    {{ tpl (.Files.Get "bin/_triliovault-datamover-api-rabbitmq-init.sh.tpl") . | nindent 4 }}
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-init.sh.tpl") . | nindent 4 }}
 

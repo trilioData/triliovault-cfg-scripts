@@ -89,15 +89,15 @@ misfire_grace_time = 600
 [keystone_authtoken]
 auth_url = {{ .Values.keystone.common.auth_url }}
 {{- $auth_url := .Values.keystone.common.auth_url | trimSuffix "/" }}
-www_authenticate_uri = "{{ $auth_url }}/v3"
-admin_password = "{{ .Values.keystone.wlm_api.password }}"
-admin_tenant_name = "{{ .Values.keystone.common.service_project_name }}"
-admin_user = "{{ .Values.keystone.wlm_api.user }}"
+www_authenticate_uri = {{ $auth_url }}/v3
+admin_password = {{ .Values.keystone.wlm_api.password }}
+admin_tenant_name = {{ .Values.keystone.common.service_project_name }}
+admin_user = {{ .Values.keystone.wlm_api.user }}
 auth_plugin = password
 auth_type = password
 auth_version = v3
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
+cafile = /etc/pki/tls/cert.pem
 {{- else }}
 cafile = 
 {{- end }}

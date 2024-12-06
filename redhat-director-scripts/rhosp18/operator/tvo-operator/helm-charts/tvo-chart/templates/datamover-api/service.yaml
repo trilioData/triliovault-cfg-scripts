@@ -1,0 +1,66 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: triliovault-datamover-internal
+  namespace: triliovault
+  labels:
+    endpoint: internal
+    osctlplane: ""
+    osctlplane-service: triliovault-datamover
+    owner: triliovault-datamover
+    service: triliovault-datamover
+  annotations:
+    core.openstack.org/ingress_create: "false"
+    dnsmasq.network.openstack.org/hostname: triliovault-datamover-internal.triliovault.svc
+    endpoint: internal
+    metallb.universe.tf/address-pool: internalapi
+    metallb.universe.tf/allow-shared-ip: internalapi
+    metallb.universe.tf/ip-allocated-from-pool: internalapi
+spec:
+  selector:
+    owner: triliovault-datamover
+    service: triliovault-datamover
+  type: LoadBalancer
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: triliovault-datamover-internal
+      port: 8784
+      protocol: TCP
+      targetPort: 8784
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    core.openstack.org/ingress_create: "true"
+    endpoint: public
+  labels:
+    component: triliovault-datamover-api
+    endpoint: public
+    osctlplane: ""
+    osctlplane-service: triliovault-datamover
+    service: triliovault-datamover
+  name: triliovault-datamover-public
+  namespace: triliovault
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: triliovault-datamover-public
+    port: 8784
+    protocol: TCP
+    targetPort: 8784
+  selector:
+    component: datamover-api
+    service: triliovault-datamover
+  sessionAffinity: None
+  type: ClusterIP
