@@ -26,6 +26,11 @@ oc create -f cert-triliovault-datamover-internal-svc.yaml
 
 oc describe secret cert-triliovault-datamover-public-svc
 oc describe secret cert-triliovault-datamover-internal-svc
+
+#sleep 15s
+#oc -n openstack delete secret cert-triliovault-datamover-internal-svc  \
+#  cert-triliovault-datamover-public-svc cert-triliovault-wlm-internal-svc cert-triliovault-wlm-public-svc
+
 #!/bin/bash
 
 # Define variables
