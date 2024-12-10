@@ -9,7 +9,7 @@ function start () {
   {{- if eq .backup_target_type "nfs" }}
     {{- $nfsShare := .nfs_shares }}
     {{- $nfsParts := splitList ":" $nfsShare }}
-    {{- $nfsDir := index $nfsParts 0 }}
+    {{- $nfsDir := index $nfsParts 1 }}
     {{- $base64MountPoint := (b64enc $nfsDir) }}
     {{- $nfsOptions := .nfs_options }}
 mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
