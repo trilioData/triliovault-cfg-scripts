@@ -2,7 +2,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: triliovault-datamover-public
-  namespace: triliovault
+  trilio-system
   labels:
     osctlplane-service: triliovault-datamover
 spec:

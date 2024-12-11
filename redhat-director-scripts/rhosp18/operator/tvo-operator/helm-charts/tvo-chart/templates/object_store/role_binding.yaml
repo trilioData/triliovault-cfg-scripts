@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: triliovault-object-store
-  namespace: triliovault
+  trilio-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -11,13 +11,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: triliovault-object-store
-    namespace: triliovault
+    trilio-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: triliovault-object-store-anyuid
-  namespace: triliovault
+  trilio-system
 roleRef:
   kind: ClusterRole
   name: system:openshift:scc:anyuid
@@ -25,13 +25,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: triliovault-object-store
-    namespace: triliovault
+    trilio-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: triliovault-object-store-privileged
-  namespace: triliovault
+  trilio-system
 roleRef:
   kind: ClusterRole
   name: system:openshift:scc:privileged
@@ -39,4 +39,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: triliovault-object-store
-    namespace: triliovault
+    trilio-system
