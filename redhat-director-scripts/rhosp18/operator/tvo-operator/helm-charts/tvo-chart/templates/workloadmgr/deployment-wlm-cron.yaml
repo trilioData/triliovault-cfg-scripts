@@ -47,7 +47,7 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 10
       nodeSelector:
-        triliovault-control-plane: enabled
+        trilio-control-plane: enabled
       terminationGracePeriodSeconds: 30
       initContainers:
         - name: triliovault-wlm-cron-init
