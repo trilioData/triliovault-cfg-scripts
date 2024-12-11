@@ -146,8 +146,6 @@ keystone:
     internal_endpoint: "ENDPOINT_PROTOCOL_INTERNAL://ENDPOINT_HOST_INTERNAL:8781/v1/$(tenant_id)s"
     public_endpoint: "ENDPOINT_PROTOCOL_PUBLIC://ENDPOINT_HOST_PUBLIC:8781/v1/$(tenant_id)s"
     public_auth_host: ""
-  identity:
-    
 
 database:
   common:
