@@ -1,18 +1,18 @@
 labels:
   wlm_api:
-    node_selector_key: triliovault-control-plane
+    node_selector_key: trilio-control-plane
     node_selector_value: enabled
   wlm_cron:
-    node_selector_key: triliovault-control-plane
+    node_selector_key: trilio-control-plane
     node_selector_value: enabled
   wlm_scheduler:
-    node_selector_key: triliovault-control-plane
+    node_selector_key: trilio-control-plane
     node_selector_value: enabled
   wlm_workloads:
-    node_selector_key: triliovault-control-plane
+    node_selector_key: trilio-control-plane
     node_selector_value: enabled
   datamover_api:
-    node_selector_key: triliovault-control-plane
+    node_selector_key: trilio-control-plane
     node_selector_value: enabled
 images:
   triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic

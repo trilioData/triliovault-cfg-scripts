@@ -2,7 +2,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: triliovault-wlm-public
-  namespace: triliovault
+  namespace: trilio-system
   labels:
     osctlplane-service: triliovault-wlm
 spec:

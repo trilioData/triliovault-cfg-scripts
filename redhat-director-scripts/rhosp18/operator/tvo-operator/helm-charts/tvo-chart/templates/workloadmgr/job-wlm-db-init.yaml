@@ -22,7 +22,7 @@ spec:
       serviceAccountName: triliovault-wlm
       restartPolicy: OnFailure
       nodeSelector:
-        triliovault-control-plane: enabled
+        trilio-control-plane: enabled
       containers:
         - name: "wlm-db-init"
           securityContext:

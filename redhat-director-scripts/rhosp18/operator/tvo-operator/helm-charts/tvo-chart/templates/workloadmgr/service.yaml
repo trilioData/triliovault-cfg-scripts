@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: triliovault-wlm-internal
-  namespace: triliovault
+  namespace: trilio-system
   labels:
     endpoint: internal
     osctlplane: ""
@@ -48,7 +48,7 @@ metadata:
     osctlplane-service: triliovault-wlm
     service: triliovault-wlm
   name: triliovault-wlm-public
-  namespace: triliovault
+  namespace: trilio-system
 spec:
   internalTrafficPolicy: Cluster
   ipFamilies:
