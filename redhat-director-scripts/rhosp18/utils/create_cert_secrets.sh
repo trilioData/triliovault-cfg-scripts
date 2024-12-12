@@ -5,27 +5,27 @@ oc create -f ./certificate.yaml
 oc get secret cert-triliovault-wlm-public-svc -n openstack -o yaml > cert-triliovault-wlm-public-svc.yaml
 oc get secret cert-triliovault-wlm-internal-svc -n openstack -o yaml > cert-triliovault-wlm-internal-svc.yaml
 
-sed -i 's/openstack/triliovault/' cert-triliovault-wlm-internal-svc.yaml
-sed -i 's/openstack/triliovault/' cert-triliovault-wlm-public-svc.yaml
+sed -i 's/openstack/trilio-system/' cert-triliovault-wlm-internal-svc.yaml
+sed -i 's/openstack/trilio-system/' cert-triliovault-wlm-public-svc.yaml
 
 oc create -f cert-triliovault-wlm-public-svc.yaml
 oc create -f cert-triliovault-wlm-internal-svc.yaml
 
-oc describe secret cert-triliovault-wlm-public-svc
-oc describe secret cert-triliovault-wlm-internal-svc
+oc describe secret cert-triliovault-wlm-public-svc -n trilio-system
+oc describe secret cert-triliovault-wlm-internal-svc -n trilio-system
 
 
 oc get secret cert-triliovault-datamover-public-svc -n openstack -o yaml > cert-triliovault-datamover-public-svc.yaml
 oc get secret cert-triliovault-datamover-internal-svc -n openstack -o yaml > cert-triliovault-datamover-internal-svc.yaml
 
-sed -i 's/openstack/triliovault/' cert-triliovault-datamover-internal-svc.yaml
-sed -i 's/openstack/triliovault/' cert-triliovault-datamover-public-svc.yaml
+sed -i 's/openstack/trilio-system/' cert-triliovault-datamover-internal-svc.yaml
+sed -i 's/openstack/trilio-system/' cert-triliovault-datamover-public-svc.yaml
 
 oc create -f cert-triliovault-datamover-public-svc.yaml
 oc create -f cert-triliovault-datamover-internal-svc.yaml
 
-oc describe secret cert-triliovault-datamover-public-svc
-oc describe secret cert-triliovault-datamover-internal-svc
+oc describe secret cert-triliovault-datamover-public-svc -n trilio-system
+oc describe secret cert-triliovault-datamover-internal-svc -n trilio-system
 
 #sleep 15s
 #oc -n openstack delete secret cert-triliovault-datamover-internal-svc  \
@@ -35,7 +35,7 @@ oc describe secret cert-triliovault-datamover-internal-svc
 
 # Define variables
 SOURCE_NAMESPACE="openstack"
-TARGET_NAMESPACE="triliovault"
+TARGET_NAMESPACE="trilio-system"
 SECRET_NAME="combined-ca-bundle"
 
 # Check if the secret exists in the source namespace
