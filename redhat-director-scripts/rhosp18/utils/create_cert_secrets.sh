@@ -11,8 +11,8 @@ sed -i 's/openstack/trilio-system/' cert-triliovault-wlm-public-svc.yaml
 oc create -f cert-triliovault-wlm-public-svc.yaml
 oc create -f cert-triliovault-wlm-internal-svc.yaml
 
-oc describe secret cert-triliovault-wlm-public-svc
-oc describe secret cert-triliovault-wlm-internal-svc
+oc describe secret cert-triliovault-wlm-public-svc -n trilio-system
+oc describe secret cert-triliovault-wlm-internal-svc -n trilio-system
 
 
 oc get secret cert-triliovault-datamover-public-svc -n openstack -o yaml > cert-triliovault-datamover-public-svc.yaml
@@ -24,8 +24,8 @@ sed -i 's/openstack/trilio-system/' cert-triliovault-datamover-public-svc.yaml
 oc create -f cert-triliovault-datamover-public-svc.yaml
 oc create -f cert-triliovault-datamover-internal-svc.yaml
 
-oc describe secret cert-triliovault-datamover-public-svc
-oc describe secret cert-triliovault-datamover-internal-svc
+oc describe secret cert-triliovault-datamover-public-svc -n trilio-system
+oc describe secret cert-triliovault-datamover-internal-svc -n trilio-system
 
 #sleep 15s
 #oc -n openstack delete secret cert-triliovault-datamover-internal-svc  \

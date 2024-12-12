@@ -13,7 +13,7 @@ spec:
   dnsNames:
     - triliovault-wlm-public.triliovault.svc
     - triliovault-wlm-public.triliovault.svc.cluster.local
-    - triliovault-wlm-public-triliovault.apps.trilio.trilio.prod
+    - triliovault-wlm-public-triliovault.$PUBLIC_ENDPOINT_DOMAIN
 
 ---
 
@@ -47,7 +47,7 @@ spec:
   dnsNames:
     - triliovault-datamover-public.triliovault.svc
     - triliovault-datamover-public.triliovault.svc.cluster.local
-    - triliovault-datamover-public-triliovault.apps.trilio.trilio.prod
+    - triliovault-datamover-public-triliovault.$PUBLIC_ENDPOINT_DOMAIN
 
 ---
 apiVersion: cert-manager.io/v1

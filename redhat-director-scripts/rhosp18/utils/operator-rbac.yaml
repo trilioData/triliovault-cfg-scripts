@@ -36,7 +36,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: operator-full-access-role
-  trilio-system
+  namespace: trilio-system
 rules:
   # Grant access to all resources within the namespace
   - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io", "route.openshift.io", "*"]
@@ -57,7 +57,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: operator-full-access-rolebinding
-  trilio-system
+  namespace: trilio-system
 subjects:
   - kind: ServiceAccount
     name: tvo-operator-controller-manager
