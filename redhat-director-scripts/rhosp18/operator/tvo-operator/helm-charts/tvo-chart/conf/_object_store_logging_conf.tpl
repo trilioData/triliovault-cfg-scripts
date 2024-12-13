@@ -9,7 +9,7 @@ keys = default,advanced,default-utc,advanced-utc
 
 [logger_root]
 level = INFO
-handlers = s3fuse
+handlers = s3fuse,stdout,stderr
 
 [logger_s3fuse]
 level = INFO
