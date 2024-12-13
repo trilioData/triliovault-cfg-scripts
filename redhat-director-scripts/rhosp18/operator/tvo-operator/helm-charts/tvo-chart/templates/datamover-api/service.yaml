@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: triliovault-datamover-internal
-  namespace: trilio-system
+  namespace: trilio-openstack
   labels:
     endpoint: internal
     osctlplane: ""
@@ -48,7 +48,7 @@ metadata:
     osctlplane-service: triliovault-datamover
     service: triliovault-datamover
   name: triliovault-datamover-public
-  namespace: trilio-system
+  namespace: trilio-openstack
 spec:
   internalTrafficPolicy: Cluster
   ipFamilies:
