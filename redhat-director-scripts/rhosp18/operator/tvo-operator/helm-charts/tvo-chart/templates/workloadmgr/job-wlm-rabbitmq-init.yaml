@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-wlm-rabbitmq-init"
+  labels:
+    application: triliovault
+    component: wlm-rabbitmq-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-rabbitmq-init
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      serviceAccountName: triliovault-wlm
+      restartPolicy: OnFailure
+      nodeSelector:
+        triliovault-control-plane: enabled
+      imagePullSecrets:
+        - name: triliovault-image-pull-secret
+      containers:
+        - name: "wlm-rabbitmq-init"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          image: {{ .Values.images.triliovault_wlm_api }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-rabbitmq-init.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-rabbitmq-init.sh
+              subPath: triliovault-wlm-rabbitmq-init.sh
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-wlm-bin
+          configMap:
+            name: "triliovault-wlm-bin"
+            defaultMode: 0555
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
