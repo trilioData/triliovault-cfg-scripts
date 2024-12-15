@@ -154,12 +154,12 @@ spec:
       user: "dmapi"
       password: "EDIT_PASSWORD"
       vhost: "dmapi"
-      transport_url: "rabbit://dmapi:${PASSWORD}@${RABBITMQ_HOST}:5671/?ssl=1"
+      transport_url: "rabbit://dmapi:${PASSWORD}@${RABBITMQ_HOST}:5671/dmapi?ssl=1"
     wlm_api:
       user: "workloadmgr"
       password: "EDIT_PASSWORD"
       vhost: "workloadmgr"
-      transport_url: "rabbit://workloadmgr:${PASSWORD}@${RABBITMQ_HOST}:5671/?ssl=1"
+      transport_url: "rabbit://workloadmgr:${PASSWORD}@${RABBITMQ_HOST}:5671/workloadmgr?ssl=1"
   helm3_hook: true
   pod:
     security_context:
