@@ -149,6 +149,7 @@ spec:
       host: "EDIT_HOST"
       port: "15671"
       driver: "messagingv2"
+      ssl: true
     datamover_api:
       user: "dmapi"
       password: "EDIT_PASSWORD"

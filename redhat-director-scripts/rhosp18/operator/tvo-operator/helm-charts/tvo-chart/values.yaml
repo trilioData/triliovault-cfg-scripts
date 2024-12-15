@@ -126,6 +126,7 @@ rabbitmq:
     admin_password: "EDIT_PASSWORD"
     host: "EDIT_HOST"
     port: "5672"
+    ssl: true
     driver: "messagingv2"
   datamover_api:
     user: "dmapi"
