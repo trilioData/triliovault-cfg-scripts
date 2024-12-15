@@ -42,6 +42,10 @@ spec:
             - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-datamover-api-rabbitmq-init.sh
               subPath: triliovault-datamover-api-rabbitmq-init.sh
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -49,3 +53,7 @@ spec:
           configMap:
             name: triliovault-datamover-api-bin
             defaultMode: 0555
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle

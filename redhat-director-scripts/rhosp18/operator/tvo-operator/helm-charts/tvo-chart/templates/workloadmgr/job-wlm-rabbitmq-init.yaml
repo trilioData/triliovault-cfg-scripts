@@ -42,6 +42,10 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-rabbitmq-init.sh
               subPath: triliovault-wlm-rabbitmq-init.sh
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -49,3 +53,7 @@ spec:
           configMap:
             name: "triliovault-wlm-bin"
             defaultMode: 0555
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
