@@ -20,15 +20,15 @@ export RABBITMQ_ADMIN_PASSWORD
 
 # Create user
 rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" \
-  declare user name="${WLMAPI_RABBITMQ_USER_NAME}" password="${WLMAPI_RABBITMQ_USER_PASSWORD}" tags="management"
+  --ssl declare user name="${WLMAPI_RABBITMQ_USER_NAME}" password="${WLMAPI_RABBITMQ_USER_PASSWORD}" tags="management"
 
 # Create virtual host
 rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" \
-  declare vhost name="${WLMAPI_RABBITMQ_VHOST_NAME}"
+  --ssl declare vhost name="${WLMAPI_RABBITMQ_VHOST_NAME}"
 
 # Set permissions
 rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" \
-  declare permission vhost="${WLMAPI_RABBITMQ_VHOST_NAME}" user="${WLMAPI_RABBITMQ_USER_NAME}" configure=".*" write=".*" read=".*"
+  --ssl declare permission vhost="${WLMAPI_RABBITMQ_VHOST_NAME}" user="${WLMAPI_RABBITMQ_USER_NAME}" configure=".*" write=".*" read=".*"
 
 
 # Create the virtual host
