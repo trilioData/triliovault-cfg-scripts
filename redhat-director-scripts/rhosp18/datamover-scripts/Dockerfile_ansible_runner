@@ -1,0 +1,2 @@
+FROM quay.io/openstack-k8s-operators/openstack-ansibleee-runner:latest
+COPY ansible-roles/trilio-datamover /usr/share/ansible/roles/trilio-datamover
