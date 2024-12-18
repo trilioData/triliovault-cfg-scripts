@@ -1,0 +1,36 @@
+[DEFAULT]
+
+vault_data_directory = {{ vault_data_dir }}
+vault_data_directory_old = /var/triliovault
+
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+max_uploads_pending = 3
+max_commit_pending = 3
+dmapi_transport_url = {{ dmapi_transport_url }}
+
+{% if cinder_backend_ceph %}
+[libvirt]
+images_rbd_ceph_conf = {{ libvirt_images_rbd_ceph_conf }}
+rbd_user = {{ ceph_cinder_user }}
+
+[ceph]
+keyring_ext = .keyring
+{% endif %}
+
+[dmapi_database]
+connection = {{ dmapi_database_connection }}
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
+
+[oslo_messaging_rabbit]
+ssl = {{ oslomsg_rpc_use_ssl }}
+
+[cinder]
+http_retries = {{ cinder_http_retries }}
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
