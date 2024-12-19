@@ -1,5 +1,4 @@
 ---
-
 - name: Ensure Trilio object store directory exists
   file:
     path: "{{ triliovault_object_store_config_dest }}"
@@ -23,6 +22,7 @@
     group: '42436'
     mode: '0644'
 
+
 - name: Render triliovault_object_store_config_json.j2 for S3 backup targets
   template:
     src: "triliovault_object_store_config_json.j2"
@@ -33,6 +33,9 @@
   when: item.backup_target_type == "s3"
   vars:
     backup_target_name: "{{ item.backup_target_name }}"
+  notify: 
+    - "Restart triliovault-object-store-{{ item.backup_target_name }}"
+
 
 - name: Process Trilio backup targets
   vars:
@@ -66,6 +69,8 @@
             owner: '42436'
             group: '42436'
             mode: '0644'
+          notify: 
+            - "Restart triliovault-object-store-{{ target.backup_target_name }}"
 
         - name: Create configuration file for Trilio backup target
           template:
@@ -92,12 +97,32 @@
             s3_bucket_object_lock_enabled: "{{ target.s3_bucket_object_lock_enabled }}"
             vault_data_dir: "{{ vault_data_dir }}"
             vault_storage_nfs_export: "{{ vault_storage_nfs_export }}"
+          notify: 
+            - "Restart triliovault-object-store-{{ target.backup_target_name }}"
 
-- name: Render triliovault-object-store container
-  ansible.builtin.template:
+
+- name: Render triliovault-object-store container jsons for S3 backup targets
+  template:
     src: "triliovault-object-store-container-json.j2"
-    dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store.json"
-    setype: "container_file_t"
+    dest: "/var/lib/openstack/config/containers/triliovault-object-store-{{ item.backup_target_name }}.json"
     mode: "0644"
-  notify:
-    - Restart trilio-datamover
+    owner: "42436"
+  with_items: "{{ triliovault_backup_targets }}"
+  when: item.backup_target_type == "s3"
+  vars:
+    backup_target_name: "{{ item.backup_target_name }}"
+  notify: 
+    - "Restart triliovault-object-store-{{ item.backup_target_name }}"
+
+- name: Deploy trilio object store containers
+  ansible.builtin.include_role:
+    name: osp.edpm.edpm_container_manage
+  vars:
+    edpm_container_manage_config: '/var/lib/openstack/config/containers'
+    edpm_container_manage_healthcheck_disabled: true
+    edpm_container_manage_config_patterns: 'triliovault-  -store-{{ item.backup_target_name }}.json'
+    edpm_container_manage_clean_orphans: false
+  with_items: "{{ triliovault_backup_targets }}"
+  when: item.backup_target_type == "s3"
+  vars:
+    backup_target_name: "{{ item.backup_target_name }}"

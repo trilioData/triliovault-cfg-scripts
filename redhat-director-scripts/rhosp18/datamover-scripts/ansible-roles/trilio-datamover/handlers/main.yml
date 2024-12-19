@@ -1,2 +1,9 @@
 ---
 # handlers file for trilio-datamover
+- name: Restart triliovault-datamover container
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: "edpm_triliovault_datamover.service"
+  listen: "Restart triliovault-datamover"
+

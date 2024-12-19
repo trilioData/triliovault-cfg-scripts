@@ -10,7 +10,8 @@
         "KOLLA_CONFIG_STRATEGY":"COPY_ALWAYS"
     },
     "volumes": [
-        "/var/lib/trilio/config/triliovault-datamover:/var/lib/kolla/config_files/triliovault-datamover:ro",
+        ""{{ triliovault_datamover_config_dest }}/triliovault_datamover_config.json:/var/lib/kolla/config_files/config.json:ro"
+        "/var/lib/openstack/config/triliovault-datamover:/var/lib/kolla/config_files/triliovault-datamover:ro",
 {% if ca_bundle_exists|bool %}
         "{{ edpm_nova_tls_ca_src_dir }}/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro,z",
 {% endif %}
@@ -25,6 +26,7 @@
         "/etc/multipath:/etc/multipath:z",
         "/etc/multipath.conf:/etc/multipath.conf:ro",
         "/etc/iscsi:/etc/iscsi:ro",
+        "/var/trilio:/var/trilio:shared"
         "/etc/nvme:/etc/nvme",
         "/run:/run",
         "/var/lib/openstack/config/ceph:/var/lib/kolla/config_files/ceph:ro",

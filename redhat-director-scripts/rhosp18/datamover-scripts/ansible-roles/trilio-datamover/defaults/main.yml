@@ -1,9 +1,9 @@
 ---
 
 triliovault_datamover_config_src: /var/lib/openstack/configs
-triliovault_datamover_config_dest: /var/lib/trilio/config/triliovault-datamover
+triliovault_datamover_config_dest: /var/lib/openstack/config/triliovault-datamover
 triliovault_object_store_config_src: /var/lib/openstack/configs
-triliovault_object_store_config_dest: /var/lib/trilio/config/triliovault-object-store
+triliovault_object_store_config_dest: /var/lib/openstack/config/triliovault-object-store
 
 # defaults file for trilio-datamover
 vault_data_dir: "/var/trilio/triliovault-mounts"

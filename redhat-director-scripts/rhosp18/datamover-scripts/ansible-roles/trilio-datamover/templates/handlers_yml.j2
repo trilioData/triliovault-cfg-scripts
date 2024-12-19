@@ -1,0 +1,9 @@
+
+{% for target in triliovault_backup_targets if target.backup_target_type == "s3" %}
+- name: Restart triliovault-object-store-{{ target.backup_target_name }} container
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: "edpm_triliovault_object_store_{{ target.backup_target_name }}.service"
+  listen: "Restart triliovault-object-store-{{ target.backup_target_name }}"
+{% endfor %}

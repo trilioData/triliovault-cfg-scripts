@@ -2,10 +2,10 @@
   "command": "/usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store-{{ backup_target_name }}.conf",
   "config_files": [
     {
-      "dest": "/",
+      "dest": "/etc/triliovault-object-store/",
       "merge": true,
       "preserve_properties": true,
-      "source": "/var/lib/kolla/config_files/triliovaultobjectstore/*"
+      "source": "/var/lib/kolla/config_files/triliovault-object-store/*"
     }
   ],
   "permissions": [
