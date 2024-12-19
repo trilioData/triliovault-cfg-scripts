@@ -1,5 +1,3 @@
----
-# handlers file for trilio-datamover
 - name: Restart triliovault-datamover container
   become: true
   ansible.builtin.systemd:
@@ -7,3 +5,15 @@
     name: "edpm_triliovault_datamover.service"
   listen: "Restart triliovault-datamover"
 
+- name: Restart triliovault-object-store-BT1_S3 container
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: "edpm_triliovault_object_store_BT1_S3.service"
+  listen: "Restart triliovault-object-store-BT1_S3"
+- name: Restart triliovault-object-store-BT2_S3 container
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: "edpm_triliovault_object_store_BT2_S3.service"
+  listen: "Restart triliovault-object-store-BT2_S3"

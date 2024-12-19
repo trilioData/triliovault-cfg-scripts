@@ -37,69 +37,11 @@
     - "Restart triliovault-object-store-{{ item.backup_target_name }}"
 
 
-- name: Process Trilio backup targets
-  vars:
-    triliovault_backup_targets: "{{ triliovault_backup_targets }}"
-  block:
-    - name: Iterate over Trilio backup targets
-      loop: "{{ triliovault_backup_targets }}"
-      loop_control:
-        loop_var: target
-      tasks:
-        - name: Determine backup target mount point and vault storage NFS export
-          set_fact:
-            backup_target_mount_point: >-
-              {{ 
-                (target.s3_bucket | b64encode) 
-                if target.s3_type == 'amazon_s3' else 
-                (target.s3_endpoint_url | regex_replace('^https?://', '') ~ '/' ~ target.s3_bucket | b64encode) 
-              }}
-            vault_storage_nfs_export: >-
-              {{ 
-                target.s3_bucket 
-                if target.s3_type == 'amazon_s3' else 
-                target.s3_endpoint_url | regex_replace('^https?://', '') ~ '/' ~ target.s3_bucket 
-              }}
-
-        - name: Create S3 certificate file if required
-          when: target.s3_ssl_enabled and target.s3_self_signed_cert
-          copy:
-            src: "files/s3-cert-{{ target.backup_target_name }}.pem"
-            dest: "{{ triliovault_object_store_config_dest }}/s3-cert-{{ target.backup_target_name }}.pem"
-            owner: '42436'
-            group: '42436'
-            mode: '0644'
-          notify: 
-            - "Restart triliovault-object-store-{{ target.backup_target_name }}"
-
-        - name: Create configuration file for Trilio backup target
-          template:
-            src: triliovault_object_store_conf.j2
-            dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ target.backup_target_name }}.conf"
-            owner: '42436'
-            group: '42436'
-            mode: '0644'
-          vars:
-            backup_target_type: "{{ target.backup_target_type }}"
-            backup_target_name: "{{ target.backup_target_name }}"
-            backup_target_mount_point: "{{ backup_target_mount_point }}"
-            s3_accesskey: "{{ target.s3_access_key }}"
-            s3_secretkey: "{{ target.s3_secret_key }}"
-            s3_bucket: "{{ target.s3_bucket }}"
-            s3_region_name: "{{ target.s3_region_name }}"
-            s3_auth_version: "{{ target.s3_auth_version }}"
-            s3_signature_version: "{{ target.s3_signature_version }}"
-            s3_ssl_enabled: "{{ target.s3_ssl_enabled }}"
-            s3_self_signed_cert: "{{ target.s3_self_signed_cert }}"
-            s3_ssl_verify: "{{ target.s3_ssl_verify }}"
-            s3_type: "{{ target.s3_type }}"
-            s3_endpoint_url: "{{ target.s3_endpoint_url }}"
-            s3_bucket_object_lock_enabled: "{{ target.s3_bucket_object_lock_enabled }}"
-            vault_data_dir: "{{ vault_data_dir }}"
-            vault_storage_nfs_export: "{{ vault_storage_nfs_export }}"
-          notify: 
-            - "Restart triliovault-object-store-{{ target.backup_target_name }}"
-
+- name: Process Trilio S3 backup targets
+  include_tasks: process_backup_target.yml
+  loop: "{{ triliovault_backup_targets | selectattr('backup_target_type', 'equalto', 's3') | list }}"
+  loop_control:
+    loop_var: target
 
 - name: Render triliovault-object-store container jsons for S3 backup targets
   template:

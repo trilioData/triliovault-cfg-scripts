@@ -6,12 +6,11 @@
 - name: Generate handlers dynamically
   template:
     src: handlers_yml.j2
-    dest: /usr/share/ansible/roles/trilio-datamover/handlers/dynamic-handlers.yml
+    dest: /usr/share/ansible/roles/trilio-datamover/handlers/main.yml
     mode: "0755"
     owner: "42436"
-
-- name: Include handlers
-  import_tasks: /usr/share/ansible/roles/trilio-datamover/handlers/dynamic-handlers.yml
+  delegate_to: localhost
+  run_once: true
 
 - name: Configure and install triliovault object store services
   ansible.builtin.include_tasks: configure_object_store.yml

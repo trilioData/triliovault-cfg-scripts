@@ -1,3 +1,9 @@
+- name: Restart triliovault-datamover container
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: "edpm_triliovault_datamover.service"
+  listen: "Restart triliovault-datamover"
 
 {% for target in triliovault_backup_targets if target.backup_target_type == "s3" %}
 - name: Restart triliovault-object-store-{{ target.backup_target_name }} container
