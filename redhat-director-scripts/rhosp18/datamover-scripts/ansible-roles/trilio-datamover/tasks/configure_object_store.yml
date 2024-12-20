@@ -62,9 +62,6 @@
   vars:
     edpm_container_manage_config: '/var/lib/openstack/config/containers'
     edpm_container_manage_healthcheck_disabled: true
-    edpm_container_manage_config_patterns: 'triliovault-  -store-{{ item.backup_target_name }}.json'
+    edpm_container_manage_config_patterns: 'triliovault-object-store-{{ item.backup_target_name }}.json'
     edpm_container_manage_clean_orphans: false
-  with_items: "{{ triliovault_backup_targets }}"
-  when: item.backup_target_type == "s3"
-  vars:
-    backup_target_name: "{{ item.backup_target_name }}"
+  with_items: "{{ triliovault_backup_targets | selectattr('backup_target_type', 'equalto', 's3') | list }}"

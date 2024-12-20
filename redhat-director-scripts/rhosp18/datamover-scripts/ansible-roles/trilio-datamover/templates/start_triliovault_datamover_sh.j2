@@ -1,12 +1,5 @@
 #!/bin/bash
 
-{% if vmware_to_openstack_migration_enabled %}
-if [ -f "/opt/vddk.tar.gz" ]; then
-    mkdir -p /opt/vmware-vix-disklib-distrib
-    tar xfz /opt/vddk.tar.gz --strip-components=1 -C /opt/vmware-vix-disklib-distrib
-    chown -R nova:nova /opt/vmware-vix-disklib-distrib 2> /dev/null
-fi
-{% endif %}
 
 {% for target in triliovault_backup_targets %}
 {% if target.backup_target_type == 'nfs' %}

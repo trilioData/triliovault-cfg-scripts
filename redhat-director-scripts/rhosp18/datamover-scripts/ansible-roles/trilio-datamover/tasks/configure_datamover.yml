@@ -10,8 +10,12 @@
   file:
     path: "{{ item.path }}"
     state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0744'
     setype: "{{ item.setype }}"
   with_items:
+    - { 'path': /var/trilio, 'setype': svirt_sandbox_file_t }
     - { 'path': /var/trilio/triliovault-mounts, 'setype': svirt_sandbox_file_t }
     - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
 
