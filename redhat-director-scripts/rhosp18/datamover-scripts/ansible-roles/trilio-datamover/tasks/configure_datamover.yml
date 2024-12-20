@@ -1,0 +1,90 @@
+- name: Ensure Trilio datamover configuration directory exists
+  file:
+    path: "{{ triliovault_datamover_config_dest }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+
+- name: create trilio datamover directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0744'
+    setype: "{{ item.setype }}"
+  with_items:
+    - { 'path': /var/trilio, 'setype': svirt_sandbox_file_t }
+    - { 'path': /var/trilio/triliovault-mounts, 'setype': svirt_sandbox_file_t }
+    - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
+
+
+- name: Create Trilio datamover configuration file
+  template:
+    src: triliovault_datamover_conf.j2
+    dest: "{{ triliovault_datamover_config_dest }}/triliovault-datamover.conf"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+
+- name: Create Trilio datamover kolla config json file
+  template:
+    src: triliovault_datamover_config_json.j2
+    dest: "{{ triliovault_datamover_config_dest }}/triliovault_datamover_config.json"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+    
+- name: Create Trilio datamover logging configuration file
+  template:
+    src: datamover_logging_conf.j2
+    dest: "{{ triliovault_datamover_config_dest }}/datamover_logging.conf"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+
+- name: Create Trilio datamover start script
+  template:
+    src: start_triliovault_datamover_sh.j2
+    dest: "{{ triliovault_datamover_config_dest }}/start_triliovault_datamover.sh"
+    owner: '42436'
+    group: '42436'
+    mode: '0755'
+
+
+#- name: Ensure VMware to OpenStack migration directory exists
+#  when: vmware_to_openstack_migration_enabled | bool
+#  file:
+#    path: /opt/vmware-vix-disklib-distrib/
+#    state: directory
+#    owner: '42436'
+#    group: '42436'
+#    mode: '0755'
+
+#- name: Copy VMware VDDK tarball
+#  when: vmware_to_openstack_migration_enabled | bool
+#  copy:
+#    src: "files/{{ vddk_file_name }}"
+#    dest: /opt/vddk.tar.gz
+#    owner: '42436'
+#    group: '42436'
+#    mode: '0755'
+
+- name: Render triliovault-datamover container
+  ansible.builtin.template:
+    src: "triliovault-datamover-container-json.j2"
+    dest: "/var/lib/openstack/config/containers/triliovault-datamover.json"
+    setype: "container_file_t"
+    mode: "0644"
+  notify:
+    - Restart triliovault-datamover
+
+- name: Deploy trilio datamover container
+  ansible.builtin.include_role:
+    name: osp.edpm.edpm_container_manage
+  vars:
+    edpm_container_manage_config: '/var/lib/openstack/config/containers'
+    edpm_container_manage_healthcheck_disabled: true
+    edpm_container_manage_config_patterns: 'triliovault-datamover.json'
+    edpm_container_manage_clean_orphans: false

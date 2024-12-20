@@ -1,0 +1,21 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneService
+metadata:
+  name: trilio-datamover
+spec:
+  deployOnAllNodeSets: true
+  label: dataplane-deployment-custom-service
+  openStackAnsibleEERunnerImage: docker.io/trilio/openstack-ansibleee-runner:shyam-dev-1
+  playbookContents: |
+    - hosts: all
+      tasks:
+        - name: Hello World!
+          shell: "echo Hello World!"
+          register: output
+        - name: Execute trilio-datamover role
+          import_role: trilio-datamover
+  dataSources:
+    - configMapRef:
+        name: trilio-datamover-cm
+    - secretRef:
+        name: trilio-datamover-secret

@@ -1,0 +1,51 @@
+[DEFAULT]
+{% if backup_target_type == "s3" %}
+vault_s3_access_key_id = {{ s3_accesskey }}
+vault_s3_secret_access_key = {{ s3_secretkey }}
+vault_s3_bucket = {{ s3_bucket }}
+vault_s3_region_name = {{ s3_region_name }}
+vault_s3_auth_version = {{ s3_auth_version }}
+vault_s3_signature_version = {{ s3_signature_version }}
+vault_s3_ssl = {{ s3_ssl_enabled }}
+vault_s3_ssl_verify = {{ s3_ssl_verify }}
+vault_storage_nfs_export = {{ vault_storage_nfs_export }}
+
+{% if s3_bucket_object_lock_enabled %}
+bucket_object_lock = true
+use_manifest_suffix = true
+{% else %}
+bucket_object_lock = false
+use_manifest_suffix = false
+{% endif %}
+
+{% if s3_ssl_enabled and s3_self_signed_cert %}
+vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ backup_target_name }}.pem
+{% else %}
+vault_s3_ssl_cert =
+{% endif %}
+
+{% if s3_type == "ceph_s3" %}
+vault_s3_endpoint_url = {{ s3_endpoint_url }}
+{% else %}
+vault_s3_endpoint_url =
+{% endif %}
+{% else %}
+vault_s3_access_key_id = 
+vault_s3_secret_access_key = 
+vault_s3_bucket = 
+vault_s3_region_name = 
+vault_s3_auth_version = 
+vault_s3_signature_version = 
+vault_s3_ssl = 
+vault_s3_ssl_cert = 
+vault_s3_endpoint_url = 
+{% endif %}
+
+vault_s3_max_pool_connections = 500
+vault_data_directory_old = /var/triliovault
+vault_data_directory = {{ vault_data_dir }}/{{ backup_target_mount_point }}
+log_config_append = /etc/triliovault-object-store/object_store_logging.conf
+vault_s3_max_pool_connections = 500
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
