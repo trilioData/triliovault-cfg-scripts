@@ -68,6 +68,12 @@ spec:
       s3_ssl_verify: false
       s3_self_signed_cert: false
       s3_bucket_object_lock_enabled: false
+   - backup_target_name: 'BT3_NFS'
+      backup_target_type: 'nfs'
+      is_default: false
+      nfs_shares: '192.168.2.3:/nfs/share'
+      nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+
   keystone:
     keystone_interface: "internal"
     common:

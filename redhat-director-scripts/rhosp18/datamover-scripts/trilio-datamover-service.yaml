@@ -1,0 +1,19 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneService
+metadata:
+  name: trilio-datamover
+spec:
+  deployOnAllNodeSets: true
+  label: dataplane-deployment-custom-service
+  openStackAnsibleEERunnerImage: docker.io/trilio/rhoso-ansible-runner:shyam-dev-3
+  edpmServiceType: triliovault-datamover
+  playbookContents: |
+    - hosts: all
+      vars_files:
+        - /var/lib/openstack/configs/triliovault-datamover/trilio_env.yml
+      tasks:
+        - name: Execute trilio-datamover role
+          import_role: trilio-datamover
+  dataSources:
+    - configMapRef:
+        name: cm-trilio-datamover

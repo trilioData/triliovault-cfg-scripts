@@ -1,0 +1,23 @@
+{
+    "image": "{{ triliovault_wlm_image }}",
+    "privileged": true,
+    "user": "nova",
+    "restart": "always",
+    "command": "kolla_start",
+    "net": "host",
+    "ipc": "host",
+    "environment": {
+        "KOLLA_CONFIG_STRATEGY":"COPY_ALWAYS"
+    },
+    "volumes": [
+        "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro",
+        "{{ triliovault_object_store_config_dest }}:/var/lib/kolla/config_files/triliovault-object-store:ro",
+        "/etc/localtime:/etc/localtime:ro",
+        "/lib/modules:/lib/modules:ro",
+        "/var/log/containers/triliovault-object-store:/var/log/triliovault:z",
+        "/var/log/containers/nova:/var/log/containers/nova",
+        "/dev:/dev",
+        "/var/trilio:/var/trilio:shared"
+    ]
+}
+

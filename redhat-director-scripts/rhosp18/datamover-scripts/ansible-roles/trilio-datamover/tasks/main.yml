@@ -1,0 +1,19 @@
+---
+# tasks file for trilio-datamover
+
+## Render handlers
+
+- name: Generate handlers dynamically
+  template:
+    src: handlers_yml.j2
+    dest: /usr/share/ansible/roles/trilio-datamover/handlers/main.yml
+    mode: "0755"
+    owner: "42436"
+  delegate_to: localhost
+  run_once: true
+
+- name: Configure and install triliovault object store services
+  ansible.builtin.include_tasks: configure_object_store.yml
+
+- name: Configure and install triliovault datamover service
+  ansible.builtin.include_tasks: configure_datamover.yml
