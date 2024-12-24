@@ -80,6 +80,7 @@
   notify:
     - Restart triliovault-datamover
 
+
 - name: Deploy trilio datamover container
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
