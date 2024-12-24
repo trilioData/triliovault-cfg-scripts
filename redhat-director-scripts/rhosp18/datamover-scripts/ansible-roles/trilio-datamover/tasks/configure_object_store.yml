@@ -1,4 +1,9 @@
 ---
+- name: Perform container registry login with Podman for Trilio registry
+  become: true
+  ansible.builtin.shell: |
+    podman login --username={{ trilio_container_registry_username }} --password={{ trilio_container_registry_password }} {{ trilio_container_registry_url }}
+
 - name: Ensure Trilio object store directory exists
   file:
     path: "{{ triliovault_object_store_config_dest }}"
@@ -56,6 +61,7 @@
   notify: 
     - "Restart triliovault-object-store-{{ item.backup_target_name }}"
 
+
 - name: Deploy trilio object store containers
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
@@ -65,3 +71,4 @@
     edpm_container_manage_config_patterns: 'triliovault-object-store-{{ item.backup_target_name }}.json'
     edpm_container_manage_clean_orphans: false
   with_items: "{{ triliovault_backup_targets | selectattr('backup_target_type', 'equalto', 's3') | list }}"
+

@@ -10,6 +10,6 @@
   become: true
   ansible.builtin.systemd:
     state: restarted
-    name: "edpm_triliovault-object-store_{{ target.backup_target_name }}.service"
+    name: "edpm_triliovault-object-store-{{ target.backup_target_name }}.service"
   listen: "Restart triliovault-object-store-{{ target.backup_target_name }}"
 {% endfor %}

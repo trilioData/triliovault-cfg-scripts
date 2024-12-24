@@ -1,0 +1,55 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-trilio-datamover
+data:
+  trilio_env.yml: |
+    dmapi_transport_url: "rabbit://dmapi:lhth25YJV7wVRNy9G5PjxjVRZ5efehjw@rabbitmq.openstack.svc:5671/dmapi?ssl=1"
+    dmapi_database_connection: "mysql+pymysql://dmapi:sdyj21aSyH5gHH6XE72k11Y3t3C308jY5rP02ndwJW@openstack.openstack.svc:3306/dmapi"
+    cinder_backend_ceph: true
+    libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
+    ceph_cinder_user: "cinder"
+    oslomsg_rpc_use_ssl: true
+    triliovault_datamover_image: "docker.io/trilio/trilio-datamover:6.0.0-stable-19-rhosp18.0"
+    triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
+    ca_bundle_exists: "true"
+    trilio_container_registry_username: ""
+    trilio_container_registry_password: ""
+    trilio_container_registry_url: "docker.io"
+    triliovault_backup_targets:
+      - backup_target_name: 'BT1_S3'
+        backup_target_type: 's3'
+        is_default: False
+        s3_type: 'amazon_s3'
+        s3_access_key: ''
+        s3_secret_key: ''
+        s3_region_name: ''
+        s3_bucket: ''
+        s3_endpoint_url: ''
+        s3_signature_version: 'default'
+        s3_auth_version: 'DEFAULT'
+        s3_ssl_enabled: true
+        s3_ssl_verify: true
+        s3_self_signed_cert: false
+        s3_bucket_object_lock_enabled: false
+      - backup_target_name: 'BT2_S3'
+        backup_target_type: 's3'
+        is_default: True
+        s3_type: 'amazon_s3'
+        s3_access_key: ''
+        s3_secret_key: ''
+        s3_region_name: ''
+        s3_bucket: ''
+        s3_endpoint_url: ''
+        s3_signature_version: 'default'
+        s3_auth_version: 'DEFAULT'
+        s3_ssl_enabled: false
+        s3_ssl_verify: false
+        s3_self_signed_cert: false
+        s3_bucket_object_lock_enabled: false
+    - backup_target_name: 'BT3_NFS'
+        backup_target_type: 'nfs'
+        is_default: false
+        nfs_shares: '192.168.2.3:/nfs/share'
+        nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
