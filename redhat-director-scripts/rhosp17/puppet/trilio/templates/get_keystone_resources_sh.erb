@@ -1,18 +1,53 @@
-#!/bin/bash -x
-
-set -e
+#!/bin/bash
 
 source /etc/triliovault-wlm/cloud_admin_rc
 
 echo -e "Setting default project id for triliovault user"
-openstack user set --project <%= @project_name %> <%= @keystone_username %>
 
-wlm_user_id=`openstack user show --domain <%= @user_domain_name %> -f value -c id <%= @keystone_username %>`
+# Retry logic for 'openstack user set'
+attempt=1
+max_attempts=10
+delay=5
 
-old_wlm_user_id=`grep "cloud_unique_id" /etc/triliovault-wlm/triliovault-wlm.conf | awk -F "=" '{print $2}' | tr -d ' ' | tr -d \'\"`
+while [ $attempt -le $max_attempts ]; do
+    if openstack user set --project <%= @project_name %> <%= @keystone_username %>; then
+        break
+    fi
+    echo "Attempt $attempt of $max_attempts failed: openstack user set"
+    if [ $attempt -eq $max_attempts ]; then
+        echo "Failed to set user project after $max_attempts attempts."
+        exit 1
+    fi
+    attempt=$((attempt + 1))
+    sleep $delay
+done
 
-if [ "$old_wlm_user_id" != "$wlm_user_id" ];then
-sed -i "s/cloud_unique_id.*/cloud_unique_id\ =\ $wlm_user_id/" /etc/triliovault-wlm/triliovault-wlm.conf
+
+sleep 5s
+# Retry logic for 'openstack user show'
+attempt=1
+wlm_user_id=""
+
+while [ $attempt -le $max_attempts ]; do
+    wlm_user_id=$(openstack user show --domain <%= @user_domain_name %> -f value -c id <%= @keystone_username %>)
+    if [ -n "$wlm_user_id" ]; then
+        break
+    fi
+    echo "Attempt $attempt of $max_attempts failed: openstack user show"
+    if [ $attempt -eq $max_attempts ]; then
+        echo "Failed to retrieve wlm_user_id after $max_attempts attempts."
+        exit 1
+    fi
+    attempt=$((attempt + 1))
+    sleep $delay
+done
+
+# Retrieve old_wlm_user_id and compare
+old_wlm_user_id=$(grep "cloud_unique_id" /etc/triliovault-wlm/triliovault-wlm.conf | awk -F "=" '{print $2}' | tr -d ' ' | tr -d \'\")
+
+if [ "$old_wlm_user_id" != "$wlm_user_id" ]; then
+    echo "Updating cloud_unique_id in configuration file."
+    sed -i "s/cloud_unique_id.*/cloud_unique_id\ =\ $wlm_user_id/" /etc/triliovault-wlm/triliovault-wlm.conf
+else
+    echo "cloud_unique_id is already up to date."
 fi
-
-
