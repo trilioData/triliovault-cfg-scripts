@@ -22,7 +22,7 @@
     group: '42436'
     mode: '0644'
   notify:
-    - "Restart triliovault-object-store-{{ target.backup_target_name }}"
+    - "Restart triliovault-object-store"
 
 - name: Create triliovault object store conf file
   template:
@@ -49,5 +49,5 @@
     s3_bucket_object_lock_enabled: "{{ target.s3_bucket_object_lock_enabled }}"
     vault_storage_nfs_export: "{{ vault_storage_nfs_export }}"
   notify:
-    - "Restart triliovault-object-store-{{ target.backup_target_name }}"
+    - "Restart triliovault-object-store"
 
