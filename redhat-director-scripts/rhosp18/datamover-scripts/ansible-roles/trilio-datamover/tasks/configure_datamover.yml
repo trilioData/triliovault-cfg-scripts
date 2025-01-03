@@ -27,6 +27,8 @@
     owner: '42436'
     group: '42436'
     mode: '0644'
+  notify:
+    - Restart triliovault-datamover
 
 - name: Create Trilio datamover kolla config json file
   template:
@@ -35,6 +37,8 @@
     owner: '42436'
     group: '42436'
     mode: '0644'
+  notify:
+    - Restart triliovault-datamover
     
 - name: Create Trilio datamover logging configuration file
   template:
@@ -43,6 +47,8 @@
     owner: '42436'
     group: '42436'
     mode: '0644'
+  notify:
+    - Restart triliovault-datamover
 
 - name: Create Trilio datamover start script
   template:
@@ -51,7 +57,8 @@
     owner: '42436'
     group: '42436'
     mode: '0755'
-
+  notify:
+    - Restart triliovault-datamover
 
 #- name: Ensure VMware to OpenStack migration directory exists
 #  when: vmware_to_openstack_migration_enabled | bool
