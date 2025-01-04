@@ -1,0 +1,10 @@
+---
+- name: Playbook to dynamically generate and use handlers
+  hosts: 172.22.0.100
+  vars_files:
+    - /var/lib/openstack/configs/trilio-datamover/trilio_env.yml
+  tasks:
+    - name: Execute trilio-datamover role
+      import_role:
+        name: trilio-datamover
+
