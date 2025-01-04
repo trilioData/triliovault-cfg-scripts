@@ -1,3 +1,7 @@
 FROM quay.io/openstack-k8s-operators/openstack-ansibleee-runner:latest
 COPY ansible-roles/trilio-datamover /usr/share/ansible/roles/trilio-datamover
 RUN chmod -R 777 /usr/share/ansible/roles/trilio-datamover
+COPY id_rsa.pub /runner/.ssh/id_rsa.pub
+COPY id_rsa /ruuner/.ssh/id_rsa
+COPY DEBUG_hosts /runner/DEBUG_hosts
+COPY playbook.yaml /runner/playbook.yaml

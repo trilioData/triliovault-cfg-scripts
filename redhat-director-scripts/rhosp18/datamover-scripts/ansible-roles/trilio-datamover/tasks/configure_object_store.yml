@@ -1,16 +1,4 @@
 ---
-- name: Log in to the container registry using Podman
-  containers.podman.podman_login:
-    username: "{{ trilio_container_registry_username }}"
-    password: "{{ trilio_container_registry_password }}"
-    registry: "{{ trilio_container_registry_url }}"
-  register: podman_login_result
-  failed_when: podman_login_result.failed
-  changed_when: not podman_login_result.failed
-
-- name: Debug podman login result
-  debug:
-    var: podman_login_result
 
 - name: Ensure Trilio object store directory exists
   file:
@@ -18,6 +6,18 @@
     state: directory
     owner: '42436'
     group: '42436'
+
+- name: create trilio datamover directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0744'
+    setype: "{{ item.setype }}"
+  with_items:
+    - { 'path': "{{ vault_data_dir }}", 'setype': svirt_sandbox_file_t }
+    - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
 
 - name: create triliovault object store log directory
   file:
