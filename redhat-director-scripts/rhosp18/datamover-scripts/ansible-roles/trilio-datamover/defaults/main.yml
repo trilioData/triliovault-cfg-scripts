@@ -6,7 +6,7 @@ triliovault_object_store_config_src: /var/lib/openstack/configs
 triliovault_object_store_config_dest: /var/lib/openstack/config/triliovault-object-store
 
 # defaults file for trilio-datamover
-vault_data_dir: "/var/trilio/triliovault-mounts"
+vault_data_dir: "/var/lib/trilio/triliovault-mounts"
 dmapi_transport_url: ""
 dmapi_database_connection: ""
 cinder_backend_ceph: true
@@ -22,7 +22,7 @@ triliovault_datamover_image: "docker.io/trilio/trilio-datamover:6.0.0-stable-19-
 triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
 
 ca_bundle_exists: "true"
-edpm_nova_tls_ca_src_dir: "/tmp/certs"
+edpm_nova_tls_ca_src_dir: "/var/lib/openstack/cacerts/nova"
 
 
 trilio_container_registry_username: ""

@@ -13,7 +13,6 @@ data:
     oslomsg_rpc_use_ssl: true
     triliovault_datamover_image: "docker.io/trilio/trilio-datamover:6.0.0-stable-19-rhosp18.0"
     triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
-    ca_bundle_exists: "true"
     trilio_container_registry_username: ""
     trilio_container_registry_password: ""
     trilio_container_registry_url: "docker.io"

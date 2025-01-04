@@ -5,16 +5,18 @@ metadata:
 spec:
   deployOnAllNodeSets: true
   label: dataplane-deployment-custom-service
-  openStackAnsibleEERunnerImage: docker.io/trilio/rhoso-ansible-runner:shyam-dev-15
-  edpmServiceType: trilio-datamover
+  openStackAnsibleEERunnerImage: docker.io/trilio/rhoso-ansible-runner:shyam-debug-2
   playbookContents: |
     - hosts: all
       vars_files:
         - /var/lib/openstack/configs/trilio-datamover/trilio_env.yml
       tasks:
-        - name: Execute trilio-datamover role
-          import_role:
-            name: trilio-datamover
+        - name: Run a task in an infinite loop
+          ansible.builtin.command: echo "This task is running in a loop..."
+          register: loop_result
+          until: false
+          retries: 99999  # A large number to simulate an infinite loop
+          delay: 5  # Delay in seconds between each retry
   dataSources:
     - configMapRef:
         name: cm-trilio-datamover
