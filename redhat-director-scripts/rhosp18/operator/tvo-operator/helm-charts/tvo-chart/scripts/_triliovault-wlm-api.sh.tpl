@@ -4,7 +4,7 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-{{- $vaultDataDir := "/var/lib/nova/triliovault-mounts" }}
+{{- $vaultDataDir := .Values.common.vault_data_dir }}
 {{- range .Values.triliovault_backup_targets }}
   {{- if eq .backup_target_type "nfs" }}
     {{- $nfsShare := .nfs_shares }}

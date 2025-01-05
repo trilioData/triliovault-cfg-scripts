@@ -32,6 +32,7 @@ common:
   dmapi_workers: "16"
   memcached_servers: ""
   oslo_enable_proxy_headers_parsing: false
+  vault_data_dir: "/var/lib/trilio/triliovault-mounts"
 triliovault_backup_targets:
   - backup_target_name: 'S3_BT1'
     backup_target_type: 's3'
