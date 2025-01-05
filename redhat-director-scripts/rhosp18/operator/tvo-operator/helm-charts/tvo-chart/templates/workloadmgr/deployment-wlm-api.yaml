@@ -89,8 +89,8 @@ spec:
               mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
-            - name: var-lib-nova
-              mountPath: /var/lib/nova
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
       containers:
         - name: triliovault-wlm-api
@@ -152,8 +152,8 @@ spec:
               subPath: triliovault-wlm-api.sh
             - name: pod-shared-triliovault-wlm-api
               mountPath: /tmp/pod-shared-triliovault-wlm-api
-            - name: var-lib-nova
-              mountPath: /var/lib/nova
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
             - mountPath: /etc/pki/tls/certs/internal.crt
               name: internal-tls-certs
@@ -202,7 +202,7 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-api
           emptyDir: {}
-        - name: var-lib-nova
+        - name: trilio-mounts
           hostPath:
-            path: /var/lib/nova
+            path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
