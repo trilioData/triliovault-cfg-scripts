@@ -10,7 +10,7 @@
 
 {{- define "to_ini_object_store" -}}
 {{- $target := index . "target" -}}
-{{- $vaultDataDir := "/var/lib/nova/triliovault-mounts" -}}
+{{- $vaultDataDir := index . "Values" "common" "vault_data_dir" -}}
 {{- $backupTargetMountPoint := "" -}}
 {{- $vaultStorageNfsExport := "" -}}
 

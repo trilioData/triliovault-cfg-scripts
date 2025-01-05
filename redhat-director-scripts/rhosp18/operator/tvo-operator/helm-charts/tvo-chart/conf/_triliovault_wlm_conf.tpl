@@ -30,7 +30,7 @@ taskflow_max_cache_size = 1024
 transport_url = {{ .Values.rabbitmq.wlm_api.transport_url }}
 trustee_role  = {{ .Values.common.trustee_role }}
 use_syslog = false
-vault_data_directory = /var/lib/nova/triliovault-mounts
+vault_data_directory = {{ .Values.common.vault_data_dir }}
 vault_data_directory_old = /var/triliovault
 
 workloads_workers = 4
