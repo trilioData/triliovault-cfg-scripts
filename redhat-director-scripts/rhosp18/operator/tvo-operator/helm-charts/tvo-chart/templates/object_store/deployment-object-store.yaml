@@ -96,8 +96,8 @@ spec:
               subPath: triliovault-object-store.sh
             - name: pod-shared-triliovault-object-store
               mountPath: /tmp/pod-shared-triliovault-object-store
-            - name: var-lib-nova
-              mountPath: /var/lib/nova
+            - name: trilio-mounts
+              mountPath: {{ $.Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
@@ -114,9 +114,9 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-object-store
           emptyDir: {}
-        - name: var-lib-nova
+        - name: trilio-mounts
           hostPath:
-            path: /var/lib/nova
+            path: {{ $.Values.common.vault_data_dir }}
             type: DirectoryOrCreate
   {{- end }}
 {{- end }}
