@@ -21,7 +21,7 @@ if openstack user list --domain $SERVICE_DOMAIN -f value -c Name | grep -qw $USE
   echo "User $USER_NAME already exists in domain $SERVICE_DOMAIN."
   openstack user set --password $PASSWORD $USER_NAME
 else
-  openstack user create --domain $SERVICE_DOMAIN --password $PASSWORD $USER_NAME
+  openstack user create --project $SERVICE_PROJECT --domain $SERVICE_DOMAIN --password $PASSWORD $USER_NAME
 fi
 
 # Assign role to the user
