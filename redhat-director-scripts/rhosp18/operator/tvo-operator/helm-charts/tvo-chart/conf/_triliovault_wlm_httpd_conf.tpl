@@ -1,6 +1,6 @@
 Listen 8781
 <VirtualHost *:8781>
-  ServerName triliovault-wlm-internal.triliovault.svc
+  ServerName triliovault-wlm-internal.trilio-openstack.svc
 
   ## Logging
   ErrorLog /dev/stdout
@@ -22,7 +22,7 @@ Listen 8781
   Timeout 60
 </VirtualHost>
 
-# Public vhost configuration for https://triliovault-wlm-public-triliovault.apps.trilio.trilio.bos2:8781/v1/s
+# Public vhost configuration for https://triliovault-wlm-public-trilio-openstack.apps.trilio.trilio.bos2:8781/v1/s
 <VirtualHost *:8781>
   ServerName {{ .Values.keystone.wlm_api.public_auth_host }}
 
