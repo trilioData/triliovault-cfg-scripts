@@ -1,6 +1,7 @@
 #!/bin/bash
 
 oc create -f ./certificate.yaml
+sleep 120s
 
 oc get secret cert-triliovault-wlm-public-svc -n openstack -o yaml > cert-triliovault-wlm-public-svc.yaml
 oc get secret cert-triliovault-wlm-internal-svc -n openstack -o yaml > cert-triliovault-wlm-internal-svc.yaml
