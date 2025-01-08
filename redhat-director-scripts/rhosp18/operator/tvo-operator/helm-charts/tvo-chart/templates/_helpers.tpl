@@ -54,7 +54,7 @@ vault_s3_ssl_cert = /etc/triliovault-object-store/s3-cert-{{ $target.backup_targ
 vault_s3_ssl_cert =
 {{- end }}
 
-{{- if eq $target.s3_type "ceph_s3" }}
+{{- if eq $target.s3_type "other_s3" }}
 vault_s3_endpoint_url = {{ $target.s3_endpoint_url }}
 {{- else }}
 vault_s3_endpoint_url =
