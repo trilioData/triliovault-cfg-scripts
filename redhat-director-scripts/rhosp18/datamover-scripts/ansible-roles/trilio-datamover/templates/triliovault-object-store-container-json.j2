@@ -17,7 +17,7 @@
         "/var/log/containers/triliovault-object-store:/var/log/triliovault:z",
         "/var/log/containers/nova:/var/log/containers/nova",
         "/dev:/dev",
-        "/var/trilio:/var/trilio:shared"
+        "{{ vault_data_dir }}:{{ vault_data_dir }}:shared"
     ]
 }
 

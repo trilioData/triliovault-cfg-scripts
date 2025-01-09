@@ -1,0 +1,9 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneDeployment
+metadata:
+  name: edpm-trilio-data-plane-deployment-1
+spec:
+  nodeSets:
+    - openstack-edpm-ipam
+  servicesOverride:
+    - trilio-datamover

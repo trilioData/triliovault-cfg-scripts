@@ -13,16 +13,16 @@
         target.s3_endpoint_url | regex_replace('^https?://', '') ~ '/' ~ target.s3_bucket
       }}
 
-- name: Create S3 certificate file if required
-  when: target.s3_ssl_enabled and target.s3_self_signed_cert
+- name: Create S3 SSL certificate file for the trilio s3 backup targets
   copy:
-    src: "files/s3-cert-{{ target.backup_target_name }}.pem"
     dest: "{{ triliovault_object_store_config_dest }}/s3-cert-{{ target.backup_target_name }}.pem"
-    owner: '42436'
-    group: '42436'
-    mode: '0644'
+    content: "{{ target.s3_ssl_ca_cert | default('') }}"
+    mode: '0600'
+  when:
+    - target.s3_ssl_enabled | default(false)
+    - target.s3_self_signed_cert | default(false)
   notify:
-    - "Restart triliovault-object-store-{{ target.backup_target_name }}"
+    - "Restart triliovault-object-store"
 
 - name: Create triliovault object store conf file
   template:
@@ -49,5 +49,5 @@
     s3_bucket_object_lock_enabled: "{{ target.s3_bucket_object_lock_enabled }}"
     vault_storage_nfs_export: "{{ vault_storage_nfs_export }}"
   notify:
-    - "Restart triliovault-object-store-{{ target.backup_target_name }}"
+    - "Restart triliovault-object-store"
 

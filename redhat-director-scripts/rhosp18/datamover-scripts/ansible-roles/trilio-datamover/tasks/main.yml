@@ -1,16 +1,14 @@
 ---
 # tasks file for trilio-datamover
 
-## Render handlers
-
-- name: Generate handlers dynamically
-  template:
-    src: handlers_yml.j2
-    dest: /usr/share/ansible/roles/trilio-datamover/handlers/main.yml
-    mode: "0755"
-    owner: "42436"
-  delegate_to: localhost
-  run_once: true
+- name: Log in to the container registry using Podman
+  containers.podman.podman_login:
+    username: "{{ trilio_container_registry_username }}"
+    password: "{{ trilio_container_registry_password }}"
+    registry: "{{ trilio_container_registry_url }}"
+  register: podman_login_result
+  failed_when: podman_login_result.failed
+  changed_when: not podman_login_result.failed
 
 - name: Configure and install triliovault object store services
   ansible.builtin.include_tasks: configure_object_store.yml

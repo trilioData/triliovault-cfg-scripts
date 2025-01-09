@@ -85,8 +85,8 @@ spec:
               mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
-            - name: var-lib-nova
-              mountPath: /var/lib/nova
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
       containers:
         - name: triliovault-wlm-scheduler
@@ -135,8 +135,8 @@ spec:
               subPath: triliovault-wlm-scheduler.sh
             - name: pod-shared-triliovault-wlm-scheduler
               mountPath: /tmp/pod-shared-triliovault-wlm-scheduler
-            - name: var-lib-nova
-              mountPath: /var/lib/nova
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
             - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
               name: combined-ca-bundle
@@ -157,9 +157,9 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-scheduler
           emptyDir: {}
-        - name: var-lib-nova
+        - name: trilio-mounts
           hostPath:
-            path: /var/lib/nova
+            path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
         - name: combined-ca-bundle
           secret:
