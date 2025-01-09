@@ -1,5 +1,5 @@
 <VirtualHost *:8784>
-  ServerName triliovault-datamover-internal.triliovault.svc
+  ServerName triliovault-datamover-internal.trilio-openstack.svc
 
   ## Logging
   ErrorLog /dev/stdout
@@ -21,7 +21,7 @@
   Timeout 60
 </VirtualHost>
 
-# Public vhost configuration for https://triliovault-datamover-public-triliovault.apps.trilio.trilio.demo:8781/v1/s
+# Public vhost configuration for https://triliovault-datamover-public-trilio-openstack.apps.trilio.trilio.demo:8781/v1/s
 <VirtualHost *:8784>
   ServerName {{ .Values.keystone.datamover_api.public_auth_host }}
 

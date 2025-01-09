@@ -2,5 +2,5 @@
 
 set -e
 
-oc delete -f cm-trilio-datamover.yaml
-oc delete -f trilio-datamover-service.yaml
+oc -n openstack delete -f cm-trilio-datamover.yaml
+oc -n openstack delete -f trilio-datamover-service.yaml

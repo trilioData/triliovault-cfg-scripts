@@ -1,8 +1,4 @@
 ---
-- name: Perform container registry login with Podman for Trilio registry
-  become: true
-  ansible.builtin.shell: |
-    podman login --username={{ trilio_container_registry_username }} --password={{ trilio_container_registry_password }} {{ trilio_container_registry_url }}
 
 - name: Ensure Trilio object store directory exists
   file:
@@ -10,6 +6,18 @@
     state: directory
     owner: '42436'
     group: '42436'
+
+- name: create trilio datamover directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0744'
+    setype: "{{ item.setype }}"
+  with_items:
+    - { 'path': "{{ vault_data_dir }}", 'setype': svirt_sandbox_file_t }
+    - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
 
 - name: create triliovault object store log directory
   file:
@@ -39,7 +47,7 @@
   vars:
     backup_target_name: "{{ item.backup_target_name }}"
   notify: 
-    - "Restart triliovault-object-store-{{ item.backup_target_name }}"
+    - "Restart triliovault-object-store"
 
 
 - name: Process Trilio S3 backup targets
@@ -59,7 +67,7 @@
   vars:
     backup_target_name: "{{ item.backup_target_name }}"
   notify: 
-    - "Restart triliovault-object-store-{{ item.backup_target_name }}"
+    - "Restart triliovault-object-store"
 
 
 - name: Deploy trilio object store containers
