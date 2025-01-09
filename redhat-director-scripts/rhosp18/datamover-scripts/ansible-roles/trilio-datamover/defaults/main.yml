@@ -46,21 +46,25 @@ triliovault_backup_targets:
     s3_ssl_verify: true
     s3_self_signed_cert: false
     s3_bucket_object_lock_enabled: false
-  - backup_target_name: 'BT2_S3'
+  - backup_target_name: 'BT2_Other_S3'
     backup_target_type: 's3'
     is_default: True
-    s3_type: 'amazon_s3'
-    s3_access_key: ''
-    s3_secret_key: ''
-    s3_region_name: ''
-    s3_bucket: ''
-    s3_endpoint_url: ''
+    s3_type: 'other_s3'
+    s3_access_key: 'ACCESSKEY2'
+    s3_secret_key: 'SECRETKEY2'
+    s3_region_name: 'REGION2'
+    s3_bucket: 'BUCKET2'
+    s3_endpoint_url: 'ENDPOINT_URL2'
     s3_signature_version: 'default'
     s3_auth_version: 'DEFAULT'
-    s3_ssl_enabled: false
-    s3_ssl_verify: false
-    s3_self_signed_cert: false
     s3_bucket_object_lock_enabled: false
+    s3_ssl_enabled: true
+    s3_ssl_verify: true
+    s3_self_signed_cert: true
+    s3_ssl_ca_cert: |
+      SSL_CERT_LINE_1
+      SSL_CERT_LINE_2
+      SSL_CERT_LINE_N
   - backup_target_name: 'BT3_NFS'
     backup_target_type: 'nfs'
     is_default: false
