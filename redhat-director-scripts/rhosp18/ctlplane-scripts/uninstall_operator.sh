@@ -12,7 +12,7 @@ IMAGE_TAG=$1
 
 ## Install CRD
 
-cd ../operator/tvo-operator/
+cd operator/tvo-operator/
 make install
 
 ## Install Operator
