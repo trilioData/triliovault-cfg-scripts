@@ -37,3 +37,6 @@
     - { role: triliovault,
         tags: triliovault,
         when: enable_triliovault | bool }
+    - { role: triliovault,
+        tags: wlm_cloud_trust
+        }

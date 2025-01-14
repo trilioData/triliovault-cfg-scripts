@@ -2,7 +2,6 @@
 
 - name: Create Cloud Admin Trust
   become: true
-  ignore_errors: yes
   docker_container:
     name: wlm_cloud_trust
     image: "{{ triliovault_wlm_image_full }}"
@@ -20,4 +19,5 @@
       - /etc/kolla/triliovault-wlm-api/api-paste.ini:/etc/triliovault-wlm/api-paste.ini:ro
       - /etc/kolla/triliovault-cloudrc:/opt/triliovault-cloudrc:rw
       - /tmp/create_cloud_trust.sh:/opt/create_cloud_trust.sh:rw
+  tags: wlm_cloud_trust
 
