@@ -12,7 +12,7 @@
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
-    - "/tmp/create_cloud_trust.sh"
+    - "/etc/kolla/triliovault-wlm-api/create_cloud_trust.sh"
 
 
 - name: Copy Triliovault-cloudrc to localhost
