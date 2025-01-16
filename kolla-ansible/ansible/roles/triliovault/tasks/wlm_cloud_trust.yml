@@ -25,3 +25,4 @@
           - /etc/kolla/triliovault-cloudrc:/opt/triliovault-cloudrc:rw
           - /etc/kolla/triliovault-wlm-api/create_cloud_trust.sh:/opt/create_cloud_trust.sh:rw
       tags: wlm_cloud_trust
+      run_once: true
