@@ -26,8 +26,8 @@ COPY --from=source /usr/local/bin/helm-operator /usr/local/bin/helm-operator
 # Copy application-specific files
 COPY watches.yaml ${HOME}/watches.yaml
 COPY helm-charts ${HOME}/helm-charts
-RUN mkdir /licenses && \
-    touch /licenses/licensing.txt  # Replace with actual licensing content
+RUN mkdir /licenses
+COPY licensing.txt /licenses
 
 # Ensure the application runs as a non-root user
 USER ${USER_UID}

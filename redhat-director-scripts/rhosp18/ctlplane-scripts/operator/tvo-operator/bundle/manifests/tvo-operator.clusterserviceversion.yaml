@@ -1,6 +1,8 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
+  labels:
+    operatorframework.io/arch.amd64: supported
   annotations:
     alm-examples: |-
       [
@@ -476,11 +478,11 @@ metadata:
           }
         }
       ]
-    capabilities: Seamless Upgrades
+    capabilities: Full Lifecycle
     createdAt: "2025-01-14T11:20:30Z"
     operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
-  name: tvo-operator.v0.0.1
+  name: tvo-operator.6.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -488,6 +490,8 @@ spec:
     owned:
     - kind: TVOControlPlane
       name: tvocontrolplanes.tvo.trilio.io
+      displayName: TVO Control Plane
+      description: Trilio for OpenStack Control Plane. Includes all control plane components like Datamover Api, Workloadmgr services.
       version: v1
   description: |-
     Trilio for OpenStack provides scalable, native, agentless, multi-tenant backup and recovery solutions, ensuring seamless protection of workloads with flexible storage options for dynamic cloud environments.
@@ -698,8 +702,11 @@ spec:
   - OpenStack
   - Backup
   - Recovery
-  - DR
   - RHOSO Backup
+  - Disaster Recovery
+  maintainers:
+  - name: 'Trilio'
+    email: 'info@trilio.io'
   links:
   - name: Tvo Operator
     url: https://tvo-operator.domain
@@ -707,4 +714,4 @@ spec:
   provider:
     name: Trilio
     url: https://trilio.io/
-  version: 0.0.1
+  version: 6.0.1
