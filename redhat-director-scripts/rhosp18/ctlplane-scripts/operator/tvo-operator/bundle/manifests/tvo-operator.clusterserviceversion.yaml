@@ -710,7 +710,7 @@ spec:
   links:
   - name: Tvo Operator
     url: https://tvo-operator.domain
-  maturity: alpha
+  maturity: stable
   provider:
     name: Trilio
     url: https://trilio.io/
