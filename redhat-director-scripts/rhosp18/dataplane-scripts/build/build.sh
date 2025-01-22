@@ -1,4 +1,4 @@
-#!/bin/bash -x
+!/bin/bash -x
 
 set -e 
 
@@ -12,12 +12,5 @@ fi
 
 TAG=$1
 
-
-rm -rf edpm-ansible/
-git clone https://github.com/openstack-k8s-operators/edpm-ansible.git
-cp Dockerfile_ansible_runner edpm-ansible/
-cp -R ../ansible-roles edpm-ansible/
-
-cd edpm-ansible/
-buildah bud -t docker.io/trilio/rhoso-ansible-runner:$TAG -f Dockerfile_ansible_runner .
+buildah bud -t docker.io/trilio/rhoso-ansible-runner:$TAG -f Dockerfile .
 podman push docker.io/trilio/rhoso-ansible-runner:$TAG
