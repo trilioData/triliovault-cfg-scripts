@@ -18,6 +18,7 @@ metadata:
     metallb.universe.tf/address-pool: internalapi
     metallb.universe.tf/allow-shared-ip: internalapi
     metallb.universe.tf/ip-allocated-from-pool: internalapi
+    loadbalancer.openstack.org/timeout-member-data: "300000"
 spec:
   selector:
     owner: triliovault-datamover
