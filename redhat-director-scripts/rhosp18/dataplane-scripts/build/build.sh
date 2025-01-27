@@ -1,4 +1,4 @@
-!/bin/bash -x
+#!/bin/bash -x
 
 set -e 
 
@@ -11,6 +11,9 @@ fi
 
 
 TAG=$1
+
+rm -rf ./ansible-roles/
+cp -R ../ansible-roles .
 
 buildah bud -t docker.io/trilio/rhoso-ansible-runner:$TAG -f Dockerfile .
 podman push docker.io/trilio/rhoso-ansible-runner:$TAG
