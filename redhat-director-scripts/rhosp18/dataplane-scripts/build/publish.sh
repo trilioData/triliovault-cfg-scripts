@@ -1,4 +1,4 @@
-!/bin/bash -x
+#!/bin/bash -x
 
 set -e 
 
@@ -12,4 +12,4 @@ fi
 
 TAG=$1
 
-podman push --authfile  /root/.docker/config.json docker.io/trilio/rhoso-ansible-runner:$TAG
+podman push docker.io/trilio/rhoso-ansible-runner:$TAG
