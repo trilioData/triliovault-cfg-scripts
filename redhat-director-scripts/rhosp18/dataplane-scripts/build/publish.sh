@@ -12,4 +12,4 @@ fi
 
 TAG=$1
 
-podman push docker.io/trilio/rhoso-ansible-runner:$TAG
+podman push --authfile  /root/.docker/config.json docker.io/trilio/rhoso-ansible-runner:$TAG
