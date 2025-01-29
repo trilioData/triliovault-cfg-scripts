@@ -30,11 +30,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec defines the desired state of TVOControlPlane
+            description: Spec defines the desired state of TVOBackupTarget
             type: object
             x-kubernetes-preserve-unknown-fields: true
           status:
-            description: Status defines the observed state of TVOControlPlane
+            description: Status defines the observed state of TVOBackupTarget
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object
