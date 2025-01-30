@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -67,3 +68,4 @@ spec:
           secret:
             secretName: triliovault-datamover-api-etc
             defaultMode: 0444
+{{- end }}
