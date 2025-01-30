@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -13,7 +14,6 @@ subjects:
     namespace: trilio-openstack
     
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -41,3 +41,4 @@ subjects:
   - kind: ServiceAccount
     name: triliovault-datamover-api
     namespace: trilio-openstack
+{{- end }}

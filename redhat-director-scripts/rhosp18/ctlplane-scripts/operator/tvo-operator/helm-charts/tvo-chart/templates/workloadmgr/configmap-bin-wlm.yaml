@@ -1,4 +1,4 @@
----
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,3 +24,4 @@ data:
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-db-init.sh.tpl") . | indent 4 }}
   triliovault-wlm-rabbitmq-init.sh: |-
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-rabbitmq-init.sh.tpl") . | indent 4 }}
+{{- end }}

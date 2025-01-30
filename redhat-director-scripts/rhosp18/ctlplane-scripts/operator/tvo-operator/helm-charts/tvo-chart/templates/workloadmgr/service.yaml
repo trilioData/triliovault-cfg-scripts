@@ -1,5 +1,5 @@
 
----
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -64,3 +64,4 @@ spec:
     service: triliovault-wlm
   sessionAffinity: None
   type: ClusterIP
+{{- end }}
