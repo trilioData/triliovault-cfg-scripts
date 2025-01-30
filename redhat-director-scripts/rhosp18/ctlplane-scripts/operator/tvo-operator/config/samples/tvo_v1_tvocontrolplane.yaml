@@ -4,6 +4,7 @@ metadata:
   name: tvocontrolplane-sample
 spec:
   # Default values copied from <project_dir>/helm-charts/tvo-chart/values.yaml
+  crdType: "TVOControlPlane"
   common:
     dmapi_workers: "16"
     memcached_servers: ""
