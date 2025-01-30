@@ -1,23 +1,23 @@
 
 {{- if eq .Values.crdType "TVOBackupTarget" }}
-  {{- if eq .Values.backup_target_type "s3" }}
+  {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triliovault-object-store-{{ .Values.backup_target_name | lower | replace "_" "-" }}
+  name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
-    component: object-store-{{ .Values.backup_target_name | lower | replace "_" "-" }}
+    component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "99"
 spec:
-  replicas: {{ .Values.pod.replicas.triliovault_object_store }}
+  replicas: 1
   selector:
     matchLabels:
       application: triliovault
-      component: object-store-{{ .Values.backup_target_name | lower | replace "_" "-" }}
+      component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -27,7 +27,7 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: object-store-{{ .Values.backup_target_name | lower | replace "_" "-" }}
+        component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
@@ -53,7 +53,7 @@ spec:
         trilio-control-plane: enabled
       terminationGracePeriodSeconds: 30
       containers:
-        - name: triliovault-object-store-{{ .Values.backup_target_name | lower | replace "_" "-" }}
+        - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
           image: {{ .Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -84,12 +84,12 @@ spec:
               subPath: object_store_logging.conf
             - name: triliovault-object-store-etc
               mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
-              subPath: triliovault-object-store-{{ .backup_target_name | lower }}.conf
+              subPath: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.conf
               readOnly: true
-            {{- if .Values.s3_self_signed_cert }}
+            {{- if .Values.triliovault_backup_target.s3_self_signed_cert }}
             - name: triliovault-object-store-etc
-              mountPath: /etc/triliovault-object-store/s3-cert-{{ .Values.backup_target_name | lower }}.pem
-              subPath: s3-cert-{{ .Values.backup_target_name | lower }}.pem
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
               readOnly: true
             {{- end }}
             - name: triliovault-object-store-bin
