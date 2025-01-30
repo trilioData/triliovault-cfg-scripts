@@ -107,7 +107,7 @@ spec:
           emptyDir: {}
         - name: triliovault-object-store-etc
           secret:
-            secretName: triliovault-object-store-etc
+            secretName: triliovault-object-store-etc-single-bt
             defaultMode: 0444
         - name: triliovault-object-store-bin
           configMap:
