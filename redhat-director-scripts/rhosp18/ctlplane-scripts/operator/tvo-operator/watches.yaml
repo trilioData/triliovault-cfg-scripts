@@ -3,4 +3,14 @@
   version: v1
   kind: TVOControlPlane
   chart: helm-charts/tvo-chart
+  overrideValues:
+    crdType: "TVOControlPlane"
+
+- group: tvo.trilio.io
+  version: v1
+  kind: TVOBackupTarget
+  chart: helm-charts/tvo-chart
+  overrideValues:
+    crdType: "TVOBackupTarget"
+
 # +kubebuilder:scaffold:watch

@@ -1,11 +1,11 @@
-{{- if eq .Values.crdType "TVOControlPlane" }}
+{{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "job-triliovault-wlm-keystone-init"
+  name: job-triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
-    component: wlm-keystone-init
+    component: wlm-nfs-mount
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-4"
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: wlm-keystone-init
+        component: wlm-nfs-mount
     spec:
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
@@ -25,8 +25,9 @@ spec:
       nodeSelector:
         trilio-control-plane: enabled
       containers:
-        - name: "wlm-keystone-init"
+        - name: "wlm-nfs-mount"
           securityContext:
+            privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
           image: {{ .Values.images.triliovault_wlm_api }}
@@ -34,29 +35,25 @@ spec:
           command:
             - /bin/bash
             - -c
-            - /tmp/triliovault-wlm-keystone-init.sh
+            - /tmp/triliovault-nfs-mount.sh
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
             - name: triliovault-wlm-bin
-              mountPath: /tmp/triliovault-wlm-keystone-init.sh
-              subPath: triliovault-wlm-keystone-init.sh
-            - name: triliovault-wlm-bin
-              mountPath: /tmp/triliovault-cloudrc
-              subPath: triliovault-cloudrc
-            - name: triliovault-wlm-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
-              readOnly: true
+              mountPath: /tmp/triliovault-nfs-mount.sh
+              subPath: triliovault-nfs-mount.sh
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
           emptyDir: {}
         - name: triliovault-wlm-bin
           configMap:
-            name: "triliovault-wlm-bin"
+            name: triliovault-wlm-bin-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
             defaultMode: 0555
-        - name: triliovault-wlm-etc
-          secret:
-            secretName: triliovault-wlm-etc
-            defaultMode: 0444
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate
 {{- end }}

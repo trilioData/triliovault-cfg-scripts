@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -16,3 +17,4 @@ rules:
     resources:
       - jobs
       - pods
+{{- end }}

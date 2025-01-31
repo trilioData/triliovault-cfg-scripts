@@ -1,4 +1,4 @@
----
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,3 +7,4 @@ data:
   triliovault-object-store.sh: |
     {{ tpl (.Files.Get "scripts/_triliovault-object-store.sh.tpl") . | nindent 4 }}
 
+{{- end }}
