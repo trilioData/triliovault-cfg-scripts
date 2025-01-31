@@ -1,0 +1,51 @@
+{{- if eq .Values.crdType "TVOBackupTarget" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-nfs-mount"
+  labels:
+    application: triliovault
+    component: wlm-nfs-mount
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-nfs-mount
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      serviceAccountName: triliovault-wlm
+      restartPolicy: OnFailure
+      nodeSelector:
+        trilio-control-plane: enabled
+      containers:
+        - name: "wlm-nfs-mount"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          image: {{ .Values.images.triliovault_wlm_api }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-nfs-mount.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-nfs-mount.sh
+              subPath: triliovault-nfs-mount.sh
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-wlm-bin
+          configMap:
+            name: "triliovault-wlm-bin-single-bt"
+            defaultMode: 0555
+{{- end }}
