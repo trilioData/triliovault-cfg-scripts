@@ -107,7 +107,7 @@ spec:
           emptyDir: {}
         - name: triliovault-object-store-etc
           secret:
-            secretName: triliovault-object-store-etc-single-bt-{{ .Values.triliovault_backup_target.backup_target_name }}
+            secretName: triliovault-object-store-etc-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
             defaultMode: 0444
         - name: triliovault-object-store-bin
           configMap:
