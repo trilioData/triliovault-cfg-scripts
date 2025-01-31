@@ -1,8 +1,8 @@
-{{- if eq .Values.crdType "TVOBackupTarget" }}
+{{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "job-triliovault-nfs-mount"
+  name: job-triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name }}
   labels:
     application: triliovault
     component: wlm-nfs-mount
@@ -49,7 +49,7 @@ spec:
           emptyDir: {}
         - name: triliovault-wlm-bin
           configMap:
-            name: "triliovault-wlm-bin-single-bt"
+            name: triliovault-wlm-bin-single-bt-{{ .Values.triliovault_backup_target.backup_target_name }}
             defaultMode: 0555
         - name: trilio-mounts
           hostPath:
