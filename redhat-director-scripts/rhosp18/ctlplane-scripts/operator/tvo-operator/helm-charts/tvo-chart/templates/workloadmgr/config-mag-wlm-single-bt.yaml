@@ -1,4 +1,4 @@
-{{- if eq .Values.crdType "TVOBackupTarget" }}
+{{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

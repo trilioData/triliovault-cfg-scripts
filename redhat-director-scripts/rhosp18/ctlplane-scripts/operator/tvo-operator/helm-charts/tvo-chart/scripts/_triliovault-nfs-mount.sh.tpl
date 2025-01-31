@@ -1,3 +1,4 @@
+{{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
 #!/bin/bash
 set -e
 
@@ -10,4 +11,5 @@ set -e
     {{- $nfsOptions := .Values.triliovault_backup_target.nfs_options }}
 mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
 sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
+{{- end }}
 {{- end }}
