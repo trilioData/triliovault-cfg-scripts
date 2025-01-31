@@ -27,6 +27,7 @@ spec:
       containers:
         - name: "wlm-nfs-mount"
           securityContext:
+            privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
           image: {{ .Values.images.triliovault_wlm_api }}
