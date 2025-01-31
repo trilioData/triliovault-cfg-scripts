@@ -41,6 +41,9 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-nfs-mount.sh
               subPath: triliovault-nfs-mount.sh
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -48,4 +51,8 @@ spec:
           configMap:
             name: "triliovault-wlm-bin-single-bt"
             defaultMode: 0555
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate
 {{- end }}
