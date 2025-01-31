@@ -1,0 +1,9 @@
+{{- if eq .Values.crdType "TVOBackupTarget" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-wlm-bin-single-bt
+data:
+  triliovault-nfs-mount.sh: |
+{{ tpl (.Files.Get "scripts/_triliovault-nfs-mount.sh.tpl") . | indent 4 }}
+{{- end }}

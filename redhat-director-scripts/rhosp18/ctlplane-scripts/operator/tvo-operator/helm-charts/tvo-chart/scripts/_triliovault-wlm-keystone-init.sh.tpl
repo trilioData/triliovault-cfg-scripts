@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-set -ex
+set -e
 source /tmp/triliovault-cloudrc
 
 # Variables

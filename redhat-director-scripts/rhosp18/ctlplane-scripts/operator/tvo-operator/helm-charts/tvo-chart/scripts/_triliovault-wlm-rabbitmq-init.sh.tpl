@@ -1,5 +1,5 @@
 #!/bin/bash -x
-set -ex
+set -e
 RABBITMQ_ADMIN_USER="{{- .Values.rabbitmq.common.admin_user -}}"
 RABBITMQ_ADMIN_PASSWORD="{{- .Values.rabbitmq.common.admin_password -}}"
 RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
