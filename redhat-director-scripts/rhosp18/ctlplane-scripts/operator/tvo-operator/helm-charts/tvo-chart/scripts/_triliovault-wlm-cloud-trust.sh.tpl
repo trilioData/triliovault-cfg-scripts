@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 source /tmp/triliovault-cloudrc
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
 
