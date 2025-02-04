@@ -1,0 +1,8 @@
+kind: OpenStackDataPlaneDeployment
+metadata:
+  name: edpm-trilio-datamover-add-backup-target-1
+spec:
+  nodeSets:
+    - openstack-edpm-ipam
+  servicesOverride:
+    - trilio-datamover-add-backup-target-<BACKUP_TARGET_NAME>

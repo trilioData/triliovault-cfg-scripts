@@ -1,0 +1,75 @@
+---
+- name: Render triliovault_object_store_config_json.j2 for S3 backup target
+  template:
+    src: "triliovault_object_store_config_json.j2"
+    dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
+    mode: "0644"
+    owner: "42436"
+  when: triliovault_backup_target.backup_target_type == "s3"
+  vars:
+    backup_target_name: "{{ triliovault_backup_target.backup_target_name }}"
+  notify: 
+    - "Restart triliovault-object-store"
+
+- name: Process Trilio S3 backup target - render trilio object store conf file
+  include_tasks: process_backup_target.yml
+  when: triliovault_backup_target.backup_target_type == "s3"
+  vars:
+    target: "{{ triliovault_backup_target }}"
+
+- name: Render triliovault-object-store container json for S3 backup target
+  template:
+    src: "triliovault-object-store-container-json.j2"
+    dest: "/var/lib/openstack/config/containers/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
+    mode: "0644"
+    owner: "42436"
+  when: triliovault_backup_target.backup_target_type == "s3"
+  vars:
+    backup_target_name: "{{ triliovault_backup_target.backup_target_name }}"
+  notify: 
+    - "Restart triliovault-object-store"
+
+- name: Deploy trilio object store container
+  ansible.builtin.include_role:
+    name: osp.edpm.edpm_container_manage
+  vars:
+    edpm_container_manage_config: '/var/lib/openstack/config/containers'
+    edpm_container_manage_healthcheck_disabled: true
+    edpm_container_manage_config_patterns: 'triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json'
+    edpm_container_manage_clean_orphans: false
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+
+- name: Create Trilio NFS mount kolla config json file
+  template:
+    src: triliovault_nfs_config_json.j2
+    dest: "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config.json"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+
+- name: Render Trilio NFS mount shell script
+  template:
+    src: "nfs_mount_sh.j2"
+    dest: "{{ triliovault_nfs_config_dest }}/nfs_mount.sh"
+    owner: '42436'
+    group: '42436'
+    mode: '0755'
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Render Trilio NFS container json
+  ansible.builtin.template:
+    src: "triliovault-nfs-container-json.j2"
+    dest: "/var/lib/openstack/config/containers/triliovault-nfs-container.json"
+    setype: "container_file_t"
+    mode: "0644"
+
+- name: Deploy container Trilio mount nfs backup target
+  ansible.builtin.include_role:
+    name: osp.edpm.edpm_container_manage
+  vars:
+    edpm_container_manage_config: '/var/lib/openstack/config/containers'
+    edpm_container_manage_healthcheck_disabled: true
+    edpm_container_manage_config_patterns: 'triliovault_nfs_config.json'
+    edpm_container_manage_clean_orphans: false
+  when: triliovault_backup_target.backup_target_type == "nfs"
