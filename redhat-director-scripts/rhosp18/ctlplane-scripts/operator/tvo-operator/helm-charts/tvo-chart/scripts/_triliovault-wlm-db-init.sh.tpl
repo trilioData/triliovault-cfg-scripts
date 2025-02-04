@@ -1,5 +1,5 @@
 #!/bin/bash -x
-set -ex
+set -e
 DB_ROOT_USER="{{- .Values.database.common.root_user_name -}}"
 DB_ROOT_PASSWORD="{{- .Values.database.common.root_password -}}"
 DB_HOST="{{- .Values.database.common.host -}}"
