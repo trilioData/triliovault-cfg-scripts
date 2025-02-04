@@ -1,0 +1,19 @@
+{
+  "command": "/tmp/nfs_mount.sh",
+  "config_files": [
+    {
+      "source": "/var/lib/kolla/config_files/triliovault-nfs-mount/nfs_mount.sh",
+      "dest": "/tmp/nfs_mount.sh",
+      "owner": "nova",
+      "perm": "0750"
+    }
+  ],
+  "permissions": [
+    {
+      "owner": "nova:nova",
+      "path": "{{ vault_data_dir }}",
+      "recurse": false
+    }
+  ]
+}
+

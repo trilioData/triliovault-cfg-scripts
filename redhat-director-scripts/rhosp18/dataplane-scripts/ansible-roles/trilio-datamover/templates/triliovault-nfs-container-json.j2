@@ -1,0 +1,18 @@
+{
+    "image": "{{ triliovault_datamover_image }}",
+    "privileged": true,
+    "user": "nova",
+    "restart": "always",
+    "command": "kolla_start",
+    "net": "host",
+    "ipc": "host",
+    "environment": {
+        "KOLLA_CONFIG_STRATEGY":"COPY_ALWAYS"
+    },
+    "volumes": [
+        "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config.json:/var/lib/kolla/config_files/config.json:ro",
+        "/var/lib/openstack/config/triliovault-nfs-mount:/var/lib/kolla/config_files/triliovault-nfs-mount:ro",
+        "{{ vault_data_dir }}:{{ vault_data_dir }}:shared"
+    ]
+}
+
