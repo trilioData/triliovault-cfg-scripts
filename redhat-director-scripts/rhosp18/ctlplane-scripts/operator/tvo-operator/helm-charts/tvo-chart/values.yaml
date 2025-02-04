@@ -90,8 +90,6 @@ keystone:
     keystone_auth_host: ""
     keystone_auth_port: ""
     is_self_signed_ssl_cert: True
-    ca_cert: |
-      CERT MULTIPLE LINES
   datamover_api: 
     user: "dmapi"
     password: "EDIT_PASSWORD"
