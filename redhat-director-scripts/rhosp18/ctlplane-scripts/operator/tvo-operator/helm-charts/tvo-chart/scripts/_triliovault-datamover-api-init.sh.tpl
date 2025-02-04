@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 ## datamover api conf file for my_ip parameter
 chown -R dmapi:dmapi /var/log/triliovault
