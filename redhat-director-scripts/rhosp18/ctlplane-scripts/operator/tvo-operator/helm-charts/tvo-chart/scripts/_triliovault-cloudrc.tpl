@@ -14,7 +14,7 @@ export OS_INTERFACE="{{- .Values.keystone.keystone_interface }}"
 
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
 
-export OS_CACERT=/etc/pki/tls/certs/openstack-ca-cert.pem
+export OS_CACERT=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 {{- end }}
 
