@@ -1,0 +1,8 @@
+kind: OpenStackDataPlaneDeployment
+metadata:
+  name: edpm-nova-service-data-plane-deployment-2
+spec:
+  nodeSets:
+    - openstack-edpm-ipam
+  servicesOverride:
+    - nova
