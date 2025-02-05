@@ -80,10 +80,10 @@ spec:
               subPath: triliovault-cloudrc
             - name: pod-shared-triliovault-wlm-cron
               mountPath: /tmp/pod-shared-triliovault-wlm-cron
-            - name: triliovault-wlm-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
               readOnly: true
+              subPath: tls-ca-bundle.pem
       containers:
         - name: triliovault-wlm-cron
           image: {{ .Values.images.triliovault_wlm_cron }}
