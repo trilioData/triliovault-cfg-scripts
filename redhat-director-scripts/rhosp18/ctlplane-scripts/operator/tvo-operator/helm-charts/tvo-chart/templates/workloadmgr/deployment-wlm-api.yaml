@@ -89,7 +89,6 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
-              readOnly: true
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
