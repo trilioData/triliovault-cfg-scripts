@@ -83,7 +83,6 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-wlm-workloads
             - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
               name: combined-ca-bundle
-              readOnly: true
               subPath: tls-ca-bundle.pem
               readOnly: true
             - name: trilio-mounts
