@@ -1,5 +1,5 @@
 ---
-- name: Ensure Trilio datamover configuration directory exists
+- name: Ensure Trilio nfs configuration directory exists
   file:
     path: "{{ triliovault_nfs_config_dest }}"
     state: directory
@@ -7,7 +7,7 @@
     group: '42436'
     mode: '0644'
   when: triliovault_backup_target.backup_target_type == "nfs"
-  
+
 - name: Render triliovault_object_store_config_json.j2 for S3 backup target
   template:
     src: "triliovault_object_store_config_json.j2"
@@ -81,6 +81,6 @@
   vars:
     edpm_container_manage_config: '/var/lib/openstack/config/containers'
     edpm_container_manage_healthcheck_disabled: true
-    edpm_container_manage_config_patterns: 'triliovault_nfs_config-{{ triliovault_backup_target.backup_target_name }}.json'
+    edpm_container_manage_config_patterns: 'triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.json'
     edpm_container_manage_clean_orphans: false
   when: triliovault_backup_target.backup_target_type == "nfs"

@@ -8,7 +8,7 @@ data:
     images:
       triliovault_object_store: "docker.io/trilio/trilio-wlm:6.0.24-dev-maint1-2-rhosp18.0"
     triliovault_backup_target:
-      backup_target_name: 'S3_BT4'
+      backup_target_name: '<BACKUP_TARGET_NAME>'
       backup_target_type: 's3'
       is_default: False
       s3_type: 'amazon_s3'
