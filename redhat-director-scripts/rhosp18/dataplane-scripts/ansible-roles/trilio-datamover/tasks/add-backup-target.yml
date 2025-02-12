@@ -1,4 +1,13 @@
 ---
+- name: Ensure Trilio datamover configuration directory exists
+  file:
+    path: "{{ triliovault_nfs_config_dest }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+  when: triliovault_backup_target.backup_target_type == "nfs"
+  
 - name: Render triliovault_object_store_config_json.j2 for S3 backup target
   template:
     src: "triliovault_object_store_config_json.j2"
@@ -47,6 +56,7 @@
     owner: '42436'
     group: '42436'
     mode: '0644'
+  when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Render Trilio NFS mount shell script
   template:
@@ -63,6 +73,7 @@
     dest: "/var/lib/openstack/config/containers/triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.json"
     setype: "container_file_t"
     mode: "0644"
+  when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Deploy container Trilio mount nfs backup target
   ansible.builtin.include_role:
