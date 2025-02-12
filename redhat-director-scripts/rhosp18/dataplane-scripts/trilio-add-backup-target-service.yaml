@@ -15,7 +15,7 @@ spec:
         - name: Execute trilio-datamover role
           import_role:
             name: trilio-datamover
-            tasks_from: add_backup_target
+            tasks_from: add-backup-target
   dataSources:
     - configMapRef: 
         name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>
