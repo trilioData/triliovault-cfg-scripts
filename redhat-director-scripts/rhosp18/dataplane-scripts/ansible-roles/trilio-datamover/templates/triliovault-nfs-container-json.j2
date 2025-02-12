@@ -10,8 +10,8 @@
         "KOLLA_CONFIG_STRATEGY":"COPY_ALWAYS"
     },
     "volumes": [
-        "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config.json:/var/lib/kolla/config_files/config.json:ro",
-        "/var/lib/openstack/config/triliovault-nfs-mount:/var/lib/kolla/config_files/triliovault-nfs-mount:ro",
+        "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config-{{ triliovault_backup_target.backup_target_name }}.json:/var/lib/kolla/config_files/config.json:ro",
+        "{{ triliovault_nfs_config_dest}}:/var/lib/kolla/config_files/triliovault-nfs:ro",
         "{{ vault_data_dir }}:{{ vault_data_dir }}:shared"
     ]
 }
