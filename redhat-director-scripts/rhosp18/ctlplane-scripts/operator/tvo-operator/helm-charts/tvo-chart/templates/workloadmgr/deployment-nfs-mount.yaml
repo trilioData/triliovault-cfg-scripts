@@ -1,16 +1,17 @@
 {{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
-apiVersion: batch/v1
-kind: Job
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: job-triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  name: deployment-triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
     component: wlm-nfs-mount
-  annotations:
-    helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "-4"
 spec:
-  backoffLimit: 1000
+  replicas: 1
+  selector:
+    matchLabels:
+      application: triliovault
+      component: wlm-nfs-mount
   template:
     metadata:
       labels:
@@ -21,7 +22,6 @@ spec:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
       serviceAccountName: triliovault-wlm
-      restartPolicy: OnFailure
       nodeSelector:
         trilio-control-plane: enabled
       containers:

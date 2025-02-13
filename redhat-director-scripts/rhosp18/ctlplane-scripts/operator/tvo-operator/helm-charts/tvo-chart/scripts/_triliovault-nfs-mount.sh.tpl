@@ -12,4 +12,6 @@ set -e
 mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
 sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
 {{- end }}
+tail -f /dev/null
+
 {{- end }}
