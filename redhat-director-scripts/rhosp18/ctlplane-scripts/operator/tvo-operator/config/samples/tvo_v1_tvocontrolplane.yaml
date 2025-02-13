@@ -59,8 +59,6 @@ spec:
       admin_role_name: admin
       auth_uri: ""
       auth_url: ""
-      ca_cert: |
-        CERT MULTIPLE LINES
       cloud_admin_domain_name: Default
       cloud_admin_project_name: admin
       cloud_admin_user_name: admin

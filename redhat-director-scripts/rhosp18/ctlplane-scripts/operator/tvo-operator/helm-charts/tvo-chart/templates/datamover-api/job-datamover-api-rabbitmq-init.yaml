@@ -23,9 +23,7 @@ spec:
       serviceAccountName: triliovault-datamover-api
       restartPolicy: OnFailure
       nodeSelector:
-        triliovault-control-plane: enabled
-      imagePullSecrets:
-        - name: triliovault-image-pull-secret
+        trilio-control-plane: enabled
       containers:
         - name: "datamover-api-rabbitmq-init"
           securityContext:
