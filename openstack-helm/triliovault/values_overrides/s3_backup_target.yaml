@@ -1,0 +1,22 @@
+action: 'add-s3-target'
+
+images:
+  triliovault_object_store: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
+nfs_data_dir: '/var/trilio/triliovault-mounts'
+
+triliovault_backup_target:
+  backup_target_name: 'S3_BT1'
+  backup_target_type: 's3'
+  is_default: False
+  s3_type: 'amazon_s3'
+  s3_access_key: ''
+  s3_secret_key: ''
+  s3_region_name: ''
+  s3_bucket: ''
+  s3_endpoint_url: ''
+  s3_signature_version: 'default'
+  s3_auth_version: 'DEFAULT'
+  s3_bucket_object_lock_enabled: false
+  s3_ssl_enabled: true
+  s3_ssl_verify: true
+  s3_self_signed_cert: false
