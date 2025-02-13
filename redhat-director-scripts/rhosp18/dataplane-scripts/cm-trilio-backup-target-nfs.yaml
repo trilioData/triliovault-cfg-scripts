@@ -1,0 +1,15 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>
+data:
+  trilio_env.yml: |
+    images:
+      triliovault_wlm_api: "docker.io/trilio/trilio-wlm:6.0.24-dev-maint1-2-rhosp18.0"
+    triliovault_backup_target:
+      backup_target_name: '<BACKUP_TARGET_NAME>'
+      backup_target_type: 'nfs'
+      is_default: False
+      nfs_shares: '192.168.2.30:/nfs/share'
+      nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'

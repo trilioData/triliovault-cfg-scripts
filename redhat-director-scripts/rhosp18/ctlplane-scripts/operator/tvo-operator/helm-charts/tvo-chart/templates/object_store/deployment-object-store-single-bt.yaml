@@ -1,23 +1,23 @@
-{{- if eq .Values.crdType "TVOControlPlane" }}
-{{- range .Values.triliovault_backup_targets }}
-  {{- if eq .backup_target_type "s3" }}
+
+{{- if eq .Values.crdType "TVOBackupTarget" }}
+  {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+  name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
-    component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+    component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "99"
 spec:
-  replicas: {{ $.Values.pod.replicas.triliovault_object_store }}
+  replicas: 1
   selector:
     matchLabels:
       application: triliovault
-      component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+      component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -27,12 +27,12 @@ spec:
     metadata:
       labels:
         application: triliovault
-        component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
+        component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
-        runAsUser: {{ $.Values.common.nova_user_id }}
-        fsGroup: {{ $.Values.common.nova_group_id }}
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -53,13 +53,13 @@ spec:
         trilio-control-plane: enabled
       terminationGracePeriodSeconds: 30
       containers:
-        - name: triliovault-object-store-{{ .backup_target_name | lower | replace "_" "-" }}
-          image: {{ $.Values.images.triliovault_object_store }}
+        - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+          image: {{ .Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
-            runAsUser: {{ $.Values.common.nova_user_id }}
+            runAsUser: {{ .Values.common.nova_user_id }}
           command:
             - /bin/bash
             - -c
@@ -84,12 +84,12 @@ spec:
               subPath: object_store_logging.conf
             - name: triliovault-object-store-etc
               mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
-              subPath: triliovault-object-store-{{ .backup_target_name | lower }}.conf
+              subPath: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.conf
               readOnly: true
-            {{- if .s3_self_signed_cert }}
+            {{- if .Values.triliovault_backup_target.s3_self_signed_cert }}
             - name: triliovault-object-store-etc
-              mountPath: /etc/triliovault-object-store/s3-cert-{{ .backup_target_name | lower }}.pem
-              subPath: s3-cert-{{ .backup_target_name | lower }}.pem
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
               readOnly: true
             {{- end }}
             - name: triliovault-object-store-bin
@@ -98,7 +98,7 @@ spec:
             - name: pod-shared-triliovault-object-store
               mountPath: /tmp/pod-shared-triliovault-object-store
             - name: trilio-mounts
-              mountPath: {{ $.Values.common.vault_data_dir }}
+              mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
@@ -107,7 +107,7 @@ spec:
           emptyDir: {}
         - name: triliovault-object-store-etc
           secret:
-            secretName: triliovault-object-store-etc
+            secretName: triliovault-object-store-etc-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
             defaultMode: 0444
         - name: triliovault-object-store-bin
           configMap:
@@ -117,9 +117,9 @@ spec:
           emptyDir: {}
         - name: trilio-mounts
           hostPath:
-            path: {{ $.Values.common.vault_data_dir }}
+            path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
   {{- end }}
 {{- end }}
-{{- end }}
+
 

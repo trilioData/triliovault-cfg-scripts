@@ -1,0 +1,14 @@
+#!/bin/bash
+
+{% if triliovault_backup_target.backup_target_type == 'nfs' %}
+  # Configure NFS backup target: {{ triliovault_backup_target.backup_target_name }}
+  {% set nfs_share = triliovault_backup_target.nfs_shares %}
+  {% set nfs_dir = nfs_share.split(':')[1] %}
+  {% set base64_mount_point = nfs_dir | b64encode %}
+  {% set nfs_options = triliovault_backup_target.nfs_options %}
+  
+mkdir -p {{ vault_data_dir }}/{{ base64_mount_point }}
+sudo nova-rootwrap /etc/nova/rootwrap.conf mount -t nfs {{ nfs_share }} {{ vault_data_dir }}/{{ base64_mount_point }} -o {{ nfs_options }}
+tail -f /dev/null
+{% endif %}
+
