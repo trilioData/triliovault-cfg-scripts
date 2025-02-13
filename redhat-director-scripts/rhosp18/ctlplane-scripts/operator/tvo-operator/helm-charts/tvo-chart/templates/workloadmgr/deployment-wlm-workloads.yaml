@@ -82,9 +82,9 @@ spec:
               subPath: triliovault-cloudrc
             - name: pod-shared-triliovault-wlm-workloads
               mountPath: /tmp/pod-shared-triliovault-wlm-workloads
-            - name: triliovault-wlm-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              subPath: tls-ca-bundle.pem
               readOnly: true
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}

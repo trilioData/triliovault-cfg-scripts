@@ -96,31 +96,6 @@ spec:
       keystone_auth_host: "keystone-internal.openstack.svc"
       keystone_auth_port: "5000"
       is_self_signed_ssl_cert: True
-      ca_cert: |
-        -----BEGIN CERTIFICATE-----
-        fdwkldnnrmmgAwIBAgIRAIZiD8BmTf+GUM6FO0KM9ucwDQYJKoZIhvcNAQELBQAw
-        GjEYMBYGA1UEAxMPcm9vdGNhLWludGVybmFsMB4XDTI0MTAyNTEwMjc1N1oXDTM0
-        MTAyMzEwMjc1N1owGjEYMBYGA1UEAxMPcm9vdGNhLWludGVybmFsMIIBojANBgkq
-        hkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAxufxDCr3CAxlRtjs/q6t98Vi1YwJI901
-        /OJ5l21iKusTOTIPERdpku1PMq6keOuqFIV6vD4TlK5+DuopkULdBmtz2BXx97BA
-        uTqoUVGkB1fQEJoZiHEsXB1kPLgXbo1XxtVDuV66FTNjePIsB7wQedtvJLGJltzJ
-        RSd3hiIZOGeMEC2eEyzDiy+/DdeYR4mOjlQ0Q5GcWakzEXTO2nCGmZhx4vbpV6me
-        VDkpEv3uCXk6vQngE2fqaQs66Jo3iM02hIY2YCJfgi4/dfcARXYIEzhBfc0G1AVL
-        a5l9bH0N6H8SrS/0EDkJSNWwswnxHUQEA+WmS2uhncxKbUh5jtzZiHzrw6qkwMCZ
-        DkWr5Q5rvs9QCsfHeLraQEMHv8MmWQQCle+ZrsFvmG+NWbSy74BAcr0vQfGu9GaE
-        nml/WlmyeYKfwJ4X0TjAeSvI/53gz4iE87/vAOA0Y/uigCXPna6qdsnFs7HgQS+P
-        J7qZtkdC5gxz+BYbq3AlFbBVij/Vnw01AgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIC
-        pDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTxcaYla3CvWoFLKS+1xCyTvhds
-        8DANBgkqhkiG9w0BAQsFAAOCAYEAvHCg3QzlJnANgRD82RBh6yIMRxSgpcSHYuyS
-        S8IE82R/cOf2GgP5HWZFOUaFZ+wG9T4y0j+97tt9jR3/0tVKVjWelpdLoVslEqHf
-        n3IME9Ij/UhPclb7tPq4Fh3Xl2xNXRropb9A4aooT4gXUYkdexnXQMRP5vC/wKoB
-        6Pa0xE0nqnoomXyLcOSE1RP0w9Gq1l6RlsiEIe3izCyiXZdyq+Z8VK1zoU/tGLvk
-        mIN7uKsgVhdkx8GJb9CNxLAzsPiLrFics7VWObY7dhZ2bmJVMiyb22Ulr8Nsb2Pk
-        GYQaP6laH5XcY1aj14bKq4WI9mbKuFEsoAhDR6kHElz0XPpAIFEztUVy1MRtritq
-        6vWIkTm3JDnpwrFO+uwq3qD7fn0ldQ0uzQjvlLkiiWz8uqnNWVVlRoZyyijKMuYa
-        YIBH9ZG0ZzXBC6dTIkuIuMiEVH0lvvgrqUhi3E4R8pTmZCjdCLzg+UgFoOAYvBA1
-        QP7m1uoEN0eb5csgU2sjdkkel
-        -----END CERTIFICATE-----
     datamover_api:
       user: "dmapi"
       password: "defajgh48zgt88wFzzhwEt3xHGeCOdExYbLGQN2XRm"

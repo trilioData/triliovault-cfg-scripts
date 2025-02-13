@@ -44,10 +44,10 @@ spec:
             - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-cloudrc
               subPath: triliovault-cloudrc
-            - name: triliovault-datamover-api-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
               readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -59,4 +59,11 @@ spec:
           secret:
             secretName: triliovault-datamover-api-etc
             defaultMode: 0444
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle   
+
 {{- end }}
+
+

@@ -49,10 +49,6 @@ spec:
     wlm_api:
       transport_url: $TRANSPORT_URL
       password: $WLM_RABBIT_PASSWORD
-  keystone:
-    common:
-      ca_cert: |
-  $(echo "$KEYSTONE_CA_CERT" | sed 's/^/      /')
 EOF
 
 echo -e "Dynamic values are generated and copied to file ${SCRIPT_DIR}/tvo-chart/values_overrides/trilio_inputs_dynamic.yaml"
