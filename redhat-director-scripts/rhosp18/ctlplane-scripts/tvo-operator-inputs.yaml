@@ -3,6 +3,7 @@ kind: TVOControlPlane
 metadata:
   name: tvocontrolplane-v61
 spec:
+  crdType: "TVOControlPlane"
   labels:
     wlm_api:
       node_selector_key: trilio-control-plane
