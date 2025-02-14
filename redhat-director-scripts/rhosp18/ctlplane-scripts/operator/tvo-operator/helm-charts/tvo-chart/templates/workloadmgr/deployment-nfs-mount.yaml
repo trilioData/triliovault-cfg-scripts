@@ -1,13 +1,12 @@
 {{- if and (eq .Values.crdType "TVOBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: deployment-triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  name: triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: triliovault
     component: wlm-nfs-mount
 spec:
-  replicas: 1
   selector:
     matchLabels:
       application: triliovault

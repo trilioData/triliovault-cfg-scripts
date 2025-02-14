@@ -1,9 +1,8 @@
-
 {{- if eq .Values.crdType "TVOBackupTarget" }}
   {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
@@ -13,16 +12,10 @@ metadata:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "99"
 spec:
-  replicas: 1
   selector:
     matchLabels:
       application: triliovault
       component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
   template:
     metadata:
       labels:
@@ -33,22 +26,6 @@ spec:
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: application
-                    operator: In
-                    values:
-                    - triliovault
-                  - key: component
-                    operator: In
-                    values:
-                    - object-store
-              topologyKey: kubernetes.io/hostname
-            weight: 10
       nodeSelector:
         trilio-control-plane: enabled
       terminationGracePeriodSeconds: 30
@@ -121,5 +98,3 @@ spec:
             type: DirectoryOrCreate
   {{- end }}
 {{- end }}
-
-
