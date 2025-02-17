@@ -1,4 +1,4 @@
----
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -17,3 +17,4 @@ data:
   triliovault-datamover-api-rabbitmq-init.sh: |-
     {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-init.sh.tpl") . | nindent 4 }}
 
+{{- end }}

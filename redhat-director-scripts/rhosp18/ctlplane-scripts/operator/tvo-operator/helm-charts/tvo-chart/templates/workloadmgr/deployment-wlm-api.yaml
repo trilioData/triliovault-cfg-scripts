@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -202,3 +203,4 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
+{{- end }}

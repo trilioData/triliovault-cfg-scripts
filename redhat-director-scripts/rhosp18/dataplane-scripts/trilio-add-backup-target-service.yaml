@@ -1,0 +1,21 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneService
+metadata:
+  name: trilio-add-backup-target-<BACKUP_TARGET_NAME>
+spec:
+  deployOnAllNodeSets: true
+  label: trilio-add-backup-target-custom-service
+  openStackAnsibleEERunnerImage: docker.io/trilio/rhoso-ansible-runner:shyam-dev-15
+  edpmServiceType: trilio-add-backup-target-<BACKUP_TARGET_NAME>
+  playbookContents: |
+    - hosts: all
+      vars_files:
+        - /var/lib/openstack/configs/trilio-add-backup-target-<BACKUP_TARGET_NAME>/trilio_env.yml
+      tasks:
+        - name: Execute trilio-datamover role
+          import_role:
+            name: trilio-datamover
+            tasks_from: add-backup-target
+  dataSources:
+    - configMapRef: 
+        name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>

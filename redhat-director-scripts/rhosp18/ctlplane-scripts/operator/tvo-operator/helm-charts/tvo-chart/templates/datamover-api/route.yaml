@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -17,3 +18,4 @@ spec:
     termination: passthrough
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
+  {{- end }}
