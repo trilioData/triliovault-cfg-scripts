@@ -119,10 +119,6 @@ spec:
               subPath: triliovault-wlm.conf
               readOnly: true
             - name: triliovault-wlm-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
-              readOnly: true
-            - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
               readOnly: true

@@ -22,7 +22,7 @@ connection = mysql+pymysql://{{- .Values.database.datamover_api.user -}}:{{- .Va
 memcached_servers = {{ .Values.common.memcached_servers }}
 signing_dir = /var/cache/dmapi
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/pki/tls/cert.pem
+cafile = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 {{- else }}
 cafile =
 {{- end }}
