@@ -1,4 +1,4 @@
-action: 'add-nfs-target'
+action: 'add-backup-target'
 
 images: 
   triliovault_object_store: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'

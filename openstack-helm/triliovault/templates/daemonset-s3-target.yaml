@@ -1,0 +1,98 @@
+{{- if and (eq .Values.action "add-backup-target") (eq .Values.triliovault_backup_target.backup_target_type "s3") }}
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-s3-target-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  labels:
+    app: triliovault
+    component: s3-target
+    backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+spec:
+  selector:
+    matchLabels:
+      app: triliovault
+      component: s3-target
+      backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  template:
+    metadata:
+      labels:
+        app: triliovault
+        component: s3-target
+        backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+    spec:
+      serviceAccountName: triliovault-object-store
+      securityContext:
+        runAsUser: 42424
+        fsGroup: 42424
+      nodeSelector:
+        triliovault-control-plane: enabled
+        openstack-compute-node: enabled
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: triliovault-s3-target-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+          image: {{ .Values.images.triliovault_object_store }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: 42424
+          command: ["/bin/bash", "/tmp/triliovault-object-store.sh"]
+          args: ["start"]  # Don't run in background
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-object-store.sh
+                  - stop
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-object-store-secret
+              mountPath: /etc/triliovault-object-store
+              readOnly: true
+            - name: triliovault-s3-secret
+              mountPath: /etc/triliovault-object-store/object_store_logging.conf
+              subPath: object_store_logging.conf
+              readOnly: true
+            - name: triliovault-s3-secret
+              mountPath: /etc/triliovault-object-store/s3-cert.pem
+              subPath: s3-cert.pem
+              readOnly: true
+            - name: triliovault-s3-secret
+              mountPath: /etc/triliovault-object-store/fuse.conf
+              subPath: fuse.conf
+              readOnly: true
+            - name: triliovault-bin-object-store
+              mountPath: /tmp/triliovault-object-store.sh
+              subPath: triliovault-object-store.sh
+            - name: pod-shared-triliovault-object-store
+              mountPath: /tmp/pod-shared-triliovault-object-store
+            # Dynamic mount path
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio/triliovault-mounts/{{ .Values.triliovault_backup_target.s3_bucket | b64enc }}
+              mountPropagation: Bidirectional
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-object-store-secret
+          secret:
+            secretName: triliovault-object-store-secret-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+            defaultMode: 0444
+        - name: triliovault-s3-secret
+          secret:
+            secretName: triliovault-etc-object-store
+            defaultMode: 0444
+        - name: triliovault-bin-object-store
+          configMap:
+            name: triliovault-bin-object-store
+            defaultMode: 0555
+        - name: pod-shared-triliovault-object-store
+          emptyDir: {}
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio/triliovault-mounts/{{ .Values.triliovault_backup_target.s3_bucket | b64enc }}
+            type: DirectoryOrCreate
+{{- end }}

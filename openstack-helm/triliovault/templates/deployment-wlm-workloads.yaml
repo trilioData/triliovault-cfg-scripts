@@ -124,28 +124,10 @@ spec:
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
               readOnly: true
-            {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
-            - mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: triliovault-object-store-wlm-workloads.conf
-            - mountPath: /etc/fuse.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: fuse.conf
-            - mountPath: /etc/triliovault-wlm/s3-cert.pem
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: s3-cert.pem
-            {{- end }}
             - mountPath: /etc/triliovault-wlm/wlm_logging.conf
               name: triliovault-wlm-etc
               readOnly: true
               subPath: wlm_logging.conf
-            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: object_store_logging.conf
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-workloads.sh
               subPath: triliovault-wlm-workloads.sh

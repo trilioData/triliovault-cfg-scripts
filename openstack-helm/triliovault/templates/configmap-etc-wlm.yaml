@@ -16,126 +16,6 @@ limitations under the License.
 {{- $envAll := . }}
 
 
-
-{{/* **********************************************************************
-     set triliovault_object_store.conf services conf parameters wlm-api
-     **********************************************************************
-*/}}
-
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_access_key_id -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_access_key_id" .Values.conf.triliovault.s3.access_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_secret_access_key -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_secret_access_key" .Values.conf.triliovault.s3.secret_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_region_name -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_region_name" .Values.conf.triliovault.s3.region_name -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_bucket -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_bucket" .Values.conf.triliovault.s3.bucket -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_signature_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_signature_version" .Values.conf.triliovault.s3.signature_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_auth_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_auth_version" .Values.conf.triliovault.s3.auth_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_endpoint_url -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_endpoint_url" .Values.conf.triliovault.s3.endpoint_url -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_ssl -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
-{{- end -}}
-
-
-{{/* **********************************************************************
-     set triliovault_object_store.conf services conf parameters wlm-scheduler
-     **********************************************************************
-*/}}
-
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_access_key_id -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_access_key_id" .Values.conf.triliovault.s3.access_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_secret_access_key -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_secret_access_key" .Values.conf.triliovault.s3.secret_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_region_name -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_region_name" .Values.conf.triliovault.s3.region_name -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_bucket -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_bucket" .Values.conf.triliovault.s3.bucket -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_signature_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_signature_version" .Values.conf.triliovault.s3.signature_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_auth_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_auth_version" .Values.conf.triliovault.s3.auth_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_endpoint_url -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_endpoint_url" .Values.conf.triliovault.s3.endpoint_url -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_ssl -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
-{{- end -}}
-
-
-
-{{/* **********************************************************************
-     set triliovault_object_store.conf services conf parameters wlm-workloads
-     **********************************************************************
-*/}}
-
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_access_key_id -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_access_key_id" .Values.conf.triliovault.s3.access_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_secret_access_key -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_secret_access_key" .Values.conf.triliovault.s3.secret_key -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_region_name -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_region_name" .Values.conf.triliovault.s3.region_name -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_bucket -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_bucket" .Values.conf.triliovault.s3.bucket -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_signature_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_signature_version" .Values.conf.triliovault.s3.signature_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_auth_version -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_auth_version" .Values.conf.triliovault.s3.auth_version -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_endpoint_url -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_endpoint_url" .Values.conf.triliovault.s3.endpoint_url -}}
-{{- end -}}
-
-{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_ssl -}}
-{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
-{{- end -}}
-
-
-
 {{/* **********************************************************************
      set logging.conf conf parameters
      **********************************************************************
@@ -154,8 +34,6 @@ limitations under the License.
 {{- $formatter_fluent := dict "class" "oslo_log.formatters.FluentFormatter" -}}
 {{- $_ := set .Values.conf.logging "formatter_fluent" $formatter_fluent -}}
 {{- end -}}
-
-
 
 
 {{/* **********************************************************************
@@ -370,13 +248,7 @@ type: Opaque
 data:
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
   wlm_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm_logging | b64enc }}
-  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
-  triliovault-object-store-wlm-api.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_wlm_api | b64enc }}
-  triliovault-object-store-wlm-scheduler.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_wlm_scheduler | b64enc }}
-  triliovault-object-store-wlm-workloads.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.triliovault_object_store_wlm_workloads | b64enc }}
-  fuse.conf: {{ .Values.conf.fuse | b64enc }}
-  s3-cert.pem: {{ .Files.Get "files/s3-cert.pem" | default "" | b64enc }}
   triliovault-wlm.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm | b64enc }}
   api-paste.ini: {{ tuple "bin/_api-paste.ini.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
   nova-compute.conf: {{ tuple "bin/_triliovault-nova-compute.conf.tpl" . | include "helm-toolkit.utils.template" | b64enc }}

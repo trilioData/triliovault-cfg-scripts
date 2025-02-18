@@ -126,10 +126,7 @@ data:
   triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
   datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
-  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
-  fuse.conf: {{ .Values.conf.fuse | b64enc }}
-  s3-cert.pem: {{ .Files.Get "files/s3-cert.pem" | default "" | b64enc }}
   api-paste.ini: {{ tuple "bin/_api-paste.ini.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
   nova-compute.conf: {{ tuple "bin/_triliovault-nova-compute.conf.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
   {{- if .Values.ceph.enabled }}

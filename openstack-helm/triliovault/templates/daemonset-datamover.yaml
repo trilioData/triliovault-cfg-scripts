@@ -155,20 +155,6 @@ spec:
               mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
               subPath: triliovault-datamover.conf
               readOnly: true
-            {{- if eq $envAll.Values.conf.triliovault.backup_target_type "s3" }}
-            - mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: triliovault-object-store-datamover.conf
-            - mountPath: /etc/fuse.conf
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: fuse.conf
-            - mountPath: /etc/triliovault-datamover/s3-cert.pem
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: s3-cert.pem
-            {{- end }}
             - name: triliovault-datamover-bin
               mountPath: /tmp/triliovault-datamover.sh
               subPath: triliovault-datamover.sh
@@ -191,10 +177,6 @@ spec:
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/datamover_logging.conf
               subPath: datamover_logging.conf
-              readOnly: true
-            - name: triliovault-datamover-etc
-              mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              subPath: object_store_logging.conf
               readOnly: true
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/policy.yaml
@@ -433,20 +415,6 @@ spec:
               mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
               subPath: triliovault-datamover.conf
               readOnly: true
-            {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
-            - mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: triliovault-object-store-datamover.conf
-            - mountPath: /etc/fuse.conf
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: fuse.conf
-            - mountPath: /etc/triliovault-datamover/s3-cert.pem
-              name: triliovault-datamover-etc
-              readOnly: true
-              subPath: s3-cert.pem
-            {{- end }}
             - name: triliovault-datamover-bin
               mountPath: /tmp/triliovault-datamover.sh
               subPath: triliovault-datamover.sh
@@ -469,10 +437,6 @@ spec:
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/datamover_logging.conf
               subPath: datamover_logging.conf
-              readOnly: true
-            - name: triliovault-datamover-etc
-              mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              subPath: object_store_logging.conf
               readOnly: true
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/policy.yaml

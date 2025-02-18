@@ -1,22 +1,32 @@
-action: 'add-s3-target'
+action: 'add-backup-target'
 
 images:
   triliovault_object_store: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
-nfs_data_dir: '/var/trilio/triliovault-mounts'
 
 triliovault_backup_target:
-  backup_target_name: 'S3_BT1'
-  backup_target_type: 's3'
-  is_default: False
-  s3_type: 'amazon_s3'
-  s3_access_key: ''
-  s3_secret_key: ''
-  s3_region_name: ''
-  s3_bucket: ''
-  s3_endpoint_url: ''
-  s3_signature_version: 'default'
-  s3_auth_version: 'DEFAULT'
-  s3_bucket_object_lock_enabled: false
-  s3_ssl_enabled: true
-  s3_ssl_verify: true
-  s3_self_signed_cert: false
+  backup_target_name: 'S3_BT1'        # Unique name for this backup target
+  backup_target_type: 's3'            # Ensure type is s3
+  is_default: False                    # Set as default backup target if needed
+  s3_type: 'amazon_s3'                 # Type of S3 (e.g., amazon_s3, minio, etc.)
+  s3_access_key: '<access_key_id>'     # Your S3 access key
+  s3_secret_key: '<secret_access_key>' # Your S3 secret key
+  s3_region_name: '<region_name>'      # AWS region (if using AWS)
+  s3_bucket: '<bucket_name>'           # Target S3 bucket
+  s3_endpoint_url: '<s3_endpoint_url>' # Required if not AWS
+  s3_signature_version: 's3v4'         # Optional: Signature version
+  s3_auth_version: '4'                 # Optional: Authentication version
+  s3_bucket_object_lock_enabled: false # If object lock should be enabled
+  s3_ssl_enabled: true                 # Enable SSL (https)
+  s3_ssl_verify: true                  # Verify SSL certificate
+  s3_self_signed_cert: false           # Whether to allow self-signed certs
+
+triliovault_object_store:
+  DEFAULT:
+    vault_s3_ssl_cert: "/etc/triliovault-object-store/s3-cert.pem"  # If SSL is enabled
+    vault_storage_type: s3
+    vault_s3_auth_version: DEFAULT
+    vault_storage_nfs_export: TrilioVault
+    vault_data_directory: /var/lib/trilio/triliovault-mounts
+    vault_s3_max_pool_connections: 500
+    vault_data_directory_old: /var/triliovault
+    log_config_append: /etc/triliovault-object-store/object_store_logging.conf

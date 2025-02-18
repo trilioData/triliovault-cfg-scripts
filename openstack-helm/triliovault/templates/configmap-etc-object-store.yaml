@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: triliovault-etc-object-store
+type: Opaque
+data:
+  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
+  s3-cert.pem: {{ .Files.Get "files/s3-cert.pem" | default "" | b64enc }}
+  fuse.conf: {{ .Values.conf.fuse | b64enc }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-bin-object-store
+data:
+  triliovault-object-store.sh: |
+    #!/bin/bash
+    set -ex
+
+    COMMAND="${@:-start}"
+
+    function start () {
+      ## Start triliovault object store service
+      /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf
+      status=$?
+      sleep 20s
+      if [ $status -ne 0 ]; then
+        echo "Failed to start tvault-object-store service: $status"
+        exit $status
+      fi
+    }
+
+    function stop () {
+      pkill -f s3vaultfuse.py || true
+      exit 0
+    }
+
+    $COMMAND
