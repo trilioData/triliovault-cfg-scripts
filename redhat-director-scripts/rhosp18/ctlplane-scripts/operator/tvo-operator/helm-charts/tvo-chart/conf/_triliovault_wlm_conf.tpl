@@ -80,7 +80,7 @@ encryption_support = true
 [clients]
 client_retry_limit = 3
 endpoint_type  = internal
-cafile = /etc/pki/tls/certs/openstack-ca-cert.pem
+cafile = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 [filesearch]
 process_timeout = 300
 [global_job_scheduler]
@@ -97,7 +97,7 @@ auth_plugin = password
 auth_type = password
 auth_version = v3
 {{- if .Values.keystone.common.is_self_signed_ssl_cert }}
-cafile = /etc/pki/tls/cert.pem
+cafile = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 {{- else }}
 cafile = 
 {{- end }}
