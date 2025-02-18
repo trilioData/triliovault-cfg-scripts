@@ -3,4 +3,5 @@
 # It should be run by config/default
 resources:
 - bases/tvo.trilio.io_tvocontrolplanes.yaml
+- bases/tvo.trilio.io_tvobackuptargets.yaml
 # +kubebuilder:scaffold:crdkustomizeresource

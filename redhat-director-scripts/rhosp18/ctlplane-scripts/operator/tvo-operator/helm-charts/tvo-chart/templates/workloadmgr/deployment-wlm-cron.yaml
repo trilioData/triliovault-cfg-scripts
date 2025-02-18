@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -119,10 +120,6 @@ spec:
               subPath: triliovault-wlm.conf
               readOnly: true
             - name: triliovault-wlm-etc
-              mountPath: /etc/pki/tls/certs/openstack-ca-cert.pem
-              subPath: ca-cert.pem
-              readOnly: true
-            - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
               readOnly: true
@@ -154,3 +151,4 @@ spec:
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
+{{- end }}
