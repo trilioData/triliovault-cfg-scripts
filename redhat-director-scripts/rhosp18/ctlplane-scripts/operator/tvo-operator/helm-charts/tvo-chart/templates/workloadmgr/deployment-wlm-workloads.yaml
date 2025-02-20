@@ -139,6 +139,8 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: dev-mount
+              mountPath: /dev
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -162,4 +164,8 @@ spec:
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
+        - name: dev-mount
+          hostPath:
+            path: /dev
+            type: Directory
 {{- end }}
