@@ -17,11 +17,10 @@
   when: triliovault_backup_target.backup_target_type == "s3"
   vars:
     backup_target_name: "{{ triliovault_backup_target.backup_target_name }}"
-  notify: 
-    - "Restart triliovault-object-store"
+  notify: restart-single-triliovault-object-store
 
 - name: Process Trilio S3 backup target - render trilio object store conf file
-  include_tasks: process_backup_target.yml
+  include_tasks: process_backup_target_single.yml
   when: triliovault_backup_target.backup_target_type == "s3"
   vars:
     target: "{{ triliovault_backup_target }}"
@@ -35,8 +34,8 @@
   when: triliovault_backup_target.backup_target_type == "s3"
   vars:
     backup_target_name: "{{ triliovault_backup_target.backup_target_name }}"
-  notify: 
-    - "Restart triliovault-object-store"
+  notify: restart-single-triliovault-object-store
+
 
 - name: Deploy trilio object store container
   ansible.builtin.include_role:
