@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 set -e
 DB_ROOT_USER="{{- .Values.database.common.root_user_name -}}"
 DB_ROOT_PASSWORD="{{- .Values.database.common.root_password -}}"
