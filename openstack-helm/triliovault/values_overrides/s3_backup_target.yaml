@@ -1,7 +1,7 @@
 action: 'add-backup-target'
 
 images:
-  triliovault_object_store: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
+  triliovault_backup_target: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
 
 triliovault_backup_target:
   backup_target_name: 'S3_BT1'        # Unique name for this backup target

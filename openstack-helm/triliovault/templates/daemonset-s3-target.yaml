@@ -21,7 +21,7 @@ spec:
         component: s3-target
         backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
     spec:
-      serviceAccountName: triliovault-object-store
+      serviceAccountName: triliovault-backup-targets
       securityContext:
         runAsUser: 42424
         fsGroup: 42424
@@ -31,14 +31,14 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: triliovault-s3-target-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
-          image: {{ .Values.images.triliovault_object_store }}
+          image: {{ .Values.images.triliovault_backup_target }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: 42424
           command: ["/bin/bash", "/tmp/triliovault-object-store.sh"]
-          args: ["start"]  # Don't run in background
+          args: ["start"]
           lifecycle:
             preStop:
               exec:

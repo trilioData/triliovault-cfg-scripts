@@ -1,0 +1,72 @@
+{{- if and (eq .Values.action "add-backup-target") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-nfs-target-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  labels:
+    app: triliovault
+    component: nfs-target
+    backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+spec:
+  selector:
+    matchLabels:
+      app: triliovault
+      component: nfs-target
+      backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  template:
+    metadata:
+      labels:
+        app: triliovault
+        component: nfs-target
+        backup_target_name: {{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+    spec:
+      serviceAccountName: ttriliovault-backup-targets
+      securityContext:
+        runAsUser: 42424
+        fsGroup: 42424
+      nodeSelector:
+        triliovault-control-plane: enabled
+        openstack-compute-node: enabled
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: triliovault-nfs-target
+          image: {{ .Values.images.triliovault_backup_target }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: 42424
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting NFS mounts..."
+              {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+              export_path="{{ get $share "path" }}"
+              export_server="{{ get $share "ip" }}"
+              encoded_dir=$(echo -n "$export_path" | base64)
+              mount_dir="/var/lib/nova/triliovault-mounts/$encoded_dir"
+
+              echo "Creating directory: $mount_dir"
+              mkdir -p $mount_dir
+
+              echo "Mounting NFS export: $export_server:$export_path to $mount_dir"
+              mount -t nfs -o {{ $.Values.conf.triliovault.nfs.nfs_options }} $export_server:$export_path $mount_dir
+
+              echo "Verifying mount point: $mount_dir"
+              df -h $mount_dir || echo "Mount failed for $mount_dir"
+
+              {{- end }}
+              
+              echo "All mounts attempted. Keeping container running..."
+              sh -c "tail -f /dev/null"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: nfs-mounts
+              mountPath: /var/lib/trilio/triliovault-mounts
+      volumes:
+        - name: nfs-mounts
+          hostPath:
+            path: /var/lib/trilio/triliovault-mounts
+
+{{- end }}

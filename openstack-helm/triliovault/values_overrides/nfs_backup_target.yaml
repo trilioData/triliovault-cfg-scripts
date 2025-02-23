@@ -1,7 +1,8 @@
 action: 'add-backup-target'
 
-images: 
-  triliovault_object_store: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
+images:
+  triliovault_backup_target: 'docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic'
+
 nfs_data_dir: /var/trilio/triliovault-mounts
 
 triliovault_backup_target:

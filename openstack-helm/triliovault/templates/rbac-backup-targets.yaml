@@ -1,0 +1,2 @@
+{{- $serviceAccountName := "triliovault-backup-targets" }}
+{{ tuple $envAll "triliovault-backup-targets" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
