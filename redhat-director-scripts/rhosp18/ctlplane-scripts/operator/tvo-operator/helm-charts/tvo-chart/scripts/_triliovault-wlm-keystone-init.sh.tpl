@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 set -e
 source /tmp/triliovault-cloudrc
