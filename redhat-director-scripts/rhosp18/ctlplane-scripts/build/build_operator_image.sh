@@ -10,6 +10,9 @@ fi
 
 # Assign the first argument to TAG variable
 TAG=$1
+
+docker rmi -f quay.io/operator-framework/helm-operator:latest
+
 cd ../operator/tvo-operator
 export IMG=docker.io/trilio/tvo-operator:$TAG
 make docker-build IMG=$IMG
