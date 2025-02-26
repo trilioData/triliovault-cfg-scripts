@@ -10,7 +10,6 @@ fi
 
 # Assign the first argument to TAG variable
 TAG=$1
-
 cd ../operator/tvo-operator
 export IMG=docker.io/trilio/tvo-operator:$TAG
 make docker-build IMG=$IMG
