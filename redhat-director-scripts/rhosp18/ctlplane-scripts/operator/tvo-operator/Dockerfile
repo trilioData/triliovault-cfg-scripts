@@ -1,11 +1,11 @@
-FROM quay.io/operator-framework/helm-operator:v1.38.0
+FROM quay.io/operator-framework/helm-operator:latest
 
 # Add metadata
 LABEL name="trilio/trilio-openstack-operator" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="6.0.0" \
-      release="6.0" \
+      version="6.1.0" \
+      release="6.1" \
       summary="Trilio for OpenStack Operator - RHOSO" \
       description="Trilio for OpenStack Operator - RHOSO"
 
