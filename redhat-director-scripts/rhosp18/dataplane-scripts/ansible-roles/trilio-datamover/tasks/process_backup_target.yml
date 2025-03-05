@@ -4,7 +4,7 @@
       {{
         (target.s3_bucket | b64encode)
         if target.s3_type == 'amazon_s3' else
-        (target.s3_endpoint_url | regex_replace('^https?://', '') ~ '/' ~ target.s3_bucket | b64encode)
+        ((target.s3_endpoint_url | regex_replace('^https?://', '') ~ '/' ~ target.s3_bucket) | b64encode)
       }}
     vault_storage_nfs_export: >-
       {{
