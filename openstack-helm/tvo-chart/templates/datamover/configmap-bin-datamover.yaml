@@ -1,0 +1,19 @@
+{{- if eq .Values.action "Install" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-datamover-bin
+data:
+  triliovault-datamover-init.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-init.sh.tpl") . | nindent 4 }}
+  triliovault-datamover.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover.sh.tpl") . | nindent 4 }}
+  ceph_keyring_placement_triliovault: |
+    {{ tpl (.Files.Get "scripts/_ceph_keyring_placement_triliovault.sh.tpl") . | nindent 4 }}
+  triliovault-datamover-keystone-init.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-keystone-init.sh.tpl") . | nindent 4 }}
+  triliovault-datamover-db-init.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-db-init.sh.tpl") . | nindent 4 }}
+  triliovault-datamover-rabbitmq-init.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-rabbitmq-init.sh.tpl") . | nindent 4 }}
+{{- end }}

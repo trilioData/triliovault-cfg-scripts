@@ -1,0 +1,154 @@
+{{- if eq .Values.action "Install" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-wlm-cron
+  labels:
+    application: triliovault
+    component: wlm-cron
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "102"
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_cron }}
+  selector:
+    matchLabels:
+      application: triliovault
+      component: wlm-cron
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-cron
+    spec:
+      serviceAccountName: triliovault-wlm
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: application
+                    operator: In
+                    values:
+                    - triliovault
+                  - key: component
+                    operator: In
+                    values:
+                    - wlm-cron
+              topologyKey: kubernetes.io/hostname
+            weight: 10
+      nodeSelector:
+        trilio-control-plane: enabled
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: triliovault-wlm-cron-init
+          image: {{ .Values.images.triliovault_wlm_cron }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsGroup: {{ .Values.common.nova_user_id }}
+            runAsUser: 0
+          env:
+            - name: POD_NAME
+              value: "triliovault-wlm-cron"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-api-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-api-init.sh
+              subPath: triliovault-wlm-init.sh
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
+      containers:
+        - name: triliovault-wlm-cron
+          image: {{ .Values.images.triliovault_wlm_cron }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-wlm-cron.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-wlm-cron.sh
+                  - stop
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-wlm/wlm_logging.conf
+              name: triliovault-wlm-etc
+              readOnly: true
+              subPath: wlm_logging.conf
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
+              subPath: triliovault-wlm.conf
+              readOnly: true
+            - name: triliovault-wlm-etc
+              mountPath: /etc/triliovault-wlm/api-paste.ini
+              subPath: api-paste.ini
+              readOnly: true
+            - name: triliovault-wlm-bin
+              mountPath: /tmp/triliovault-wlm-cron.sh
+              subPath: triliovault-wlm-cron.sh
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /tmp/pod-shared-triliovault-wlm-cron
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: trilio-logs
+          emptyDir: {}
+        - name: triliovault-wlm-etc
+          secret:
+            secretName: triliovault-wlm-etc
+            defaultMode: 0444
+        - name: triliovault-wlm-bin
+          configMap:
+            name: triliovault-wlm-bin
+            defaultMode: 0555
+        - name: pod-shared-triliovault-wlm-cron
+          emptyDir: {}
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
+{{- end }}

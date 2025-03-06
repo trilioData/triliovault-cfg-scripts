@@ -1,0 +1,69 @@
+{{- if eq .Values.action "Install" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-datamover-api-keystone-init"
+  labels:
+    application: triliovault
+    component: datamover-api-keystone-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: datamover-api-keystone-init
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
+      serviceAccountName: triliovault-datamover-api
+      restartPolicy: OnFailure
+      nodeSelector:
+        trilio-control-plane: enabled
+      containers:
+        - name: "datamover-api-keystone-init"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+          image: {{ .Values.images.triliovault_datamover_api }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-datamover-api-keystone-init.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-datamover-api-keystone-init.sh
+              subPath: triliovault-datamover-api-keystone-init.sh
+            - name: triliovault-datamover-api-bin
+              mountPath: /tmp/triliovault-cloudrc
+              subPath: triliovault-cloudrc
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-datamover-api-bin
+          configMap:
+            name: "triliovault-datamover-api-bin"
+            defaultMode: 0555
+        - name: triliovault-datamover-api-etc
+          secret:
+            secretName: triliovault-datamover-api-etc
+            defaultMode: 0444
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle   
+
+{{- end }}
+
+

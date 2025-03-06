@@ -1,0 +1,17 @@
+{{- if and (eq .Values.action "AddBackupTarget") (eq .Values.triliovault_backup_target.backup_target_type "nfs") }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: triliovault-nfs-pv-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  namespace: trilio-openstack
+spec:
+  capacity:
+    storage: {{ .Values.triliovault_backup_target.storage_size | default "100Gi" }}
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    server: {{ .Values.triliovault_backup_target.nfs_server }}
+    path: {{ .Values.triliovault_backup_target.nfs_shares }}
+{{- end }}

@@ -1,0 +1,250 @@
+{{- if eq .Values.action "Install" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-datamover
+  labels:
+    application: triliovault
+    component: datamover
+    owner: triliovault-datamover
+    service: triliovault-datamover
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: datamover
+  minReadySeconds: 0
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: datamover
+        owner: triliovault-datamover
+        service: triliovault-datamover
+    spec:
+      serviceAccountName: triliovault-datamover
+      securityContext:
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover.runAsGroup }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: application
+                    operator: In
+                    values:
+                    - triliovault
+                  - key: component
+                    operator: In
+                    values:
+                    - datamover
+              topologyKey: kubernetes.io/hostname
+            weight: 10
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        openstack-compute-node: enabled
+      imagePullSecrets:
+        - name: triliovault-image-registry
+      initContainers:
+        - name: triliovault-datamover-init
+          image: {{ .Values.images.triliovault_datamover }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsGroup: 42424
+            runAsUser: 0
+          command:
+            - /tmp/triliovault-datamover-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
+            - name: varlogtriliovaultdatamover
+              mountPath: /var/log/triliovault
+            - name: triliovault-datamover-bin
+              mountPath: /tmp/triliovault-datamover-init.sh
+              subPath: triliovault-datamover-init.sh
+              readOnly: true
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
+        - name: ceph-keyring-placement-triliovault
+          image: {{ .Values.images.triliovault_datamover }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsGroup: 42424
+            runAsUser: 42424
+          command:
+            - /tmp/ceph_keyring_placement_triliovault.sh
+          env:
+            - name: RBD_USER
+              value: "nova"
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: etcceph
+              mountPath: /etc/ceph
+            - name: triliovault-datamover-bin
+              mountPath: /tmp/ceph_keyring_placement_triliovault.sh
+              subPath: ceph_keyring_placement_triliovault.sh
+              readOnly: true
+            - name: ceph-keyring
+              mountPath: /tmp/client-keyring
+              subPath: keyring
+              readOnly: true
+      containers:
+        - name: triliovault-datamover
+          image: {{ .Values.images.triliovault_datamover }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: 42424
+          command:
+            - /tmp/triliovault-datamover.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /tmp/triliovault-datamover.sh
+                  - stop
+          volumeMounts:
+            - name: ca-cert-bundle
+              mountPath: /etc/ssl/certs/openstack-ca-bundle.pem
+              readOnly: true
+              subPath: ca_bundle
+            - name: ca-cert
+              mountPath: /certs
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: pod-shared-triliovault-datamover
+              mountPath: /tmp/pod-shared-triliovault-datamover
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
+            - name: varlogtriliovaultdatamover
+              mountPath: /var/log/triliovault
+            - name: triliovault-datamover-etc
+              mountPath: /etc/triliovault-datamover/triliovault-datamover.conf
+              subPath: triliovault-datamover.conf
+              readOnly: true
+            - name: triliovault-datamover-bin
+              mountPath: /tmp/triliovault-datamover.sh
+              subPath: triliovault-datamover.sh
+              readOnly: true
+            - name: varlibnova
+              mountPath: /var/lib/nova
+            - name: varliblibvirt
+              mountPath: /var/lib/libvirt
+            - name: run
+              mountPath: /run
+            - name: cgroup
+              mountPath: /sys/fs/cgroup
+            - name: machine-id
+              mountPath: /etc/machine-id
+              readOnly: true
+            - name: triliovault-datamover-etc
+              mountPath: /etc/nova/nova.conf
+              subPath: nova-compute.conf
+              readOnly: true
+            - name: triliovault-datamover-etc
+              mountPath: /etc/triliovault-datamover/datamover_logging.conf
+              subPath: datamover_logging.conf
+              readOnly: true
+            - name: triliovault-datamover-etc
+              mountPath: /etc/triliovault-object-store/object_store_logging.conf
+              subPath: object_store_logging.conf
+              readOnly: true
+            - name: triliovault-datamover-etc
+              mountPath: /etc/triliovault-datamover/policy.yaml
+              subPath: policy.yaml
+              readOnly: true
+            - name: etcceph
+              mountPath: /etc/ceph
+            - name: triliovault-datamover-etc
+              mountPath: /etc/ceph/ceph.conf
+              subPath: ceph.conf
+              readOnly: true
+            - name: ceph-keyring
+              mountPath: /tmp/client-keyring
+              subPath: keyring
+              readOnly: true     
+            - name: dev
+              mountPath: /dev
+              mountPropagation: HostToContainer
+            - name: etciscsi
+              mountPath: /etc/iscsi
+              mountPropagation: HostToContainer
+            - mountPath: /lib/modules
+              name: libmodules
+              readOnly: true
+              mountPropagation: Bidirectional
+      volumes:
+        - name: ca-cert-bundle
+          secret:
+            secretName: triliovault-datamover-ca-bundle
+        - name: ca-cert
+          emptyDir: {}
+        - name: pod-tmp
+          emptyDir: {}
+        - name: pod-shared-triliovault-datamover
+          emptyDir: {}
+        - name: varlibtrilio
+          hostPath:
+            path: /var/lib/trilio
+        - name: varlogtriliovaultdatamover
+          hostPath:
+            path: /var/log/triliovault-datamover
+        - name: triliovault-etc-datamover
+          secret:
+            secretName: triliovault-etc-datamover
+            defaultMode: 0444
+        - name: triliovault-datamover-bin
+          configMap:
+            name: triliovault-datamover-bin
+            defaultMode: 0555
+        - name: varlibnova
+          hostPath:
+            path: /var/lib/nova
+        - name: varliblibvirt
+          hostPath:
+            path: /var/lib/libvirt
+        - name: run
+          hostPath:
+            path: /run
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: machine-id
+          hostPath:
+            path: /etc/machine-id
+        - name: etcceph
+          emptyDir: {}
+        - name: ceph-keyring
+          secret:
+            secretName: triliovault-ceph-keyring
+        - name: libmodules
+          hostPath:
+            path: /lib/modules
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: etciscsi
+          hostPath:
+            path: /etc/iscsi
+{{- end }}
+
+

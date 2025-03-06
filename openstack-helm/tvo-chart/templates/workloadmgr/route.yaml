@@ -1,0 +1,21 @@
+{{- if eq .Values.action "Install" }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: triliovault-wlm-public
+  namespace: trilio-openstack
+  labels:
+    osctlplane-service: triliovault-wlm
+spec:
+  host: {{ .Values.keystone.wlm_api.public_auth_host }}
+  to:
+    kind: Service
+    name: triliovault-wlm-public
+    weight: 100
+  port:
+    targetPort: triliovault-wlm-public
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+{{- end }}

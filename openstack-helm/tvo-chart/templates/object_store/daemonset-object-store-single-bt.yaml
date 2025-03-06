@@ -1,0 +1,101 @@
+{{- if eq .Values.action "AddBackupTarget" }}
+  {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  labels:
+    application: triliovault
+    component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "99"
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+    spec:
+      serviceAccountName: triliovault-object-store
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      nodeSelector:
+        trilio-control-plane: enabled
+        openstack-compute-node: enabled
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+          image: {{ .Values.images.triliovault_object_store }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-object-store.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-object-store.sh
+                  - stop
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
+              name: triliovault-object-store-etc
+              readOnly: true
+              subPath: object_store_logging.conf
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/triliovault-object-store.conf
+              subPath: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.conf
+              readOnly: true
+            {{- if .Values.triliovault_backup_target.s3_self_signed_cert }}
+            - name: triliovault-object-store-etc
+              mountPath: /etc/triliovault-object-store/s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
+              subPath: s3-cert-{{ .Values.triliovault_backup_target.backup_target_name | lower }}.pem
+              readOnly: true
+            {{- end }}
+            - name: triliovault-object-store-bin
+              mountPath: /tmp/triliovault-object-store.sh
+              subPath: triliovault-object-store.sh
+            - name: pod-shared-triliovault-object-store
+              mountPath: /tmp/pod-shared-triliovault-object-store
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: trilio-logs
+          emptyDir: {}
+        - name: triliovault-object-store-etc
+          secret:
+            secretName: triliovault-object-store-etc-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+            defaultMode: 0444
+        - name: triliovault-object-store-bin
+          configMap:
+            name: triliovault-object-store-bin
+            defaultMode: 0555
+        - name: pod-shared-triliovault-object-store
+          emptyDir: {}
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate
+  {{- end }}
+{{- end }}
