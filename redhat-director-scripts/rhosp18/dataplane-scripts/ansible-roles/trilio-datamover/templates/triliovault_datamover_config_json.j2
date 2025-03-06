@@ -22,7 +22,6 @@
     {
       "dest": "/etc/ceph/",
       "merge": true,
-      "preserve_properties": true,
       "source": "/var/lib/kolla/config_files/ceph/"
     },
     {
@@ -45,7 +44,12 @@
     },
     {
       "owner": "nova:nova",
-      "path": "/etc/ceph/ceph.client.cinder.keyring",
+      "path": "/etc/ceph",
+      "perm": "0700"
+    },
+    {
+      "owner": "nova:nova",
+      "path": "/etc/ceph/*",
       "perm": "0600"
     }
   ]
