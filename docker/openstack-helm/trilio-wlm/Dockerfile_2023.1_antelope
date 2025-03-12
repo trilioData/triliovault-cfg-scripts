@@ -1,9 +1,9 @@
-ARG FROM=docker.io/ubuntu:jammy
-FROM ${FROM}
+FROM docker.io/ubuntu:jammy
+MAINTAINER  kanav.malhotra@trilio.io
 
 LABEL name="trilio/triliovault-wlm" \
       version="6.1.0" \
-      release="6.0" \
+      release="6.1" \
       vendor="TrilioData" \
       summary="TrilioData Workload Manager" \
       description="TrilioData Workload Manager container image" \
@@ -36,12 +36,15 @@ RUN set -ex \
         python${PYTHON_VERSION} \
         python3-pip \
         python3-retrying \
+        python3-openstackclient \
         sudo \
         nfs-common \
         vim \
         less \
         iputils-ping \
     && pip3 --no-cache-dir install --upgrade pip \
+    && curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin \
+    && chmod +x /usr/local/bin/rabbitmqadmin \
     && apt-get clean -y
 
 # Install Trilio repo
@@ -64,13 +67,12 @@ RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
 RUN /opt/${PROJECT_DIR}/nova_userid.sh
 
 RUN apt install -y python3-neutronclient python3-glanceclient python3-attr \
-    && apt-get install -y workloadmgr fuse python3-s3-fuse-plugin --allow-unauthenticated \
-    && mkdir -p /var/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store/ \
-    && chmod 777 /var/trilio \
-    && chmod 777 /var/trilio/triliovault-mounts \
-    && cp -R /etc/workloadmgr/rootwrap.d /etc/workloadmgr/rootwrap.conf /etc/workloadmgr/policy.json /etc/workloadmgr/policy.yaml /etc/${PROJECT_DIR}/
+    && apt-get install -y workloadmgr python3-workloadmgrclient python3-contegoclient python3-s3-fuse-plugin --allow-unauthenticated \
+    && mkdir -p /var/lib/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store/ \
+    && chmod 777 /var/lib/trilio \
+    && chmod 777 /var/lib/trilio/triliovault-mounts
 
-RUN chown -R nova.nova /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /etc/workloadmgr /var/triliovault-mounts /etc/triliovault-object-store/
+RUN chown -R nova.nova /var/lib/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /var/lib/workloadmgr /var/triliovault-mounts /etc/triliovault-object-store/
 RUN usermod -aG disk nova
 
 ADD log-rotate-conf /etc/logrotate.d/workloadmgr-api.conf

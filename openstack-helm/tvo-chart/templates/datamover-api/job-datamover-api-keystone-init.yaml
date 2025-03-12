@@ -31,6 +31,8 @@ spec:
             runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
+          imagePullSecrets:
+          - name: triliovault-image-registry
           command:
             - /bin/bash
             - -c
@@ -44,10 +46,6 @@ spec:
             - name: triliovault-datamover-api-bin
               mountPath: /tmp/triliovault-cloudrc
               subPath: triliovault-cloudrc
-            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-              name: combined-ca-bundle
-              readOnly: true
-              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -59,11 +57,6 @@ spec:
           secret:
             secretName: triliovault-datamover-api-etc
             defaultMode: 0444
-        - name: combined-ca-bundle
-          secret:
-            defaultMode: 292
-            secretName: combined-ca-bundle   
-
 {{- end }}
 
 

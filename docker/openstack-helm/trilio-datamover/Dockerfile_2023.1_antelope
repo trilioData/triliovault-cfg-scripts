@@ -46,13 +46,14 @@ RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
     && sed -i -r "s/^(group_id=).*/\1${GID}/" /opt/${PROJECT_DIR}/nova_userid.sh
 RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_userid.sh
 
-RUN echo 'KERNEL=="rbd[0-9]*", PROGRAM="/usr/bin/ceph-rbdnamer %n", SYMLINK+="rbd/%c{1}/%c{2}"' > /etc/udev/rules.d/trilio-rbd.rules
-
+RUN mkdir -p /etc/udev/rules.d && \
+    echo 'KERNEL=="rbd[0-9]*", PROGRAM="/usr/bin/ceph-rbdnamer %n", SYMLINK+="rbd/%c{1}/%c{2}"' > /etc/udev/rules.d/trilio-rbd.rules
 # Copy conf files
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
-RUN usermod -aG disk nova \
-    && usermod -aG kvm nova
+
+RUN groupadd -f kvm && groupadd -f disk && \
+    usermod -aG disk nova && usermod -aG kvm nova
 
 RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store \
     && chown nova.nova -R ${TRILIO_MOUNT_DIR} \

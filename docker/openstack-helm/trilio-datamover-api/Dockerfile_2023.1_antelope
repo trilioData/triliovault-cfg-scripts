@@ -2,7 +2,7 @@ FROM openstackhelm/nova:2023.1-ubuntu_jammy
 MAINTAINER  kanav.malhotra@trilio.io
 LABEL name="trilio/triliovault-datamover-api" \
       version="6.1.0" \
-      release="6.0" \
+      release="6.1" \
       vendor="TrilioData" \
       summary="TrilioData Datamover API" \
       description="TrilioData Datamover API container image" \
@@ -15,6 +15,9 @@ ARG OPENSTACK_REPO=cloud-archive:antelope
 # Switch to root and install a custom RPM, etc.
 USER root
 
+# Set noninteractive mode to avoid timezone selection prompts
+ENV DEBIAN_FRONTEND=noninteractive 
+
 # Install the pre-requisite packages 
 RUN set -ex \
     && apt-get update && apt-get -y install \
@@ -22,8 +25,12 @@ RUN set -ex \
         software-properties-common \
         ca-certificates \
         vim  \
+        curl \
         less  \
-        iputils-ping
+        iputils-ping \
+        python3-openstackclient \
+    && curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin \
+    && chmod +x /usr/local/bin/rabbitmqadmin
 
 # Install datamover packages
 COPY trilio.list /etc/apt/sources.list.d/

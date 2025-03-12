@@ -5,9 +5,9 @@ LABEL name="ubuntu-binary-trilio-horizon-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
       version="6.1.0" \
-      release="6.0" \
+      release="6.1" \
       summary="TrilioVault Horizon Plugin" \
-      description="TrilioVault Horizon Plugin for Kolla-ansible deployed OpenStack on ubuntu platform"
+      description="TrilioVault Horizon Plugin for Openstack Helm"
 
 ARG OPENSTACK_REPO=cloud-archive:antelope
 
@@ -21,20 +21,16 @@ RUN set -ex \
 
 # Install datamover packages
 ADD trilio.list /etc/apt/sources.list.d/
-ADD manage.py /tmp/
-RUN chmod 777 /tmp/manage.py
-
-RUN mkdir -p /var/lib/openstack/share/openstack-dashboard && \
-    cp /tmp/manage.py /var/lib/openstack/share/openstack-dashboard
-
-RUN . /var/lib/openstack/bin/activate
 
 RUN apt update -y  && \
     apt-add-repository ${OPENSTACK_REPO} && \
     apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient --allow-unauthenticated
 
-RUN cp /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/enabled/
-RUN cp /usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
+##Move necessary files
+RUN cp /usr/lib/python3/dist-packages/trilio_dashboard/local/enabled/*.py /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/ \
+    && cp /usr/lib/python3/dist-packages/trilio_dashboard/templatetags/*.py /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
 
 # Add license
 RUN mkdir /licenses
