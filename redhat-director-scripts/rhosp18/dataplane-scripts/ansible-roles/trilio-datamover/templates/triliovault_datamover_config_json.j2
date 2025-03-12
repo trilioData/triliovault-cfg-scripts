@@ -22,8 +22,9 @@
     {
       "dest": "/etc/ceph/",
       "merge": true,
-      "preserve_properties": true,
-      "source": "/var/lib/kolla/config_files/ceph/"
+      "source": "/var/lib/kolla/config_files/ceph/",
+      "owner": "nova",
+      "perm": "0700"
     },
     {
       "source": "/var/lib/kolla/config_files/triliovault-datamover/start_triliovault_datamover.sh",
@@ -45,7 +46,7 @@
     },
     {
       "owner": "nova:nova",
-      "path": "/etc/ceph/ceph.client.cinder.keyring",
+      "path": "/etc/ceph/*",
       "perm": "0600"
     }
   ]
