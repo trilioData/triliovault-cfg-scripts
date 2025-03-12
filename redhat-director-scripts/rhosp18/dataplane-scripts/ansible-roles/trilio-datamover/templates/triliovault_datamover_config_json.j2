@@ -22,7 +22,9 @@
     {
       "dest": "/etc/ceph/",
       "merge": true,
-      "source": "/var/lib/kolla/config_files/ceph/"
+      "source": "/var/lib/kolla/config_files/ceph/",
+      "owner": "nova",
+      "perm": "0700"
     },
     {
       "source": "/var/lib/kolla/config_files/triliovault-datamover/start_triliovault_datamover.sh",
@@ -41,11 +43,6 @@
       "owner": "nova:nova",
       "path": "{{ vault_data_dir }}",
       "recurse": false
-    },
-    {
-      "owner": "nova:nova",
-      "path": "/etc/ceph",
-      "perm": "0700"
     },
     {
       "owner": "nova:nova",
