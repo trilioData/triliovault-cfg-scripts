@@ -82,10 +82,10 @@ spec:
               subPath: triliovault-cloudrc
             - name: pod-shared-triliovault-wlm-workloads
               mountPath: /tmp/pod-shared-triliovault-wlm-workloads
-            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-              name: combined-ca-bundle
-              subPath: tls-ca-bundle.pem
-              readOnly: true
+            # - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+            #   name: combined-ca-bundle
+            #   subPath: tls-ca-bundle.pem
+            #   readOnly: true
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
@@ -135,10 +135,10 @@ spec:
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
-            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-              name: combined-ca-bundle
-              readOnly: true
-              subPath: tls-ca-bundle.pem
+            # - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+            #   name: combined-ca-bundle
+            #   readOnly: true
+            #   subPath: tls-ca-bundle.pem
             - name: dev-mount
               mountPath: /dev
       volumes:
@@ -160,10 +160,10 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
-        - name: combined-ca-bundle
-          secret:
-            defaultMode: 292
-            secretName: combined-ca-bundle
+        # - name: combined-ca-bundle
+        #   secret:
+        #     defaultMode: 292
+        #     secretName: combined-ca-bundle
         - name: dev-mount
           hostPath:
             path: /dev

@@ -51,10 +51,10 @@ spec:
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf
               readOnly: true
-            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-              name: combined-ca-bundle
-              readOnly: true
-              subPath: tls-ca-bundle.pem
+            # - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+            #   name: combined-ca-bundle
+            #   readOnly: true
+            #   subPath: tls-ca-bundle.pem
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/api-paste.ini
               subPath: api-paste.ini
@@ -73,9 +73,9 @@ spec:
             defaultMode: 0444
         - name: trilio-logs
           emptyDir: {}
-        - name: combined-ca-bundle
-          secret:
-            defaultMode: 292
-            secretName: combined-ca-bundle
+        # - name: combined-ca-bundle
+        #   secret:
+        #     defaultMode: 292
+        #     secretName: combined-ca-bundle
 {{- end }}
 

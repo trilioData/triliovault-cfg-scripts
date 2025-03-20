@@ -45,10 +45,10 @@ spec:
               mountPath: /etc/triliovault-datamover/triliovault-datamover-api.conf
               subPath: triliovault-datamover-api.conf
               readOnly: true
-            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-              name: combined-ca-bundle
-              readOnly: true
-              subPath: tls-ca-bundle.pem
+            # - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+            #   name: combined-ca-bundle
+            #   readOnly: true
+            #   subPath: tls-ca-bundle.pem
             - name: triliovault-datamover-api-etc
               mountPath: /etc/triliovault-datamover/datamover_api_logging.conf
               subPath: datamover_api_logging.conf
@@ -68,9 +68,9 @@ spec:
           secret:
             secretName: triliovault-datamover-api-etc
             defaultMode: 0444
-        - name: combined-ca-bundle
-          secret:
-            defaultMode: 292
-            secretName: combined-ca-bundle
+        # - name: combined-ca-bundle
+        #   secret:
+        #     defaultMode: 292
+        #     secretName: combined-ca-bundle
 {{- end }}
 
