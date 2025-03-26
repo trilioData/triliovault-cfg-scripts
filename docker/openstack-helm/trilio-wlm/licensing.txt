@@ -1,0 +1,10 @@
+LicenseID               	         TVAULT-59508796-8e7f-11e7-9a79-
+Description             	 TrilioVault License from TrilioData, Inc
+CreationDate            	 2017-08-31
+LicenseEdition          	 ENTERPRISE
+LicenseTypeName         	 EULA
+Organisation            	 Luxoft
+LicenseExpiryDate       	 2020-05-27
+Licensed For            	 1 GB Backup Capacity
+Evaluation              	 False
+License Key             	 AAABUA0ODAoPeNp9Uk2PgjAQvfdXNNnr

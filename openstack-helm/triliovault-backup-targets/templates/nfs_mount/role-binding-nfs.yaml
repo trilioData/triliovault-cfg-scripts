@@ -1,0 +1,42 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs
+  namespace: triliovault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: default-triliovault-nfs
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs-anyuid
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs-privileged
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault

@@ -71,7 +71,7 @@ cloud_admin_domain = $CLOUD_ADMIN_DOMAIN_ID
 cloud_admin_project_id = $CLOUD_ADMIN_PROJECT_ID
 cloud_unique_id = $WLM_USER_ID
 triliovault_user_domain_id = $WLM_USER_DOMAIN_ID
-domain_name = $CLOUD_ADMIN_DOMAIN_ID
+domain_name = $WLM_PROJECT_DOMAIN_ID
 
 [keystone_authtoken]
 project_domain_id = $WLM_PROJECT_DOMAIN_ID
