@@ -1,4 +1,4 @@
 ceph:
   enabled: true
-  rbd_user: nova
-  keyring: AQAD+WhigJHWExAwtzIxdHVFbWlDCnl4MQAdrw==
+  rbd_user: cinder
+  keyring: AQALO8lnsmGqHxAA03frNuiDyIFOx8QYFgluhA==

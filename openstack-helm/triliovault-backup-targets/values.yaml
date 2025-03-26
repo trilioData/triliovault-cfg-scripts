@@ -1,0 +1,28 @@
+triliovault_backup_target:
+  backup_target_name: 'S3_BT1'
+  backup_target_type: 'nfs'
+  is_default: False
+  s3_type: 'amazon_s3'
+  s3_access_key: 'ACCESSKEY1'
+  s3_secret_key: 'SECRETKEY1'
+  s3_region_name: 'REGION1'
+  s3_bucket: 'BUCKET1'
+  s3_endpoint_url: 'ENDPOINT_URL1'
+  s3_signature_version: 'default'
+  s3_auth_version: 'DEFAULT'
+  s3_bucket_object_lock_enabled: false
+  s3_ssl_enabled: true
+  s3_ssl_verify: true
+  s3_self_signed_cert: false
+  nfs_server: "11.30.1.10"
+  nfs_shares: "/mnt/share"
+  nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+  storage_size: "100Gi"
+
+common:
+  vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+  nova_user_id: "42436"
+  nova_group_id: "42436"
+
+images:
+  triliovault_backup_targets: docker.io/trilio/trilio-wlm-helm:6.1.0-tv6578-2023.2

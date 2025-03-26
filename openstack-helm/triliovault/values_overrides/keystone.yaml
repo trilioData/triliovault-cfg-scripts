@@ -8,4 +8,4 @@ conf:
     interface: "internal"
     ## Provide any role name as your preference. 
     ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
-    trustee_role: "creator"
+    trustee_role: "member"
