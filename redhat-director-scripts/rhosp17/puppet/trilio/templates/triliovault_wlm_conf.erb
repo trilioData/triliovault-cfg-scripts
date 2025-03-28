@@ -72,7 +72,7 @@ immutable = 0
 <% if target['s3_type'] == 'amazon_s3' %>
 vault_storage_filesystem_export = <%= target['s3_bucket'] %>
 <% else -%>
-<% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https:\/\//, '') %>
+<% s3_endpoint_domain_name = target['s3_endpoint_url'].gsub(/^https?:\/\//, '').gsub(/\/$/, '') %>
 vault_storage_filesystem_export = <%= s3_endpoint_domain_name %>/<%= target['s3_bucket'] %>
 <% end %>
 <% else -%>
