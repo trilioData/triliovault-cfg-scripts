@@ -1,0 +1,292 @@
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/service-account-nfs.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: triliovault-nfs
+  namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/object_store/service-accounts-object-store.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: triliovault-object-store
+  namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/configmap-bin-nfs-single-bt.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-nfs-bin-single-bt-s3-bt1
+  namespace: triliovault
+data:
+  triliovault-nfs-mount.sh: |
+    
+    #!/bin/bash
+    set -e
+    
+    # Base64 encode the NFS path to create a unique mount directory
+    
+    mkdir -p /var/lib/trilio/triliovault-mounts/L21udC9zaGFyZQ==
+    sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs 11.30.1.10:/mnt/share /var/lib/trilio/triliovault-mounts/L21udC9zaGFyZQ== -o nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10
+    
+    echo -e "NFS backup target mounted successfully"
+    tail -f /dev/null
+---
+# Source: triliovault-backup-targets/templates/object_store/configmap-bin-object-store.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-object-store-bin
+data:
+  triliovault-object-store.sh: |
+    
+    #!/bin/bash
+    
+    set -e
+    
+    COMMAND="${@:-start}"
+    
+    function start () {
+    
+      ## Start triliovault object store service if backup target type is s3
+      /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf
+      sleep 20s
+      status=$?
+      if [ $status -ne 0 ]; then
+        echo "Failed to start tvault-object-store service: $status"
+        exit $status
+      fi
+    
+    }
+    
+    function stop () {
+      kill -TERM 1
+    }
+    
+    $COMMAND
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/pv-nfs-single-bt.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: triliovault-nfs-pv-s3-bt1
+  namespace: triliovault
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    server: 11.30.1.10
+    path: /mnt/share
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/pvc-nfs-single-bt.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: triliovault-nfs-pvc-s3-bt1
+  namespace: triliovault
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: nfs
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/role-nfs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: default-triliovault-nfs
+  namespace: triliovault
+rules:
+  - apiGroups:
+      - ""
+      - extensions
+      - batch
+      - apps
+    verbs:
+      - get
+      - list
+    resources:
+      - jobs
+      - pods
+---
+# Source: triliovault-backup-targets/templates/object_store/role-object-store.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: default-triliovault-object-store
+  namespace: triliovault
+rules:
+  - apiGroups:
+      - ""
+      - extensions
+      - batch
+      - apps
+    verbs:
+      - get
+      - list
+    resources:
+      - jobs
+      - pods
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/role-binding-nfs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs
+  namespace: triliovault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: default-triliovault-nfs
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/role-binding-nfs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs-anyuid
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/role-binding-nfs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-nfs-privileged
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-nfs
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/object_store/role-binding-object-store.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-object-store
+  namespace: triliovault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: default-triliovault-object-store
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-object-store
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/object_store/role-binding-object-store.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-object-store-anyuid
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-object-store
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/object_store/role-binding-object-store.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triliovault-object-store-privileged
+  namespace: triliovault
+roleRef:
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: triliovault-object-store
+    namespace: triliovault
+---
+# Source: triliovault-backup-targets/templates/nfs_mount/daemonset-nfs-mount.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-nfs-mount-s3-bt1
+  namespace: triliovault
+  labels:
+    application: triliovault
+    component: nfs-mount
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: nfs-mount
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: nfs-mount
+    spec:
+      securityContext:
+        runAsUser: 42436
+        fsGroup: 42436
+      serviceAccountName: triliovault-nfs
+      nodeSelector:
+        trilio-control-plane: enabled
+        openstack-compute-node: enabled
+      containers:
+        - name: "nfs-mount"
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: 42436
+          image: docker.io/trilio/trilio-wlm-helm:6.1.0-tv6578-2023.2
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-nfs-mount.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-nfs-bin
+              mountPath: /tmp/triliovault-nfs-mount.sh
+              subPath: triliovault-nfs-mount.sh
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio/triliovault-mounts
+              mountPropagation: Bidirectional
+            - name: nfs-mounts
+              mountPath: /mnt/nfs
+              mountPropagation: Bidirectional
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-nfs-bin
+          configMap:
+            name: triliovault-nfs-bin-single-bt-s3-bt1
+            defaultMode: 0555
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio/triliovault-mounts
+            type: DirectoryOrCreate
+        - name: nfs-mounts
+          persistentVolumeClaim:
+            claimName: triliovault-nfs-pvc-s3-bt1
