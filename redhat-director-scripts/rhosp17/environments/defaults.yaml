@@ -58,24 +58,24 @@ parameter_defaults:
    ## Project name in which triliovault keystone resources will get created
    
    ## Triliovault Wlm Api Service port
-   WlmApiHaproxyPort: "8781"
-   WlmApiPort: "8780"
-   WlmApiSslPort: "13781"
-   DatamoverApiPort: "8784"
-   DatamoverApiSslPort: "13784"
+   WlmApiHaproxyPort: "8783"
+   WlmApiPort: "8782"
+   WlmApiSslPort: "13783"
+   DatamoverApiPort: "8787"
+   DatamoverApiSslPort: "13787"
 
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
-   WlmApiDbUserName: "workloadmgr"
-   WlmApiDbName: "workloadmgr"
-   WlmApiKeystoneUserName: "triliovault"
-   WlmApiKeystoneServiceName: "TrilioVaultWLM"
-   WlmApiKeystoneServiceType: "workloads"
+   WlmApiDbUserName: "trilioworkloadmgr"
+   WlmApiDbName: "trilioworkloadmgr"
+   WlmApiKeystoneUserName: "triliotriliovault"
+   WlmApiKeystoneServiceName: "trilioTrilioVaultWLM"
+   WlmApiKeystoneServiceType: "trilioworkloads"
    ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 
    ## TrilioVault Datamover Service's Database, Keystone and rabbitmq user names
-   DatamoverApiDbUserName: "dmapi"
-   DatamoverApiDbName: "dmapi"
-   DatamoverApiKeystoneUserName: "dmapi"
-   DatamoverApiKeystoneServiceName: "dmapi"
-   DatamoverApiKeystoneServiceType: "datamover"
+   DatamoverApiDbUserName: "triliodmapi"
+   DatamoverApiDbName: "triliodmapi"
+   DatamoverApiKeystoneUserName: "triliodmapi"
+   DatamoverApiKeystoneServiceName: "triliodmapi"
+   DatamoverApiKeystoneServiceType: "triliodatamover"
 ###################################################################
