@@ -55,6 +55,57 @@ limitations under the License.
 {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
+{{- if and .Values.conf.triliovault.s3.ssl_enabled (ne .Values.conf.triliovault.s3.type "amazon_s3") -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-wlm/s3-cert.pem" -}}
+{{- else -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_ssl_cert" "" -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_ssl_verify -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_ssl_verify" true -}}
+{{- end -}}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "bucket_object_lock" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "bucket_object_lock" false -}}
+{{- end }}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "use_manifest_suffix" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "use_manifest_suffix" false -}}
+{{- end }}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_s3_max_pool_connections -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_s3_max_pool_connections" 500 -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_api.DEFAULT.vault_storage_nfs_export -}}
+  {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+    {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_storage_nfs_export" .Values.conf.triliovault.s3.bucket -}}
+    {{- else }}
+      {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+      {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+      {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+      {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_storage_nfs_export" $cephS3Str -}}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+  {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc .Values.conf.triliovault.s3.bucket)) }}
+  {{- else }}
+    {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+    {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+    {{- $_ := set .Values.conf.triliovault_object_store_wlm_api.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc $cephS3Str)) }}
+  {{- end }}
+{{- end }}
 
 {{/* **********************************************************************
      set triliovault_object_store.conf services conf parameters wlm-scheduler
@@ -94,6 +145,57 @@ limitations under the License.
 {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
+{{- if and .Values.conf.triliovault.s3.ssl_enabled (ne .Values.conf.triliovault.s3.type "amazon_s3") -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-wlm/s3-cert.pem" -}}
+{{- else -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_ssl_cert" "" -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_ssl_verify -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_ssl_verify" true -}}
+{{- end -}}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "bucket_object_lock" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "bucket_object_lock" false -}}
+{{- end }}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "use_manifest_suffix" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "use_manifest_suffix" false -}}
+{{- end }}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_s3_max_pool_connections -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_s3_max_pool_connections" 500 -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT.vault_storage_nfs_export -}}
+  {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+    {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_storage_nfs_export" .Values.conf.triliovault.s3.bucket -}}
+    {{- else }}
+      {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+      {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+      {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+      {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_storage_nfs_export" $cephS3Str -}}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+  {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc .Values.conf.triliovault.s3.bucket)) }}
+  {{- else }}
+    {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+    {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+    {{- $_ := set .Values.conf.triliovault_object_store_wlm_scheduler.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc $cephS3Str)) }}
+  {{- end }}
+{{- end }}
 
 
 {{/* **********************************************************************
@@ -134,7 +236,57 @@ limitations under the License.
 {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
+{{- if and .Values.conf.triliovault.s3.ssl_enabled (ne .Values.conf.triliovault.s3.type "amazon_s3") -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-wlm/s3-cert.pem" -}}
+{{- else -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_ssl_cert" "" -}}
+{{- end -}}
 
+{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_ssl_verify -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_ssl_verify" true -}}
+{{- end -}}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "bucket_object_lock" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "bucket_object_lock" false -}}
+{{- end }}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "use_manifest_suffix" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "use_manifest_suffix" false -}}
+{{- end }}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_s3_max_pool_connections -}}
+{{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_s3_max_pool_connections" 500 -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT.vault_storage_nfs_export -}}
+  {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+    {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_storage_nfs_export" .Values.conf.triliovault.s3.bucket -}}
+    {{- else }}
+      {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+      {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+      {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+      {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_storage_nfs_export" $cephS3Str -}}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+  {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc .Values.conf.triliovault.s3.bucket)) }}
+  {{- else }}
+    {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+    {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+    {{- $_ := set .Values.conf.triliovault_object_store_wlm_workloads.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc $cephS3Str)) }}
+  {{- end }}
+{{- end }}
 
 {{/* **********************************************************************
      set logging.conf conf parameters
@@ -197,11 +349,11 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.memcached_servers -}}
-{{- $_ := tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.datamover_api.keystone_authtoken "memcached_servers" -}}
+{{- $_ := tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.wlm.keystone_authtoken "memcached_servers" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.keystone_authtoken.memcache_secret_key -}}
-{{- $_ := set .Values.conf.datamover_api.keystone_authtoken "memcache_secret_key" ( default ( randAlphaNum 64 ) .Values.endpoints.oslo_cache.auth.memcache_secret_key ) -}}
+{{- $_ := set .Values.conf.wlm.keystone_authtoken "memcache_secret_key" ( default ( randAlphaNum 64 ) .Values.endpoints.oslo_cache.auth.memcache_secret_key ) -}}
 {{- end -}}
 
 {{- if .Values.manifests.secret_ca_bundle -}}

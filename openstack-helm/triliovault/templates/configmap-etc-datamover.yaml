@@ -146,11 +146,57 @@ limitations under the License.
 {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl" .Values.conf.triliovault.s3.ssl_enabled -}}
 {{- end -}}
 
-{{- if .Values.conf.triliovault.s3.ssl_enabled -}}
-{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-datamover/s3-cert.pem" -}}
+{{- if and .Values.conf.triliovault.s3.ssl_enabled (ne .Values.conf.triliovault.s3.type "amazon_s3") -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl_cert" "/etc/triliovault-datamover/s3-cert.pem" -}}
+{{- else -}}
+  {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl_cert" "" -}}
 {{- end -}}
 
+{{- if empty .Values.conf.triliovault_object_store_datamover.DEFAULT.vault_s3_ssl_verify -}}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_ssl_verify" true -}}
+{{- end -}}
 
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "bucket_object_lock" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "bucket_object_lock" false -}}
+{{- end }}
+
+{{- if .Values.conf.triliovault.s3.bucket_object_lock_enabled }}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "use_manifest_suffix" true -}}
+{{- else }}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "use_manifest_suffix" false -}}
+{{- end }}
+
+{{- if empty .Values.conf.triliovault_object_store_datamover.DEFAULT.vault_s3_max_pool_connections -}}
+{{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_s3_max_pool_connections" 500 -}}
+{{- end -}}
+
+{{- if empty .Values.conf.triliovault_object_store_datamover.DEFAULT.vault_storage_nfs_export -}}
+  {{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+    {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_storage_nfs_export" .Values.conf.triliovault.s3.bucket -}}
+    {{- else }}
+      {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+      {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+      {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+      {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+      {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_storage_nfs_export" $cephS3Str -}}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{- if eq .Values.conf.triliovault.backup_target_type "s3" }}
+  {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" }}
+      {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc .Values.conf.triliovault.s3.bucket)) }}
+  {{- else }}
+    {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+    {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+    {{- $_ := set .Values.conf.triliovault_object_store_datamover.DEFAULT "vault_data_directory" (printf "/var/lib/trilio/triliovault-mounts/%s" (b64enc $cephS3Str)) }}
+  {{- end }}
+{{- end }}
 
 {{/* **********************************************************************
      set logging.conf conf parameters
