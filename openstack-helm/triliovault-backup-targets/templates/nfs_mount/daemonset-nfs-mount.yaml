@@ -1,0 +1,66 @@
+{{- if eq .Values.triliovault_backup_target.backup_target_type "nfs" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-nfs-mount-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  namespace: triliovault
+  labels:
+    application: triliovault
+    component: nfs-mount
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: nfs-mount
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: nfs-mount
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      serviceAccountName: triliovault-nfs
+      nodeSelector:
+        trilio-control-plane: enabled
+        openstack-compute-node: enabled
+      containers:
+        - name: "nfs-mount"
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          image: {{ .Values.images.triliovault_backup_targets }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-nfs-mount.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-nfs-bin
+              mountPath: /tmp/triliovault-nfs-mount.sh
+              subPath: triliovault-nfs-mount.sh
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
+            - name: nfs-mounts
+              mountPath: /mnt/nfs
+              mountPropagation: Bidirectional
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: triliovault-nfs-bin
+          configMap:
+            name: triliovault-nfs-bin-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+            defaultMode: 0555
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate
+        - name: nfs-mounts
+          persistentVolumeClaim:
+            claimName: triliovault-nfs-pvc-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+{{- end }}

@@ -1,0 +1,69 @@
+FROM openstackhelm/nova:2023.2-ubuntu_jammy
+
+LABEL name="trilio/triliovault-datamover-api" \
+      version="6.1.0" \
+      release="6.1" \
+      vendor="TrilioData" \
+      summary="TrilioData Datamover API" \
+      description="TrilioData Datamover API container image" \
+      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+
+ARG PROJECT_DIR=triliovault-datamover
+ARG OPENSTACK_REPO=cloud-archive:bobcat
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC \
+    LIBGUESTFS_DEBUG=1 \
+    LIBGUESTFS_TRACE=1
+
+# Switch to root and install a custom RPM, etc.
+USER root
+
+# Install the pre-requisite packages 
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        apt-utils \
+        software-properties-common \
+        ca-certificates \
+        curl \
+        vim \
+        less \
+        iputils-ping \
+        python3-retrying \
+        mysql-client \
+        python3-openstackclient \
+        apache2 \
+        net-tools
+
+# Install datamover packages
+COPY trilio.list /etc/apt/sources.list.d/
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+RUN set -ex \
+    && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
+       python3-dmapi \
+    && apt-get clean -y
+
+# Configure Apache for DMAPI
+RUN sed -i '/^Listen /c\Listen 8784' /etc/apache2/ports.conf \
+    && chown -R dmapi:dmapi /var/log/apache2 /var/www /etc/apache2 /var/cache/apache2
+
+# Download rabbitmqadmin
+RUN curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin \
+    && chmod +x /usr/local/bin/rabbitmqadmin
+
+# Security updates
+RUN apt-get -y upgrade --with-new-pkgs --only-upgrade
+
+# Clean up unnecessary files
+RUN rm -f /etc/apt/sources.list.d/trilio.list
+
+RUN mkdir -p /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses \
+    && chown -R dmapi.dmapi /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses
+
+# Copy license file
+COPY licensing.txt /licenses
+
+# Become dmapi user for further operations
+USER dmapi
