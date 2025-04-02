@@ -3,6 +3,8 @@ conf:
     ## Valid values are "nfs" and "s3"
     backup_target_type: "s3"
     s3:
+      name: bt1-s3
+      type: '' #other_s3 or amazon_s3
       access_key: ''
       secret_key: ''
       ## S3 region, if your s3 does not have any region, just keep the parameter as it is
@@ -13,3 +15,4 @@ conf:
       auth_version: 'DEFAULT'
       ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
       ssl_enabled: False
+      bucket_object_lock_enabled: false  # default value, can be changed to true if needed

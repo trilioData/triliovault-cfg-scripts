@@ -768,7 +768,7 @@ conf:
     cloud_admin_domain_name: ""
     ## Provide any role name as your preference. 
     ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
-    trustee_role: "creator"
+    trustee_role: "member"
     ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
     ## Valid values: internal, public, admin
     interface: "internal"
@@ -790,7 +790,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
       vault_storage_nfs_export: TrilioVault
-      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_config_append: /etc/triliovault-object-store/object_store_logging.conf
@@ -802,7 +802,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
       vault_storage_nfs_export: TrilioVault
-      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_config_append: /etc/triliovault-object-store/object_store_logging.conf
@@ -814,7 +814,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
       vault_storage_nfs_export: TrilioVault
-      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_config_append: /etc/triliovault-object-store/object_store_logging.conf
@@ -826,7 +826,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: ''
       vault_storage_nfs_export: TrilioVault
-      vault_data_directory: /var/trilio/triliovault-mounts
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
       vault_s3_max_pool_connections: 500
       vault_data_directory_old: /var/triliovault
       log_config_append: /etc/triliovault-object-store/object_store_logging.conf
@@ -857,7 +857,7 @@ conf:
       project_name: service
       memcache_security_strategy: ENCRYPT
       signing_dir: /var/cache/dmapi
-      insecure: False
+      insecure: True
       cafile: ""
     oslo_messaging_notifications:
       driver: messagingv2
@@ -876,7 +876,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: ''
       vault_data_directory_old: "/var/triliovault"
-      vault_data_directory: "/var/trilio/triliovault-mounts"
+      vault_data_directory: "/var/lib/trilio/triliovault-mounts"
       max_uploads_pending: 3
       max_commit_pending: 3
     dmapi_database:
@@ -900,7 +900,7 @@ conf:
       http_retries: 10
     barbican:
       barbican_endpoint_type: internal
-      verify_ssl: true
+      verify_ssl: false
       verify_ssl_path: /etc/ssl/certs/openstack-ca-bundle.pem
   wlm:
     DEFAULT:
@@ -916,13 +916,13 @@ conf:
       config_status: configured
       keystone_auth_version: 3
       glance_api_version: 2
-      neutron_api_insecure: False
+      neutron_api_insecure: True
       state_path: /opt/stack/data/workloadmgr
       vault_storage_das_device: none
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
       vault_data_directory_old: "/var/triliovault"
-      vault_data_directory: "/var/trilio/triliovault-mounts"
+      vault_data_directory: "/var/lib/trilio/triliovault-mounts"
       #The amount of time(in hrs) that snapshot upload operation should wait for the upload
       max_wait_for_upload: 48
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
@@ -932,7 +932,7 @@ conf:
       taskflow_max_cache_size: 1024
     clients:
       client_retry_limit: 3
-      insecure: False
+      insecure: True
     global_job_scheduler:
       misfire_grace_time: 600
     keystone_authtoken:
@@ -942,7 +942,7 @@ conf:
       username: triliovault
       admin_user: triliovault
       signing_dir: /var/cache/workloadmgr
-      insecure: False
+      insecure: True
       service_token_roles_required: True
       cafile: ""
     alembic:

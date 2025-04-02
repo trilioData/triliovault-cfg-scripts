@@ -1,0 +1,14 @@
+{{- if eq .Values.triliovault_backup_target.backup_target_type "nfs" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: triliovault-nfs-pvc-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  namespace: triliovault
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.triliovault_backup_target.storage_size | default "100Gi" }}
+  storageClassName: nfs
+{{- end }}

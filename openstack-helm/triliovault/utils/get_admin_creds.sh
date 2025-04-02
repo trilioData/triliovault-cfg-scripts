@@ -27,8 +27,8 @@ OS_USERNAME=$(kubectl -n openstack get secrets/nova-keystone-admin --template={{
 MYSQL_DBADMIN_PASSWORD=$(kubectl -n openstack get secrets/mariadb-dbadmin-password --template={{.data.MYSQL_DBADMIN_PASSWORD}} | base64 -d)
 
 ## Rabbitmq creds
-RABBITMQ_ADMIN_PASSWORD=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
-RABBITMQ_ADMIN_USERNAME=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
+RABBITMQ_ADMIN_PASSWORD=$(kubectl -n openstack get secrets/rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
+RABBITMQ_ADMIN_USERNAME=$(kubectl -n openstack get secrets/rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
 
 NOVA_TRANSPORT_URL=$(kubectl -n openstack get secret nova-rabbitmq-user --template={{.data.TRANSPORT_URL}} | base64 -d)
 

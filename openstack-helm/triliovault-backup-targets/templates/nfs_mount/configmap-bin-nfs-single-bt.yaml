@@ -1,0 +1,10 @@
+{{- if eq .Values.triliovault_backup_target.backup_target_type "nfs" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-nfs-bin-single-bt-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+  namespace: triliovault
+data:
+  triliovault-nfs-mount.sh: |
+{{ tpl (.Files.Get "scripts/_triliovault-nfs-mount.sh.tpl") . | indent 4 }}
+{{- end }}
