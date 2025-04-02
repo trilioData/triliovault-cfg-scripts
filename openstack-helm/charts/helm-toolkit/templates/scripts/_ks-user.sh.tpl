@@ -71,6 +71,9 @@ USER_ID=$(openstack user create --or-show --enable -f value -c id \
     --description="${USER_DESC}" \
     "${SERVICE_OS_USERNAME}");
 
+# overwrite default project id
+openstack user set --domain="${USER_DOMAIN_ID}" --project-domain="${PROJECT_DOMAIN_ID}" --project="${USER_PROJECT_ID}" "${USER_ID}"
+
 # Manage user password (we do this in a seperate step to ensure the password is updated if required)
 set +x
 echo "Setting user password via: openstack user set --password=xxxxxxx ${USER_ID}"
