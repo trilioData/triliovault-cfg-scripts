@@ -249,11 +249,8 @@ outputs:
         mysql:
           trilio::dmapi::db::mysql::user: {get_param: DatamoverApiDbUserName}
           trilio::dmapi::db::mysql::password: {get_param: DatamoverApiDbUserPassword}
-          trilio::dmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::dmapi::db::mysql::host: '%'
           trilio::dmapi::db::mysql::dbname: {get_param: DatamoverApiDbName}
-          trilio::dmapi::db::mysql::allowed_hosts:
-            - '%'
-            - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
         config_volume: triliovaultdmapi
         puppet_tags: dmapiconfig
