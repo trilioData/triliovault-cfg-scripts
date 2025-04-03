@@ -21,7 +21,7 @@ spec:
         application: triliovault
         component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
     spec:
-      serviceAccountName: triliovault-object-store
+      serviceAccountName: triliovault-backup-targets
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}

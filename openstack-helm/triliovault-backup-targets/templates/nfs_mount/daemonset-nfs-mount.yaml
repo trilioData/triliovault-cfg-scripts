@@ -21,7 +21,7 @@ spec:
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
-      serviceAccountName: triliovault-nfs
+      serviceAccountName: triliovault-backup-targets
       nodeSelector:
         triliovault-control-plane: enabled
         openstack-compute-node: enabled
