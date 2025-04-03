@@ -358,11 +358,8 @@ outputs:
         mysql:
           trilio::wlmapi::db::mysql::user: {get_param: WlmApiDbUserName}
           trilio::wlmapi::db::mysql::password: {get_param: WlmApiDbUserPassword}
-          trilio::wlmapi::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          trilio::wlmapi::db::mysql::host: '%'
           trilio::wlmapi::db::mysql::dbname: {get_param: WlmApiDbName}
-          trilio::wlmapi::db::mysql::allowed_hosts:
-            - '%'
-            - "%{hiera('mysql_bind_host')}"                         
       puppet_config:
         config_volume: triliovaultwlmapi
         puppet_tags: wlmapiconfig
