@@ -251,8 +251,6 @@ outputs:
           trilio::dmapi::db::mysql::password: {get_param: DatamoverApiDbUserPassword}
           trilio::dmapi::db::mysql::host: '%'
           trilio::dmapi::db::mysql::dbname: {get_param: DatamoverApiDbName}
-          trilio::dmapi::db::mysql::allowed_hosts:
-            - '%'
       puppet_config:
         config_volume: triliovaultdmapi
         puppet_tags: dmapiconfig
