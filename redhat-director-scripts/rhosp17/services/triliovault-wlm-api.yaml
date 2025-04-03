@@ -360,8 +360,6 @@ outputs:
           trilio::wlmapi::db::mysql::password: {get_param: WlmApiDbUserPassword}
           trilio::wlmapi::db::mysql::host: '%'
           trilio::wlmapi::db::mysql::dbname: {get_param: WlmApiDbName}
-          trilio::wlmapi::db::mysql::allowed_hosts:
-            - '%'
       puppet_config:
         config_volume: triliovaultwlmapi
         puppet_tags: wlmapiconfig
