@@ -26,7 +26,7 @@ spec:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
       nodeSelector:
-        trilio-control-plane: enabled
+        triliovault-control-plane: enabled
         openstack-compute-node: enabled
       terminationGracePeriodSeconds: 30
       containers:
