@@ -23,7 +23,7 @@ spec:
         fsGroup: {{ .Values.common.nova_group_id }}
       serviceAccountName: triliovault-nfs
       nodeSelector:
-        trilio-control-plane: enabled
+        triliovault-control-plane: enabled
         openstack-compute-node: enabled
       containers:
         - name: "nfs-mount"
