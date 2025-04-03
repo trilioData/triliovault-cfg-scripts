@@ -1,5 +1,5 @@
 triliovault_backup_target:
-  backup_target_name: 'S3_BT1'
+  backup_target_name: 'NFS_BT1'
   backup_target_type: 'nfs'
   is_default: False
   s3_type: 'amazon_s3'
