@@ -457,3 +457,7 @@ cinder_http_retries: '10'
 
 ##New_vars
 cloud_admin_role: 'admin'
+cloud_admin_authurl: "{{ keystone_public_url }}"
+cloud_admin_regionname: "{{ openstack_region_name }}"
+cloud_admin_interface: "{{ os_endpoint_type }}"
+cloud_admin_cacert: "{{ openstack_cacert }}"
