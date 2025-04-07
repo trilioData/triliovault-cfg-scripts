@@ -1,8 +1,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: triliovault-backup-targets
-  namespace: triliovault
+  name: trilio-backup-targets-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
+  namespace: trilio-openstack
 rules:
   - apiGroups:
       - ""

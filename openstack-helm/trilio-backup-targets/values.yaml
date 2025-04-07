@@ -1,4 +1,4 @@
-triliovault_backup_target:
+trilio_backup_target:
   backup_target_name: 'NFS_BT1'
   backup_target_type: 'nfs'
   is_default: False
@@ -14,15 +14,17 @@ triliovault_backup_target:
   s3_ssl_enabled: true
   s3_ssl_verify: true
   s3_self_signed_cert: false
-  nfs_server: "192.168.0.51"
-  nfs_shares: "/home/openstack-helm"
+  nfs_server: '192.168.0.51'
+  nfs_shares: /home/openstack-helm
   nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
   storage_size: "100Gi"
+  storage_class_name: ceph-filesystem
+  s3_ssl_ca_cert: ''
 
 common:
-  vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+  vault_data_dir: /var/lib/trilio/triliovault-mounts
   nova_user_id: "42424"
   nova_group_id: "42424"
 
 images:
-  triliovault_backup_targets: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+  trilio_backup_targets: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
