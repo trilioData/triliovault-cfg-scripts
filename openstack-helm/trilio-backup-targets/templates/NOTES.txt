@@ -1,0 +1,59 @@
+Thank you for installing Trilio Backup Targets! 🎉
+
+This chart sets up the necessary resources to mount and manage your NFS and S3 backup targets.
+
+---
+
+🔍 To verify that the NFS backup target is mounted on all nodes:
+
+$ kubectl get pods -n trilio-openstack -l component=nfs-mount
+
+$ kubectl exec -n trilio-openstack -it <nfs-mount-pod> -- mount | grep trilio
+
+Mounted path should look like:
+  /var/lib/trilio/triliovault-mounts/<base64-nfs-path>
+
+---
+
+🪵 To check logs for the NFS mount pod:
+
+$ kubectl logs -n trilio-openstack -l component=nfs-mount
+
+---
+
+🧰 Object Store Info:
+
+Each S3/NFS backup target spawns a daemon pod under:
+  - Namespace: `trilio-openstack`
+  - Label: `component=object-store`
+
+$ kubectl get pods -n trilio-openstack -l component=object-store
+
+---
+
+📦 Persistent Volumes:
+
+$ kubectl get pv | grep trilio-openstack
+$ kubectl get pvc -n trilio-openstack | grep trilio
+
+---
+
+🧪 To test access from a pod:
+
+$ kubectl exec -n trilio-openstack -it <some-pod> -- ls /var/lib/trilio/triliovault-mounts/
+
+---
+
+🚀 Installation command:
+
+helm upgrade --install nfs-bt1 ./trilio-backup-targets \
+  -n trilio-openstack \
+  --wait \
+  --timeout 5m
+
+---
+
+💡 Pro Tip:
+You can define multiple NFS and S3 backup targets and set a default in `values.yaml`.
+
+Happy Backups! 🛡️
