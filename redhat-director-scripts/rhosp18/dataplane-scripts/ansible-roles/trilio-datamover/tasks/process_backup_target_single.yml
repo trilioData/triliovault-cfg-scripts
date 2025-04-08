@@ -14,6 +14,7 @@
       }}
 
 - name: Create S3 SSL certificate file for the trilio s3 backup targets
+  become: true
   copy:
     dest: "{{ triliovault_object_store_config_dest }}/s3-cert-{{ target.backup_target_name }}.pem"
     content: "{{ target.s3_ssl_ca_cert | default('') }}"
@@ -24,6 +25,7 @@
   notify: restart-single-triliovault-object-store
 
 - name: Create triliovault object store conf file
+  bcome: true
   template:
     src: triliovault_object_store_conf.j2
     dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ target.backup_target_name }}.conf"
