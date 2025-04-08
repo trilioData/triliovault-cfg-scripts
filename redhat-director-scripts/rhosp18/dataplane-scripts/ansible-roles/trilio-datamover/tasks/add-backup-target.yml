@@ -41,7 +41,6 @@
 
 
 - name: Deploy trilio object store container
-  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:
@@ -81,7 +80,6 @@
   when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Deploy container Trilio mount nfs backup target
-  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:

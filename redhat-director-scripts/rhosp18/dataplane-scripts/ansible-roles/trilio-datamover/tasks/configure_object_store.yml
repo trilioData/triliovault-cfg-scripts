@@ -72,7 +72,6 @@
 
 
 - name: Deploy trilio object store containers
-  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:
