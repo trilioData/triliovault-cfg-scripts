@@ -115,7 +115,7 @@ endpoints:
   datamover:
     host_fqdn_override:
       default:
-        host: triliovault-datamover-api.triliovault.svc.$INTERNAL_DOMAIN_NAME
+        host: triliovault-datamover-api.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
       public:
         host: triliovault-datamover.$PUBLIC_DOMAIN_NAME
         tls:
@@ -127,7 +127,7 @@ $CA
   workloads:
     host_fqdn_override:
       default:
-        host: triliovault-wlm-api.triliovault.svc.$INTERNAL_DOMAIN_NAME
+        host: triliovault-wlm-api.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
       public:
         host: triliovault-wlm.$PUBLIC_DOMAIN_NAME
         tls:

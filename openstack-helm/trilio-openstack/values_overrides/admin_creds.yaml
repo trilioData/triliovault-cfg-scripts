@@ -70,7 +70,7 @@ endpoints:
   datamover:
     host_fqdn_override:
       default:
-        host: triliovault-datamover-api.triliovault.svc.cluster.local
+        host: triliovault-datamover-api.trilio-openstack.svc.cluster.local
       public:
         host: triliovault-datamover.triliodata.demo
         tls:
@@ -149,7 +149,7 @@ endpoints:
   workloads:
     host_fqdn_override:
       default:
-        host: triliovault-wlm-api.triliovault.svc.cluster.local
+        host: triliovault-wlm-api.trilio-openstack.svc.cluster.local
       public:
         host: triliovault-wlm.triliodata.demo
         tls:

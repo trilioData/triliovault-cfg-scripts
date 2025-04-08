@@ -93,6 +93,8 @@ spec:
           volumeMounts:
             - name: vartrilio
               mountPath: /var/trilio
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: varlogtriliovaultdatamover
@@ -149,6 +151,8 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
             - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-etc
@@ -253,6 +257,9 @@ spec:
         - name: vartrilio
           hostPath:
             path: /var/trilio
+        - name: varlibtrilio
+          hostPath:
+            path: /var/lib/trilio
         - name: varlogtriliovaultdatamover
           hostPath:
             path: /var/log/triliovault-datamover
@@ -371,6 +378,8 @@ spec:
           volumeMounts:
             - name: vartrilio
               mountPath: /var/trilio
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
             - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-bin
@@ -427,6 +436,9 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
               mountPath: /var/trilio
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
+              mountPropagation: Bidirectional
             - name: varlogtriliovaultdatamover
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-etc
@@ -540,6 +552,9 @@ spec:
         - name: vartrilio
           hostPath:
             path: /var/trilio
+        - name: varlibtrilio
+          hostPath:
+            path: /var/lib/trilio
         - name: varlogtriliovaultdatamover
           hostPath:
             path: /var/log/triliovault-datamover

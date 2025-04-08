@@ -75,7 +75,7 @@ spec:
             - name: pod-shared-trilio-object-store
               mountPath: /tmp/pod-shared-trilio-object-store
             - name: trilio-mounts
-              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPath: /var/lib/trilio
               mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
@@ -94,6 +94,6 @@ spec:
           emptyDir: {}
         - name: trilio-mounts
           hostPath:
-            path: {{ .Values.common.vault_data_dir }}
+            path: /var/lib/trilio
             type: DirectoryOrCreate
 {{- end }}

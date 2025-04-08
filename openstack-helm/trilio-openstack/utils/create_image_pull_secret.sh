@@ -15,8 +15,8 @@ kubectl create secret docker-registry triliovault-image-registry \
    --docker-server="docker.io" \
    --docker-username=${TRILIO_REGISTRY_USERNAME} \
    --docker-password=${TRILIO_REGISTRY_PASSWORD} \
-   -n triliovault
+   -n trilio-openstack
 
-kubectl describe secret triliovault-image-registry -n triliovault
+kubectl describe secret triliovault-image-registry -n trilio-openstack
 
-echo "TrilioVault image pull secret created. Name: triliovault-image-registry"
+echo "Trilio image pull secret created. Name: triliovault-image-registry"

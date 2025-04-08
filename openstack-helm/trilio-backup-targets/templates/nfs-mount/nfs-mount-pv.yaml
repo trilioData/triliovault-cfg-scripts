@@ -3,14 +3,19 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: trilio-nfs-pv-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
-  namespace: trilio-openstack
 spec:
   capacity:
     storage: {{ .Values.trilio_backup_target.storage_size | default "100Gi" }}
+  volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: {{ .Values.trilio_backup_target.storage_class_name }} 
+  storageClassName: {{ .Values.trilio_backup_target.storage_class_name }}
+  claimRef:
+    name: trilio-nfs-pvc-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
+    namespace: trilio-openstack
+  mountOptions:
+{{ regexSplit "," .Values.trilio_backup_target.nfs_options -1 | toYaml | indent 4 }}
   nfs:
     server: {{ .Values.trilio_backup_target.nfs_server }}
     path: {{ .Values.trilio_backup_target.nfs_shares }}

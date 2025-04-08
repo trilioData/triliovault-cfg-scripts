@@ -37,6 +37,9 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio
+              mountPropagation: Bidirectional
             {{- $encoded_path := .Values.trilio_backup_target.nfs_shares | b64enc }}
             {{- $mount_path := printf "%s/%s" .Values.common.vault_data_dir $encoded_path }}
             - name: nfs-mounts
@@ -45,6 +48,10 @@ spec:
       volumes:
         - name: pod-tmp
           emptyDir: {}
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio
+            type: DirectoryOrCreate
         - name: nfs-mounts
           persistentVolumeClaim:
             claimName: trilio-nfs-pvc-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
