@@ -17,7 +17,7 @@ limitations under the License.
 set -ex
 
 mkdir -p /var/log/triliovault/datamover
-chown -R nova:nova /var/log/triliovault /var/trilio
+chown -R nova:nova /var/log/triliovault /var/trilio /var/lib/trilio
 touch /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
 
 {{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (.Values.conf.triliovault.nfs.multi_ip_nfs) -}}

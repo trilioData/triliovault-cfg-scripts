@@ -46,7 +46,7 @@ spec:
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
   claimRef:
     name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
-    namespace: triliovault
+    namespace: trilio-openstack
   mountOptions:
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}
   nfs:
@@ -81,7 +81,7 @@ spec:
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
   claimRef:
     name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
-    namespace: triliovault
+    namespace: trilio-openstack
   mountOptions: 
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}
   nfs:

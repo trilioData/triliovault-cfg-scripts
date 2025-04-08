@@ -42,24 +42,25 @@ labels:
 
 images:
   tags:
-    bootstrap: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
-    db_init: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
-    db_drop: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    bootstrap: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    db_init: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    db_drop: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
     rabbit_init: docker.io/rabbitmq:3.7-management
-    ks_user: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
-    ks_service: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
-    ks_endpoints: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
+    ks_user: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    ks_service: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    ks_endpoints: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
     dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
     image_repo_sync: docker.io/docker:17.07.0
-    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:5.0.0-train-ubuntu_bionic
-    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
-    triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
-    triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:shruti-6.1.0-bobcat-2
+    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
+    triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
+
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -922,7 +923,7 @@ conf:
       vault_s3_auth_version: DEFAULT
       vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
       vault_data_directory_old: "/var/triliovault"
-      vault_data_directory: "/var/lib/trilio/triliovault-mounts"
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
       #The amount of time(in hrs) that snapshot upload operation should wait for the upload
       max_wait_for_upload: 48
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper

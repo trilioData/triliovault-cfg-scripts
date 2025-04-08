@@ -46,7 +46,7 @@ $ kubectl exec -n trilio-openstack -it <some-pod> -- ls /var/lib/trilio/triliova
 
 🚀 Installation command:
 
-helm upgrade --install nfs-bt1 ./trilio-backup-targets \
+helm upgrade --install nfs-bt ./trilio-backup-targets \
   -n trilio-openstack \
   --wait \
   --timeout 5m

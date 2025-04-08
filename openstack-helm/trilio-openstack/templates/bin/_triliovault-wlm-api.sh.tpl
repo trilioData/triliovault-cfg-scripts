@@ -35,22 +35,6 @@ function start () {
 
   {{ end }}
 
-  {{ if eq $backup_target_type "nfs" }}
-  ## Mount NFS backup target
-  {{- $vaultDataDir := .Values.conf.wlm.DEFAULT.vault_data_directory }}
-  {{- range .Values.conf.triliovault.nfs.nfs_shares }}
-  {{- $nfsPath := .path }}
-  {{- $nfsIP := .ip }}
-  {{- $nfsOptions := $.Values.conf.triliovault.nfs.nfs_options }}
-  {{- $base64MountPoint := (b64enc $nfsPath) }}
-
-  mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
-  sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs {{ $nfsIP }}:{{ $nfsPath }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
-
-  echo "NFS backup target mounted successfully at {{ $vaultDataDir }}/{{ $base64MountPoint }}"
-  {{- end }}
-  {{ end }}
-
   # Start workloadmgr api service
   /usr/bin/python3 /usr/bin/workloadmgr-api \
      --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \

@@ -111,6 +111,9 @@ spec:
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: HostToContainer
               {{- end }}
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio
+              mountPropagation: Bidirectional
             - mountPath: /lib/modules
               name: libmodules
               readOnly: true
@@ -181,6 +184,9 @@ spec:
         - name: varlogtriliovaultwlm
           hostPath:
             path: /var/log/triliovault-wlm
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio
         - name: libmodules
           hostPath:
             path: /lib/modules
