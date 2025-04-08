@@ -1,33 +1,33 @@
 ---
 
 - name: Ensure Trilio object store directory exists
+  become: true
   file:
     path: "{{ triliovault_object_store_config_dest }}"
     state: directory
     owner: '42436'
     group: '42436'
 
-- name: create trilio datamover directories
+- name: Create Trilio datamover directories
+  become: true
   file:
-    path: "{{ item.path }}"
+    path: "{{ item }}"
     state: directory
     owner: '42436'
     group: '42436'
     mode: '0744'
-    setype: "{{ item.setype }}"
   with_items:
-    - { 'path': "{{ vault_data_dir }}", 'setype': svirt_sandbox_file_t }
-    - { 'path': /var/log/containers/triliovault-datamover, 'setype': svirt_sandbox_file_t }
+    - "{{ vault_data_dir }}"
+    - /var/log/containers/triliovault-datamover
 
-- name: create triliovault object store log directory
+- name: Create Triliovault object store log directory
+  become: true
   file:
-    path: '{{ item.path }}'
+    path: /var/log/containers/triliovault-object-store
     state: directory
-    setype: '{{ item.setype }}'
-  with_items:
-    - {path: /var/log/containers/triliovault-object-store, setype: svirt_sandbox_file_t}
 
 - name: Create object store logging configuration
+  become: true
   template:
     src: object_store_logging_conf.j2
     dest: "{{ triliovault_object_store_config_dest }}/object_store_logging.conf"
@@ -37,6 +37,7 @@
 
 
 - name: Render triliovault_object_store_config_json.j2 for S3 backup targets
+  become: true
   template:
     src: "triliovault_object_store_config_json.j2"
     dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ item.backup_target_name }}.json"
@@ -57,11 +58,11 @@
     loop_var: target
 
 - name: Render triliovault-object-store container jsons for S3 backup targets
+  become: true
   template:
     src: "triliovault-object-store-container-json.j2"
     dest: "/var/lib/openstack/config/containers/triliovault-object-store-{{ item.backup_target_name }}.json"
     mode: "0644"
-    owner: "42436"
   with_items: "{{ triliovault_backup_targets }}"
   when: item.backup_target_type == "s3"
   vars:
@@ -71,6 +72,7 @@
 
 
 - name: Deploy trilio object store containers
+  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:

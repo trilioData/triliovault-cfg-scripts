@@ -1,4 +1,5 @@
 - name: Ensure Trilio datamover configuration directory exists
+  become: true
   file:
     path: "{{ triliovault_datamover_config_dest }}"
     state: directory
@@ -8,6 +9,7 @@
 
 
 - name: Create Trilio datamover configuration file
+  become: true
   template:
     src: triliovault_datamover_conf.j2
     dest: "{{ triliovault_datamover_config_dest }}/triliovault-datamover.conf"
@@ -18,6 +20,7 @@
     - Restart triliovault-datamover
 
 - name: Create Trilio datamover kolla config json file
+  become: true
   template:
     src: triliovault_datamover_config_json.j2
     dest: "{{ triliovault_datamover_config_dest }}/triliovault_datamover_config.json"
@@ -28,6 +31,7 @@
     - Restart triliovault-datamover
     
 - name: Create Trilio datamover logging configuration file
+  become: true
   template:
     src: datamover_logging_conf.j2
     dest: "{{ triliovault_datamover_config_dest }}/datamover_logging.conf"
@@ -38,6 +42,7 @@
     - Restart triliovault-datamover
 
 - name: Create Trilio datamover start script
+  become: true
   template:
     src: start_triliovault_datamover_sh.j2
     dest: "{{ triliovault_datamover_config_dest }}/start_triliovault_datamover.sh"
@@ -66,16 +71,17 @@
 #    mode: '0755'
 
 - name: Render triliovault-datamover container
+  become: true
   ansible.builtin.template:
     src: "triliovault-datamover-container-json.j2"
     dest: "/var/lib/openstack/config/containers/triliovault-datamover.json"
-    setype: "container_file_t"
     mode: "0644"
   notify:
     - Restart triliovault-datamover
 
 
 - name: Deploy trilio datamover container
+  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:

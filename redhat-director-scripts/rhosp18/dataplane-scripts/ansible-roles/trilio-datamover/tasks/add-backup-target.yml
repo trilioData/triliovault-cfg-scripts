@@ -1,5 +1,6 @@
 ---
 - name: Ensure Trilio nfs configuration directory exists
+  become: true
   file:
     path: "{{ triliovault_nfs_config_dest }}"
     state: directory
@@ -9,6 +10,7 @@
   when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Render triliovault_object_store_config_json.j2 for S3 backup target
+  become: true
   template:
     src: "triliovault_object_store_config_json.j2"
     dest: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
@@ -26,6 +28,7 @@
     target: "{{ triliovault_backup_target }}"
 
 - name: Render triliovault-object-store container json for S3 backup target
+  become: true
   template:
     src: "triliovault-object-store-container-json.j2"
     dest: "/var/lib/openstack/config/containers/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
@@ -38,6 +41,7 @@
 
 
 - name: Deploy trilio object store container
+  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:
@@ -49,6 +53,7 @@
 
 
 - name: Create Trilio NFS mount kolla config json file
+  become: true
   template:
     src: triliovault_nfs_config_json.j2
     dest: "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config-{{ triliovault_backup_target.backup_target_name }}.json"
@@ -58,6 +63,7 @@
   when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Render Trilio NFS mount shell script
+  become: true
   template:
     src: "nfs_mount_sh.j2"
     dest: "{{ triliovault_nfs_config_dest }}/nfs_mount-{{ triliovault_backup_target.backup_target_name }}.sh"
@@ -67,14 +73,15 @@
   when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Render Trilio NFS container json
+  become: true
   ansible.builtin.template:
     src: "triliovault-nfs-container-json.j2"
     dest: "/var/lib/openstack/config/containers/triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.json"
-    setype: "container_file_t"
     mode: "0644"
   when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Deploy container Trilio mount nfs backup target
+  become: true
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
   vars:
