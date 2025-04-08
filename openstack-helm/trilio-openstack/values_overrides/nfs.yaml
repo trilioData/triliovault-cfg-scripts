@@ -1,0 +1,11 @@
+## Edit nfs shares ip and path.
+conf:
+  triliovault:
+    backup_target_type: "nfs"
+    nfs:
+      # storage_class_name: ceph-filesystem
+      name: bt1-nfs
+      nfs_shares: 
+      - path: /home/openstack-helm
+        ip: 192.168.0.51
+      nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
