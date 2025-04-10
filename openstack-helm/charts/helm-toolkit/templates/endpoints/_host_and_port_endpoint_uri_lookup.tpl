@@ -87,4 +87,3 @@ examples:
 {{- end -}}
 {{ include "helm-toolkit.utils.joinListWithComma" $local.endpointHosts }}
 {{- end -}}
-
