@@ -36,9 +36,6 @@ kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf
 
 CRT=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')
 KEY=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.key']}" | base64 -d | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}')
-CA=$(kubectl -n openstack get secrets/keystone-ca-bundle -o "jsonpath={.data['ca_bundle']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /') 
-
-
 
 cd ../
 
@@ -122,8 +119,6 @@ endpoints:
           crt: |
 $CRT
           key: "$KEY"
-          ca: |
-$CA
   workloads:
     host_fqdn_override:
       default:
@@ -134,8 +129,6 @@ $CA
           crt: |
 $CRT
           key: "$KEY"
-          ca: |
-$CA
 
   image:
     host_fqdn_override:
