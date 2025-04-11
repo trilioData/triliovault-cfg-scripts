@@ -7,3 +7,6 @@ trilio_backup_target:
   nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
   storage_size: 20Gi
   storage_class_name: nfs
+
+images:
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
