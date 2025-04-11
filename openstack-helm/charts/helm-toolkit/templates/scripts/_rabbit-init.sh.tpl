@@ -29,7 +29,9 @@ RABBITMQ_ADMIN_USERNAME=$(echo "${RABBITMQ_ADMIN_CONNECTION}" | \
   awk -F'[//:]' '{print $4}')
 RABBITMQ_ADMIN_PASSWORD=$(echo "${RABBITMQ_ADMIN_CONNECTION}" | \
   awk -F'[@]' '{print $1}' | \
-  awk -F'[//:]' '{print $5}')
+  awk -F'[//:]' '{print $5}' | \
+  sed 's/%/\\x/g' | \
+  xargs -0 printf "%b")
 
 # Extract User creadential
 RABBITMQ_USERNAME=$(echo "${RABBITMQ_USER_CONNECTION}" | \
@@ -37,7 +39,9 @@ RABBITMQ_USERNAME=$(echo "${RABBITMQ_USER_CONNECTION}" | \
   awk -F'[//:]' '{print $4}')
 RABBITMQ_PASSWORD=$(echo "${RABBITMQ_USER_CONNECTION}" | \
   awk -F'[@]' '{print $1}' | \
-  awk -F'[//:]' '{print $5}')
+  awk -F'[//:]' '{print $5}' | \
+  sed 's/%/\\x/g' | \
+  xargs -0 printf "%b")
 
 # Extract User vHost
 RABBITMQ_VHOST=$(echo "${RABBITMQ_USER_CONNECTION}" | \
@@ -76,6 +80,11 @@ rabbitmqadmin_cli \
   name="${RABBITMQ_USERNAME}" \
   password="${RABBITMQ_PASSWORD}" \
   tags="user"
+
+echo "Deleting Guest User"
+rabbitmqadmin_cli \
+  delete user \
+  name="guest" || true
 
 if [ "${RABBITMQ_VHOST}" != "/" ]
 then

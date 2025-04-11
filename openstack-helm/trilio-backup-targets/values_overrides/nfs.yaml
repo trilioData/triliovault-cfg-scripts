@@ -1,0 +1,9 @@
+trilio_backup_target:
+  backup_target_name: 'NFS_BackupTarget'
+  backup_target_type: 'nfs'
+  is_default: True
+  nfs_server: '10.10.0.1'
+  nfs_shares: /home/openstack-helm
+  nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+  storage_size: 20Gi
+  storage_class_name: nfs

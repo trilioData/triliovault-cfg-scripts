@@ -27,4 +27,4 @@ common:
   nova_group_id: "42424"
 
 images:
-  trilio_backup_targets: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2

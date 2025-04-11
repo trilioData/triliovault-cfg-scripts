@@ -858,7 +858,7 @@ conf:
       project_name: service
       memcache_security_strategy: ENCRYPT
       signing_dir: /var/cache/dmapi
-      insecure: True
+      insecure: False
       cafile: ""
     oslo_messaging_notifications:
       driver: messagingv2
@@ -901,7 +901,7 @@ conf:
       http_retries: 10
     barbican:
       barbican_endpoint_type: internal
-      verify_ssl: false
+      verify_ssl: true
       verify_ssl_path: /etc/ssl/certs/openstack-ca-bundle.pem
   wlm:
     DEFAULT:
@@ -917,7 +917,7 @@ conf:
       config_status: configured
       keystone_auth_version: 3
       glance_api_version: 2
-      neutron_api_insecure: True
+      neutron_api_insecure: False
       state_path: /opt/stack/data/workloadmgr
       vault_storage_das_device: none
       vault_s3_auth_version: DEFAULT
@@ -933,7 +933,7 @@ conf:
       taskflow_max_cache_size: 1024
     clients:
       client_retry_limit: 3
-      insecure: True
+      insecure: False
     global_job_scheduler:
       misfire_grace_time: 600
     keystone_authtoken:
@@ -943,7 +943,7 @@ conf:
       username: triliovault
       admin_user: triliovault
       signing_dir: /var/cache/workloadmgr
-      insecure: True
+      insecure: False
       service_token_roles_required: True
       cafile: ""
     alembic:

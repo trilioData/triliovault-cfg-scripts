@@ -1,6 +1,4 @@
 {{/*
-Copyright 2019 Mirantis Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,6 +12,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.manifests.secret_ca_bundle }}
-{{ include "helm-toolkit.manifests.secret_ca_bundle" ( dict "envAll" . "secretPrefix" "triliovault-datamover" ) }}
+{{- define "helm-toolkit.snippets.rgw_s3_bucket_user_env_vars_rook" }}
+{{- range $s3Bucket := .Values.storage.s3.buckets }}
+- name: {{ printf "%s_S3_ACCESS_KEY" ($s3Bucket.client | replace "-" "_" | upper) }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $s3Bucket.name }}
+      key: AWS_ACCESS_KEY_ID
+- name: {{ printf "%s_S3_SECRET_KEY" ($s3Bucket.client | replace "-" "_" | upper) }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $s3Bucket.name }}
+      key: AWS_SECRET_ACCESS_KEY
+{{- end }}
 {{- end }}
