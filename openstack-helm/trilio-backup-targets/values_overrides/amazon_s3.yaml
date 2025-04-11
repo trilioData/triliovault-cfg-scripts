@@ -1,0 +1,25 @@
+trilio_backup_target:
+  backup_target_name: 'S3_AWSBackupTarget'
+  backup_target_type: 's3'
+  is_default: True
+  s3_type: 'amazon_s3'
+  s3_access_key: 'ACCESSKEY1'
+  s3_secret_key: 'SECRETKEY1'
+  s3_region_name: 'REGION1'
+  s3_bucket: 'BUCKET1'
+  s3_endpoint_url: ''
+  s3_signature_version: 'default'
+  s3_auth_version: 'DEFAULT'
+  s3_bucket_object_lock_enabled: false
+  s3_ssl_enabled: true
+  s3_ssl_verify: true
+  s3_self_signed_cert: false
+  s3_ssl_ca_cert: ''
+
+common:
+  vault_data_dir: /var/lib/trilio/triliovault-mounts
+  nova_user_id: "42424"
+  nova_group_id: "42424"
+
+images:
+  trilio_backup_targets: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
