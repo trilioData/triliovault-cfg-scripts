@@ -2,6 +2,7 @@
 # tasks file for trilio-datamover
 
 - name: Log in to the container registry using Podman
+  become: true
   containers.podman.podman_login:
     username: "{{ trilio_container_registry_username }}"
     password: "{{ trilio_container_registry_password }}"
