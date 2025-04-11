@@ -31,7 +31,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: trilio-object-store-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
-          image: {{ .Values.images.trilio_backup_targets }}
+          image: {{ .Values.images.trilio_wlm }}
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true

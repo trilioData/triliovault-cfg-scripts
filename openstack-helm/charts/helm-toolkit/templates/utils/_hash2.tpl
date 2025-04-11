@@ -1,6 +1,4 @@
 {{/*
-Copyright 2019 Mirantis Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,6 +12,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.manifests.secret_ca_bundle }}
-{{ include "helm-toolkit.manifests.secret_ca_bundle" ( dict "envAll" . "secretPrefix" "triliovault-wlm" ) }}
-{{- end }}
+{{- define "helm-toolkit.utils.hash2" -}}
+{{- $name := index . 0 -}}
+{{- $context := index . 1 -}}
+{{- $last := base $context.Template.Name }}
+{{- $wtf := $context.Template.Name | replace $last $name -}}
+{{- printf "%s" $wtf | quote -}}
+{{- end -}}

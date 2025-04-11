@@ -13,4 +13,4 @@
 dependencies:
   - name: helm-toolkit
     repository: file://../charts/helm-toolkit
-    version: "0.2.41"
+    version: "2024.2.0"
