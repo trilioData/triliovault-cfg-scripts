@@ -31,7 +31,7 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
-          image: {{ .Values.images.trilio_backup_targets }}
+          image: {{ .Values.images.trilio_wlm }}
           imagePullPolicy: IfNotPresent
           command: ["tail", "-f", "/dev/null"]
           volumeMounts:
