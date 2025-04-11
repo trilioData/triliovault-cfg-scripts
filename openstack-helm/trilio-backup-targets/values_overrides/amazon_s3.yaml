@@ -15,3 +15,6 @@ trilio_backup_target:
   s3_ssl_verify: true
   s3_self_signed_cert: false
   s3_ssl_ca_cert: ''
+
+images:
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
