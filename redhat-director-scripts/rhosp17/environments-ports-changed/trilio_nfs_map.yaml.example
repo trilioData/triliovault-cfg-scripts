@@ -1,0 +1,9 @@
+# TriliovaultMultiIPNfsMap represents datamover, wlm nodes (compute and controller nodes) and it's NFS share mapping.
+# All controller nodes should have same NFS share IP.
+parameter_defaults:
+  TriliovaultMultiIPNfsMap:
+    overcloudtrain1-novacompute-0: 172.25.0.10:/mnt/tvault/42436
+    overcloudtrain1-novacompute-1: 172.25.0.11:/mnt/tvault/42436
+    overcloudtrain1-controller-0: 172.25.0.12:/mnt/tvault/42436
+    overcloudtrain1-controller-1: 172.25.0.12:/mnt/tvault/42436
+    overcloudtrain1-controller-2: 172.25.0.12:/mnt/tvault/42436
