@@ -1,4 +1,7 @@
 conf:
+  wlm: 
+    keystone_authtoken:
+      memcached_servers: memcached.openstack.svc.cluster.local:11211
   datamover:
     DEFAULT:
       dmapi_transport_url: rabbit://nova:password@rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672,nova:password@rabbitmq-rabbitmq-1.rabbitmq.openstack.svc.cluster.local:5672/nova
