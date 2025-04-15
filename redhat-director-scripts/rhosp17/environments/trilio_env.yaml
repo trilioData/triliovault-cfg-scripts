@@ -16,7 +16,7 @@ parameter_defaults:
    ContainerHorizonImage: devundercloud.ctlplane.localdomain:8787/trilio/trilio-horizon-plugin:4.0.41-rhosp16
 
    ## Backup target type nfs/s3, used to store snapshots taken by triliovault
-   BackupTargetType: 'nfs'
+   TrilioBackupTargetType: 'nfs'
 
    ## If backup target NFS share support multiple IPs and you want to use those IPs(more than one) then
    ## set this parameter to True. Otherwise keep it False.
