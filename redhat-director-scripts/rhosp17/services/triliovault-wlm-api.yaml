@@ -155,7 +155,7 @@ parameters:
       description: >
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
-  BackupTargetType:
+  TrilioBackupTargetType:
     description:
     type: string
   NfsShares:
@@ -282,15 +282,15 @@ outputs:
       firewall_rules:
         '241 triliovault-wlm-api':
           dport:
-            - 8781
+            - {get_param: WlmApiHaproxyPort}
       firewall_frontend_rules:
         '100 triliovault_wlm_api_haproxy_frontend':
           dport:
-            - 8781
+            - {get_param: WlmApiHaproxyPort}
       firewall_ssl_frontend_rules:
         '100 triliovault_wlm_api_haproxy_frontend_ssl':
           dport:
-            - 13781
+            - {get_param: WlmApiSslPort}
       keystone_resources:
         TrilioVaultWLM:
           endpoints:
@@ -307,7 +307,7 @@ outputs:
         trilio::wlmapi::cloud_admin_password: {get_param: CloudAdminPassword}
         trilio::wlmapi::cloud_admin_project_name: {get_param: CloudAdminProjectName}
         trilio::wlmapi::cloud_admin_domain_name: {get_param: CloudAdminDomainName}
-        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
+        trilio::wlmapi::backup_target_type: {get_param: TrilioBackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
         trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}

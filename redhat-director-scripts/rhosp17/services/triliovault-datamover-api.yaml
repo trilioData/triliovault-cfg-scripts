@@ -164,15 +164,15 @@ outputs:
       firewall_rules:
         '240 trilio_datamover_api':
           dport:
-            - 8787
+            - {get_param: DatamoverApiPort}
       firewall_frontend_rules:
         '100 trilio_datamover_api_haproxy_frontend':
           dport:
-            - 8787
+            - {get_param: DatamoverApiPort}
       firewall_ssl_frontend_rules:
         '100 trilio_datamover_api_haproxy_frontend_ssl':
           dport:
-            - 13787
+            - {get_param: DatamoverApiSslPort}
       keystone_resources:
         dmapi:
           endpoints:
