@@ -65,17 +65,17 @@ parameter_defaults:
    DatamoverApiSslPort: "13787"
 
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
-   WlmApiDbUserName: "trilioworkloadmgr"
-   WlmApiDbName: "trilioworkloadmgr"
-   WlmApiKeystoneUserName: "triliotriliovault"
-   WlmApiKeystoneServiceName: "trilioTrilioVaultWLM"
-   WlmApiKeystoneServiceType: "trilioworkloads"
+   WlmApiDbUserName: "workloadmgr"
+   WlmApiDbName: "workloadmgr"
+   WlmApiKeystoneUserName: "triliovault"
+   WlmApiKeystoneServiceName: "TrilioVaultWLM"
+   WlmApiKeystoneServiceType: "workloads"
    ## Not in use: WlmOsloMessagingRpcUserName: "workloadmgr"
 
    ## TrilioVault Datamover Service's Database, Keystone and rabbitmq user names
-   DatamoverApiDbUserName: "triliodmapi"
-   DatamoverApiDbName: "triliodmapi"
-   DatamoverApiKeystoneUserName: "triliodmapi"
-   DatamoverApiKeystoneServiceName: "triliodmapi"
+   DatamoverApiDbUserName: "dmapi"
+   DatamoverApiDbName: "dmapi"
+   DatamoverApiKeystoneUserName: "dmapi"
+   DatamoverApiKeystoneServiceName: "dmapi"
    DatamoverApiKeystoneServiceType: "triliodatamover"
 ###################################################################
