@@ -1,2 +1,87 @@
-[global]
-        mon host = 172.25.9.2:6789,172.25.9.3:6789,172.25.9.4:6789
+[DEFAULT]
+auth_strategy = keystone
+backup_ceph_conf = /etc/ceph/ceph.conf
+backup_ceph_pool = cinder.backups
+backup_ceph_user = cinderbackup
+backup_driver = cinder.backup.drivers.swift.SwiftBackupDriver
+backup_posix_path = /var/lib/cinder/backup
+backup_swift_auth_url = http://keystone-api.openstack.svc.cluster.local:5000/v3
+backup_swift_auth_version = 3
+backup_swift_key = password
+backup_swift_project = service
+backup_swift_project_domain = service
+backup_swift_user = cinder
+backup_swift_user_domain = service
+default_volume_type = rbd1
+enable_v1_api = false
+enable_v2_api = false
+enabled_backends = rbd1
+glance_api_servers = http://glance-api.openstack.svc.cluster.local:9292
+glance_api_version = 2
+host = cinder-volume-worker
+internal_project_name = internal_cinder
+internal_user_name = internal_cinder
+log_config_append = /etc/cinder/logging.conf
+os_region_name = RegionOne
+osapi_volume_listen_port = 8776
+osapi_volume_workers = 1
+resource_query_filters_file = /etc/cinder/resource_filters.json
+swift_catalog_info = object-store:swift:internalURL
+transport_url = rabbit://cinder:password@rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672,cinder:password@rabbitmq-rabbitmq-1.rabbitmq.openstack.svc.cluster.local:5672/cinder
+use_stderr = true
+use_syslog = false
+volume_name_template = %s
+volume_usage_audit_period = hour
+[coordination]
+backend_url = file:///var/lib/cinder/coordination
+[database]
+connection = mysql+pymysql://cinder:password@mariadb.openstack.svc.cluster.local:3306/cinder
+max_retries = -1
+[keystone_authtoken]
+auth_type = password
+auth_uri = http://keystone-api.openstack.svc.cluster.local:5000/v3
+auth_url = http://keystone-api.openstack.svc.cluster.local:5000/v3
+auth_version = v3
+memcache_secret_key = lyscFuj3oJ2vCv58Frt9wkwqR9w8LDRhBJDtYUQLz44ENJjxz63CbMhcrK0QIl2V
+memcache_security_strategy = ENCRYPT
+memcached_servers = memcached.openstack.svc.cluster.local:11211
+password = password
+project_domain_name = service
+project_name = service
+region_name = RegionOne
+service_token_roles = service
+service_token_roles_required = true
+service_type = volumev3
+user_domain_name = service
+username = cinder
+[nova]
+auth_type = password
+auth_url = http://keystone-api.openstack.svc.cluster.local:5000/v3
+auth_version = v3
+interface = internal
+password = password
+project_domain_name = service
+project_name = service
+region_name = RegionOne
+user_domain_name = service
+username = cinder
+[oslo_concurrency]
+lock_path = /var/lib/cinder/tmp
+[oslo_messaging_notifications]
+driver = messagingv2
+[oslo_messaging_rabbit]
+rabbit_ha_queues = true
+[oslo_middleware]
+enable_proxy_headers_parsing = true
+[oslo_policy]
+policy_file = /etc/cinder/policy.yaml
+[service_user]
+auth_type = password
+auth_url = http://keystone-api.openstack.svc.cluster.local:5000/v3
+password = password
+project_domain_name = service
+project_name = service
+region_name = RegionOne
+send_service_user_token = true
+user_domain_name = service
+username = cinder

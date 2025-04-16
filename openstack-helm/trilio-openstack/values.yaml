@@ -939,7 +939,6 @@ conf:
     keystone_authtoken:
       auth_version: v3
       auth_type: password
-      auth_plugin: password
       username: triliovault
       admin_user: triliovault
       signing_dir: /var/cache/workloadmgr
@@ -947,6 +946,7 @@ conf:
       service_token_roles_required: True
       service_token_roles: service
       memcache_security_strategy: ENCRYPT
+      interface: internal
       cafile: ""
     alembic:
       script_location: /usr/share/workloadmgr/migrate_repo

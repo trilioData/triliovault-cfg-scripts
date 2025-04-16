@@ -40,7 +40,11 @@ CA=$(kubectl -n openstack get secrets/trilio-ca-cert -o "jsonpath={.data['ca\.cr
 cd ../
 
 tee > values_overrides/admin_creds.yaml  << EOF
+
 conf:
+  wlm: 
+    keystone_authtoken:
+      memcached_servers: memcached.openstack.svc.$INTERNAL_DOMAIN_NAME:11211
   datamover:
     DEFAULT:
       dmapi_transport_url: $NOVA_TRANSPORT_URL
