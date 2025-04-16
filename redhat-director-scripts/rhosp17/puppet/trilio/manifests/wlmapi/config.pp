@@ -123,13 +123,15 @@ class trilio::wlmapi::config inherits trilio::wlmapi {
           mode   => '0644',
           source => 'puppet:///modules/trilio/s3-cert.pem',
       }
-      if $vcenter_nossl == false {
-        file { "/etc/triliovault-wlm/${vcenter_cert_file_name}":
+      $vcenter_servers.each |$vcenter| {
+        if $vcenter['vcenter_nossl'] == false {
+          file { "/etc/triliovault-wlm/${vcenter['vcenter_cacert_file_name']}":
             ensure => 'present',
             owner  => '42436',
             group  => '42436',
             mode   => '0644',
-            source => "puppet:///modules/trilio/${vcenter_cert_file_name}",
+            source => "puppet:///modules/trilio/${vcenter['vcenter_cacert_file_name']}",
+          }
         }
       }
       file { "/etc/triliovault-wlm/triliovault-wlm-ids.conf":
