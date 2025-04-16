@@ -77,7 +77,7 @@ parameter_defaults:
        vcenter_password: ''
        vcenter_nossl: True
        vcenter_cacert_file_name: ''
-     - vcenter_server_name: 'vcenter1.example.com'
+     - vcenter_server_name: 'vcenter2.example.com'
        vcenter_url: ''
        vcenter_user_name: ''
        vcenter_password: ''
