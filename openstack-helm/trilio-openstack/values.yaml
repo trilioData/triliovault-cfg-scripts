@@ -946,6 +946,7 @@ conf:
       service_token_roles_required: True
       service_token_roles: service
       memcache_security_strategy: ENCRYPT
+      interface: internal
       cafile: ""
     alembic:
       script_location: /usr/share/workloadmgr/migrate_repo
