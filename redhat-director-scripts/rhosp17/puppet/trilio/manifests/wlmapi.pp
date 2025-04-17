@@ -80,6 +80,9 @@ class trilio::wlmapi (
   $auth_port_public                = undef,
   $auth_protocol_public            = undef,
   $vcenter_servers                 = undef,
+  $vcenter_max_retries             = undef,
+  $vcenter_retry_interval          = undef,
+  $vcenter_max_vast_retries        = undef,
   $step                            = lookup('step'),
   $s3_ssl_verify                   = true,
 ) {

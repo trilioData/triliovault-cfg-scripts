@@ -156,9 +156,9 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 
 [vcenter_migration]
 vcenters = <%= @vcenter_servers.map { |v| v['vcenter_server_name'] }.uniq.join(', ') %>
-max_retries =
-retry_interval =
-max_vast_retries =
+max_retries = <%= @vcenter_max_retries %>
+retry_interval = <%= @vcenter_retry_interval %>
+max_vast_retries = <%= @vcenter_max_vast_retries %>
 
 <% @vcenter_servers.each do |vcenter| %>
 [<%= vcenter['vcenter_server_name'] %>]

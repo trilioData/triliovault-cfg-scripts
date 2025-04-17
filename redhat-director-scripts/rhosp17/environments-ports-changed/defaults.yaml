@@ -46,6 +46,12 @@ parameter_defaults:
    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
    TrusteeRole: "creator"
 
+   ## Vcenter defaults
+   VcenterMaxRetries: "10"
+   VcenterRetryInterval: "30"
+   VcenterMaxVastRetries: "10"
+
+
 ############################### DONE #####################################################
 
 
