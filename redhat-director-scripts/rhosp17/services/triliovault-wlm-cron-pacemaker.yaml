@@ -228,7 +228,7 @@ parameters:
     default: []
     description: List of Vcenter Servers
     type: json
-  VcenterMaxVastRetries:
+  VcenterMaxRetries:
     description: Vcenter Maximum Retries
     type: string
   VcenterRetryInterval:
