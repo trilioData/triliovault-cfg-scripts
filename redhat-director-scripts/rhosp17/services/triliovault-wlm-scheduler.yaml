@@ -227,6 +227,15 @@ parameters:
     default: []
     description: List of Vcenter Servers
     type: json
+  VcenterMaxVastRetries:
+    description: Vcenter Maximum Retries
+    type: string
+  VcenterRetryInterval:
+    description: Vcenter Retry Interval
+    type: string
+  VcenterMaxVastRetries:
+    description: Vcenter Maximum Vast Retries
+    type: string
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -315,6 +324,9 @@ outputs:
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
         trilio::wlmapi::vcenter_servers: {get_param: VcenterServers }
+        trilio::wlmapi::vcenter_max_retries: {get_param: VcenterMaxRetries }
+        trilio::wlmapi::vcenter_retry_interval: {get_param: VcenterRetryInterval }
+        trilio::wlmapi::vcenter_max_vast_retries: {get_param: VcenterMaxVastRetries }
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
