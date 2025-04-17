@@ -223,22 +223,18 @@ parameters:
     default: 'creator'	
     description: This is the role to allow using triliovault features 
     type: string
-  VcenterUrl:
-    description: This is Vcenter Server URL
+  VcenterServers:
+    default: []
+    description: List of Vcenter Servers
+    type: json
+  VcenterMaxRetries:
+    description: Vcenter Maximum Retries
     type: string
-  VcenterUsername:
-    description: This is Vcenter Username
+  VcenterRetryInterval:
+    description: Vcenter Retry Interval
     type: string
-  VcenterPassword:
-    description: This is Vcenter Password
-    type: string
-  VcenterNoSsl:
-    default: false
-    description: Indicates if Vcenter has NoSSL enabled or not. If set false, it means SSL is enabled on Vcenter
-                 If set true, SSL is disabled on Vcenter
-    type: boolean
-  VcenterCACertFileName:
-    description: This is Vcenter CA Cert File Name
+  VcenterMaxVastRetries:
+    description: Vcenter Maximum Vast Retries
     type: string
   ClusterCommonTag:
     default: false
@@ -327,11 +323,10 @@ outputs:
         trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
-        trilio::wlmapi::vcenter_url: {get_param: VcenterUrl }
-        trilio::wlmapi::vcenter_username: {get_param: VcenterUsername }
-        trilio::wlmapi::vcenter_password: {get_param: VcenterPassword }
-        trilio::wlmapi::vcenter_nossl: {get_param: VcenterNoSsl }
-        trilio::wlmapi::vcenter_cert_file_name: {get_param: VcenterCACertFileName }
+        trilio::wlmapi::vcenter_servers: {get_param: VcenterServers }
+        trilio::wlmapi::vcenter_max_retries: {get_param: VcenterMaxRetries }
+        trilio::wlmapi::vcenter_retry_interval: {get_param: VcenterRetryInterval }
+        trilio::wlmapi::vcenter_max_vast_retries: {get_param: VcenterMaxVastRetries }
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}

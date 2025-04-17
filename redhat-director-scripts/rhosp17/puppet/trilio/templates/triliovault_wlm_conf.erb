@@ -155,8 +155,16 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 
 
 [vcenter_migration]
-vcenter_url= <%= @vcenter_url %>
-vcenter_username= <%= @vcenter_username %>
-vcenter_password= <%= @vcenter_password %>
-vcenter_nossl= <%= @vcenter_nossl %>
-vcenter_cert_path= /etc/triliovault-wlm/<%= @vcenter_cert_file_name %>
+vcenters = <%= @vcenter_servers.map { |v| v['vcenter_server_name'] }.uniq.join(', ') %>
+max_retries = <%= @vcenter_max_retries %>
+retry_interval = <%= @vcenter_retry_interval %>
+max_vast_retries = <%= @vcenter_max_vast_retries %>
+
+<% @vcenter_servers.each do |vcenter| %>
+[<%= vcenter['vcenter_server_name'] %>]
+vcenter_url = <%= vcenter['vcenter_url'] %>
+vcenter_username = <%= vcenter['vcenter_user_name'] %>
+vcenter_password = <%= vcenter['vcenter_password'] %>
+vcenter_nossl = <%= vcenter['vcenter_nossl'] %>
+vcenter_cert_path = <%= vcenter['vcenter_cacert_file_name'] %>
+<% end %>
