@@ -85,6 +85,7 @@ class trilio::wlmapi (
   $vcenter_max_vast_retries        = undef,
   $step                            = lookup('step'),
   $s3_ssl_verify                   = true,
+  $datamover_service_type          = 'datamover',
 ) {
     tag 'wlmapiconfig'
     
