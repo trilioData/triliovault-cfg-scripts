@@ -18,10 +18,14 @@ RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
 RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/local/enabled/
 RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
 
-# Run collectstatic and compress using Django module (since manage.py doesn't exist in 2023.1)
-RUN export DJANGO_SETTINGS_MODULE=openstack_dashboard.settings && \
-    python3 -m django collectstatic --noinput && \
-    python3 -m django compress --force
+# Add manage.py for running Django commands
+ADD manage.py /tmp/manage.py
+RUN chmod 777 /tmp/manage.py && \
+    cp /tmp/manage.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py
+
+# Run Django management commands to collect static files and compress
+RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
+RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py compress --force
 
 # Add license
 RUN mkdir /licenses
