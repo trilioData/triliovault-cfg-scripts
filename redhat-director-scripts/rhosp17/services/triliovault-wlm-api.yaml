@@ -97,6 +97,10 @@ parameters:
     type: string
     default: 'workloads'
     description: Keyston Catalog Service Type for TrilioVault Wlm Service
+  DatamoverApiKeystoneServiceType:
+    type: string
+    default: 'datamover'
+    description: Keyston Catalog Service Type for TrilioVault Datamover Api Service
   WlmApiDbName:
     type: string
     default: 'workloadmgr'
@@ -303,6 +307,7 @@ outputs:
         trilio::wlmapi::cloud_admin_password: {get_param: CloudAdminPassword}
         trilio::wlmapi::cloud_admin_project_name: {get_param: CloudAdminProjectName}
         trilio::wlmapi::cloud_admin_domain_name: {get_param: CloudAdminDomainName}
+        trilio::wlmapi::datamover_service_type: {get_param: DatamoverApiKeystoneServiceType}
         trilio::wlmapi::backup_target_type: {get_param: TrilioBackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
