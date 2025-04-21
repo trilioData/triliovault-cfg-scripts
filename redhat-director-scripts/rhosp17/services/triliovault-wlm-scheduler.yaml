@@ -240,6 +240,10 @@ parameters:
   VcenterCACertFileName:
     description: This is Vcenter CA Cert File Name
     type: string
+  DatamoverApiKeystoneServiceType:
+    type: string
+    default: 'datamover'
+    description: Keyston Catalog Service Type for TrilioVault Datamover Api Service
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -272,6 +276,7 @@ outputs:
     value:
       service_name: triliovault_wlm_scheduler
       config_settings:
+        trilio::wlmapi::datamover_service_type: {get_param: DatamoverApiKeystoneServiceType}
         trilio::wlmapi::backup_target_type: {get_param: TrilioBackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
