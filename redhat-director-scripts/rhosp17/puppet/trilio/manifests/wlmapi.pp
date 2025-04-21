@@ -86,6 +86,7 @@ class trilio::wlmapi (
   $vcenter_cert_file_name          = 'default-vcenter-cert',
   $step                            = lookup('step'),
   $s3_ssl_verify                   = true,
+  $datamover_service_type          = 'datamover',
 ) {
     tag 'wlmapiconfig'
     

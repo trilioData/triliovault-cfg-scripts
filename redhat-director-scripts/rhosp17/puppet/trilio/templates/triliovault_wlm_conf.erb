@@ -116,6 +116,8 @@ client_retry_limit = 3
 endpoint_type  = internal
 #insecure = false
 cafile = /etc/pki/tls/certs/ca-bundle.crt
+trilio_datamover_service_type = <%= @datamover_service_type %>
+
 [filesearch]
 process_timeout = 300
 [global_job_scheduler]
