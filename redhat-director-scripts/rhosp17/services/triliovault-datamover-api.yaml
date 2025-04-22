@@ -164,15 +164,15 @@ outputs:
       firewall_rules:
         '240 trilio_datamover_api':
           dport:
-            - 8784
+            - {get_param: DatamoverApiPort}
       firewall_frontend_rules:
         '100 trilio_datamover_api_haproxy_frontend':
           dport:
-            - 8784
+            - {get_param: DatamoverApiPort}
       firewall_ssl_frontend_rules:
         '100 trilio_datamover_api_haproxy_frontend_ssl':
           dport:
-            - 13784
+            - {get_param: DatamoverApiSslPort}
       keystone_resources:
         dmapi:
           endpoints:
@@ -183,7 +183,7 @@ outputs:
             dmapi:
               password: {get_param: DatamoverApiKeystoneUserPassword}
           region: {get_param: KeystoneRegion}
-          service: 'datamover'      
+          service: {get_param: DatamoverApiKeystoneServiceType}
       config_settings:
         trilio::dmapi::dmapi_port: {get_param: DatamoverApiPort}
         trilio::dmapi::dmapi_ssl_port: {get_param: DatamoverApiSslPort}

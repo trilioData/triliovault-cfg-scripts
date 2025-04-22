@@ -69,6 +69,7 @@ parameter_defaults:
    ## If you don't want to use this migration feature, you can leave these parameters as it is.
    ## Change VmwareToOpenstackMigrationEnabled parameter value to True if you want to use the VMware migration feature.
    VmwareToOpenstackMigrationEnabled: False
+
    VcenterServers:
      - vcenter_server_name: 'vcenter1.example.com'
        vcenter_url: ''
@@ -82,4 +83,4 @@ parameter_defaults:
        vcenter_password: ''
        vcenter_nossl: True
        vcenter_cacert_file_name: ''
-
+   

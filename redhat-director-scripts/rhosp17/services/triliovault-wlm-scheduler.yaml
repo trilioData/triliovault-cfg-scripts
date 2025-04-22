@@ -147,7 +147,7 @@ parameters:
       description: >
         The Ceph cluster name must be at least 1 character and contain only
         letters and numbers.
-  BackupTargetType:
+  TrilioBackupTargetType:
     description:
     type: string
   NfsShares:
@@ -223,23 +223,23 @@ parameters:
     default: 'creator'	
     description: This is the role to allow using triliovault features 
     type: string
-  VcenterUrl:
-    description: This is Vcenter Server URL
+  VcenterServers:
+    default: []
+    description: List of Vcenter Servers
+    type: json
+  VcenterMaxRetries:
+    description: Vcenter Maximum Retries
     type: string
-  VcenterUsername:
-    description: This is Vcenter Username
+  VcenterRetryInterval:
+    description: Vcenter Retry Interval
     type: string
-  VcenterPassword:
-    description: This is Vcenter Password
+  VcenterMaxVastRetries:
+    description: Vcenter Maximum Vast Retries
     type: string
-  VcenterNoSsl:
-    default: false
-    description: Indicates if Vcenter has NoSSL enabled or not. If set false, it means SSL is enabled on Vcenter
-                 If set true, SSL is disabled on Vcenter
-    type: boolean
-  VcenterCACertFileName:
-    description: This is Vcenter CA Cert File Name
+  DatamoverApiKeystoneServiceType:
     type: string
+    default: 'datamover'
+    description: Keyston Catalog Service Type for TrilioVault Datamover Api Service
   ClusterCommonTag:
     default: false
     description: When set to false, a pacemaker service is configured
@@ -272,7 +272,8 @@ outputs:
     value:
       service_name: triliovault_wlm_scheduler
       config_settings:
-        trilio::wlmapi::backup_target_type: {get_param: BackupTargetType}
+        trilio::wlmapi::datamover_service_type: {get_param: DatamoverApiKeystoneServiceType}
+        trilio::wlmapi::backup_target_type: {get_param: TrilioBackupTargetType}
         trilio::wlmapi::nfs_shares: {get_param: NfsShares}
         trilio::wlmapi::nfs_options: {get_param: NfsOptions}
         trilio::wlmapi::nfs_map:  {get_param: TriliovaultMultiIPNfsMap}
@@ -327,11 +328,10 @@ outputs:
         trilio::wlmapi::auth_host_public: {get_param: [EndpointMap, KeystonePublic, host] }
         trilio::wlmapi::auth_port_public: {get_param: [EndpointMap, KeystonePublic, port] }
         trilio::wlmapi::auth_protocol_public: {get_param: [EndpointMap, KeystonePublic, protocol] }
-        trilio::wlmapi::vcenter_url: {get_param: VcenterUrl }
-        trilio::wlmapi::vcenter_username: {get_param: VcenterUsername }
-        trilio::wlmapi::vcenter_password: {get_param: VcenterPassword }
-        trilio::wlmapi::vcenter_nossl: {get_param: VcenterNoSsl }
-        trilio::wlmapi::vcenter_cert_file_name: {get_param: VcenterCACertFileName }
+        trilio::wlmapi::vcenter_servers: {get_param: VcenterServers }
+        trilio::wlmapi::vcenter_max_retries: {get_param: VcenterMaxRetries }
+        trilio::wlmapi::vcenter_retry_interval: {get_param: VcenterRetryInterval }
+        trilio::wlmapi::vcenter_max_vast_retries: {get_param: VcenterMaxVastRetries }
         trilio::wlmapi::database_connection:
           make_url:
             scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
