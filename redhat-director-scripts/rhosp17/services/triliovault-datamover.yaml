@@ -50,7 +50,7 @@ parameters:
     default: "/var/lib/tripleo-config/ceph"
     description: |
       The path where the Ceph Cluster config files are stored on the host.
-  BackupTargetType:
+  TrilioBackupTargetType:
     description:
     type: string
   NfsShares:
@@ -151,7 +151,7 @@ outputs:
     value:
       service_name: triliovault_datamover
       config_settings:
-        trilio::contego::backup_target_type: {get_param: BackupTargetType}
+        trilio::contego::backup_target_type: {get_param: TrilioBackupTargetType}
         trilio::contego::nfs_shares: {get_param: NfsShares}
         trilio::contego::nfs_options: {get_param: NfsOptions}
         trilio::contego::s3_type: {get_param: S3Type}

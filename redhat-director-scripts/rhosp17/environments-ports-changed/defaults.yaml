@@ -46,11 +46,11 @@ parameter_defaults:
    ## Significance: To run any backups in triliovault an openstack user needs to have this role on given project. 
    TrusteeRole: "creator"
 
-
    ## Vcenter defaults
    VcenterMaxRetries: "10"
    VcenterRetryInterval: "30"
    VcenterMaxVastRetries: "10"
+
 
 ############################### DONE #####################################################
 
@@ -64,11 +64,11 @@ parameter_defaults:
    ## Project name in which triliovault keystone resources will get created
    
    ## Triliovault Wlm Api Service port
-   WlmApiHaproxyPort: "8781"
-   WlmApiPort: "8780"
-   WlmApiSslPort: "13781"
-   DatamoverApiPort: "8784"
-   DatamoverApiSslPort: "13784"
+   WlmApiHaproxyPort: "8783"
+   WlmApiPort: "8782"
+   WlmApiSslPort: "13783"
+   DatamoverApiPort: "8787"
+   DatamoverApiSslPort: "13787"
 
    ## TrilioVault Wlm Service's Database, Keystone and rabbitmq resource details
    WlmApiDbUserName: "workloadmgr"
@@ -83,5 +83,5 @@ parameter_defaults:
    DatamoverApiDbName: "dmapi"
    DatamoverApiKeystoneUserName: "dmapi"
    DatamoverApiKeystoneServiceName: "dmapi"
-   DatamoverApiKeystoneServiceType: "datamover"
+   DatamoverApiKeystoneServiceType: "triliodatamover"
 ###################################################################
