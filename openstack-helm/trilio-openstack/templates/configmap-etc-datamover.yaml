@@ -26,18 +26,29 @@ limitations under the License.
 {{- end -}}
 
 
-{{- if and (eq .Values.conf.triliovault.backup_target_type "nfs") (not .Values.conf.triliovault.nfs.multi_ip_nfs) -}}
-{{- $share_list := list }}
-{{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
-{{- $share_path := get $share "path" -}}
-{{- $share_ip := get $share "ip" -}}
-{{- $share_string := printf "%s:%s" $share_ip $share_path }}
-{{- $share_list =  append $share_list $share_string -}}
-{{- end }}
-{{- $shares_full_string := join "," $share_list }}
-{{ $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
-{{- else -}}
-{{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" "TrilioVault" -}}
+{{- if eq .Values.conf.triliovault.backup_target_type "nfs" -}}
+  {{- if not .Values.conf.triliovault.nfs.multi_ip_nfs -}}
+    {{- $share_list := list }}
+    {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+      {{- $share_path := get $share "path" -}}
+      {{- $share_ip := get $share "ip" -}}
+      {{- $share_string := printf "%s:%s" $share_ip $share_path }}
+      {{- $share_list =  append $share_list $share_string -}}
+    {{- end }}
+    {{- $shares_full_string := join "," $share_list }}
+    {{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" $shares_full_string -}}
+  {{- end }}
+
+{{- else if eq .Values.conf.triliovault.backup_target_type "s3" -}}
+  {{- if eq .Values.conf.triliovault.s3.type "amazon_s3" -}}
+    {{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" .Values.conf.triliovault.s3.bucket -}}
+  {{- else -}}
+    {{- $s3_endpoint_url := .Values.conf.triliovault.s3.endpoint_url | trimSuffix "/" }}
+    {{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
+    {{- $s3DomainName := $s3_endpoint_url_no_http | replace "https://" "" }}
+    {{- $cephS3Str := printf "%s/%s" $s3DomainName .Values.conf.triliovault.s3.bucket }}
+    {{- $_ := set .Values.conf.datamover.DEFAULT "vault_storage_nfs_export" $cephS3Str -}}
+  {{- end }}
 {{- end -}}
 
 {{- if empty .Values.conf.datamover.DEFAULT.vault_storage_nfs_options -}}

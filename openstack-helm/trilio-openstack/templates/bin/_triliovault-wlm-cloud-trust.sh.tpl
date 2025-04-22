@@ -85,7 +85,7 @@ sleep 1m
 for attempt in {1..10};
 do
         echo -e "Attempting to create wlm-cloud admin trust, Attempt Number: $attempt"
-        command_output=$(workloadmgr trust-create --is_cloud_trust True admin --insecure 2>&1)
+        command_output=$(workloadmgr --os-cacert /etc/ssl/certs/openstack-ca-bundle.pem trust-create --is_cloud_trust True admin 2>&1)
         status=$?
         echo "Command output: $command_output"
         if echo "$command_output" | grep -q "unavailable"; then
