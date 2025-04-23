@@ -18,6 +18,11 @@ RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
 RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/local/enabled/
 RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
 
+# Add manage.py for running Django commands
+ADD manage.py /tmp/manage.py
+RUN chmod 777 /tmp/manage.py && \
+    cp /tmp/manage.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py
+
 # Run Django management commands to collect static files and compress
 RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
 RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py compress --force

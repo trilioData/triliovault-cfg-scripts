@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: trilio-object-store-bin
+  name: trilio-object-store-bin-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
 data:
   trilio-object-store.sh: |
     {{ tpl (.Files.Get "scripts/_trilio-object-store.sh.tpl") . | nindent 4 }}

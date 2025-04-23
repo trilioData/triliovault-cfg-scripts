@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: trilio-nfs-mount-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
-  namespace: trilio-openstack
   labels:
     application: trilio-openstack
     component: nfs-mount
