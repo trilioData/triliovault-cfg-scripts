@@ -4,7 +4,7 @@ set -e
 
 
 CINDER_CEPH_KEYRING=$(kubectl -n openstack get secrets/cinder-volume-rbd-keyring --template={{.data.key}} | base64 -d)
-kubectl -n openstack get secret cinder-etc -o jsonpath='{.data.cinder\.conf}' | base64 -d > ../templates/bin/_triliovault-ceph.conf.tpl
+kubectl -n openstack get cm ceph-etc -o jsonpath='{.data.ceph\.conf}' > ../templates/bin/_triliovault-ceph.conf.tpl
 
 cd ../
 

@@ -21,10 +21,12 @@ trilio_backup_target:
   storage_class_name: ceph-filesystem
   s3_ssl_ca_cert: ''
 
+images:
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+
+ca_cert_bundle_secret_name: triliovault-wlm-ca-bundle
+keystone_admin_secret_name: triliovault-keystone-admin
 common:
   vault_data_dir: /var/lib/trilio/triliovault-mounts
   nova_user_id: "42424"
   nova_group_id: "42424"
-
-images:
-  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
