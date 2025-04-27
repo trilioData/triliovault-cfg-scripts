@@ -9,4 +9,4 @@ trilio_backup_target:
   storage_class_name: ceph-filesystem
 
 images:
-  trilio_wlm: docker.io/trilio/trilio-wlm-helm:shruti-6.1.0-bobcat-2
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:6.1.0-dev-maint1-1-2023.2
