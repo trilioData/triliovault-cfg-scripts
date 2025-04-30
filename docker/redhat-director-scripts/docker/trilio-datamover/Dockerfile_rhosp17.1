@@ -31,6 +31,10 @@ RUN dnf install --releasever 9.2 python3-tvault-contego-el9 python3-s3fuse-plugi
 RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
 
+RUN dnf install libnbd-1.18.1-4.el9_4.x86_64.rpm
+RUN rpm2cpio srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
+
+
 #Copy executable files
 RUN mkdir -p /opt/triliovault/
 ADD start_triliovault_datamover_s3 start_triliovault_datamover_nfs start_triliovault_object_store /opt/triliovault/
