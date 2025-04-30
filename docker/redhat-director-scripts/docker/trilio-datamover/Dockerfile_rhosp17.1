@@ -4,7 +4,7 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \ 
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.5" \
       release="5.2" \
       summary="Red Hat OpenStack Platform 17.1 nova-compute TrilioData Datamover" \
       description="Red Hat OpenStack Platform 17.1 nova-compute TrilioData Datamover"
@@ -15,7 +15,6 @@ USER root
 ## Setup repos
 RUN dnf clean all && dnf config-manager --set-disabled \*
 ADD trilio.repo /etc/yum.repos.d/
-ADD virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm /tmp/
 
 RUN dnf config-manager \
   --enable rhel-9-for-x86_64-baseos-eus-rpms \
@@ -44,7 +43,10 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 ADD log-rotate-conf /etc/logrotate.d/triliovault-datamover.conf
 RUN chown root:root /etc/sudoers.d/nova-sudoers \
   && chown root:nova /usr/share/nova/nova-dist.conf
-  
+
+## Copy locally built virt-v2v-in-place binary
+ADD virt-v2v-in-place /usr/local/bin/
+
 ## Create conf directories
 RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-datamover /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
     && chown -R nova:nova /etc/triliovault-datamover /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault \
@@ -60,8 +62,6 @@ RUN dnf config-manager \
   --disable fast-datapath-for-rhel-9-x86_64-rpms \
   --disable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
-RUN dnf install /tmp/virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm -y
-RUN rm -f /tmp/virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm
 
 RUN dnf clean all
 
