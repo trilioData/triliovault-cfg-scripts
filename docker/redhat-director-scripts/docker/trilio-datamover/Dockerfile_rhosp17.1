@@ -31,8 +31,10 @@ RUN dnf install --releasever 9.2 python3-tvault-contego-el9 python3-s3fuse-plugi
 RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
 
-RUN dnf install libnbd-1.18.1-4.el9_4.x86_64.rpm
-RUN rpm2cpio srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
+ADD libnbd-1.18.1-4.el9_4.x86_64.rpm /tmp
+ADD srvany.rpm /tmp
+RUN dnf install /tmp/libnbd-1.18.1-4.el9_4.x86_64.rpm
+RUN rpm2cpio /tmp/srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
 
 
 #Copy executable files
