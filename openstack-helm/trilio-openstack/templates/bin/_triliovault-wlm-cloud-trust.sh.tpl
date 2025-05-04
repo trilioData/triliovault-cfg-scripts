@@ -50,6 +50,7 @@ elif [ "$backup_target_type" = "s3" ]; then
     backup_target_name="{{ .Values.conf.triliovault.s3.name | default "default-s3-name" }}"
     s3_bucket="{{ .Values.conf.triliovault.s3.bucket | default "" }}"
     s3_endpoint="{{ .Values.conf.triliovault.s3.endpoint_url | default "" }}"
+    s3_immutable_enabled="{{ .Values.conf.triliovault.s3.bucket_object_lock_enabled | default false | toString }}"
 
     if [ -z "$s3_bucket" ]; then
         echo "Error: S3 bucket name is missing!"
@@ -59,11 +60,20 @@ elif [ "$backup_target_type" = "s3" ]; then
     echo "Checking if S3 backup target '${backup_target_name}' exists..."
     if workloadmgr backup-target-type-show "${backup_target_name}" 2>&1 | grep -q "No backuptargettype"; then
         echo "S3 backup target '${backup_target_name}' does not exist. Creating it..."
-        
+        echo "Creating with immutable=${s3_immutable_enabled} and endpoint=${s3_endpoint}"
+
         if [ -n "$s3_endpoint" ]; then
-            workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --s3-endpoint-url "${s3_endpoint}" --btt-name "${backup_target_name}"
+            if [ "$(echo "$s3_immutable_enabled" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+                workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --s3-endpoint-url "${s3_endpoint}" --btt-name "${backup_target_name}" --immutable
+            else
+                workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --s3-endpoint-url "${s3_endpoint}" --btt-name "${backup_target_name}"
+            fi
         else
-            workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --btt-name "${backup_target_name}"
+            if [ "$(echo "$s3_immutable_enabled" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+                workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --btt-name "${backup_target_name}" --immutable
+            else
+                workloadmgr backup-target-create --type s3 --s3-bucket "${s3_bucket}" --btt-name "${backup_target_name}"
+            fi
         fi
 
         if [ $? -eq 0 ]; then
