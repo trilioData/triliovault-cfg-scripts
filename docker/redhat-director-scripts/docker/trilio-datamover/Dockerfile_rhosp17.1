@@ -13,7 +13,7 @@ LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
 USER root
 
 #Installing latest virt-v2v package initially only as it is available in default rhel-9-for-x86_64-appstream-rpms repo for 9.5 release ver.
-RUN dnf install --releasever 9.5 virt-v2v
+RUN dnf install --releasever 9.5 virt-v2v -y
 RUN cp -r /usr/share/virtio-win /usr/local/share/
 
 ## Setup repos
