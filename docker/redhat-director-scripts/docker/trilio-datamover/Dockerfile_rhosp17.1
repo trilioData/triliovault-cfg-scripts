@@ -31,6 +31,9 @@ ADD srvany.rpm /tmp
 RUN dnf install --releasever 9.2 cpio -y
 RUN rpm2cpio /tmp/srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
 
+RUN dnf install virt-v2v-2.5.6-9.el9_5
+RUN cp -r /usr/share/virtio-win /usr/local/share/
+
 ## Install triliovault datamover packages
 RUN dnf install --releasever 9.2 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
