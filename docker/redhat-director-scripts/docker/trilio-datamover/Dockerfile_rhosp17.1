@@ -13,8 +13,7 @@ LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
 USER root
 
 #Installing latest virt-v2v package initially only as it is available in default rhel-9-for-x86_64-appstream-rpms repo for 9.5 release ver.
-RUN dnf install --releasever 9.5 virt-v2v virtio-win -y
-RUN cp -r /usr/share/virtio-win /usr/local/share/
+RUN dnf install --releasever 9.5 virt-v2v -y
 
 ## Setup repos
 RUN dnf clean all && dnf config-manager --set-disabled \*
@@ -37,7 +36,8 @@ RUN rpm2cpio /tmp/srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-to
 
 
 ## Install triliovault datamover packages
-RUN dnf install --releasever 9.2 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
+RUN dnf install --releasever 9.2 openstack-nova-common python3-nova python3-novaclient udev fuse virtio-win nbdkit --nobest -y
+RUN cp -r /usr/share/virtio-win /usr/local/share/
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN dnf install --releasever 9.2 python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
