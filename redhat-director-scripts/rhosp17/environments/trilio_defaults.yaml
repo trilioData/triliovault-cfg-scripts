@@ -16,10 +16,12 @@ parameter_defaults:
    ExtraConfig:
      horizon::customization_module: 'trilio_dashboard.overrides'
 
+
    ## Define network map for trilio datamover api service
    ServiceNetMap:
        TriliovaultDatamoverApiNetwork: ctlplane
        TriliovaultWlmApiNetwork: ctlplane
+
    ## Don't edit following parameter
    EnablePackageInstall: True
 
@@ -42,6 +44,9 @@ parameter_defaults:
    ## Keystone endpoint interface that triliovault workloadmgr services will use to communicate to other openstack services
    ## Valid values: internal, public, admin
    TrilioInterface: "internal"
+
+   TrusteeRole: "creator,member"
+
    
 
 
