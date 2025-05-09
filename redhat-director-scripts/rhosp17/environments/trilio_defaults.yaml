@@ -16,6 +16,8 @@ parameter_defaults:
    ExtraConfig:
      horizon::customization_module: 'trilio_dashboard.overrides'
 
+   TrusteeRole: "creator,member"
+
    ## Define network map for trilio datamover api service
    ServiceNetMap:
        TriliovaultDatamoverApiNetwork: ctlplane
