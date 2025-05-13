@@ -116,14 +116,19 @@ def update_keystone_endpoints():
     if glance_url and cluster_domain:
         keystone_endpoints = {
             "datamover_api": {
-                "internal_endpoint": f"https://triliovault-datamover-internal.trilio-openstack.svc:8784/v2",
-                "public_endpoint": f"https://triliovault-datamover-public-trilio-openstack.{cluster_domain}/v2"
+                "public_endpoint": f"https://triliovault-datamover-public-trilio-openstack.{cluster_domain}/v2",
+                "public_auth_host": f"triliovault-datamover-public-trilio-openstack.{cluster_domain}"
             },
             "wlm_api": {
-                "internal_endpoint": f"https://triliovault-wlm-internal.trilio-openstack.svc:8781/v1/$(tenant_id)s",
-                "public_endpoint": f"https://triliovault-wlm-public-trilio-openstack.{cluster_domain}/v1/$(tenant_id)s"
+                "public_endpoint": f"https://triliovault-wlm-public-trilio-openstack.{cluster_domain}/v1/$(tenant_id)s",
+                "public_auth_host": f"triliovault-wlm-public-trilio-openstack.{cluster_domain}"
                 }
         }
+
+        yaml_data["spec"]["keystone"]["datamover_api"]["public_endpoint"] = keystone_endpoints["datamover_api"]["public_endpoint"]
+        yaml_data["spec"]["keystone"]["datamover_api"]["public_auth_host"] = keystone_endpoints["datamover_api"]["public_auth_host"]
+        yaml_data["spec"]["keystone"]["wlm_api"]["public_endpoint"] = keystone_endpoints["wlm_api"]["public_endpoint"]
+        yaml_data["spec"]["keystone"]["wlm_api"]["public_auth_host"] = keystone_endpoints["wlm_api"]["public_auth_host"]
         
     else:
         print("Unable to update Keystone endpoints, missing necessary information.")
@@ -257,6 +262,40 @@ def set_rabbitmq_params():
         print(f"Error: {e}")
 
 
+def set_db_credentials_and_host(namespace="openstack"):
+    try:
+        # Get and decode the root password
+        root_pass_encoded = subprocess.check_output(
+            ["oc", "-n", namespace, "get", "secret", "osp-secret", "-o", "jsonpath={.data.DbRootPassword}"]
+        ).decode().strip()
+        root_password = base64.b64decode(root_pass_encoded).decode().strip()
+
+        # Get and decode nova-api-config data
+        nova_conf_raw = subprocess.check_output(
+            ["oc", "-n", namespace, "get", "secret", "nova-api-config-data", "-o", "jsonpath={.data.01-nova\\.conf}"]
+        )
+        nova_conf_decoded = base64.b64decode(nova_conf_raw).decode()
+
+        # Extract the host from the connection string
+        db_host = None
+        for line in nova_conf_decoded.splitlines():
+            if "connection =" in line:
+                import re
+                match = re.search(r'@([^?/]+)', line)
+                if match:
+                    db_host = match.group(1)
+                    break
+
+        if not db_host:
+            raise ValueError("Database host not found in nova.conf")
+
+        yaml_data["spec"]["database"]["common"]["root_password"] = root_password
+        yaml_data["spec"]["database"]["common"]["host"] = db_host
+        print("- Updated database host and root password in yaml file")
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Command failed: {e}")
+    except Exception as e:
+        raise RuntimeError(f"Error: {e}")
 
 # Function to generate a secure 32-character random password
 def generate_password(length=32):
@@ -315,6 +354,7 @@ except KeyError:
 update_keystone_endpoints()
 print("Calling rabbit params method")
 set_rabbitmq_params()
+set_db_credentials_and_host()
 
 # Write back to YAML file
 with open(yaml_file, "w") as file:
