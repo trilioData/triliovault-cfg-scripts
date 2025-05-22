@@ -93,7 +93,7 @@ spec:
             - name: WLM_RABBIT_HOST
               value: {{- .Values.rabbitmq.common.host -}}  
             - name: IS_RABBIT_SSL_ENABLED
-              value: {{- .Values.rabbitmq.common.ssl -}}           
+              value: "{{- .Values.rabbitmq.common.ssl -}}"        
             - name: WLM_DATABASE_USER
               value: {{- .Values.database.wlm_api.user -}}
             - name: WLM_DATABASE_HOST
