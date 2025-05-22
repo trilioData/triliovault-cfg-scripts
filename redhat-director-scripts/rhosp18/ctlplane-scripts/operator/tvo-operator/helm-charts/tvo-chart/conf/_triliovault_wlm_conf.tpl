@@ -26,7 +26,6 @@ region_name_for_services = "{{ .Values.keystone.common.region_name }}"
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
 state_path = /opt/stack/data/workloadmgr
 taskflow_max_cache_size = 1024
-transport_url = {{ .Values.rabbitmq.wlm_api.transport_url }}
 trustee_role  = {{ .Values.common.trustee_role }}
 use_syslog = false
 vault_data_directory = {{ .Values.common.vault_data_dir }}

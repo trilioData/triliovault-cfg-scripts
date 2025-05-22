@@ -49,6 +49,12 @@ if [[ $KEYSTONE_URL =~ ^(https?)://([^:/]+)(:([0-9]+))?(/.*)?$ ]]; then
   auth_port=${BASH_REMATCH[4]}
 fi
 
+if [ "$IS_RABBIT_SSL_ENABLED" = "true" ]; then
+  RABBIT_SSL_ENABLED_NUM=1
+else
+  RABBIT_SSL_ENABLED_NUM=0
+fi
+
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf << EOF
 [DEFAULT]
 
@@ -68,7 +74,7 @@ cloud_unique_id = $WLM_USER_ID
 triliovault_user_domain_id = $WLM_USER_DOMAIN_ID
 domain_name = $CLOUD_ADMIN_DOMAIN_ID
 sql_connection = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
-
+transport_url = "rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
 
 [keystone_authtoken]
 project_domain_id = $WLM_PROJECT_DOMAIN_ID
@@ -83,6 +89,19 @@ admin_password = ${WLM_KEYSTONE_PASSWORD}
 sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
 EOF
+
+
+{{- range .Values.triliovault_backup_targets }}
+{{- if eq .backup_target_type "s3" }}
+cat >> /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf <<EOF
+
+[{{ .backup_target_name }}]
+s3_access_key = \${{ .backup_target_name }}_S3_ACCESS_KEY
+s3_secret_key = \${{ .backup_target_name }}_S3_SECRET_KEY
+EOF
+{{- end }}
+{{- end }}
+
 
 chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf
 mkdir -p /var/log/triliovault/wlm-api /var/log/triliovault/wlm-workloads /var/log/triliovault/wlm-scheduler

@@ -1,6 +1,6 @@
 [DEFAULT]
 dmapi_workers = {{ .Values.common.dmapi_workers }}
-transport_url = "{{ .Values.rabbitmq.datamover_api.transport_url }}"
+
 dmapi_enabled_ssl_apis =
 dmapi_listen_port = 8783
 dmapi_enabled_apis = dmapi
