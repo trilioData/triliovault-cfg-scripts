@@ -3,11 +3,9 @@
 set -e
 
 DB_ROOT_USER="{{- .Values.database.common.root_user_name -}}"
-DB_ROOT_PASSWORD="{{- .Values.database.common.root_password -}}"
 DB_HOST="{{- .Values.database.common.host -}}"
 DB_NAME="{{- .Values.database.datamover_api.database -}}"
 DB_USER="{{- .Values.database.datamover_api.user -}}"
-DB_PASSWORD="{{- .Values.database.datamover_api.password -}}"
 # Create the database
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci;"
 
@@ -33,7 +31,16 @@ mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVI
 # Flush privileges
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "FLUSH PRIVILEGES;"
 # Database Sync
-exec /usr/bin/python3 /usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf
+
+tee > /tmp/triliovault-datamover-api-dynamic.conf << EOF
+
+[database]
+connection = mysql+pymysql://${DMAPI_DATABASE_USER}:${DB_PASSWORD}@${DMAPI_DATABASE_HOST}:${DMAPI_DATABASE_PORT}/${DMAPI_DATABASE_NAME}
+
+EOF
+
+
+exec /usr/bin/python3 /usr/bin/dmapi-dbsync --config-file /tmp/triliovault-datamover-api-dynamic.conf --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf
 status=$?
 if [ $status -ne 0 ]; then
   echo "TrilioVault datamover api db init failed with retrun code $status"

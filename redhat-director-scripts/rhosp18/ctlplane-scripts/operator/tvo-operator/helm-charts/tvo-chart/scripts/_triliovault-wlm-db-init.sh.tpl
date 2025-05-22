@@ -1,11 +1,9 @@
 #!/bin/bash
 set -e
 DB_ROOT_USER="{{- .Values.database.common.root_user_name -}}"
-DB_ROOT_PASSWORD="{{- .Values.database.common.root_password -}}"
 DB_HOST="{{- .Values.database.common.host -}}"
 DB_NAME="{{- .Values.database.wlm_api.database -}}"
 DB_USER="{{- .Values.database.wlm_api.user -}}"
-DB_PASSWORD="{{- .Values.database.wlm_api.password -}}"
 # Create the database
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci;"
 
@@ -32,7 +30,15 @@ mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "GRANT ALL PRIVI
 mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -h "$DB_HOST" -e "FLUSH PRIVILEGES;"
 sleep 5s
 # Database Sync
-/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head
+
+tee > /tmp/triliovault-wlm-dynamic.conf << EOF
+
+[alembic]
+sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${DB_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
+
+EOF
+
+/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf --config /tmp/triliovault-wlm-dynamic.conf upgrade head
 status=$?
 if [ $status -ne 0 ]; then
   echo "TrilioVault wlm database init failed"

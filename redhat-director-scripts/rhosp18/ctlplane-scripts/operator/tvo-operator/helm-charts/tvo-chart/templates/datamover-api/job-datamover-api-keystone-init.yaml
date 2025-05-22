@@ -31,6 +31,17 @@ spec:
             runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DmapiKeystonePassword
+            - name: OS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: CloudAdminPassword
           command:
             - /bin/bash
             - -c

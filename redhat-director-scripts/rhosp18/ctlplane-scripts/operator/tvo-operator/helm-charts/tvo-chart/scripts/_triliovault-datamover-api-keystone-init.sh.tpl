@@ -5,7 +5,6 @@ source /tmp/triliovault-cloudrc
 
 # Variables
 USER_NAME="{{- .Values.keystone.datamover_api.user -}}"
-PASSWORD="{{- .Values.keystone.datamover_api.password -}}"
 SERVICE_DOMAIN="{{- .Values.keystone.common.service_project_domain_name -}}"
 SERVICE_PROJECT="{{- .Values.keystone.common.service_project_name -}}"
 ADMIN_ROLE_NAME="{{- .Values.keystone.common.admin_role_name -}}"

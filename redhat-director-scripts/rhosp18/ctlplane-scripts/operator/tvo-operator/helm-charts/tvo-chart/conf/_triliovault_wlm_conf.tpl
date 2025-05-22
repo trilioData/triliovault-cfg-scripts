@@ -24,7 +24,6 @@ neutron_api_insecure = false
 osapi_workloads_listen_port = 8780
 region_name_for_services = "{{ .Values.keystone.common.region_name }}"
 rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
-sql_connection = mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.wlm_api.database }}
 state_path = /opt/stack/data/workloadmgr
 taskflow_max_cache_size = 1024
 transport_url = {{ .Values.rabbitmq.wlm_api.transport_url }}
@@ -73,7 +72,6 @@ is_default = 0
 
 [alembic]
 script_location = /usr/share/workloadmgr/migrate_repo
-sqlalchemy.url = mysql+pymysql://{{- .Values.database.wlm_api.user -}}:{{- .Values.database.wlm_api.password -}}@{{- .Values.database.common.host -}}:{{- .Values.database.common.port -}}/{{- .Values.database.wlm_api.database }}
 version_locations = /usr/share/workloadmgr/migrate_repo/versions
 [barbican]
 encryption_support = true
@@ -90,7 +88,7 @@ misfire_grace_time = 600
 auth_url = {{ .Values.keystone.common.auth_url }}
 {{- $auth_url := .Values.keystone.common.auth_url | trimSuffix "/" }}
 www_authenticate_uri = {{ $auth_url }}/v3
-admin_password = {{ .Values.keystone.wlm_api.password }}
+
 admin_tenant_name = {{ .Values.keystone.common.service_project_name }}
 admin_user = {{ .Values.keystone.wlm_api.user }}
 auth_plugin = password
@@ -106,7 +104,6 @@ region_name = {{ .Values.keystone.common.region_name }}
 service_token_roles_required = true
 signing_dir = /var/cache/workloadmgr
 username = {{ .Values.keystone.wlm_api.user }}
-password = {{ .Values.keystone.wlm_api.password }}
 memcached_servers = {{ .Values.common.memcached_servers }}
 
 [s3fuse_sys_admin]

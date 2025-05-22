@@ -31,6 +31,17 @@ spec:
             runAsUser: {{ .Values.common.nova_user_id }}
           image: {{ .Values.images.triliovault_wlm_api }}
           imagePullPolicy: IfNotPresent
+          env:
+            - name: WLMAPI_RABBITMQ_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmRabbitPassword
+            - name: RABBITMQ_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: RabbitAdminPassword
           command:
             - /bin/bash
             - -c
