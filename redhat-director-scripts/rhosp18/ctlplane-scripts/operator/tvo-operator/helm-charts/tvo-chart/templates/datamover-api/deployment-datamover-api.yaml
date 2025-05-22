@@ -82,6 +82,14 @@ spec:
                 secretKeyRef:
                   name: trilio-openstack-secret
                   key: DmapiRabbitPassword
+            - name: DMAPI_RABBIT_USER
+              value: {{- .Values.rabbitmq.wlm_api.user -}}
+            - name: DMAPI_RABBIT_VHOST
+              value: {{- .Values.rabbitmq.wlm_api.vhost -}}
+            - name: DMAPI_RABBIT_HOST
+              value: {{- .Values.rabbitmq.common.host -}}  
+            - name: IS_RABBIT_SSL_ENABLED
+              value: {{- .Values.rabbitmq.common.ssl -}}   
             - name: DMAPI_DATABASE_USER
               value: {{- .Values.database.datamover_api.user -}}
             - name: DMAPI_DATABASE_HOST

@@ -90,6 +90,14 @@ spec:
                 secretKeyRef:
                   name: trilio-openstack-secret
                   key: WlmRabbitPassword
+            - name: WLM_RABBIT_USER
+              value: {{- .Values.rabbitmq.wlm_api.user -}}
+            - name: WLM_RABBIT_VHOST
+              value: {{- .Values.rabbitmq.wlm_api.vhost -}}
+            - name: WLM_RABBIT_HOST
+              value: {{- .Values.rabbitmq.common.host -}}  
+            - name: IS_RABBIT_SSL_ENABLED
+              value: {{- .Values.rabbitmq.common.ssl -}}           
             - name: WLM_DATABASE_USER
               value: {{- .Values.database.wlm_api.user -}}
             - name: WLM_DATABASE_HOST
@@ -98,7 +106,6 @@ spec:
               value: {{- .Values.database.common.port -}}
             - name: WLM_DATABASE_NAME
               value: {{- .Values.database.wlm_api.database -}}
-
             {{- range .Values.triliovault_backup_targets }}
             {{- if eq .backup_target_type "s3" }}
             - name: {{ .backup_target_name }}_S3_ACCESS_KEY
