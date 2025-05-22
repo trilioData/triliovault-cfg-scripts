@@ -67,10 +67,20 @@ cloud_admin_project_id = $CLOUD_ADMIN_PROJECT_ID
 cloud_unique_id = $WLM_USER_ID
 triliovault_user_domain_id = $WLM_USER_DOMAIN_ID
 domain_name = $CLOUD_ADMIN_DOMAIN_ID
+sql_connection = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
+
 
 [keystone_authtoken]
 project_domain_id = $WLM_PROJECT_DOMAIN_ID
 user_domain_id = $WLM_USER_DOMAIN_ID
+admin_password = ${WLM_KEYSTONE_PASSWORD}
+password = ${WLM_KEYSTONE_PASSWORD}
+
+[filter:authtoken]
+admin_password = ${WLM_KEYSTONE_PASSWORD}
+
+[alembic]
+sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
 EOF
 

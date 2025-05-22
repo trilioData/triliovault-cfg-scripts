@@ -38,7 +38,6 @@ auth_port = {{ .Values.keystone.common.keystone_auth_port }}
 admin_tenant_name = {{ .Values.keystone.common.service_project_name }}
 project_name = {{ .Values.keystone.common.service_project_name }}
 admin_user = {{ .Values.keystone.wlm_api.user }}
-admin_password = {{ .Values.keystone.wlm_api.password }}
 signing_dir = /var/cache/workloadmgr
 insecure = False
 interface = {{ .Values.keystone.keystone_interface }}
