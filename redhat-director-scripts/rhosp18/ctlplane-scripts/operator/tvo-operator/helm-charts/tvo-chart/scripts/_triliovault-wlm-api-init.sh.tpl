@@ -49,6 +49,12 @@ if [[ $KEYSTONE_URL =~ ^(https?)://([^:/]+)(:([0-9]+))?(/.*)?$ ]]; then
   auth_port=${BASH_REMATCH[4]}
 fi
 
+if [ "$IS_RABBIT_SSL_ENABLED" = "true" ]; then
+  RABBIT_SSL_ENABLED_NUM=1
+else
+  RABBIT_SSL_ENABLED_NUM=0
+fi
+
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf << EOF
 [DEFAULT]
 
@@ -67,10 +73,20 @@ cloud_admin_project_id = $CLOUD_ADMIN_PROJECT_ID
 cloud_unique_id = $WLM_USER_ID
 triliovault_user_domain_id = $WLM_USER_DOMAIN_ID
 domain_name = $CLOUD_ADMIN_DOMAIN_ID
+sql_connection = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
+transport_url = rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
 
 [keystone_authtoken]
 project_domain_id = $WLM_PROJECT_DOMAIN_ID
 user_domain_id = $WLM_USER_DOMAIN_ID
+admin_password = ${WLM_KEYSTONE_PASSWORD}
+password = ${WLM_KEYSTONE_PASSWORD}
+
+[filter:authtoken]
+admin_password = ${WLM_KEYSTONE_PASSWORD}
+
+[alembic]
+sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
 EOF
 
