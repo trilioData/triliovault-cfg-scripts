@@ -31,6 +31,25 @@ spec:
             runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
           image: {{ .Values.images.triliovault_datamover_api }}
           imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DmapiDatabasePassword
+            - name: DB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DatabseRootPassword
+            - name: DMAPI_DATABASE_USER
+              value: "{{- .Values.database.datamover_api.user -}}"
+            - name: DMAPI_DATABASE_HOST
+              value: "{{- .Values.database.common.host -}}"
+            - name: DMAPI_DATABASE_PORT
+              value: "{{- .Values.database.common.port -}}"
+            - name: DMAPI_DATABASE_NAME
+              value: "{{- .Values.database.datamover_api.database -}}"
           command:
             - /bin/bash
             - -c
