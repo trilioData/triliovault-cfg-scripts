@@ -1,13 +1,11 @@
 #!/bin/bash
 set -e
 RABBITMQ_ADMIN_USER="{{- .Values.rabbitmq.common.admin_user -}}"
-RABBITMQ_ADMIN_PASSWORD="{{- .Values.rabbitmq.common.admin_password -}}"
 RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"
 RABBITMQ_PORT="{{- .Values.rabbitmq.common.port -}}"
 
 # RabbitMQ user to be created
 WLMAPI_RABBITMQ_USER_NAME="{{- .Values.rabbitmq.wlm_api.user -}}"
-WLMAPI_RABBITMQ_USER_PASSWORD="{{- .Values.rabbitmq.wlm_api.password -}}"
 WLMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.wlm_api.vhost -}}"
 
 # Export credentials for rabbitmqctl
