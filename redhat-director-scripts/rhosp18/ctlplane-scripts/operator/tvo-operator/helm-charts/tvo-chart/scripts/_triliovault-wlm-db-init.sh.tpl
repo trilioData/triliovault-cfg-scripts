@@ -34,6 +34,8 @@ sleep 5s
 tee > /tmp/triliovault-wlm-dynamic.conf << EOF
 
 [alembic]
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
 sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${DB_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
 EOF
