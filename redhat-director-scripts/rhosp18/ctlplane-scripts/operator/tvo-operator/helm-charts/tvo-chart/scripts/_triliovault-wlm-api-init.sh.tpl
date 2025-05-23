@@ -74,7 +74,7 @@ cloud_unique_id = $WLM_USER_ID
 triliovault_user_domain_id = $WLM_USER_DOMAIN_ID
 domain_name = $CLOUD_ADMIN_DOMAIN_ID
 sql_connection = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
-transport_url = "rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
+transport_url = rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
 
 [keystone_authtoken]
 project_domain_id = $WLM_PROJECT_DOMAIN_ID
