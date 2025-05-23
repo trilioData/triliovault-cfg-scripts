@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 set -e
 RABBITMQ_ADMIN_USER="{{- .Values.rabbitmq.common.admin_user -}}"
 RABBITMQ_HOST="{{- .Values.rabbitmq.common.host -}}"

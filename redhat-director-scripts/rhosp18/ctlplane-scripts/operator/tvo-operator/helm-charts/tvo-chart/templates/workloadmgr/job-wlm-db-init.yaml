@@ -43,13 +43,13 @@ spec:
                   name: trilio-openstack-secret
                   key: WlmRootPassword
             - name: WLM_DATABASE_USER
-              value: {{- .Values.database.wlm_api.user -}}
+              value: "{{- .Values.database.wlm_api.user -}}"
             - name: WLM_DATABASE_HOST
-              value: {{- .Values.database.common.host -}}
+              value: "{{- .Values.database.common.host -}}"
             - name: WLM_DATABASE_PORT
-              value: {{- .Values.database.common.port -}}
+              value: "{{- .Values.database.common.port -}}"
             - name: WLM_DATABASE_NAME
-              value: {{- .Values.database.wlm_api.database -}}
+              value: "{{- .Values.database.wlm_api.database -}}"
 
           command:
             - /bin/bash
