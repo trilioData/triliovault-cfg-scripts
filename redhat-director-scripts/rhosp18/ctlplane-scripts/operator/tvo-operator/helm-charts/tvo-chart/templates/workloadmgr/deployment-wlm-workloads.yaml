@@ -61,7 +61,7 @@ spec:
             runAsUser: 0
           env:
             - name: POD_NAME
-              value: "triliovault-wlm-api"
+              value: "triliovault-wlm-workloads"
             - name: POD_IP
               valueFrom:
                 fieldRef:
