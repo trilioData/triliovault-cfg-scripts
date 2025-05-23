@@ -37,7 +37,7 @@ spec:
           env:
             {{- if eq .backup_target_type "s3" }}
             - name: BACKUP_TARGET_NAME
-              value: {{- .backup_target_name -}}
+              value: "{{- .backup_target_name -}}"
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
