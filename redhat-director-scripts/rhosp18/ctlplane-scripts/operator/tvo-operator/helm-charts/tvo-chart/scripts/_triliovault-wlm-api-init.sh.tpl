@@ -90,19 +90,6 @@ sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@$
 
 EOF
 
-
-{{- range .Values.triliovault_backup_targets }}
-{{- if eq .backup_target_type "s3" }}
-cat >> /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf <<EOF
-
-[{{ .backup_target_name }}]
-s3_access_key = \${{ .backup_target_name }}_S3_ACCESS_KEY
-s3_secret_key = \${{ .backup_target_name }}_S3_SECRET_KEY
-EOF
-{{- end }}
-{{- end }}
-
-
 chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf
 mkdir -p /var/log/triliovault/wlm-api /var/log/triliovault/wlm-workloads /var/log/triliovault/wlm-scheduler
 chown -R nova:nova /var/log/triliovault/
