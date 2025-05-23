@@ -41,7 +41,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: trilio-openstack-secret
-                  key: WlmRootPassword
+                  key: DatabseRootPassword
             - name: WLM_DATABASE_USER
               value: "{{- .Values.database.wlm_api.user -}}"
             - name: WLM_DATABASE_HOST
