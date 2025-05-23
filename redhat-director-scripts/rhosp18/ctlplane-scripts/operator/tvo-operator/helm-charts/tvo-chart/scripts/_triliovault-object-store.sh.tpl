@@ -8,9 +8,9 @@ function start () {
 
 cat > /etc/triliovault-object-store/triliovault-object-store-dynamic.conf <<EOF
 
-[${BACKUP_TARGET_NAME}]
-s3_access_key = ${S3_ACCESS_KEY}
-s3_secret_key = ${S3_SECRET_KEY}
+[DEFAULT]
+vault_s3_access_key_id = ${S3_ACCESS_KEY}
+vault_s3_secret_access_key = ${S3_SECRET_KEY}
 EOF
 
   ## Start triliovault object store service if backup target type is s3

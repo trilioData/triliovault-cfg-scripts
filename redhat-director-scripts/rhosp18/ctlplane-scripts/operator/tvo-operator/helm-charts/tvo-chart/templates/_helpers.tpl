@@ -30,8 +30,6 @@
 
 [DEFAULT]
 {{- if eq $target.backup_target_type "s3" }}
-vault_s3_access_key_id = {{ $target.s3_access_key }}
-vault_s3_secret_access_key = {{ $target.s3_secret_key }}
 vault_s3_bucket = {{ $target.s3_bucket }}
 vault_s3_region_name = {{ $target.s3_region_name }}
 vault_s3_auth_version = {{ $target.s3_auth_version }}
