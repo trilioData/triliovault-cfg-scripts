@@ -40,7 +40,7 @@ sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${DB_PASSWORD}@${WLM_DATAB
 
 EOF
 
-/usr/bin/alembic-3 --config /etc/triliovault-wlm/triliovault-wlm.conf --config /tmp/triliovault-wlm-dynamic.conf upgrade head
+/usr/bin/alembic-3 --config /tmp/triliovault-wlm-dynamic.conf upgrade head
 status=$?
 if [ $status -ne 0 ]; then
   echo "TrilioVault wlm database init failed"
