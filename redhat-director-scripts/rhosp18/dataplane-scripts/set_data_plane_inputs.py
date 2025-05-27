@@ -14,6 +14,13 @@ with open(SECRET_FILE) as f:
 
 common = data["spec"]["rabbitmq"]["common"]
 dmapi = data["spec"]["rabbitmq"]["datamover_api"]
+backup_targets = data.get("spec", {}).get("triliovault_backup_targets", [])
+backup_targets_yaml = yaml.dump(
+    {"triliovault_backup_targets": backup_targets},
+    default_flow_style=False,
+    indent=2
+)
+
 
 DMAPI_RABBIT_USER = dmapi.get("user", "")
 DMAPI_RABBIT_VHOST = dmapi.get("vhost", "")
@@ -53,16 +60,6 @@ DMAPI_DB_CONN = (
     f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
-# Print like bash export
-print(f'DMAPI_RABBIT_USER={DMAPI_RABBIT_USER}')
-print(f'DMAPI_RABBIT_PASSWORD={DMAPI_RABBIT_PASSWORD}')
-print(f'OPENSTACK_RABBIT_HOST={OPENSTACK_RABBIT_HOST}')
-print(f'DMAPI_RABBIT_VHOST={DMAPI_RABBIT_VHOST}')
-print(f'DMAPI_RABBIT_SSL={DMAPI_RABBIT_SSL}')
-print(f'DMAPI_RABBIT_PORT={DMAPI_RABBIT_PORT}')
-print(f'DMAPI_RABBIT_SSL_NUMBER={DMAPI_RABBIT_SSL_NUMBER}')
-print(f'DMAPI_TRANSPORT_URL="{DMAPI_TRANSPORT_URL}"')
-
 
 pattern_rabbit = re.compile(r'^(\s*dmapi_transport_url:\s*")[^"]*(")')
 pattern_db = re.compile(r'^(\s*dmapi_database_connection:\s*")[^"]*(")')
@@ -77,4 +74,31 @@ with open(CM_FILE, 'w') as f:
         line = pattern_db.sub(rf'\1{DMAPI_DB_CONN}\2', line)
         f.write(line)
 
-print("Updated database connection and rabbit transport url in file cm-trilio-datamover.yaml")
+print("Updated dmapi database connection and dmapi rabbit transport url in file cm-trilio-datamover.yaml")
+
+
+# Step 1: Trim all lines after 'triliovault_backup_targets:'
+trimmed_lines = []
+found = False
+with open(CM_FILE, "r") as f:
+    for line in f:
+        trimmed_lines.append(line)
+        if "triliovault_backup_targets:" in line:
+            found = True
+            break  # stop after this line
+
+if not found:
+    print("triliovault_backup_targets: not found in the file.")
+    exit(1)
+
+# Step 2: Write trimmed content back
+with open(CM_FILE, "w") as f:
+    f.writelines(trimmed_lines)
+
+
+# Step 4: Append with proper indentation (6 spaces for trilio_env.yml nesting)
+with open(CM_FILE, "a") as f:
+    for line in backup_targets_yaml.splitlines()[1:]:  # Skip the top-level key
+        f.write("      " + line + "\n")
+
+print("Updated triliovault backup targets cm-trilio-datamover.yaml")
