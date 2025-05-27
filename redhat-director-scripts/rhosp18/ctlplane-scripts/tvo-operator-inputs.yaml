@@ -86,7 +86,6 @@ spec:
       service_project_domain_name: "Default"
       admin_role_name: "admin"
       cloud_admin_user_name: "admin"
-      cloud_admin_user_password: "openstack"
       cloud_admin_project_name: "admin"
       cloud_admin_domain_name: "Default"
       region_name: "regionOne"
@@ -98,7 +97,6 @@ spec:
       is_self_signed_ssl_cert: True
     datamover_api:
       user: "dmapi"
-      password: "defajgh48zgt88wFzzhwEt3xHGeCOdExYbLGQN2XRm"
       service_name: "dmapi"
       service_type: "datamover"
       service_desc: "TrilioVault Datamover Api Service"
@@ -107,7 +105,6 @@ spec:
       public_auth_host: "triliovault-datamover-public-trilio-openstack.apps.trilio.trilio.bos2"
     wlm_api:
       user: "triliovault"
-      password: "dsdeJl8axy0gv14fURwUUxy0qUOQbugUUOfXikz6j"
       service_name: "TrilioVaultWLM"
       service_type: "workloads"
       service_desc: "TrilioVault Workloadmgr Api Service"
@@ -117,35 +114,27 @@ spec:
   database:
     common:
       root_user_name: "root"
-      root_password: "openstack"
       host: "openstack.openstack.svc"
       port: 3306
     datamover_api:
       user: "dmapi"
-      password: "dsw21aSyH5gHH6XE72k11Y3t3C308jY5rP02ndwJW"
       database: "dmapi"
     wlm_api:
       user: "workloadmgr"
-      password: "dfeeYb72OwUzX5YuRKcVjxXJaELV8YT0jZczIQwys0v"
       database: "workloadmgr"
   rabbitmq:
     common:
       admin_user: "admin"
-      admin_password: "EDIT_PASSWORD"
       host: "EDIT_HOST"
       port: "15671"
       driver: "messagingv2"
       ssl: true
     datamover_api:
       user: "dmapi"
-      password: "EDIT_PASSWORD"
       vhost: "dmapi"
-      transport_url: "rabbit://dmapi:${PASSWORD}@${RABBITMQ_HOST}:5671/dmapi?ssl=1"
     wlm_api:
       user: "workloadmgr"
-      password: "EDIT_PASSWORD"
       vhost: "workloadmgr"
-      transport_url: "rabbit://workloadmgr:${PASSWORD}@${RABBITMQ_HOST}:5671/workloadmgr?ssl=1"
   helm3_hook: true
   pod:
     security_context:
