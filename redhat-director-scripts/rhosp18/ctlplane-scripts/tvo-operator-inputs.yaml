@@ -43,8 +43,6 @@ spec:
       backup_target_type: 's3'
       is_default: False
       s3_type: 'amazon_s3'
-      s3_access_key: ''
-      s3_secret_key: ''
       s3_region_name: ''
       s3_bucket: ''
       s3_endpoint_url: ''
@@ -58,8 +56,6 @@ spec:
       backup_target_type: 's3'
       is_default: True
       s3_type: 'other_s3'
-      s3_access_key: 'ACCESSKEY2'
-      s3_secret_key: 'SECRETKEY2'
       s3_region_name: 'REGION2'
       s3_bucket: 'BUCKET2'
       s3_endpoint_url: 'ENDPOINT_URL2'
