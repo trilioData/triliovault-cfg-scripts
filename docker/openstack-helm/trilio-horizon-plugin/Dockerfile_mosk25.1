@@ -1,27 +1,25 @@
 FROM mirantis.azurecr.io/openstack/horizon:caracal-jammy-20250217105151
 
-LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+LABEL name="triliovault-horizon-helm" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
       version="6.1.2" \
       release="6.1" \
       summary="TrilioVault Horizon Plugin" \
-      description="TrilioVault Horizon Plugin Openstack Helm for MOSK v25.1"
+      description="TrilioVault Horizon Plugin for Mirantis OpenStack on Kubernetes 25.1"
 
-# Install Trilio plugin and dependencies
-ARG TRILIO_PIP_INDEX_URL="default"
-#Eg. TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-stable-6-1/"
-RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
-    pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
+## Become root
+USER root
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+RUN source /var/lib/openstack/bin/activate && export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
 
-# Copy Trilio plugin files
-RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/local/enabled/
-RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
+RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/enabled/ && \
+    cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/ && \
+    cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/local_settings.d/_001_trilio_dashboard.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/local/local_settings.d/
 
-# Run Django management commands to collect static files and compress
-RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
-RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py compress --force
-
-# Add license
+## Add license
 RUN mkdir /licenses
 COPY licensing.txt /licenses
+
+## Become horizon user
+USER horizon
