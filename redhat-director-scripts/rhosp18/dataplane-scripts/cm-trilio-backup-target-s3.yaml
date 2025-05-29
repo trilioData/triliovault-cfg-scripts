@@ -5,7 +5,7 @@ metadata:
   name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>
 data:
   trilio_env.yml: |
-    triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.1.0-stable-19-rhosp18.0"
+    triliovault_wlm_image: "registry.connect.redhat.com/trilio/trilio-wlm:6.1.0-rhoso18.0"
     triliovault_backup_target:
       backup_target_name: '<BACKUP_TARGET_NAME>'
       backup_target_type: 's3'

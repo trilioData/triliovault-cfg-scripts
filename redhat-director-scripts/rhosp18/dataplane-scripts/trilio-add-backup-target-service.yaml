@@ -5,7 +5,7 @@ metadata:
 spec:
   deployOnAllNodeSets: true
   label: trilio-add-backup-target-custom-service
-  openStackAnsibleEERunnerImage: docker.io/trilio/rhoso-ansible-runner:6.1.0-stable-1-rhosp18.0
+  openStackAnsibleEERunnerImage: registry.connect.redhat.com/trilio/trilio-ansible-runner-rhoso:6.1.0-rhoso18.0
   edpmServiceType: trilio-add-backup-target-<BACKUP_TARGET_NAME>
   playbookContents: |
     - hosts: all

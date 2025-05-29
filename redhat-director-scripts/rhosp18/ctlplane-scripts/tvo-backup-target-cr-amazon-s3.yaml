@@ -6,7 +6,7 @@ spec:
   # Default values copied from <project_dir>/helm-charts/tvo-chart/values.yaml
   crdType: "TVOBackupTarget"
   images:
-    triliovault_object_store: "docker.io/trilio/trilio-wlm:6.0.24-dev-maint1-2-rhosp18.0"
+    triliovault_object_store: "registry.connect.redhat.com/trilio/trilio-wlm:6.1.0-rhoso18.0"
   triliovault_backup_target:
     backup_target_name: 'S3_BT4'
     backup_target_type: 's3'
