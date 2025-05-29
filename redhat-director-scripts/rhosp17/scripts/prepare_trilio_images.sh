@@ -31,13 +31,15 @@ podman pull registry.connect.redhat.com/trilio/trilio-datamover:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
 podman pull registry.connect.redhat.com/trilio/trilio-wlm:${tag}
 
-openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover:${tag}
+podman tag registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag} ${undercloud_hostname}:8787/trilio/trilio-horizon-plugin:${tag}
+podman tag registry.connect.redhat.com/trilio/trilio-datamover:${tag} ${undercloud_hostname}:8787/trilio/trilio-datamover:${tag}
+podman tag registry.connect.redhat.com/trilio/trilio-datamover-api:${tag} ${undercloud_hostname}:8787/trilio/trilio-datamover-api:${tag}
+podman tag registry.connect.redhat.com/trilio/trilio-wlm:${tag} ${undercloud_hostname}:8787/trilio/trilio-wlm:${tag}
 
-openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-datamover-api:${tag}
-
-openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-wlm:${tag}
-
-openstack tripleo container image push --local registry.connect.redhat.com/trilio/trilio-horizon-plugin:${tag}
+openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/trilio-horizon-plugin:${tag}
+openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/trilio-datamover:${tag}
+openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/trilio-datamover-api:${tag}
+openstack tripleo container image push --local ${undercloud_hostname}:8787/trilio/trilio-wlm:${tag}
 
 
 ## Update image locations in env file
