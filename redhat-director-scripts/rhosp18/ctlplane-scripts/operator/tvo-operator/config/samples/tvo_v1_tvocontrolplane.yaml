@@ -54,6 +54,10 @@ spec:
     triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  openstack:
+    namespace: "openstack"
+    osp_secret_name: "osp-secret"
+    rabbitmq_admin_secret_name: "rabbitmq-default-user"
   keystone:
     common:
       admin_role_name: admin
