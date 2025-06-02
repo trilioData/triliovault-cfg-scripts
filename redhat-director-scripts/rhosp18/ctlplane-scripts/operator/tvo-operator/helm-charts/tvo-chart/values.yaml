@@ -70,6 +70,10 @@ triliovault_backup_targets:
     is_default: False
     nfs_shares: '11.30.1.10:/mnt/share'
     nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+openstack:
+  namespace: "openstack"
+  osp_secret_name: "osp-secret"
+  rabbitmq_admin_secret_name: "rabbitmq-default-user"
 keystone:
   keystone_interface: "internal"
   common:
