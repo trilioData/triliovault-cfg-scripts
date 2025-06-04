@@ -11,11 +11,11 @@ data:
     libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
     ceph_cinder_user: "cinder"
     oslomsg_rpc_use_ssl: true
-    triliovault_datamover_image: "docker.io/trilio/trilio-datamover:6.0.0-stable-19-rhosp18.0"
-    triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
+    triliovault_datamover_image: "registry.connect.redhat.com/trilio/trilio-datamover-rhoso:6.0.0-stable-19-rhosp18.0"
+    triliovault_wlm_image: "registry.connect.redhat.com/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
     trilio_container_registry_username: ""
     trilio_container_registry_password: ""
-    trilio_container_registry_url: "docker.io"
+    trilio_container_registry_url: "registry.connect.redhat.com"
     triliovault_backup_targets:
       - backup_target_name: 'BT1_S3'
         backup_target_type: 's3'
