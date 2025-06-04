@@ -41,7 +41,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: openstack-secret
-                  key: DatabseRootPassword
+                  key: DatabaseRootPassword
             - name: DMAPI_DATABASE_USER
               value: "{{- .Values.database.datamover_api.user -}}"
             - name: DMAPI_DATABASE_HOST
