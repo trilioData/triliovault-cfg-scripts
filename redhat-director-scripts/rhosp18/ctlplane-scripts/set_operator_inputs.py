@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import subprocess
-import yaml
+from ruamel.yaml import YAML
+
+
 import sys
 from urllib.parse import urlparse
 import secrets
@@ -11,6 +13,13 @@ import base64
 
 # Define the input YAML file
 yaml_file = "tvo-operator-inputs.yaml"
+
+yaml_parser = YAML()
+yaml_parser.preserve_quotes = True
+
+with open(yaml_file, "r") as file:
+    yaml_data = yaml_parser.load(file)
+
 
 # Function to check if Barbican is installed
 def is_barbican_installed():
@@ -91,9 +100,9 @@ def fetch_and_extract_cluster_domain():
             check=True
         )
         glance_url = result.stdout.strip()
-        
+
         if glance_url:
-            
+
             # Match everything after "openstack." and before the next "/"
             match = re.search(r'openstack\.(.+?)(?:[/:]|$)', glance_url)
             if match:
@@ -112,7 +121,7 @@ def fetch_and_extract_cluster_domain():
 # Function to update keystone endpoints for trilio services
 def update_keystone_endpoints():
     glance_url, cluster_domain = fetch_and_extract_cluster_domain()
-    
+
     if glance_url and cluster_domain:
         keystone_endpoints = {
             "datamover_api": {
@@ -129,7 +138,7 @@ def update_keystone_endpoints():
         yaml_data["spec"]["keystone"]["datamover_api"]["public_auth_host"] = keystone_endpoints["datamover_api"]["public_auth_host"]
         yaml_data["spec"]["keystone"]["wlm_api"]["public_endpoint"] = keystone_endpoints["wlm_api"]["public_endpoint"]
         yaml_data["spec"]["keystone"]["wlm_api"]["public_auth_host"] = keystone_endpoints["wlm_api"]["public_auth_host"]
-        
+
     else:
         print("Unable to update Keystone endpoints, missing necessary information.")
 
@@ -138,15 +147,12 @@ def update_keystone_endpoints():
 
 # Get the image tag from command-line argument
 if len(sys.argv) != 2:
-    print("Usage: script.py <image-tag>")
+    print("Usage: ./set_operator_inputs.py <TRILIO-CONTAINER-IMAGE-TAG>")
+    print("       Please provide container image tag of trilio-wlm or trilio-datamover-api.")
+    print("       If tags of trilio-wlm and trilio-datamover-api does not match then you need to manually set them in tvo-operator-inputs.yaml")
     sys.exit(1)
 
 image_tag = sys.argv[1]
-
-# Load the YAML file
-print("Loading YAML file...")
-with open(yaml_file, "r") as file:
-    yaml_data = yaml.safe_load(file)
 
 # Determine the new value for trustee_role
 new_trustee_role = "creator,member" if is_barbican_installed() else "member"
@@ -210,13 +216,6 @@ def set_rabbitmq_params():
         if not rabbit_admin_user:
             raise Exception("Administrator user not found in RabbitMQ")
 
-        # Fetch RabbitMQ admin password
-        result = subprocess.run(
-            ["oc", "-n", "openstack", "get", "secret", "rabbitmq-default-user", "-o", "jsonpath='{.data.password}'"],
-            capture_output=True, text=True, check=True
-        )
-        rabbit_admin_password = base64.b64decode(result.stdout.strip().strip("'")).decode("utf-8")
-
         # Fetch RabbitMQ host
         result = subprocess.run(
             ["oc", "-n", "openstack", "get", "secret", "rabbitmq-default-user", "-o", "jsonpath='{.data.host}'"],
@@ -242,18 +241,12 @@ def set_rabbitmq_params():
         rabbit_ssl = True
 
         yaml_data["spec"]["rabbitmq"]["common"]["admin_user"] = rabbit_admin_user
-        yaml_data["spec"]["rabbitmq"]["common"]["admin_password"] = rabbit_admin_password
         yaml_data["spec"]["rabbitmq"]["common"]["host"] = rabbit_host
         yaml_data["spec"]["rabbitmq"]["common"]["port"] = rabbit_port
-        rabbit_dmapi_password = yaml_data["spec"]["rabbitmq"]["datamover_api"]["password"]
         rabbit_dmapi_vhost = yaml_data["spec"]["rabbitmq"]["datamover_api"]["vhost"]
         rabbit_dmapi_user = yaml_data["spec"]["rabbitmq"]["datamover_api"]["user"]
-        yaml_data["spec"]["rabbitmq"]["datamover_api"]["transport_url"] = f"rabbit://{rabbit_dmapi_user}:{rabbit_dmapi_password}@{rabbit_host}:{rabbit_listener_port}/{rabbit_dmapi_vhost}?ssl=1"
-        rabbit_wlmapi_password = yaml_data["spec"]["rabbitmq"]["wlm_api"]["password"]
         rabbit_wlmapi_vhost = yaml_data["spec"]["rabbitmq"]["wlm_api"]["vhost"]
         rabbit_wlmapi_user = yaml_data["spec"]["rabbitmq"]["wlm_api"]["user"]
-        yaml_data["spec"]["rabbitmq"]["wlm_api"]["transport_url"] = f"rabbit://{rabbit_wlmapi_user}:{rabbit_wlmapi_password}@{rabbit_host}:{rabbit_listener_port}/{rabbit_wlmapi_vhost}?ssl=1"
-
         print("- Updated rabbitmq section with admin, host, and transport URLs.")
 
     except subprocess.CalledProcessError as e:
@@ -264,11 +257,6 @@ def set_rabbitmq_params():
 
 def set_db_credentials_and_host(namespace="openstack"):
     try:
-        # Get and decode the root password
-        root_pass_encoded = subprocess.check_output(
-            ["oc", "-n", namespace, "get", "secret", "osp-secret", "-o", "jsonpath={.data.DbRootPassword}"]
-        ).decode().strip()
-        root_password = base64.b64decode(root_pass_encoded).decode().strip()
 
         # Get and decode nova-api-config data
         nova_conf_raw = subprocess.check_output(
@@ -289,66 +277,12 @@ def set_db_credentials_and_host(namespace="openstack"):
         if not db_host:
             raise ValueError("Database host not found in nova.conf")
 
-        yaml_data["spec"]["database"]["common"]["root_password"] = root_password
         yaml_data["spec"]["database"]["common"]["host"] = db_host
-        print("- Updated database host and root password in yaml file")
+        print("- Updated database host in yaml file")
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Command failed: {e}")
     except Exception as e:
         raise RuntimeError(f"Error: {e}")
-
-# Function to generate a secure 32-character random password
-def generate_password(length=32):
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
-# Generate individual passwords
-keystone_wlm_pw = generate_password()
-keystone_dmapi_pw = generate_password()
-rabbitmq_wlm_pw = generate_password()
-rabbitmq_dmapi_pw = generate_password()
-db_wlm_pw = generate_password()
-db_dmapi_pw = generate_password()
-
-# Update Keystone passwords
-try:
-    yaml_data["spec"]["keystone"]["wlm_api"]["password"] = keystone_wlm_pw
-    print("- Updated keystone.wlm_api.password.")
-except KeyError:
-    print("Warning: keystone.wlm_api section not found.")
-
-try:
-    yaml_data["spec"]["keystone"]["datamover_api"]["password"] = keystone_dmapi_pw
-    print("- Updated keystone.datamover_api.password.")
-except KeyError:
-    print("Warning: keystone.datamover_api section not found.")
-
-# Update RabbitMQ passwords
-try:
-    yaml_data["spec"]["rabbitmq"]["wlm_api"]["password"] = rabbitmq_wlm_pw
-    print("- Updated rabbitmq.wlm_api.password.")
-except KeyError:
-    print("Warning: rabbitmq.wlm_api section not found.")
-
-try:
-    yaml_data["spec"]["rabbitmq"]["datamover_api"]["password"] = rabbitmq_dmapi_pw
-    print("- Updated rabbitmq.datamover_api.password.")
-except KeyError:
-    print("Warning: rabbitmq.datamover_api section not found.")
-
-# Update Database passwords
-try:
-    yaml_data["spec"]["database"]["wlm_api"]["password"] = db_wlm_pw
-    print("- Updated database.wlm_api.password.")
-except KeyError:
-    print("Warning: database.wlm_api section not found.")
-
-try:
-    yaml_data["spec"]["database"]["datamover_api"]["password"] = db_dmapi_pw
-    print("- Updated database.datamover_api.password.")
-except KeyError:
-    print("Warning: database.datamover_api section not found.")
-
 
 
 update_keystone_endpoints()
@@ -356,10 +290,7 @@ print("Calling rabbit params method")
 set_rabbitmq_params()
 set_db_credentials_and_host()
 
-# Write back to YAML file
 with open(yaml_file, "w") as file:
-    yaml.dump(yaml_data, file, default_flow_style=False, sort_keys=False)
-
+    yaml_parser.dump(yaml_data, file)
 
 print("YAML file tvo-operator-inputs.yaml is updated successfully.")
-
