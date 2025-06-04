@@ -15,7 +15,7 @@ USER=$2
 PASSWORD=$(oc get secret trilio-openstack-secret -n trilio-openstack -o jsonpath='{.data.ContainerRegistryPassword}' | base64 -d)
 
 if [ -z "$PASSWORD" ]; then
-   echo "Failed to retrieve ContainerRegistryPassword from the secret"
+   echo "Failed to retrieve ContainerRegistryPassword from the secret trilio-openstack-secret"
    exit 2
 fi
 
