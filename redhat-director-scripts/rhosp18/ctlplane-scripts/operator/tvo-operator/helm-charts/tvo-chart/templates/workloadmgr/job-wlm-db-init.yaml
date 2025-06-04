@@ -41,7 +41,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: openstack-secret
-                  key: DatabseRootPassword
+                  key: DatabaseRootPassword
             - name: WLM_DATABASE_USER
               value: "{{- .Values.database.wlm_api.user -}}"
             - name: WLM_DATABASE_HOST
