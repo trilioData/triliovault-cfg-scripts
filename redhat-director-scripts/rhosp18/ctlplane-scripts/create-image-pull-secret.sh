@@ -4,6 +4,7 @@ if [ $# -lt 2 ]; then
    echo "Script takes exactly 2 arguments"
    echo -e "./create-image-pull-secret.sh <TRILIO_IMAGE_REGISTRY_URL> <TRILIO_IMAGE_REGISTRY_USER>"
    echo -e "./create-image-pull-secret.sh registry.connect.redhat.com testuser"
+   echo -e "This script reads container image password from secret trilio-openstack-secret"
    exit 1
 fi
 
