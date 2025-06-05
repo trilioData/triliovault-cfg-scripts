@@ -5,7 +5,7 @@
   become: true
   containers.podman.podman_login:
     username: "{{ trilio_container_registry_username }}"
-    password: "{{ trilio_container_registry_password }}"
+    password: "{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/ContainerRegistryPassword') | trim }}"
     registry: "{{ trilio_container_registry_url }}"
   register: podman_login_result
   failed_when: podman_login_result.failed

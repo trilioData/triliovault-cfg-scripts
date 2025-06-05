@@ -6,7 +6,7 @@ vault_data_directory_old = /var/triliovault
 log_config_append = /etc/triliovault-datamover/datamover_logging.conf
 max_uploads_pending = 3
 max_commit_pending = 3
-dmapi_transport_url = {{ dmapi_transport_url }}
+dmapi_transport_url = "rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiRabbitPassword') | trim }}@{{ rabbit_host }}:{{ rabbit_port }}/dmapi{% if rabbit_ssl %}?ssl=1{% endif %}"
 
 {% if cinder_backend_ceph %}
 [libvirt]
@@ -18,7 +18,7 @@ keyring_ext = .keyring
 {% endif %}
 
 [dmapi_database]
-connection = {{ dmapi_database_connection }}
+connection = "mysql+pymysql://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiDatabasePassword') | trim }}@{{ database_host }}:{{ database_port }}/dmapi"
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
