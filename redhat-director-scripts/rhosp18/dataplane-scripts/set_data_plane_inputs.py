@@ -48,7 +48,12 @@ with open(CM_FILE, "w") as f:
 
 # Append backup targets with proper indentation (6 spaces under trilio_env.yml)
 with open(CM_FILE, "a") as f:
-    for line in backup_targets_yaml.splitlines()[1:]:  # Skip the top-level key
-        f.write("      " + line + "\n")
+    lines = backup_targets_yaml.splitlines()
+    if lines:
+        # Write the key with 4 spaces
+        f.write("    " + lines[0] + "\n")  # 'triliovault_backup_targets:'
+        # Write the list items with 6 spaces
+        for line in lines[1:]:
+            f.write("      " + line + "\n")
 
 print("Updated rabbit/database config and backup targets in cm-trilio-datamover.yaml")
