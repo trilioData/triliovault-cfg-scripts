@@ -5,17 +5,19 @@ metadata:
   name: cm-trilio-datamover
 data:
   trilio_env.yml: |
-    dmapi_transport_url: "rabbit://dmapi:lhth25YJV7wVRNy9G5PjxjVRZ5efehjw@rabbitmq.openstack.svc:5671/dmapi?ssl=1"
-    dmapi_database_connection: "mysql+pymysql://dmapi:sdyj21aSyH5gHH6XE72k11Y3t3C308jY5rP02ndwJW@openstack.openstack.svc:3306/dmapi"
+    rabbit_host: "rabbitmq.openstack.svc"
+    rabbit_port: "5671"
+    rabbit_ssl: true
+    database_host: "openstack.openstack.svc"
+    database_port: "3306"
     cinder_backend_ceph: true
     libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
     ceph_cinder_user: "cinder"
     oslomsg_rpc_use_ssl: true
-    triliovault_datamover_image: "docker.io/trilio/trilio-datamover:6.0.0-stable-19-rhosp18.0"
-    triliovault_wlm_image: "docker.io/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
+    triliovault_datamover_image: "registry.connect.redhat.com/trilio/trilio-datamover-rhoso:6.0.0-stable-19-rhosp18.0"
+    triliovault_wlm_image: "registry.connect.redhat.com/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
     trilio_container_registry_username: ""
-    trilio_container_registry_password: ""
-    trilio_container_registry_url: "docker.io"
+    trilio_container_registry_url: "registry.connect.redhat.com"
     triliovault_backup_targets:
       - backup_target_name: 'BT1_S3'
         backup_target_type: 's3'
