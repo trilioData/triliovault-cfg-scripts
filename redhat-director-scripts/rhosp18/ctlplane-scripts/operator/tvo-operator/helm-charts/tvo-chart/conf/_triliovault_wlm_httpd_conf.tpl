@@ -15,11 +15,12 @@ Listen 8781
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass / http://127.0.0.1:8780/
+  ProxyTimeout 600
+  ProxyPass / http://127.0.0.1:8780/ connectiontimeout=600 timeout=600
   ProxyPassReverse / http://127.0.0.1:8780/
 
 
-  Timeout 60
+  Timeout 600
 </VirtualHost>
 
 # Public vhost configuration for https://triliovault-wlm-public-trilio-openstack.apps.trilio.trilio.bos2:8781/v1/s
@@ -39,9 +40,10 @@ Listen 8781
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass / http://127.0.0.1:8780/
+  ProxyTimeout 600
+  ProxyPass / http://127.0.0.1:8780/ connectiontimeout=600 timeout=600
   ProxyPassReverse / http://127.0.0.1:8780/
 
 
-  Timeout 60
+  Timeout 600
 </VirtualHost>
