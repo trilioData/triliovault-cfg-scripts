@@ -30,6 +30,10 @@ MYSQL_DBADMIN_PASSWORD=$(kubectl -n openstack get secrets/mariadb-dbadmin-passwo
 RABBITMQ_ADMIN_PASSWORD=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
 RABBITMQ_ADMIN_USERNAME=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
 
+## Trilio Rabbitmq 
+TRILIO_RABBITMQ_ADMIN_PASSWORD=$(kubectl -n trilio-openstack get secrets/trilio-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
+TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secrets/trilio-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
+
 NOVA_TRANSPORT_URL=$(kubectl -n openstack get secret nova-rabbitmq-user --template={{.data.TRANSPORT_URL}} | base64 -d)
 
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
@@ -72,14 +76,14 @@ endpoints:
   oslo_messaging:
     auth:
       admin:
-        username: $RABBITMQ_ADMIN_USERNAME
-        password: $RABBITMQ_ADMIN_PASSWORD
+        username: $TRILIO_RABBITMQ_ADMIN_USERNAME
+        password: $TRILIO_RABBITMQ_ADMIN_PASSWORD
         secret:
           tls:
             internal: rabbitmq-tls-direct
     host_fqdn_override:
       default:
-        host: rabbitmq.openstack.svc.$INTERNAL_DOMAIN_NAME
+        host: rabbitmq.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
   oslo_messaging_nova:
     auth:
       admin:
