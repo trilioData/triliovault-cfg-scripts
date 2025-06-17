@@ -33,6 +33,15 @@ spec:
         - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
           image: {{ .Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
+          env:
+            {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
+            - name: BACKUP_TARGET_NAME
+              value: "{{- .Values.triliovault_backup_target.backup_target_name -}}"
+            - name: S3_ACCESS_KEY
+              value: "{{- .Values.triliovault_backup_target.s3_access_key -}}"
+            - name: S3_SECRET_KEY
+              value: "{{- .Values.triliovault_backup_target.s3_secret_key -}}"
+            {{- end }}
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
