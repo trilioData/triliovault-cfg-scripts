@@ -95,6 +95,8 @@ spec:
               mountPath: /var/trilio
             - name: varlibtrilio
               mountPath: /var/lib/trilio
+            - mountPath: /etc/nova/nova.conf.d
+              name: nova-confd
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: varlogtriliovaultdatamover
@@ -192,6 +194,8 @@ spec:
               mountPath: /etc/nova/nova.conf
               subPath: nova-compute.conf
               readOnly: true
+            - mountPath: /etc/nova/nova.conf.d
+              name: nova-confd
             - name: triliovault-datamover-etc
               mountPath: /etc/triliovault-datamover/datamover_logging.conf
               subPath: datamover_logging.conf
@@ -274,6 +278,8 @@ spec:
         - name: varlibnova
           hostPath:
             path: /var/lib/nova
+        - emptyDir: {}
+          name: nova-confd
         - name: varliblibvirt
           hostPath:
             path: /var/lib/libvirt
@@ -386,6 +392,8 @@ spec:
               mountPath: /tmp/triliovault-datamover-init.sh
               subPath: triliovault-datamover-init.sh
               readOnly: true
+            - mountPath: /etc/nova/nova.conf.d
+              name: nova-confd
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
 {{ if $mounts_triliovault_datamover_init.volumeMounts }}{{ toYaml $mounts_triliovault_datamover_init.volumeMounts | indent 12 }}{{ end }}
@@ -463,6 +471,8 @@ spec:
               mountPath: /tmp/triliovault-datamover.sh
               subPath: triliovault-datamover.sh
               readOnly: true
+            - mountPath: /etc/nova/nova.conf.d
+              name: nova-confd
             - name: varlibnova
               mountPath: /var/lib/nova
             - name: varliblibvirt
@@ -569,6 +579,8 @@ spec:
         - name: varlibnova
           hostPath:
             path: /var/lib/nova
+        - emptyDir: {}
+          name: nova-confd
         - name: varliblibvirt
           hostPath:
             path: /var/lib/libvirt
