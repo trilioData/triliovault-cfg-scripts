@@ -1,0 +1,74 @@
+ARG FROM=docker.io/ubuntu:jammy
+FROM ${FROM}
+
+LABEL maintainer="shyam.biradar@trilio.io"
+LABEL name="trilio/trilio-wlm" \
+      version="6.1.2" \
+      release="6.1" \
+      vendor="TrilioData" \
+      summary="TrilioData Workload Manager" \
+      description="TrilioData Workload Manager container image for MOSK25.1" \
+      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+
+USER root
+
+ARG PROJECT_DIR=trilio-wlm
+ARG UID=42424
+ARG GID=42424
+ARG PYTHON_VERSION=3.10
+ARG OPENSTACK_REPO=cloud-archive:caracal
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC \
+    LIBGUESTFS_DEBUG=1 \
+    LIBGUESTFS_TRACE=1
+
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        apt-utils \
+        software-properties-common \
+        ca-certificates \
+        curl \
+        make \
+        openssl \
+        gnupg \
+        gcc \
+        python${PYTHON_VERSION} \
+        python3-pip \
+        python3-retrying \
+        sudo \
+        nfs-common \
+        vim \
+        less \
+        iputils-ping \
+    && pip3 --no-cache-dir install --upgrade pip \
+    && apt-get clean -y
+
+# Install Trilio repository
+COPY ./trilio.list /etc/apt/sources.list.d/
+
+RUN set -ex \
+    && apt-add-repository ${OPENSTACK_REPO} \
+    && PYTHON_LIB_PATH=$(python3 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())" ) \
+    && mkdir -p "${PYTHON_LIB_PATH}/wlmfs_appliance" \
+    && apt-get update && apt-get -y upgrade \
+    && apt-get -y install tzdata \
+    && apt-get install -y nova-common
+
+# Configure the Nova user
+COPY nova_userid.sh /opt/${PROJECT_DIR}/
+RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
+    && sed -i -r "s/^(group_id=).*/\1${GID}/" /opt/${PROJECT_DIR}/nova_userid.sh
+RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_userid.sh
+
+RUN apt install -y python3-neutronclient python3-glanceclient python3-attr \
+    && apt-get install -y workloadmgr fuse3 python3-s3-fuse-plugin --allow-unauthenticated \
+    && mkdir -p /var/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store/ \
+    && chmod 777 /var/trilio \
+    && chmod 777 /var/trilio/triliovault-mounts
+
+RUN chown -R nova.nova /var/lib/workloadmgr /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /var/triliovault-mounts /etc/triliovault-object-store/
+RUN usermod -aG disk nova
+
+ADD log-rotate-conf /etc/logrotate.d/workloadmgr-api.conf
+
+USER nova
