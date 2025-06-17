@@ -34,6 +34,10 @@ function start () {
   
   /usr/bin/python3 /usr/bin/tvault-contego \
     --config-file=/etc/nova/nova.conf \
+# Only MOSK requires config-dir
+{{- if eq (default "" .Values.distro) "mosk" }}
+    --config-dir=/etc/nova/nova.conf.d \
+{{- end }}
     --config-file=/etc/triliovault-datamover/triliovault-datamover.conf \
     --config-file=/tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
 

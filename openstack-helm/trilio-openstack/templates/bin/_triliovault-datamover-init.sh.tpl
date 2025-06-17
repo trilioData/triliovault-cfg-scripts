@@ -33,3 +33,56 @@ EOF
 fi
 
 {{- end }}
+
+# --------------------------------------------
+# 1 & 2. Setup nova-libvirt.conf and nova-hypervisor.conf
+# Only if distro == mosk
+# --------------------------------------------
+{{- if eq (default "" .Values.distro) "mosk" }}
+
+# Set default values
+migration_interface="{{ default "mcc-lcm" .Values.conf.datamover.libvirt.live_migration_interface }}"
+listen_tls="{{ default "false" .Values.conf.datamover.libvirt.listen_tls }}"
+hypervisor_interface="{{ default "mcc-lcm" .Values.conf.datamover.libvirt.hypervisor_host_interface }}"
+
+touch /etc/nova/nova.conf.d/nova-libvirt.conf
+if [[ -n "$migration_interface" ]]; then
+    migration_address=$(ip a s $migration_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}')
+fi
+
+qemu_connection_type="qemu+tcp"
+if [[ "$listen_tls" == "true" ]]; then
+    qemu_connection_type="qemu+tls"
+fi
+
+if [[ -n "$migration_address" ]]; then
+    cat <<EOF > /etc/nova/nova.conf.d/nova-libvirt.conf
+[libvirt]
+live_migration_inbound_addr = $migration_address
+connection_uri = "${qemu_connection_type}://${migration_address}/system"
+EOF
+    chgrp nova /etc/nova/nova.conf.d/nova-libvirt.conf
+else
+    echo "Migration address is not set."
+    exit 1
+fi
+
+# Prepare nova-hypervisor.conf
+if [[ -z "$hypervisor_interface" ]]; then
+    hypervisor_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk '{ print $1 }') || exit 1
+fi
+
+hypervisor_address=$(ip a s "$hypervisor_interface" | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}')
+if [ -z "$hypervisor_address" ]; then
+    echo "Var my_ip is empty"
+    exit 1
+fi
+
+tee > /etc/nova/nova.conf.d/nova-hypervisor.conf << EOF
+[DEFAULT]
+my_ip = $hypervisor_address
+EOF
+
+chgrp nova /etc/nova/nova.conf.d/nova-hypervisor.conf
+
+{{- end }}
