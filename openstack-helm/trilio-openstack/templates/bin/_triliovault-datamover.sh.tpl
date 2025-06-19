@@ -20,8 +20,9 @@ COMMAND="${@:-start}"
 
 function start () {
   {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
+  {{- $distro := default "" .Values.distro }}
 
-  {{ if eq $backup_target_type "s3" }}
+  {{- if eq $backup_target_type "s3" }}
   ## Start triliovault object store service
   /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
   status=$?
@@ -30,24 +31,26 @@ function start () {
     echo "Failed to start tvault-object-store service: $status"
     exit $status
   fi
-  {{ end }}
-  
-  /usr/bin/python3 /usr/bin/tvault-contego \
-    --config-file=/etc/nova/nova.conf \
-# Only MOSK requires config-dir
-{{- if eq (default "" .Values.distro) "mosk" }}
-    --config-dir=/etc/nova/nova.conf.d \
-{{- end }}
-    --config-file=/etc/triliovault-datamover/triliovault-datamover.conf \
-    --config-file=/tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
+  {{- end }}
 
+  CMD="/usr/bin/python3 /usr/bin/tvault-contego \
+    --config-file=/etc/nova/nova.conf"
+
+  {{- if eq $distro "mosk" }}
+  CMD+=" --config-file=/etc/nova/nova.conf.d/nova-hypervisor.conf"
+  CMD+=" --config-file=/etc/nova/nova.conf.d/nova-libvirt.conf"
+  {{- end }}
+
+  CMD+=" --config-file=/etc/triliovault-datamover/triliovault-datamover.conf"
+  CMD+=" --config-file=/tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf"
+
+  echo "Running: $CMD"
+  eval $CMD
   status=$?
   if [ $status -ne 0 ]; then
     echo "Failed to start tvault contego service: $status"
     exit $status
   fi
-
-
 }
 
 function stop () {
@@ -55,5 +58,3 @@ function stop () {
 }
 
 $COMMAND
-
-
