@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 set -e
 if [ $# -lt 2 ];then
@@ -19,6 +19,9 @@ cp trilio-add-backup-target-deployment.yaml trilio-add-backup-target-service.yam
 cp cm-trilio-backup-target-${BACKUP_TARGET_TYPE}.yaml ${BACKUP_TARGET_NAME}/cm-trilio-backup-target.yaml
 
 cd ${BACKUP_TARGET_NAME}/
-
+ORIGINAL_BACKUP_TARGTE_NAME=$BACKUP_TARGET_NAME
 BACKUP_TARGET_NAME=$(echo "$BACKUP_TARGET_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/_/-/g')
-sed -i "s/<BACKUP_TARGET_NAME>/${BACKUP_TARGET_NAME}/g" *.yaml
+sed -i "s/<BACKUP_TARGET_NAME>/${BACKUP_TARGET_NAME}/g" trilio-add-backup-target-deployment.yaml
+sed -i "s/<BACKUP_TARGET_NAME>/${BACKUP_TARGET_NAME}/g" trilio-add-backup-target-service.yaml
+sed -i "/^  name: /s/<BACKUP_TARGET_NAME>/${BACKUP_TARGET_NAME}/" cm-trilio-backup-target.yaml
+sed -i "s/<BACKUP_TARGET_NAME>/${ORIGINAL_BACKUP_TARGTE_NAME}/g" cm-trilio-backup-target.yaml
