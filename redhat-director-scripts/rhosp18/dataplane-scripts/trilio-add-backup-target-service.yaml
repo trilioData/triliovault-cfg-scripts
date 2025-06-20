@@ -19,3 +19,5 @@ spec:
   dataSources:
     - configMapRef: 
         name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>
+    - secretRef:
+        name: trilio-s3-backup-target-secret-<BACKUP_TARGET_NAME>
