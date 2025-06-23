@@ -1,0 +1,26 @@
+prometheus-openstack-exporter:
+  endpoint_type: internal
+  cloud: default
+
+  serviceMonitor:
+    enabled: true
+
+  multicloud:
+    enabled: false
+
+  clouds_yaml_config: |
+    clouds.yaml: |
+      clouds:
+        default:
+          region_name: regionOne
+          identity_api_version: 3
+          volume_api_version: 3
+          identity_interface: public
+          auth:
+            username: admin
+            password: YOUR_PASSWORD_HERE
+            project_name: admin
+            user_domain_name: Default
+            project_domain_name: Default
+            auth_url: http://172.30.0.31:5000/v3
+          verify: false
