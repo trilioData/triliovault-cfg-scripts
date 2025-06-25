@@ -33,7 +33,9 @@ spec:
         {{- end }}
         volumeMounts:
           - name: openstack-config
-            mountPath: /etc/openstack
+            mountPath: /etc/openstack/clouds.yaml
+            subPath: clouds.yaml
+            readOnly: true
         ports:
         - name: metrics
           containerPort: 9180
@@ -42,6 +44,8 @@ spec:
         - name: {{ quote $name }}
           value: {{ quote $value }}
         {{- end }}
+        - name: OS_CLIENT_CONFIG_FILE
+          value: /etc/openstack/clouds.yaml
       volumes:
       - name: openstack-config
         secret:

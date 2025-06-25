@@ -1,9 +1,6 @@
 prometheus-openstack-exporter:
-  endpoint_type: internal
-  cloud: default
-
-  serviceMonitor:
-    enabled: true
+  endpoint_type: public
+  cloud: openstack
 
   multicloud:
     enabled: false
@@ -11,16 +8,19 @@ prometheus-openstack-exporter:
   clouds_yaml_config: |
     clouds.yaml: |
       clouds:
-        default:
+        openstack:
           region_name: regionOne
           identity_api_version: 3
           volume_api_version: 3
           identity_interface: public
           auth:
-            username: admin
-            password: YOUR_PASSWORD_HERE
-            project_name: admin
-            user_domain_name: Default
+            password: ""
+            username: "admin"
+            project_id: ""
+            project_name: "test"
+            user_domain_name: "Default"
             project_domain_name: Default
-            auth_url: http://172.30.0.31:5000/v3
-          verify: false
+            auth_url: https://keystone-public-openstack.apps.rhoso18.prod.engineering.trilio.io
+            cacert: |
+              -----BEGIN CERTIFICATE-----
+          verify: true
