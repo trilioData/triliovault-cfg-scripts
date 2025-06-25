@@ -1,0 +1,6 @@
+dependencies:
+- name: prometheus-openstack-exporter
+  repository: file://charts/prometheus-openstack-exporter
+  version: 0.4.3
+digest: sha256:cc0d4f34a109b8491273e959316fd7ae0b6b5ad87dde17d0fa7804551b857c27
+generated: "2025-06-23T10:38:17.094563+05:30"

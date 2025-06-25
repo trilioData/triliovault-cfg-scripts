@@ -1,0 +1,26 @@
+prometheus-openstack-exporter:
+  endpoint_type: public
+  cloud: openstack
+
+  multicloud:
+    enabled: false
+
+  clouds_yaml_config: |
+    clouds.yaml: |
+      clouds:
+        openstack:
+          region_name: regionOne
+          identity_api_version: 3
+          volume_api_version: 3
+          identity_interface: public
+          auth:
+            password: ""
+            username: "admin"
+            project_id: ""
+            project_name: "test"
+            user_domain_name: "Default"
+            project_domain_name: Default
+            auth_url: https://keystone-public-openstack.apps.rhoso18.prod.engineering.trilio.io
+            cacert: |
+              -----BEGIN CERTIFICATE-----
+          verify: true
