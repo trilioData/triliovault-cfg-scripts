@@ -17,13 +17,26 @@ spec:
         application: trilio-openstack
         component: nfs-mount
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: triliovault-control-plane
+                    operator: In
+                    values:
+                      - "enabled"
+              - matchExpressions:
+                  - key: openstack-compute-node
+                    operator: In
+                    values:
+                      - "enabled"
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
       serviceAccountName: trilio-backup-targets-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
-      nodeSelector:
-        triliovault-control-plane: enabled
-        openstack-compute-node: enabled
+      imagePullSecrets:
+        - name: triliovault-image-registry
       containers:
         - name: nfs-mount
           securityContext:
