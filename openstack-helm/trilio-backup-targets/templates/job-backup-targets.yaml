@@ -18,6 +18,8 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: trilio-backup-targets-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
+      imagePullSecrets:
+        - name: triliovault-image-registry
       containers:
         - name: backup-target-create
           image: {{ .Values.images.trilio_wlm }}
