@@ -12,6 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
+{{- if or (eq .Values.conf.triliovault.nfs.provisioning_mode "static-with-sc") (eq .Values.conf.triliovault.nfs.provisioning_mode "static-without-sc") }}
 {{- if .Values.manifests.nfs_pv -}}
 
 {{- $envAll := . }}
@@ -33,7 +34,7 @@ limitations under the License.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
   labels:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
@@ -43,9 +44,13 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+{{- if eq $envAll.Values.conf.triliovault.nfs.provisioning_mode "static-without-sc" }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   claimRef:
-    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
     namespace: trilio-openstack
   mountOptions:
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}
@@ -68,7 +73,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
   labels:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
@@ -78,16 +83,20 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+{{- if eq $envAll.Values.conf.triliovault.nfs.provisioning_mode "static-without-sc" }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   claimRef:
-    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
     namespace: trilio-openstack
   mountOptions: 
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}
   nfs:
     path: {{ $share_path }}
     server: {{ $share_ip }}
-
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
