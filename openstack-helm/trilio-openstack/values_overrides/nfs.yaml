@@ -3,7 +3,7 @@ conf:
   triliovault:
     backup_target_type: "nfs"
     nfs:
-      static: false
+      static: false  # set to true to create static PVs with storageClassName: ""
       storage_class_name: "kubernetes-ssd"
       name: bt1-nfs
       nfs_shares: 

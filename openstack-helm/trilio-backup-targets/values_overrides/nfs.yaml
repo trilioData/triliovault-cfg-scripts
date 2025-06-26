@@ -7,7 +7,7 @@ trilio_backup_target:
   nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
   storage_size: 10Gi
   storage_class_name: ceph-filesystem
-  static: false
+  static: false  # set to true to create static PVs with storageClassName: ""
 
 images:
   trilio_wlm: docker.io/trilio/trilio-wlm-helm:6.1.0-dev-maint1-1-2023.2
