@@ -12,6 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
+{{- if or (eq .Values.conf.triliovault.nfs.provisioning_mode "static-with-sc") (eq .Values.conf.triliovault.nfs.provisioning_mode "static-without-sc") }}
 {{- if .Values.manifests.nfs_pv -}}
 
 {{- $envAll := . }}
@@ -43,7 +44,7 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-{{- if $envAll.Values.conf.triliovault.nfs.static }}
+{{- if eq $envAll.Values.conf.triliovault.nfs.provisioning_mode "static-without-sc" }}
   storageClassName: ""
 {{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
@@ -82,7 +83,7 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-{{- if $envAll.Values.conf.triliovault.nfs.static }}
+{{- if eq $envAll.Values.conf.triliovault.nfs.provisioning_mode "static-without-sc" }}
   storageClassName: ""
 {{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
@@ -95,7 +96,7 @@ spec:
   nfs:
     path: {{ $share_path }}
     server: {{ $share_ip }}
-
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
