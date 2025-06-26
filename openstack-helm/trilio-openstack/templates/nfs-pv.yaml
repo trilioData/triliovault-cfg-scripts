@@ -33,7 +33,7 @@ limitations under the License.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
   labels:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
@@ -43,9 +43,13 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+{{- if $envAll.Values.conf.triliovault.nfs.static }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   claimRef:
-    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
     namespace: trilio-openstack
   mountOptions:
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}
@@ -68,7 +72,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pv-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
   labels:
 {{ tuple $envAll "triliovault" "datamover" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
@@ -78,9 +82,13 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+{{- if $envAll.Values.conf.triliovault.nfs.static }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   claimRef:
-    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+    name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
     namespace: trilio-openstack
   mountOptions: 
 {{ regexSplit "," $nfs_options -1 | toYaml | indent 4 }}

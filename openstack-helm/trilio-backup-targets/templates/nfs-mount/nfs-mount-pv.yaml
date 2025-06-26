@@ -10,7 +10,11 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+{{- if .Values.trilio_backup_target.static }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ .Values.trilio_backup_target.storage_class_name }}
+{{- end }}
   claimRef:
     name: trilio-nfs-pvc-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
     namespace: trilio-openstack

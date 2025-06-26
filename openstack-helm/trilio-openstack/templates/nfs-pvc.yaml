@@ -31,9 +31,13 @@ limitations under the License.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
 spec:
+{{- if $envAll.Values.conf.triliovault.nfs.static }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   accessModes:
     - ReadWriteMany
   resources:
@@ -53,9 +57,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | replace "/" "-" }}
+  name: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
 spec:
+{{- if $envAll.Values.conf.triliovault.nfs.static }}
+  storageClassName: ""
+{{- else }}
   storageClassName: {{ $envAll.Values.conf.triliovault.nfs.storage_class_name }}
+{{- end }}
   accessModes:
     - ReadWriteMany
   resources:

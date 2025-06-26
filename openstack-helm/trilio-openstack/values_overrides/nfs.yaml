@@ -3,7 +3,8 @@ conf:
   triliovault:
     backup_target_type: "nfs"
     nfs:
-      storage_class_name: ceph-filesystem
+      static: false
+      storage_class_name: "kubernetes-ssd"
       name: bt1-nfs
       nfs_shares: 
       - path: /home/openstack-helm
