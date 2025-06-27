@@ -18,14 +18,27 @@ spec:
         application: trilio-openstack
         component: object-store-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: triliovault-control-plane
+                    operator: In
+                    values:
+                      - "enabled"
+              - matchExpressions:
+                  - key: openstack-compute-node
+                    operator: In
+                    values:
+                      - "enabled"
       serviceAccountName: trilio-backup-targets-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
       securityContext:
         runAsUser: {{ .Values.common.nova_user_id }}
         fsGroup: {{ .Values.common.nova_group_id }}
-      nodeSelector:
-        triliovault-control-plane: enabled
-        openstack-compute-node: enabled
       terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: triliovault-image-registry
       containers:
         - name: trilio-object-store-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
           image: {{ .Values.images.trilio_wlm }}
