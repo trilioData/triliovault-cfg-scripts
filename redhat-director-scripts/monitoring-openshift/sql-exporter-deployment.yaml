@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sql-exporter
+  namespace: openshift-user-workload-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sql-exporter
+  template:
+    metadata:
+      labels:
+        app: sql-exporter
+    spec:
+      containers:
+        - name: sql-exporter
+          image: docker.io/burningalchemist/sql_exporter:latest
+          args:
+            - "--config.file=/config/config.yml"
+          ports:
+            - name: metrics
+              containerPort: 9399
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: sql-exporter-config
+

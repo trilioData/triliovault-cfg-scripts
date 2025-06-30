@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: sql-exporter
+  namespace: openshift-user-workload-monitoring
+spec:
+  to:
+    kind: Service
+    name: sql-exporter
+  port:
+    targetPort: 9399
+  tls:
+    termination: edge
+

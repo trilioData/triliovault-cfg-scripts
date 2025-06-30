@@ -1,0 +1,191 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sql-exporter-config
+  namespace: openshift-user-workload-monitoring
+data:
+  config.yml: |
+    global:
+      # Scrape timeouts ensure that:
+      #   (i)  scraping completes in reasonable time and
+      #   (ii) slow queries are canceled early when the database is already under heavy load
+      # Prometheus informs targets of its own scrape timeout (via the "X-Prometheus-Scrape-Timeout-Seconds" request header)
+      # so the actual timeout is computed as:
+      #   min(scrape_timeout, X-Prometheus-Scrape-Timeout-Seconds - scrape_timeout_offset)
+      #
+      # If scrape_timeout <= 0, no timeout is set unless Prometheus provides one. The default is 10s.
+      scrape_timeout: 10s
+      # Subtracted from Prometheus' scrape_timeout to give us some headroom and prevent Prometheus from timing out first.
+      #
+      # Must be strictly positive. The default is 500ms.
+      scrape_timeout_offset: 500ms
+      # Minimum interval between collector runs: by default (0s) collectors are executed on every scrape.
+      min_interval: 0s
+      # Maximum number of open connections to any one target. Metric queries will run concurrently on multiple connections,
+      # as will concurrent scrapes.
+      #
+      # If max_connections <= 0, then there is no limit on the number of open connections. The default is 3.
+      max_connections: 3
+      # Maximum number of idle connections to any one target. Unless you use very long collection intervals, this should
+      # always be the same as max_connections.
+      #
+      # If max_idle_connections <= 0, no idle connections are retained. The default is 3.
+      max_idle_connections: 3
+
+    # The target to monitor and the collectors to execute on it.
+    target:
+      # Data source name always has a URI schema that matches the driver name. In some cases (e.g. MySQL)
+      # the schema gets dropped or replaced to match the driver expected DSN format.
+      #data_source_name: 'mysql://prometheus:p8uhGGJTQcaSkJx2lGMKbDkhVC0kEY8QhougEpTr@tcp(172.26.0.232)/workloadmgr'
+      #data_source_name: 'mysql://prometheus:IHWKtnOSe1XVd1LR12ZuEcBnADHBuF9dHVoUs4pOP8@tcp(overcloud-controller-0.ctlplane.triliodata.demo:3306)/workloadmgr'
+      data_source_name: "mysql://$DB_USER_NAME:$DB_PASSWORD@DB_HOST_NAME:3306/workloadmgr"
+
+      # Collectors (referenced by name) to execute on the target.
+      collectors: [mysql_workloads]
+
+    # A collector is a named set of related metrics that are collected together. It can be referenced by name, possibly
+    # along with other collectors.
+    #
+    # Collectors may be defined inline (under `collectors`) or loaded from `collector_files` (one collector per file).
+    collectors:
+      # A collector defining standard metrics for Microsoft SQL Server.
+      - collector_name: mysql_workloads
+        metrics:
+          - metric_name: mysql_trilio_snapshots_info
+            type: counter 
+            help: "Snapshot ID and Project from the snapshot table"
+            key_labels:
+              # Populated from the `db` column of each row.
+              - ProjectID
+              - status
+            values:
+              - count 
+            query: |
+              SELECT
+                project_id AS ProjectID,
+                'successful' AS status, SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) AS count 
+              FROM workloadmgr.snapshots
+              GROUP BY project_id
+              UNION ALL
+              SELECT
+                project_id AS ProjectID,
+                'failed' AS status, SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS count 
+              FROM workloadmgr.snapshots
+              GROUP BY project_id
+              UNION ALL
+              SELECT
+                project_id AS ProjectID,
+                'running' AS status, SUM(CASE WHEN status IN ('executing', 'wait_to_be_uploading', 'uploading') THEN 1 ELSE 0 END) AS count
+              FROM workloadmgr.snapshots
+              GROUP BY project_id;
+          - metric_name: mysql_trilio_restore_info
+            type: gauge
+            help: "Snapshot ID and Project from the restore table"
+            key_labels:
+              # Populated from the `db` column of each row.
+              - ProjectID
+              - status
+            values:
+              - count
+            query: |
+              SELECT
+                project_id AS ProjectID,
+                'successful' AS status, SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) AS count
+              FROM workloadmgr.restores
+              GROUP BY project_id
+              UNION ALL
+              SELECT
+                project_id AS ProjectID,
+                'failed' AS status, SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS count
+              FROM workloadmgr.restores
+              GROUP BY project_id
+              UNION ALL
+              SELECT
+                project_id AS ProjectID,
+                'running' AS status, SUM(CASE WHEN status IN ('executing', 'wait_to_be_uploading', 'uploading') THEN 1 ELSE 0 END) AS count
+              FROM workloadmgr.restores
+              GROUP BY project_id;
+          - metric_name: openstack_protected_vm
+            help: "Count of unique protected VMs in workload_vms per project"
+            type: gauge
+            values:
+              - protected_vm_count
+            key_labels:
+              - ProjectID 
+            query: |
+              SELECT
+                w.project_id AS ProjectID,
+                COUNT(DISTINCT wv.vm_id) AS protected_vm_count
+              FROM workload_vms wv
+              JOIN workloads w ON wv.workload_id = w.id
+              WHERE w.deleted = 0 AND wv.deleted = 0
+              GROUP BY w.project_id;
+          - metric_name: mysql_trilio_backup_size_info 
+            type: gauge
+            help: "Aggregated backup size metrics by project_id"
+            values:
+              - total_size
+            key_labels:
+              - ProjectID
+            query: |
+              SELECT
+                  project_id AS ProjectID,
+                  COUNT(id) AS total_snapshots,
+                  SUM(size) / 1073741824 AS total_size,
+                  SUM(restore_size) / 1073741824 AS total_restore_size,
+                  SUM(uploaded_size) / 1073741824 AS total_uploaded_size
+              FROM workloadmgr.snapshots
+              GROUP BY project_id;
+          - metric_name: mysql_trilio_snapshots_status
+            type: counter 
+            help: "Snapshot details (ID, name, workload) and status from the snapshot table"
+            key_labels:
+              - ProjectID
+              - WorkloadID
+              - SnapshotID
+              - SnapshotName
+              - status
+            values:
+              - count 
+            query: |
+              SELECT
+                  project_id AS ProjectID,
+                  workload_id AS WorkloadID,
+                  id AS SnapshotID,
+                  display_name AS SnapshotName,
+                  'successful' AS status,
+                  COUNT(*) AS count
+              FROM workloadmgr.snapshots
+              WHERE status = 'available'
+              GROUP BY project_id, workload_id, id, display_name
+
+              UNION ALL
+
+              SELECT
+                  project_id AS ProjectID,
+                  workload_id AS WorkloadID,
+                  id AS SnapshotID,
+                  display_name AS SnapshotName,
+                  'failed' AS status,
+                  COUNT(*) AS count
+              FROM workloadmgr.snapshots
+              WHERE status = 'error'
+              GROUP BY project_id, workload_id, id, display_name
+
+              UNION ALL
+
+              SELECT
+                  project_id AS ProjectID,
+                  workload_id AS WorkloadID,
+                  id AS SnapshotID,
+                  display_name AS SnapshotName,
+                  'running' AS status,
+                  COUNT(*) AS count
+              FROM workloadmgr.snapshots
+              WHERE status IN ('executing', 'wait_to_be_uploading', 'uploading')
+              GROUP BY project_id, workload_id, id, display_name;
+
+    # Collector files specifies a list of globs. One collector definition per file.
+    #collector_files: 
+      #  - "*.collector.yml"
+
