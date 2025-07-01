@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: openstack-exporter
+  namespace: openshift-user-workload-monitoring
+spec:
+  to:
+    kind: Service
+    name: openstack-exporter
+    weight: 100
+  port:
+    targetPort: os-metrics
+  tls:
+    termination: edge
+  wildcardPolicy: None
+
