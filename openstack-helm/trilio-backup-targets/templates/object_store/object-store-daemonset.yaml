@@ -49,7 +49,6 @@ spec:
             runAsUser: {{ .Values.common.nova_user_id }}
           command:
             - /bin/bash
-            - -c
             - /tmp/trilio-object-store.sh
             - start
           lifecycle:
@@ -57,7 +56,6 @@ spec:
               exec:
                 command:
                   - /bin/bash
-                  - -c
                   - /tmp/trilio-object-store.sh
                   - stop
           volumeMounts:

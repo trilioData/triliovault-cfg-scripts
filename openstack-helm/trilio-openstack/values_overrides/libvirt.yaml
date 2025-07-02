@@ -1,0 +1,5 @@
+conf:
+  datamover:
+    libvirt:
+      live_migration_interface: "mcc-lcm"
+      hypervisor_host_interface: "mcc-lcm"

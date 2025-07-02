@@ -39,12 +39,12 @@ spec:
         - name: triliovault-image-registry
       containers:
         - name: nfs-mount
+          image: {{ .Values.images.trilio_wlm }}
+          imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
-          image: {{ .Values.images.trilio_wlm }}
-          imagePullPolicy: IfNotPresent
           command: ["tail", "-f", "/dev/null"]
           volumeMounts:
             - name: pod-tmp
