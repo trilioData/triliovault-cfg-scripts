@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trilio-backup-target-create-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
+  name: trilio-backup-target-cleanup-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
   labels:
     application: trilio-openstack
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook": pre-delete
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 3
@@ -19,17 +19,19 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-registry
       containers:
-        - name: backup-target-create
+        - name: backup-target-cleanup
           image: {{ .Values.images.trilio_wlm }}
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
             - -c
-            - /tmp/create-backup-target.sh
+            - /tmp/cleanup-backup-target.sh
+          securityContext:
+            privileged: true
           volumeMounts:
             - name: trilio-backup-target-sh
-              mountPath: /tmp/create-backup-target.sh
-              subPath: create-backup-target.sh
+              mountPath: /tmp/cleanup-backup-target.sh
+              subPath: cleanup-backup-target.sh
               readOnly: true
             - name: ca-cert-bundle
               mountPath: /etc/ssl/certs/openstack-ca-bundle.pem

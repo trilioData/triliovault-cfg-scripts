@@ -49,13 +49,6 @@ function start () {
 
 function stop () {
   kill -TERM 1
-  {{ if eq $backup_target_type "nfs" }}
-  {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
-  {{- $share_path := get $share "path" }}
-  {{- $encoded := $share_path | b64enc }}
-  umount -l {{ printf "%s/%s" $.Values.conf.wlm.DEFAULT.vault_data_directory $encoded }}
-  {{- end }}
-  {{- end }}
 }
 
 $COMMAND

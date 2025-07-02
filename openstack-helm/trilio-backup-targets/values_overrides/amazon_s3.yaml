@@ -17,4 +17,4 @@ trilio_backup_target:
   s3_ssl_ca_cert: ''
 
 images:
-  trilio_wlm: docker.io/trilio/trilio-wlm-helm:6.1.0-dev-maint1-1-2023.2
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:6.1.2-mosk25.1

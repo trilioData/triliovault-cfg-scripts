@@ -1,10 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: trilio-backup-target-bin
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  name: trilio-backup-target-bin-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
 data:
   create-backup-target.sh: |
     {{ tpl (.Files.Get "scripts/_create-backup-target.sh.tpl") . | nindent 4 }}
+  cleanup-backup-target.sh: |
+    {{ tpl (.Files.Get "scripts/_cleanup-backup-target.sh.tpl") . | nindent 4 }}
