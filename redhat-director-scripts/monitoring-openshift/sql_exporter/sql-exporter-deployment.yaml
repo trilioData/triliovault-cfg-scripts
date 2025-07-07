@@ -17,16 +17,23 @@ spec:
         - name: sql-exporter
           image: docker.io/burningalchemist/sql_exporter:latest
           args:
-            - "--config.file=/config/config.yml"
+            - "-config.file"
+            - "/config/config.yml"
+          env:
+            - name: DSN
+              valueFrom:
+                secretKeyRef:
+                  name: sql-exporter-secret
+                  key: dsn
           ports:
             - name: metrics
               containerPort: 9399
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /config/config.yml
+              subPath: config.yml
               readOnly: true
       volumes:
         - name: config
           configMap:
             name: sql-exporter-config
-
