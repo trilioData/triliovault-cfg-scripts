@@ -1,14 +1,14 @@
 #!/bin/bash
 
 set -e
-
 echo -e "Applying certificate.yaml"
 
 APPLY_OUTPUT=$(oc -n openstack apply -f ./certificate.yaml)
 echo $APPLY_OUTPUT
 TOTAL_LINES=$(echo "$APPLY_OUTPUT" | wc -l)
+set +e
 UNCHANGED_LINES=$(echo "$APPLY_OUTPUT" | grep -c 'unchanged')
-
+set -e
 if [ "$TOTAL_LINES" -eq "$UNCHANGED_LINES" ]; then
   echo -e "\nNo change detected in certificate.yaml"
 else
@@ -85,3 +85,20 @@ sleep 30s
 oc -n trilio-openstack get pods
 echo -e "\nTrilio control plane pods are up and running with new certificates"
 echo -e "\n Please ignore any pods in 'Terminating' state"
+
+echo -e "\nFinal check on certificate validity dates"
+
+echo -n "\nCertificate Validity for cert-triliovault-wlm-public-svc:"
+oc get secret cert-triliovault-wlm-public-svc -n trilio-openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
+
+echo -n "\nCertificate Validity for cert-triliovault-wlm-internal-svc:"
+oc get secret cert-triliovault-wlm-internal-svc -n trilio-openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
+
+echo -n "\nCertificate Validity for cert-triliovault-datamover-public-svc:"
+oc get secret cert-triliovault-datamover-public-svc -n trilio-openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
+echo -n "\nCertificate Validity for cert-triliovault-datamover-internal-svc "
+oc get secret cert-triliovault-datamover-internal-svc  -n trilio-openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
