@@ -14,7 +14,7 @@ spec:
   dnsNames:
     - triliovault-wlm-public.trilio-openstack.svc
     - triliovault-wlm-public.trilio-openstack.svc.cluster.local
-    - triliovault-wlm-public-trilio-openstack.$PUBLIC_ENDPOINT_DOMAIN
+    - triliovault-wlm-public-trilio-openstack.apps.roso18qa.prod.engineering.trilio.io
 
 ---
 
@@ -50,7 +50,7 @@ spec:
   dnsNames:
     - triliovault-datamover-public.trilio-openstack.svc
     - triliovault-datamover-public.trilio-openstack.svc.cluster.local
-    - triliovault-datamover-public-trilio-openstack.$PUBLIC_ENDPOINT_DOMAIN
+    - triliovault-datamover-public-trilio-openstack.apps.roso18qa.prod.engineering.trilio.io
 
 ---
 apiVersion: cert-manager.io/v1
