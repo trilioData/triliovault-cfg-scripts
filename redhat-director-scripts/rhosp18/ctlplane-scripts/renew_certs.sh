@@ -10,15 +10,14 @@ TOTAL_LINES=$(echo "$APPLY_OUTPUT" | wc -l)
 UNCHANGED_LINES=$(echo "$APPLY_OUTPUT" | grep -c 'unchanged')
 
 if [ "$TOTAL_LINES" -eq "$UNCHANGED_LINES" ]; then
-  echo -e "\nAll certificate resources are unchanged. Exiting."
-  exit 0
+  echo -e "\nNo change detected in certificate.yaml"
 else
   echo "Detected changes in certificate resources. Proceeding..."
+  echo -e "\nWaiting for certificates to get renewed, script will continue after 120 seconds"
+  sleep 120s
 fi
 
-echo -e "\nWaiting for certificates to get renewed, script will continue after 120 seconds"
-sleep 120s
-echo -e "\nFollowing are the new certificate validity period. Please check if they got renewed."
+echo -e "\nFollowing are the certificate validity dates. Please check if it looks good."
 echo -e "\nCertificate Validity for cert-triliovault-wlm-public-svc:"
 oc get secret cert-triliovault-wlm-public-svc -n openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
 
@@ -34,7 +33,7 @@ echo -e "\nCertificate Validity for cert-triliovault-datamover-internal-svc "
 oc get secret cert-triliovault-datamover-internal-svc  -n openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
 
 
-echo -e "\n\nCheck if certificate validity is updated in above command outputs, if not updated you can stop script here using key ctrl + c"
+echo -e "\n\nIn the above output, if any of the certificate validity dates does not look okay to you then you can stop script here using key ctrl + c"
 echo -e "Script will continue after 30 seconds"
 sleep 30s
 
