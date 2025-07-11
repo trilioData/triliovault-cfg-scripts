@@ -13,9 +13,15 @@ if [ "$TOTAL_LINES" -eq "$UNCHANGED_LINES" ]; then
   echo -e "\nNo change detected in certificate.yaml"
 else
   echo "Detected changes in certificate resources. Proceeding..."
-  echo -e "\nWaiting for certificates to get renewed, script will continue after 120 seconds"
-  sleep 120s
+  echo -e "\nWaiting for certificates to get renewed, script will continue after 60 seconds"
+  sleep 60s
 fi
+
+
+oc delete secret cert-triliovault-wlm-internal-svc cert-triliovault-wlm-public-svc \
+  cert-triliovault-datamover-internal-svc cert-triliovault-datamover-public-svc -n openstack
+
+sleep 60s
 
 echo -e "\nFollowing are the certificate validity dates. Please check if it looks good."
 echo -e "\nCertificate Validity for cert-triliovault-wlm-public-svc:"
