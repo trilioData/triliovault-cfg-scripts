@@ -1,0 +1,39 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: trilio-rabbitmq-cluster
+  namespace: trilio-openstack
+spec:
+  replicas: 3
+  image: rabbitmq:3.13.2-management
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  persistence:
+    storageClassName: "ocs-storagecluster-ceph-rbd"
+    storage: 20Gi
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            # Reset the pod-level security context so OpenShift can assign a compliant UID
+            securityContext: {}
+            # Clear all container-level securityContext settings
+            containers: []
+            initContainers:
+              - name: setup-container
+                securityContext: {}
+  rabbitmq:
+    additionalConfig: |
+      cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+      cluster_formation.k8s.host = kubernetes.default.svc
+      cluster_partition_handling = autoheal
+      queue_master_locator = min-masters
+  service:
+    type: ClusterIP
+
