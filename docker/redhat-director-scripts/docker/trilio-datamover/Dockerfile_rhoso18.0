@@ -33,9 +33,9 @@ RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,
 RUN dnf install --releasever 9.4 python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 
 ## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet install
-dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
+RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
 RUN dnf -y --releasever 9.4 install python3-s3fuse-plugin-el9
-dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
+RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
