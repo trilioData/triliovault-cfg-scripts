@@ -16,6 +16,7 @@ yaml_file = "tvo-operator-inputs.yaml"
 
 yaml_parser = YAML()
 yaml_parser.preserve_quotes = True
+yaml_parser.width = 4096
 
 with open(yaml_file, "r") as file:
     yaml_data = yaml_parser.load(file)
