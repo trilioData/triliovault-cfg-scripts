@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rabbitmq-cluster-operator
+  namespace: trilio-openstack
+spec:
+  channel: stable
+  name: rabbitmq-cluster-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
