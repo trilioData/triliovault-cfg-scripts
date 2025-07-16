@@ -236,16 +236,16 @@ spec:
             {{- if $envAll.Values.multipathd_enabled }}
             - name: etcmultipath
               mountPath: /etc/multipath
-            - name: multipathconf
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              mountPropagation: Bidirectional
+              {{- end }}
+            - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipath
               subPath: multipath
             - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipathd
               subPath: multipathd
-            {{ end }}
-              {{- if or ( gt $envAll.Capabilities.KubeVersion.Major "1" ) ( ge $envAll.Capabilities.KubeVersion.Minor "10" ) }}
-              mountPropagation: Bidirectional
-              {{- end }}
+            {{- end }}
             - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
               mountPath: {{ $nfs_mount_point | quote }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
@@ -528,16 +528,16 @@ spec:
             {{- if .Values.multipathd_enabled }}
             - name: etcmultipath
               mountPath: /etc/multipath
-            - name: multipathconf
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              mountPropagation: Bidirectional
+              {{- end }}
+            - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipath
               subPath: multipath
             - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipathd
               subPath: multipathd
-            {{ end }}
-              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
-              mountPropagation: Bidirectional
-              {{- end }}
+            {{- end }}
             {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
             {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
             {{ printf "\n" | indent 12 }}
