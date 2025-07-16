@@ -50,7 +50,12 @@ RUN curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbi
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
 ## Install Triliovault wlm packages
-RUN dnf -y --releasever 9.4 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9
+RUN dnf -y --releasever 9.4 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9
+
+## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet install
+RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
+RUN dnf -y --releasever 9.4 install python3-s3fuse-plugin-el9
+RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 
 ## Install important security patches
