@@ -331,6 +331,7 @@ spec:
         - name: multipathconf
           hostPath:
             path: /etc/multipath.conf
+            type: FileOrCreate
         - name: sysblock
           hostPath:
             path: /sys/block
@@ -663,6 +664,7 @@ spec:
         - name: multipathconf
           hostPath:
             path: /etc/multipath.conf
+            type: FileOrCreate
         - name: sysblock
           hostPath:
             path: /sys/block
