@@ -71,7 +71,7 @@ images:
 release_group: null
 helm3_hook: true
 
-multipathd_enabled: false
+multipathd_enabled: true
 
 ceph:
   enabled: true

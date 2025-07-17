@@ -255,6 +255,8 @@ spec:
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: Bidirectional
               {{- end }}
+            - name: multipathconf
+              mountPath: /etc/multipath.conf
             - name: sysblock
               mountPath: /sys/block
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
@@ -326,6 +328,9 @@ spec:
         - name: etcmultipath
           hostPath:
             path: /etc/multipath
+        - name: multipathconf
+          hostPath:
+            path: /etc/multipath.conf
         - name: sysblock
           hostPath:
             path: /sys/block
@@ -573,6 +578,8 @@ spec:
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: Bidirectional
               {{- end }}
+            - name: multipathconf
+              mountPath: /etc/multipath.conf
             - name: sysblock
               mountPath: /sys/block
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
@@ -653,6 +660,9 @@ spec:
         - name: etcmultipath
           hostPath:
             path: /etc/multipath
+        - name: multipathconf
+          hostPath:
+            path: /etc/multipath.conf
         - name: sysblock
           hostPath:
             path: /sys/block
