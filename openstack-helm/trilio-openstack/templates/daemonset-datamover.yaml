@@ -257,6 +257,9 @@ spec:
               {{- end }}
             - name: multipathconf
               mountPath: /etc/multipath.conf
+            - mountPath: /var/lib/openstack/lock
+              mountPropagation: Bidirectional
+              name: lockpath
             - name: sysblock
               mountPath: /sys/block
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
@@ -332,6 +335,10 @@ spec:
           hostPath:
             path: /etc/multipath.conf
             type: FileOrCreate
+        - name: lockpath
+          hostPath:
+            path: /var/lib/openstack/lock
+            type: DirectoryOrCreate
         - name: sysblock
           hostPath:
             path: /sys/block
@@ -581,6 +588,9 @@ spec:
               {{- end }}
             - name: multipathconf
               mountPath: /etc/multipath.conf
+            - mountPath: /var/lib/openstack/lock
+              mountPropagation: Bidirectional
+              name: lockpath
             - name: sysblock
               mountPath: /sys/block
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
@@ -665,6 +675,10 @@ spec:
           hostPath:
             path: /etc/multipath.conf
             type: FileOrCreate
+        - name: lockpath
+          hostPath:
+            path: /var/lib/openstack/lock
+            type: DirectoryOrCreate
         - name: sysblock
           hostPath:
             path: /sys/block
