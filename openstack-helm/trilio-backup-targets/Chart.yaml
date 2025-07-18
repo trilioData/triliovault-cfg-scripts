@@ -9,4 +9,4 @@ name: trilio-backup-targets
 sources:
 - https://github.com/trilioData/triliovault-cfg-scripts/
 type: application
-version: 6.1.2
+version: 6.1.3
