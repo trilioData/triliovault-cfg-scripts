@@ -31,7 +31,7 @@ spec:
                 securityContext: {}
   rabbitmq:
     additionalConfig: |
-      {{ .Values.rabbitmq.cluster.rabbitmq.additional_config }}
+{{ .Values.rabbitmq.cluster.rabbitmq.additional_config | nindent 6 }}
   service:
     type: {{ .Values.rabbitmq.cluster.service.type }}
 
