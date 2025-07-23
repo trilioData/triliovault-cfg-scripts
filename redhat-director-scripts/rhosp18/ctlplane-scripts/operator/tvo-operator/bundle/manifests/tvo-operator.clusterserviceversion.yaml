@@ -416,12 +416,56 @@ metadata:
             },
             "rabbitmq": {
               "common": {
-                "admin_password": "EDIT_PASSWORD",
                 "admin_user": "admin",
-                "driver": "messagingv2",
                 "host": "EDIT_HOST",
-                "port": "5672"
+                "port": "15671",
+                "driver": "messagingv2",
+                "ssl": true,
+                "namespace": "trilio-openstack"
               },
+              "operator": {
+                "api_version": "operators.coreos.com/v1",
+                "operator_name": "rabbitmq-cluster-operator",
+                "channel": "stable",
+                "starting_csv": "rabbitmq-cluster-operator.v2.15.0",
+                "install_plan_approval": "Automatic",
+                "source_namespace": "openshift-marketplace",
+                "source": "community-operators"
+              },
+              "cluster": {
+                "api_version": "rabbitmq.com/v1beta1",
+                "replicas": 3,
+                "image": "rabbitmq:3.13.2-management",
+                "resources": {
+                  "requests": {
+                    "cpu": "500m",
+                    "memory": "1Gi"
+                  },
+                  "limits": {
+                    "cpu": 1,
+                    "memory": "1Gi"
+                  }
+                },
+                "persistence": {
+                  "storage_class_name": "EDIT_STORAGE_CLASS_NAME",
+                  "storage": "10Gi"
+                },
+                "rabbitmq": {
+                  "additional_config": "EDIT_CONFIG"
+                },
+                "service": {
+                  "type": "ClusterIP"
+                }
+              },
+              "datamover_api": {
+                "user": "dmapi",
+                "vhost": "dmapi"
+              },
+              "wlm_api": {
+                "user": "workloadmgr",
+                "vhost": "workloadmgr"
+              }
+            },
               "datamover_api": {
                 "password": "EDIT_PASSWORD",
                 "transport_url": "",
