@@ -22,7 +22,8 @@ backup_targets = data.get("spec", {}).get("triliovault_backup_targets", [])
 backup_targets_yaml = yaml.dump(
     {"triliovault_backup_targets": backup_targets},
     default_flow_style=False,
-    indent=2
+    indent=2,
+    sort_keys=False  # preserve original sequence
 )
 
 # Read and update lines before backup targets
