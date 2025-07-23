@@ -3,17 +3,17 @@ apiVersion: {{ .Values.rabbitmq.operator.api_version }}
 kind: OperatorGroup
 metadata:
   name: trilio-openstack-operatorgroup
-  namespace: {{ .Values.common.namespace }}
+  namespace: {{ .Values.rabbitmq.common.namespace }}
 spec:
   targetNamespaces:
-  - {{ .Values.common.namespace }}
+  - {{ .Values.rabbitmq.common.namespace }}
 
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: trilio-rabbitmq-cluster-operator
-  namespace: {{ .Values.common.namespace }}
+  namespace: {{ .Values.rabbitmq.common.namespace }}
 spec:
   channel: {{ .Values.rabbitmq.operator.channel }}
   name: {{ .Values.rabbitmq.operator.operator_name }}

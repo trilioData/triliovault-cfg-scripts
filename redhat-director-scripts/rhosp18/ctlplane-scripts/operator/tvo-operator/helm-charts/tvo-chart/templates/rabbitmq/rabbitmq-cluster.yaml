@@ -3,7 +3,7 @@ apiVersion: {{ .Values.rabbitmq.cluster.api_version }}
 kind: RabbitmqCluster
 metadata:
   name: trilio-rabbitmq-cluster
-  namespace: {{ .Values.common.namespace }}
+  namespace: {{ .Values.rabbitmq.common.namespace }}
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.rabbitmq.cluster.image }}
