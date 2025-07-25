@@ -19,8 +19,9 @@ spec:
     storage: {{ .Values.rabbitmq.cluster.persistence.storage }}
   tls:
     secretName: cert-trilio-rabbitmq-cluster
-    caSecretName: combined-ca-bundle
+    caSecretName: cert-trilio-rabbitmq-cluster
     enabled: true
+    disableNonTLSListeners: true
   override:
     statefulSet:
       spec:
