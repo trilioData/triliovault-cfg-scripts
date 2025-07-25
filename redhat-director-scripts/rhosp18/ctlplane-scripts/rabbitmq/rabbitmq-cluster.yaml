@@ -13,6 +13,10 @@ spec:
     limits:
       cpu: 1
       memory: 1Gi
+  tls:
+    secretName: cert-trilio-rabbitmq-cluster        # Secret with server cert and key
+    caSecretName: combined-ca-bundle       # Secret with ca.crt (optional if same as server cert)
+    enabled: true
   persistence:
     storageClassName: "ocs-storagecluster-ceph-rbd"
     storage: 20Gi
