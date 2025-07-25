@@ -77,7 +77,7 @@ spec:
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
-    rabbitmq_admin_secret_name: "rabbitmq-default-user"
+    rabbitmq_admin_secret_name: "trilio-rabbitmq-cluster-default-user"
   keystone:
     keystone_interface: "internal"
     common:
@@ -123,8 +123,8 @@ spec:
       database: "workloadmgr"
   rabbitmq:
     common:
-      admin_user: "admin"
-      host: "EDIT_HOST"
+      admin_user: "trilio_rabbitmq_admin"
+      host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
       port: "15671"
       driver: "messagingv2"
       ssl: true
