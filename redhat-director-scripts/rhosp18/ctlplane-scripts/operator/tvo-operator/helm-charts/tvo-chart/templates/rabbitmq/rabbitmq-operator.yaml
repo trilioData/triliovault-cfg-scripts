@@ -4,6 +4,9 @@ kind: OperatorGroup
 metadata:
   name: trilio-openstack-operatorgroup
   namespace: {{ .Values.rabbitmq.common.namespace }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
 spec:
   targetNamespaces:
   - {{ .Values.rabbitmq.common.namespace }}
@@ -14,6 +17,9 @@ kind: Subscription
 metadata:
   name: trilio-rabbitmq-cluster-operator
   namespace: {{ .Values.rabbitmq.common.namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-9"
 spec:
   channel: {{ .Values.rabbitmq.operator.channel }}
   name: {{ .Values.rabbitmq.operator.operator_name }}
