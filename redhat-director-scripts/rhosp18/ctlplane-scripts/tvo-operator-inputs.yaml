@@ -77,7 +77,7 @@ spec:
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
-    rabbitmq_admin_secret_name: "trilio-rabbitmq-cluster-default-user"
+    rabbitmq_admin_secret_name: "trilio-openstack-secret"
   keystone:
     keystone_interface: "internal"
     common:
