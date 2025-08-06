@@ -8,7 +8,7 @@
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
-    mode: '0777'
+    mode: '0770'
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
