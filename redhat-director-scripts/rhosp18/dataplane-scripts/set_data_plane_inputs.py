@@ -5,6 +5,13 @@ YAML_FILE = "../ctlplane-scripts/tvo-operator-inputs.yaml"
 SECRET_FILE = "../ctlplane-scripts/trilio-openstack-secret.yaml"
 CM_FILE = "cm-trilio-datamover.yaml"
 
+def str_presenter(dumper, data):
+    if "\n" in data:  # If string contains newlines, use block style '|'
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml.add_representer(str, str_presenter)
+
 # Load YAML files
 with open(YAML_FILE) as f:
     data = yaml.safe_load(f)
@@ -23,7 +30,7 @@ backup_targets_yaml = yaml.dump(
     {"triliovault_backup_targets": backup_targets},
     default_flow_style=False,
     indent=2,
-    sort_keys=False  # preserve original sequence
+    sort_keys=False
 )
 
 # Read and update lines before backup targets
