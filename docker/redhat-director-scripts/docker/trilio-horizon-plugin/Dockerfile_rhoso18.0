@@ -30,7 +30,7 @@ RUN rm /etc/yum.repos.d/trilio.repo
 RUN cp -r /usr/lib/python3.9/site-packages/trilio_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
 RUN cp -r /usr/lib/python3.9/site-packages/trilio_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
 
-RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/share/openstack-dashboard/manage.py collectstatic --no-clear --noinput
 RUN /usr/share/openstack-dashboard/manage.py compress --force
 
 ##Disable repos and Clean subscription
