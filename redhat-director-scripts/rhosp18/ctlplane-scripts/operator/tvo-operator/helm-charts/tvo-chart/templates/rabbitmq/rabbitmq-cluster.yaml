@@ -38,7 +38,6 @@ spec:
               - name: setup-container
                 securityContext: {}
   rabbitmq:
-    usernameSecret: trilio-rabbitmq-admin
     additionalConfig: |
 {{ .Values.rabbitmq.cluster.rabbitmq.additional_config | nindent 6 }}
   service:
