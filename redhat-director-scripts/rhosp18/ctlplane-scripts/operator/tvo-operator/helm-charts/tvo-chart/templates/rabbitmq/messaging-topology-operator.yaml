@@ -4,6 +4,9 @@ kind: Subscription
 metadata:
   name: rabbitmq-messaging-topology-operator
   namespace: trilio-openstack
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-7"
 spec:
   channel: stable
   name: rabbitmq-messaging-topology-operator

@@ -4,6 +4,9 @@ kind: User
 metadata:
   name: trilio-rabbitmq-admin
   namespace: trilio-openstack
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-6"
 spec:
   rabbitmqClusterReference:
     name: trilio-rabbitmq-cluster
