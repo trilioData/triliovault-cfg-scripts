@@ -7,7 +7,7 @@ metadata:
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "-10"
+    helm.sh/hook-weight: "-14"
 spec:
   template:
     spec:
@@ -44,7 +44,7 @@ metadata:
   namespace: trilio-openstack
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-8"
+    "helm.sh/hook-weight": "-12"
 spec:
   template:
     spec:
@@ -72,7 +72,7 @@ metadata:
   namespace: trilio-openstack
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-7"
+    "helm.sh/hook-weight": "-10"
 spec:
   template:
     spec:
@@ -109,7 +109,7 @@ metadata:
   namespace: trilio-openstack
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-6"
+    "helm.sh/hook-weight": "-8"
 spec:
   template:
     spec:
