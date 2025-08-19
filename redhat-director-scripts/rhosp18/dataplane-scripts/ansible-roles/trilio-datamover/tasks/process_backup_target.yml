@@ -18,6 +18,8 @@
   copy:
     dest: "{{ triliovault_object_store_config_dest }}/s3-cert-{{ target.backup_target_name }}.pem"
     content: "{{ target.s3_ssl_ca_cert | default('') }}"
+    owner: '42436'
+    group: '42436'
     mode: '0600'
   when:
     - target.s3_ssl_enabled | default(false)
