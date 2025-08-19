@@ -118,7 +118,7 @@ database:
     database: "workloadmgr"    
 rabbitmq:
   common: 
-    admin_user: "admin"
+    admin_user: "trilio-rabbitmq-admin"
     host: "EDIT_HOST"
     port: "5672"
     ssl: true

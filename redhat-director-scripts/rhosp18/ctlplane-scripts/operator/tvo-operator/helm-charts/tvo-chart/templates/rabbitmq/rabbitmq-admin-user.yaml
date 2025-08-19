@@ -2,7 +2,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: User
 metadata:
-  name: trilio-rabbitmq-admin
+  name: {{ .Values.rabbitmq.common.admin_user }}
   namespace: trilio-openstack
   annotations:
     "helm.sh/hook": post-install,post-upgrade
