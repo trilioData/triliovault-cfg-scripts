@@ -15,7 +15,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-rabbitmq-operator
-          image: bitnami/kubectl:latest
+          image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
             - -c
@@ -52,7 +52,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-rabbitmq-cluster
-          image: bitnami/kubectl:latest
+          image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
             - -c
@@ -80,7 +80,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-messaging-topology-operator
-          image: bitnami/kubectl:latest
+          image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
             - -c
@@ -117,7 +117,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-rabbitmq-admin-user
-          image: bitnami/kubectl:latest
+          image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
             - -c
