@@ -61,7 +61,7 @@ spec:
                 echo "Waiting for RabbitMQ Cluster CR...";
                 sleep 10;
               done
-              oc wait --for=condition=Ready rabbitmqcluster/trilio-rabbitmq-cluster -n {{ .Values.rabbitmq.common.namespace }} --timeout=600s
+              oc wait --for=condition=Ready rabbitmqcluster/trilio-rabbitmq-cluster -n {{ .Values.rabbitmq.common.namespace }} --timeout=60s
               echo "RabbitMQ Cluster is ready."
 ---
 # Job 3: Wait for Messaging Topology Operator Installation
