@@ -6,7 +6,7 @@ metadata:
   name: wait-for-rabbitmq-operator
   namespace: trilio-openstack
   annotations:
-    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook: post-install
     helm.sh/hook-weight: "-14"
 spec:
   template:

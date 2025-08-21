@@ -5,9 +5,8 @@ metadata:
   name: trilio-openstack-operatorgroup
   namespace: {{ .Values.rabbitmq.common.namespace }}
   annotations:
-    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook: post-install
     helm.sh/hook-weight: "-16"
-    "helm.sh/resource-policy": keep
 spec:
   targetNamespaces:
   - {{ .Values.rabbitmq.common.namespace }}

@@ -5,9 +5,8 @@ metadata:
   name: rabbitmq-messaging-topology-operator
   namespace: trilio-openstack
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook": post-install
     "helm.sh/hook-weight": "-11"
-    "helm.sh/resource-policy": keep
 spec:
   channel: stable
   name: rabbitmq-messaging-topology-operator
