@@ -6,9 +6,6 @@ metadata:
 data:
   config.yml: |
     global:
-      scrape_timeout: 10s
-    # Global settings and defaults.
-    global:
       # Scrape timeouts ensure that:
       #   (i)  scraping completes in reasonable time and
       #   (ii) slow queries are canceled early when the database is already under heavy load
