@@ -8,12 +8,12 @@ data:
     clouds:
       openstack:
         auth:
-          auth_url: https://keystone-public-openstack.apps.QA1.engineering.trilio.io
-          username: admin
-          password: "$PASSWORD"
-          project_name: admin
-          user_domain_name: Default
-          project_domain_name: Default
+          auth_url: ${OPENSTACK_KEYSTONE_AUTH_URL}
+          username: ${OPENSTACK_ADMIN_USER_NAME}
+          password: ${OPENSTACK_ADMIN_USER_PASSWORD}
+          project_name: ${OPENSTACK_PROJECT_NAME}
+          user_domain_name: ${OPENSTACK_USER_DOMAIN_NAME}
+          project_domain_name: ${OPENSTACK_PROJECT_DOMAIN_NAME}
         region_name: regionOne
         cacert: /etc/ssl/certs/ca.crt
         interface: public

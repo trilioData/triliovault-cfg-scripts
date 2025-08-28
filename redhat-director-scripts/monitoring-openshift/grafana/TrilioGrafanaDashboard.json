@@ -502,7 +502,7 @@
               "refId": "A"
             }
           ],
-          "title": "VM Quota Usgae",
+          "title": "VM Quota Usage",
           "type": "gauge"
         },
         {
