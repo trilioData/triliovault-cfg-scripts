@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openstack-exporter
+  namespace: openshift-user-workload-monitoring
+  labels:
+    release: prometheus-user-workload
+spec:
+  selector:
+    matchLabels:
+      app: openstack-exporter
+  namespaceSelector:
+    matchNames:
+      - openshift-user-workload-monitoring
+  endpoints:
+    - port: os-metrics
+      path: /metrics
+      interval: 30s
+
