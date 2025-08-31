@@ -4,8 +4,8 @@ set -e
 
 if [ $# -lt 2 ];then
    echo "Script takes exacyly 2 arguments"
-   echo -e "./get_admin_creds.sh <internal_domain_name> <public_domain_name>"
-   echo -e "./get_admin_creds.sh cluster.local company.public.net"
+   echo -e "./get_admin_creds_vexxhost.sh <internal_domain_name> <public_domain_name>"
+   echo -e "./get_admin_creds_vexxhost.sh cluster.local company.public.net"
    exit 1
 fi
 
@@ -76,7 +76,7 @@ endpoints:
         password: $RABBITMQ_ADMIN_PASSWORD
     host_fqdn_override:
       default:
-        host: rabbitmq-trilio.openstack.svc.$INTERNAL_DOMAIN_NAME
+        host: rabbitmq.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
   oslo_messaging_nova:
     auth:
       admin:
