@@ -12,10 +12,10 @@
 # limitations under the License.
 
 apiVersion: v1
-appVersion: 6.1.2
+appVersion: 6.1.4
 description: Trilio for OpenStack-Helm
 name: trilio-openstack
-version: 6.1.2
+version: 6.1.4
 
 home: https://docs.trilio.io/openstack
 icon: https://asset.brandfetch.io/idGK8s6yAt/id71ulaWGz.jpeg
