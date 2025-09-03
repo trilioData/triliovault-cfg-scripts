@@ -234,18 +234,38 @@ spec:
               name: libmodules
               readOnly: true
             {{- if $envAll.Values.multipathd_enabled }}
-            - name: etcmultipath
-              mountPath: /etc/multipath
-            - name: multipathconf
+            - name: host-rootfs
+              mountPath: /mnt/host-rootfs
+              mountPropagation: HostToContainer
+            - name: usrlocalsbin
+              mountPath: /usr/local/sbin
+            - name: runlock
+              mountPath: /run/lock
+            - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipath
               subPath: multipath
             - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipathd
               subPath: multipathd
-            {{ end }}
-              {{- if or ( gt $envAll.Capabilities.KubeVersion.Major "1" ) ( ge $envAll.Capabilities.KubeVersion.Minor "10" ) }}
+            - name: triliovault-datamover-bin
+              mountPath: /usr/local/sbin/iscsiadm
+              subPath: iscsiadm
+            - name: etcmultipath
+              mountPath: /etc/multipath
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: Bidirectional
               {{- end }}
+            - name: multipathconf
+              mountPath: /etc/multipath.conf
+            - mountPath: /var/lib/openstack/lock
+              mountPropagation: Bidirectional
+              name: lockpath
+            - name: sysblock
+              mountPath: /sys/block
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              mountPropagation: HostToContainer
+              {{- end }}
+            {{- end }}
             - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
               mountPath: {{ $nfs_mount_point | quote }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
@@ -300,10 +320,29 @@ spec:
             secretName: triliovault-ceph-keyring
         {{ end }}
         {{- if $envAll.Values.multipathd_enabled }}
+        - name: host-rootfs
+          hostPath:
+            path: /
+        - name: runlock
+          hostPath:
+            path: /run/lock
+        - name: usrlocalsbin
+          emptyDir: {}
         - name: etcmultipath
           hostPath:
             path: /etc/multipath
-        {{ end }}
+        - name: multipathconf
+          hostPath:
+            path: /etc/multipath.conf
+            type: FileOrCreate
+        - name: lockpath
+          hostPath:
+            path: /var/lib/openstack/lock
+            type: DirectoryOrCreate
+        - name: sysblock
+          hostPath:
+            path: /sys/block
+        {{- end }}
         - name: libmodules
           hostPath:
             path: /lib/modules
@@ -526,18 +565,38 @@ spec:
               name: libmodules
               readOnly: true
             {{- if .Values.multipathd_enabled }}
-            - name: etcmultipath
-              mountPath: /etc/multipath
-            - name: multipathconf
+            - name: host-rootfs
+              mountPath: /mnt/host-rootfs
+              mountPropagation: HostToContainer
+            - name: usrlocalsbin
+              mountPath: /usr/local/sbin
+            - name: runlock
+              mountPath: /run/lock
+            - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipath
               subPath: multipath
             - name: triliovault-datamover-bin
               mountPath: /usr/local/sbin/multipathd
               subPath: multipathd
-            {{ end }}
+            - name: triliovault-datamover-bin
+              mountPath: /usr/local/sbin/iscsiadm
+              subPath: iscsiadm
+            - name: etcmultipath
+              mountPath: /etc/multipath
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: Bidirectional
               {{- end }}
+            - name: multipathconf
+              mountPath: /etc/multipath.conf
+            - mountPath: /var/lib/openstack/lock
+              mountPropagation: Bidirectional
+              name: lockpath
+            - name: sysblock
+              mountPath: /sys/block
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              mountPropagation: HostToContainer
+              {{- end }}
+            {{- end }}
             {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
             {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
             {{ printf "\n" | indent 12 }}
@@ -601,10 +660,29 @@ spec:
             secretName: triliovault-ceph-keyring
         {{ end }}
         {{- if .Values.multipathd_enabled }}
+        - name: host-rootfs
+          hostPath:
+            path: /
+        - name: runlock
+          hostPath:
+            path: /run/lock
+        - name: usrlocalsbin
+          emptyDir: {}
         - name: etcmultipath
           hostPath:
             path: /etc/multipath
-        {{ end }}
+        - name: multipathconf
+          hostPath:
+            path: /etc/multipath.conf
+            type: FileOrCreate
+        - name: lockpath
+          hostPath:
+            path: /var/lib/openstack/lock
+            type: DirectoryOrCreate
+        - name: sysblock
+          hostPath:
+            path: /sys/block
+        {{- end }}
         - name: libmodules
           hostPath:
             path: /lib/modules
