@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sql-exporter
+  namespace: openshift-user-workload-monitoring
+  labels:
+    release: prometheus-user-workload
+spec:
+  selector:
+    matchLabels:
+      app: sql-exporter
+  namespaceSelector:
+    matchNames:
+      - openshift-user-workload-monitoring
+  endpoints:
+    - port: metrics
+      interval: 30s
+
