@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openstack-exporter
+  namespace: openshift-user-workload-monitoring
+  labels:
+    app: openstack-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openstack-exporter
+  template:
+    metadata:
+      labels:
+        app: openstack-exporter
+    spec:
+      containers:
+        - name: openstack-exporter
+          image: ghcr.io/openstack-exporter/openstack-exporter:latest
+          workingDir: /tmp
+          args:
+            - "--os-client-config=/etc/openstack/clouds.yaml"
+            - "openstack"
+          ports:
+            - name: os-metrics
+              containerPort: 9180
+          volumeMounts:
+            - name: clouds-config
+              mountPath: /etc/openstack/clouds.yaml
+              subPath: clouds.yaml
+              readOnly: true
+            - name: tmp-dir
+              mountPath: /tmp
+            - name: keystone-ca
+              mountPath: /etc/ssl/certs/ca.crt
+              subPath: ca.crt
+      volumes:
+        - name: clouds-config
+          configMap:
+            name: openstack-exporter-clouds-cm
+        - name: tmp-dir
+          emptyDir: {}
+        - name: keystone-ca
+          secret:
+            secretName: keystone-ca

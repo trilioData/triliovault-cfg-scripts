@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: 6.1.2
+appVersion: 6.1.4
 description: Trilio Backup Targets for OpenStack Helm Chart for Kubernetes
 home: https://docs.trilio.io/openstack
 icon: https://asset.brandfetch.io/idGK8s6yAt/id71ulaWGz.jpeg
@@ -9,4 +9,4 @@ name: trilio-backup-targets
 sources:
 - https://github.com/trilioData/triliovault-cfg-scripts/
 type: application
-version: 6.1.3
+version: 6.1.4

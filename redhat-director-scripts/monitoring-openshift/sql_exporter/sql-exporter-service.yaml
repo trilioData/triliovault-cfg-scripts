@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sql-exporter
+  namespace: openshift-user-workload-monitoring
+  labels:
+    app: sql-exporter
+spec:
+  selector:
+    app: sql-exporter
+  ports:
+    - name: metrics           # <-- REQUIRED
+      protocol: TCP
+      port: 9399
+      targetPort: 9399
+
