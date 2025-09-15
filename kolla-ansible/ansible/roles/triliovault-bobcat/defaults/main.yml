@@ -366,7 +366,7 @@ triliovault_db_details:
 ####################
 # TLS
 ####################
-triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
+triliovault_enable_tls_backend: false
 
 
 ## TrilioVault Inventory for datamover.  Refer triliovault_inventory file. 
