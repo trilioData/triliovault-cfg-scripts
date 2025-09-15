@@ -30,7 +30,7 @@ triliovault_services:
         backend_http_extra:
           - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
-        tls_backend: false
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_datamover_api_external:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
@@ -48,7 +48,7 @@ triliovault_services:
         backend_http_extra:
           - "timeout server 10m"
         listen_port: "{{ triliovault_datamover_api_listen_port }}"
-        tls_backend: false
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
   triliovault-datamover:
     container_name: "triliovault_datamover"
     group: "{{ triliovault_datamover_group }}"
@@ -88,7 +88,7 @@ triliovault_services:
         backend_http_extra:
           - "timeout server 10m"
         listen_port: "{{ triliovault_wlm_api_listen_port }}"
-        tls_backend: false
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
       triliovault_wlm_api_external:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
@@ -106,7 +106,7 @@ triliovault_services:
         backend_http_extra:
           - "timeout server 10m"
         listen_port: "{{ triliovault_wlm_api_listen_port }}"
-        tls_backend: false
+        tls_backend: "{{ triliovault_enable_tls_backend }}"
   triliovault-wlm-workloads:
     container_name: "triliovault_wlm_workloads"
     group: "{{ triliovault_wlm_workloads_group }}"
@@ -357,7 +357,7 @@ triliovault_db_details:
 ####################
 # TLS
 ####################
-triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
+triliovault_enable_tls_backend: false
 
 
 ## TrilioVault Inventory for datamover.  Refer triliovault_inventory file. 
