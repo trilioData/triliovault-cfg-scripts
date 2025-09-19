@@ -31,8 +31,8 @@ RABBITMQ_ADMIN_PASSWORD=$(kubectl -n openstack get secrets/openstack-rabbitmq-ad
 RABBITMQ_ADMIN_USERNAME=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
 
 ## Trilio Rabbitmq 
-TRILIO_RABBITMQ_ADMIN_PASSWORD=$(kubectl -n trilio-openstack get secrets/trilio-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
-TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secrets/trilio-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
+TRILIO_RABBITMQ_ADMIN_PASSWORD=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.password}} | base64 -d)
+TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.username}} | base64 -d)
 
 NOVA_TRANSPORT_URL=$(kubectl -n openstack get secret nova-rabbitmq-user --template={{.data.TRANSPORT_URL}} | base64 -d)
 
