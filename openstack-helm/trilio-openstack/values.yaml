@@ -397,8 +397,6 @@ manifests:
   service_wlm_api: true
   service_ingress_datamover_api: true
   service_ingress_wlm_api: true
-  nfs_pv: true
-  nfs_pvc: true
 
 network:
   wlm_api:

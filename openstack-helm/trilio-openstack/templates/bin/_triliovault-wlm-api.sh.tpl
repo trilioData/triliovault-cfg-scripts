@@ -22,9 +22,28 @@ function start () {
 
   {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
 
-  {{ if eq $backup_target_type "s3" }}
+  {{ if eq $backup_target_type "nfs" }}
+  echo "[INFO] Starting NFS mount setup..."
 
-  ## Start triliovault object store service if backup target type is s3
+  {{- $vaultDataDir := .Values.conf.wlm.DEFAULT.vault_data_directory }}
+  {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+    {{- $nfsShare := printf "%s:%s" (get $share "ip") (get $share "path") }}
+    {{- $nfsDir := get $share "path" }}
+    {{- $base64MountPoint := b64enc $nfsDir }}
+    {{- $nfsOptions := $.Values.conf.triliovault.nfs.nfs_options }}
+
+    echo "[INFO] Mounting NFS share {{ $nfsShare }} to {{ $vaultDataDir }}/{{ $base64MountPoint }}"
+    mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
+    /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf \
+      mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
+
+  {{- end }}
+
+  echo "[INFO] NFS mounts completed."
+  {{ end }}
+
+  {{ if eq $backup_target_type "s3" }}
+  echo "[INFO] Starting S3 object store service..."
   /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
   sleep 20s
   status=$?
@@ -32,19 +51,20 @@ function start () {
     echo "Failed to start tvault-object-store service: $status"
     exit $status
   fi
-
   {{ end }}
 
-  # Start workloadmgr api service
+  echo "[INFO] Starting workloadmgr API service..."
   /usr/bin/python3 /usr/bin/workloadmgr-api \
-     --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
-     --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-ids.conf
+    --config-file=/etc/triliovault-wlm/triliovault-wlm.conf \
+    --config-file=/tmp/pod-shared-triliovault-wlm-api/triliovault-wlm-ids.conf
 
   status=$?
   if [ $status -ne 0 ]; then
-    echo "Failed to start tvault contego service: $status"
+    echo "Failed to start workloadmgr API service: $status"
     exit $status
   fi
+
+  echo "[INFO] workloadmgr API service started successfully."
 }
 
 function stop () {

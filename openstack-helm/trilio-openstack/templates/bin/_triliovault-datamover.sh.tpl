@@ -19,8 +19,29 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-  {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
   {{- $distro := default "" .Values.distro }}
+
+  {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
+  
+  {{ if eq $backup_target_type "nfs" }}
+  echo "[INFO] Starting NFS mount setup..."
+
+  {{- $vaultDataDir := .Values.conf.wlm.DEFAULT.vault_data_directory }}
+  {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
+    {{- $nfsShare := printf "%s:%s" (get $share "ip") (get $share "path") }}
+    {{- $nfsDir := get $share "path" }}
+    {{- $base64MountPoint := b64enc $nfsDir }}
+    {{- $nfsOptions := $.Values.conf.triliovault.nfs.nfs_options }}
+
+    echo "[INFO] Mounting NFS share {{ $nfsShare }} to {{ $vaultDataDir }}/{{ $base64MountPoint }}"
+    mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
+    nova-rootwrap /etc/nova/rootwrap.conf \
+      mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
+
+  {{- end }}
+
+  echo "[INFO] NFS mounts completed."
+  {{ end }}
 
   {{- if eq $backup_target_type "s3" }}
   ## Start triliovault object store service

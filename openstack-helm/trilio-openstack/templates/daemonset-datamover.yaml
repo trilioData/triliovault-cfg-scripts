@@ -269,8 +269,6 @@ spec:
               mountPropagation: HostToContainer
               {{- end }}
             {{- end }}
-            - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
-              mountPath: {{ $nfs_mount_point | quote }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal "path" "/etc/triliovault_datamover/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
@@ -358,9 +356,6 @@ spec:
         - name: etciscsi
           hostPath:
             path: /etc/iscsi
-        - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
-          persistentVolumeClaim:
-            claimName: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
@@ -606,17 +601,6 @@ spec:
               mountPropagation: HostToContainer
               {{- end }}
             {{- end }}
-            {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
-            {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
-            {{ printf "\n" | indent 12 }}
-            {{- $share_path := get $share "path" -}}
-            {{- $share_ip := get $share "ip" -}}
-            {{- $nfs_mount_point_endcoded := $share_path | b64enc }}
-            {{- $nfs_mount_point := printf "%s/%s" $envAll.Values.conf.datamover.DEFAULT.vault_data_directory $nfs_mount_point_endcoded }}
-            - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
-              mountPath: {{ $nfs_mount_point | quote }}
-            {{- end }}
-            {{- end }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal "path" "/etc/triliovault_datamover/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
@@ -704,16 +688,6 @@ spec:
         - name: etciscsi
           hostPath:
             path: /etc/iscsi
-        {{- if eq .Values.conf.triliovault.backup_target_type "nfs" }}
-        {{- range $share := .Values.conf.triliovault.nfs.nfs_shares }}
-        {{ printf "\n" | indent 8 }}
-        {{- $share_path := get $share "path" -}}
-        {{- $share_ip := get $share "ip" -}}
-        - name: triliovault-nfs-pv-datamover-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
-          persistentVolumeClaim:
-            claimName: triliovault-nfs-pvc-{{ $share_ip | replace "." "-" }}{{ $share_path | lower | replace "_" "-" | replace "/" "-" }}
-        {{- end }}
-        {{- end }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
