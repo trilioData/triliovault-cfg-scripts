@@ -91,6 +91,10 @@ spec:
 {{ tuple $envAll "triliovault_wlm_api" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
 {{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_wlm_api" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: 42424
           command:
             - /tmp/triliovault-wlm-api.sh
             - start
