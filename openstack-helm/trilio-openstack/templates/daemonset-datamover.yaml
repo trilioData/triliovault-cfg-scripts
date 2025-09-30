@@ -149,6 +149,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
@@ -276,6 +279,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
         - name: pod-shared-triliovault-datamover
           emptyDir: {}
         - name: vartrilio
@@ -479,6 +485,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
             - name: pod-shared-triliovault-datamover
               mountPath: /tmp/pod-shared-triliovault-datamover
             - name: vartrilio
@@ -616,6 +625,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
         - name: pod-shared-triliovault-datamover
           emptyDir: {}
         - name: vartrilio

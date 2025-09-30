@@ -105,6 +105,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
             - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
             - name: trilio-mounts
@@ -154,6 +157,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
         - name: varlogtriliovaultwlm
           hostPath:
             path: /var/log/triliovault-wlm

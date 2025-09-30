@@ -102,6 +102,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
             - name: varlogtriliovaultdatamoverapi
               mountPath: /var/log/triliovault
             - name: triliovault-datamover-api-etc
@@ -126,6 +129,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-datamover" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
         - name: triliovault-datamover-api-etc
           secret:
             secretName: triliovault-etc-datamover-api
