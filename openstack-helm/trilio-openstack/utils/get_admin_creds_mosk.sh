@@ -26,15 +26,9 @@ OS_USERNAME=$(kubectl -n openstack get secrets/nova-keystone-admin --template={{
 ## DB creds
 MYSQL_DBADMIN_PASSWORD=$(kubectl -n openstack get secrets/mariadb-dbadmin-password --template={{.data.MYSQL_DBADMIN_PASSWORD}} | base64 -d)
 
-## Rabbitmq creds
-RABBITMQ_ADMIN_PASSWORD=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_PASSWORD}} | base64 -d)
-RABBITMQ_ADMIN_USERNAME=$(kubectl -n openstack get secrets/openstack-rabbitmq-admin-user --template={{.data.RABBITMQ_ADMIN_USERNAME}} | base64 -d)
-
 ## Trilio Rabbitmq 
 TRILIO_RABBITMQ_ADMIN_PASSWORD=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.password}} | base64 -d)
 TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.username}} | base64 -d)
-
-NOVA_TRANSPORT_URL=$(kubectl -n openstack get secret nova-rabbitmq-user --template={{.data.TRANSPORT_URL}} | base64 -d)
 
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
 
@@ -49,12 +43,6 @@ conf:
   wlm: 
     keystone_authtoken:
       memcached_servers: memcached.openstack.svc.$INTERNAL_DOMAIN_NAME:11211
-  datamover:
-    DEFAULT:
-      dmapi_transport_url: $NOVA_TRANSPORT_URL
-  datamover_api:
-    DEFAULT:
-      transport_url: $NOVA_TRANSPORT_URL
 endpoints:
   identity:
     name: keystone
@@ -73,7 +61,7 @@ endpoints:
         host: keystone-api.openstack.svc.$INTERNAL_DOMAIN_NAME
       public:
         host: keystone.$PUBLIC_DOMAIN_NAME
-  oslo_messaging:
+  oslo_messaging_wlm:
     auth:
       admin:
         username: $TRILIO_RABBITMQ_ADMIN_USERNAME
@@ -84,17 +72,17 @@ endpoints:
     host_fqdn_override:
       default:
         host: rabbitmq.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
-  oslo_messaging_nova:
+  oslo_messaging_datamover:
     auth:
       admin:
-        username: $RABBITMQ_ADMIN_USERNAME
-        password: $RABBITMQ_ADMIN_PASSWORD
+        username: $TRILIO_RABBITMQ_ADMIN_USERNAME
+        password: $TRILIO_RABBITMQ_ADMIN_PASSWORD
         secret:
           tls:
             internal: rabbitmq-tls-direct
     host_fqdn_override:
       default:
-        host: rabbitmq.openstack.svc.$INTERNAL_DOMAIN_NAME
+        host: rabbitmq.trilio-openstack.svc.$INTERNAL_DOMAIN_NAME
   oslo_db_triliovault_datamover:
     auth:
       admin:
