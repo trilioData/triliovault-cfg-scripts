@@ -368,6 +368,7 @@ manifests:
   job_datamover_db_sync: true
   job_wlm_db_sync: true
   job_wlm_rabbit_init: true
+  job_datamover_rabbit_init: true
   job_datamover_ks_endpoints: true
   job_datamover_ks_service: true
   job_datamover_ks_user: true
@@ -393,6 +394,7 @@ manifests:
   secret_ca_bundle: true
   secret_keystone: true
   secret_rabbitmq_wlm: true
+  secret_rabbitmq_datamover: true
   service_datamover_api: true
   service_wlm_api: true
   service_ingress_datamover_api: true
@@ -439,6 +441,7 @@ secrets:
     triliovault_wlm: triliovault-wlm-db-user
   oslo_messaging:
     admin: triliovault-rabbitmq-admin
+    triliovault_datamover: triliovault-datamover-rabbitmq-user
     triliovault_wlm: triliovault-wlm-rabbitmq-user
   tls:
     datamover:
@@ -599,7 +602,7 @@ endpoints:
     port:
       memcache:
         default: 11211
-  oslo_messaging:
+  oslo_messaging_wlm:
     auth:
       admin:
         username: rabbitmq
@@ -624,7 +627,7 @@ endpoints:
         default: 5672
       http:
         default: 15672
-  oslo_messaging_nova:
+  oslo_messaging_datamover:
     auth:
       admin:
         username: rabbitmq
@@ -632,8 +635,8 @@ endpoints:
         secret:
           tls:
             internal: rabbitmq-tls-direct
-      nova:
-        username: nova
+      triliovault_datamover:
+        username: dmapi
         password: password
     statefulset:
       replicas: 2
@@ -642,7 +645,7 @@ endpoints:
       default: rabbitmq
     host_fqdn_override:
       default: null
-    path: /nova
+    path: /dmapi
     scheme: rabbit
     port:
       amqp:
@@ -1210,11 +1213,13 @@ dependencies:
     datamover_api:
       jobs:
         - triliovault-datamover-db-sync
+        - triliovault-datamover-rabbit-init
         - triliovault-datamover-ks-user
         - triliovault-datamover-ks-endpoints
     datamover:
       jobs:
         - triliovault-datamover-db-sync
+        - triliovault-datamover-rabbit-init
         - triliovault-datamover-ks-user
         - triliovault-datamover-ks-endpoints
       services:
