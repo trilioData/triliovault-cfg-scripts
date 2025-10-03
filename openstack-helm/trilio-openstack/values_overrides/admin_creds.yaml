@@ -2,12 +2,6 @@ conf:
   wlm: 
     keystone_authtoken:
       memcached_servers: memcached.openstack.svc.cluster.local:11211
-  datamover:
-    DEFAULT:
-      dmapi_transport_url: rabbit://nova:password@rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672,nova:password@rabbitmq-rabbitmq-1.rabbitmq.openstack.svc.cluster.local:5672/nova
-  datamover_api:
-    DEFAULT:
-      transport_url: rabbit://nova:password@rabbitmq-rabbitmq-0.rabbitmq.openstack.svc.cluster.local:5672,nova:password@rabbitmq-rabbitmq-1.rabbitmq.openstack.svc.cluster.local:5672/nova
 endpoints:
   identity:
     name: keystone
@@ -26,7 +20,7 @@ endpoints:
         host: keystone-api.openstack.svc.cluster.local
       public:
         host: keystone.triliodata.demo
-  oslo_messaging:
+  oslo_messaging_wlm:
     auth:
       admin:
         username: rabbitmq
@@ -36,8 +30,8 @@ endpoints:
             internal: rabbitmq-tls-direct
     host_fqdn_override:
       default:
-        host: rabbitmq.openstack.svc.cluster.local
-  oslo_messaging_nova:
+        host: rabbitmq.trilio-openstack.svc.cluster.local
+  oslo_messaging_datamover:
     auth:
       admin:
         username: rabbitmq
@@ -47,7 +41,7 @@ endpoints:
             internal: rabbitmq-tls-direct
     host_fqdn_override:
       default:
-        host: rabbitmq.openstack.svc.cluster.local
+        host: rabbitmq.trilio-openstack.svc.cluster.local
   oslo_db_triliovault_datamover:
     auth:
       admin:
