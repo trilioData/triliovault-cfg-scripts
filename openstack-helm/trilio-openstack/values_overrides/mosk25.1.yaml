@@ -1,5 +1,4 @@
 ---
-distro: mosk
 images:
   tags:
     bootstrap: docker.io/openstackhelm/heat:2024.1-ubuntu_jammy
