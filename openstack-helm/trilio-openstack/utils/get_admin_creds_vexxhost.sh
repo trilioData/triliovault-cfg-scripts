@@ -30,7 +30,9 @@ MYSQL_DBADMIN_PASSWORD=$(kubectl -n openstack get secrets/internal-percona-xtrad
 TRILIO_RABBITMQ_ADMIN_PASSWORD=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.password}} | base64 -d)
 TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secret/rabbitmq-default-user --template={{.data.username}} | base64 -d)
 
+## Create nova compute related conf file
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
+./sync_nova_compute.sh
 
 CRT=$(kubectl -n cert-manager get secrets/cert-manager-selfsigned-ca -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')
 KEY=$(kubectl -n cert-manager get secrets/cert-manager-selfsigned-ca -o "jsonpath={.data['tls\.key']}" | base64 -d | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}')
