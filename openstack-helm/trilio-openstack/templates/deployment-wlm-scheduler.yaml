@@ -105,6 +105,9 @@ spec:
 {{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
             - name: pod-tmp
               mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
             - name: varlogtriliovaultwlm
               mountPath: /var/log/triliovault
             - name: trilio-mounts
@@ -148,12 +151,15 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-wlm-scheduler
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.workloads.wlm_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{ if $mounts_triliovault_wlm_scheduler.volumeMounts }}{{ toYaml $mounts_triliovault_wlm_scheduler.volumeMounts | indent 12 }}{{ end }}
       volumes:
 {{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-wlm" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
         - name: pod-tmp
           emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
         - name: varlogtriliovaultwlm
           hostPath:
             path: /var/log/triliovault-wlm
@@ -170,8 +176,8 @@ spec:
             defaultMode: 0555
         - name: pod-shared-triliovault-wlm-scheduler
           emptyDir: {}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
-{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.workloads.wlm_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{ if $mounts_triliovault_wlm_scheduler.volumes }}{{ toYaml $mounts_triliovault_wlm_scheduler.volumes | indent 8 }}{{ end }}
 {{- end }}

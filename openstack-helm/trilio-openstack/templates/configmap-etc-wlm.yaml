@@ -439,7 +439,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.wlm.DEFAULT.transport_url -}}
-{{- $_ := tuple "oslo_messaging" "internal" "triliovault_wlm" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "transport_url" -}}
+{{- $_ := tuple "oslo_messaging_wlm" "internal" "triliovault_wlm" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.wlm.DEFAULT "transport_url" -}}
 {{- end -}}
 
 

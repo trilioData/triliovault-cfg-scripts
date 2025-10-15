@@ -85,7 +85,7 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.datamover_api.DEFAULT.transport_url -}}
-{{- $_ := tuple "oslo_messaging_nova" "internal" "nova" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.datamover_api.DEFAULT "transport_url" -}}
+{{- $_ := tuple "oslo_messaging_datamover" "internal" "triliovault_datamover" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.datamover_api.DEFAULT "transport_url" -}}
 {{- end -}}
 
 
