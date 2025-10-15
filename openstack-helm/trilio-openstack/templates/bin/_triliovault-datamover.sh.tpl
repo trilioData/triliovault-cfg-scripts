@@ -20,8 +20,6 @@ COMMAND="${@:-start}"
 
 function start () {
   {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
-  {{- $distro := default "" .Values.distro }}
-
   {{- if eq $backup_target_type "s3" }}
   ## Start triliovault object store service
   /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
@@ -33,18 +31,11 @@ function start () {
   fi
   {{- end }}
 
-  CMD="/usr/bin/python3 /usr/bin/tvault-contego \
-    --config-file=/etc/nova/nova.conf"
-
-  {{- if eq $distro "mosk" }}
-  CMD+=" --config-file=/etc/nova/nova.conf.d/nova-hypervisor.conf"
-  CMD+=" --config-file=/etc/nova/nova.conf.d/nova-libvirt.conf"
-  {{- end }}
-
+  CMD="/usr/bin/python3 /usr/bin/tvault-contego"
+  CMD+=" --config-file=/etc/nova/nova.conf"
   CMD+=" --config-file=/etc/triliovault-datamover/triliovault-datamover.conf"
-  CMD+=" --config-file=/tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf"
+  <INJECT_CONFIG_FILES>
 
-  echo "Running: $CMD"
   eval $CMD
   status=$?
   if [ $status -ne 0 ]; then
