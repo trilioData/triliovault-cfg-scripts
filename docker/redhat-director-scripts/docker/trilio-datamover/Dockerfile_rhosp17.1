@@ -18,18 +18,18 @@ ADD trilio.repo /etc/yum.repos.d/
 ADD virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm /tmp/
 
 RUN dnf config-manager \
-  --enable rhel-9-for-x86_64-baseos-eus-rpms \
-  --enable rhel-9-for-x86_64-appstream-eus-rpms \
+  --enable rhel-9-for-x86_64-baseos-aus-rpms \
+  --enable rhel-9-for-x86_64-appstream-aus-rpms \
   --enable rhel-9-for-x86_64-highavailability-eus-rpms \
   --enable openstack-17.1-for-rhel-9-x86_64-rpms \
   --enable fast-datapath-for-rhel-9-x86_64-rpms \
   --enable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
 ## Install triliovault datamover packages
+RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 RUN dnf install --releasever 9.2 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN dnf install --releasever 9.2 python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
-RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
 
 #Copy executable files
@@ -53,8 +53,8 @@ RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-datamover /var/log/t
 
 ##Disable repos and Clean subscription
 RUN dnf config-manager \
-  --disable rhel-9-for-x86_64-baseos-eus-rpms \
-  --disable rhel-9-for-x86_64-appstream-eus-rpms \
+  --disable rhel-9-for-x86_64-baseos-aus-rpms \
+  --disable rhel-9-for-x86_64-appstream-aus-rpms \
   --disable rhel-9-for-x86_64-highavailability-eus-rpms \
   --disable openstack-17.1-for-rhel-9-x86_64-rpms \
   --disable fast-datapath-for-rhel-9-x86_64-rpms \
