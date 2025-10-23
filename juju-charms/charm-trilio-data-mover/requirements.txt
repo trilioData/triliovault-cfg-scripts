@@ -1,2 +1,0 @@
-# Requirements to build the charm
-charm-tools
