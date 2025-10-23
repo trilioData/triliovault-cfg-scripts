@@ -883,6 +883,7 @@ conf:
       vault_data_directory: "/var/lib/trilio/triliovault-mounts"
       max_uploads_pending: 3
       max_commit_pending: 3
+      qemu_agent_ping_timeout: 30
     dmapi_database:
       connection_recycle_time: 300
       max_overflow: 30
