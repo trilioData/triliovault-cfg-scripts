@@ -8,6 +8,7 @@ metadata:
   annotations:
     helm.sh/hook: post-install
     helm.sh/hook-weight: "-14"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
@@ -18,7 +19,7 @@ spec:
           image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
-            - -c
+            - -xc
             - |
               csv_name=$(oc get csv -n {{ .Values.rabbitmq.common.namespace }} -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep {{ .Values.rabbitmq.operator.operator_name }})
               until [ -n "$csv_name" ]; do
@@ -43,8 +44,9 @@ metadata:
   name: wait-for-rabbitmq-cluster
   namespace: trilio-openstack
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-12"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-12"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
@@ -55,7 +57,7 @@ spec:
           image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
-            - -c
+            - -xc
             - |
               until oc get rabbitmqcluster -n {{ .Values.rabbitmq.common.namespace }} | grep -q trilio-rabbitmq-cluster; do
                 echo "Waiting for RabbitMQ Cluster CR...";
@@ -71,8 +73,9 @@ metadata:
   name: wait-for-messaging-topology-operator
   namespace: trilio-openstack
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-10"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
@@ -83,7 +86,7 @@ spec:
           image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
-            - -c
+            - -xc
             - |
               csv_name=$(oc get csv -n {{ .Values.rabbitmq.common.namespace }} -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep rabbitmq-messaging-topology-operator)
               until [ -n "$csv_name" ]; do
@@ -108,8 +111,9 @@ metadata:
   name: wait-for-rabbitmq-admin-user
   namespace: trilio-openstack
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-8"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-8"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
@@ -120,7 +124,7 @@ spec:
           image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/sh
-            - -c
+            - -xc
             - |
               until oc get users.rabbitmq.com -n {{ .Values.rabbitmq.common.namespace }} | grep -q trilio-rabbitmq-admin; do
                 echo "Waiting for RabbitMQ Admin User CR...";
