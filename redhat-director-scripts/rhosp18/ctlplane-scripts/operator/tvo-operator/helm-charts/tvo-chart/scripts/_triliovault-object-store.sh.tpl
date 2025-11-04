@@ -27,6 +27,8 @@ EOF
 }
 
 function stop () {
+  MOUNT_DIR=$(cat /etc/triliovault-object-store/triliovault-object-store.conf | grep vault_data_directory | grep triliovault-mounts | awk '{print $3}')
+  umount $MOUNT_DIR
   kill -TERM 1
 }
 
