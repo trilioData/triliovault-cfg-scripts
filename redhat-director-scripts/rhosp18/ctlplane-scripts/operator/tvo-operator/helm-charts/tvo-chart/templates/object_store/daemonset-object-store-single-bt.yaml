@@ -25,7 +25,7 @@ spec:
         fsGroup: {{ .Values.common.nova_group_id }}
       nodeSelector:
         trilio-control-plane: enabled
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 90
       containers:
         - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
           image: {{ .Values.images.triliovault_object_store }}
@@ -60,8 +60,7 @@ spec:
                 command:
                   - /bin/bash
                   - -c
-                  - /tmp/triliovault-object-store.sh
-                  - stop
+                  - /tmp/triliovault-object-store.sh stop
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
