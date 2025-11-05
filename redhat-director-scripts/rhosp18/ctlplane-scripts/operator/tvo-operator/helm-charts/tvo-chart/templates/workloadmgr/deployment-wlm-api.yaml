@@ -30,6 +30,10 @@ spec:
         component: wlm-api
         owner: triliovault-wlm
         service: triliovault-wlm
+      {{- if .Values.pod.networks.triliovault_wlm_api }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_wlm_api | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:

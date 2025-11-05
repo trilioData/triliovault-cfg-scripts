@@ -26,6 +26,10 @@ spec:
       labels:
         application: triliovault
         component: wlm-scheduler
+      {{- if .Values.pod.networks.triliovault_wlm_scheduler }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_wlm_scheduler | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:

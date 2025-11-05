@@ -30,6 +30,10 @@ spec:
         component: datamover-api
         owner: triliovault-datamover
         service: triliovault-datamover
+      {{- if .Values.pod.networks.triliovault_datamover_api }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_datamover_api | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
