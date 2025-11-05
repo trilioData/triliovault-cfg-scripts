@@ -26,6 +26,10 @@ spec:
       labels:
         application: triliovault
         component: wlm-cron
+      {{- if .Values.pod.networks.triliovault_wlm_cron }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_wlm_cron | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:

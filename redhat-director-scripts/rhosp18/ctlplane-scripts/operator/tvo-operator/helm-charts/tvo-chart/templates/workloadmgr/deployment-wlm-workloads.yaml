@@ -26,6 +26,10 @@ spec:
       labels:
         application: triliovault
         component: wlm-workloads
+      {{- if .Values.pod.networks.triliovault_wlm_workloads }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_wlm_workloads | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:
