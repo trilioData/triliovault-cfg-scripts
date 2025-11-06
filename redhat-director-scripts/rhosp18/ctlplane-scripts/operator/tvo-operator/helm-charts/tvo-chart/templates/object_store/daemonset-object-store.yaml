@@ -22,9 +22,9 @@ spec:
       labels:
         application: triliovault
         component: object-store-{{ .backup_target_name | lower | replace "_" "-" }}
-      {{- if .Values.pod.networks.triliovault_object_store }}
+      {{- if $Values.pod.networks.triliovault_object_store }}
       annotations:
-        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_object_store | quote }}
+        k8s.v1.cni.cncf.io/networks: {{ $Values.pod.networks.triliovault_object_store | quote }}
       {{- end }}
     spec:
       serviceAccountName: triliovault-object-store

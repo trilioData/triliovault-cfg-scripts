@@ -111,6 +111,13 @@ spec:
       node_selector_key: trilio-control-plane
       node_selector_value: enabled
   pod:
+    networks:
+      triliovault_wlm_api: ""
+      triliovault_wlm_scheduler: ""
+      triliovault_wlm_cron: ""
+      triliovault_wlm_workloads: ""
+      triliovault_object_store: ""
+      triliovault_datamover_api: ""
     affinity:
       anti:
         topologyKey:
