@@ -145,12 +145,14 @@ spec:
           ports:
             - name: dm-api
               containerPort: 8783
+          {{- if not .Values.pod.triliovault_wlm_api.debug_mode }}
           readinessProbe:
             tcpSocket:
               port: 8783
           livenessProbe:
             tcpSocket:
               port: 8783
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
