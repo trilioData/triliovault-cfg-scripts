@@ -1,0 +1,34 @@
+---
+- import_role:
+    name: service-ks-register
+  vars:
+    service_ks_register_auth: "{{ openstack_triliovault_auth }}"
+    service_ks_register_services: "{{ triliovault_ks_services }}"
+    service_ks_register_users: "{{ triliovault_ks_users }}"
+  tags: register
+
+- name: "triliovault | Creating keystone users"
+  become: true
+  kolla_toolbox:
+    container_engine: "{{ kolla_container_engine }}"
+    module_name: "os_user"
+    module_args:
+      default_project: "{{ item.project }}"
+      name: "{{ item.user }}"
+      password: "{{ item.password }}"
+      update_password: always
+      domain: "{{ service_ks_register_domain }}"
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_triliovault_auth }}"
+      interface: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
+  run_once: True
+  with_items: "{{ triliovault_ks_users }}"
+  loop_control:
+    label: "{{ item.user }} {{ item.project }}"
+  register: service_ks_register_result
+  until: service_ks_register_result is success
+  retries: "{{ service_ks_register_retries }}"
+  delay: "{{ service_ks_register_delay }}"
+  
+
