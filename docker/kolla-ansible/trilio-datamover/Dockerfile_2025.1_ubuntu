@@ -22,7 +22,10 @@ RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-com
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y qemu-utils ceph-common python3-libvirt python3-cinderclient \
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated
 
+<<<<<<< tv6847
 RUN /usr/bin/pip3 install "oslo.db==15.0.0" --break-system-packages && /usr/bin/pip3 install "SQLAlchemy==1.4.51" --break-system-packages
+=======
+>>>>>>> dev-maint7/5.2
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
