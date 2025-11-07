@@ -45,7 +45,7 @@ dmapi_workers: "16"
 
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
-triliovault_tag: "5.2.4-2024.1"
+triliovault_tag: "5.2.7-maint-1-2025.1"
 triliovault_docker_username: ""
 triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"

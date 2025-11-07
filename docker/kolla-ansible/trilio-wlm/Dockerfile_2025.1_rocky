@@ -35,12 +35,18 @@ RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y pytho
 
 RUN /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install igraph namedatomiclock jinja2 \
-    && /usr/bin/pip3 install "SQLAlchemy==1.4.51"
+    && /usr/bin/pip3 install "SQLAlchemy==1.4.51" \
+    && pip3 install "SQLAlchemy==1.4.51" 
 
 RUN dnf -y install python3-tzlocal
 
 # Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
+##ADD python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm /tmp/
+##RUN dnf install -y /tmp/python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm && \
+##   rm -f /tmp/python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm && \
+##    dnf clean all
+
+RUN dnf install python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
