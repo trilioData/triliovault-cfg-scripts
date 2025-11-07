@@ -151,7 +151,7 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
-          {{- if .Values.pod.triliovault_wlm_api.debug_mode }}
+          {{- if .Values.pod.triliovault_wlm_workloads.debug_mode }}
           command:
             - /bin/bash
             - -c
