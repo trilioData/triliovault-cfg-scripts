@@ -178,12 +178,14 @@ spec:
           ports:
             - name: w-api
               containerPort: 8780
+          {{- if not .Values.pod.triliovault_wlm_api.debug_mode }}
           readinessProbe:
             tcpSocket:
               port: 8780
           livenessProbe:
             tcpSocket:
               port: 8780
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
