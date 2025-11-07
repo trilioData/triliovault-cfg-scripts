@@ -30,6 +30,10 @@ spec:
         component: datamover-api
         owner: triliovault-datamover
         service: triliovault-datamover
+      {{- if .Values.pod.triliovault_datamover_api.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_datamover_api.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
@@ -118,6 +122,12 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
+          {{- if .Values.pod.triliovault_datamover_api.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -131,15 +141,18 @@ spec:
                   - -c
                   - /tmp/triliovault-datamover-api.sh
                   - stop
+          {{- end }}
           ports:
             - name: dm-api
               containerPort: 8783
+          {{- if not .Values.pod.triliovault_datamover_api.debug_mode }}
           readinessProbe:
             tcpSocket:
               port: 8783
           livenessProbe:
             tcpSocket:
               port: 8783
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

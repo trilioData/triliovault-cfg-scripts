@@ -18,6 +18,10 @@ spec:
       labels:
         application: triliovault
         component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+      {{- if .Values.pod.triliovault_object_store.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_object_store.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
@@ -49,6 +53,12 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_object_store.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -61,6 +71,7 @@ spec:
                   - /bin/bash
                   - -c
                   - /tmp/triliovault-object-store.sh stop
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
