@@ -26,9 +26,9 @@ spec:
       labels:
         application: triliovault
         component: wlm-scheduler
-      {{- if .Values.pod.networks.triliovault_wlm_scheduler }}
+      {{- if .Values.pod.triliovault_wlm_scheduler.networks }}
       annotations:
-        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.networks.triliovault_wlm_scheduler | quote }}
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_wlm_scheduler.networks | quote }}
       {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
@@ -151,6 +151,12 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_wlm_api.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -164,6 +170,7 @@ spec:
                   - -c
                   - /tmp/triliovault-wlm-scheduler.sh
                   - stop
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
