@@ -26,6 +26,10 @@ spec:
       labels:
         application: triliovault
         component: wlm-workloads
+      {{- if .Values.pod.triliovault_wlm_workloads.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_wlm_workloads.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:
@@ -147,6 +151,12 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_wlm_workloads.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -160,6 +170,7 @@ spec:
                   - -c
                   - /tmp/triliovault-wlm-workloads.sh
                   - stop
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
