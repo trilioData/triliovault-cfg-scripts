@@ -122,7 +122,7 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
-          {{- if .Values.pod.triliovault_wlm_api.debug_mode }}
+          {{- if .Values.pod.triliovault_datamover_api.debug_mode }}
           command:
             - /bin/bash
             - -c
@@ -145,7 +145,7 @@ spec:
           ports:
             - name: dm-api
               containerPort: 8783
-          {{- if not .Values.pod.triliovault_wlm_api.debug_mode }}
+          {{- if not .Values.pod.triliovault_datamover_api.debug_mode }}
           readinessProbe:
             tcpSocket:
               port: 8783
