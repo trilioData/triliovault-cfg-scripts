@@ -13,10 +13,10 @@
 			"perm": "0755"
 		},
 		{
-                        "source": "{{ container_config_directory }}/api-paste.ini",
-                        "dest": "/etc/triliovault-wlm/api-paste.ini",
-                        "owner": "nova",
-                        "perm": "0755"
+			"source": "{{ container_config_directory }}/api-paste.ini",
+			"dest": "/etc/triliovault-wlm/api-paste.ini",
+			"owner": "nova",
+			"perm": "0755"
         },
         {
             "source": "{{ container_config_directory }}/triliovault-object-store.conf",
@@ -29,10 +29,16 @@
 			"dest": "/opt/triliovault/start-triliovault-wlm-cron.sh",
 			"owner": "nova",
 			"perm": "0755"
-		}
+        }{% if kolla_copy_ca_into_containers | bool %},
+        {
+            "source": "{{ container_config_directory }}/ca-certificates",
+            "dest": "/var/lib/kolla/share/ca-certificates",
+            "owner": "root",
+            "perm": "0600"
+        }{% endif %}
 	],
 	"permissions": [{
-		"path": "/var/log/triliovault",
+		"path": "/var/log/kolla/triliovault",
 		"owner": "nova:nova"
 	}]
 }

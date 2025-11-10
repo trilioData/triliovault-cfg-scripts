@@ -86,8 +86,9 @@ ssl = false
 [cinder]
 http_retries = {{ cinder_http_retries }}
 
+{% if enable_barbican | bool %}
 [barbican]
+auth_endpoint = {{ keystone_internal_url }}
 barbican_endpoint_type = internal
-verify_ssl = true
 verify_ssl_path = {{ openstack_cacert }}
-
+{% endif %}

@@ -41,10 +41,16 @@
                         "dest": "/etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}",
                         "owner": "nova",
                         "perm": "0600"
+                }{% endif %}{% if kolla_copy_ca_into_containers | bool %},
+                {
+                        "source": "{{ container_config_directory }}/ca-certificates",
+                        "dest": "/var/lib/kolla/share/ca-certificates",
+                        "owner": "root",
+                        "perm": "0600"
                 }{% endif %}
 	],
 	"permissions": [{
-		"path": "/var/log/triliovault",
+		"path": "/var/log/kolla/triliovault",
 		"owner": "nova:nova"
 	}]
 }
