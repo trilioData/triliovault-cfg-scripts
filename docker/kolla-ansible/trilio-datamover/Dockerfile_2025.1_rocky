@@ -4,7 +4,7 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/trilio-datamover" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.7" \
+      version="5.2.8" \
       release="5.2" \
       type="source" \
       summary="TrilioData Datamover" \
@@ -39,7 +39,7 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install virt-v2v virtio-win nbdkit -y
 
 ## Copy locally built virt-v2v-in-place binary
-#COPY virt-v2v-in-place /usr/local/bin/
+COPY virt-v2v-in-place /usr/local/bin/
 
 ## Downgrade SQLAlchemy to compatible version
 RUN set -ex \

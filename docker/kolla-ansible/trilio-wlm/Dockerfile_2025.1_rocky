@@ -4,7 +4,7 @@ MAINTAINER Trilio shyam.biradar@trilio.io
 LABEL name="kolla/openstack-nova-api-triliodata-wlm-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
@@ -41,12 +41,7 @@ RUN /usr/bin/pip3 install --upgrade pip \
 RUN dnf -y install python3-tzlocal
 
 # Installing TrilioVaultWLM packages
-##ADD python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm /tmp/
-##RUN dnf install -y /tmp/python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm && \
-##   rm -f /tmp/python3-workloadmgr-el9-5.2.8.25-5.2.noarch.rpm && \
-##    dnf clean all
-
-RUN dnf install python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
+RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault

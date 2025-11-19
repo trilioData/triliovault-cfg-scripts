@@ -4,7 +4,7 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
