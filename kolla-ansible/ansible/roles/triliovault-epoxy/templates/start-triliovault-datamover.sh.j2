@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-## Start TTrilioVault Object Store Service
+## Start TrilioVault Object Store Service
 {% if triliovault_backup_target == "amazon_s3"  or  triliovault_backup_target == "other_s3_compatible" %}
 
 /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
@@ -16,8 +16,6 @@ sleep 20s
 {% endif %}
 
 ## Start TrilioVault Datamover Service
-/usr/bin/python3 /usr/bin/tvault-contego \
+/usr/bin/env python /usr/bin/tvault-contego \
 --config-file=/etc/nova/nova.conf \
 --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
-
-

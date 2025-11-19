@@ -5,3 +5,11 @@
   vars:
     project_services: "{{ triliovault_services }}"
   tags: always
+
+- name: "Configure proxysql for {{ project_name }}"
+  import_role:
+    name: proxysql-config
+  when:
+    - enable_proxysql | bool
+  notify:
+    - Restart proxysql container
