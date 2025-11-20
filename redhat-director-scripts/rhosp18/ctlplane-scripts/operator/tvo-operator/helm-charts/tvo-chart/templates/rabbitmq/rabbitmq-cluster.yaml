@@ -1,0 +1,46 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: {{ .Values.rabbitmq.cluster.api_version }}
+kind: RabbitmqCluster
+metadata:
+  name: trilio-rabbitmq-cluster
+  namespace: {{ .Values.rabbitmq.common.namespace }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-13"
+spec:
+  replicas: {{ .Values.rabbitmq.cluster.replicas }}
+  image: {{ .Values.rabbitmq.cluster.image }}
+  resources:
+    requests:
+      cpu: {{ .Values.rabbitmq.cluster.resources.requests.cpu }}
+      memory: {{ .Values.rabbitmq.cluster.resources.requests.memory }}
+    limits:
+      cpu: {{ .Values.rabbitmq.cluster.resources.limits.cpu }}
+      memory: {{ .Values.rabbitmq.cluster.resources.limits.memory }}
+  persistence:
+    storageClassName: {{ .Values.rabbitmq.cluster.persistence.storage_class_name }}
+    storage: {{ .Values.rabbitmq.cluster.persistence.storage }}
+  tls:
+    secretName: cert-trilio-rabbitmq-cluster
+    caSecretName: cert-trilio-rabbitmq-cluster
+    enabled: true
+    disableNonTLSListeners: true
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            # Reset the pod-level security context so OpenShift can assign a compliant UID
+            securityContext: {}
+            # Clear all container-level securityContext settings
+            containers: []
+            initContainers:
+              - name: setup-container
+                securityContext: {}
+  rabbitmq:
+    additionalConfig: |
+{{ .Values.rabbitmq.cluster.rabbitmq.additional_config | nindent 6 }}
+  service:
+    type: {{ .Values.rabbitmq.cluster.service.type }}
+
+{{- end }}

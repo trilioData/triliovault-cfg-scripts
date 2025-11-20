@@ -1,0 +1,17 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: {{ .Values.rabbitmq.admin_user.name }}
+  namespace: trilio-openstack
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-9"
+spec:
+  rabbitmqClusterReference:
+    name: trilio-rabbitmq-cluster
+  importCredentialsSecret:
+    name: trilio-rabbitmq-admin-credentials
+  tags:
+    - administrator
+{{- end }}
