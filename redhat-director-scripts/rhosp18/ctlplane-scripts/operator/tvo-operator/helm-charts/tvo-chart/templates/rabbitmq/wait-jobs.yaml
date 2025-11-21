@@ -95,6 +95,7 @@ spec:
                 csv_name=$(oc get csv -n {{ .Values.rabbitmq.common.namespace }} -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep rabbitmq-messaging-topology-operator)
               done
               while true; do
+                csv_name=$(oc get csv -n {{ .Values.rabbitmq.common.namespace }} -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep rabbitmq-messaging-topology-operator)
                 phase=$(oc get csv "$csv_name" -n {{ .Values.rabbitmq.common.namespace }} -o jsonpath='{.status.phase}')
                 if [ "$phase" = "Succeeded" ]; then
                   echo "Messaging Topology Operator installed."
