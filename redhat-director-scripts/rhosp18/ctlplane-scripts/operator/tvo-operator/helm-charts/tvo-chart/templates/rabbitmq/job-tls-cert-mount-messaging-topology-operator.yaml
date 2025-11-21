@@ -1,0 +1,42 @@
+{{- if and (eq .Values.crdType "TVOControlPlane") (eq .Values.rabbitmq.common.ssl true) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: patch-messaging-topology-operator-tls
+  namespace: trilio-openstack
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-13"
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      serviceAccountName: trilio-rabbitmq
+      restartPolicy: OnFailure
+      containers:
+      - name: patch-operator
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          
+          echo "Patching messaging-topology-operator deployment with CA certificate..."
+          oc -n trilio-openstack patch deployment messaging-topology-operator --patch "spec:
+            template:
+              spec:
+                containers:
+                - name: manager
+                  volumeMounts:
+                  - mountPath: /etc/ssl/certs/rabbitmq-ca.crt
+                    name: cert-trilio-rabbitmq-cluster
+                    subPath: ca.crt
+                volumes:
+                - name: cert-trilio-rabbitmq-cluster
+                  secret:
+                    defaultMode: 420
+                    secretName: cert-trilio-rabbitmq-cluster"
+          sleep 30s
+          echo "Deployment patched successfully!"
+{{- end }}

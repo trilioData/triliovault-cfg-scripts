@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Values.rabbitmq.common.namespace }}
   annotations:
     "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-13"
+    "helm.sh/hook-weight": "-18"
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.rabbitmq.cluster.image }}

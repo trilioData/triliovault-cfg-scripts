@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Values.rabbitmq.common.namespace }}
   annotations:
     helm.sh/hook: post-install
-    helm.sh/hook-weight: "-16"
+    helm.sh/hook-weight: "-20"
 spec:
   targetNamespaces:
   - {{ .Values.rabbitmq.common.namespace }}
@@ -19,7 +19,7 @@ metadata:
   namespace: {{ .Values.rabbitmq.common.namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-15"
+    "helm.sh/hook-weight": "-19"
 spec:
   channel: {{ .Values.rabbitmq.operator.channel }}
   name: {{ .Values.rabbitmq.operator.operator_name }}
