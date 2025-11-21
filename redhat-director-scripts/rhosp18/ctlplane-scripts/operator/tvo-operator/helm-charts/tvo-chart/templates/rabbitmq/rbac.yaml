@@ -50,9 +50,6 @@ kind: RoleBinding
 metadata:
   name: trilio-tvo-deployment-patcher
   namespace: trilio-openstack
-  annotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-12"
 subjects:
 - kind: ServiceAccount
   name: trilio-rabbitmq
