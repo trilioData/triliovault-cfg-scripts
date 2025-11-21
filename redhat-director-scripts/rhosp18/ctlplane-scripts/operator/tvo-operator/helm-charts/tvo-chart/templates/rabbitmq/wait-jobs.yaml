@@ -126,9 +126,9 @@ spec:
             - /bin/sh
             - -xc
             - |
-              until oc get users.rabbitmq.com -n {{ .Values.rabbitmq.common.namespace }} | grep -q {{ .Values.rabbitmq.admin_user.name }}; do
+              until oc get users.rabbitmq.com -n {{ .Values.rabbitmq.common.namespace }} | grep -q {{ .Values.rabbitmq.common.admin_user }}; do
                 echo "Waiting for RabbitMQ Admin User CR...";
                 sleep 10;
               done
-              oc wait --for=condition=Ready users.rabbitmq.com/{{ .Values.rabbitmq.admin_user.name }} -n {{ .Values.rabbitmq.common.namespace }} --timeout=120s
+              oc wait --for=condition=Ready users.rabbitmq.com/{{ .Values.rabbitmq.common.admin_user }} -n {{ .Values.rabbitmq.common.namespace }} --timeout=120s
               echo "RabbitMQ Admin User is ready."
