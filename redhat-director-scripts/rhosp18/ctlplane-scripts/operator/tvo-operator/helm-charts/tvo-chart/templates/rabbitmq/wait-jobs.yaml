@@ -3,13 +3,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-rabbitmq-operator
+  name: jobwait-for-rabbitmq-operator
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install
     helm.sh/hook-weight: "-19"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
+  activeDeadlineSeconds: 300
   template:
     spec:
       serviceAccountName: wait-job-sa
@@ -41,13 +42,14 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-rabbitmq-cluster
+  name: job-wait-for-rabbitmq-cluster
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-17"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
+  activeDeadlineSeconds: 300
   template:
     spec:
       serviceAccountName: wait-job-sa
@@ -70,13 +72,14 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-messaging-topology-operator
+  name: job-wait-for-messaging-topology-operator
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-15"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
+  activeDeadlineSeconds: 300
   template:
     spec:
       serviceAccountName: wait-job-sa
@@ -109,13 +112,14 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-rabbitmq-admin-user
+  name: job-wait-for-rabbitmq-admin-user
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-8"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
+  activeDeadlineSeconds: 300
   template:
     spec:
       serviceAccountName: wait-job-sa

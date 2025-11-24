@@ -32,8 +32,17 @@ auth_type = password
 auth_uri = {{ .Values.keystone.common.auth_uri }}
 
 
+{{- if .Values.rabbitmq.common.ssl }}
+[oslo_messaging_rabbit]
+ssl = true
+ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+ssl_cert_file = /etc/pki/tls/certs/rabbitmq-tls.crt
+ssl_key_file = /etc/pki/tls/private/rabbitmq-tls.key
+{{- end }}
+
+
+
 [oslo_messaging_notifications]
-transport_url = {{ .Values.rabbitmq.datamover_api.transport_url }}
 driver = {{ .Values.rabbitmq.common.driver }}
 
 [oslo_middleware]
