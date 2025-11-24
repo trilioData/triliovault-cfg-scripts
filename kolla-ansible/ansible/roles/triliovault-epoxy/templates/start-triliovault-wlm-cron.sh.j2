@@ -1,0 +1,5 @@
+#!/bin/bash
+set -ex
+
+## Start Triliovault Wlm Cron Service
+/usr/bin/python3 /usr/bin/workloadmgr-cron --config-file=/etc/triliovault-wlm/triliovault-wlm.conf

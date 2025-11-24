@@ -4,7 +4,7 @@ MAINTAINER Trilio shyam.biradar@trilio.io
 LABEL name="kolla/openstack-nova-api-triliodata--wlm-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
@@ -27,9 +27,12 @@ RUN set -ex \
      && apt-get -y install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system \
      && apt-get -y install python3-neutronclient python3-glanceclient \
      && pip3 --no-cache-dir install --upgrade pip \
-     && apt-get clean -y
+     && pip3 --no-cache-dir install "SQLAlchemy==1.4.51" \
+     && pip3 --no-cache-dir install --upgrade pyvmomi \
+     && apt-get clean -y    
 
 # Installing TrilioVaultWLM packages
+##RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install ./tmp/workloadmgr_5.2.8.25_all.deb
 RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-s3-fuse-plugin --allow-unauthenticated
 
 
