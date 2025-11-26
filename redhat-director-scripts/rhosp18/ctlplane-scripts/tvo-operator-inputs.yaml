@@ -129,6 +129,7 @@ spec:
       driver: "messagingv2"
       ssl: true
       namespace: 'trilio-openstack'
+      metallb_address_pool: "internalapi"
     operator:
       api_version: 'operators.coreos.com/v1'
       operator_name: 'rabbitmq-cluster-operator'
