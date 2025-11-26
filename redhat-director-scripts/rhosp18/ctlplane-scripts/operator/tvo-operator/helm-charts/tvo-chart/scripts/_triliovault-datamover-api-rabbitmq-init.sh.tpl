@@ -13,7 +13,17 @@ DMAPI_RABBITMQ_VHOST_NAME="{{- .Values.rabbitmq.datamover_api.vhost -}}"
 export RABBITMQ_ADMIN_USER
 export RABBITMQ_ADMIN_PASSWORD
 
+URL="https://trilio-rabbitmq-cluster.trilio-openstack.svc:15671/api/vhosts"
 
+while true; do
+  if curl -u "${RABBITMQ_ADMIN_USER}:${RABBITMQ_ADMIN_PASSWORD}" -k --silent --fail "$URL" > /dev/null; then
+    echo "RabbitMQ API is now reachable!"
+    break
+  else
+    echo "RabbitMQ API not reachable yet. Retrying in 5 seconds..."
+    sleep 5
+  fi
+done
 # Check if SSL is enabled and run the corresponding commands
 if [ "{{- .Values.rabbitmq.common.ssl -}}" == "true" ]; then
   # SSL is enabled, include --ssl in commands

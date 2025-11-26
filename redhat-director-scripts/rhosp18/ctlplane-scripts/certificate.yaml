@@ -68,3 +68,21 @@ spec:
   dnsNames:
     - triliovault-datamover-internal.trilio-openstack.svc
     - triliovault-datamover-internal.trilio-openstack.svc.cluster.local
+
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trilio-rabbitmq-cluster
+  namespace: openstack
+spec:
+  secretName: cert-trilio-rabbitmq-cluster
+  issuerRef:
+    name: rootca-public
+    kind: Issuer
+  duration: 43800h0m0s
+  commonName: trilio-rabbitmq-cluster.trilio-openstack.svc
+  dnsNames:
+    - trilio-rabbitmq-cluster.trilio-openstack.svc
