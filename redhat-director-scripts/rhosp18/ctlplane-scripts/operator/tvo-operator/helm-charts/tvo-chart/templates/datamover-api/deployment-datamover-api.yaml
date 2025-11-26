@@ -199,6 +199,14 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - mountPath: /etc/pki/tls/certs/rabbitmq-tls.crt
+              name: rabbitmq-tls-certs
+              readOnly: true
+              subPath: tls.crt
+            - mountPath: /etc/pki/tls/private/rabbitmq-tls.key
+              name: rabbitmq-tls-certs
+              readOnly: true
+              subPath: tls.key
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -221,6 +229,10 @@ spec:
         - name: internal-tls-certs
           secret:
             secretName: cert-triliovault-datamover-internal-svc
+            defaultMode: 0640
+        - name: rabbitmq-tls-certs
+          secret:
+            secretName: cert-trilio-rabbitmq-cluster
             defaultMode: 0640
         - name: combined-ca-bundle
           secret:

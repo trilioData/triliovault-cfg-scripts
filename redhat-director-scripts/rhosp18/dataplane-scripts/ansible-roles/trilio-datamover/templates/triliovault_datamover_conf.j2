@@ -17,6 +17,11 @@ rbd_user = {{ ceph_cinder_user }}
 keyring_ext = .keyring
 {% endif %}
 
+[oslo_messaging_rabbit]
+rabbit_quorum_queue = true
+ssl = {{ rabbit_ssl }}
+ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+
 [dmapi_database]
 connection = "mysql+pymysql://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiDatabasePassword') | trim }}@{{ database_host }}:{{ database_port }}/dmapi"
 

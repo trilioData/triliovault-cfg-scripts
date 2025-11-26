@@ -117,12 +117,68 @@ database:
     user: "workloadmgr"
     database: "workloadmgr"    
 rabbitmq:
-  common: 
-    admin_user: "admin"
-    host: "EDIT_HOST"
-    port: "5672"
-    ssl: true
+  common:
+    admin_user: "trilio-rabbitmq-admin"
+    host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
+    port: "15671"
     driver: "messagingv2"
+    ssl: true
+    namespace: 'trilio-openstack'
+  operator:
+    api_version: 'operators.coreos.com/v1'
+    operator_name: 'rabbitmq-cluster-operator'
+    channel: 'stable'
+    starting_csv: 'rabbitmq-cluster-operator.v2.16.0'
+    install_plan_approval: 'Automatic'
+    source_namespace: 'openshift-marketplace'
+    source: 'community-operators'
+  cluster:
+    api_version: 'rabbitmq.com/v1beta1'
+    replicas: 3
+    image: 'rabbitmq:3.13.7-management'
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+    persistence:
+      storage_class_name: 'ocs-storagecluster-ceph-rbd'
+      storage: 10Gi
+    rabbitmq:
+      additional_config: |
+        # Cluster formation
+        cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
+        cluster_formation.k8s.host = kubernetes.default.svc
+        cluster_partition_handling = autoheal
+
+        # Quorum queue optimizations (Raft-based)
+        raft.wal_max_size_bytes = 134217728
+        raft.segment_max_entries = 32768
+
+        # Memory and disk management (adjusted for 2Gi memory)
+        vm_memory_high_watermark.relative = 0.5
+        vm_memory_high_watermark_paging_ratio = 0.75
+        disk_free_limit.absolute = 2GB
+
+        # Connection and channel limits
+        channel_max = 2048
+
+        # Heartbeat and timeouts
+        heartbeat = 60
+
+        # Message size limit (100MB)
+        max_message_size = 104857600
+
+        # Consumer timeout (30 minutes)
+        consumer_timeout = 1800000
+
+        # Background GC for better memory management
+        background_gc_enabled = true
+        background_gc_target_interval = 60000
+    service:
+      type: ClusterIP
   datamover_api:
     user: "dmapi"
     vhost: "dmapi"

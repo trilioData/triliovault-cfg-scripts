@@ -1,0 +1,13 @@
+kind: DNSData
+metadata:
+  name: trilio-rabbitmq-dns
+  namespace: openstack
+  labels:
+    dnsmasqname: dns
+spec:
+  dnsDataLabelSelectorValue: dnsdata
+  hosts:
+  - hostnames:
+    - trilio-rabbitmq-cluster.trilio-openstack.svc
+    ip: <TRILIO-RABBITMQ-LB-SERVICE-IP>
+    # oc get svc trilio-rabbitmq-lb -n trilio-openstack -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
