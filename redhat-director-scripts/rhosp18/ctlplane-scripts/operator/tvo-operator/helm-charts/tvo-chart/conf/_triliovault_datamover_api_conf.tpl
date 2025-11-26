@@ -31,16 +31,10 @@ auth_url = {{ .Values.keystone.common.auth_url }}
 auth_type = password
 auth_uri = {{ .Values.keystone.common.auth_uri }}
 
-
-{{- if .Values.rabbitmq.common.ssl }}
 [oslo_messaging_rabbit]
-ssl = true
+ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-ssl_cert_file = /etc/pki/tls/certs/rabbitmq-tls.crt
-ssl_key_file = /etc/pki/tls/private/rabbitmq-tls.key
-{{- end }}
-
-
+rabbit_quorum_queue = true
 
 [oslo_messaging_notifications]
 driver = {{ .Values.rabbitmq.common.driver }}
