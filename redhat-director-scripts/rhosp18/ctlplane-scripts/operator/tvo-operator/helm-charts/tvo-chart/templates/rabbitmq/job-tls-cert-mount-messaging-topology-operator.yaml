@@ -7,6 +7,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-weight": "-13"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 spec:
   backoffLimit: 5
   template:
@@ -37,6 +38,8 @@ spec:
                   secret:
                     defaultMode: 420
                     secretName: cert-trilio-rabbitmq-cluster"
+          echo "Waiting for deployment rollout to complete..."
+          oc -n trilio-openstack rollout status deployment/messaging-topology-operator --timeout=300s
           sleep 30s
-          echo "Deployment patched successfully!"
+          echo "Deployment patched and rolled out successfully!"
 {{- end }}
