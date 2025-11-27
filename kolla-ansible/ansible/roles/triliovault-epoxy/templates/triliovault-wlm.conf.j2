@@ -170,7 +170,6 @@ process_timeout = 300
 encryption_support = True
 
 [oslo_messaging_rabbit]
-use_queue_manager = true
 heartbeat_in_pthread = false
 {% if om_enable_rabbitmq_tls | bool %}
 ssl = true
