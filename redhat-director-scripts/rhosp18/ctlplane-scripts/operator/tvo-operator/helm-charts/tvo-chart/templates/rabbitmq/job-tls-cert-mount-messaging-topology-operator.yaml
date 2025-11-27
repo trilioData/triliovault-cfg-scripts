@@ -37,6 +37,8 @@ spec:
                   secret:
                     defaultMode: 420
                     secretName: cert-trilio-rabbitmq-cluster"
+          echo "Waiting for deployment rollout to complete..."
+          oc -n trilio-openstack rollout status deployment/messaging-topology-operator --timeout=300s
           sleep 30s
-          echo "Deployment patched successfully!"
+          echo "Deployment patched and rolled out successfully!"
 {{- end }}
