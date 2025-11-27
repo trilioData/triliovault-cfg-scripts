@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,7 +9,6 @@ metadata:
     dnsmasq.network.openstack.org/hostname: trilio-rabbitmq-cluster.trilio-openstack.svc
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-15"
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   labels:
     app.kubernetes.io/component: rabbitmq
     app.kubernetes.io/name: trilio-rabbitmq-cluster
@@ -28,3 +28,4 @@ spec:
     protocol: TCP
   sessionAffinity: None
   externalTrafficPolicy: Cluster
+{{- end }}
