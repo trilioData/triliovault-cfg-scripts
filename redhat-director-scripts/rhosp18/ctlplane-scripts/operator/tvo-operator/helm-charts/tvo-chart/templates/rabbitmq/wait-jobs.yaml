@@ -105,7 +105,7 @@ spec:
                   break
                 fi
                 echo "Waiting for Messaging Topology Operator CSV to be Succeeded... Current phase: $phase"
-                sleep 10
+                sleep 30s
               done
 ---
 # Job 4: Wait for RabbitMQ Admin User CR Creation
