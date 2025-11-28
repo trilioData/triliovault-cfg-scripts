@@ -52,7 +52,6 @@ driver = noop
 {% endif %}
 
 [oslo_messaging_rabbit]
-use_queue_manager = true
 heartbeat_in_pthread = false
 {% if om_enable_rabbitmq_tls | bool %}
 ssl = true
