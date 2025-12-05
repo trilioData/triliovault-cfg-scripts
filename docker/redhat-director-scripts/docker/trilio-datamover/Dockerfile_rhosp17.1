@@ -28,16 +28,16 @@ RUN dnf config-manager \
   --enable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
 ADD srvany.rpm /tmp
-RUN dnf install --releasever 9.2 cpio -y
+RUN dnf install --releasever 9.6 cpio -y
 RUN rpm2cpio /tmp/srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
 
 
 ## Install triliovault datamover packages
-RUN dnf install --releasever 9.2 openstack-nova-common python3-nova python3-novaclient udev fuse virtio-win nbdkit --nobest -y
+RUN dnf install --releasever 9.6 openstack-nova-common python3-nova python3-novaclient udev fuse virtio-win nbdkit --nobest -y
 RUN cp -r /usr/share/virtio-win /usr/local/share/
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
-RUN dnf install --releasever 9.2 python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
-RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
+RUN dnf install --releasever 9.6 python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
+RUN dnf --releasever 9.6 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
 ##Disable repos
 RUN dnf config-manager \
@@ -51,8 +51,8 @@ RUN dnf config-manager \
 ##Enable appstream & baseos repos
 RUN dnf config-manager --enable rhel-9-for-x86_64-appstream-rpms --enable rhel-9-for-x86_64-baseos-rpms
 
-#Installing latest virt-v2v package initially only as it is available in default rhel-9-for-x86_64-appstream-rpms repo for 9.5 release ver.
-RUN dnf install --releasever 9.5 virt-v2v -y
+#Installing latest virt-v2v package initially only as it is available in default rhel-9-for-x86_64-appstream-rpms repo for 9.6 release ver.
+RUN dnf install --releasever 9.6 virt-v2v -y
 
 ##Disable appstream & baseos repos
 RUN dnf config-manager --disable rhel-9-for-x86_64-appstream-rpms --disable rhel-9-for-x86_64-baseos-rpms
