@@ -59,4 +59,21 @@ roleRef:
   kind: Role
   name: trilio-tvo-deployment-patcher
   apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trilio-rabbitmq-anyuid-scc
+  namespace: trilio-openstack
+  labels:
+    app.kubernetes.io/name: trilio-rabbitmq-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+- kind: ServiceAccount
+  name: trilio-rabbitmq-cluster-server
+  namespace: trilio-openstack
 {{- end }}

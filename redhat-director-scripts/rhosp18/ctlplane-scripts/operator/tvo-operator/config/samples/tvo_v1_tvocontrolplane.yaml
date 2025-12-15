@@ -57,7 +57,6 @@ spec:
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
-    rabbitmq_admin_secret_name: "rabbitmq-default-user"
   keystone:
     common:
       admin_role_name: admin
