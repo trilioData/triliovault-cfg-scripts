@@ -131,7 +131,7 @@ spec:
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
-      image: 'rabbitmq:3.13.7-management'
+      image: 'rabbitmq:3.13-management'
       resources:
         requests:
           cpu: 1
@@ -146,7 +146,7 @@ spec:
         additional_config: |
           # Cluster formation
           cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
-          cluster_formation.k8s.host = kubernetes.default.svc
+          cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
           cluster_partition_handling = autoheal
 
           # Quorum queue optimizations (Raft-based)
