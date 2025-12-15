@@ -138,7 +138,7 @@ spec:
           memory: 2Gi
         limits:
           cpu: 2
-          memory: 4Gi
+          memory: 2Gi
       persistence:
         storage_class_name: 'ocs-storagecluster-ceph-rbd'
         storage: 10Gi
@@ -153,13 +153,12 @@ spec:
           raft.wal_max_size_bytes = 134217728
           raft.segment_max_entries = 32768
 
-          ssl_options.verify = verify_peer
+          ssl_options.verify = verify_none
           ssl_options.fail_if_no_peer_cert = false
         
           # Memory and disk management (adjusted for 2Gi memory)
-          vm_memory_high_watermark.relative = 0.5
+          vm_memory_high_watermark.relative = 0.6
           vm_memory_high_watermark_paging_ratio = 0.75
-          disk_free_limit.absolute = 2GB
 
           # Connection and channel limits
           channel_max = 2048
