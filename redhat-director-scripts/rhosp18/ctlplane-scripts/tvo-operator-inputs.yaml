@@ -77,7 +77,6 @@ spec:
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
-    rabbitmq_admin_secret_name: "trilio-openstack-secret"
   keystone:
     keystone_interface: "internal"
     common:
@@ -123,21 +122,12 @@ spec:
       database: "workloadmgr"
   rabbitmq:
     common:
-      admin_user: "trilio-rabbitmq-admin"
       host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
       port: "15671"
       driver: "messagingv2"
       ssl: true
       namespace: 'trilio-openstack'
       metallb_address_pool: "internalapi"
-    operator:
-      api_version: 'operators.coreos.com/v1'
-      operator_name: 'rabbitmq-cluster-operator'
-      channel: 'stable'
-      starting_csv: 'rabbitmq-cluster-operator.v2.16.0'
-      install_plan_approval: 'Automatic'
-      source_namespace: 'openshift-marketplace'
-      source: 'community-operators'
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3

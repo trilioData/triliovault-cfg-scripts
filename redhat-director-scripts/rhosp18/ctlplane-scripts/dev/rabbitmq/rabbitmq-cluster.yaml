@@ -1,0 +1,38 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: trilio-rabbitmq-cluster
+  namespace: trilio-openstack
+spec:
+  replicas: 3
+  image: rabbitmq:3.13-management
+  persistence:
+    storageClassName: ocs-storagecluster-ceph-rbd
+    storage: 10Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi  # MUST BE EQUAL to request
+  rabbitmq:
+    additionalConfig: |
+      cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
+      cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+      cluster_partition_handling = autoheal
+      vm_memory_high_watermark.relative = 0.6
+  service:
+    type: ClusterIP
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - trilio-rabbitmq-cluster
+            topologyKey: kubernetes.io/hostname
