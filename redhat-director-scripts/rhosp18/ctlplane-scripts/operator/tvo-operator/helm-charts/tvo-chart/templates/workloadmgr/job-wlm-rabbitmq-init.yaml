@@ -37,11 +37,16 @@ spec:
                 secretKeyRef:
                   name: trilio-openstack-secret
                   key: WlmRabbitPassword
+            - name: RABBITMQ_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-rabbitmq-cluster-default-user
+                  key: username
             - name: RABBITMQ_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: trilio-openstack-secret
-                  key: RabbitAdminPassword
+                  name: trilio-rabbitmq-cluster-default-user
+                  key: password
           command:
             - /bin/bash
             - -c

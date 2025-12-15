@@ -16,7 +16,6 @@ metadata:
             "openstack": {
               "namespace": "openstack",
               "osp_secret_name": "osp-secret",
-              "rabbitmq_admin_secret_name": "rabbitmq-default-user"
             },
             "common": {
               "dmapi_workers": "16",

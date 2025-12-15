@@ -23,20 +23,19 @@ spec:
   tls:
     secretName: cert-trilio-rabbitmq-cluster
     caSecretName: cert-trilio-rabbitmq-cluster
-    enabled: true
     disableNonTLSListeners: true
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            # Reset the pod-level security context so OpenShift can assign a compliant UID
-            securityContext: {}
-            # Clear all container-level securityContext settings
-            containers: []
-            initContainers:
-              - name: setup-container
-                securityContext: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - trilio-rabbitmq-cluster
+            topologyKey: kubernetes.io/hostname
   rabbitmq:
     additionalConfig: |
 {{ .Values.rabbitmq.cluster.rabbitmq.additional_config | nindent 6 }}

@@ -77,7 +77,6 @@ spec:
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
-    rabbitmq_admin_secret_name: "trilio-openstack-secret"
   keystone:
     keystone_interface: "internal"
     common:
@@ -123,32 +122,23 @@ spec:
       database: "workloadmgr"
   rabbitmq:
     common:
-      admin_user: "trilio-rabbitmq-admin"
       host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
       port: "15671"
       driver: "messagingv2"
       ssl: true
       namespace: 'trilio-openstack'
       metallb_address_pool: "internalapi"
-    operator:
-      api_version: 'operators.coreos.com/v1'
-      operator_name: 'rabbitmq-cluster-operator'
-      channel: 'stable'
-      starting_csv: 'rabbitmq-cluster-operator.v2.16.0'
-      install_plan_approval: 'Automatic'
-      source_namespace: 'openshift-marketplace'
-      source: 'community-operators'
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
-      image: 'rabbitmq:3.13.7-management'
+      image: 'rabbitmq:3.13-management'
       resources:
         requests:
           cpu: 1
           memory: 2Gi
         limits:
           cpu: 2
-          memory: 4Gi
+          memory: 2Gi
       persistence:
         storage_class_name: 'ocs-storagecluster-ceph-rbd'
         storage: 10Gi
@@ -156,20 +146,19 @@ spec:
         additional_config: |
           # Cluster formation
           cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
-          cluster_formation.k8s.host = kubernetes.default.svc
+          cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
           cluster_partition_handling = autoheal
 
           # Quorum queue optimizations (Raft-based)
           raft.wal_max_size_bytes = 134217728
           raft.segment_max_entries = 32768
 
-          ssl_options.verify = verify_peer
+          ssl_options.verify = verify_none
           ssl_options.fail_if_no_peer_cert = false
         
           # Memory and disk management (adjusted for 2Gi memory)
-          vm_memory_high_watermark.relative = 0.5
+          vm_memory_high_watermark.relative = 0.6
           vm_memory_high_watermark_paging_ratio = 0.75
-          disk_free_limit.absolute = 2GB
 
           # Connection and channel limits
           channel_max = 2048
