@@ -76,6 +76,16 @@ oc -n trilio-openstack apply -f cert-triliovault-datamover-internal-svc.yaml
 oc describe secret cert-triliovault-datamover-public-svc -n trilio-openstack
 oc describe secret cert-triliovault-datamover-internal-svc -n trilio-openstack
 
+
+
+oc get secret cert-trilio-rabbitmq-cluster -n openstack -o yaml > cert-trilio-rabbitmq-cluster.yaml
+sed -i 's/openstack/trilio-openstack/' cert-trilio-rabbitmq-cluster.yaml
+oc -n trilio-openstack delete secret cert-trilio-rabbitmq-cluster
+oc apply -f cert-trilio-rabbitmq-cluster.yaml
+oc describe secret cert-trilio-rabbitmq-cluster -n trilio-openstack
+
+
+
 echo -e "\n\nCertificates renewed"
 
 echo -e "\nNow restarting trilio control plane pods"
