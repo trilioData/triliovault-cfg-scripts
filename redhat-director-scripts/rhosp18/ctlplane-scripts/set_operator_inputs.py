@@ -200,62 +200,6 @@ if keystone_url:
 
 
 
-## Set rabbitmq params
-def set_rabbitmq_params():
-    try:
-        # Fetch RabbitMQ admin user
-        result = subprocess.run(
-            ["oc", "-n", "openstack", "exec", "rabbitmq-server-0", "--", "bash", "-c", "rabbitmqctl list_users"],
-            capture_output=True, text=True, check=True
-        )
-        # Parse the output to get the admin user
-        rabbit_admin_user = None
-        for line in result.stdout.splitlines():
-            if "administrator" in line:
-                rabbit_admin_user = line.split()[0]
-                break
-        if not rabbit_admin_user:
-            raise Exception("Administrator user not found in RabbitMQ")
-
-        # Fetch RabbitMQ host
-        result = subprocess.run(
-            ["oc", "-n", "openstack", "get", "secret", "rabbitmq-default-user", "-o", "jsonpath='{.data.host}'"],
-            capture_output=True, text=True, check=True
-        )
-        rabbit_host = base64.b64decode(result.stdout.strip().strip("'")).decode("utf-8")
-
-        result = subprocess.run(
-            ["oc", "-n", "openstack", "get", "cm", "rabbitmq-server-conf", "-o", "jsonpath={.data.userDefinedConfiguration\\.conf}"],
-            capture_output=True, text=True, check=True
-        )
-
-        # Extract management.ssl.port using regex
-        match = re.search(r'management\.ssl\.port\s*=\s*(\d+)', result.stdout)
-
-        if match:
-            rabbit_port = match.group(1)
-        else:
-            print("management.ssl.port not found.")
-        listener_match = re.search(r'listeners\.ssl\.default\s*=\s*(\d+)', result.stdout)
-        rabbit_listener_port = listener_match.group(1) if listener_match else None
-        # Assuming SSL is enabled
-        rabbit_ssl = True
-
-        yaml_data["spec"]["rabbitmq"]["common"]["admin_user"] = rabbit_admin_user
-        yaml_data["spec"]["rabbitmq"]["common"]["host"] = rabbit_host
-        yaml_data["spec"]["rabbitmq"]["common"]["port"] = rabbit_port
-        rabbit_dmapi_vhost = yaml_data["spec"]["rabbitmq"]["datamover_api"]["vhost"]
-        rabbit_dmapi_user = yaml_data["spec"]["rabbitmq"]["datamover_api"]["user"]
-        rabbit_wlmapi_vhost = yaml_data["spec"]["rabbitmq"]["wlm_api"]["vhost"]
-        rabbit_wlmapi_user = yaml_data["spec"]["rabbitmq"]["wlm_api"]["user"]
-        print("- Updated rabbitmq section with admin, host, and transport URLs.")
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error during RabbitMQ parameter fetch: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
-
-
 def set_db_credentials_and_host(namespace="openstack"):
     try:
 
@@ -288,7 +232,6 @@ def set_db_credentials_and_host(namespace="openstack"):
 
 update_keystone_endpoints()
 print("Calling rabbit params method")
-set_rabbitmq_params()
 set_db_credentials_and_host()
 
 with open(yaml_file, "w") as file:
