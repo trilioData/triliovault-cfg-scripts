@@ -1,35 +1,33 @@
---- 
-
+---
 - name: set vars
   set_fact:
     cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
 
 - name: Copy Create Cloud Trust Ansible Node
+  become: true
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
-    mode: '0755'
+    mode: "0755"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
     - "/etc/kolla/triliovault-wlm-api/create_cloud_trust.sh"
-
 
 - name: Copy Triliovault-cloudrc to localhost
   become: true
   template:
     src: triliovault-cloudrc
     dest: "{{ cloudrc_dest }}"
-    mode: '0777'
+    mode: "0777"
   delegate_to: localhost
-
 
 - name: Copy Triliovault-cloudrc to openstack controller node
   become: true
   template:
     src: triliovault-cloudrc
     dest: "{{ cloudrc_dest }}"
-    mode: '0777'
+    mode: "0777"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
 
