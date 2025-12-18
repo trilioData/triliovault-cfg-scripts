@@ -18,7 +18,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-rabbitmq-cluster
-          image: quay.io/openshift/origin-cli:latest
+          image: {{ .Values.images.openshift_cli }}
           command:
             - /bin/sh
             - -xc

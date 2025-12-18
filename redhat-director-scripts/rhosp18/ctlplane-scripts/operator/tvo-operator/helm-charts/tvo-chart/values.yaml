@@ -26,6 +26,7 @@ images:
   triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
   triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
   triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  openshift_cli: registry.redhat.io/openshift4/ose-cli:latest
 common: 
   nova_user_id: "42436"
   nova_group_id: "42436"
