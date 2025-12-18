@@ -1,0 +1,61 @@
+---
+apiVersion: mariadb.openstack.org/v1beta1
+kind: Galera
+metadata:
+  name: trilio-galera-cluster
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: galera
+    component: database
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-15"
+spec:
+  # Galera cluster configuration
+  replicas: {{ .Values.database.galera.replicas }}
+
+  # Storage configuration
+  storageClass: {{ .Values.database.galera.storageClass }}
+  storageRequest: {{ .Values.database.galera.storageRequest }}
+
+  # Secret containing passwords
+  secret: {{ .Values.database.galera.secret }}
+
+  # Container image
+  containerImage: {{ .Values.database.galera.containerImage }}
+
+  # Disk logging configuration
+  logToDisk: {{ .Values.database.galera.logToDisk }}
+
+  # Resource limits and requests
+  resources:
+    requests:
+      cpu: {{ .Values.database.galera.resources.requests.cpu | quote }}
+      memory: {{ .Values.database.galera.resources.requests.memory }}
+    limits:
+      cpu: {{ .Values.database.galera.resources.limits.cpu | quote }}
+      memory: {{ .Values.database.galera.resources.limits.memory }}
+
+  # TLS configuration
+  tls:
+    caBundleSecretName: {{ .Values.database.galera.tls.caBundleSecretName }}
+    secretName: {{ .Values.database.galera.tls.secretName }}
+
+  # Node selector
+  {{- if .Values.database.galera.nodeSelector }}
+  nodeSelector:
+    {{- toYaml .Values.database.galera.nodeSelector | nindent 4 }}
+  {{- end }}
+
+  # Pod anti-affinity to spread replicas across nodes
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - galera
+          topologyKey: kubernetes.io/hostname

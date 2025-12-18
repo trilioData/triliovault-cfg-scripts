@@ -1,0 +1,96 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trilio-galera-wait-job
+  namespace: {{ .Release.Namespace }}
+  labels:
+    component: wait-job
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-13"
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: galera
+        component: wait-job
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: galera-wait-sa
+      containers:
+        - name: wait-for-galera
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              #!/bin/bash
+              set -e
+              echo "Waiting for Galera cluster pods to be ready..."
+              REPLICAS={{ .Values.database.galera.replicas }}
+              TIMEOUT=600
+              ELAPSED=0
+              SLEEP_INTERVAL=10
+              echo "Expected replicas: $REPLICAS"
+              while [ $ELAPSED -lt $TIMEOUT ]; do
+                # Count running pods - exclude the wait job itself
+                RUNNING_PODS=$(oc get pods -n {{ .Release.Namespace }} -l app=galera -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | wc -w)
+                echo "[$ELAPSED/$TIMEOUT] Running pods: $RUNNING_PODS/$REPLICAS"
+                if [ "$RUNNING_PODS" -eq "$REPLICAS" ]; then
+                  echo "All $REPLICAS Galera pods are running"
+                  # Verify all containers in pods are ready
+                  ALL_READY=true
+                  for i in $(seq 0 $((REPLICAS - 1))); do
+                    POD_NAME="trilio-galera-cluster-galera-$i"
+                    POD_READY=$(oc get pod $POD_NAME -n {{ .Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
+                    if [ "$POD_READY" != "True" ]; then
+                      echo "Pod $POD_NAME is not ready yet (Ready=$POD_READY)"
+                      ALL_READY=false
+                      break
+                    else
+                      echo "Pod $POD_NAME is ready"
+                    fi
+                  done
+                  if [ "$ALL_READY" = true ]; then
+                    echo "✓ All Galera pods are fully ready!"
+                    exit 0
+                  fi
+                fi
+                sleep $SLEEP_INTERVAL
+                ELAPSED=$((ELAPSED + SLEEP_INTERVAL))
+              done
+              echo "✗ Timeout waiting for Galera pods to be ready"
+              oc get pods -n {{ .Release.Namespace }} -l app=galera
+              exit 1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: galera-wait-sa
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: galera-wait-role
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: galera-wait-rolebinding
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: galera-wait-sa
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: galera-wait-role
+  apiGroup: rbac.authorization.k8s.io

@@ -113,14 +113,47 @@ spec:
   database:
     common:
       root_user_name: "root"
-      host: "openstack.openstack.svc"
+      host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
       port: 3306
-    datamover_api:
+    datamover_api: 
       user: "dmapi"
       database: "dmapi"
-    wlm_api:
+    wlm_api: 
       user: "workloadmgr"
       database: "workloadmgr"
+    galera: 
+      replicas: 3
+
+      # Storage configuration - matching OpenStack Galera
+      storageClass: ocs-storagecluster-ceph-rbd
+      storageRequest: 20G
+
+      # Secret containing passwords
+      secret: trilio-openstack-secret
+
+      # Container image - RHOSO 18
+      containerImage: registry.redhat.io/rhoso/openstack-mariadb-rhel9:18.0
+
+      # Disable disk logging like OpenStack Galera
+      logToDisk: false
+
+      # Resource limits and requests for production workloads
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+        limits:
+          cpu: "4"
+          memory: 8Gi
+
+      # TLS configuration - using CA bundle approach like OpenStack
+      tls:
+        caBundleSecretName: combined-ca-bundle
+        secretName: cert-trilio-galera-cluster
+
+      # Node selector for dedicated database nodes (optional)
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
   rabbitmq:
     common:
       host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
