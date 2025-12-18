@@ -18,7 +18,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: wait-for-rabbitmq-cluster
-          image: quay.io/openshift/origin-cli:latest
+          image: {{ .Values.images.openshift_cli }}
           command:
             - /bin/sh
             - -xc
@@ -27,7 +27,7 @@ spec:
                 echo "Waiting for RabbitMQ Cluster CR...";
                 sleep 10;
               done
-              oc wait --for=condition=Ready rabbitmqcluster/trilio-rabbitmq-cluster -n {{ .Values.rabbitmq.common.namespace }} --timeout=120s
+              oc wait --for=condition=AllReplicasReady rabbitmqcluster/trilio-rabbitmq-cluster -n trilio-openstack --timeout=120s
               echo "RabbitMQ Cluster is ready."
 
 {{- end }}
