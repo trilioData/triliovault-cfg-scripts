@@ -31,6 +31,7 @@ spec:
     triliovault_datamover_api: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
     triliovault_datamover_db_sync: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
     triliovault_wlm_db_sync: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    openshift_cli: registry.redhat.io/openshift4/ose-cli:latest
   common:
     nova_user_id: "42436"
     nova_group_id: "42436"
