@@ -11,7 +11,7 @@ LABEL name="ubuntu-binary-trilio-horizon-plugin" \
 # Install Trilio plugin and dependencies
 ARG TRILIO_PIP_INDEX_URL="DEFAULT"
 #Eg. TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-stable-6-1/"
-RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
+RUN pip install pytz  && export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
     pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
 
 # Copy Trilio plugin files
