@@ -10,3 +10,5 @@ rbd: CommandFilter, rbd, root
 multipathd: CommandFilter, multipathd, root
 virt-v2v: CommandFilter, /usr/bin/virt-v2v, root
 virt-v2v-in-place: CommandFilter, /usr/local/bin/virt-v2v-in-place, root
+virt-inspector: CommandFilter, /usr/bin/virt-inspector, root
+dd: CommandFilter, dd, root

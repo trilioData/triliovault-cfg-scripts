@@ -5,8 +5,8 @@ MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="6.0.0" \
-      release="6.0" \
+      version="6.1" \
+      release="6.1" \
       summary="Red Hat OpenStack Platform 18.0 nova-compute TrilioData Datamover" \
       description="Red Hat OpenStack Platform 18.0 nova-compute TrilioData Datamover"
 
@@ -16,7 +16,10 @@ USER root
 ## Setup repos
 RUN dnf clean all && dnf config-manager --set-disabled \*
 ADD trilio.repo /etc/yum.repos.d/
-ADD virt-v2v-1.42.0-22.module+el8.9.0+18724+20190c23.x86_64.rpm /tmp/
+
+ADD libnbd-1.18.1-4.el9_4.x86_64.rpm /tmp
+RUN dnf install /tmp/libnbd-1.18.1-4.el9_4.x86_64.rpm -y
+
 RUN dnf repolist
 
 RUN dnf config-manager \
@@ -27,8 +30,13 @@ RUN dnf config-manager \
   --enable rhceph-7-tools-for-rhel-9-x86_64-rpms \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
+ADD srvany.rpm /tmp
+RUN dnf install --releasever 9.2 cpio -y
+RUN rpm2cpio /tmp/srvany.rpm | cpio -idmv   && mkdir -p /usr/local/share/virt-tools   && mv ./usr/i686-w64-mingw32/sys-root/mingw/bin/*exe /usr/local/share/virt-tools/
+
 ## Install triliovault datamover packages
-RUN dnf install --releasever 9.4 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
+RUN dnf install --releasever 9.4 openstack-nova-common python3-nova python3-novaclient udev fuse virtio-win nbdkit --nobest -y
+RUN cp -r /usr/share/virtio-win /usr/local/share/
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
 RUN dnf install --releasever 9.4 python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 
@@ -39,6 +47,12 @@ RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
+##Enable appstream & baseos repos
+RUN dnf config-manager --enable rhel-9-for-x86_64-appstream-rpms --enable rhel-9-for-x86_64-baseos-rpms
+#Installing latest virt-v2v package initially only as it is available in default rhel-9-for-x86_64-appstream-rpms repo for 9.5 release ver.
+RUN dnf install --releasever 9.5 virt-v2v -y
+##Disable appstream & baseos repos
+RUN dnf config-manager --disable rhel-9-for-x86_64-appstream-rpms --disable rhel-9-for-x86_64-baseos-rpms
 
 #Copy executable files
 RUN mkdir -p /opt/triliovault/
@@ -52,6 +66,9 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 ADD log-rotate-conf /etc/logrotate.d/triliovault-datamover.conf
 RUN chown root:root /etc/sudoers.d/nova-sudoers \
   && chown root:nova /usr/share/nova/nova-dist.conf
+
+## Copy locally built virt-v2v-in-place binary
+ADD virt-v2v-in-place /usr/local/bin/
 
 ## Create conf directories
 RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-datamover /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
