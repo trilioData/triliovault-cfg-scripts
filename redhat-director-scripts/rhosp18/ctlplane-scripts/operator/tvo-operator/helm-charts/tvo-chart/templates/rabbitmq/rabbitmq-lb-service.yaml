@@ -5,7 +5,7 @@ metadata:
   name: trilio-rabbitmq-lb
   namespace: trilio-openstack
   annotations:
-    metallb.io/address-pool: {{ .Values.rabbitmq.common.metallb_address_pool }}
+    metallb.io/address-pool: {{ .Values.common.metallb_address_pool }}
     dnsmasq.network.openstack.org/hostname: trilio-rabbitmq-cluster.trilio-openstack.svc
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-15"

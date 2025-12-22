@@ -1,8 +1,8 @@
-{{- if eq .Values.crdType "TVOControlPlane" }}
+{{- if and (eq .Values.crdType "TVOControlPlane") (.Values.database.common.use_trilio_galera) }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: job-create-rabbitmq-dns-entry
+  name: job-create-galera-dns-entry
   namespace: trilio-openstack
   annotations:
     helm.sh/hook: post-install,post-upgrade
@@ -22,11 +22,11 @@ spec:
         - -c
         - |
           set -e
-          echo "Waiting for LoadBalancer IP on service trilio-rabbitmq-lb..."
+          echo "Waiting for LoadBalancer IP on service trilio-galera-lb..."
           
           EXTERNAL_IP=""
           for i in {1..10}; do
-            EXTERNAL_IP=$(oc get svc trilio-rabbitmq-lb -n trilio-openstack -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+            EXTERNAL_IP=$(oc get svc trilio-galera-lb -n trilio-openstack -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
             
             if [ -n "$EXTERNAL_IP" ] && [ "$EXTERNAL_IP" != "null" ]; then
               echo "LoadBalancer IP found: $EXTERNAL_IP"
@@ -48,7 +48,7 @@ spec:
           apiVersion: network.openstack.org/v1beta1
           kind: DNSData
           metadata:
-            name: trilio-rabbitmq-dns
+            name: trilio-galera-dns
             namespace: openstack
             labels:
               dnsmasqname: dns
@@ -58,7 +58,7 @@ spec:
             dnsDataLabelSelectorValue: dnsdata
             hosts:
             - hostnames:
-              - trilio-rabbitmq-cluster.trilio-openstack.svc
+              - trilio-galera-cluster.trilio-openstack.svc
               ip: $EXTERNAL_IP
           EOF
           

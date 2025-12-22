@@ -86,6 +86,25 @@ oc describe secret cert-trilio-rabbitmq-cluster -n trilio-openstack
 
 
 
+## Rabbitmq certs
+oc get secret cert-trilio-rabbitmq-cluster -n openstack -o yaml > cert-trilio-rabbitmq-cluster.yaml
+oc delete secret cert-trilio-rabbitmq-cluster -n trilio-openstack
+sed -i 's/openstack/trilio-openstack/' cert-trilio-rabbitmq-cluster.yaml
+oc apply -f cert-trilio-rabbitmq-cluster.yaml
+oc describe secret cert-trilio-rabbitmq-cluster -n trilio-openstack
+
+
+
+## Galera DB certs
+oc get secret cert-trilio-galera-cluster -n openstack -o yaml > cert-trilio-galera-cluster.yaml
+oc delete secret cert-trilio-galera-cluster -n trilio-openstack
+sed -i 's/openstack/trilio-openstack/' cert-trilio-galera-cluster.yaml
+oc apply -f cert-trilio-galera-cluster.yaml
+oc describe secret cert-trilio-galera-cluster -n trilio-openstack
+
+
+
+
 echo -e "\n\nCertificates renewed"
 
 echo -e "\nNow restarting trilio control plane pods"

@@ -35,11 +35,11 @@ oc create -f cert-trilio-rabbitmq-cluster.yaml
 oc describe secret cert-trilio-rabbitmq-cluster -n trilio-openstack
 
 
-#sleep 15s
-#oc -n openstack delete secret cert-triliovault-datamover-internal-svc  \
-#  cert-triliovault-datamover-public-svc cert-triliovault-wlm-internal-svc cert-triliovault-wlm-public-svc
-
-#!/bin/bash
+## Galera DB certs
+oc get secret cert-trilio-galera-cluster -n openstack -o yaml > cert-trilio-galera-cluster.yaml
+sed -i 's/openstack/trilio-openstack/' cert-trilio-galera-cluster.yaml
+oc create -f cert-trilio-galera-cluster.yaml
+oc describe secret cert-trilio-galera-cluster -n trilio-openstack
 
 # Define variables
 SOURCE_NAMESPACE="openstack"
