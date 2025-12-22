@@ -86,3 +86,19 @@ spec:
   commonName: trilio-rabbitmq-cluster.trilio-openstack.svc
   dnsNames:
     - trilio-rabbitmq-cluster.trilio-openstack.svc
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trilio-galera-cluster
+  namespace: openstack
+spec:
+  secretName: cert-trilio-galera-cluster
+  issuerRef:
+    name: rootca-public
+    kind: Issuer
+  duration: 43800h0m0s
+  commonName: trilio-galera-cluster.trilio-openstack.svc
+  dnsNames:
+    - trilio-galera-cluster.trilio-openstack.svc

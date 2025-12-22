@@ -40,8 +40,13 @@ spec:
             - name: DB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.database.common.use_trilio_galera }}
+                  name: trilio-openstack-secret
+                  key: DbRootPassword
+                  {{- else }}
                   name: openstack-secret
                   key: DatabaseRootPassword
+                  {{- end }}
             - name: DMAPI_DATABASE_USER
               value: "{{- .Values.database.datamover_api.user -}}"
             - name: DMAPI_DATABASE_HOST

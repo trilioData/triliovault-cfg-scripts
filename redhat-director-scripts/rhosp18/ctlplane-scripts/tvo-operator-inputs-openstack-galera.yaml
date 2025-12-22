@@ -113,9 +113,9 @@ spec:
       public_auth_host: "triliovault-wlm-public-trilio-openstack.apps.trilio.trilio.bos2"
   database:
     common:
-      use_trilio_galera: true
+      use_trilio_galera: false
       root_user_name: "root"
-      host: "trilio-galera-cluster.trilio-openstack.svc"
+      host: "openstack.openstack.svc"
       port: 3306
     datamover_api: 
       user: "dmapi"
