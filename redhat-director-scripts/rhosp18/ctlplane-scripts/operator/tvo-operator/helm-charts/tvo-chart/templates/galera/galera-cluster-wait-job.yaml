@@ -1,3 +1,4 @@
+{{- if and (eq .Values.crdType "TVOControlPlane") (.Values.database.common.use_trilio_galera) }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -94,3 +95,4 @@ roleRef:
   kind: Role
   name: galera-wait-role
   apiGroup: rbac.authorization.k8s.io
+{{- end }}

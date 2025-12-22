@@ -1,3 +1,4 @@
+{{- if and (eq .Values.crdType "TVOControlPlane") (.Values.database.common.use_trilio_galera) }}
 ---
 apiVersion: mariadb.openstack.org/v1beta1
 kind: Galera
@@ -59,3 +60,4 @@ spec:
                 values:
                   - galera
           topologyKey: kubernetes.io/hostname
+{{- end }}

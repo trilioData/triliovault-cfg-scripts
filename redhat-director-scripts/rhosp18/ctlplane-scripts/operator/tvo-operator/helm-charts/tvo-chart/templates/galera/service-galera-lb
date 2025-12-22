@@ -1,4 +1,4 @@
-{{- if eq .Values.crdType "TVOControlPlane" }}
+{{- if and (eq .Values.crdType "TVOControlPlane") (.Values.database.common.use_trilio_galera) }}
 ---
 apiVersion: v1
 kind: Service
