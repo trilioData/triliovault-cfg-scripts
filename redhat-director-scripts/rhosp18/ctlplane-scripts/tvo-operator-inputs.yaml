@@ -187,6 +187,7 @@ spec:
           raft.wal_max_size_bytes = 134217728
           raft.segment_max_entries = 32768
 
+          default_queue_type = quorum
           ssl_options.verify = verify_none
           ssl_options.fail_if_no_peer_cert = false
         
@@ -196,6 +197,7 @@ spec:
 
           # Connection and channel limits
           channel_max = 2048
+          connection_max = 1000
 
           # Heartbeat and timeouts
           heartbeat = 60

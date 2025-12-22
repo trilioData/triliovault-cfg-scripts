@@ -19,6 +19,7 @@ keyring_ext = .keyring
 
 [oslo_messaging_rabbit]
 rabbit_quorum_queue = true
+amqp_durable_queues = true
 ssl = {{ rabbit_ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
