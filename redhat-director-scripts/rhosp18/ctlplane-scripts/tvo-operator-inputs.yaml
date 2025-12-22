@@ -39,6 +39,7 @@ spec:
     dmapi_workers: "16"
     memcached_servers: "memcached-0.memcached.openstack.svc:11212"
     oslo_enable_proxy_headers_parsing: false
+    metallb_address_pool: "internalapi"
   triliovault_backup_targets:
     - backup_target_name: 'BT1_S3'
       backup_target_type: 's3'
@@ -126,7 +127,7 @@ spec:
 
       # Storage configuration - matching OpenStack Galera
       storageClass: ocs-storagecluster-ceph-rbd
-      storageRequest: 20G
+      storageRequest: 10G
 
       # Secret containing passwords
       secret: trilio-openstack-secret
@@ -161,7 +162,6 @@ spec:
       driver: "messagingv2"
       ssl: true
       namespace: 'trilio-openstack'
-      metallb_address_pool: "internalapi"
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
