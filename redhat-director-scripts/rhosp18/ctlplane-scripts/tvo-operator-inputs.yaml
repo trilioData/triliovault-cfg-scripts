@@ -113,7 +113,7 @@ spec:
   database:
     common:
       root_user_name: "root"
-      host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
+      host: "trilio-galera-cluster.trilio-openstack.svc"
       port: 3306
     datamover_api: 
       user: "dmapi"

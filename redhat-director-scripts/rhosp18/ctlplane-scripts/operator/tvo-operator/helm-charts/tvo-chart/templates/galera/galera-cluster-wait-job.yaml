@@ -14,7 +14,7 @@ spec:
   template:
     metadata:
       labels:
-        app: galera
+        app: galera-wait
         component: wait-job
     spec:
       restartPolicy: OnFailure
