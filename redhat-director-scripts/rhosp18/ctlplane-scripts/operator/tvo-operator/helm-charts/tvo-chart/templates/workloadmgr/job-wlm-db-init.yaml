@@ -40,8 +40,8 @@ spec:
             - name: DB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: openstack-secret
-                  key: DatabaseRootPassword
+                  name: trilio-openstack-secret
+                  key: DbRootPassword
             - name: WLM_DATABASE_USER
               value: "{{- .Values.database.wlm_api.user -}}"
             - name: WLM_DATABASE_HOST
