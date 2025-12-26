@@ -166,6 +166,8 @@ if "spec" in yaml_data and "common" in yaml_data["spec"]:
 # Update image tags
 if "spec" in yaml_data and "images" in yaml_data["spec"]:
     for key in yaml_data["spec"]["images"]:
+        if key == "openshift_cli":
+          continue
         base_image = yaml_data["spec"]["images"][key].split(":")[0]
         yaml_data["spec"]["images"][key] = f"{base_image}:{image_tag}"
     print(f"- Updated all image tags to: {image_tag}")
