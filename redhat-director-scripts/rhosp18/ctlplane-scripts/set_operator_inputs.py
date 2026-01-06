@@ -202,40 +202,8 @@ if keystone_url:
 
 
 
-def set_db_credentials_and_host(namespace="openstack"):
-    try:
-
-        # Get and decode nova-api-config data
-        nova_conf_raw = subprocess.check_output(
-            ["oc", "-n", namespace, "get", "secret", "nova-api-config-data", "-o", "jsonpath={.data.01-nova\\.conf}"]
-        )
-        nova_conf_decoded = base64.b64decode(nova_conf_raw).decode()
-
-        # Extract the host from the connection string
-        db_host = None
-        for line in nova_conf_decoded.splitlines():
-            if "connection =" in line:
-                import re
-                match = re.search(r'@([^?/]+)', line)
-                if match:
-                    db_host = match.group(1)
-                    break
-
-        if not db_host:
-            raise ValueError("Database host not found in nova.conf")
-
-        yaml_data["spec"]["database"]["common"]["host"] = db_host
-        print("- Updated database host in yaml file")
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Command failed: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Error: {e}")
-
-
 update_keystone_endpoints()
 print("Calling rabbit params method")
-set_db_credentials_and_host()
-
 with open(yaml_file, "w") as file:
     yaml_parser.dump(yaml_data, file)
 
