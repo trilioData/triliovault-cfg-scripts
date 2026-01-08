@@ -1,4 +1,14 @@
 ---
+- name: Check if this node owns the internal VIP
+  command: ip addr show {{ network_interface }}
+  register: vip_check
+  changed_when: false
+  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+
+- name: Set fact if this node is the active controller
+  set_fact:
+    is_triliovault_wlm_cron_leader: "{{ kolla_internal_vip_address in vip_check.stdout }}"
+
 - name: Stop wlm_cron service
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
@@ -7,7 +17,10 @@
     action: "stop_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ triliovault_wlm_cron.container_name }}"
-  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - not is_triliovault_wlm_cron_leader
+  failed_when: false
 
 - name: Starting triliovault workloadmgr cron container
   vars:
@@ -30,5 +43,6 @@
       - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
       - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
       - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
-  run_once: True
-  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - is_triliovault_wlm_cron_leader
