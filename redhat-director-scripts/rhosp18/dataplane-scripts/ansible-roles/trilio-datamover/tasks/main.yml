@@ -10,6 +10,7 @@
   register: podman_login_result
   failed_when: podman_login_result.failed
   changed_when: not podman_login_result.failed
+  when: trilio_container_registry_login_enabled | bool
 
 - name: Trilio - Ensure nbd module loads at boot
   become: true
