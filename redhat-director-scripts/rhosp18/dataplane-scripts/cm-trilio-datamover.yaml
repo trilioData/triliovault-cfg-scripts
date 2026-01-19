@@ -16,6 +16,7 @@ data:
     oslomsg_rpc_use_ssl: true
     triliovault_datamover_image: "registry.connect.redhat.com/trilio/trilio-datamover-rhoso:6.0.0-stable-19-rhosp18.0"
     triliovault_wlm_image: "registry.connect.redhat.com/trilio/trilio-wlm:6.0.0-stable-19-rhosp18.0"
+    trilio_container_registry_login_enabled: true
     trilio_container_registry_username: ""
     trilio_container_registry_url: "registry.connect.redhat.com"
     triliovault_backup_targets:
