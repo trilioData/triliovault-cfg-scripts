@@ -27,22 +27,22 @@ RUN dnf config-manager \
   --enable codeready-builder-for-rhel-9-x86_64-rpms
   
 ## Epel repo is needed for ntfs-3g package
-RUN dnf install --releasever 9.2 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+RUN dnf install --releasever 9.4 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
     && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
     && dnf config-manager --disable epel-cisco-openh264
 
 ## Install important security patches
-RUN dnf -y --releasever 9.2 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
+RUN dnf -y --releasever 9.4 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
-RUN dnf install --releasever 9.2 -y ntfs-3g python3-pyvmomi
-RUN dnf erase --releasever 9.2 -y epel-release
+RUN dnf install --releasever 9.4 -y ntfs-3g python3-pyvmomi
+RUN dnf erase --releasever 9.4 -y epel-release
 
-RUN dnf install --releasever 9.2 -y python3-editor
+RUN dnf install --releasever 9.4 -y python3-editor
 RUN dnf config-manager --disable openstack-17-for-rhel-9-x86_64-rpms
 
 
 ## Install dependencies
-RUN dnf --releasever 9.2 -y install openstack-nova-common python3-nova python3-novaclient udev \
+RUN dnf --releasever 9.4 -y install openstack-nova-common python3-nova python3-novaclient udev \
   fuse python3-neutronclient python3-retrying python3-cryptography \
   python3-devel libxslt-devel swig python3-pip python3-glanceclient fuse-libs \
   pacemaker-remote resource-agents pcs parted
@@ -50,7 +50,7 @@ RUN dnf --releasever 9.2 -y install openstack-nova-common python3-nova python3-n
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
 ## Install Triliovault wlm packages
-RUN dnf -y --releasever 9.2 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9
+RUN dnf -y --releasever 9.4 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9
 
 ## Nova user changes
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
