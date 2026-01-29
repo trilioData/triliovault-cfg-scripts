@@ -27,9 +27,9 @@ RUN dnf config-manager \
   --enable rhceph-6-tools-for-rhel-9-x86_64-rpms
 
 
-RUN dnf --releasever 9.2 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
-RUN dnf --releasever 9.2 -y install python3-nova python3-retrying
-RUN dnf install --releasever 9.2 python3-dmapi-el9 -y
+RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
+RUN dnf --releasever 9.4 -y install python3-nova python3-retrying
+RUN dnf install --releasever 9.4 python3-dmapi-el9 -y
 RUN rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
 
