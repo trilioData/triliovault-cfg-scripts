@@ -166,7 +166,7 @@ spec:
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
-      image: 'rabbitmq:3.13-management'
+      image: 'registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0'
       resources:
         requests:
           cpu: 1

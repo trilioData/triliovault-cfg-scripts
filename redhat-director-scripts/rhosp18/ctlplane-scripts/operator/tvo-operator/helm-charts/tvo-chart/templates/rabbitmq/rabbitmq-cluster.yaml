@@ -10,6 +10,30 @@ metadata:
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.rabbitmq.cluster.image }}
+  override:
+    statefulSet:
+      spec:
+        template:
+          metadata: {}
+          spec:
+            containers:
+            - args:
+              - /usr/lib/rabbitmq/bin/rabbitmq-server
+              env:
+              - name: RABBITMQ_UPGRADE_LOG
+                value: /var/lib/rabbitmq/rabbitmq_upgrade.log
+              - name: HOME
+                value: /var/lib/rabbitmq
+              - name: PATH
+                value: /usr/lib/rabbitmq/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              image: {{ .Values.rabbitmq.cluster.image }}
+              name: rabbitmq
+              resources: {}
+            initContainers:
+            - name: setup-container
+              resources: {}
+              securityContext: {}
+            securityContext: {}
   resources:
     requests:
       cpu: {{ .Values.rabbitmq.cluster.resources.requests.cpu }}
