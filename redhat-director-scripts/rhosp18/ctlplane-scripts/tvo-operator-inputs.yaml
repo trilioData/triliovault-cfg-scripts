@@ -169,51 +169,109 @@ spec:
       image: 'registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0'
       resources:
         requests:
-          cpu: 1
+          cpu: "1"
           memory: 2Gi
         limits:
-          cpu: 2
+          cpu: "2"
           memory: 2Gi
       persistence:
         storage_class_name: 'ocs-storagecluster-ceph-rbd'
         storage: 10Gi
+      termination_grace_period_seconds: 604800
+      tls:
+        issuer_name: 'rootca-public'
+        secret_name: 'cert-trilio-rabbitmq-cluster'
+        ca_secret_name: 'cert-trilio-rabbitmq-cluster'
+        disable_non_tls_listeners: true
       rabbitmq:
         additional_config: |
+          log.console = true
           # Cluster formation
           cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
           cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
           cluster_partition_handling = autoheal
-
-          # Quorum queue optimizations (Raft-based)
-          raft.wal_max_size_bytes = 134217728
-          raft.segment_max_entries = 32768
-
-          default_queue_type = quorum
+          # TLS configuration
           ssl_options.verify = verify_none
           ssl_options.fail_if_no_peer_cert = false
-        
+          ssl_options.depth = 1
+
+          # Quorum queue optimizations (Raft-based), Uncomment following three parameters if your rabbitm image supports quorum queue. It should have version >= 3.13
+          #raft.wal_max_size_bytes = 134217728
+          #raft.segment_max_entries = 32768
+          #default_queue_type = quorum
+
           # Memory and disk management (adjusted for 2Gi memory)
           vm_memory_high_watermark.relative = 0.6
           vm_memory_high_watermark_paging_ratio = 0.75
-
           # Connection and channel limits
           channel_max = 2048
           connection_max = 1000
-
           # Heartbeat and timeouts
           heartbeat = 60
-
           # Message size limit (100MB)
           max_message_size = 104857600
-
           # Consumer timeout (30 minutes)
           consumer_timeout = 1800000
-
           # Background GC for better memory management
           background_gc_enabled = true
           background_gc_target_interval = 60000
+        advanced_config: |
+          [
+          {ssl, [{protocol_version, ['tlsv1.2']}]},
+          {rabbit, [
+          {ssl_options, [
+            {cacertfile,"/etc/rabbitmq-tls/ca.crt"},
+            {certfile,"/etc/rabbitmq-tls/tls.crt"},
+            {keyfile,"/etc/rabbitmq-tls/tls.key"},
+            {depth,1},
+            {secure_renegotiate,true},
+            {reuse_sessions,true},
+            {honor_cipher_order,false},
+            {honor_ecc_order,false},
+            {verify,verify_none},
+            {fail_if_no_peer_cert,false},
+            {versions, ['tlsv1.2']}
+          ]}
+          ]},
+          {rabbitmq_management, [
+          {ssl_config, [
+            {ip,"::"},
+            {cacertfile,"/etc/rabbitmq-tls/ca.crt"},
+            {certfile,"/etc/rabbitmq-tls/tls.crt"},
+            {keyfile,"/etc/rabbitmq-tls/tls.key"},
+            {depth,1},
+            {secure_renegotiate,true},
+            {reuse_sessions,true},
+            {honor_cipher_order,false},
+            {honor_ecc_order,false},
+            {verify,verify_none},
+            {fail_if_no_peer_cert,false},
+            {versions, ['tlsv1.2']}
+          ]}
+          ]},
+          {client, [
+          {cacertfile, "/etc/rabbitmq-tls/ca.crt"},
+          {verify,verify_none},
+          {secure_renegotiate,true},
+          {versions, ['tlsv1.2']}
+          ]}
+          ].
+        erlang_inet_config: |
+          {inet,true}.
       service:
         type: ClusterIP
+      affinity:
+        pod_anti_affinity:
+          preferred:
+            - weight: 100
+              pod_affinity_term:
+                label_selector:
+                  match_expressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - trilio-rabbitmq-cluster
+                topology_key: kubernetes.io/hostname
     datamover_api:
       user: "dmapi"
       vhost: "dmapi"
