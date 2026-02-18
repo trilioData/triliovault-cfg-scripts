@@ -8,6 +8,7 @@ data:
     rabbit_host: "rabbitmq.openstack.svc"
     rabbit_port: "5671"
     rabbit_ssl: true
+    rabbit_quorum_queue: false
     database_host: "openstack.openstack.svc"
     database_port: "3306"
     cinder_backend_ceph: true

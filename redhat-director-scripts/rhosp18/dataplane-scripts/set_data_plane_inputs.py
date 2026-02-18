@@ -14,6 +14,7 @@ with open(SECRET_FILE) as f:
 # Extract data
 rabbit_host = data["spec"]["rabbitmq"]["common"].get("host", "")
 rabbit_ssl = data["spec"]["rabbitmq"]["common"].get("ssl", True)
+rabbit_quorum_queue = data["spec"]["rabbitmq"]["cluster"].get("rabbit_quorum_queue", False)
 database_host = data["spec"]["database"]["common"].get("host", "")
 database_port = data["spec"]["database"]["common"].get("port", "3306")
 backup_targets = data.get("spec", {}).get("triliovault_backup_targets", [])
@@ -35,6 +36,8 @@ with open(CM_FILE, "r") as f:
             updated_lines.append(f'    rabbit_host: "{rabbit_host}"\n')
         elif "rabbit_ssl:" in line:
             updated_lines.append(f'    rabbit_ssl: {str(rabbit_ssl).lower()}\n')
+        elif "rabbit_quorum_queue:" in line:
+            updated_lines.append(f'    rabbit_quorum_queue: {str(rabbit_quorum_queue).lower()}\n')
         elif "database_host:" in line:
             updated_lines.append(f'    database_host: "{database_host}"\n')
         elif "database_port:" in line:

@@ -111,5 +111,5 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 [oslo_messaging_rabbit]
 ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-rabbit_quorum_queue = true
+rabbit_quorum_queue = {{ .Values.rabbitmq.cluster.rabbit_quorum_queue }}
 
