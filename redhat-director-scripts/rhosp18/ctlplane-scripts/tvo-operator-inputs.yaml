@@ -166,6 +166,7 @@ spec:
     cluster:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
+      rabbit_quorum_queue: false
       image: 'registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0'
       resources:
         requests:
