@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 15,
   "links": [],
   "panels": [
     {
@@ -746,12 +746,80 @@
       "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "count(\n  count by (ID) (\n    max_over_time(\n      trilio_workload_info{Deleted=\"0\", ProjectID=~\"$project_id\"}[${__range}]\n    )\n  )\n)\n",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Workloads",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 25
       },
       "id": 5,
       "panels": [],
@@ -829,7 +897,7 @@
         "h": 8,
         "w": 7,
         "x": 0,
-        "y": 19
+        "y": 26
       },
       "id": 13,
       "options": {
@@ -951,7 +1019,7 @@
         "h": 8,
         "w": 6,
         "x": 7,
-        "y": 19
+        "y": 26
       },
       "id": 2,
       "options": {
@@ -1004,6 +1072,74 @@
     {
       "datasource": {
         "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 5,
+        "x": 13,
+        "y": 26
+      },
+      "id": 16,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "count(\n  count by (ID) (\n    max_over_time(\n      trilio_workload_info{Deleted=\"0\"}[${__range}]\n    )\n  )\n)\n",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Workloads",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
         "uid": "$datasource"
       },
       "fieldConfig": {
@@ -1028,7 +1164,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 27
+        "y": 34
       },
       "id": 9,
       "options": {
@@ -1104,7 +1240,7 @@
         "h": 8,
         "w": 12,
         "x": 6,
-        "y": 27
+        "y": 34
       },
       "id": 3,
       "options": {
@@ -1147,6 +1283,128 @@
       ],
       "title": "Protected instance info",
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 1,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "{__name__=\"kube_pod_status_phase\", container=\"kube-rbac-proxy-main\", endpoint=\"https-main\", job=\"kube-state-metrics\", namespace=\"trilio-openstack\", phase=\"Running\", pod=\"triliovault-wlm-api-6b6784b654-txvzr\", prometheus=\"openshift-monitoring/k8s\", service=\"kube-state-metrics\", uid=\"01dac450-5c9d-4a8e-a748-fc736ad4a347\"}"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 42
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "kube_pod_status_phase{\n  namespace=~\"trilio-openstack\",\n  pod=~\"trilio.*|triliovault.*\"\n} == 1\n",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Pod status",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -1196,7 +1454,7 @@
       },
       {
         "current": {
-          "text": "Select datasource",
+          "text": "Select Datasource",
           "value": ""
         },
         "hide": 1,
@@ -1218,5 +1476,5 @@
   "timezone": "browser",
   "title": "T4O",
   "uid": "25404c73-47de-4dca-b7ea-be1f63517d2rd",
-  "version": 7
+  "version": 5
 }
