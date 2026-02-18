@@ -85,7 +85,15 @@ spec:
   duration: 43800h0m0s
   commonName: trilio-rabbitmq-cluster.trilio-openstack.svc
   dnsNames:
+    - trilio-rabbitmq-cluster-nodes.trilio-openstack.svc
+    - trilio-rabbitmq-cluster-nodes.trilio-openstack.svc.cluster.local
     - trilio-rabbitmq-cluster.trilio-openstack.svc
+    - trilio-rabbitmq-cluster.trilio-openstack.svc.cluster.local
+    - trilio-rabbitmq-lb.trilio-openstack.svc
+    - trilio-rabbitmq-lb.trilio-openstack.svc.cluster.local
+    - trilio-rabbitmq-cluster-server-0.trilio-rabbitmq-cluster-nodes.trilio-openstack
+    - trilio-rabbitmq-cluster-server-1.trilio-rabbitmq-cluster-nodes.trilio-openstack
+    - trilio-rabbitmq-cluster-server-2.trilio-rabbitmq-cluster-nodes.trilio-openstack
 
 ---
 apiVersion: cert-manager.io/v1

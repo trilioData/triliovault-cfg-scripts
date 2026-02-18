@@ -10,6 +10,41 @@ metadata:
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.rabbitmq.cluster.image }}
+  delayStartSeconds: 30
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: rabbitmq
+              image: {{ .Values.rabbitmq.cluster.image }}
+              args:
+              - /usr/lib/rabbitmq/bin/rabbitmq-server
+              env:
+              - name: RABBITMQ_UPGRADE_LOG
+                value: /var/lib/rabbitmq/rabbitmq_upgrade.log
+              - name: HOME
+                value: /var/lib/rabbitmq
+              - name: PATH
+                value: /usr/lib/rabbitmq/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              - name: RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS
+                value: '-kernel inetrc ''/etc/rabbitmq/erl_inetrc'' -proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter-node-tls.config'
+              - name: RABBITMQ_CTL_ERL_ARGS
+                value: -proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter-node-tls.config
+              volumeMounts:
+              - mountPath: /etc/rabbitmq/inter-node-tls.config
+                name: config-data
+                readOnly: true
+                subPath: inter_node_tls.config
+            volumes:
+            - name: config-data
+              configMap:
+                name: trilio-rabbitmq-cluster-config-data
+                defaultMode: 272
+                items:
+                - key: inter_node_tls.config
+                  path: inter_node_tls.config
   resources:
     requests:
       cpu: {{ .Values.rabbitmq.cluster.resources.requests.cpu }}
@@ -39,7 +74,15 @@ spec:
   rabbitmq:
     additionalConfig: |
 {{ .Values.rabbitmq.cluster.rabbitmq.additional_config | nindent 6 }}
+{{- if .Values.rabbitmq.cluster.rabbitmq.advanced_config }}
+    advancedConfig: |
+{{ .Values.rabbitmq.cluster.rabbitmq.advanced_config | nindent 6 }}
+{{- end }}
+{{- if .Values.rabbitmq.cluster.rabbitmq.erlang_inet_config }}
+    erlangInetConfig: |
+{{ .Values.rabbitmq.cluster.rabbitmq.erlang_inet_config | nindent 6 }}
+{{- end }}
   service:
     type: {{ .Values.rabbitmq.cluster.service.type }}
-
+  terminationGracePeriodSeconds: {{ .Values.rabbitmq.cluster.termination_grace_period_seconds | default 604800 }}
 {{- end }}
