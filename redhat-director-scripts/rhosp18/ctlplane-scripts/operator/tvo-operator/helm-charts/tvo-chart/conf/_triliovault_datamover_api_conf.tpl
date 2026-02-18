@@ -34,7 +34,7 @@ auth_uri = {{ .Values.keystone.common.auth_uri }}
 [oslo_messaging_rabbit]
 ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-rabbit_quorum_queue = true
+rabbit_quorum_queue = {{ .Values.rabbitmq.cluster.rabbit_quorum_queue }}
 
 [oslo_messaging_notifications]
 driver = {{ .Values.rabbitmq.common.driver }}
