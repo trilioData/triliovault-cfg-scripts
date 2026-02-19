@@ -130,10 +130,11 @@ data:
               SELECT
                   project_id AS ProjectID,
                   COUNT(id) AS total_snapshots,
-                  SUM(size) / 1073741824 AS total_size,
-                  SUM(restore_size) / 1073741824 AS total_restore_size,
-                  SUM(uploaded_size) / 1073741824 AS total_uploaded_size
+                  ROUND(SUM(IFNULL(size, 0)) / 1073741824, 2) AS total_size_gb,
+                  ROUND(SUM(IFNULL(restore_size, 0)) / 1073741824, 2) AS total_restore_size_gb,
+                  ROUND(SUM(IFNULL(uploaded_size, 0)) / 1073741824, 2) AS total_uploaded_size_gb
               FROM workloadmgr.snapshots
+              WHERE data_deleted = 0
               GROUP BY project_id;
           - metric_name: mysql_trilio_snapshots_status
             type: counter 
