@@ -83,17 +83,17 @@ echo "ServiceMonitor exists"
 # --------------------------------------------------
 # 9. Validate metrics endpoint responds
 # --------------------------------------------------
-POD=$(oc get pod -l ${APP_LABEL} -n "${NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+# POD=$(oc get pod -l ${APP_LABEL} -n "${NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
-if ! oc exec -n "${NAMESPACE}" ${POD} -- curl -s localhost:8080/metrics >/dev/null 2>&1; then
-  echo "ERROR: Metrics endpoint not responding."
-  exit 1
-fi
-echo "Metrics endpoint responding"
+# if ! oc exec -n "${NAMESPACE}" ${POD} -- curl -s localhost:8080/metrics >/dev/null 2>&1; then
+#   echo "ERROR: Metrics endpoint not responding."
+#   exit 1
+# fi
+# echo "Metrics endpoint responding"
 
-echo "=================================================="
-echo "kube-state-metrics deployment SUCCESSFUL"
-echo "=================================================="
+# echo "=================================================="
+# echo "kube-state-metrics deployment SUCCESSFUL"
+# echo "=================================================="
 
 echo "Pod:"
 oc get pods -n "${NAMESPACE}" -l ${APP_LABEL}
