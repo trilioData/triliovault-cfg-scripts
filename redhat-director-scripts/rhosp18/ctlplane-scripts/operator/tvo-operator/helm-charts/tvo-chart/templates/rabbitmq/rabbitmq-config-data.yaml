@@ -1,3 +1,4 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,3 +23,5 @@ data:
         {secure_renegotiate, true}
       ]}
     ].
+
+{{- end }}
