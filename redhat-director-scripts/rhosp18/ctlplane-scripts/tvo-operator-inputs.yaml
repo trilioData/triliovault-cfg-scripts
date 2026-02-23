@@ -31,7 +31,9 @@ spec:
     triliovault_datamover_api: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
     triliovault_datamover_db_sync: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
     triliovault_wlm_db_sync: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
-    openshift_cli: quay.io/openshift/origin-cli:4.15
+    openshift_cli: registry.redhat.io/openshift4/ose-cli:v4.15
+    rabbitmq: registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0
+    galera: registry.redhat.io/rhoso/openstack-mariadb-rhel9:18.0
   common:
     nova_user_id: "42436"
     nova_group_id: "42436"
@@ -133,9 +135,6 @@ spec:
       # Secret containing passwords
       secret: trilio-openstack-secret
 
-      # Container image - RHOSO 18
-      containerImage: registry.redhat.io/rhoso/openstack-mariadb-rhel9:18.0
-
       # Disable disk logging like OpenStack Galera
       logToDisk: false
 
@@ -167,7 +166,6 @@ spec:
       api_version: 'rabbitmq.com/v1beta1'
       replicas: 3
       rabbit_quorum_queue: false
-      image: 'registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0'
       resources:
         requests:
           cpu: "1"

@@ -9,7 +9,7 @@ metadata:
     "helm.sh/hook-weight": "-18"
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
-  image: {{ .Values.rabbitmq.cluster.image }}
+  image: {{ .Values.images.rabbitmq }}
   delayStartSeconds: 30
   override:
     statefulSet:
@@ -18,7 +18,7 @@ spec:
           spec:
             containers:
             - name: rabbitmq
-              image: {{ .Values.rabbitmq.cluster.image }}
+              image: {{ .Values.images.rabbitmq }}
               args:
               - /usr/lib/rabbitmq/bin/rabbitmq-server
               env:
