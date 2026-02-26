@@ -1,4 +1,47 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.1.0"
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,7 +61,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 15,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -37,7 +80,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -142,7 +185,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -160,7 +203,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -263,7 +306,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -281,7 +324,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -346,12 +389,16 @@
           "expr": "count(openstack_nova_server_status{tenant_id=\"$project_id\"})\n-\n(\n  sum(openstack_protected_vm{ProjectID=\"$project_id\"})\n  or vector(0)\n)\n",
           "legendFormat": "Unprotected",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "(\n  sum(openstack_protected_vm{ProjectID=\"$project_id\"})\n  or vector(0)\n)",
@@ -368,7 +415,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -454,7 +501,11 @@
           "expr": "(sum(mysql_trilio_backup_size_info{ProjectID=\"$project_id\"})\n / scalar(trilio_allowed_quota_value{QuotaName=\"Storage\",ProjectID=\"$project_id\"})) * 100\n",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Backup Quota Usage",
@@ -463,7 +514,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -549,7 +600,11 @@
           "expr": "(sum(openstack_protected_vm{ProjectID=\"$project_id\"}) / scalar(trilio_allowed_quota_value{QuotaName=\"VMs\",ProjectID=\"$project_id\"})) * 100\n",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "VM Quota Usage",
@@ -558,7 +613,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -644,7 +699,11 @@
           "expr": "(sum (mysql_trilio_snapshots_info{ProjectID=\"$project_id\"})/scalar(trilio_allowed_quota_value{QuotaName=\"Snapshots\",ProjectID=\"$project_id\"})) *100",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Snapshot  Quota Usage",
@@ -653,7 +712,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -739,7 +798,11 @@
           "expr": "(count by (ProjectID) (trilio_workload_info{ProjectID=\"$project_id\"})/scalar(trilio_allowed_quota_value{QuotaName=\"Workloads\",ProjectID=\"$project_id\"}))* 100",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Workload Quota Usage",
@@ -801,7 +864,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "count(\n  count by (ID) (\n    max_over_time(\n      trilio_workload_info{Deleted=\"0\", ProjectID=~\"$project_id\"}[${__range}]\n    )\n  )\n)\n",
@@ -810,7 +873,7 @@
           "refId": "A"
         }
       ],
-      "title": "Workloads",
+      "title": "No of Workload",
       "type": "stat"
     },
     {
@@ -829,7 +892,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -933,7 +996,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -951,7 +1014,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1054,7 +1117,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1125,7 +1188,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "count(\n  count by (ID) (\n    max_over_time(\n      trilio_workload_info{Deleted=\"0\"}[${__range}]\n    )\n  )\n)\n",
@@ -1134,13 +1197,13 @@
           "refId": "A"
         }
       ],
-      "title": "Workloads",
+      "title": "No of Workload",
       "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1191,7 +1254,11 @@
           "expr": "sum(mysql_trilio_backup_size_info)",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Total Backup Size(GB)",
@@ -1200,7 +1267,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1265,12 +1332,16 @@
           "expr": "count(openstack_nova_server_status) - sum(openstack_protected_vm)",
           "legendFormat": "Unprotected",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(openstack_protected_vm)",
@@ -1283,131 +1354,9 @@
       ],
       "title": "Protected instance info",
       "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 1,
-            "barWidthFactor": 0.6,
-            "drawStyle": "bars",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "{__name__=\"kube_pod_status_phase\", container=\"kube-rbac-proxy-main\", endpoint=\"https-main\", job=\"kube-state-metrics\", namespace=\"trilio-openstack\", phase=\"Running\", pod=\"triliovault-wlm-api-6b6784b654-txvzr\", prometheus=\"openshift-monitoring/k8s\", service=\"kube-state-metrics\", uid=\"01dac450-5c9d-4a8e-a748-fc736ad4a347\"}"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 0,
-        "y": 42
-      },
-      "id": 18,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "kube_pod_status_phase{\n  namespace=~\"trilio-openstack\",\n  pod=~\"trilio.*|triliovault.*\"\n} == 1\n",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Pod status",
-      "type": "timeseries"
     }
   ],
-  "preload": false,
+  "refresh": "auto",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
@@ -1415,10 +1364,7 @@
       {
         "allValue": "__none__",
         "allowCustomValue": true,
-        "current": {
-          "text": "admin",
-          "value": "admin"
-        },
+        "current": {},
         "definition": "label_values(openstack_identity_project_info{name!=\"service\"},name)",
         "includeAll": false,
         "label": "Project Name",
@@ -1434,10 +1380,7 @@
         "type": "query"
       },
       {
-        "current": {
-          "text": "708c74e28dfd460b86a2aab80a24d984",
-          "value": "708c74e28dfd460b86a2aab80a24d984"
-        },
+        "current": {},
         "definition": "label_values(openstack_identity_project_info{name=\"$project_name\"}, id)",
         "hide": 2,
         "label": "Project ID",
@@ -1453,10 +1396,7 @@
         "type": "query"
       },
       {
-        "current": {
-          "text": "Select Datasource",
-          "value": ""
-        },
+        "current": {},
         "hide": 1,
         "label": "Datasoure",
         "name": "datasource",
@@ -1469,12 +1409,13 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "T4O",
-  "uid": "25404c73-47de-4dca-b7ea-be1f63517d2rd",
-  "version": 5
+  "title": "Trilio Openstack Backup Monitor",
+  "uid": "T4O",
+  "version": 1,
+  "weekStart": ""
 }
