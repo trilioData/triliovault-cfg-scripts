@@ -43,28 +43,28 @@ spec:
     oslo_enable_proxy_headers_parsing: false
     metallb_address_pool: "internalapi"
   triliovault_backup_targets:
-    - backup_target_name: 'BT1_S3'
-      backup_target_type: 's3'
+    - backup_target_name: "BT1_S3"
+      backup_target_type: "s3"
       is_default: False
-      s3_type: 'amazon_s3'
-      s3_region_name: ''
-      s3_bucket: ''
-      s3_endpoint_url: ''
-      s3_signature_version: 'default'
-      s3_auth_version: 'DEFAULT'
+      s3_type: "amazon_s3"
+      s3_region_name: ""
+      s3_bucket: ""
+      s3_endpoint_url: ""
+      s3_signature_version: "default"
+      s3_auth_version: "DEFAULT"
       s3_ssl_enabled: true
       s3_ssl_verify: true
       s3_self_signed_cert: false
       s3_bucket_object_lock_enabled: false
-    - backup_target_name: 'BT2_Other_S3'
-      backup_target_type: 's3'
+    - backup_target_name: "BT2_Other_S3"
+      backup_target_type: "s3"
       is_default: True
-      s3_type: 'other_s3'
-      s3_region_name: 'REGION2'
-      s3_bucket: 'BUCKET2'
-      s3_endpoint_url: 'ENDPOINT_URL2'
-      s3_signature_version: 'default'
-      s3_auth_version: 'DEFAULT'
+      s3_type: "other_s3"
+      s3_region_name: "REGION2"
+      s3_bucket: "BUCKET2"
+      s3_endpoint_url: "ENDPOINT_URL2"
+      s3_signature_version: "default"
+      s3_auth_version: "DEFAULT"
       s3_bucket_object_lock_enabled: false
       s3_ssl_enabled: true
       s3_ssl_verify: true
@@ -73,11 +73,11 @@ spec:
         SSL_CERT_LINE_1
         SSL_CERT_LINE_2
         SSL_CERT_LINE_N
-    - backup_target_name: 'BT3_NFS'
-      backup_target_type: 'nfs'
+    - backup_target_name: "BT3_NFS"
+      backup_target_type: "nfs"
       is_default: false
-      nfs_shares: '192.168.2.3:/nfs/share'
-      nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+      nfs_shares: "192.168.2.3:/nfs/share"
+      nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
@@ -119,13 +119,13 @@ spec:
       root_user_name: "root"
       host: "trilio-galera-cluster.trilio-openstack.svc"
       port: 3306
-    datamover_api: 
+    datamover_api:
       user: "dmapi"
       database: "dmapi"
-    wlm_api: 
+    wlm_api:
       user: "workloadmgr"
       database: "workloadmgr"
-    galera: 
+    galera:
       replicas: 3
 
       # Storage configuration - matching OpenStack Galera
@@ -161,9 +161,9 @@ spec:
       port: "15671"
       driver: "messagingv2"
       ssl: true
-      namespace: 'trilio-openstack'
+      namespace: "trilio-openstack"
     cluster:
-      api_version: 'rabbitmq.com/v1beta1'
+      api_version: "rabbitmq.com/v1beta1"
       replicas: 3
       rabbit_quorum_queue: false
       resources:
@@ -174,13 +174,13 @@ spec:
           cpu: "2"
           memory: 2Gi
       persistence:
-        storage_class_name: 'ocs-storagecluster-ceph-rbd'
+        storage_class_name: "ocs-storagecluster-ceph-rbd"
         storage: 10Gi
       termination_grace_period_seconds: 604800
       tls:
-        issuer_name: 'rootca-public'
-        secret_name: 'cert-trilio-rabbitmq-cluster'
-        ca_secret_name: 'cert-trilio-rabbitmq-cluster'
+        issuer_name: "rootca-public"
+        secret_name: "cert-trilio-rabbitmq-cluster"
+        ca_secret_name: "cert-trilio-rabbitmq-cluster"
         disable_non_tls_listeners: true
       rabbitmq:
         additional_config: |
@@ -340,4 +340,8 @@ spec:
       triliovault_wlm_cron: 1
       triliovault_wlm_scheduler: 3
       triliovault_object_store: 3
-
+  workloadmgr:
+    policyOverrides:
+      # Example of overriding a default policy rule
+      # workload:workload_delete: rule:admin_api
+      # snapshot:snapshot_delete: rule:admin_api
