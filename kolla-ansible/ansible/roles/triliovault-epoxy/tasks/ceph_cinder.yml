@@ -36,7 +36,7 @@
 
 - name: Copy over cinder ceph keyring files for triliovault datamover
   vars:
-    keyring: "{{ item.cluster }}.{{ ceph_cinder_keyring }}"
+    keyring: "{{ ceph_cinder_keyring }}"
   template:
     src: "{{ node_custom_config }}/cinder/cinder-volume/{{ keyring }}"
     dest: "{{ node_config_directory }}/triliovault-datamover/ceph/{{ keyring }}"

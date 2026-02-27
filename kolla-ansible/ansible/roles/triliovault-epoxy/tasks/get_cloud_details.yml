@@ -13,6 +13,16 @@
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
     - "/etc/kolla/triliovault-wlm-api/create_cloud_trust.sh"
+  become: true
+
+- name: Ensure cloudrc_dest directory exists on localhost
+  file:
+    path: "{{ cloudrc_dest | dirname }}"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  become: true
+  run_once: true
 
 - name: Copy Triliovault-cloudrc to localhost
   become: true
@@ -21,6 +31,7 @@
     dest: "{{ cloudrc_dest }}"
     mode: "0777"
   delegate_to: localhost
+  become: true
 
 - name: Copy Triliovault-cloudrc to openstack controller node
   become: true
@@ -30,6 +41,7 @@
     mode: "0777"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
+  become: true
 
 - name: GET CLOUD_ADMIN_USER_ID
   shell: ". {{ cloudrc_dest }} && openstack user show --insecure --domain {{ cloud_admin_domainname }} -f value -c id {{ cloud_admin_username }}"

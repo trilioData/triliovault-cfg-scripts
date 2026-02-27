@@ -148,7 +148,7 @@ triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/
 
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
-###### END OF DATAMOVER ## 
+###### END OF DATAMOVER ##
 
 
 ###### START OF WORKLOADMGR ####
@@ -175,7 +175,7 @@ nova_ceph_cluster: "ceph"
 ## This is needed to support 'snapshot mount' feature of triliovault
 ## User needs to mount this directory on 'nova_compute' and 'nova_libvirt' container.
 
-triliovault_parent_data_directory: "/var/trilio" 
+triliovault_parent_data_directory: "/var/trilio"
 
 triliovault_datamover_user_id: "42436"
 triliovault_datamover_group_id: "42436"
@@ -304,14 +304,14 @@ triliovault_ks_services:
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
     endpoints: "{{ triliovault_datamover_api_service_endpoints }}"
-    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
+    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
     endpoints: "{{ triliovault_wlm_api_service_endpoints }}"
-    triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
+    triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"
 
-triliovault_datamover_keystone_user: "dmapi"	
+triliovault_datamover_keystone_user: "dmapi"
 triliovault_wlm_keystone_user : "triliovault"
 # Domain name in which "service" project is available.
 service_ks_register_domain: "default"
@@ -336,9 +336,7 @@ triliovault_ks_users:
 ####################
 triliovault_notification_topics: >
   {{
-    [{'name': 'notifications', 'enabled': enable_ceilometer | bool}] 
-    + 
-    ([{'name': 'vitrage_notifications', 'enabled': enable_vitrage | bool}] if enable_vitrage is defined else [])
+    [{'name': 'notifications', 'enabled': enable_ceilometer | bool}]
   }}
 
 
@@ -386,13 +384,13 @@ triliovault_database_shard:
 triliovault_enable_tls_backend: false
 
 
-## TrilioVault Inventory for datamover.  Refer triliovault_inventory file. 
+## TrilioVault Inventory for datamover.  Refer triliovault_inventory file.
 triliovault_datamover_api_group: 'triliovault-datamover-api'
 triliovault_datamover_group: 'triliovault-datamover'
 triliovault_horizon_group: "horizon"
 
-## TrilioVault Inventory for workloadmgr.  Refer triliovault_inventory file. 
-## Since All workload manager Services get deployed on control nodes. We are not creating another inventory group for the same. 
+## TrilioVault Inventory for workloadmgr.  Refer triliovault_inventory file.
+## Since All workload manager Services get deployed on control nodes. We are not creating another inventory group for the same.
 triliovault_wlm_api_group: 'triliovault-wlm-api'
 triliovault_wlm_workloads_group: 'triliovault-wlm-workloads'
 triliovault_wlm_scheduler_group: 'triliovault-wlm-scheduler'
@@ -429,8 +427,8 @@ triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
 
 ##################
-# RabbitMQ 
-################# 
+# RabbitMQ
+#################
 triliovault_wlm_rabbitmq_user: "workloadmgr"
 triliovault_wlm_rpc_vhost: "workloadmgr"
 triliovault_tags:
@@ -450,7 +448,7 @@ triliovault_backup_target: 'nfs'
 ### 'NFS' backup target details
 ## Valid for backup target 'nfs' only, provide full NFS share path
 triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
-## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
+## Valid for backup target 'nfs' only, Following parameter takes NFS mount options.
 ## Keep default values, unless you have a special need.
 triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
 
@@ -479,6 +477,9 @@ triliovault_copy_ceph_s3_ssl_cert: False
 ## cinder
 ## cinder http retries default value
 cinder_http_retries: '10'
+ceph_cinder_keyring: "ceph.client.{{ ceph_cinder_user }}.keyring"
+ceph_cinder_backup_keyring: "ceph.client.{{ ceph_cinder_backup_user }}.keyring"
+ceph_nova_keyring: "{{ ceph_cinder_keyring }}"
 
 
 ##New_vars
