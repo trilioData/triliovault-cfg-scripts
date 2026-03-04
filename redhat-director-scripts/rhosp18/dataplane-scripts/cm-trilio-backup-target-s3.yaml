@@ -20,3 +20,4 @@ data:
       s3_ssl_enabled: true
       s3_ssl_verify: true
       s3_self_signed_cert: false
+      s3_ssl_ca_cert: |

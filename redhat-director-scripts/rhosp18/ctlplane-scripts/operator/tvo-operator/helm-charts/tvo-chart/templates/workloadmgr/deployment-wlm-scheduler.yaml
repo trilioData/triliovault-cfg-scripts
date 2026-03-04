@@ -191,6 +191,9 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-scheduler.sh
               subPath: triliovault-wlm-scheduler.sh
+            - name: triliovault-wlm-bin
+              mountPath: /etc/triliovault-wlm/policy.yaml 
+              subPath: workloadmgr-policy.yaml
             - name: pod-shared-triliovault-wlm-scheduler
               mountPath: /tmp/pod-shared-triliovault-wlm-scheduler
             - name: trilio-mounts
