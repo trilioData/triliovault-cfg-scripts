@@ -342,6 +342,6 @@ spec:
       triliovault_object_store: 3
   workloadmgr:
     policyOverrides:
-      # Example of overriding a default policy rule
+      # Refer file policy-example.yaml for examples of overriding default policy rules. Uncomment and modify the below lines to override specific rules.
       # workload:workload_delete: rule:admin_api
       # snapshot:snapshot_delete: rule:admin_api
