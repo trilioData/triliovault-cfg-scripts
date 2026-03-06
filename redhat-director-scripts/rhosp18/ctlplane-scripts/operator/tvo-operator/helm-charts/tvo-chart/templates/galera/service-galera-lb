@@ -1,0 +1,29 @@
+{{- if and (eq .Values.crdType "TVOControlPlane") (.Values.database.common.use_trilio_galera) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trilio-galera-lb
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    metallb.universe.tf/address-pool: {{ .Values.common.metallb_address_pool }}
+    dnsmasq.network.openstack.org/hostname: trilio-galera-lb.{{ .Release.Namespace }}.svc
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/name: trilio-galera-cluster
+    app.kubernetes.io/part-of: trilio-vault
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: trilio-galera-cluster-galera
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  externalTrafficPolicy: Cluster
+{{- end }}

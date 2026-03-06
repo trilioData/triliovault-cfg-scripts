@@ -1,4 +1,4 @@
-FROM registry.redhat.io/rhoso/openstack-horizon-rhel9:18.0.0
+FROM registry.redhat.io/rhoso/openstack-horizon-rhel9:18.0
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="trilio/openstack-horizon-triliodata-plugin" \
@@ -22,16 +22,15 @@ RUN dnf config-manager \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
 ADD trilio.repo /etc/yum.repos.d/
-RUN dnf install --releasever 9.4 python3-tvault-horizon-plugin-el9 -y
-RUN dnf --releasever 9.4 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-django
+RUN dnf install --releasever 9.6 python3-tvault-horizon-plugin-el9 -y
+RUN dnf --releasever 9.6 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-django
 RUN rm /etc/yum.repos.d/trilio.repo
 
 ##Copy necessary files
 RUN cp -r /usr/lib/python3.9/site-packages/trilio_dashboard/local/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
 RUN cp -r /usr/lib/python3.9/site-packages/trilio_dashboard/templatetags/* /usr/share/openstack-dashboard/openstack_dashboard/templatetags/
 
-RUN /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
-RUN /usr/share/openstack-dashboard/manage.py compress --force
+RUN chown apache:root -R /usr/share/openstack-dashboard/static/themes/rcue
 
 ##Disable repos and Clean subscription
 RUN dnf config-manager \

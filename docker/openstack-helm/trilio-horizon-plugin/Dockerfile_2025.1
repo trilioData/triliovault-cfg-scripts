@@ -1,0 +1,27 @@
+FROM quay.io/airshipit/horizon:2025.1-ubuntu_noble
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="6.1.0" \
+      release="6.1" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Openstack Helm"
+
+# Install Trilio plugin and dependencies
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+#Eg. TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-stable-6-1/"
+RUN pip install pytz  && export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
+    pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
+
+# Copy Trilio plugin files
+RUN cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/local/enabled/
+RUN cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/templatetags/
+
+# Run Django management commands to collect static files and compress
+RUN python3 /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
+RUN python3 /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/manage.py compress --force
+
+# Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses

@@ -1,0 +1,72 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-create-rabbitmq-dns-entry
+  namespace: trilio-openstack
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: trilio-dns-creator
+      restartPolicy: OnFailure
+      containers:
+      - name: create-dns-entry
+        image: {{ .Values.images.openshift_cli }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Waiting for LoadBalancer IP on service trilio-rabbitmq-lb..."
+          
+          EXTERNAL_IP=""
+          for i in {1..10}; do
+            EXTERNAL_IP=$(oc get svc trilio-rabbitmq-lb -n trilio-openstack -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+            
+            if [ -n "$EXTERNAL_IP" ] && [ "$EXTERNAL_IP" != "null" ]; then
+              echo "LoadBalancer IP found: $EXTERNAL_IP"
+              break
+            fi
+            
+            echo "Attempt $i/10: IP not yet assigned, waiting 5 seconds..."
+            sleep 5
+          done
+          
+          if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "null" ]; then
+            echo "ERROR: Timeout waiting for LoadBalancer IP after 5 minutes"
+            exit 1
+          fi
+          
+          echo "Creating DNSData with IP: $EXTERNAL_IP"
+          
+          cat <<EOF | oc apply -f -
+          apiVersion: network.openstack.org/v1beta1
+          kind: DNSData
+          metadata:
+            name: trilio-rabbitmq-dns
+            namespace: openstack
+            labels:
+              dnsmasqname: dns
+              app.kubernetes.io/managed-by: {{ .Release.Service }}
+              app.kubernetes.io/instance: {{ .Release.Name }}
+          spec:
+            dnsDataLabelSelectorValue: dnsdata
+            hosts:
+            - hostnames:
+              - trilio-rabbitmq-cluster.trilio-openstack.svc
+              ip: $EXTERNAL_IP
+          EOF
+          
+          if [ $? -eq 0 ]; then
+            echo "DNSData created/updated successfully"
+            exit 0
+          else
+            echo "ERROR: Failed to create DNSData"
+            exit 1
+          fi
+{{- end }}

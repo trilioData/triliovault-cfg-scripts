@@ -1,0 +1,27 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trilio-rabbitmq-cluster-config-data
+  namespace: trilio-openstack
+data:
+  inter_node_tls.config: |
+    [
+      {server, [
+        {cacertfile, "/etc/rabbitmq-tls/ca.crt"},
+        {certfile,   "/etc/rabbitmq-tls/tls.crt"},
+        {keyfile,    "/etc/rabbitmq-tls/tls.key"},
+        {verify, verify_none},
+        {fail_if_no_peer_cert, false},
+        {secure_renegotiate, true}
+      ]},
+      {client, [
+        {cacertfile, "/etc/rabbitmq-tls/ca.crt"},
+        {certfile,   "/etc/rabbitmq-tls/tls.crt"},
+        {keyfile,    "/etc/rabbitmq-tls/tls.key"},
+        {verify, verify_none},
+        {secure_renegotiate, true}
+      ]}
+    ].
+
+{{- end }}

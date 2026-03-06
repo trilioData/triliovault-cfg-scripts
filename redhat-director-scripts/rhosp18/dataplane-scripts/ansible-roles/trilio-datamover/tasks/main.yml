@@ -2,13 +2,37 @@
 # tasks file for trilio-datamover
 
 - name: Log in to the container registry using Podman
+  become: true
   containers.podman.podman_login:
     username: "{{ trilio_container_registry_username }}"
-    password: "{{ trilio_container_registry_password }}"
+    password: "{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/ContainerRegistryPassword') | trim }}"
     registry: "{{ trilio_container_registry_url }}"
   register: podman_login_result
   failed_when: podman_login_result.failed
   changed_when: not podman_login_result.failed
+  when: trilio_container_registry_login_enabled | bool
+
+- name: Trilio - Ensure nbd module loads at boot
+  become: true
+  copy:
+    dest: "/etc/modules-load.d/nbd.conf"
+    content: "nbd"
+    mode: "0644"
+
+- name: Trilio - Ensure nbd module parameters persist
+  become: true
+  copy:
+    dest: "/etc/modprobe.d/nbd.conf"
+    content: "options nbd nbds_max=128"
+    mode: "0644"
+
+
+- name: Trilio - Load nbd module
+  become: true
+  modprobe:
+    name: "nbd"
+    params: "nbds_max=128"
+    state: "present"
 
 - name: Configure and install triliovault object store services
   ansible.builtin.include_tasks: configure_object_store.yml

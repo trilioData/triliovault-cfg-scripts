@@ -1,0 +1,9 @@
+network:
+  wlm_api:
+    ingress:
+      classes:
+        namespace: "nginx" # use openstack-ingress-nginx for MOSK
+  datamover_api:
+    ingress:
+      classes:
+        namespace: "nginx" # use openstack-ingress-nginx for MOSK

@@ -45,6 +45,12 @@ spec:
             runAsUser: {{ .Values.common.nova_user_id }}
           image: {{ .Values.images.triliovault_wlm_api }}
           imagePullPolicy: IfNotPresent
+          env:
+            - name: OS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openstack-secret
+                  key: CloudAdminPassword
           command:
             - /bin/bash
             - -c

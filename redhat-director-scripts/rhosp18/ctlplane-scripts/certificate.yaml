@@ -9,6 +9,7 @@ spec:
   issuerRef:
     name: rootca-public
     kind: Issuer
+  duration: 43800h0m0s
   commonName: triliovault-wlm-public.trilio-openstack.svc
   dnsNames:
     - triliovault-wlm-public.trilio-openstack.svc
@@ -27,6 +28,7 @@ spec:
   issuerRef:
     name: rootca-internal
     kind: Issuer
+  duration: 43800h0m0s
   commonName: triliovault-wlm-internal.trilio-openstack.svc
   dnsNames:
     - triliovault-wlm-internal.trilio-openstack.svc
@@ -43,6 +45,7 @@ spec:
   issuerRef:
     name: rootca-public
     kind: Issuer
+  duration: 43800h0m0s
   commonName: triliovault-datamover-public.trilio-openstack.svc
   dnsNames:
     - triliovault-datamover-public.trilio-openstack.svc
@@ -60,7 +63,50 @@ spec:
   issuerRef:
     name: rootca-internal
     kind: Issuer
+  duration: 43800h0m0s
   commonName: triliovault-datamover-internal.trilio-openstack.svc
   dnsNames:
     - triliovault-datamover-internal.trilio-openstack.svc
     - triliovault-datamover-internal.trilio-openstack.svc.cluster.local
+
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trilio-rabbitmq-cluster
+  namespace: openstack
+spec:
+  secretName: cert-trilio-rabbitmq-cluster
+  issuerRef:
+    name: rootca-public
+    kind: Issuer
+  duration: 43800h0m0s
+  commonName: trilio-rabbitmq-cluster.trilio-openstack.svc
+  dnsNames:
+    - trilio-rabbitmq-cluster-nodes.trilio-openstack.svc
+    - trilio-rabbitmq-cluster-nodes.trilio-openstack.svc.cluster.local
+    - trilio-rabbitmq-cluster.trilio-openstack.svc
+    - trilio-rabbitmq-cluster.trilio-openstack.svc.cluster.local
+    - trilio-rabbitmq-lb.trilio-openstack.svc
+    - trilio-rabbitmq-lb.trilio-openstack.svc.cluster.local
+    - trilio-rabbitmq-cluster-server-0.trilio-rabbitmq-cluster-nodes.trilio-openstack
+    - trilio-rabbitmq-cluster-server-1.trilio-rabbitmq-cluster-nodes.trilio-openstack
+    - trilio-rabbitmq-cluster-server-2.trilio-rabbitmq-cluster-nodes.trilio-openstack
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trilio-galera-cluster
+  namespace: openstack
+spec:
+  secretName: cert-trilio-galera-cluster
+  issuerRef:
+    name: rootca-public
+    kind: Issuer
+  duration: 43800h0m0s
+  commonName: trilio-galera-cluster.trilio-openstack.svc
+  dnsNames:
+    - trilio-galera-cluster.trilio-openstack.svc

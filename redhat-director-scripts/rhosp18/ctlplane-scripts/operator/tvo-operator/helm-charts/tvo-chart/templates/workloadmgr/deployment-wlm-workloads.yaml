@@ -26,6 +26,10 @@ spec:
       labels:
         application: triliovault
         component: wlm-workloads
+      {{- if .Values.pod.triliovault_wlm_workloads.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_wlm_workloads.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-wlm
       securityContext:
@@ -66,6 +70,56 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: OS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openstack-secret
+                  key: CloudAdminPassword
+            - name: WLM_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmDatabasePassword
+            - name: WLM_KEYSTONE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmKeystonePassword
+            - name: WLM_RABBIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmRabbitPassword
+            - name: WLM_RABBIT_USER
+              value: "{{- .Values.rabbitmq.wlm_api.user -}}"
+            - name: WLM_RABBIT_VHOST
+              value: "{{- .Values.rabbitmq.wlm_api.vhost -}}"
+            - name: WLM_RABBIT_HOST
+              value: "{{- .Values.rabbitmq.common.host -}}"
+            - name: IS_RABBIT_SSL_ENABLED
+              value: "{{- .Values.rabbitmq.common.ssl -}}"
+            - name: WLM_DATABASE_USER
+              value: "{{- .Values.database.wlm_api.user -}}"
+            - name: WLM_DATABASE_HOST
+              value: "{{- .Values.database.common.host -}}"
+            - name: WLM_DATABASE_PORT
+              value: "{{- .Values.database.common.port -}}"
+            - name: WLM_DATABASE_NAME
+              value: "{{- .Values.database.wlm_api.database -}}"
+            {{- range .Values.triliovault_backup_targets }}
+            {{- if eq .backup_target_type "s3" }}
+            - name: {{ .backup_target_name }}_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: {{ .backup_target_name }}_s3_access_key
+            - name: {{ .backup_target_name }}_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: {{ .backup_target_name }}_s3_secret_key
+            {{- end }}
+            {{- end }}
           command:
             - /bin/bash
             - -c
@@ -97,6 +151,12 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_wlm_workloads.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -110,6 +170,7 @@ spec:
                   - -c
                   - /tmp/triliovault-wlm-workloads.sh
                   - stop
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

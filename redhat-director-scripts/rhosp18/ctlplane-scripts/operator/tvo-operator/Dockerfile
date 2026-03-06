@@ -1,4 +1,4 @@
-FROM quay.io/operator-framework/helm-operator:latest
+FROM quay.io/operator-framework/helm-operator:master
 
 # Add metadata
 LABEL name="trilio/trilio-openstack-operator" \

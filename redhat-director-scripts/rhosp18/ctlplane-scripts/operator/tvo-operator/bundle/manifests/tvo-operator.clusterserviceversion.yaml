@@ -13,6 +13,10 @@ metadata:
             "name": "tvocontrolplane-sample"
           },
           "spec": {
+            "openstack": {
+              "namespace": "openstack",
+              "osp_secret_name": "osp-secret",
+            },
             "common": {
               "dmapi_workers": "16",
               "memcached_servers": "",
@@ -134,6 +138,30 @@ metadata:
               }
             },
             "pod": {
+              "triliovault_wlm_api": {
+                "networks": "",
+                "debug_mode": false
+              },
+              "triliovault_wlm_scheduler": {
+                "networks": "",
+                "debug_mode": false
+              },
+              "triliovault_wlm_cron": {
+                "networks": "",
+                "debug_mode": false
+              },
+              "triliovault_wlm_workloads": {
+                "networks": "",
+                "debug_mode": false
+              },
+              "triliovault_object_store": {
+                "networks": "",
+                "debug_mode": false
+              },
+              "triliovault_datamover_api": {
+                "networks": "",
+                "debug_mode": false
+              },
               "affinity": {
                 "anti": {
                   "topologyKey": {

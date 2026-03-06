@@ -31,6 +31,31 @@ spec:
             runAsUser: {{ .Values.common.nova_user_id }}
           image: {{ .Values.images.triliovault_wlm_api }}
           imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmDatabasePassword
+            - name: DB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.database.common.use_trilio_galera }}
+                  name: trilio-openstack-secret
+                  key: DbRootPassword
+                  {{- else }}
+                  name: openstack-secret
+                  key: DatabaseRootPassword
+                  {{- end }}
+            - name: WLM_DATABASE_USER
+              value: "{{- .Values.database.wlm_api.user -}}"
+            - name: WLM_DATABASE_HOST
+              value: "{{- .Values.database.common.host -}}"
+            - name: WLM_DATABASE_PORT
+              value: "{{- .Values.database.common.port -}}"
+            - name: WLM_DATABASE_NAME
+              value: "{{- .Values.database.wlm_api.database -}}"
+
           command:
             - /bin/bash
             - -c

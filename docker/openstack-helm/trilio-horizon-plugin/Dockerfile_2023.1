@@ -1,39 +1,31 @@
 FROM docker.io/openstackhelm/horizon:2023.1-ubuntu_jammy
 
 LABEL name="ubuntu-binary-trilio-horizon-plugin" \
-      maintainer="shyam.biradar@trilio.io" \ 
+      maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
       version="6.1.0" \
       release="6.1" \
       summary="TrilioVault Horizon Plugin" \
       description="TrilioVault Horizon Plugin for Openstack Helm"
 
-ARG OPENSTACK_REPO=cloud-archive:antelope
+# Install Trilio plugin and dependencies
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+#Eg. TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-stable-6-1/"
+RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
+    pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=Etc/UTC
+# Copy Trilio plugin files
+RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/local/enabled/
+RUN cp /var/lib/openstack/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
 
-# Install pre-requisite packages 
-RUN set -ex \
-    && apt-get update && apt-get -y install \
-        software-properties-common apt-utils vim less iputils-ping
+# Add manage.py for running Django commands
+ADD manage.py /tmp/manage.py
+RUN chmod 777 /tmp/manage.py && \
+    cp /tmp/manage.py /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py
 
-# Install datamover packages
-ADD trilio.list /etc/apt/sources.list.d/
-ADD manage.py /tmp/
-RUN chmod 777 /tmp/manage.py
-
-RUN mkdir -p /var/lib/openstack/share/openstack-dashboard && \
-    cp /tmp/manage.py /var/lib/openstack/share/openstack-dashboard
-
-RUN . /var/lib/openstack/bin/activate
-
-RUN apt update -y  && \
-    apt-add-repository ${OPENSTACK_REPO} && \
-    apt-get install -y python3-tvault-horizon-plugin python3-workloadmgrclient --allow-unauthenticated
-
-RUN cp /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/* /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/enabled/
-RUN cp /usr/share/openstack-dashboard/openstack_dashboard/templatetags/* /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/templatetags/
+# Run Django management commands to collect static files and compress
+RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
+RUN python3 /var/lib/openstack/lib/python3.10/site-packages/openstack_dashboard/manage.py compress --force
 
 # Add license
 RUN mkdir /licenses

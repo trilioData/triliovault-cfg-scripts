@@ -1,0 +1,148 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wait-job-sa
+  namespace: trilio-openstack
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wait-job-role
+  namespace: trilio-openstack
+rules:
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["subscriptions", "installplans", "clusterserviceversions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rabbitmq.com"]
+    resources: ["rabbitmqclusters", "users"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wait-job-rb
+  namespace: trilio-openstack
+subjects:
+  - kind: ServiceAccount
+    name: wait-job-sa
+roleRef:
+  kind: Role
+  name: wait-job-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: trilio-tvo-deployment-patcher
+  namespace: trilio-openstack
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "patch", "watch"]
+  resourceNames: ["messaging-topology-operator"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trilio-tvo-deployment-patcher
+  namespace: trilio-openstack
+subjects:
+- kind: ServiceAccount
+  name: trilio-rabbitmq
+  namespace: trilio-openstack
+roleRef:
+  kind: Role
+  name: trilio-tvo-deployment-patcher
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trilio-rabbitmq-anyuid-scc
+  namespace: trilio-openstack
+  labels:
+    app.kubernetes.io/name: trilio-rabbitmq-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+- kind: ServiceAccount
+  name: trilio-rabbitmq-cluster-server
+  namespace: trilio-openstack
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: trilio-dns-creator
+  namespace: trilio-openstack
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: trilio-dns-creator
+  namespace: trilio-openstack
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trilio-dns-creator
+  namespace: trilio-openstack
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+subjects:
+- kind: ServiceAccount
+  name: trilio-dns-creator
+  namespace: trilio-openstack
+roleRef:
+  kind: Role
+  name: trilio-dns-creator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: trilio-dns-creator-openstack
+  namespace: openstack
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+rules:
+- apiGroups: ["network.openstack.org"]
+  resources: ["dnsdata"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trilio-dns-creator-openstack
+  namespace: openstack
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+subjects:
+- kind: ServiceAccount
+  name: trilio-dns-creator
+  namespace: trilio-openstack
+roleRef:
+  kind: Role
+  name: trilio-dns-creator-openstack
+  apiGroup: rbac.authorization.k8s.io
+
+{{- end }}

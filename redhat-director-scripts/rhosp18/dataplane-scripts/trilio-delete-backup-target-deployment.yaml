@@ -1,0 +1,10 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneDeployment
+metadata:
+  name: edpm-trilio-delete-backup-target-<BACKUP_TARGET_NAME>
+spec:
+  nodeSets:
+    - openstack-edpm-ipam
+  servicesOverride:
+    - trilio-delete-backup-target-<BACKUP_TARGET_NAME>
+

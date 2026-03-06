@@ -54,6 +54,9 @@ spec:
     triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+  openstack:
+    namespace: "openstack"
+    osp_secret_name: "osp-secret"
   keystone:
     common:
       admin_role_name: admin
@@ -107,6 +110,24 @@ spec:
       node_selector_key: trilio-control-plane
       node_selector_value: enabled
   pod:
+    triliovault_wlm_api:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_scheduler:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_cron:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_workloads:
+      networks: ""
+      debug_mode: false
+    triliovault_object_store:
+      networks: ""
+      debug_mode: false
+    triliovault_datamover_api:
+      networks: ""
+      debug_mode: false
     affinity:
       anti:
         topologyKey:

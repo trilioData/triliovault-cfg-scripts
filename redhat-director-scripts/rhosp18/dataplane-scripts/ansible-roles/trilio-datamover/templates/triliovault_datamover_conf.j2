@@ -2,11 +2,11 @@
 
 vault_data_directory = {{ vault_data_dir }}
 vault_data_directory_old = /var/triliovault
-
+qemu_agent_ping_timeout = 30
 log_config_append = /etc/triliovault-datamover/datamover_logging.conf
 max_uploads_pending = 3
 max_commit_pending = 3
-dmapi_transport_url = {{ dmapi_transport_url }}
+dmapi_transport_url = "rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiRabbitPassword') | trim }}@{{ rabbit_host }}:{{ rabbit_port }}/dmapi{% if rabbit_ssl %}?ssl=1{% endif %}"
 
 {% if cinder_backend_ceph %}
 [libvirt]
@@ -17,8 +17,13 @@ rbd_user = {{ ceph_cinder_user }}
 keyring_ext = .keyring
 {% endif %}
 
+[oslo_messaging_rabbit]
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+ssl = {{ rabbit_ssl }}
+ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+
 [dmapi_database]
-connection = {{ dmapi_database_connection }}
+connection = "mysql+pymysql://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiDatabasePassword') | trim }}@{{ database_host }}:{{ database_port }}/dmapi"
 
 [contego_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper

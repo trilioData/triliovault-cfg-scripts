@@ -8,9 +8,6 @@ metadata:
   labels:
     application: triliovault
     component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "99"
 spec:
   selector:
     matchLabels:
@@ -21,6 +18,10 @@ spec:
       labels:
         application: triliovault
         component: object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+      {{- if .Values.pod.triliovault_object_store.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_object_store.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-object-store
       securityContext:
@@ -28,15 +29,36 @@ spec:
         fsGroup: {{ .Values.common.nova_group_id }}
       nodeSelector:
         trilio-control-plane: enabled
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 90
       containers:
         - name: triliovault-object-store-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
           image: {{ .Values.images.triliovault_object_store }}
           imagePullPolicy: IfNotPresent
+          env:
+            {{- if eq .Values.triliovault_backup_target.backup_target_type "s3" }}
+            - name: BACKUP_TARGET_NAME
+              value: "{{- .Values.triliovault_backup_target.backup_target_name -}}"
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-s3-backup-target-secret-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+                  key: {{ .Values.triliovault_backup_target.backup_target_name }}_s3_access_key
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-s3-backup-target-secret-{{ .Values.triliovault_backup_target.backup_target_name | lower | replace "_" "-" }}
+                  key: {{ .Values.triliovault_backup_target.backup_target_name }}_s3_secret_key
+            {{- end }}
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_object_store.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -48,8 +70,8 @@ spec:
                 command:
                   - /bin/bash
                   - -c
-                  - /tmp/triliovault-object-store.sh
-                  - stop
+                  - /tmp/triliovault-object-store.sh stop
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

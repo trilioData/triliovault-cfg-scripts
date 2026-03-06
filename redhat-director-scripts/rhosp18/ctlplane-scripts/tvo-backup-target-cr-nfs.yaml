@@ -6,7 +6,7 @@ spec:
   # Default values copied from <project_dir>/helm-charts/tvo-chart/values.yaml
   crdType: "TVOBackupTarget"
   images:
-    triliovault_wlm_api: "docker.io/trilio/trilio-wlm:6.0.24-dev-maint1-2-rhosp18.0"
+    triliovault_wlm_api: "registry.connect.redhat.com/trilio/trilio-wlm:6.0.24-dev-maint1-2-rhosp18.0"
   triliovault_backup_target:
     backup_target_name: 'nfs-BT5'
     backup_target_type: 'nfs'

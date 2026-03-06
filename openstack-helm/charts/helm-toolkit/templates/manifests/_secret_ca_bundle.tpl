@@ -34,6 +34,15 @@ examples:
 {{- define "helm-toolkit.manifests.secret_ca_bundle" -}}
 {{- $envAll := index . "envAll" -}}
 {{- $secretPrefix := index . "secretPrefix" -}}
+{{- $endpointName := index . "endpointName" -}}
+
+{{- $ca := "" }}
+{{- with index $envAll.Values.endpoints $endpointName }}
+  {{- with .host_fqdn_override.public.tls.ca }}
+    {{- $ca = . | trim }}
+  {{- end }}
+{{- end }}
+
 ---
 apiVersion: v1
 kind: Secret
@@ -41,21 +50,5 @@ metadata:
   name: {{ $secretPrefix }}-ca-bundle
 type: Opaque
 data:
-{{- $cabundle := "" }}
-{{- range $key, $val := $envAll.Values.endpoints }}
-{{- if kindIs "map" ( index $envAll.Values.endpoints $key) }}
-{{- $endpoint := index $envAll.Values.endpoints $key -}}
-{{- if hasKey $endpoint "host_fqdn_override" }}
-{{- if hasKey $endpoint.host_fqdn_override "public" }}
-{{- if hasKey $endpoint.host_fqdn_override.public "tls" }}
-{{- if hasKey $endpoint.host_fqdn_override.public.tls "ca" }}
-{{- $ca := $endpoint.host_fqdn_override.public.tls.ca }}
-{{- $cabundle = printf "%s%s" $cabundle $ca }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-  ca_bundle: {{ $cabundle | trim | b64enc}}
+  ca_bundle: {{ $ca | b64enc }}
 {{- end }}

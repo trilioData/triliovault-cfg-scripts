@@ -14,11 +14,12 @@
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass / http://127.0.0.1:8783/
+  ProxyTimeout 600
+  ProxyPass / http://127.0.0.1:8783/ connectiontimeout=600 timeout=600
   ProxyPassReverse / http://127.0.0.1:8783/
 
 
-  Timeout 60
+  Timeout 600
 </VirtualHost>
 
 # Public vhost configuration for https://triliovault-datamover-public-trilio-openstack.apps.trilio.trilio.demo:8781/v1/s
@@ -38,9 +39,10 @@
 
   ## Proxy Configuration
   ProxyPreserveHost On
-  ProxyPass / http://127.0.0.1:8783/
+  ProxyTimeout 600
+  ProxyPass / http://127.0.0.1:8783/ connectiontimeout=600 timeout=600
   ProxyPassReverse / http://127.0.0.1:8783/
 
 
-  Timeout 60
+  Timeout 600
 </VirtualHost>

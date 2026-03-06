@@ -1,0 +1,81 @@
+---
+# For S3 object store containers
+- name: Remove triliovault-object-store container json for S3 backup target
+  become: true
+  ansible.builtin.file:
+    path: "/var/lib/openstack/config/containers/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Remove triliovault object store conf file
+  become: true
+  ansible.builtin.file:
+    path: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.conf"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Remove S3 SSL certificate file for the trilio s3 backup targets
+  become: true
+  ansible.builtin.file:
+    path: "{{ triliovault_object_store_config_dest }}/s3-cert-{{ triliovault_backup_target.backup_target_name }}.pem"
+    state: absent
+  when:
+    - triliovault_backup_target.backup_target_type == "s3"
+    - triliovault_backup_target.s3_ssl_enabled | default(false)
+    - triliovault_backup_target.s3_self_signed_cert | default(false)
+
+- name: Remove triliovault_object_store_config_json for S3 backup target
+  become: true
+  ansible.builtin.file:
+    path: "{{ triliovault_object_store_config_dest }}/triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.json"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+# For NFS mount containers
+- name: Remove Trilio NFS container json
+  become: true
+  ansible.builtin.file:
+    path: "/var/lib/openstack/config/containers/triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.json"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Remove Trilio NFS mount shell script
+  become: true
+  ansible.builtin.file:
+    path: "{{ triliovault_nfs_config_dest }}/nfs_mount-{{ triliovault_backup_target.backup_target_name }}.sh"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Remove Trilio NFS mount kolla config json file
+  become: true
+  ansible.builtin.file:
+    path: "{{ triliovault_nfs_config_dest }}/triliovault_nfs_config-{{ triliovault_backup_target.backup_target_name }}.json"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Stop triliovault-object-store container
+  containers.podman.podman_container:
+    name: triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}
+    state: stopped
+  ignore_errors: true
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Remove triliovault-object-store container
+  containers.podman.podman_container:
+    name: triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Stop triliovault-nfs-container container
+  containers.podman.podman_container:
+    name: triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}
+    state: stopped
+  ignore_errors: true
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Remove triliovault-nfs-container container
+  containers.podman.podman_container:
+    name: triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+

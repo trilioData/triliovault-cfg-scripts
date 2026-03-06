@@ -30,6 +30,10 @@ spec:
         component: datamover-api
         owner: triliovault-datamover
         service: triliovault-datamover
+      {{- if .Values.pod.triliovault_datamover_api.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_datamover_api.networks | quote }}
+      {{- end }}
     spec:
       serviceAccountName: triliovault-datamover-api
       securityContext:
@@ -67,6 +71,37 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: DMAPI_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DmapiDatabasePassword
+            - name: DMAPI_KEYSTONE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DmapiKeystonePassword
+            - name: DMAPI_RABBIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: DmapiRabbitPassword
+            - name: DMAPI_RABBIT_USER
+              value: "{{- .Values.rabbitmq.datamover_api.user -}}"
+            - name: DMAPI_RABBIT_VHOST
+              value: "{{- .Values.rabbitmq.datamover_api.vhost -}}"
+            - name: DMAPI_RABBIT_HOST
+              value: "{{- .Values.rabbitmq.common.host -}}"
+            - name: IS_RABBIT_SSL_ENABLED
+              value: "{{- .Values.rabbitmq.common.ssl -}}" 
+            - name: DMAPI_DATABASE_USER
+              value: "{{- .Values.database.datamover_api.user -}}"
+            - name: DMAPI_DATABASE_HOST
+              value: "{{- .Values.database.common.host -}}"
+            - name: DMAPI_DATABASE_PORT
+              value: "{{- .Values.database.common.port -}}"
+            - name: DMAPI_DATABASE_NAME
+              value: "{{- .Values.database.datamover_api.database -}}"
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: triliovault-datamover-api-bin
@@ -87,6 +122,12 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: false
+          {{- if .Values.pod.triliovault_datamover_api.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
           command:
             - /bin/bash
             - -c
@@ -100,15 +141,18 @@ spec:
                   - -c
                   - /tmp/triliovault-datamover-api.sh
                   - stop
+          {{- end }}
           ports:
             - name: dm-api
               containerPort: 8783
+          {{- if not .Values.pod.triliovault_datamover_api.debug_mode }}
           readinessProbe:
             tcpSocket:
               port: 8783
           livenessProbe:
             tcpSocket:
               port: 8783
+          {{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
@@ -155,6 +199,14 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - mountPath: /etc/pki/tls/certs/rabbitmq-tls.crt
+              name: rabbitmq-tls-certs
+              readOnly: true
+              subPath: tls.crt
+            - mountPath: /etc/pki/tls/private/rabbitmq-tls.key
+              name: rabbitmq-tls-certs
+              readOnly: true
+              subPath: tls.key
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -177,6 +229,10 @@ spec:
         - name: internal-tls-certs
           secret:
             secretName: cert-triliovault-datamover-internal-svc
+            defaultMode: 0640
+        - name: rabbitmq-tls-certs
+          secret:
+            secretName: cert-trilio-rabbitmq-cluster
             defaultMode: 0640
         - name: combined-ca-bundle
           secret:
