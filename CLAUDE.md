@@ -1,8 +1,9 @@
 # triliovault-cfg-scripts — CLAUDE.md
 
-# T4O is shortform for Trilio for OpenStack product
-# In triliovault-cfg-scripts repo we keep all deployment scripts to deploy and upgrade T4O on different OpenStack distributions clouds like RedHat OpenStack, Kolla Ansible OpenStack, Mirantis OpenStack, Canonical OpenStack etc.
-# You need to understand openstack architecture to work on this project
+## Introduction
+T4O is shortform for Trilio for OpenStack product
+In triliovault-cfg-scripts repo we keep all deployment scripts to deploy and upgrade T4O on different OpenStack distributions clouds like RedHat OpenStack, Kolla Ansible OpenStack, Mirantis OpenStack, Canonical OpenStack etc.
+You need to understand openstack architecture to work on this project
 https://www.openstack.org/software/
 
 ## T4O Product Documentation Links
