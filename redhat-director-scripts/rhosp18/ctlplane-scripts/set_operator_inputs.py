@@ -163,14 +163,14 @@ if "spec" in yaml_data and "common" in yaml_data["spec"]:
     yaml_data["spec"]["common"]["trustee_role"] = new_trustee_role
     print(f"- Updated trustee_role to: {new_trustee_role}")
 
-# Update image tags
+# Update only Trilio image tags
 if "spec" in yaml_data and "images" in yaml_data["spec"]:
     for key in yaml_data["spec"]["images"]:
-        if key == "openshift_cli":
-          continue
+        if not key.startswith("trilio"):
+            continue
         base_image = yaml_data["spec"]["images"][key].split(":")[0]
         yaml_data["spec"]["images"][key] = f"{base_image}:{image_tag}"
-    print(f"- Updated all image tags to: {image_tag}")
+    print(f"- Updated Trilio image tags to: {image_tag}")
 
 
 

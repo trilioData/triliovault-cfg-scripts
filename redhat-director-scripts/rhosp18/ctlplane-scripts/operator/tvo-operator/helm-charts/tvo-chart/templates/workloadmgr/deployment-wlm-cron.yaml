@@ -187,6 +187,9 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-cron.sh
               subPath: triliovault-wlm-cron.sh
+            - name: triliovault-wlm-bin
+              mountPath: /etc/triliovault-wlm/policy.yaml 
+              subPath: workloadmgr-policy.yaml
             - name: pod-shared-triliovault-wlm-cron
               mountPath: /tmp/pod-shared-triliovault-wlm-cron
             - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
