@@ -1,0 +1,99 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: triliovault-dms
+  labels:
+    application: triliovault
+    component: dms
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: dms
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: dms
+      {{- if .Values.pod.triliovault_dms.networks }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: {{ .Values.pod.triliovault_dms.networks | quote }}
+      {{- end }}
+    spec:
+      serviceAccountName: triliovault-dms
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      nodeSelector:
+        trilio-control-plane: enabled
+      terminationGracePeriodSeconds: 90
+      containers:
+        - name: triliovault-dms
+          image: {{ .Values.images.triliovault_dms }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.common.nova_user_id }}
+          {{- if .Values.pod.triliovault_dms.debug_mode }}
+          command:
+            - /bin/bash
+            - -c
+            - /usr/bin/sleep 500m
+          {{- else }}
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-dms.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - /tmp/triliovault-dms.sh stop
+          {{- end }}
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/server.conf
+              subPath: server.conf
+              readOnly: true
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/client.conf
+              subPath: client.conf
+              readOnly: true
+            - name: triliovault-dms-bin
+              mountPath: /tmp/triliovault-dms.sh
+              subPath: triliovault-dms.sh
+            - name: pod-shared-triliovault-dms
+              mountPath: /tmp/pod-shared-triliovault-dms
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: trilio-logs
+          emptyDir: {}
+        - name: triliovault-dms-etc
+          secret:
+            secretName: triliovault-dms-etc
+            defaultMode: 0444
+        - name: triliovault-dms-bin
+          configMap:
+            name: triliovault-dms-bin
+            defaultMode: 0555
+        - name: pod-shared-triliovault-dms
+          emptyDir: {}
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate
+{{- end }}

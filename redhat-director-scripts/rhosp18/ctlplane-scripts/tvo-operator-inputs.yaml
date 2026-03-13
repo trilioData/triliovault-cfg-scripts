@@ -291,10 +291,10 @@ spec:
     triliovault_wlm_workloads:
       networks: ""
       debug_mode: false
-    triliovault_object_store:
+    triliovault_datamover_api:
       networks: ""
       debug_mode: false
-    triliovault_datamover_api:
+    triliovault_dms:
       networks: ""
       debug_mode: false
     security_context:
@@ -339,7 +339,6 @@ spec:
       triliovault_wlm_workloads: 3
       triliovault_wlm_cron: 1
       triliovault_wlm_scheduler: 3
-      triliovault_object_store: 3
   workloadmgr:
     policyOverrides:
       # Refer file policy-example.yaml for examples of overriding default policy rules. Uncomment and modify the below lines to override specific rules.
