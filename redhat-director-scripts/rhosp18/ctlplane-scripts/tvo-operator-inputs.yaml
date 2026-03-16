@@ -97,6 +97,7 @@ spec:
       keystone_auth_host: "keystone-internal.openstack.svc"
       keystone_auth_port: "5000"
       is_self_signed_ssl_cert: True
+      ssl_verify: True
     datamover_api:
       user: "dmapi"
       service_name: "dmapi"

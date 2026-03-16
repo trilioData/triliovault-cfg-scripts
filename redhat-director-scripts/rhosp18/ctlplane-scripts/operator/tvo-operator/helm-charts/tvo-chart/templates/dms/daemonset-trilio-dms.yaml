@@ -77,6 +77,10 @@ spec:
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -96,4 +100,12 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
+        - name: triliovault-datamover-api-etc
+          secret:
+            secretName: triliovault-datamover-api-etc
+            defaultMode: 0444
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
 {{- end }}

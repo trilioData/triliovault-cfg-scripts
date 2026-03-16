@@ -1,10 +1,10 @@
 [client]
 # RabbitMQ connection
 # Supported schemes: amqp://, amqps://, rabbit://, rabbitmq://, rabbit+ssl://
-rabbitmq_url = amqp://openstack:PASSWORD@rabbitmq-host:5672/
+rabbitmq_url = rabbit://{{ .Values.rabbitmq.datamover_api.user }}:{{ .Values.rabbitmq.datamover_api.password }}@{{ .Values.rabbitmq.common.host }}:5671/{{ .Values.rabbitmq.datamover_api.vhost }}?ssl={{ if .Values.rabbitmq.common.ssl }}1{{ else }}0{{ end }}
 
 # Database connection
-db_url = mysql+pymysql://workloadmgr:PASSWORD@db-host:3306/workloadmgr
+db_url = mysql+pymysql://{{ .Values.database.datamover_api.user }}:{{ .Values.database.datamover_api.password }}@{{ .Values.database.common.host }}:{{ .Values.database.common.port }}/{{ .Values.database.datamover_api.database }}
 
 # Node identifier (optional, default: auto-detected hostname)
 # If not specified, DMS will auto-detect the hostname
@@ -18,7 +18,7 @@ log_level = INFO
 
 # Log file path (optional, default: /var/log/trilio-dms/trilio-dms-client.log)
 # Directory is created automatically if it does not exist
-log_file = /var/log/trilio-dms/trilio-dms-client.log
+log_file = /var/log/triliovault/trilio-dms-client.log
 
 # Log file max size in bytes before rotation (optional, default: 26214400 = 25 MB)
 log_max_bytes = 26214400
