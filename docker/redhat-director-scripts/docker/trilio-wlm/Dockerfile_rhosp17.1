@@ -50,7 +50,7 @@ RUN dnf --releasever 9.4 -y install openstack-nova-common python3-nova python3-n
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
 ## Install Triliovault wlm packages
-RUN dnf -y --releasever 9.4 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9
+RUN dnf -y --releasever 9.4 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 python3-trilio-dms-el9
 
 ## Nova user changes
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
