@@ -1,0 +1,18 @@
+{
+  "command": "/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf",
+  "config_files": [
+    {
+      "dest": "/etc/triliovault-dms/",
+      "merge": true,
+      "preserve_properties": true,
+      "source": "/var/lib/kolla/config_files/triliovault-dms/*"
+    }
+  ],
+  "permissions": [
+    {
+      "owner": "nova:nova",
+      "path": "/var/log/triliovault/",
+      "recurse": true
+    }
+  ]
+}

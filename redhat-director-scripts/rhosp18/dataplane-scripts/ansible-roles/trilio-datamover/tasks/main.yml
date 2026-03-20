@@ -34,8 +34,8 @@
     params: "nbds_max=128"
     state: "present"
 
-- name: Configure and install triliovault object store services
-  ansible.builtin.include_tasks: configure_object_store.yml
+- name: Configure and install triliovault DMS services
+  ansible.builtin.include_tasks: configure_dms.yml
 
 - name: Configure and install triliovault datamover service
   ansible.builtin.include_tasks: configure_datamover.yml

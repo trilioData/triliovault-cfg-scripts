@@ -4,17 +4,9 @@
     state: restarted
     name: "edpm_triliovault-datamover.service"
 
-- name: Restart triliovault-object-store
+- name: Restart triliovault-dms
   become: true
   ansible.builtin.systemd:
     state: restarted
-    name: "edpm_triliovault-object-store-{{ item.backup_target_name }}.service"
-  loop: "{{ triliovault_backup_targets | selectattr('backup_target_type', 'equalto', 's3') | list }}"
-
-
-- name: Restart single-triliovault-object-store
-  become: true
-  ansible.builtin.systemd:
-    state: restarted
-    name: "edpm_triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.service"
-  listen: "restart-single-triliovault-object-store"
+    name: "edpm_triliovault-dms.service"
+  listen: "restart-triliovault-dms"
