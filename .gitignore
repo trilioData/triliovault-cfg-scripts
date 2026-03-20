@@ -11,3 +11,4 @@ deps/
 results.txt
 *.db
 tvo-chart-manifest.yaml
+.claude/

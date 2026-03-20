@@ -1,7 +1,7 @@
 [server]
 # RabbitMQ connection
 # Supported schemes: amqp://, amqps://, rabbit://, rabbitmq://, rabbit+ssl://
-rabbitmq_url = rabbit://{{ .Values.rabbitmq.wlm_api.user }}:$(WLM_RABBIT_PASSWORD)@{{ .Values.rabbitmq.common.host }}:5671/{{ .Values.rabbitmq.wlm_api.vhost }}?ssl={{ if .Values.rabbitmq.common.ssl }}1{{ else }}0{{ end }}
+rabbitmq_url = "rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiRabbitPassword') | trim }}@{{ rabbit_host }}:{{ rabbit_port }}/dmapi{% if rabbit_ssl %}?ssl=1{% endif %}"
 
 
 # Node identifier (optional, default: auto-detected hostname)
@@ -9,12 +9,12 @@ rabbitmq_url = rabbit://{{ .Values.rabbitmq.wlm_api.user }}:$(WLM_RABBIT_PASSWOR
 # node_id = controller
 
 # Keystone auth URL
-auth_url = {{ .Values.keystone.common.auth_url }}
+auth_url = {{ keystone_auth_url }}
 
 # Barbican SSL verification (optional, default: False)
 # Set to True to enable SSL certificate verification for Barbican API
 # Set to False to disable SSL verification (useful for self-signed certificates)
-barbican_ssl_verify = {{ .Values.keystone.common.ssl_verify }}
+barbican_ssl_verify = {{ keystone_ssl_verify }}
 
 # Custom CA bundle for Barbican (optional, default: None)
 # If specified, uses this CA bundle path for SSL verification instead of system CA

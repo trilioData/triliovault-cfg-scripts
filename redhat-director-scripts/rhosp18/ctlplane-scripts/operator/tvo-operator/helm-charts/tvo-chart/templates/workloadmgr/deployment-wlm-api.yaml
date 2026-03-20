@@ -226,6 +226,10 @@ spec:
               subPath: tls-ca-bundle.pem
             - name: dev-mount
               mountPath: /dev
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/client.conf
+              subPath: client_wlm.conf
+              readOnly: true
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -261,4 +265,8 @@ spec:
           hostPath:
             path: /dev
             type: Directory
+        - name: triliovault-dms-etc
+          secret:
+            secretName: triliovault-dms-etc
+            defaultMode: 0444
 {{- end }}

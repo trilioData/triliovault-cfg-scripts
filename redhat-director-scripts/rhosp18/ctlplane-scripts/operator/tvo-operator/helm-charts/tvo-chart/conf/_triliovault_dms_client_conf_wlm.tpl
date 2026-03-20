@@ -4,7 +4,7 @@
 rabbitmq_url = rabbit://{{ .Values.rabbitmq.wlm_api.user }}:$(WLM_RABBIT_PASSWORD)@{{ .Values.rabbitmq.common.host }}:5671/{{ .Values.rabbitmq.wlm_api.vhost }}?ssl={{ if .Values.rabbitmq.common.ssl }}1{{ else }}0{{ end }}
 
 # Database connection
-db_url = mysql+pymysql://{{ .Values.database.wlm.user }}:{{ .Values.database.wlm.password }}@{{ .Values.database.common.host }}:{{ .Values.database.common.port }}/{{ .Values.database.wlm.database }}
+db_url = mysql+pymysql://{{ .Values.database.wlm_api.user }}:{{ .Values.database.wlm_api.password }}@{{ .Values.database.common.host }}:{{ .Values.database.common.port }}/{{ .Values.database.wlm_api.database }}
 
 # Node identifier (optional, default: auto-detected hostname)
 # If not specified, DMS will auto-detect the hostname
