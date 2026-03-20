@@ -110,20 +110,6 @@ spec:
               value: "{{- .Values.database.common.port -}}"
             - name: WLM_DATABASE_NAME
               value: "{{- .Values.database.wlm_api.database -}}"
-            {{- range .Values.triliovault_backup_targets }}
-            {{- if eq .backup_target_type "s3" }}
-            - name: {{ .backup_target_name }}_S3_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: trilio-openstack-secret
-                  key: {{ .backup_target_name }}_s3_access_key
-            - name: {{ .backup_target_name }}_S3_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: trilio-openstack-secret
-                  key: {{ .backup_target_name }}_s3_secret_key
-            {{- end }}
-            {{- end }}
           command:
             - /bin/bash
             - -c
