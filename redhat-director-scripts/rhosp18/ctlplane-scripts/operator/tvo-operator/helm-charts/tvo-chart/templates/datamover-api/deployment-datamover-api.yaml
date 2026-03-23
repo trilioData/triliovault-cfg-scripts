@@ -207,12 +207,23 @@ spec:
               name: rabbitmq-tls-certs
               readOnly: true
               subPath: tls.key
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/client.conf
+              subPath: client_dmapi.conf
+              readOnly: true
+            - name: pod-shared-triliovault-datamover-api
+              mountPath: /etc/triliovault-dms/client.conf.d/triliovault-dms-client-dynamic.conf
+              subPath: triliovault-dms-client-dynamic.conf
       volumes:
         - name: pod-tmp
           emptyDir: {}
         - name: triliovault-datamover-api-etc
           secret:
             secretName: triliovault-datamover-api-etc
+            defaultMode: 0444
+        - name: triliovault-dms-etc
+          secret:
+            secretName: triliovault-dms-etc
             defaultMode: 0444
         - name: triliovault-datamover-api-bin
           configMap:

@@ -5,7 +5,8 @@ COMMAND="${@:-start}"
 
 function start () {
   exec /usr/bin/python3 /usr/bin/trilio-dms-server \
-       --config-file /etc/triliovault-dms/server.conf
+       --config-file /etc/triliovault-dms/server.conf \
+       --config-file /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf
 }
 
 function stop () {

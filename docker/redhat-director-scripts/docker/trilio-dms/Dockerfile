@@ -41,6 +41,7 @@ RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms \
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
     /etc/triliovault-dms \
+    /etc/triliovault-dms/client.conf.d \
     /var/log/triliovault \
     /run/dms/s3 \
     && chmod 777 /var/lib/trilio/triliovault-mounts \

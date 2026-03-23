@@ -182,6 +182,13 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/client.conf
+              subPath: client_wlm.conf
+              readOnly: true
+            - name: pod-shared-triliovault-wlm-cron
+              mountPath: /etc/triliovault-dms/client.conf.d/triliovault-dms-client-dynamic.conf
+              subPath: triliovault-dms-client-dynamic.conf
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -201,4 +208,8 @@ spec:
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
+        - name: triliovault-dms-etc
+          secret:
+            secretName: triliovault-dms-etc
+            defaultMode: 0444
 {{- end }}

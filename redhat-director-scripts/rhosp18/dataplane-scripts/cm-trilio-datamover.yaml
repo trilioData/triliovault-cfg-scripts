@@ -11,6 +11,8 @@ data:
     rabbit_quorum_queue: false
     database_host: "openstack.openstack.svc"
     database_port: "3306"
+    keystone_auth_url: "https://keystone.openstack.svc:5000/v3"
+    keystone_ssl_verify: true
     cinder_backend_ceph: true
     libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
     ceph_cinder_user: "cinder"

@@ -29,6 +29,46 @@ spec:
       nodeSelector:
         trilio-control-plane: enabled
       terminationGracePeriodSeconds: 90
+      initContainers:
+        - name: triliovault-dms-init
+          image: {{ .Values.images.triliovault_dms }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsGroup: {{ .Values.common.nova_user_id }}
+            runAsUser: 0
+          env:
+            - name: WLM_RABBIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmRabbitPassword
+            - name: WLM_RABBIT_USER
+              value: "{{- .Values.rabbitmq.wlm_api.user -}}"
+            - name: WLM_RABBIT_VHOST
+              value: "{{- .Values.rabbitmq.wlm_api.vhost -}}"
+            - name: WLM_RABBIT_HOST
+              value: "{{- .Values.rabbitmq.common.host -}}"
+            - name: IS_RABBIT_SSL_ENABLED
+              value: "{{- .Values.rabbitmq.common.ssl -}}"
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-dms-init.sh
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - name: triliovault-dms-bin
+              mountPath: /tmp/triliovault-dms-init.sh
+              subPath: triliovault-dms-init.sh
+            - name: pod-shared-triliovault-dms
+              mountPath: /tmp/pod-shared-triliovault-dms
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
       containers:
         - name: triliovault-dms
           image: {{ .Values.images.triliovault_dms }}
@@ -65,6 +105,7 @@ spec:
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
               readOnly: true
+
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
@@ -77,9 +118,6 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
-            - name: trilio-mounts
-              mountPath: {{ $.Values.common.vault_data_dir }}
-              mountPropagation: Bidirectional
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -99,16 +137,8 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
-        - name: triliovault-datamover-api-etc
-          secret:
-            secretName: triliovault-datamover-api-etc
-            defaultMode: 0444
         - name: combined-ca-bundle
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
-        - name: trilio-mounts
-          hostPath:
-            path: {{ $.Values.common.vault_data_dir }}
-            type: DirectoryOrCreate
 {{- end }}

@@ -6,5 +6,6 @@ metadata:
 data:
   triliovault-dms.sh: |
     {{ tpl (.Files.Get "scripts/_triliovault-dms.sh.tpl") . | nindent 4 }}
-
+  triliovault-dms-init.sh: |
+    {{ tpl (.Files.Get "scripts/_triliovault-dms-init.sh.tpl") . | nindent 4 }}
 {{- end }}
