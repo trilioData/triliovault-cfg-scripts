@@ -195,6 +195,9 @@ spec:
               mountPath: /etc/triliovault-dms/client.conf
               subPath: client_wlm.conf
               readOnly: true
+            - name: pod-shared-triliovault-wlm-workloads
+              mountPath: /etc/triliovault-dms/client.conf.d/triliovault-dms-client-dynamic.conf
+              subPath: triliovault-dms-client-dynamic.conf
       volumes:
         - name: pod-tmp
           emptyDir: {}

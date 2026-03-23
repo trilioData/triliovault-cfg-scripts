@@ -1,10 +1,4 @@
 [client]
-# RabbitMQ connection
-# Supported schemes: amqp://, amqps://, rabbit://, rabbitmq://, rabbit+ssl://
-rabbitmq_url = rabbit://{{ .Values.rabbitmq.datamover_api.user }}:{{ .Values.rabbitmq.datamover_api.password }}@{{ .Values.rabbitmq.common.host }}:5671/{{ .Values.rabbitmq.datamover_api.vhost }}?ssl={{ if .Values.rabbitmq.common.ssl }}1{{ else }}0{{ end }}
-
-# Database connection
-db_url = mysql+pymysql://{{ .Values.database.datamover_api.user }}:{{ .Values.database.datamover_api.password }}@{{ .Values.database.common.host }}:{{ .Values.database.common.port }}/{{ .Values.database.datamover_api.database }}
 
 # Node identifier (optional, default: auto-detected hostname)
 # If not specified, DMS will auto-detect the hostname

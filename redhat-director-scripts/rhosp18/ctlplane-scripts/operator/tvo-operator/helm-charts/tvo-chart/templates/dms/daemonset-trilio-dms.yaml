@@ -69,9 +69,6 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
-            - name: trilio-mounts
-              mountPath: {{ .Values.common.vault_data_dir }}
-              mountPropagation: Bidirectional
       containers:
         - name: triliovault-dms
           image: {{ .Values.images.triliovault_dms }}
@@ -107,6 +104,10 @@ spec:
             - name: triliovault-dms-etc
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
+              readOnly: true
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/client.conf
+              subPath: client.conf
               readOnly: true
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
