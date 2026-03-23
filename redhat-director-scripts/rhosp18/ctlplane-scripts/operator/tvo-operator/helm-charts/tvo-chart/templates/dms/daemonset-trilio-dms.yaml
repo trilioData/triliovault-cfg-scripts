@@ -105,10 +105,7 @@ spec:
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
               readOnly: true
-            - name: triliovault-dms-etc
-              mountPath: /etc/triliovault-dms/client.conf
-              subPath: client.conf
-              readOnly: true
+
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
