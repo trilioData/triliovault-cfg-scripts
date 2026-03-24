@@ -32,10 +32,17 @@ RUN groupadd -g ${GID} nova \
     && dnf install -y --releasever 9.6 python3-devel python3-pip nfs-utils mysql \
     && dnf install -y --releasever 9.6 python3-trilio-dms-el9
 
+## Epel repo is needed for ntfs-3g package
+RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
+    && dnf config-manager --disable epel-cisco-openh264
+
 ## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet 
 RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms \
     && dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9 \
     && dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
+
+RUN dnf erase --releasever 9.6 -y epel-release
 
 
 RUN mkdir -p \
