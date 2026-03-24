@@ -51,7 +51,7 @@
   vars:
     edpm_container_manage_config: '/var/lib/openstack/config/containers'
     edpm_container_manage_healthcheck_disabled: true
-    edpm_container_manage_config_patterns: 'triliovault_dms_config.json'
+    edpm_container_manage_config_patterns: 'triliovault-dms.json'
     edpm_container_manage_clean_orphans: false
 
 
