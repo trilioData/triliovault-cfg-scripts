@@ -105,7 +105,6 @@ spec:
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
               readOnly: true
-
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
@@ -118,6 +117,8 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: run-dir
+              mountPath: /run
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -141,4 +142,8 @@ spec:
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
+        - name: run-dir
+          hostPath:
+            path: /run
+            type: Directory
 {{- end }}
