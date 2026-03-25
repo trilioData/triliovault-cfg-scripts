@@ -2,6 +2,9 @@
 
 set -e
 
+mkdir -p /run/dms
+chown {{ .Values.common.nova_user_id }}:{{ .Values.common.nova_group_id }} /run/dms
+
 touch /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf
 
 if [ "$IS_RABBIT_SSL_ENABLED" = "true" ]; then

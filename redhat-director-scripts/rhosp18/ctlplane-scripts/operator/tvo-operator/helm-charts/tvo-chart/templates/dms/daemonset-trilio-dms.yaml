@@ -72,6 +72,8 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: run-dir
+              mountPath: /run
       containers:
         - name: triliovault-dms
           image: {{ .Values.images.triliovault_dms }}
