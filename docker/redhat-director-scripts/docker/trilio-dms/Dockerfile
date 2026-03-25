@@ -22,10 +22,14 @@ RUN dnf config-manager \
   --enable rhceph-7-tools-for-rhel-9-x86_64-rpms \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
+ARG UID=42436
+ARG GID=42436
 ENV TZ=Etc/UTC \
     LIBGUESTFS_DEBUG=1 \
     LIBGUESTFS_TRACE=1
-RUN usermod -aG kolla nova \
+RUN groupadd -g ${GID} nova \
+    && useradd -u ${UID} -g ${GID} -m -s /bin/bash nova \
+    && usermod -aG kolla nova \
     && dnf install -y --releasever 9.6 python3-devel python3-pip nfs-utils mysql \
     && dnf install -y --releasever 9.6 python3-trilio-dms-el9 \
     && dnf install -y --releasever 9.6 https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
