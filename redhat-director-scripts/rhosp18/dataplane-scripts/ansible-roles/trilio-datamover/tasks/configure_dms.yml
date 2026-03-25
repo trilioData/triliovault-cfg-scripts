@@ -45,6 +45,15 @@
     - "Restart triliovault-dms"
 
 
+- name: Create Triliovault DMS run directory
+  become: true
+  file:
+    path: /run/dms
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0755'
+
 - name: Deploy trilio DMS containers
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
