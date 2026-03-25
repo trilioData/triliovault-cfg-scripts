@@ -5,6 +5,7 @@
     cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
 
 - name: Copy Create Cloud Trust Ansible Node
+  become: true
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
