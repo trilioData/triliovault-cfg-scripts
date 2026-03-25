@@ -11,7 +11,7 @@
   become: true
   template:
     src: triliovault_dms_conf.j2
-    dest: "{{ triliovault_dms_config_dest }}/triliovault-dms.conf"
+    dest: "{{ triliovault_dms_config_dest }}/server.conf"
     owner: '42436'
     group: '42436'
     mode: '0644'
@@ -53,6 +53,8 @@
     owner: '42436'
     group: '42436'
     mode: '0755'
+  notify:
+    - "Restart triliovault-dms"
 
 - name: Deploy trilio DMS containers
   ansible.builtin.include_role:
