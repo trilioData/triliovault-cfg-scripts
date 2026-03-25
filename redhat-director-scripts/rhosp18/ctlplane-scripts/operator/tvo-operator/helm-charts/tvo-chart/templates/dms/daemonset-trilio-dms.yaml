@@ -7,6 +7,9 @@ metadata:
   labels:
     application: triliovault
     component: dms
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "100"
 spec:
   selector:
     matchLabels:
@@ -69,6 +72,8 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: run-dir
+              mountPath: /run
       containers:
         - name: triliovault-dms
           image: {{ .Values.images.triliovault_dms }}
@@ -105,7 +110,6 @@ spec:
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
               readOnly: true
-
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
@@ -118,6 +122,8 @@ spec:
               name: combined-ca-bundle
               readOnly: true
               subPath: tls-ca-bundle.pem
+            - name: run-dir
+              mountPath: /run
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -141,4 +147,8 @@ spec:
           secret:
             defaultMode: 292
             secretName: combined-ca-bundle
+        - name: run-dir
+          hostPath:
+            path: /run
+            type: Directory
 {{- end }}

@@ -1,7 +1,7 @@
-FROM registry.access.redhat.com/ubi9/ubi:9.6
+FROM registry.redhat.io/rhoso/openstack-base-rhel9:18.0
 MAINTAINER TrilioData shyam.biradar@trilio.io
 LABEL name="trilio/openstack-nova-compute-triliodata-plugin" \
-      maintainer="shyam.biradar@trilio.io" \ 
+      maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
       version="6.2.0" \
       release="6.2" \
@@ -29,8 +29,10 @@ ENV TZ=Etc/UTC \
     LIBGUESTFS_TRACE=1
 RUN groupadd -g ${GID} nova \
     && useradd -u ${UID} -g ${GID} -m -s /bin/bash nova \
+    && usermod -aG kolla nova \
     && dnf install -y --releasever 9.6 python3-devel python3-pip nfs-utils mysql \
-    && dnf install -y --releasever 9.6 python3-trilio-dms-el9
+    && dnf install -y --releasever 9.6 python3-trilio-dms-el9 \
+    && dnf install -y --releasever 9.6 https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 
 ## Epel repo is needed for ntfs-3g package
 RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
