@@ -34,6 +34,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_datamover_api_port }}"
         frontend_http_extra:
           - "retries 5"
@@ -92,6 +93,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
