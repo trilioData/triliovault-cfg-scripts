@@ -36,7 +36,7 @@
 
 - name: Copy over cinder ceph keyring files for triliovault datamover
   vars:
-    keyring: "{{ item.cluster }}.{{ ceph_cinder_keyring }}"
+    keyring: "{{ ceph_cinder_keyring }}" #FIXME: Need to implement proper support for multiple Ceph clusters https://review.opendev.org/c/openstack/kolla-ansible/+/907166.
   template:
     src: "{{ node_custom_config }}/cinder/cinder-volume/{{ keyring }}"
     dest: "{{ node_config_directory }}/triliovault-datamover/ceph/{{ keyring }}"

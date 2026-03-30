@@ -34,6 +34,6 @@
     - enable_triliovault | bool
   serial: '{{ kolla_serial|default("0") }}'
   roles:
-    - { role: triliovault,
+    - { role: triliovault-epoxy,
         tags: triliovault,
         when: enable_triliovault | bool }
