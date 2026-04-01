@@ -21,7 +21,6 @@ images:
   triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
-  triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
   triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
   triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
@@ -202,10 +201,6 @@ pod:
           readOnlyRootFilesystem: false
           runAsUser: 0
           runAsGroup: 63630
-        wlm_cloud_trust_creation:
-          readOnlyRootFilesystem: false
-          runAsUser: 42436
-          runAsGroup: 42436
   replicas:
     triliovault_wlm_api: 3
     triliovault_datamover_api: 3

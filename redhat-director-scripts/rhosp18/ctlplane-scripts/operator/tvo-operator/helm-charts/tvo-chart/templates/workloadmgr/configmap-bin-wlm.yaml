@@ -16,8 +16,6 @@ data:
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-scheduler.sh.tpl") . | indent 4 }}
   triliovault-wlm-workloads.sh: |
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-workloads.sh.tpl") . | indent 4 }}
-  triliovault-wlm-cloud-trust.sh: |
-{{ tpl (.Files.Get "scripts/_triliovault-wlm-cloud-trust.sh.tpl") . | indent 4 }}
   triliovault-wlm-keystone-init.sh: |-
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-keystone-init.sh.tpl") . | indent 4 }}
   triliovault-wlm-db-init.sh: |-

@@ -26,7 +26,6 @@ spec:
     triliovault_wlm_scheduler: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
     triliovault_wlm_cron: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
     triliovault_wlm_workloads: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
-    triliovault_wlm_cloud_trust: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
     triliovault_object_store: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
     triliovault_datamover_api: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
     triliovault_datamover_db_sync: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
@@ -295,10 +294,6 @@ spec:
             readOnlyRootFilesystem: false
             runAsUser: 0
             runAsGroup: 63630
-          wlm_cloud_trust_creation:
-            readOnlyRootFilesystem: false
-            runAsUser: 42436
-            runAsGroup: 42436
     replicas:
       triliovault_wlm_api: 3
       triliovault_datamover_api: 3
