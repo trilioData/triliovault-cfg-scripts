@@ -15,7 +15,7 @@ kubectl delete job triliovault-wlm-rabbit-init -n trilio-openstack
 kubectl delete job triliovault-datamover-rabbit-init -n trilio-openstack
 kubectl delete job triliovault-datamover-db-drop -n trilio-openstack
 kubectl delete job triliovault-wlm-db-drop -n trilio-openstack
-kubectl delete job triliovault-wlm-cloud-trust -n trilio-openstack
+#kubectl delete job triliovault-wlm-cloud-trust -n trilio-openstack
 kubectl delete rabbitmqcluster rabbitmq -n trilio-openstack
 
 sleep 50s

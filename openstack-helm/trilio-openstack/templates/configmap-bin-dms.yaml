@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {{/*
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,26 +12,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-set -ex
-
-COMMAND="${@:-start}"
-
-function start () {
-  CMD="/usr/bin/python3 /usr/bin/tvault-contego"
-  CMD+=" --config-file=/etc/nova/nova.conf"
-  CMD+=" --config-file=/etc/triliovault-datamover/triliovault-datamover.conf"
-  <INJECT_CONFIG_FILES>
-
-  eval $CMD
-  status=$?
-  if [ $status -ne 0 ]; then
-    echo "Failed to start tvault contego service: $status"
-    exit $status
-  fi
-}
-
-function stop () {
-  kill -TERM 1
-}
-
-$COMMAND
+{{- if .Values.manifests.configmap_bin }}
+{{- $envAll := . }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-dms-bin
+data:
+  triliovault-dms.sh: |
+{{ tuple "bin/_triliovault-dms.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+{{- end }}
