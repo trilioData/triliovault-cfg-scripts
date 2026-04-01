@@ -38,6 +38,7 @@ spec:
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
         configmap-etc-dms-hash: {{ tuple "configmap-etc-dms-compute.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-dms-hash: {{ tuple "configmap-bin-dms.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -180,6 +181,10 @@ spec:
         - name: triliovault-datamover-bin
           configMap:
             name: triliovault-bin-datamover
+            defaultMode: 0555
+        - name: triliovault-dms-bin
+          configMap:
+            name: triliovault-bin-dms
             defaultMode: 0555
         - name: varlibnova
           hostPath:

@@ -370,7 +370,7 @@ manifests:
   ingress_wlm_api: true
   ingress_datamover_api: true
   job_bootstrap: false
-  job_wlm_cloud_trust: true
+  job_wlm_cloud_trust: false
   job_datamover_db_drop: false
   job_wlm_db_drop: false
   job_datamover_db_init: true
