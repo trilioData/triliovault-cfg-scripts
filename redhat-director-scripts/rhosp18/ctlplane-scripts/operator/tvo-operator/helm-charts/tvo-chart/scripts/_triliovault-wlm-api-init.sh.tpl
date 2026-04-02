@@ -100,6 +100,8 @@ rabbitmq_url = rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_H
 # Database connection
 db_url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
+node_id = ${NODE_NAME}
+
 EOF
 
 

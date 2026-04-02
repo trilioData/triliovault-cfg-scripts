@@ -16,6 +16,7 @@ fi
 tee > /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf << EOF
 [server]
 rabbitmq_url = rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
+node_id = ${NODE_NAME}
 EOF
 
 
