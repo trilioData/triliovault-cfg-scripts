@@ -42,6 +42,10 @@ spec:
             runAsGroup: {{ .Values.common.nova_user_id }}
             runAsUser: 0
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: WLM_RABBIT_PASSWORD
               valueFrom:
                 secretKeyRef:
