@@ -37,7 +37,35 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 3: Stop and disable old S3 object store systemd services.
+# Step 3: Stop and disable systemd .mount units for triliovault-mounts.
+# These are auto-generated units like:
+#   var-lib-trilio-triliovault\x2dmounts-<base64>.mount
+# Lazy unmount handles the kernel mount, but the unit must also be stopped
+# so systemd does not attempt to re-mount it.
+- name: Get list of triliovault mount units
+  become: true
+  shell: systemctl list-units --no-legend --no-pager --type=mount | awk '{print $1}' | grep 'var-lib-trilio-triliovault'
+  args:
+    executable: /bin/bash
+  register: triliovault_mount_units
+  changed_when: false
+  failed_when: false
+  tags:
+    - upgrade-and-clean-backup-target-mounts
+
+- name: Stop and disable triliovault mount units
+  become: true
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ triliovault_mount_units.stdout_lines }}"
+  when: triliovault_mount_units.stdout_lines | length > 0
+  failed_when: false
+  tags:
+    - upgrade-and-clean-backup-target-mounts
+
+# Step 4: Stop and disable old S3 object store systemd services.
 # Service name pattern: edpm_triliovault-object-store-<bt_name>.service
 # Must be done before stopping containers, otherwise systemd restarts them.
 - name: Get list of old object store systemd services
@@ -63,7 +91,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 4: Stop and disable old NFS mount systemd services.
+# Step 5: Stop and disable old NFS mount systemd services.
 # Service name pattern: edpm_triliovault-nfs-container-<bt_name>.service
 - name: Get list of old NFS mount systemd services
   become: true
@@ -88,7 +116,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 5: Remove old S3 object store containers
+# Step 6: Remove old S3 object store containers
 - name: Get list of old object store containers
   become: true
   command: podman ps -a --format '{{ "{{" }}.Names{{ "}}" }}' --filter name=triliovault-object-store
@@ -116,7 +144,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 6: Remove old NFS mount containers
+# Step 7: Remove old NFS mount containers
 - name: Get list of old NFS mount containers
   become: true
   command: podman ps -a --format '{{ "{{" }}.Names{{ "}}" }}' --filter name=triliovault-nfs-container
@@ -144,7 +172,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 7: Remove old S3 object store container JSON files from containers dir
+# Step 8: Remove old S3 object store container JSON files from containers dir
 - name: Find old object store container JSON files
   become: true
   find:
@@ -163,7 +191,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 8: Remove old NFS container JSON files from containers dir
+# Step 9: Remove old NFS container JSON files from containers dir
 - name: Find old NFS container JSON files
   become: true
   find:
@@ -182,7 +210,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 9: Remove old S3 object store config directory
+# Step 10: Remove old S3 object store config directory
 # Contains: triliovault-object-store-<name>.conf, triliovault-object-store-<name>.json,
 #           object_store_logging.conf, s3-cert-<name>.pem
 - name: Remove old object store config directory
@@ -193,7 +221,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 10: Remove old NFS config directory
+# Step 11: Remove old NFS config directory
 # Contains: triliovault_nfs_config-<name>.json, nfs_mount-<name>.sh
 - name: Remove old NFS config directory
   become: true
@@ -203,7 +231,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 11: Remove old object store log directory
+# Step 12: Remove old object store log directory
 - name: Remove old object store log directory
   become: true
   file:
@@ -212,7 +240,7 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 12: Final check — report any remaining mounts under vault_data_dir
+# Step 13: Final check — report any remaining mounts under vault_data_dir
 - name: List any remaining mounts under vault_data_dir
   become: true
   shell: findmnt -r -n -o TARGET,FSTYPE,SOURCE | grep "^{{ vault_data_dir }}" || true
