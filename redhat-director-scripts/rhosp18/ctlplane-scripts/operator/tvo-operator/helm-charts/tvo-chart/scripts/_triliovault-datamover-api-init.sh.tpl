@@ -41,6 +41,8 @@ rabbitmq_url = rabbit://${DMAPI_RABBIT_USER}:${DMAPI_RABBIT_PASSWORD}@${DMAPI_RA
 # Database connection
 db_url = mysql+pymysql://${DMAPI_DATABASE_USER}:${DMAPI_DATABASE_PASSWORD}@${DMAPI_DATABASE_HOST}:${DMAPI_DATABASE_PORT}/${DMAPI_DATABASE_NAME}
 
+node_id = ${NODE_NAME}
+
 EOF
 
 

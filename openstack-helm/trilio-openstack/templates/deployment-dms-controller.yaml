@@ -1,0 +1,139 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.deployment_dms }}
+{{- $envAll := . }}
+{{- $tlsSecret := "" -}}
+{{- if .Values.manifests.certificates -}}
+{{- $tlsSecret := .Values.secrets.tls.workloads.wlm_api.internal -}}
+{{- end -}}
+
+
+{{- $serviceAccountName := "triliovault-dms" }}
+{{ tuple $envAll "dms" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-dms
+  annotations:
+    {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
+  labels:
+{{ tuple $envAll "triliovault" "dms" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_workloads }}
+  selector:
+    matchLabels:
+{{ tuple $envAll "triliovault" "dms" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "triliovault" "dms" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+      annotations:
+{{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
+        configmap-etc-dms-controller-hash: {{ tuple "configmap-etc-dms-controller.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-bin-dms-hash: {{ tuple "configmap-bin-dms.yaml" . | include "helm-toolkit.utils.hash" }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      securityContext:
+        runAsUser: 42424
+        fsGroup: 42424
+      affinity:
+{{ tuple $envAll "triliovault" "dms" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      nodeSelector:
+        {{ .Values.labels.dms_controller.node_selector_key }}: {{ .Values.labels.dms_controller.node_selector_value }}
+      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.dms.timeout | default "30" }}
+{{ if .Values.conf.triliovault.docker_registry_auth_enabled }}
+      imagePullSecrets:
+        - name: triliovault-image-registry
+{{ end }}
+      containers:
+        - name: triliovault-dms
+{{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ tuple $envAll $envAll.Values.pod.resources.dms | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_dms" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          command:
+            - /tmp/triliovault-dms.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /tmp/triliovault-dms.sh
+                  - stop
+          volumeMounts:
+{{ dict "envAll" $envAll "objectType" "mountpoint" "secretPrefix" "triliovault-dms" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 12 }}
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: localtime
+              mountPath: "/etc/localtime"
+              readOnly: yes
+            - name: dev
+              mountPath: /dev
+              {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
+              mountPropagation: HostToContainer
+              {{- end }}
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio
+              mountPropagation: Bidirectional
+            - mountPath: /lib/modules
+              name: libmodules
+              readOnly: true
+            - name: varlogtriliovaultdms
+              mountPath: /var/log/triliovault-dms
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/server.conf
+              subPath: server.conf
+              readOnly: true
+            - name: triliovault-dms-bin
+              mountPath: /tmp/triliovault-dms.sh
+              subPath: triliovault-dms.sh
+              readOnly: true
+            - name: pod-shared-triliovault-dms
+              mountPath: /tmp/pod-shared-triliovault-dms
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.workloads.wlm_api.internal "path" "/etc/triliovault_wlm/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_wlm.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+      volumes:
+{{ dict "envAll" $envAll "objectType" "volume" "secretPrefix" "triliovault-dms" | include "helm-toolkit.snippets.kubernetes_ssl_objects" | indent 8 }}
+        - name: pod-tmp
+          emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: "/etc/localtime"
+        - name: varlogtriliovaultdms
+          hostPath:
+            path: /var/log/triliovault-dms
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio
+        - name: libmodules
+          hostPath:
+            path: /lib/modules
+        - name: triliovault-dms-etc
+          secret:
+            secretName: triliovault-etc-dms-controller
+            defaultMode: 0444
+        - name: triliovault-dms-bin
+          configMap:
+            name: triliovault-bin-dms
+            defaultMode: 0555
+        - name: pod-shared-triliovault-dms
+          emptyDir: {}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.workloads.wlm_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_wlm.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- end }}
