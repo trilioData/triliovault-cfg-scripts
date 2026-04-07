@@ -83,6 +83,12 @@ spec:
                 echo "[ctlplane-bt-cleanup] No remaining mounts under ${VAULT_DATA_DIR}"
               fi
 
+              # Step 4: Remove empty mount point subdirectories left behind after
+              # unmounting. The top-level vault_data_dir is preserved because WLM 6.2
+              # still references it. Only empty subdirs (up to 2 levels deep) are removed.
+              echo "[ctlplane-bt-cleanup] Step 4: Removing empty mount point subdirectories under ${VAULT_DATA_DIR}"
+              find "${VAULT_DATA_DIR}" -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
+
               echo "[ctlplane-bt-cleanup] CTLPLANE_CLEANUP_DONE on $(hostname)"
               exec sleep infinity
           volumeMounts:
