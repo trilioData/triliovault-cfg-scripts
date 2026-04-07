@@ -34,8 +34,14 @@
     params: "nbds_max=128"
     state: "present"
 
-- name: Configure and install triliovault object store services
-  ansible.builtin.include_tasks: configure_object_store.yml
+- name: Configure and install triliovault DMS services
+  ansible.builtin.include_tasks: configure_dms.yml
 
 - name: Configure and install triliovault datamover service
   ansible.builtin.include_tasks: configure_datamover.yml
+
+- name: Cleanup old backup target mounts and containers (upgrade from 6.0/6.1 to 6.2)
+  ansible.builtin.include_tasks: cleanup_old_backup_targets.yml
+  tags:
+    - upgrade-and-clean-backup-target-mounts
+    - never

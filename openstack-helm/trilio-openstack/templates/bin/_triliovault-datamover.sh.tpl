@@ -19,18 +19,6 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-  {{- $backup_target_type := .Values.conf.triliovault.backup_target_type }}
-  {{- if eq $backup_target_type "s3" }}
-  ## Start triliovault object store service
-  /usr/bin/python3 /usr/bin/s3vaultfuse.py --config-file=/etc/triliovault-object-store/triliovault-object-store.conf &
-  status=$?
-  sleep 20s
-  if [ $status -ne 0 ]; then
-    echo "Failed to start tvault-object-store service: $status"
-    exit $status
-  fi
-  {{- end }}
-
   CMD="/usr/bin/python3 /usr/bin/tvault-contego"
   CMD+=" --config-file=/etc/nova/nova.conf"
   CMD+=" --config-file=/etc/triliovault-datamover/triliovault-datamover.conf"

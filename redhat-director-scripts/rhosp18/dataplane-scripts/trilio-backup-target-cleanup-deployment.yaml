@@ -1,0 +1,10 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneDeployment
+metadata:
+  name: edpm-trilio-upgrade-cleanup-1
+spec:
+  nodeSets:
+    - openstack-edpm-ipam
+  servicesOverride:
+    - trilio-datamover
+  ansibleTags: upgrade-and-clean-backup-target-mounts

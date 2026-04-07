@@ -17,11 +17,4 @@ resources:
   group: tvo
   kind: TVOControlPlane
   version: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  domain: trilio.io
-  group: tvo
-  kind: TVOBackupTarget
-  version: v1
 version: "3"

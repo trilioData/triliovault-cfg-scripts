@@ -90,7 +90,23 @@ sqlalchemy.url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@$
 
 EOF
 
+tee > /tmp/pod-shared-${POD_NAME}/triliovault-dms-client-dynamic.conf << EOF
+[client]
+
+# RabbitMQ connection
+# Supported schemes: amqp://, amqps://, rabbit://, rabbitmq://, rabbit+ssl://
+rabbitmq_url = rabbit://${WLM_RABBIT_USER}:${WLM_RABBIT_PASSWORD}@${WLM_RABBIT_HOST}:5671/${WLM_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
+
+# Database connection
+db_url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
+
+node_id = ${NODE_NAME}
+
+EOF
+
+
 chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-wlm-dynamic.conf
+chown nova:nova /tmp/pod-shared-${POD_NAME}/triliovault-dms-client-dynamic.conf
 mkdir -p /var/log/triliovault/wlm-api /var/log/triliovault/wlm-workloads /var/log/triliovault/wlm-scheduler
 chown -R nova:nova /var/log/triliovault/
 

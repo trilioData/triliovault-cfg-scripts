@@ -1,0 +1,31 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.configmap_etc }}
+{{- $envAll := . }}
+
+{{- $auth_url := .Values.conf.dms_server.server.auth_url | default (tuple "identity" .Values.conf.triliovault.interface "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup") }}
+{{- $base := deepCopy .Values.conf.dms_server.server }}
+
+{{- $_ := set $base "auth_url" $auth_url }}
+{{- $_ := set $base "rabbitmq_url" (tuple "oslo_messaging_datamover" "internal" "triliovault_datamover" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup") }}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: triliovault-etc-dms-compute
+type: Opaque
+data:
+  server.conf: {{ dict "server" $base | include "helm-toolkit.utils.to_oslo_conf" | b64enc }}
+{{- end }}

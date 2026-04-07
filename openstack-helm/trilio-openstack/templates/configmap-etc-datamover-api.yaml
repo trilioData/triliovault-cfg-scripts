@@ -108,9 +108,18 @@ limitations under the License.
 {{- $_ := set .Values.conf.logging "formatter_fluent" $formatter_fluent -}}
 {{- end -}}
 
+{{/* **********************************************************************
+     set client.conf conf parameters
+     **********************************************************************
+*/}}
 
+{{- if empty .Values.conf.dms_client.client.db_url -}}
+{{- $_ := tuple "oslo_db_triliovault_datamover" "internal" "triliovault_datamover" "mysql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.dms_client.client "db_url" -}}
+{{- end -}}
 
-
+{{- if empty .Values.conf.dms_client.client.rabbitmq_url -}}
+{{- $_ := tuple "oslo_messaging_datamover" "internal" "triliovault_datamover" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.dms_client.client "rabbitmq_url" -}}
+{{- end -}}
 
 {{/* **********************************************************************
      DONE
@@ -126,12 +135,11 @@ data:
   triliovault-datamover-api.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api | b64enc }}
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
   datamover_api_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.datamover_api_logging | b64enc }}
-  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
   fuse.conf: {{ .Values.conf.fuse | b64enc }}
-  s3-cert.pem: {{ .Files.Get "files/s3-cert.pem" | default "" | b64enc }}
   api-paste.ini: {{ tuple "bin/_api-paste.ini.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
   nova-compute.conf: {{ tuple "bin/_triliovault-nova-compute.conf.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
+  client.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.dms_client | b64enc }}
   {{- if .Values.ceph.enabled }}
   ceph.conf: {{ tuple "bin/_triliovault-ceph.conf.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
   {{ end }}

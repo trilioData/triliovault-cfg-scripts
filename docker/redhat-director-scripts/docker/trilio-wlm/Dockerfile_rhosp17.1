@@ -35,6 +35,10 @@ RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-r
 RUN dnf -y --releasever 9.6 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 
 RUN dnf install --releasever 9.6 -y ntfs-3g python3-pyvmomi
+
+## Install Triliovault wlm packages
+RUN dnf -y --releasever 9.6 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 python3-trilio-dms-el9
+
 RUN dnf erase --releasever 9.6 -y epel-release
 
 RUN dnf install --releasever 9.6 -y python3-editor
@@ -48,9 +52,6 @@ RUN dnf --releasever 9.6 -y install openstack-nova-common python3-nova python3-n
   pacemaker-remote resource-agents pcs parted
 
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
-
-## Install Triliovault wlm packages
-RUN dnf -y --releasever 9.6 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9
 
 ## Nova user changes
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova

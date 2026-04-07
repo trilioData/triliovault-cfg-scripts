@@ -1,14 +1,6 @@
 [DEFAULT]
 api_paste_config = /etc/triliovault-wlm/api-paste.ini
-{{- $enabledBackends := "" }}
-{{- range $index, $element := .Values.triliovault_backup_targets }}
-{{- if $index }}
-{{- $enabledBackends = printf "%s,%s" $enabledBackends $element.backup_target_name }}
-{{- else }}
-{{- $enabledBackends = $element.backup_target_name }}
-{{- end }}
-{{- end }}
-enabled_backends = {{ $enabledBackends }}
+enabled_backends = ""
 api_workers = 4
 cloud_admin_role = admin
 compute_driver = libvirt.LibvirtDriver
@@ -32,42 +24,6 @@ vault_data_directory = {{ .Values.common.vault_data_dir }}
 vault_data_directory_old = /var/triliovault
 
 workloads_workers = 4
-
-{{- range .Values.triliovault_backup_targets }}
-[{{ .backup_target_name }}]
-{{- if eq .backup_target_type "s3" }}
-vault_storage_type = s3
-vault_s3_endpoint_url = {{ .s3_endpoint_url }}
-vault_s3_bucket = {{ .s3_bucket }}
-
-{{- if .s3_bucket_object_lock_enabled }}
-immutable = 1
-{{- else }}
-immutable = 0
-{{- end }}
-
-{{- if eq .s3_type "amazon_s3" }}
-vault_storage_filesystem_export = {{ .s3_bucket }}
-{{- else }}
-
-{{- $s3_endpoint_url := .s3_endpoint_url | trimSuffix "/" }}
-{{- $s3_endpoint_url_no_http := $s3_endpoint_url | replace "http://" "" }}
-{{- $s3_endpoint_domain_name := $s3_endpoint_url_no_http | replace "https://" "" }}
-vault_storage_filesystem_export = {{ $s3_endpoint_domain_name }}/{{ .s3_bucket }}
-
-{{- end }}
-{{- else }}
-vault_storage_type = nfs
-vault_storage_filesystem_export = {{ .nfs_shares }}
-vault_storage_nfs_options = {{ .nfs_options }}
-{{- end }}
-{{- if .is_default }}
-is_default = 1
-{{- else }}
-is_default = 0
-{{- end }}
-{{- end }}
-
 
 [alembic]
 script_location = /usr/share/workloadmgr/migrate_repo

@@ -1,0 +1,11 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-dms-bin
+data:
+  triliovault-dms.sh: |
+    {{ tpl (.Files.Get "scripts/_triliovault-dms.sh.tpl") . | nindent 4 }}
+  triliovault-dms-init.sh: |
+    {{ tpl (.Files.Get "scripts/_triliovault-dms-init.sh.tpl") . | nindent 4 }}
+{{- end }}

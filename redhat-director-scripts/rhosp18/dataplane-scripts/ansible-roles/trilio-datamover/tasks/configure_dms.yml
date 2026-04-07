@@ -1,0 +1,68 @@
+---
+- name: Ensure Trilio DMS directory exists
+  become: true
+  file:
+    path: "{{ triliovault_dms_config_dest }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+
+- name: Create Trilio DMS configuration file
+  become: true
+  template:
+    src: triliovault_dms_conf.j2
+    dest: "{{ triliovault_dms_config_dest }}/server.conf"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+  notify:
+    - Restart triliovault-dms
+
+- name: Create Triliovault DMS log directory
+  become: true
+  file:
+    path: /var/log/containers/triliovault-dms
+    state: directory
+
+- name: Render triliovault_dms_config_json.j2
+  become: true
+  template:
+    src: "triliovault_dms_config_json.j2"
+    dest: "{{ triliovault_dms_config_dest }}/triliovault_dms_config.json"
+    mode: "0644"
+    owner: "42436"
+  notify: 
+    - "Restart triliovault-dms"
+
+
+- name: Render triliovault-dms container json
+  become: true
+  template:
+    src: "triliovault-dms-container-json.j2"
+    dest: "/var/lib/openstack/config/containers/triliovault-dms.json"
+    mode: "0644"
+  notify: 
+    - "Restart triliovault-dms"
+
+
+- name: Create Triliovault DMS run directory
+  become: true
+  file:
+    path: /run/dms
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0755'
+  notify:
+    - "Restart triliovault-dms"
+
+- name: Deploy trilio DMS containers
+  ansible.builtin.include_role:
+    name: osp.edpm.edpm_container_manage
+  vars:
+    edpm_container_manage_config: '/var/lib/openstack/config/containers'
+    edpm_container_manage_healthcheck_disabled: true
+    edpm_container_manage_config_patterns: 'triliovault-dms.json'
+    edpm_container_manage_clean_orphans: false
+
+
