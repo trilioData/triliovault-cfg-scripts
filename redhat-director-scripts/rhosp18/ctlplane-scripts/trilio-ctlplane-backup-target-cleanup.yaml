@@ -1,0 +1,98 @@
+# trilio-ctlplane-backup-target-cleanup.yaml
+#
+# Privileged DaemonSet that cleans up hung S3 FUSE and NFS mount points
+# on nodes labelled trilio-control-plane=enabled after upgrading T4O 6.0/6.1
+# to 6.2 on RHOSO18.
+#
+# Background: T4O 6.1 deployed object store and NFS DaemonSets on control
+# plane nodes using mountPropagation: Bidirectional. When those pods stop
+# (during helm upgrade to 6.2), their FUSE/NFS mounts become hung on the
+# host. This DaemonSet uses the same Bidirectional propagation to see and
+# lazily unmount those defunct mount points from within the pod.
+#
+# Do not apply this file directly. Use cleanup_backup_targets_ctlplane.sh.
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: trilio-ctlplane-bt-cleanup
+  namespace: trilio-openstack
+  labels:
+    application: triliovault
+    component: ctlplane-bt-cleanup
+spec:
+  selector:
+    matchLabels:
+      application: triliovault
+      component: ctlplane-bt-cleanup
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: ctlplane-bt-cleanup
+    spec:
+      serviceAccountName: triliovault-wlm
+      nodeSelector:
+        trilio-control-plane: enabled
+      # Tolerate all taints so the cleanup pod is not blocked on tainted nodes.
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: trilio-ctlplane-bt-cleanup
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+          env:
+            - name: VAULT_DATA_DIR
+              value: /var/lib/trilio/triliovault-mounts
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "[ctlplane-bt-cleanup] Starting on node $(hostname)"
+
+              # Step 1: Lazy-unmount defunct S3 FUSE mounts propagated from the host.
+              # Bidirectional mountPropagation makes these visible here; umount -l
+              # detaches them immediately and the detach propagates back to the host.
+              echo "[ctlplane-bt-cleanup] Step 1: Unmounting FUSE mounts under ${VAULT_DATA_DIR}"
+              findmnt -r -n -o TARGET,FSTYPE | grep "^${VAULT_DATA_DIR}" \
+                | awk '$2 ~ /^fuse/ {print $1}' | sort -r \
+                | while read -r mnt; do
+                    echo "  Lazy unmounting FUSE: ${mnt}"
+                    umount -l "${mnt}" || true
+                  done
+
+              # Step 2: Lazy-unmount defunct NFS mounts propagated from the host.
+              echo "[ctlplane-bt-cleanup] Step 2: Unmounting NFS mounts under ${VAULT_DATA_DIR}"
+              findmnt -r -n -o TARGET,FSTYPE | grep "^${VAULT_DATA_DIR}" \
+                | awk '($2 == "nfs" || $2 == "nfs4") {print $1}' | sort -r \
+                | while read -r mnt; do
+                    echo "  Lazy unmounting NFS: ${mnt}"
+                    umount -l -f "${mnt}" || true
+                  done
+
+              # Step 3: Report remaining mounts (informational).
+              echo "[ctlplane-bt-cleanup] Step 3: Checking for remaining mounts"
+              remaining=$(findmnt -r -n -o TARGET,FSTYPE,SOURCE \
+                | grep "^${VAULT_DATA_DIR}" || true)
+              if [ -n "${remaining}" ]; then
+                echo "[ctlplane-bt-cleanup] WARNING: Remaining mounts found:"
+                echo "${remaining}"
+              else
+                echo "[ctlplane-bt-cleanup] No remaining mounts under ${VAULT_DATA_DIR}"
+              fi
+
+              echo "[ctlplane-bt-cleanup] CTLPLANE_CLEANUP_DONE on $(hostname)"
+              exec sleep infinity
+          volumeMounts:
+            # Bidirectional propagation: host mounts under vault_data_dir are
+            # visible inside the container, and unmounts here propagate to the host.
+            - name: trilio-mounts
+              mountPath: /var/lib/trilio/triliovault-mounts
+              mountPropagation: Bidirectional
+      volumes:
+        - name: trilio-mounts
+          hostPath:
+            path: /var/lib/trilio/triliovault-mounts
+            type: DirectoryOrCreate
