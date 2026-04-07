@@ -240,7 +240,20 @@
   tags:
     - upgrade-and-clean-backup-target-mounts
 
-# Step 13: Final check — report any remaining mounts under vault_data_dir
+# Step 13: Remove empty mount point subdirectories left behind after unmounting.
+# vault_data_dir itself is preserved — datamover still references it.
+# Only empty subdirs up to 2 levels deep are removed.
+- name: Remove empty mount point subdirectories under vault_data_dir
+  become: true
+  shell: |
+    find "{{ vault_data_dir }}" -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
+  args:
+    executable: /bin/bash
+  changed_when: false
+  tags:
+    - upgrade-and-clean-backup-target-mounts
+
+# Step 14: Final check — report any remaining mounts under vault_data_dir
 - name: List any remaining mounts under vault_data_dir
   become: true
   shell: findmnt -r -n -o TARGET,FSTYPE,SOURCE | grep "^{{ vault_data_dir }}" || true
@@ -265,3 +278,4 @@
   when: remaining_mounts.stdout_lines | length == 0
   tags:
     - upgrade-and-clean-backup-target-mounts
+
