@@ -9,49 +9,41 @@ T4O 6.2 backup target creation flow:
 
   S3 backup targets:
     1. Build a Barbican secret JSON payload from the 6.1 S3 config fields.
-    2. Store the secret in OpenStack Barbican.
+    2. Store the secret in OpenStack Barbican via openstackclient pod.
     3. Create the WLM backup target with the Barbican secret_ref.
 
   NFS backup targets:
     1. Create the WLM backup target directly with the NFS export path and options.
 
-Authentication uses standard OpenStack environment variables (source your cloudrc):
-  OS_AUTH_URL, OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME,
-  OS_USER_DOMAIN_NAME, OS_PROJECT_DOMAIN_NAME, OS_REGION_NAME
-  OS_CACERT  (optional: CA bundle path for self-signed certificates)
+All OpenStack API calls are executed inside the openstackclient pod in the
+openstack namespace (where the cloudrc is already sourced). The bastion only
+needs an authenticated oc CLI.
 
 Usage:
-  source /path/to/cloudrc
   python3 create_backup_targets_62.py [options]
 
 Options:
-  --input     Path to migration YAML  (default: backup-targets-migration.yaml)
-  --insecure  Disable SSL certificate verification
-  --dry-run   Print actions without executing them
+  --input        Path to migration YAML  (default: backup-targets-migration.yaml)
+  --namespace    OpenShift namespace for openstackclient pod (default: openstack)
+  --pod          Explicit openstackclient pod name (auto-detected if omitted)
+  --insecure     Pass --insecure to openstack/curl commands inside the pod
+  --dry-run      Print actions without executing them
 
 Prerequisites:
-  - T4O 6.2 deployed and WLM service accessible
-  - OpenStack Barbican service running
-  - python3-pyyaml   (dnf install python3-pyyaml)
-  - python3-requests (dnf install python3-requests)
+  - oc CLI authenticated on the bastion with access to the openstack namespace
+  - openstackclient pod running in the openstack namespace with cloudrc sourced
+  - python3-pyyaml on the bastion (dnf install python3-pyyaml)
 """
 
 import argparse
 import json
-import os
+import subprocess
 import sys
 
 try:
     import yaml
 except ImportError:
     print("ERROR: PyYAML is required.  dnf install python3-pyyaml", file=sys.stderr)
-    sys.exit(1)
-
-try:
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-except ImportError:
-    print("ERROR: requests is required.  dnf install python3-requests", file=sys.stderr)
     sys.exit(1)
 
 
@@ -61,16 +53,16 @@ except ImportError:
 
 # Required Barbican secret keys for S3 backup targets (ref: trilio-dms DEPLOYMENT_GUIDE.md)
 S3_FIELD_MAP = {
-    "s3_access_key":               "VAULT_S3_ACCESS_KEY_ID",
-    "s3_secret_key":               "VAULT_S3_SECRET_ACCESS_KEY",
-    "s3_bucket":                   "VAULT_S3_BUCKET",
-    "s3_endpoint_url":             "VAULT_S3_ENDPOINT_URL",
-    "s3_region_name":              "VAULT_S3_REGION_NAME",
-    "s3_signature_version":        "VAULT_S3_SIGNATURE_VERSION",
-    "s3_auth_version":             "VAULT_S3_AUTH_VERSION",
-    "s3_ssl_enabled":              "VAULT_S3_SSL",
-    "s3_ssl_verify":               "VAULT_S3_SSL_VERIFY",
-    "s3_ssl_ca_cert":              "VAULT_S3_SSL_CERT",
+    "s3_access_key":                 "VAULT_S3_ACCESS_KEY_ID",
+    "s3_secret_key":                 "VAULT_S3_SECRET_ACCESS_KEY",
+    "s3_bucket":                     "VAULT_S3_BUCKET",
+    "s3_endpoint_url":               "VAULT_S3_ENDPOINT_URL",
+    "s3_region_name":                "VAULT_S3_REGION_NAME",
+    "s3_signature_version":          "VAULT_S3_SIGNATURE_VERSION",
+    "s3_auth_version":               "VAULT_S3_AUTH_VERSION",
+    "s3_ssl_enabled":                "VAULT_S3_SSL",
+    "s3_ssl_verify":                 "VAULT_S3_SSL_VERIFY",
+    "s3_ssl_ca_cert":                "VAULT_S3_SSL_CERT",
     "s3_bucket_object_lock_enabled": "BUCKET_OBJECT_LOCK",
 }
 
@@ -89,112 +81,114 @@ S3_DEFAULTS = {
 
 
 # ---------------------------------------------------------------------------
-# OpenStack / Barbican / WLM helpers
+# oc exec helpers
 # ---------------------------------------------------------------------------
 
-def get_env(key, required=True):
-    val = os.environ.get(key, "")
-    if required and not val:
-        print(f"ERROR: {key} is not set. Source your cloudrc file.", file=sys.stderr)
+def run_oc_exec(namespace, pod, cmd, capture=True):
+    """
+    Run a shell command inside the openstackclient pod via oc exec.
+    Returns (stdout, returncode). stderr is printed directly.
+    """
+    full_cmd = ["oc", "exec", "-n", namespace, pod, "--", "/bin/bash", "-c", cmd]
+    result = subprocess.run(full_cmd, capture_output=capture, text=True)
+    return result.stdout.strip(), result.returncode
+
+
+def get_openstackclient_pod(namespace):
+    """
+    Auto-detect the openstackclient pod name in the given namespace.
+    Returns the pod name or exits on failure.
+    """
+    result = subprocess.run(
+        ["oc", "get", "pods", "-n", namespace,
+         "-l", "component=openstackclient",
+         "-o", "jsonpath={.items[0].metadata.name}"],
+        capture_output=True, text=True
+    )
+    pod = result.stdout.strip()
+    if not pod or result.returncode != 0:
+        # Fallback: try common pod name patterns
+        result2 = subprocess.run(
+            ["oc", "get", "pods", "-n", namespace,
+             "--no-headers", "-o", "custom-columns=NAME:.metadata.name"],
+            capture_output=True, text=True
+        )
+        for line in result2.stdout.splitlines():
+            if "openstackclient" in line:
+                return line.strip()
+        print(f"ERROR: Could not find openstackclient pod in namespace '{namespace}'.\n"
+              f"Use --pod to specify the pod name explicitly.", file=sys.stderr)
         sys.exit(1)
-    return val
+    return pod
 
 
-def keystone_auth(verify):
-    """Authenticate against Keystone v3. Returns (token, project_id, catalog)."""
-    auth_url   = get_env("OS_AUTH_URL").rstrip("/")
-    username   = get_env("OS_USERNAME")
-    password   = get_env("OS_PASSWORD")
-    proj_name  = get_env("OS_PROJECT_NAME")
-    user_dom   = get_env("OS_USER_DOMAIN_NAME", required=False) or "Default"
-    proj_dom   = get_env("OS_PROJECT_DOMAIN_NAME", required=False) or "Default"
+# ---------------------------------------------------------------------------
+# OpenStack token / project
+# ---------------------------------------------------------------------------
 
-    body = {
-        "auth": {
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "name": username,
-                        "password": password,
-                        "domain": {"name": user_dom},
-                    }
-                },
-            },
-            "scope": {
-                "project": {
-                    "name": proj_name,
-                    "domain": {"name": proj_dom},
-                }
-            },
-        }
-    }
-
-    url = f"{auth_url}/v3/auth/tokens"
-    print(f"  Authenticating to Keystone: {url}")
-    resp = requests.post(url, json=body, verify=verify)
-    if resp.status_code not in (200, 201):
-        print(f"ERROR: Keystone auth failed ({resp.status_code}): {resp.text}", file=sys.stderr)
+def get_token_and_project(namespace, pod, insecure):
+    """
+    Retrieve the current auth token and project ID from inside the
+    openstackclient pod using 'openstack token issue'.
+    Returns (token, project_id).
+    """
+    insecure_flag = " --insecure" if insecure else ""
+    cmd = f"openstack{insecure_flag} token issue -f json"
+    stdout, rc = run_oc_exec(namespace, pod, cmd)
+    if rc != 0 or not stdout:
+        print(f"ERROR: 'openstack token issue' failed inside pod '{pod}'.\n"
+              f"Ensure the cloudrc is sourced in the pod.", file=sys.stderr)
         sys.exit(1)
-
-    token      = resp.headers["X-Subject-Token"]
-    body_resp  = resp.json()
-    project_id = body_resp["token"]["project"]["id"]
-    catalog    = body_resp["token"].get("catalog", [])
-    return token, project_id, catalog
-
-
-def get_endpoint(catalog, svc_type, interface=None, region=None):
-    """Extract an endpoint URL from the Keystone service catalog."""
-    interface = interface or os.environ.get("OS_INTERFACE", "public")
-    region    = region    or os.environ.get("OS_REGION_NAME", "")
-    for svc in catalog:
-        if svc.get("type") != svc_type:
-            continue
-        for iface in (interface, "internal", "public"):
-            for ep in svc.get("endpoints", []):
-                if region and ep.get("region_id") != region:
-                    continue
-                if ep.get("interface") == iface:
-                    return ep["url"].rstrip("/")
-    return None
+    try:
+        data = json.loads(stdout)
+        return data["id"], data["project_id"]
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"ERROR: Failed to parse token output: {e}\nOutput: {stdout}", file=sys.stderr)
+        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
 # Barbican
 # ---------------------------------------------------------------------------
 
-def store_barbican_secret(barbican_base, token, secret_name, payload, verify, dry_run):
+def store_barbican_secret(namespace, pod, secret_name, payload, insecure, dry_run):
     """
-    POST /v1/secrets  — store a JSON payload as a Barbican secret.
+    Store a JSON payload as a Barbican secret via 'openstack secret store'
+    inside the openstackclient pod.
     Returns the secret_ref URL string, or None on failure.
     """
-    url = f"{barbican_base}/v1/secrets"
-    body = {
-        "name":         secret_name,
-        "payload":      json.dumps(payload),
-        "payload_content_type": "application/json",
-        "content_types": {"default": "application/json"},
-    }
-    headers = {
-        "X-Auth-Token": token,
-        "Content-Type": "application/json",
-    }
+    payload_json = json.dumps(payload)
+    insecure_flag = " --insecure" if insecure else ""
+
+    # Escape single quotes in the JSON payload for shell safety
+    escaped_payload = payload_json.replace("'", "'\\''")
+
+    cmd = (
+        f"openstack{insecure_flag} secret store"
+        f" --name '{secret_name}'"
+        f" --payload '{escaped_payload}'"
+        f" --payload-content-type 'application/json'"
+        f" -f json"
+    )
 
     if dry_run:
-        print(f"    [DRY-RUN] POST {url}")
-        print(f"    Secret name   : {secret_name}")
-        print(f"    Payload keys  : {list(payload.keys())}")
+        print(f"    [DRY-RUN] openstack secret store --name '{secret_name}'")
+        print(f"    Payload keys: {list(payload.keys())}")
         return "http://barbican-dry-run/v1/secrets/dry-run-uuid"
 
-    resp = requests.post(url, json=body, headers=headers, verify=verify)
-    if resp.status_code in (200, 201):
-        secret_ref = resp.json().get("secret_ref", "")
+    stdout, rc = run_oc_exec(namespace, pod, cmd)
+    if rc != 0 or not stdout:
+        print(f"    ERROR: 'openstack secret store' failed for '{secret_name}'.\n"
+              f"    Output: {stdout}")
+        return None
+
+    try:
+        data = json.loads(stdout)
+        secret_ref = data.get("secret_href", "")
         print(f"    Barbican secret created: {secret_ref}")
         return secret_ref
-    else:
-        print(f"    ERROR: Barbican secret creation failed "
-              f"(HTTP {resp.status_code}): {resp.text}")
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"    ERROR: Failed to parse secret store output: {e}\nOutput: {stdout}")
         return None
 
 
@@ -226,10 +220,41 @@ def build_s3_barbican_payload(bt):
 # WLM backup target
 # ---------------------------------------------------------------------------
 
-def create_wlm_backup_target(wlm_base, token, project_id, bt, secret_ref,
-                              verify, dry_run):
+def get_wlm_endpoint(namespace, pod, insecure):
     """
-    POST /v1/{project_id}/backup_targets  — register a backup target in WLM.
+    Retrieve the WLM (workloads) service endpoint from inside the
+    openstackclient pod using 'openstack catalog show'.
+    Returns the endpoint URL base, or None if not found.
+    """
+    insecure_flag = " --insecure" if insecure else ""
+    cmd = f"openstack{insecure_flag} catalog show workloads -f json"
+    stdout, rc = run_oc_exec(namespace, pod, cmd)
+    if rc != 0 or not stdout:
+        return None
+    try:
+        data = json.loads(stdout)
+        for endpoint in data.get("endpoints", []):
+            if endpoint.get("interface") == "public":
+                url = endpoint["url"].rstrip("/")
+                if "/v1/" in url:
+                    url = url.split("/v1/")[0]
+                return url
+        # Fallback: return first endpoint found
+        endpoints = data.get("endpoints", [])
+        if endpoints:
+            url = endpoints[0]["url"].rstrip("/")
+            if "/v1/" in url:
+                url = url.split("/v1/")[0]
+            return url
+    except (json.JSONDecodeError, KeyError):
+        pass
+    return None
+
+
+def create_wlm_backup_target(namespace, pod, wlm_base, token, project_id,
+                              bt, secret_ref, insecure, dry_run):
+    """
+    POST /v1/{project_id}/backup_targets via curl inside the openstackclient pod.
     Returns True on success, False on failure.
     """
     bt_name = bt.get("backup_target_name", "")
@@ -243,7 +268,7 @@ def create_wlm_backup_target(wlm_base, token, project_id, bt, secret_ref,
         }
     elif bt_type == "nfs":
         metadata = {
-            "btt_name":         bt_name,
+            "btt_name":          bt_name,
             "filesystem_export": bt.get("nfs_shares", ""),
         }
         if bt.get("nfs_options"):
@@ -261,27 +286,48 @@ def create_wlm_backup_target(wlm_base, token, project_id, bt, secret_ref,
         }
     }
 
-    headers = {
-        "X-Auth-Token":      token,
-        "X-Auth-Project-Id": project_id,
-        "Content-Type":      "application/json",
-        "Accept":            "application/json",
-        "User-Agent":        "python-workloadmgrclient",
-    }
+    body_json    = json.dumps(body)
+    escaped_body = body_json.replace("'", "'\\''")
+    insecure_flag = " -k" if insecure else ""
+
+    cmd = (
+        f"curl -s{insecure_flag} -o /tmp/wlm_response.json -w '%{{http_code}}'"
+        f" -X POST '{url}'"
+        f" -H 'X-Auth-Token: {token}'"
+        f" -H 'X-Auth-Project-Id: {project_id}'"
+        f" -H 'Content-Type: application/json'"
+        f" -H 'Accept: application/json'"
+        f" -d '{escaped_body}'"
+        f" && cat /tmp/wlm_response.json"
+    )
 
     if dry_run:
         print(f"    [DRY-RUN] POST {url}")
         print(f"    Payload: {json.dumps(body, indent=6)}")
         return True
 
-    resp = requests.post(url, json=body, headers=headers, verify=verify)
-    if resp.status_code in (200, 201):
-        bt_id = resp.json().get("backup_target", {}).get("id", "")
-        print(f"    WLM backup target created: id={bt_id}")
+    stdout, rc = run_oc_exec(namespace, pod, cmd)
+    if rc != 0:
+        print(f"    ERROR: curl command failed (rc={rc}): {stdout}")
+        return False
+
+    # stdout contains: <http_code><response_body>
+    # Split http_code (last 3 chars before JSON) from response
+    lines = stdout.strip().splitlines()
+    # First line is the http_code from -w '%{http_code}', rest is the JSON body
+    http_code = lines[0].strip() if lines else ""
+    response_body = "\n".join(lines[1:]) if len(lines) > 1 else ""
+
+    if http_code in ("200", "201"):
+        try:
+            bt_id = json.loads(response_body).get("backup_target", {}).get("id", "")
+            print(f"    WLM backup target created: id={bt_id}")
+        except json.JSONDecodeError:
+            print(f"    WLM backup target created.")
         return True
     else:
         print(f"    ERROR: WLM backup target creation failed "
-              f"(HTTP {resp.status_code}): {resp.text}")
+              f"(HTTP {http_code}): {response_body}")
         return False
 
 
@@ -289,8 +335,8 @@ def create_wlm_backup_target(wlm_base, token, project_id, bt, secret_ref,
 # Per-backup-target orchestration
 # ---------------------------------------------------------------------------
 
-def process_backup_target(bt, barbican_base, wlm_base, token, project_id,
-                           verify, dry_run):
+def process_backup_target(bt, namespace, pod, wlm_base, token, project_id,
+                           insecure, dry_run):
     """Handle one backup target — Barbican secret (if S3) + WLM registration."""
     bt_name = bt.get("backup_target_name", "?")
     bt_type = bt.get("backup_target_type", "?")
@@ -307,7 +353,7 @@ def process_backup_target(bt, barbican_base, wlm_base, token, project_id,
         print(f"    Step 1/2: Store credentials in Barbican")
         payload    = build_s3_barbican_payload(bt)
         secret_ref = store_barbican_secret(
-            barbican_base, token, bt_name, payload, verify, dry_run
+            namespace, pod, bt_name, payload, insecure, dry_run
         )
         if not secret_ref:
             return False
@@ -322,7 +368,7 @@ def process_backup_target(bt, barbican_base, wlm_base, token, project_id,
         return False
 
     return create_wlm_backup_target(
-        wlm_base, token, project_id, bt, secret_ref, verify, dry_run
+        namespace, pod, wlm_base, token, project_id, bt, secret_ref, insecure, dry_run
     )
 
 
@@ -333,26 +379,27 @@ def process_backup_target(bt, barbican_base, wlm_base, token, project_id,
 def main():
     parser = argparse.ArgumentParser(
         description="Create T4O 6.2 backup targets from migration YAML "
-                    "(Barbican secret + WLM registration)"
+                    "(Barbican secret + WLM registration via openstackclient pod)"
     )
     parser.add_argument(
         "--input", default="backup-targets-migration.yaml",
         help="Migration YAML from export_backup_targets.py "
              "(default: backup-targets-migration.yaml)"
     )
+    parser.add_argument(
+        "--namespace", default="openstack",
+        help="OpenShift namespace containing the openstackclient pod "
+             "(default: openstack)"
+    )
+    parser.add_argument(
+        "--pod", default="",
+        help="openstackclient pod name (auto-detected if omitted)"
+    )
     parser.add_argument("--insecure", action="store_true",
                         help="Disable SSL certificate verification")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print actions without executing them")
     args = parser.parse_args()
-
-    # SSL verification
-    if args.insecure:
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        verify = False
-    else:
-        ca_cert = os.environ.get("OS_CACERT", "")
-        verify  = ca_cert if ca_cert else True
 
     # Load migration YAML
     print(f"Reading backup targets from: {args.input}")
@@ -371,28 +418,22 @@ def main():
 
     print(f"Found {len(backup_targets)} backup target(s).\n")
 
-    # Keystone auth
-    print("Authenticating with OpenStack Keystone...")
-    token, project_id, catalog = keystone_auth(verify)
+    # Locate openstackclient pod
+    pod = args.pod or get_openstackclient_pod(args.namespace)
+    print(f"Using openstackclient pod: {pod}  (namespace: {args.namespace})")
+
+    # Get auth token and project ID from inside the pod
+    print("Retrieving auth token from openstackclient pod...")
+    token, project_id = get_token_and_project(args.namespace, pod, args.insecure)
     print(f"  Token obtained. Project ID: {project_id}")
 
-    # Barbican endpoint
-    barbican_base = os.environ.get("OS_BARBICAN_URL") or get_endpoint(catalog, "key-manager")
-    if not barbican_base:
-        print("ERROR: Barbican (key-manager) endpoint not found in service catalog.\n"
-              "Set OS_BARBICAN_URL=<barbican_endpoint> and retry.", file=sys.stderr)
-        sys.exit(1)
-    print(f"  Barbican endpoint: {barbican_base}")
-
-    # WLM endpoint
-    wlm_base = os.environ.get("OS_WLM_URL") or get_endpoint(catalog, "workloads")
+    # Get WLM endpoint
+    print("Resolving WLM endpoint...")
+    wlm_base = get_wlm_endpoint(args.namespace, pod, args.insecure)
     if not wlm_base:
         print("ERROR: WLM (workloads) endpoint not found in service catalog.\n"
-              "Set OS_WLM_URL=<wlm_endpoint> and retry.", file=sys.stderr)
+              "Ensure the workloads service is registered in Keystone.", file=sys.stderr)
         sys.exit(1)
-    # Strip /v1/... suffix if catalog includes it
-    if "/v1/" in wlm_base:
-        wlm_base = wlm_base.split("/v1/")[0]
     print(f"  WLM endpoint: {wlm_base}\n")
 
     # Process each backup target
@@ -401,7 +442,8 @@ def main():
 
     for bt in backup_targets:
         ok = process_backup_target(
-            bt, barbican_base, wlm_base, token, project_id, verify, args.dry_run
+            bt, args.namespace, pod, wlm_base, token, project_id,
+            args.insecure, args.dry_run
         )
         if ok:
             success_count += 1
