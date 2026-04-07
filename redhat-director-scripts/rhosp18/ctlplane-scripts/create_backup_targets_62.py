@@ -462,12 +462,6 @@ def main():
 
     if not args.dry_run:
         print("\nAll backup targets created successfully.")
-        print("Next: create a cloud admin trust by launching a temporary WLM pod:")
-        print("  WLM_IMAGE=$(oc get deployment -n trilio-openstack -l app=wlm-api "
-              "-o jsonpath='{.items[0].spec.template.spec.containers[0].image}')")
-        print("  oc run -n trilio-openstack wlm-trust-create --rm -it --restart=Never "
-              "--image=$WLM_IMAGE -- "
-              "workloadmgr trust-create --is_cloud_trust True admin --insecure")
 
 
 if __name__ == "__main__":
