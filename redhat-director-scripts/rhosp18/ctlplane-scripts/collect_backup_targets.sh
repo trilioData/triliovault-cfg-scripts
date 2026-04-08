@@ -212,7 +212,7 @@ log_step "Step 3: Merge and write ${INVENTORY_FILE}"
 python3 - <<PYEOF
 import json, yaml, sys
 
-static_bts  = json.loads('${STATIC_BTS_JSON}')
+static_bts  = json.loads(r"""${STATIC_BTS_JSON}""")
 dynamic_bts = json.loads(r"""${DYNAMIC_BTS_JSON}""")
 
 # De-duplicate: if the same name appears in both sources, keep the CR
