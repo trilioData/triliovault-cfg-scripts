@@ -4,7 +4,7 @@
 # T4O 6.0/6.1 → 6.2 Backup Target Migration — Step 1 of 2 (RHOSO18)
 #
 # Reads backup targets from two sources:
-#   1. tvo-operator-inputs.yaml  (backup_target / backup_targets section, if present)
+#   1. tvo-operator-inputs.yaml  (triliovault_backup_targets section, if present)
 #   2. TVOBackupTarget CR instances in the trilio-openstack namespace
 #
 # Writes the combined list to: backup_targets_inventory.yaml
@@ -27,7 +27,7 @@
 #   bash collect_backup_targets.sh
 #
 # Output:
-#   backup_targets_inventory.yaml  — input for update_backup_targets_62.sh
+#   existing_list_of_backup_targets.yaml  — input for update_backup_targets_62.sh
 
 set -euo pipefail
 
@@ -68,13 +68,19 @@ log_step "Step 1: Read backup targets from ${INPUTS_FILE}"
 #       If your file uses a flat layout (not wrapped under spec:), that is
 #       handled automatically below.
 #
-#       Supported sections:
-#         spec.backup_target   — single default backup target (dict)
-#         spec.backup_targets  — list of backup targets
+#       Supported section (T4O 6.0/6.1):
+#         spec.triliovault_backup_targets — list of backup targets
 #
-#       If neither section is present the script logs a notice and moves on.
-#       That is normal for installations where backup targets were created
-#       only via the workloadmgr API and stored as TVOBackupTarget CRs.
+#       Field names are normalised to a common internal format:
+#         backup_target_name → name
+#         backup_target_type → type
+#         s3_bucket          → bucket
+#         s3_endpoint_url    → endpoint_url
+#         s3_ssl_enabled     → ssl
+#         s3_ssl_verify      → ssl_verify
+#         s3_ssl_ca_cert     → ssl_cert  (only when s3_self_signed_cert=true)
+#
+#       If the section is absent the script logs a notice and moves on.
 
 STATIC_BTS_JSON=$(python3 - <<'PYEOF'
 import yaml, json, sys
@@ -85,27 +91,35 @@ with open("tvo-operator-inputs.yaml") as f:
 spec = doc.get("spec", doc)   # support both wrapped and flat layouts
 bts  = []
 
-single = spec.get("backup_target")
-if single and isinstance(single, dict):
-    single.setdefault("name", "default")
-    single["source"]     = "tvo-operator-inputs.yaml"
-    single["is_default"] = True
-    bts.append(single)
-    print(f"[INFO] backup_target section: 1 entry found", file=sys.stderr)
-elif single:
-    print("[WARN] backup_target section present but not a mapping — skipping",
-          file=sys.stderr)
-
-for b in spec.get("backup_targets", []):
-    if isinstance(b, dict):
-        b["source"]      = "tvo-operator-inputs.yaml"
-        b.setdefault("is_default", False)
-        bts.append(b)
+for b in spec.get("triliovault_backup_targets", []):
+    if not isinstance(b, dict):
+        continue
+    bt = {
+        "name":       b.get("backup_target_name", ""),
+        "type":       b.get("backup_target_type", "s3"),
+        "source":     "tvo-operator-inputs.yaml",
+        "is_default": b.get("is_default", False),
+    }
+    if not bt["name"]:
+        print("[WARN] Entry without backup_target_name — skipping", file=sys.stderr)
+        continue
+    if bt["type"] == "s3":
+        bt["s3_type"]      = b.get("s3_type", "other_s3")
+        bt["bucket"]       = b.get("s3_bucket", "")
+        bt["endpoint_url"] = b.get("s3_endpoint_url", "")
+        bt["ssl"]          = b.get("s3_ssl_enabled", False)
+        bt["ssl_verify"]   = b.get("s3_ssl_verify", False)
+        if b.get("s3_self_signed_cert") and b.get("s3_ssl_ca_cert"):
+            bt["ssl_cert"] = b["s3_ssl_ca_cert"]
+    elif bt["type"] == "nfs":
+        bt["nfs_shares"]  = b.get("nfs_shares", "")
+        bt["nfs_options"] = b.get("nfs_options", "")
+    bts.append(bt)
 
 if bts:
     print(f"[INFO] Total from tvo-operator-inputs.yaml: {len(bts)}", file=sys.stderr)
 else:
-    print("[INFO] No backup_target/backup_targets section found in "
+    print("[INFO] No triliovault_backup_targets section found in "
           "tvo-operator-inputs.yaml — relying on TVOBackupTarget CRs.",
           file=sys.stderr)
 
@@ -127,12 +141,16 @@ CR_COUNT=$(echo "${CR_RAW}" | jq '.items | length')
 log "TVOBackupTarget CRs found: ${CR_COUNT}"
 
 # Extract fields from each CR.
-# NOTE: Adjust the .spec field names below if your T4O 6.0/6.1 CRD uses
-#       different keys (e.g. "backup_target_type" instead of "type").
-DYNAMIC_BTS_JSON=$(echo "${CR_RAW}" | python3 - <<'PYEOF'
-import json, sys
+# T4O 6.0/6.1 stores backup target config under spec.triliovault_backup_target
+# (singular, nested) using s3_* prefixed field names.
+# Fields are normalised to the same internal format used for the YAML source.
+#
+# NOTE: CR_RAW is embedded via bash expansion (not piped) to avoid the
+#       heredoc/pipe stdin conflict where <<'PYEOF' overrides the pipe fd.
+DYNAMIC_BTS_JSON=$(python3 <<PYEOF
+import json
 
-data = json.load(sys.stdin)
+data = json.loads(r"""${CR_RAW}""")
 bts  = []
 
 for item in data.get("items", []):
@@ -141,29 +159,41 @@ for item in data.get("items", []):
     cr_name = meta.get("name", "")
 
     # Naming convention: tvobackuptarget-<backup-target-name>
-    bt_name = cr_name.removeprefix("tvobackuptarget-")
+    bt_name = cr_name.replace("tvobackuptarget-", "", 1)
+
+    # Fields are nested under spec.triliovault_backup_target
+    bt_spec = spec.get("triliovault_backup_target", spec)
+
+    bt_type = bt_spec.get("backup_target_type",
+                bt_spec.get("type", "s3"))
 
     bt = {
         "source":     "TVOBackupTarget CR",
         "cr_name":    cr_name,
-        "is_default": False,
-        "name":       spec.get("name", bt_name),
-        "type":       spec.get("type",
-                        spec.get("backup_target_type", "s3")),
+        "is_default": bt_spec.get("is_default", False),
+        "name":       bt_spec.get("backup_target_name", bt_name),
+        "type":       bt_type,
     }
 
-    # S3 credential fields
-    for field in ("access_key", "secret_key", "bucket", "endpoint_url",
-                  "ssl", "ssl_verify", "ssl_cert"):
-        val = spec.get(field)
-        if val is not None:
-            bt[field] = val
-
-    # NFS mount fields
-    for field in ("nfs_server", "nfs_export", "nfs_options"):
-        val = spec.get(field)
-        if val is not None:
-            bt[field] = val
+    if bt_type == "s3":
+        bt["s3_type"]      = bt_spec.get("s3_type", "other_s3")
+        bt["bucket"]       = bt_spec.get("s3_bucket",
+                               bt_spec.get("bucket", ""))
+        bt["endpoint_url"] = bt_spec.get("s3_endpoint_url",
+                               bt_spec.get("endpoint_url", ""))
+        bt["ssl"]          = bt_spec.get("s3_ssl_enabled",
+                               bt_spec.get("ssl", False))
+        bt["ssl_verify"]   = bt_spec.get("s3_ssl_verify",
+                               bt_spec.get("ssl_verify", False))
+        if (bt_spec.get("s3_self_signed_cert") and
+                bt_spec.get("s3_ssl_ca_cert")):
+            bt["ssl_cert"] = bt_spec["s3_ssl_ca_cert"]
+        elif bt_spec.get("ssl_cert"):
+            bt["ssl_cert"] = bt_spec["ssl_cert"]
+    elif bt_type == "nfs":
+        bt["nfs_shares"]  = bt_spec.get("nfs_shares",
+                              bt_spec.get("nfs_export", ""))
+        bt["nfs_options"] = bt_spec.get("nfs_options", "")
 
     bts.append(bt)
 

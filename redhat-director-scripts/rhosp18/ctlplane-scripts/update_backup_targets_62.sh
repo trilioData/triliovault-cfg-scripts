@@ -35,7 +35,7 @@
 # pod — no separate openstackclient pod is needed.
 #
 # Prerequisites:
-#   - backup_targets_inventory.yaml  (produced by collect_backup_targets.sh)
+#   - existing_list_of_backup_targets.yaml  (produced by collect_backup_targets.sh)
 #   - tvo-operator-inputs.yaml in the current directory
 #   - oc CLI with cluster-admin (or equivalent RBAC)
 #   - python3 with PyYAML   (pip3 install pyyaml)
@@ -257,18 +257,40 @@ for i in $(seq 0 $((TOTAL - 1))); do
   # ------------------------------------------------------------------
   # S3: validate required fields
   # ------------------------------------------------------------------
-  ACCESS_KEY=$(echo "${BT}"   | jq -r '.access_key   // empty')
-  SECRET_KEY=$(echo "${BT}"   | jq -r '.secret_key   // empty')
   BUCKET=$(echo "${BT}"       | jq -r '.bucket       // empty')
   ENDPOINT_URL=$(echo "${BT}" | jq -r '.endpoint_url // empty')
   SSL=$(echo "${BT}"          | jq -r '.ssl          // false')
   SSL_VERIFY=$(echo "${BT}"   | jq -r '.ssl_verify   // false')
   SSL_CERT=$(echo "${BT}"     | jq -r '.ssl_cert     // empty')
+  S3_TYPE=$(echo "${BT}"      | jq -r '.s3_type      // "other_s3"')
 
-  if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ] || \
-     [ -z "${BUCKET}"     ] || [ -z "${ENDPOINT_URL}" ]; then
-    err "  Missing required S3 fields for '${BT_NAME}' " \
-        "(access_key / secret_key / bucket / endpoint_url). Skipping."
+  # S3 credentials are stored in a Kubernetes Secret (not in the inventory).
+  # Convention: trilio-s3-backup-target-secret-<name>
+  # Keys:       <name>_s3_access_key,  <name>_s3_secret_key
+  BT_SECRET_NAME="trilio-s3-backup-target-secret-${BT_NAME}"
+  ACCESS_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
+    jq -r --arg k "${BT_NAME}_s3_access_key" '.data[$k] // empty' | \
+    base64 -d 2>/dev/null || true)
+  SECRET_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
+    jq -r --arg k "${BT_NAME}_s3_secret_key" '.data[$k] // empty' | \
+    base64 -d 2>/dev/null || true)
+
+  if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ]; then
+    err "  S3 credentials not found in secret '${BT_SECRET_NAME}'."
+    err "  Expected keys: ${BT_NAME}_s3_access_key, ${BT_NAME}_s3_secret_key"
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  if [ -z "${BUCKET}" ]; then
+    err "  Missing bucket for '${BT_NAME}'. Skipping."
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  # endpoint_url is optional for amazon_s3 (AWS handles routing internally)
+  if [ -z "${ENDPOINT_URL}" ] && [ "${S3_TYPE}" != "amazon_s3" ]; then
+    err "  Missing endpoint_url for non-Amazon S3 target '${BT_NAME}'. Skipping."
     FAIL=$((FAIL + 1))
     continue
   fi
