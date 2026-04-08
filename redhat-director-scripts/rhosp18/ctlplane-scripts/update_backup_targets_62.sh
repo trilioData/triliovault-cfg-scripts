@@ -28,8 +28,6 @@
 # Sourcing /tmp/triliovault-cloudrc inside the pod sets all other
 # OpenStack env vars (OS_AUTH_URL, OS_USERNAME, etc.).
 #
-# NFS backup targets are listed but skipped — no Barbican secret needed.
-#
 # The trilio-wlm image contains workloadmgr, trilio-dms-cli, and the
 # openstack CLI client, so all four steps run inside the single migration
 # pod — no separate openstackclient pod is needed.
@@ -205,8 +203,16 @@ WLM_BT_JSON=$(exec_in_pod "workloadmgr backup-target-list --format json" || echo
 BT_COUNT=$(echo "${WLM_BT_JSON}" | jq 'length')
 log "workloadmgr reports ${BT_COUNT} backup target(s)."
 
-get_bt_id() {
-  echo "${WLM_BT_JSON}" | jq -r --arg n "$1" '.[] | select(.name==$n) | .id'
+# Match by S3 bucket name — target names may differ between inventory and WLM.
+# workloadmgr may return the bucket as 's3_bucket' or 'bucket'.
+get_bt_id_by_bucket() {
+  echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
+    '.[] | select((.s3_bucket // .bucket // "") == $b) | .id'
+}
+
+get_wlm_name_by_bucket() {
+  echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
+    '.[] | select((.s3_bucket // .bucket // "") == $b) | .name'
 }
 
 # -----------------------------------------------------------------------
@@ -228,36 +234,33 @@ for i in $(seq 0 $((TOTAL - 1))); do
   BT=$(echo "${BT_JSON_LIST}" | jq ".[${i}]")
   BT_NAME=$(echo "${BT}" | jq -r '.name')
   BT_TYPE=$(echo "${BT}" | jq -r '.type // "s3"')
+  BUCKET=$(echo "${BT}"  | jq -r '.bucket // empty')
 
   log ""
   log "---------------------------------------------"
-  log "[${i}/${TOTAL}] Backup target: ${BT_NAME}  (type: ${BT_TYPE})"
+  log "[${i}/${TOTAL}] Backup target: ${BT_NAME}  bucket: ${BUCKET}"
   log "---------------------------------------------"
 
   # ------------------------------------------------------------------
-  # Step 2.1: Find backup target ID in workloadmgr
+  # Step 2.1: Find backup target ID in workloadmgr by S3 bucket name
   # ------------------------------------------------------------------
-  BT_ID=$(get_bt_id "${BT_NAME}")
+  if [ -z "${BUCKET}" ]; then
+    err "  No bucket configured for '${BT_NAME}'. Skipping."
+    SKIP=$((SKIP + 1))
+    continue
+  fi
+  BT_ID=$(get_bt_id_by_bucket "${BUCKET}")
   if [ -z "${BT_ID}" ]; then
-    warn "  '${BT_NAME}' not found in workloadmgr backup-target-list. Skipping."
+    warn "  No workloadmgr entry with bucket '${BUCKET}' (inventory name: '${BT_NAME}'). Skipping."
     SKIP=$((SKIP + 1))
     continue
   fi
-  log "  workloadmgr id: ${BT_ID}"
-
-  # ------------------------------------------------------------------
-  # NFS: no Barbican secret needed
-  # ------------------------------------------------------------------
-  if [ "${BT_TYPE}" = "nfs" ]; then
-    log "  NFS backup target — no Barbican secret required. Skipping."
-    SKIP=$((SKIP + 1))
-    continue
-  fi
+  WLM_NAME=$(get_wlm_name_by_bucket "${BUCKET}")
+  log "  Matched WLM entry: '${WLM_NAME}' (id=${BT_ID})"
 
   # ------------------------------------------------------------------
   # S3: validate required fields
   # ------------------------------------------------------------------
-  BUCKET=$(echo "${BT}"       | jq -r '.bucket       // empty')
   ENDPOINT_URL=$(echo "${BT}" | jq -r '.endpoint_url // empty')
   SSL=$(echo "${BT}"          | jq -r '.ssl          // false')
   SSL_VERIFY=$(echo "${BT}"   | jq -r '.ssl_verify   // false')
@@ -278,12 +281,6 @@ for i in $(seq 0 $((TOTAL - 1))); do
   if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ]; then
     err "  S3 credentials not found in secret '${BT_SECRET_NAME}'."
     err "  Expected keys: ${BT_NAME}_s3_access_key, ${BT_NAME}_s3_secret_key"
-    FAIL=$((FAIL + 1))
-    continue
-  fi
-
-  if [ -z "${BUCKET}" ]; then
-    err "  Missing bucket for '${BT_NAME}'. Skipping."
     FAIL=$((FAIL + 1))
     continue
   fi
@@ -422,7 +419,7 @@ print(data.get('secret_href')
   # ------------------------------------------------------------------
   # Step 2.4: Update backup target record with the new Barbican secret
   # ------------------------------------------------------------------
-  log "  Step 2.4: Updating backup target '${BT_NAME}' (id=${BT_ID}) ..."
+  log "  Step 2.4: Updating '${WLM_NAME}' (bucket=${BUCKET}, id=${BT_ID}) ..."
 
   UPDATE_OUTPUT=$(exec_in_pod \
     "workloadmgr backup-target-modify --secret-ref '${SECRET_HREF}' ${BT_ID}" \
@@ -445,7 +442,7 @@ done
 log_step "Migration Summary"
 log "  Succeeded : ${PASS}"
 log "  Failed    : ${FAIL}"
-log "  Skipped   : ${SKIP}  (NFS or not found in workloadmgr)"
+log "  Skipped   : ${SKIP}  (not found in workloadmgr)"
 log "  Total     : ${TOTAL}"
 
 if [ "${FAIL}" -gt 0 ]; then

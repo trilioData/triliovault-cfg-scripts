@@ -103,17 +103,17 @@ for b in spec.get("triliovault_backup_targets", []):
     if not bt["name"]:
         print("[WARN] Entry without backup_target_name — skipping", file=sys.stderr)
         continue
-    if bt["type"] == "s3":
-        bt["s3_type"]      = b.get("s3_type", "other_s3")
-        bt["bucket"]       = b.get("s3_bucket", "")
-        bt["endpoint_url"] = b.get("s3_endpoint_url", "")
-        bt["ssl"]          = b.get("s3_ssl_enabled", False)
-        bt["ssl_verify"]   = b.get("s3_ssl_verify", False)
-        if b.get("s3_self_signed_cert") and b.get("s3_ssl_ca_cert"):
-            bt["ssl_cert"] = b["s3_ssl_ca_cert"]
-    elif bt["type"] == "nfs":
-        bt["nfs_shares"]  = b.get("nfs_shares", "")
-        bt["nfs_options"] = b.get("nfs_options", "")
+    if bt["type"] != "s3":
+        print(f"[WARN] '{bt['name']}' type='{bt['type']}' — skipping (S3 only)",
+              file=sys.stderr)
+        continue
+    bt["s3_type"]      = b.get("s3_type", "other_s3")
+    bt["bucket"]       = b.get("s3_bucket", "")
+    bt["endpoint_url"] = b.get("s3_endpoint_url", "")
+    bt["ssl"]          = b.get("s3_ssl_enabled", False)
+    bt["ssl_verify"]   = b.get("s3_ssl_verify", False)
+    if b.get("s3_self_signed_cert") and b.get("s3_ssl_ca_cert"):
+        bt["ssl_cert"] = b["s3_ssl_ca_cert"]
     bts.append(bt)
 
 if bts:
@@ -175,25 +175,23 @@ for item in data.get("items", []):
         "type":       bt_type,
     }
 
-    if bt_type == "s3":
-        bt["s3_type"]      = bt_spec.get("s3_type", "other_s3")
-        bt["bucket"]       = bt_spec.get("s3_bucket",
-                               bt_spec.get("bucket", ""))
-        bt["endpoint_url"] = bt_spec.get("s3_endpoint_url",
-                               bt_spec.get("endpoint_url", ""))
-        bt["ssl"]          = bt_spec.get("s3_ssl_enabled",
-                               bt_spec.get("ssl", False))
-        bt["ssl_verify"]   = bt_spec.get("s3_ssl_verify",
-                               bt_spec.get("ssl_verify", False))
-        if (bt_spec.get("s3_self_signed_cert") and
-                bt_spec.get("s3_ssl_ca_cert")):
-            bt["ssl_cert"] = bt_spec["s3_ssl_ca_cert"]
-        elif bt_spec.get("ssl_cert"):
-            bt["ssl_cert"] = bt_spec["ssl_cert"]
-    elif bt_type == "nfs":
-        bt["nfs_shares"]  = bt_spec.get("nfs_shares",
-                              bt_spec.get("nfs_export", ""))
-        bt["nfs_options"] = bt_spec.get("nfs_options", "")
+    if bt_type != "s3":
+        continue  # S3 targets only
+
+    bt["s3_type"]      = bt_spec.get("s3_type", "other_s3")
+    bt["bucket"]       = bt_spec.get("s3_bucket",
+                           bt_spec.get("bucket", ""))
+    bt["endpoint_url"] = bt_spec.get("s3_endpoint_url",
+                           bt_spec.get("endpoint_url", ""))
+    bt["ssl"]          = bt_spec.get("s3_ssl_enabled",
+                           bt_spec.get("ssl", False))
+    bt["ssl_verify"]   = bt_spec.get("s3_ssl_verify",
+                           bt_spec.get("ssl_verify", False))
+    if (bt_spec.get("s3_self_signed_cert") and
+            bt_spec.get("s3_ssl_ca_cert")):
+        bt["ssl_cert"] = bt_spec["s3_ssl_ca_cert"]
+    elif bt_spec.get("ssl_cert"):
+        bt["ssl_cert"] = bt_spec["ssl_cert"]
 
     bts.append(bt)
 
@@ -324,45 +322,48 @@ import json, yaml, sys
 with open("${INVENTORY_FILE}") as f:
     inventory = yaml.safe_load(f)
 
-inv_bts  = inventory.get("backup_targets", [])
-inv_names = sorted(b["name"] for b in inv_bts)
+inv_bts = inventory.get("backup_targets", [])
+# Use S3 bucket names for verification — target names may differ between
+# tvo-operator-inputs.yaml and the WLM database.
+inv_buckets = sorted(b["bucket"] for b in inv_bts if b.get("bucket"))
 
 try:
-    wlm_bts  = json.loads(r"""${WLM_BT_JSON}""")
-    wlm_names = sorted(b.get("name", "") for b in wlm_bts)
+    wlm_bts = json.loads(r"""${WLM_BT_JSON}""")
+    # workloadmgr may return the bucket as 's3_bucket' or 'bucket'
+    wlm_buckets = sorted(
+        b.get("s3_bucket") or b.get("bucket", "")
+        for b in wlm_bts
+        if b.get("s3_bucket") or b.get("bucket")
+    )
 except Exception as exc:
     print(f"[WARN] Cannot parse workloadmgr output ({exc}). "
           "Verify manually: workloadmgr backup-target-list")
     sys.exit(0)
 
-print(f"\n  Inventory count   : {len(inv_names)}")
-print(f"  workloadmgr count : {len(wlm_names)}")
+print(f"\n  Inventory S3 count   : {len(inv_buckets)}")
+print(f"  workloadmgr count    : {len(wlm_buckets)}")
 
 mismatches = False
 
-if len(inv_names) != len(wlm_names):
-    print(f"\n[MISMATCH] Counts differ: "
-          f"inventory={len(inv_names)}, workloadmgr={len(wlm_names)}")
-    mismatches = True
-
-only_in_inv = set(inv_names) - set(wlm_names)
-only_in_wlm = set(wlm_names) - set(inv_names)
+only_in_inv = set(inv_buckets) - set(wlm_buckets)
+only_in_wlm = set(wlm_buckets) - set(inv_buckets)
 
 if only_in_inv:
-    print(f"\n[MISMATCH] In inventory but not in workloadmgr:")
-    for n in sorted(only_in_inv):
-        print(f"  - {n}")
+    print(f"\n[MISMATCH] Buckets in inventory but not in workloadmgr:")
+    for b in sorted(only_in_inv):
+        print(f"  - {b}")
+    mismatches = True
 
 if only_in_wlm:
-    print(f"\n[MISMATCH] In workloadmgr but not in inventory:")
-    for n in sorted(only_in_wlm):
-        print(f"  - {n}  <-- add to ${INVENTORY_FILE} before running "
+    print(f"\n[MISMATCH] Buckets in workloadmgr but not in inventory:")
+    for b in sorted(only_in_wlm):
+        print(f"  - {b}  <-- add to ${INVENTORY_FILE} before running "
               "update_backup_targets_62.sh")
     mismatches = True
 
 if not mismatches:
     print("\n[OK] Inventory matches workloadmgr exactly.")
-    print(f"     Backup targets: {inv_names}")
+    print(f"     S3 buckets: {inv_buckets}")
 else:
     print("\n[ACTION] Correct ${INVENTORY_FILE} before running "
           "update_backup_targets_62.sh")
