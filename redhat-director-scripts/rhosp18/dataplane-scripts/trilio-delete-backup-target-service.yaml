@@ -1,0 +1,23 @@
+apiVersion: dataplane.openstack.org/v1beta1
+kind: OpenStackDataPlaneService
+metadata:
+  name: trilio-delete-backup-target-<BACKUP_TARGET_NAME>
+spec:
+  deployOnAllNodeSets: true
+  label: trilio-delete-backup-target-custom-service
+  openStackAnsibleEERunnerImage: registry.connect.redhat.com/trilio/trilio-ansible-runner-rhoso:6.1.0-stable-1-rhosp18.0
+  edpmServiceType: trilio-delete-backup-target-<BACKUP_TARGET_NAME>
+  playbookContents: |
+    - hosts: all
+      vars_files:
+        - /var/lib/openstack/configs/trilio-delete-backup-target-<BACKUP_TARGET_NAME>/trilio_env.yml
+      tasks:
+        - name: Execute trilio-datamover role
+          import_role:
+            name: trilio-datamover
+            tasks_from: delete-backup-target
+  dataSources:
+    - configMapRef: 
+        name: cm-trilio-backup-target-<BACKUP_TARGET_NAME>
+    - secretRef:
+        name: trilio-s3-backup-target-secret-<BACKUP_TARGET_NAME>

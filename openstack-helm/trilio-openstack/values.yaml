@@ -39,12 +39,6 @@ labels:
   test:
     node_selector_key: triliovault-control-plane
     node_selector_value: enabled
-  dms_controller:
-    node_selector_key: triliovault-control-plane
-    node_selector_value: enabled
-  dms_compute: 
-    node_selector_key: openstack-compute-node
-    node_selector_value: enabled
 
 images:
   tags:
@@ -66,7 +60,7 @@ images:
     triliovault_datamover: docker.io/trilio/trilio-datamover-helm:shruti-6.1.0-bobcat-2
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
-    triliovault_dms: docker.io/trilio/trilio-dms-helm:shruti-6.1.0-bobcat-2
+
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -222,8 +216,6 @@ pod:
         timeout: 30
       datamover:
         timeout: 30
-      dms:
-        timeout: 30
   replicas:
     triliovault_wlm_api: 3
     triliovault_datamover_api: 3
@@ -365,12 +357,10 @@ manifests:
   deployment_wlm_workloads: true
   deployment_datamover_api: true
   daemonset_datamover: true
-  deployment_dms: true
-  daemonset_dms: true
   ingress_wlm_api: true
   ingress_datamover_api: true
   job_bootstrap: false
-  job_wlm_cloud_trust: false
+  job_wlm_cloud_trust: true
   job_datamover_db_drop: false
   job_wlm_db_drop: false
   job_datamover_db_init: true
@@ -409,7 +399,8 @@ manifests:
   service_wlm_api: true
   service_ingress_datamover_api: true
   service_ingress_wlm_api: true
-
+  nfs_pv: true
+  nfs_pvc: true
 
 network:
   wlm_api:
@@ -748,6 +739,29 @@ endpoints:
 conf:
   policy: {}
   triliovault:
+    backup_target_type: "nfs"
+    ## Valid values are "nfs" and "s3"
+    nfs:
+      multi_ip_nfs: false
+      nfs_shares: 
+      - path: /opt/share1
+        ip: "192.168.122.101"
+      multi_ip_nfs_shares:
+      nfs_options: "nolock,soft,vers=3,timeo=180,intr,lookupcache=none"
+      storage_class_name: nfs
+    s3:
+      access_key: ''
+      secret_key: ''
+      ## S3 region, if your s3 does not have any region, just keep the parameter as it is
+      region_name: ''
+      bucket: ''
+      endpoint_url: ''
+      signature_version: 'default'
+      auth_version: 'DEFAULT'
+      ## If S3 backend is not Amazon S3 and SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
+      ## And, copy S3's ca cert file in triliovault/files/s3-cert.pem file in triliovault helm chart code directory.
+      ssl_enabled: False
+
     ## Configure 'dmapi_workers' parameter of '/etc/triliovault-datamover/triliovault-datamover-api.conf' file
     ## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
     ## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
@@ -774,6 +788,54 @@ conf:
 
     # Allow non-root users to specify the allow_other or allow_root mount options.
     user_allow_other
+  triliovault_object_store_wlm_api:
+    DEFAULT:
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: ''
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_wlm_scheduler:
+    DEFAULT:
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: ''
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_wlm_workloads:
+    DEFAULT:
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+      vault_storage_nfs_export: ''
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+  triliovault_object_store_datamover:
+    DEFAULT:
+      vault_storage_type: s3
+      vault_s3_auth_version: DEFAULT
+      vault_s3_ssl_cert: ''
+      vault_storage_nfs_export: ''
+      vault_data_directory: /var/lib/trilio/triliovault-mounts
+      vault_s3_max_pool_connections: 500
+      vault_data_directory_old: /var/triliovault
+      log_config_append: /etc/triliovault-object-store/object_store_logging.conf
+    s3fuse_sys_admin:
+      helper_command: sudo /usr/bin/privsep-helper
   datamover_api:
     DEFAULT:
       log_config_append: /etc/triliovault-datamover/datamover_api_logging.conf 
@@ -1057,6 +1119,46 @@ conf:
       format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
 
+  object_store_logging:
+    loggers:
+      keys: "root"
+    handlers:
+      keys: "s3fuse,stdout,stderr,null"
+    formatters:
+      keys: "default,advanced,default-utc,advanced-utc"
+    logger_root:
+      level: "INFO"
+      handlers: "s3fuse"
+    handler_s3fuse:
+      class: "logging.handlers.RotatingFileHandler"
+      args: "('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)"
+      formatter: "advanced-utc"
+    handler_stderr:
+      class: "StreamHandler"
+      args: "(sys.stderr,)"
+      formatter: "default"
+    handler_stdout:
+      class: "StreamHandler"
+      args: "(sys.stdout,)"
+      formatter: "advanced"
+    handler_null:
+      class: "NullHandler"
+      formatter: "default"
+      args: "()"
+    formatter_default-utc:
+      class: "s3fuse.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced-utc:
+      class: "s3fuse.log.UTCFormatter"
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_default:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
+    formatter_advanced:
+      format: "%(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S,%s %Z"
   logging:
     loggers:
       keys:
@@ -1091,33 +1193,6 @@ conf:
     formatter_default:
       format: "%(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S"
-  dms_client:
-    client:
-      request_timeout: 60
-      log_level: INFO
-      log_file: /var/log/triliovault/trilio-dms-client.log
-      log_max_bytes: '26214400'
-      log_backup_count: 5
-      db_pool_size: 20
-      db_max_overflow: 40
-      db_pool_recycle: 3600
-  dms_server:  
-    server:
-      log_level: INFO
-      log_file: /var/log/triliovault/trilio-dms-server.log
-      log_max_bytes: '26214400'
-      log_backup_count: 5
-      s3vaultfuse_bin: /usr/bin/s3vaultfuse.py
-      rootwrap_bin: /usr/bin/trilio-dms-rootwrap
-      rootwrap_conf: /etc/triliovault-dms/rootwrap.conf
-      worker_threads: 10
-      # Barbican SSL verification (optional, default: False)
-      # Set to True to enable SSL certificate verification for Barbican API
-      # Set to False to disable SSL verification (useful for self-signed certificates)
-      barbican_ssl_verify: False
-      # Barbican CA bundle path (optional, default: None - uses system CA bundle)
-      # Use this for custom/self-signed certificates
-      # barbican_ca_bundle = /etc/ssl/certs/custom-ca-bundle.crt
 
 
 bootstrap:

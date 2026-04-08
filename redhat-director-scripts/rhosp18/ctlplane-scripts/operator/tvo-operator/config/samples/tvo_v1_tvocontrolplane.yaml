@@ -46,8 +46,10 @@ spec:
     rabbit_init: docker.io/rabbitmq:3.7-management
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
+    triliovault_object_store: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
+    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
@@ -120,6 +122,9 @@ spec:
     triliovault_wlm_workloads:
       networks: ""
       debug_mode: false
+    triliovault_object_store:
+      networks: ""
+      debug_mode: false
     triliovault_datamover_api:
       networks: ""
       debug_mode: false
@@ -165,6 +170,7 @@ spec:
             max_unavailable: 1
     replicas:
       triliovault_datamover_api: 3
+      triliovault_object_store: 3
       triliovault_wlm_api: 3
       triliovault_wlm_cron: 1
       triliovault_wlm_scheduler: 3
@@ -309,6 +315,10 @@ spec:
             privileged: true
             readOnlyRootFilesystem: false
             runAsUser: 42436
+          wlm_cloud_trust_creation:
+            readOnlyRootFilesystem: false
+            runAsGroup: 42436
+            runAsUser: 42436
         pod:
           runAsUser: 42424
   rabbitmq:
@@ -328,5 +338,43 @@ spec:
       transport_url: ""
       user: workloadmgr
       vhost: workloadmgr
-
+  triliovault_backup_targets:
+  - backup_target_name: S3_BT1
+    backup_target_type: s3
+    is_default: true
+    s3_access_key: ACCESSKEY1
+    s3_auth_version: DEFAULT
+    s3_bucket: BUCKET1
+    s3_bucket_object_lock_enabled: false
+    s3_endpoint_url: ENDPOINT_URL1
+    s3_region_name: REGION1
+    s3_secret_key: SECRETKEY1
+    s3_self_signed_cert: false
+    s3_signature_version: default
+    s3_ssl_enabled: true
+    s3_ssl_verify: true
+    s3_type: amazon_s3
+  - backup_target_name: S3_BT2
+    backup_target_type: s3
+    is_default: true
+    s3_access_key: ACCESSKEY2
+    s3_auth_version: DEFAULT
+    s3_bucket: BUCKET2
+    s3_bucket_object_lock_enabled: false
+    s3_endpoint_url: ENDPOINT_URL2
+    s3_region_name: REGION2
+    s3_secret_key: SECRETKEY2
+    s3_self_signed_cert: true
+    s3_signature_version: default
+    s3_ssl_ca_cert: |
+      SSL_CERT_LINE_1
+    s3_ssl_enabled: true
+    s3_ssl_verify: true
+    s3_type: amazon_s3
+  - backup_target_name: NFS_BT3
+    backup_target_type: nfs
+    is_default: false
+    nfs_options: nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10
+    nfs_shares: 11.30.1.10:/mnt/share
+  
   

@@ -7,4 +7,12 @@
   overrideValues:
     crdType: "TVOControlPlane"
 
+- group: tvo.trilio.io
+  version: v1
+  kind: TVOBackupTarget
+  chart: helm-charts/tvo-chart
+  dryrunOption: server
+  overrideValues:
+    crdType: "TVOBackupTarget"
+
 # +kubebuilder:scaffold:watch

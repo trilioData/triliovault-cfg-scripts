@@ -1,0 +1,103 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trilio-backup-target-create
+  labels:
+    application: trilio-openstack
+    component: backup-target-create
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        application: trilio-openstack
+        component: backup-target-create
+    spec:
+      restartPolicy: Never
+      serviceAccountName: trilio-backup-targets-{{ .Values.trilio_backup_target.backup_target_name | lower | replace "_" "-" }}
+      imagePullSecrets:
+        - name: triliovault-image-registry
+      containers:
+        - name: backup-target-create
+          image: {{ .Values.images.trilio_wlm }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - /tmp/create-backup-target.sh
+          volumeMounts:
+            - name: trilio-backup-target-sh
+              mountPath: /tmp/create-backup-target.sh
+              subPath: create-backup-target.sh
+              readOnly: true
+            - name: ca-cert-bundle
+              mountPath: /etc/ssl/certs/openstack-ca-bundle.pem
+              subPath: ca_bundle
+              readOnly: true
+          env:
+            - name: WORKLOADMGR_ENDPOINT_TYPE
+              value: "internal"
+            - name: OS_IDENTITY_API_VERSION
+              value: "3"
+            - name: OS_AUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_AUTH_URL
+            - name: OS_REGION_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_REGION_NAME
+            - name: OS_INTERFACE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_INTERFACE
+            - name: OS_ENDPOINT_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_INTERFACE
+            - name: OS_PROJECT_DOMAIN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_PROJECT_DOMAIN_NAME
+            - name: OS_PROJECT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_PROJECT_NAME
+            - name: OS_USER_DOMAIN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_USER_DOMAIN_NAME
+            - name: OS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_USERNAME
+            - name: OS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_PASSWORD
+            - name: OS_DEFAULT_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keystone_admin_secret_name }}
+                  key: OS_DEFAULT_DOMAIN
+      volumes:
+        - name: trilio-backup-target-sh
+          configMap:
+            name: trilio-backup-target-bin
+            defaultMode: 0555
+        - name: ca-cert-bundle
+          secret:
+            secretName: {{ .Values.ca_cert_bundle_secret_name }}
+            defaultMode: 0444

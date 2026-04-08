@@ -705,7 +705,6 @@ images:
     triliovault_wlm_db_sync: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_scheduler: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
     triliovault_wlm_workloads: docker.io/trilio/triliovault-wlm-helm:5.0.0-train-ubuntu_bionic
-    triliovault_dms: docker.io/trilio/triliovault-dms-helm:5.0.0-train-ubuntu_bionic
 labels:
   datamover:
     node_selector_key: openstack-compute-node
@@ -731,16 +730,9 @@ labels:
   wlm_workloads:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  dms_controller:
-    node_selector_key: openstack-control-plane
-    node_selector_value: enabled
-  dms_compute:
-    node_selector_key: openstack-compute-node
-    node_selector_value: enabled
 manifests:
   certificates: true
   daemonset_datamover: true
-  daemonset_dms: true
   datamover_configmap_bin: true
   datamover_configmap_etc: true
   deployment_datamover_api: true
@@ -748,7 +740,6 @@ manifests:
   deployment_wlm_cron: true
   deployment_wlm_scheduler: true
   deployment_wlm_workloads: true
-  deployment_dms: true
   ingress_api: true
   ingress_datamover_api: true
   ingress_wlm_api: true
@@ -760,7 +751,7 @@ manifests:
   job_datamover_ks_service: true
   job_datamover_ks_user: true
   job_image_repo_sync: true
-  job_wlm_cloud_trust: false
+  job_wlm_cloud_trust: true
   job_wlm_db_drop: false
   job_wlm_db_init: true
   job_wlm_db_sync: true

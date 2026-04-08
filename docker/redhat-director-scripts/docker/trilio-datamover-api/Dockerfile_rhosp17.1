@@ -29,7 +29,7 @@ RUN dnf config-manager \
 
 RUN dnf --releasever 9.6 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --nobest --skip-broken
 RUN dnf --releasever 9.6 -y install python3-nova python3-retrying
-RUN dnf install --releasever 9.6 python3-dmapi-el9 python3-trilio-dms-el9 -y
+RUN dnf install --releasever 9.6 python3-dmapi-el9 -y
 RUN rm -f /etc/yum.repos.d/trilio.repo
 RUN usermod -a -G kolla dmapi
 

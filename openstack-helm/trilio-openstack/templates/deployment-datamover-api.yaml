@@ -112,10 +112,6 @@ spec:
               subPath: triliovault-datamover-api.conf
               readOnly: true
             - name: triliovault-datamover-api-etc
-              mountPath: /etc/triliovault-dms/client.conf
-              subPath: client.conf
-              readOnly: true
-            - name: triliovault-datamover-api-etc
               mountPath: /etc/triliovault-datamover/datamover_api_logging.conf
               subPath: datamover_api_logging.conf
               readOnly: true

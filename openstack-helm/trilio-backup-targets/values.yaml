@@ -1,0 +1,32 @@
+trilio_backup_target:
+  backup_target_name: 'NFS_BT2'
+  backup_target_type: 's3'
+  is_default: False
+  s3_type: 'amazon_s3'
+  s3_access_key: 'ACCESSKEY1'
+  s3_secret_key: 'SECRETKEY1'
+  s3_region_name: 'REGION1'
+  s3_bucket: 'BUCKET1'
+  s3_endpoint_url: 'ENDPOINT_URL1'
+  s3_signature_version: 'default'
+  s3_auth_version: 'DEFAULT'
+  s3_bucket_object_lock_enabled: false
+  s3_ssl_enabled: true
+  s3_ssl_verify: true
+  s3_self_signed_cert: false
+  nfs_server: '192.168.0.51'
+  nfs_shares: /home/openstack-helm
+  nfs_options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+  storage_size: 20Gi
+  storage_class_name: ceph-filesystem
+  s3_ssl_ca_cert: ''
+
+images:
+  trilio_wlm: docker.io/trilio/trilio-wlm-helm:6.1.0-dev-maint1-1-2023.2
+
+ca_cert_bundle_secret_name: triliovault-wlm-ca-bundle
+keystone_admin_secret_name: triliovault-keystone-admin
+common:
+  vault_data_dir: /var/lib/trilio/triliovault-mounts
+  nova_user_id: "42424"
+  nova_group_id: "42424"

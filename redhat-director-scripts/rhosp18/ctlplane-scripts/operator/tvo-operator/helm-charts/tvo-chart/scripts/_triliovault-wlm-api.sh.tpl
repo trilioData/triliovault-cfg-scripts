@@ -4,6 +4,20 @@ set -e
 COMMAND="${@:-start}"
 
 function start () {
+{{- $vaultDataDir := .Values.common.vault_data_dir }}
+{{- range .Values.triliovault_backup_targets }}
+  {{- if eq .backup_target_type "nfs" }}
+    {{- $nfsShare := .nfs_shares }}
+    {{- $nfsParts := splitList ":" $nfsShare }}
+    {{- $nfsDir := index $nfsParts 1 }}
+    {{- $base64MountPoint := (b64enc $nfsDir) }}
+    {{- $nfsOptions := .nfs_options }}
+mkdir -p {{ $vaultDataDir }}/{{ $base64MountPoint }}
+sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf mount -t nfs {{ $nfsShare }} {{ $vaultDataDir }}/{{ $base64MountPoint }} -o {{ $nfsOptions }}
+  {{- end }}
+{{- end }}
+
+  
   # Start httpd in background
   httpd -k start
 

@@ -68,10 +68,6 @@ spec:
             runAsGroup: {{ .Values.common.nova_user_id }}
             runAsUser: 0
           env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
             - name: POD_NAME
               value: "triliovault-wlm-api"
             - name: POD_IP
@@ -114,6 +110,20 @@ spec:
               value: "{{- .Values.database.common.port -}}"
             - name: WLM_DATABASE_NAME
               value: "{{- .Values.database.wlm_api.database -}}"
+            {{- range .Values.triliovault_backup_targets }}
+            {{- if eq .backup_target_type "s3" }}
+            - name: {{ .backup_target_name }}_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: {{ .backup_target_name }}_s3_access_key
+            - name: {{ .backup_target_name }}_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: {{ .backup_target_name }}_s3_secret_key
+            {{- end }}
+            {{- end }}
           command:
             - /bin/bash
             - -c
@@ -200,9 +210,6 @@ spec:
             - name: triliovault-wlm-bin
               mountPath: /tmp/triliovault-wlm-api.sh
               subPath: triliovault-wlm-api.sh
-            - name: triliovault-wlm-bin
-              mountPath: /etc/triliovault-wlm/policy.yaml 
-              subPath: workloadmgr-policy.yaml
             - name: pod-shared-triliovault-wlm-api
               mountPath: /tmp/pod-shared-triliovault-wlm-api
             - name: trilio-mounts
@@ -230,13 +237,6 @@ spec:
               subPath: tls-ca-bundle.pem
             - name: dev-mount
               mountPath: /dev
-            - name: triliovault-dms-etc
-              mountPath: /etc/triliovault-dms/client.conf
-              subPath: client_wlm.conf
-              readOnly: true
-            - name: pod-shared-triliovault-wlm-api
-              mountPath: /etc/triliovault-dms/client.conf.d/triliovault-dms-client-dynamic.conf
-              subPath: triliovault-dms-client-dynamic.conf
       volumes:
         - name: pod-tmp
           emptyDir: {}
@@ -272,8 +272,4 @@ spec:
           hostPath:
             path: /dev
             type: Directory
-        - name: triliovault-dms-etc
-          secret:
-            secretName: triliovault-dms-etc
-            defaultMode: 0444
 {{- end }}

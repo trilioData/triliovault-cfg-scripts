@@ -27,7 +27,7 @@ RUN dnf config-manager \
 
 
 RUN dnf --releasever 9.6 -y install python3-nova python3-retrying mysql python3-openstackclient httpd mod_ssl net-tools
-RUN dnf install --releasever 9.6 python3-dmapi-el9 python3-trilio-dms-el9 -y && chown -R dmapi:dmapi /run/httpd/ \
+RUN dnf install --releasever 9.6 python3-dmapi-el9 -y && chown -R dmapi:dmapi /run/httpd/ \
     && sed -i '/^Listen /c\Listen 8784' /etc/httpd/conf/httpd.conf && chown -R dmapi:root /var/log/httpd \
     && chown -R dmapi:root /var/www && chown -R dmapi:root /etc/httpd && chown -R dmapi:dmapi /var/cache/httpd 
 RUN curl -o /usr/local/bin/rabbitmqadmin https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/v3.12.x/deps/rabbitmq_management/bin/rabbitmqadmin && chmod +x /usr/local/bin/rabbitmqadmin

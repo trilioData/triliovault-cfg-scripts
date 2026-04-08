@@ -4,6 +4,7 @@ metadata:
   name: trilio-datamover
 spec:
   deployOnAllNodeSets: true
+  label: dataplane-deployment-custom-service
   openStackAnsibleEERunnerImage: registry.connect.redhat.com/trilio/trilio-ansible-runner-rhoso:6.1.0-stable-1-rhosp18.0
   edpmServiceType: trilio-datamover
   playbookContents: |
@@ -19,3 +20,4 @@ spec:
         name: cm-trilio-datamover
     - secretRef:
         name: trilio-openstack-secret
+
