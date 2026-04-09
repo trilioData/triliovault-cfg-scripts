@@ -48,6 +48,9 @@ RUN dnf erase --releasever 9.6 -y epel-release
 
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
+RUN dnf install --releasever 9.6 -y fuse-libs && \
+      ldconfig
+
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
     /etc/triliovault-dms \
