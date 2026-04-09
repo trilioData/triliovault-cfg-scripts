@@ -49,7 +49,6 @@ RUN dnf erase --releasever 9.6 -y epel-release
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
 RUN dnf install --releasever 9.6 -y fuse-libs && \
-      ln -s /usr/lib64/libfuse.so.2 /usr/lib64/libfuse.so && \
       ldconfig
 
 RUN mkdir -p \
