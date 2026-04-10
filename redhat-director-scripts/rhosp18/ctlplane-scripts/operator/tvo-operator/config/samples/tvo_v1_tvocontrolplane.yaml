@@ -311,6 +311,46 @@ spec:
             runAsUser: 42436
         pod:
           runAsUser: 42424
+  dms:
+    # s3vaultfuse-global.conf parameters
+    # These configure how DMS spawns s3vaultfuse processes on control plane nodes.
+    # The values below are defaults -- modify only the params you need to override.
+    s3vaultfuse:
+      default:
+        vault_storage_type: "s3"
+        vault_s3_max_pool_connections: 50
+        vault_s3_read_timeout: 30
+        vault_s3_max_attempts: 3
+        vault_s3_auth_version: "DEFAULT"
+        vault_s3_signature_version: "default"
+        # SSL settings -- DMS overrides these via env vars; set here only to change the site-wide default
+        vault_s3_ssl: "True"
+        vault_s3_ssl_verify: "True"
+        vault_s3_region_name: "us-east-1"
+        # FUSE / caching
+        vault_segment_size: 33554432
+        vault_cache_size: 16
+        queue_depth: 100
+        worker_pool_size: 10
+        vault_retry_count: 2
+        # Thread pool
+        vault_enable_threadpool: "True"
+        vault_threaded_filesystem: "True"
+        max_uploads_pending: 20
+        # Logging
+        vault_logging_level: "error"
+        log_file: "/var/log/tvault-object-store/tvault-object-store.log"
+        log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
+        trace_function_calls: "False"
+        # S3 bucket features
+        bucket_object_lock: "False"
+        use_manifest_suffix: "False"
+        azure_immutability_enabled: "False"
+        # Metadata cache
+        metadata_cache_max_items: 32
+        vault_cache_username: "nova"
+      s3fuse_sys_admin:
+        helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
   rabbitmq:
     common:
       admin_password: EDIT_PASSWORD
