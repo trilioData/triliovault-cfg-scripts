@@ -18,6 +18,17 @@
   notify:
     - Restart triliovault-dms
 
+- name: Create S3VaultFuse global configuration file
+  become: true
+  template:
+    src: s3vaultfuse_global_conf.j2
+    dest: "{{ triliovault_dms_config_dest }}/s3vaultfuse-global.conf"
+    owner: '42436'
+    group: '42436'
+    mode: '0644'
+  notify:
+    - Restart triliovault-dms
+
 - name: Create Triliovault DMS log directory
   become: true
   file:
