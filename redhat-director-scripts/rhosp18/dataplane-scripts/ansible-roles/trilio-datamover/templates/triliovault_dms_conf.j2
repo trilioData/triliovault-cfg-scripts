@@ -6,7 +6,7 @@ rabbitmq_url = rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/tril
 
 # Node identifier (optional, default: auto-detected hostname)
 # If not specified, DMS will use socket.gethostname()
-node_id = {{ ansible_hostname }}
+node_id = {{ ansible_fqdn }}
 
 # Keystone auth URL
 auth_url = {{ keystone_auth_url }}
