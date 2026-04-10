@@ -5,8 +5,10 @@ rabbitmq_url = rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/tril
 
 
 # Node identifier (optional, default: auto-detected hostname)
-# If not specified, DMS will use socket.gethostname()
-node_id = {{ ansible_fqdn }}
+# Must match OS-EXT-SRV-ATTR:host from 'openstack server show' (nova-compute host value).
+# canonical_hostname is set by the EDPM dataplane-operator from the ctlplane network FQDN,
+# which is the same variable the edpm_nova role uses for host= in nova.conf.
+node_id = {{ canonical_hostname }}
 
 # Keystone auth URL
 auth_url = {{ keystone_auth_url }}
