@@ -48,11 +48,12 @@ RUN dnf erase --releasever 9.6 -y epel-release
 
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
-RUN dnf install --releasever 9.6 -y fuse-libs && \
+RUN dnf install --releasever 9.6 -y fuse && \
       ldconfig
 
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
+    /var/triliovault \
     /etc/triliovault-dms \
     /etc/triliovault-dms/client.conf.d \
     /var/log/triliovault \
@@ -64,6 +65,7 @@ RUN mkdir -p \
     /run/dms/s3 \
     /etc/triliovault-dms
 
+RUN echo "user_allow_other" > /etc/fuse.conf
 
 ##Disable repos and Clean subscription
 RUN dnf config-manager \
