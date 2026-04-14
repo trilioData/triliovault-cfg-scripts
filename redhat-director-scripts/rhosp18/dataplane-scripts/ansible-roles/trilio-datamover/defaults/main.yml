@@ -14,7 +14,7 @@ cinder_backend_ceph: true
 libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
 ceph_cinder_user: "cinder"
 oslomsg_rpc_use_ssl: true
-rabbit_quorum_queue: true
+rabbit_quorum_queue: false
 cinder_backend_power_flex: false
 ## Do we need this parameter? Check datamover conf.
 cinder_http_retries: "10"

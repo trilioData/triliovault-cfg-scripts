@@ -99,7 +99,7 @@ rabbitmq:
   cluster:
     api_version: "rabbitmq.com/v1beta1"
     replicas: 3
-    rabbit_quorum_queue: true
+    rabbit_quorum_queue: false
     image: "rabbitmq:3.13.7-management"
     resources:
       requests:
