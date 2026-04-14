@@ -339,7 +339,7 @@ spec:
         max_uploads_pending: 20
         # Logging
         vault_logging_level: "error"
-        log_file: "/var/log/tvault-object-store/tvault-object-store.log"
+        log_file: "/var/log/triliovault/triliovault-object-store.log"
         log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
         trace_function_calls: "False"
         # S3 bucket features

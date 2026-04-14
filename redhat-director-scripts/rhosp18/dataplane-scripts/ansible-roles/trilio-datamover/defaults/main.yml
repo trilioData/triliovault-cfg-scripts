@@ -14,6 +14,7 @@ cinder_backend_ceph: true
 libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
 ceph_cinder_user: "cinder"
 oslomsg_rpc_use_ssl: true
+rabbit_quorum_queue: false
 cinder_backend_power_flex: false
 ## Do we need this parameter? Check datamover conf.
 cinder_http_retries: "10"
@@ -53,7 +54,7 @@ s3vaultfuse_global:
     vault_threaded_filesystem: "True"
     max_uploads_pending: 20
     vault_logging_level: "error"
-    log_file: "/var/log/tvault-object-store/tvault-object-store.log"
+    log_file: "/var/log/triliovault/triliovault-object-store.log"
     log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
     trace_function_calls: "False"
     bucket_object_lock: "False"

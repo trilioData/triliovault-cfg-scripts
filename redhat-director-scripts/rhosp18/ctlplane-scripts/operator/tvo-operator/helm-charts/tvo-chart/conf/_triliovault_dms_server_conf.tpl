@@ -7,6 +7,11 @@
 # Keystone auth URL
 auth_url = {{ .Values.keystone.common.auth_url }}
 
+{{- if .Values.rabbitmq.cluster.rabbit_quorum_queue }}
+# Use quorum queue type for RabbitMQ
+rabbitmq_queue_type = quorum
+{{- end }}
+
 # Barbican SSL verification (optional, default: False)
 # Set to True to enable SSL certificate verification for Barbican API
 # Set to False to disable SSL verification (useful for self-signed certificates)
