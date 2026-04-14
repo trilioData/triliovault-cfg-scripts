@@ -3,6 +3,9 @@
 # Supported schemes: amqp://, amqps://, rabbit://, rabbitmq://, rabbit+ssl://
 rabbitmq_url = rabbit://dmapi:{{ lookup('file', '/var/lib/openstack/configs/trilio-datamover/DmapiRabbitPassword') | trim }}@{{ rabbit_host }}:{{ rabbit_port }}/dmapi{% if rabbit_ssl %}?ssl=1{% endif %}
 
+# Enable quorum queues for RabbitMQ (optional, default: True)
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+
 
 # Node identifier (optional, default: auto-detected hostname)
 # Must match OS-EXT-SRV-ATTR:host from 'openstack server show' (nova-compute host value).
