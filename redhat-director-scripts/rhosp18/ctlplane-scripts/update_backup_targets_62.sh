@@ -353,13 +353,9 @@ for i in $(seq 0 $((TOTAL - 1))); do
 
   VALIDATE_CMD="trilio-dms-cli secret-payload validate ${POD_SECRET_JSON}"
 
-  log "  DMS command: ${DMS_CMD}"
-
   # Run create → validate → print JSON in a single exec call
   RAW_OUTPUT=$(exec_in_pod \
-    "${DMS_CMD} && ${VALIDATE_CMD} && cat ${POD_SECRET_JSON}" 2>&1 || echo "")
-
-  log "  DMS output: ${RAW_OUTPUT}"
+    "${DMS_CMD} && ${VALIDATE_CMD} && cat ${POD_SECRET_JSON}" || echo "")
 
   if [ -z "${RAW_OUTPUT}" ]; then
     err "  trilio-dms-cli failed for '${BT_NAME}'."
