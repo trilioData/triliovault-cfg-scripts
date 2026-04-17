@@ -209,6 +209,7 @@ log "Migration pod is ready."
 exec_in_pod() {
   oc exec -n "${NAMESPACE}" "${MIGRATE_POD}" -- bash -c "
     source /tmp/triliovault-cloudrc
+    unset OS_PROJECT_ID
     $*
   " 2>/dev/null
 }
@@ -441,6 +442,45 @@ print(data.get('secret_href')
     continue
   fi
 
+  # The href returned by 'openstack secret store' uses the endpoint the CLI
+  # connected to (often http:// internal hostname), which differs from the
+  # https:// public endpoint that workloadmgr uses to validate secret_ref.
+  # Fix: query the keystone catalog for the Barbican public endpoint and
+  # rebuild the href keeping only the secret UUID from the returned value.
+  SECRET_UUID=$(echo "${SECRET_HREF}" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' || echo "")
+  # Query the Barbican public endpoint using OS_INTERFACE=public explicitly
+  # so the keystone catalog lookup uses the public URL, not the internal one
+  # set in triliovault-cloudrc.
+  BARBICAN_ENDPOINT=$(oc exec -n "${NAMESPACE}" "${MIGRATE_POD}" -- bash -c "
+    source /tmp/triliovault-cloudrc
+    unset OS_PROJECT_ID
+    OS_INTERFACE=public openstack endpoint list \
+      --service key-manager --interface public -f json 2>/dev/null | \
+    python3 -c \"
+import json, sys
+eps = json.load(sys.stdin)
+url = eps[0].get('URL', '').rstrip('/') if eps else ''
+if url.endswith('/v1'):
+    url = url[:-3]
+print(url)
+\"
+  " 2>/dev/null || echo "")
+
+  if [ -z "${SECRET_UUID}" ]; then
+    err "  Could not extract secret UUID from Barbican href '${SECRET_HREF}'."
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  if [ -z "${BARBICAN_ENDPOINT}" ]; then
+    err "  Could not determine Barbican public endpoint from keystone catalog."
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  SECRET_HREF="${BARBICAN_ENDPOINT}/v1/secrets/${SECRET_UUID}"
+  log "  Normalised Barbican secret href: ${SECRET_HREF}"
+
   log "  Barbican secret: ${SECRET_HREF}"
 
   # ------------------------------------------------------------------
@@ -448,9 +488,11 @@ print(data.get('secret_href')
   # ------------------------------------------------------------------
   log "  Step 2.4: Updating '${WLM_NAME}' (bucket=${BUCKET}, id=${BT_ID}) ..."
 
-  UPDATE_OUTPUT=$(exec_in_pod \
-    "workloadmgr backup-target-modify --secret-ref '${SECRET_HREF}' ${BT_ID}" \
-    2>&1 || echo "FAILED")
+  WLM_UPDATE_CMD="workloadmgr backup-target-modify --secret-ref '${SECRET_HREF}' ${BT_ID}"
+  log "  Update command: ${WLM_UPDATE_CMD}"
+
+  UPDATE_OUTPUT=$(exec_in_pod "${WLM_UPDATE_CMD}" 2>&1 || echo "FAILED")
+  log "  Update output: ${UPDATE_OUTPUT}"
 
   if echo "${UPDATE_OUTPUT}" | grep -qiE "^FAILED|[Ee]rror"; then
     err "  workloadmgr backup-target-modify failed for '${BT_NAME}':"
@@ -458,6 +500,20 @@ print(data.get('secret_href')
     FAIL=$((FAIL + 1))
     continue
   fi
+
+  # Verify secret_ref was persisted
+  VERIFY_OUTPUT=$(exec_in_pod \
+    "workloadmgr backup-target-show ${BT_ID} --format json" 2>/dev/null || echo "[]")
+  SECRET_REF_STORED=$(echo "${VERIFY_OUTPUT}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if isinstance(data, list):
+    val = next((d.get('Value','') for d in data if d.get('Field') == 'secret_ref'), '')
+else:
+    val = data.get('secret_ref', '')
+print(val or 'None')
+" 2>/dev/null || echo "unknown")
+  log "  secret_ref after update: ${SECRET_REF_STORED}"
 
   log "  Backup target '${BT_NAME}' updated successfully."
   PASS=$((PASS + 1))
