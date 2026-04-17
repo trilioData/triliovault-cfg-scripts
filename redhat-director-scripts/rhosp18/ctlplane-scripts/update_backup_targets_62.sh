@@ -40,9 +40,24 @@
 #   - jq
 #
 # Usage:
-#   bash update_backup_targets_62.sh
+#   bash update_backup_targets_62.sh [-k]
+#
+#   -k  Keep the migration pod running after the script exits (useful for
+#       debugging — exec into it with:
+#         oc exec -it -n trilio-openstack <pod-name> -- bash
 
 set -euo pipefail
+
+KEEP_POD=false
+
+while getopts ":k" opt; do
+  case "${opt}" in
+    k) KEEP_POD=true ;;
+    \?) echo "ERROR: Unknown option -${OPTARG}." >&2
+        echo "Usage: $0 [-k]" >&2; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 NAMESPACE="trilio-openstack"
 INPUTS_FILE="tvo-operator-inputs.yaml"
@@ -62,8 +77,12 @@ err()  { echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2; }
 
 cleanup() {
   [ -d "${WORKDIR}" ] && rm -rf "${WORKDIR}"
-  oc delete pod "${MIGRATE_POD}" -n "${NAMESPACE}" \
-    --ignore-not-found >/dev/null 2>&1 || true
+  if [ "${KEEP_POD}" = "true" ]; then
+    log "Keeping migration pod '${MIGRATE_POD}' (sleep 600 — exec in with: oc exec -it -n ${NAMESPACE} ${MIGRATE_POD} -- bash)"
+  else
+    oc delete pod "${MIGRATE_POD}" -n "${NAMESPACE}" \
+      --ignore-not-found >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT
 
@@ -203,16 +222,26 @@ WLM_BT_JSON=$(exec_in_pod "workloadmgr backup-target-list --format json" || echo
 BT_COUNT=$(echo "${WLM_BT_JSON}" | jq 'length')
 log "workloadmgr reports ${BT_COUNT} backup target(s)."
 
-# Match by S3 bucket name — target names may differ between inventory and WLM.
-# workloadmgr may return the bucket as 's3_bucket' or 'bucket'.
+# Match by S3 bucket name — workloadmgr backup-target-list --format json
+# returns the bucket/endpoint in "Backend Endpoint" field.
+# Format is either:
+#   plain bucket name      →  "trilio-qa"
+#   host:port/bucket-name  →  "ceph-aio.example.com:8080/bucket1"
+# So we match on exact equality OR on the last path component after '/'.
 get_bt_id_by_bucket() {
   echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
-    '.[] | select((.s3_bucket // .bucket // "") == $b) | .id'
+    '.[] | select(
+      (."Backend Endpoint" // "") == $b or
+      ((."Backend Endpoint" // "") | split("/") | last) == $b
+    ) | .ID'
 }
 
 get_wlm_name_by_bucket() {
   echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
-    '.[] | select((.s3_bucket // .bucket // "") == $b) | .name'
+    '.[] | select(
+      (."Backend Endpoint" // "") == $b or
+      ((."Backend Endpoint" // "") | split("/") | last) == $b
+    ) | ."Backend Endpoint"'
 }
 
 # -----------------------------------------------------------------------
@@ -267,20 +296,15 @@ for i in $(seq 0 $((TOTAL - 1))); do
   SSL_CERT=$(echo "${BT}"     | jq -r '.ssl_cert     // empty')
   S3_TYPE=$(echo "${BT}"      | jq -r '.s3_type      // "other_s3"')
 
-  # S3 credentials are stored in a Kubernetes Secret (not in the inventory).
-  # Convention: trilio-s3-backup-target-secret-<name>
-  # Keys:       <name>_s3_access_key,  <name>_s3_secret_key
-  BT_SECRET_NAME="trilio-s3-backup-target-secret-${BT_NAME}"
-  ACCESS_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
-    jq -r --arg k "${BT_NAME}_s3_access_key" '.data[$k] // empty' | \
-    base64 -d 2>/dev/null || true)
-  SECRET_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
-    jq -r --arg k "${BT_NAME}_s3_secret_key" '.data[$k] // empty' | \
-    base64 -d 2>/dev/null || true)
+  # S3 credentials are read from the inventory file, which was populated by
+  # collect_backup_targets.sh from trilio-openstack-secret on the 6.1 cluster
+  # before upgrade (6.2 removes those keys from trilio-openstack-secret).
+  ACCESS_KEY=$(echo "${BT}" | jq -r '.access_key // empty')
+  SECRET_KEY=$(echo "${BT}" | jq -r '.secret_key // empty')
 
   if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ]; then
-    err "  S3 credentials not found in secret '${BT_SECRET_NAME}'."
-    err "  Expected keys: ${BT_NAME}_s3_access_key, ${BT_NAME}_s3_secret_key"
+    err "  S3 credentials missing for '${BT_NAME}' in ${INVENTORY_FILE}."
+    err "  Re-run collect_backup_targets.sh against the 6.1 cluster to collect credentials."
     FAIL=$((FAIL + 1))
     continue
   fi
@@ -314,10 +338,13 @@ for i in $(seq 0 $((TOTAL - 1))); do
   fi
 
   # Build trilio-dms-cli argument list
+  # --filesystem-export is the Backend Endpoint value from workloadmgr
+  # backup-target-list (same as filesystem_export in backup-target-show).
   DMS_CMD="trilio-dms-cli secret-payload create"
   DMS_CMD="${DMS_CMD} --access-key '${ACCESS_KEY}'"
   DMS_CMD="${DMS_CMD} --secret-key '${SECRET_KEY}'"
   DMS_CMD="${DMS_CMD} --bucket '${BUCKET}'"
+  DMS_CMD="${DMS_CMD} --filesystem-export '${WLM_NAME}'"
   DMS_CMD="${DMS_CMD} --endpoint-url '${ENDPOINT_URL}'"
   [ "${SSL}"            = "true" ] && DMS_CMD="${DMS_CMD} --ssl"
   [ "${SSL_VERIFY}"     = "true" ] && DMS_CMD="${DMS_CMD} --ssl-verify"
@@ -326,9 +353,13 @@ for i in $(seq 0 $((TOTAL - 1))); do
 
   VALIDATE_CMD="trilio-dms-cli secret-payload validate ${POD_SECRET_JSON}"
 
+  log "  DMS command: ${DMS_CMD}"
+
   # Run create → validate → print JSON in a single exec call
   RAW_OUTPUT=$(exec_in_pod \
-    "${DMS_CMD} && ${VALIDATE_CMD} && cat ${POD_SECRET_JSON}" || echo "")
+    "${DMS_CMD} && ${VALIDATE_CMD} && cat ${POD_SECRET_JSON}" 2>&1 || echo "")
+
+  log "  DMS output: ${RAW_OUTPUT}"
 
   if [ -z "${RAW_OUTPUT}" ]; then
     err "  trilio-dms-cli failed for '${BT_NAME}'."

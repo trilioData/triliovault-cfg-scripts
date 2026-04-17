@@ -21,19 +21,33 @@
 #       get secret openstack-secret in trilio-openstack or openstack namespace
 #   - python3 with PyYAML   (pip3 install pyyaml)
 #   - jq
-#   - tvo-operator-inputs.yaml in the current directory
+#   - tvo-operator-inputs.yaml (path supplied via -i or defaults to ./tvo-operator-inputs.yaml)
 #
 # Usage:
-#   bash collect_backup_targets.sh
+#   bash collect_backup_targets.sh [-i <path/to/tvo-operator-inputs.yaml>]
 #
 # Output:
 #   existing_list_of_backup_targets.yaml  — input for update_backup_targets_62.sh
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+INPUTS_FILE="tvo-operator-inputs.yaml"   # default
+
+while getopts ":i:" opt; do
+  case "${opt}" in
+    i) INPUTS_FILE="${OPTARG}" ;;
+    :) echo "ERROR: -${OPTARG} requires an argument." >&2; exit 1 ;;
+    \?) echo "ERROR: Unknown option -${OPTARG}." >&2
+        echo "Usage: $0 [-i <path/to/tvo-operator-inputs.yaml>]" >&2; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
 NAMESPACE="trilio-openstack"
 OPENSTACK_NS="openstack"
-INPUTS_FILE="tvo-operator-inputs.yaml"
 INVENTORY_FILE="existing_list_of_backup_targets.yaml"
 
 log()      { echo "[$(date '+%H:%M:%S')] $*"; }
@@ -56,7 +70,7 @@ done
 python3 -c "import yaml" 2>/dev/null || {
   err "Python3 'yaml' module missing.  Install with: pip3 install pyyaml"; exit 1; }
 [ -f "${INPUTS_FILE}" ] || {
-  err "${INPUTS_FILE} not found in $(pwd)"; exit 1; }
+  err "${INPUTS_FILE} not found"; exit 1; }
 log "All prerequisites satisfied."
 
 # -----------------------------------------------------------------------
@@ -82,10 +96,10 @@ log_step "Step 1: Read backup targets from ${INPUTS_FILE}"
 #
 #       If the section is absent the script logs a notice and moves on.
 
-STATIC_BTS_JSON=$(python3 - <<'PYEOF'
+STATIC_BTS_JSON=$(python3 - "${INPUTS_FILE}" <<'PYEOF'
 import yaml, json, sys
 
-with open("tvo-operator-inputs.yaml") as f:
+with open(sys.argv[1]) as f:
     doc = yaml.safe_load(f)
 
 spec = doc.get("spec", doc)   # support both wrapped and flat layouts
@@ -97,7 +111,7 @@ for b in spec.get("triliovault_backup_targets", []):
     bt = {
         "name":       b.get("backup_target_name", ""),
         "type":       b.get("backup_target_type", "s3"),
-        "source":     "tvo-operator-inputs.yaml",
+        "source":     sys.argv[1],
         "is_default": b.get("is_default", False),
     }
     if not bt["name"]:
@@ -117,10 +131,10 @@ for b in spec.get("triliovault_backup_targets", []):
     bts.append(bt)
 
 if bts:
-    print(f"[INFO] Total from tvo-operator-inputs.yaml: {len(bts)}", file=sys.stderr)
+    print(f"[INFO] Total from {sys.argv[1]}: {len(bts)}", file=sys.stderr)
 else:
-    print("[INFO] No triliovault_backup_targets section found in "
-          "tvo-operator-inputs.yaml — relying on TVOBackupTarget CRs.",
+    print(f"[INFO] No triliovault_backup_targets section found in "
+          f"{sys.argv[1]} — relying on TVOBackupTarget CRs.",
           file=sys.stderr)
 
 print(json.dumps(bts))
@@ -240,9 +254,123 @@ PYEOF
 log "Inventory file created: ${INVENTORY_FILE}"
 
 # -----------------------------------------------------------------------
-# Step 4: Verify inventory against workloadmgr backup-target-list
+# Step 4: Collect S3 credentials (6.1 cluster — must run BEFORE upgrade)
+#
+# Credential source depends on how the backup target was added:
+#
+#   tvo-operator-inputs.yaml → trilio-openstack-secret
+#                              keys: <bt-name>_s3_access_key
+#                                    <bt-name>_s3_secret_key
+#
+#   TVOBackupTarget CR       → trilio-s3-backup-target-secret-<bt-name>
+#                              keys: <bt-name>_s3_access_key
+#                                    <bt-name>_s3_secret_key
+#
+# Both secrets are removed in 6.2, so credentials must be collected here.
 # -----------------------------------------------------------------------
-log_step "Step 4: Verify inventory against workloadmgr backup-target-list"
+log_step "Step 4: Collect S3 credentials"
+
+# Fetch trilio-openstack-secret (for YAML-sourced targets)
+OS_SECRET_JSON=$(oc get secret trilio-openstack-secret -n "${NAMESPACE}" \
+  -o json 2>/dev/null || echo '{}')
+OPENSTACK_SECRET_DATA=$(echo "${OS_SECRET_JSON}" | jq -c '.data // {}')
+
+# For each TVOBackupTarget CR target, fetch its dedicated secret and collect
+# credentials into a temp JSON file: { "<bt-name>": {"access_key":…, "secret_key":…} }
+CR_CREDS_FILE=$(mktemp)
+echo '{}' > "${CR_CREDS_FILE}"
+
+while IFS= read -r bt_name; do
+  [ -z "${bt_name}" ] && continue
+  # K8s resource names cannot contain underscores — normalise bt_name for
+  # the secret name only; data keys inside the secret keep the original name.
+  SECRET_NAME="trilio-s3-backup-target-secret-${bt_name//_/-}"
+  log "  Reading ${SECRET_NAME} ..."
+  AK_B64=$(oc get secret "${SECRET_NAME}" -n "${NAMESPACE}" \
+    -o json 2>/dev/null | jq -r --arg k "${bt_name}_s3_access_key" '.data[$k] // empty' || true)
+  SK_B64=$(oc get secret "${SECRET_NAME}" -n "${NAMESPACE}" \
+    -o json 2>/dev/null | jq -r --arg k "${bt_name}_s3_secret_key" '.data[$k] // empty' || true)
+  if [ -n "${AK_B64}" ] && [ -n "${SK_B64}" ]; then
+    python3 -c "
+import json, base64
+with open('${CR_CREDS_FILE}') as fh: d = json.load(fh)
+d['${bt_name}'] = {
+    'access_key': base64.b64decode('${AK_B64}').decode(),
+    'secret_key': base64.b64decode('${SK_B64}').decode(),
+}
+with open('${CR_CREDS_FILE}', 'w') as fh: json.dump(d, fh)
+"
+  else
+    warn "  Credentials not found in ${SECRET_NAME}"
+  fi
+done < <(python3 -c "
+import yaml
+with open('${INVENTORY_FILE}') as f:
+    inv = yaml.safe_load(f)
+for bt in inv.get('backup_targets', []):
+    if 'TVOBackupTarget CR' in bt.get('source', ''):
+        print(bt['name'])
+")
+
+# Merge all collected credentials into the inventory
+python3 - <<PYEOF
+import json, yaml, base64, sys, os
+
+os_data  = json.loads(r"""${OPENSTACK_SECRET_DATA}""")
+with open("${CR_CREDS_FILE}") as fh:
+    cr_creds = json.load(fh)
+
+def decode(val):
+    return base64.b64decode(val).decode() if val else ""
+
+with open("${INVENTORY_FILE}") as f:
+    inventory = yaml.safe_load(f)
+
+bts     = inventory.get("backup_targets", [])
+missing = []
+
+for bt in bts:
+    name   = bt["name"]
+    source = bt.get("source", "")
+
+    if "TVOBackupTarget CR" in source:
+        # Per-target secret: trilio-s3-backup-target-secret-<bt-name>
+        creds = cr_creds.get(name, {})
+        ak    = creds.get("access_key", "")
+        sk    = creds.get("secret_key", "")
+    else:
+        # Shared secret: trilio-openstack-secret, keys <bt-name>_s3_*
+        ak = decode(os_data.get(f"{name}_s3_access_key", ""))
+        sk = decode(os_data.get(f"{name}_s3_secret_key", ""))
+
+    if ak and sk:
+        bt["access_key"] = ak
+        bt["secret_key"] = sk
+    else:
+        missing.append(name)
+
+if missing:
+    print(f"[WARN] Credentials not found for: {missing}", file=sys.stderr)
+    print("[WARN] These targets will fail in update_backup_targets_62.sh unless "
+          "credentials are added manually to ${INVENTORY_FILE}", file=sys.stderr)
+
+inventory["backup_targets"] = bts
+with open("${INVENTORY_FILE}", "w") as f:
+    yaml.dump(inventory, f, default_flow_style=False,
+              allow_unicode=True, sort_keys=False)
+
+os.remove("${CR_CREDS_FILE}")
+
+found = len(bts) - len(missing)
+print(f"[INFO] Credentials collected for {found}/{len(bts)} backup target(s)")
+PYEOF
+
+log "Credentials written to ${INVENTORY_FILE}"
+
+# -----------------------------------------------------------------------
+# Step 5: Verify inventory against workloadmgr backup-target-list
+# -----------------------------------------------------------------------
+log_step "Step 5: Verify inventory against workloadmgr backup-target-list"
 
 # Read OpenStack admin settings from tvo-operator-inputs.yaml
 _py_spec() {
@@ -314,7 +442,7 @@ WLM_BT_JSON=$(oc exec -n "${NAMESPACE}" "${WLM_POD}" -- bash -c "
 # -----------------------------------------------------------------------
 # Step 5: Compare and report
 # -----------------------------------------------------------------------
-log_step "Step 5: Compare inventory vs workloadmgr"
+log_step "Step 6: Compare inventory vs workloadmgr"
 
 python3 - <<PYEOF
 import json, yaml, sys
@@ -329,11 +457,13 @@ inv_buckets = sorted(b["bucket"] for b in inv_bts if b.get("bucket"))
 
 try:
     wlm_bts = json.loads(r"""${WLM_BT_JSON}""")
-    # workloadmgr may return the bucket as 's3_bucket' or 'bucket'
+    # workloadmgr backup-target-list --format json returns the bucket/endpoint
+    # in "Backend Endpoint".  Format is either a plain bucket name or
+    # "host:port/bucket" — extract the last path component in both cases.
     wlm_buckets = sorted(
-        b.get("s3_bucket") or b.get("bucket", "")
+        (b.get("Backend Endpoint") or "").split("/")[-1]
         for b in wlm_bts
-        if b.get("s3_bucket") or b.get("bucket")
+        if b.get("Backend Endpoint")
     )
 except Exception as exc:
     print(f"[WARN] Cannot parse workloadmgr output ({exc}). "
