@@ -40,9 +40,24 @@
 #   - jq
 #
 # Usage:
-#   bash update_backup_targets_62.sh
+#   bash update_backup_targets_62.sh [-k]
+#
+#   -k  Keep the migration pod running after the script exits (useful for
+#       debugging — exec into it with:
+#         oc exec -it -n trilio-openstack <pod-name> -- bash
 
 set -euo pipefail
+
+KEEP_POD=false
+
+while getopts ":k" opt; do
+  case "${opt}" in
+    k) KEEP_POD=true ;;
+    \?) echo "ERROR: Unknown option -${OPTARG}." >&2
+        echo "Usage: $0 [-k]" >&2; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 NAMESPACE="trilio-openstack"
 INPUTS_FILE="tvo-operator-inputs.yaml"
@@ -62,8 +77,12 @@ err()  { echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2; }
 
 cleanup() {
   [ -d "${WORKDIR}" ] && rm -rf "${WORKDIR}"
-  oc delete pod "${MIGRATE_POD}" -n "${NAMESPACE}" \
-    --ignore-not-found >/dev/null 2>&1 || true
+  if [ "${KEEP_POD}" = "true" ]; then
+    log "Keeping migration pod '${MIGRATE_POD}' (sleep 600 — exec in with: oc exec -it -n ${NAMESPACE} ${MIGRATE_POD} -- bash)"
+  else
+    oc delete pod "${MIGRATE_POD}" -n "${NAMESPACE}" \
+      --ignore-not-found >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT
 
@@ -190,6 +209,7 @@ log "Migration pod is ready."
 exec_in_pod() {
   oc exec -n "${NAMESPACE}" "${MIGRATE_POD}" -- bash -c "
     source /tmp/triliovault-cloudrc
+    unset OS_PROJECT_ID
     $*
   " 2>/dev/null
 }
@@ -203,16 +223,26 @@ WLM_BT_JSON=$(exec_in_pod "workloadmgr backup-target-list --format json" || echo
 BT_COUNT=$(echo "${WLM_BT_JSON}" | jq 'length')
 log "workloadmgr reports ${BT_COUNT} backup target(s)."
 
-# Match by S3 bucket name — target names may differ between inventory and WLM.
-# workloadmgr may return the bucket as 's3_bucket' or 'bucket'.
+# Match by S3 bucket name — workloadmgr backup-target-list --format json
+# returns the bucket/endpoint in "Backend Endpoint" field.
+# Format is either:
+#   plain bucket name      →  "trilio-qa"
+#   host:port/bucket-name  →  "ceph-aio.example.com:8080/bucket1"
+# So we match on exact equality OR on the last path component after '/'.
 get_bt_id_by_bucket() {
   echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
-    '.[] | select((.s3_bucket // .bucket // "") == $b) | .id'
+    '.[] | select(
+      (."Backend Endpoint" // "") == $b or
+      ((."Backend Endpoint" // "") | split("/") | last) == $b
+    ) | .ID'
 }
 
 get_wlm_name_by_bucket() {
   echo "${WLM_BT_JSON}" | jq -r --arg b "$1" \
-    '.[] | select((.s3_bucket // .bucket // "") == $b) | .name'
+    '.[] | select(
+      (."Backend Endpoint" // "") == $b or
+      ((."Backend Endpoint" // "") | split("/") | last) == $b
+    ) | ."Backend Endpoint"'
 }
 
 # -----------------------------------------------------------------------
@@ -267,20 +297,15 @@ for i in $(seq 0 $((TOTAL - 1))); do
   SSL_CERT=$(echo "${BT}"     | jq -r '.ssl_cert     // empty')
   S3_TYPE=$(echo "${BT}"      | jq -r '.s3_type      // "other_s3"')
 
-  # S3 credentials are stored in a Kubernetes Secret (not in the inventory).
-  # Convention: trilio-s3-backup-target-secret-<name>
-  # Keys:       <name>_s3_access_key,  <name>_s3_secret_key
-  BT_SECRET_NAME="trilio-s3-backup-target-secret-${BT_NAME}"
-  ACCESS_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
-    jq -r --arg k "${BT_NAME}_s3_access_key" '.data[$k] // empty' | \
-    base64 -d 2>/dev/null || true)
-  SECRET_KEY=$(oc get secret "${BT_SECRET_NAME}" -n "${NAMESPACE}" -o json 2>/dev/null | \
-    jq -r --arg k "${BT_NAME}_s3_secret_key" '.data[$k] // empty' | \
-    base64 -d 2>/dev/null || true)
+  # S3 credentials are read from the inventory file, which was populated by
+  # collect_backup_targets.sh from trilio-openstack-secret on the 6.1 cluster
+  # before upgrade (6.2 removes those keys from trilio-openstack-secret).
+  ACCESS_KEY=$(echo "${BT}" | jq -r '.access_key // empty')
+  SECRET_KEY=$(echo "${BT}" | jq -r '.secret_key // empty')
 
   if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ]; then
-    err "  S3 credentials not found in secret '${BT_SECRET_NAME}'."
-    err "  Expected keys: ${BT_NAME}_s3_access_key, ${BT_NAME}_s3_secret_key"
+    err "  S3 credentials missing for '${BT_NAME}' in ${INVENTORY_FILE}."
+    err "  Re-run collect_backup_targets.sh against the 6.1 cluster to collect credentials."
     FAIL=$((FAIL + 1))
     continue
   fi
@@ -314,10 +339,13 @@ for i in $(seq 0 $((TOTAL - 1))); do
   fi
 
   # Build trilio-dms-cli argument list
+  # --filesystem-export is the Backend Endpoint value from workloadmgr
+  # backup-target-list (same as filesystem_export in backup-target-show).
   DMS_CMD="trilio-dms-cli secret-payload create"
   DMS_CMD="${DMS_CMD} --access-key '${ACCESS_KEY}'"
   DMS_CMD="${DMS_CMD} --secret-key '${SECRET_KEY}'"
   DMS_CMD="${DMS_CMD} --bucket '${BUCKET}'"
+  DMS_CMD="${DMS_CMD} --filesystem-export '${WLM_NAME}'"
   DMS_CMD="${DMS_CMD} --endpoint-url '${ENDPOINT_URL}'"
   [ "${SSL}"            = "true" ] && DMS_CMD="${DMS_CMD} --ssl"
   [ "${SSL_VERIFY}"     = "true" ] && DMS_CMD="${DMS_CMD} --ssl-verify"
@@ -414,6 +442,45 @@ print(data.get('secret_href')
     continue
   fi
 
+  # The href returned by 'openstack secret store' uses the endpoint the CLI
+  # connected to (often http:// internal hostname), which differs from the
+  # https:// public endpoint that workloadmgr uses to validate secret_ref.
+  # Fix: query the keystone catalog for the Barbican public endpoint and
+  # rebuild the href keeping only the secret UUID from the returned value.
+  SECRET_UUID=$(echo "${SECRET_HREF}" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' || echo "")
+  # Query the Barbican public endpoint using OS_INTERFACE=public explicitly
+  # so the keystone catalog lookup uses the public URL, not the internal one
+  # set in triliovault-cloudrc.
+  BARBICAN_ENDPOINT=$(oc exec -n "${NAMESPACE}" "${MIGRATE_POD}" -- bash -c "
+    source /tmp/triliovault-cloudrc
+    unset OS_PROJECT_ID
+    OS_INTERFACE=public openstack endpoint list \
+      --service key-manager --interface public -f json 2>/dev/null | \
+    python3 -c \"
+import json, sys
+eps = json.load(sys.stdin)
+url = eps[0].get('URL', '').rstrip('/') if eps else ''
+if url.endswith('/v1'):
+    url = url[:-3]
+print(url)
+\"
+  " 2>/dev/null || echo "")
+
+  if [ -z "${SECRET_UUID}" ]; then
+    err "  Could not extract secret UUID from Barbican href '${SECRET_HREF}'."
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  if [ -z "${BARBICAN_ENDPOINT}" ]; then
+    err "  Could not determine Barbican public endpoint from keystone catalog."
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  SECRET_HREF="${BARBICAN_ENDPOINT}/v1/secrets/${SECRET_UUID}"
+  log "  Normalised Barbican secret href: ${SECRET_HREF}"
+
   log "  Barbican secret: ${SECRET_HREF}"
 
   # ------------------------------------------------------------------
@@ -421,9 +488,11 @@ print(data.get('secret_href')
   # ------------------------------------------------------------------
   log "  Step 2.4: Updating '${WLM_NAME}' (bucket=${BUCKET}, id=${BT_ID}) ..."
 
-  UPDATE_OUTPUT=$(exec_in_pod \
-    "workloadmgr backup-target-modify --secret-ref '${SECRET_HREF}' ${BT_ID}" \
-    2>&1 || echo "FAILED")
+  WLM_UPDATE_CMD="workloadmgr backup-target-modify --secret-ref '${SECRET_HREF}' ${BT_ID}"
+  log "  Update command: ${WLM_UPDATE_CMD}"
+
+  UPDATE_OUTPUT=$(exec_in_pod "${WLM_UPDATE_CMD}" 2>&1 || echo "FAILED")
+  log "  Update output: ${UPDATE_OUTPUT}"
 
   if echo "${UPDATE_OUTPUT}" | grep -qiE "^FAILED|[Ee]rror"; then
     err "  workloadmgr backup-target-modify failed for '${BT_NAME}':"
@@ -431,6 +500,20 @@ print(data.get('secret_href')
     FAIL=$((FAIL + 1))
     continue
   fi
+
+  # Verify secret_ref was persisted
+  VERIFY_OUTPUT=$(exec_in_pod \
+    "workloadmgr backup-target-show ${BT_ID} --format json" 2>/dev/null || echo "[]")
+  SECRET_REF_STORED=$(echo "${VERIFY_OUTPUT}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if isinstance(data, list):
+    val = next((d.get('Value','') for d in data if d.get('Field') == 'secret_ref'), '')
+else:
+    val = data.get('secret_ref', '')
+print(val or 'None')
+" 2>/dev/null || echo "unknown")
+  log "  secret_ref after update: ${SECRET_REF_STORED}"
 
   log "  Backup target '${BT_NAME}' updated successfully."
   PASS=$((PASS + 1))
