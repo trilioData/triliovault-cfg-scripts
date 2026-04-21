@@ -344,3 +344,10 @@ spec:
       # Refer file policy-example.yaml for examples of overriding default policy rules. Uncomment and modify the below lines to override specific rules.
       # workload:workload_delete: rule:admin_api
       # snapshot:snapshot_delete: rule:admin_api
+      workload:backup_target_create: rule:admin_api
+      workload:backup_target_delete: rule:admin_api
+      workload:backup_target_set_default: rule:admin_api
+      workload:backup_target_type_create: rule:admin_api
+      workload:backup_target_type_delete: rule:admin_api
+      workload:backup_target_type_update: rule:admin_api
+      workload:backup_target_update: rule:admin_api
