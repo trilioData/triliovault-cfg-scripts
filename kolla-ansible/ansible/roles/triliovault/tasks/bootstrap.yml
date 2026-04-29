@@ -8,7 +8,7 @@
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ database_port }}"
-      login_user: "{{ database_user }}"
+      login_user: "{{ triliovault_database_shard_root_user }}"
       login_password: "{{ database_password }}"
       name: "{{ item.database_name }}"
   run_once: True
@@ -26,7 +26,7 @@
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ database_port }}"
-      login_user: "{{ database_user }}"
+      login_user: "{{ triliovault_database_shard_root_user }}"
       login_password: "{{ database_password }}"
       name: "{{ item.database_user }}"
       password: "{{ item.database_password }}"
@@ -43,4 +43,3 @@
 - import_tasks: rabbitmq.yml
 
 - include_tasks: bootstrap_service.yml
-

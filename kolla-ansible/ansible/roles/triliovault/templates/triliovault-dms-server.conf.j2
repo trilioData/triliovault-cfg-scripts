@@ -1,0 +1,35 @@
+[server]
+# RabbitMQ connection — uses WLM rabbit user and vhost
+rabbitmq_url = rabbit://{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ kolla_internal_fqdn }}:{{ rabbitmq_port | default('5672') }}/{{ triliovault_wlm_rpc_vhost }}{% if om_enable_rabbitmq_tls | bool %}?ssl=1{% endif %}
+
+{% if rabbit_quorum_queue | bool %}
+rabbitmq_queue_type = quorum
+{% endif %}
+
+# Node identifier — must match OS-EXT-SRV-ATTR:host from nova (the nova-compute host value)
+node_id = {{ inventory_hostname }}
+
+# Keystone auth URL for Barbican token validation
+auth_url = {{ keystone_internal_url }}
+
+# Barbican SSL verification
+barbican_ssl_verify = {{ 'True' if openstack_cacert else 'False' }}
+{% if openstack_cacert %}
+barbican_ca_bundle = {{ openstack_cacert }}
+{% endif %}
+
+# s3vaultfuse binary path
+s3vaultfuse_bin = /usr/bin/s3vaultfuse.py
+
+# rootwrap paths
+rootwrap_bin = /usr/bin/trilio-dms-rootwrap
+rootwrap_conf = /etc/triliovault-dms/rootwrap.conf
+
+# Logging
+log_file = /var/log/triliovault/trilio-dms-server.log
+log_level = INFO
+log_max_bytes = 26214400
+log_backup_count = 5
+
+# Parallel worker threads for different (host, backup_target_id) pairs
+worker_threads = 10

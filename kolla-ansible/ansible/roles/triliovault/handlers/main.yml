@@ -1,5 +1,10 @@
 ---
-- name: Restart triliovault-datamover-api container
+# Each container has two handler entries sharing the same listen topic.
+# Only the one matching triliovault_kolla_module fires; the other is skipped by its when condition.
+# This lets a single role support both kolla_docker (Zed/Antelope) and
+# kolla_container (Bobcat / Caracal / Dalmatian / Epoxy / Flamingo).
+
+- name: Restart triliovault-datamover-api container (kolla_docker)
   vars:
     service_name: "triliovault-datamover-api"
     service: "{{ triliovault_services[service_name] }}"
@@ -15,10 +20,33 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-datamover-api container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Restart triliovault-datamover container
+- name: Restart triliovault-datamover-api container (kolla_container)
+  vars:
+    service_name: "triliovault-datamover-api"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-datamover-api container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-datamover container (kolla_docker)
   vars:
     service_name: "triliovault-datamover"
     service: "{{ triliovault_services[service_name] }}"
@@ -35,10 +63,34 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-datamover container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Restart triliovault-wlm-api container
+- name: Restart triliovault-datamover container (kolla_container)
+  vars:
+    service_name: "triliovault-datamover"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    ipc_mode: "{{ service.ipc_mode | default('') }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-datamover container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-wlm-api container (kolla_docker)
   vars:
     service_name: "triliovault-wlm-api"
     service: "{{ triliovault_services[service_name] }}"
@@ -54,10 +106,33 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-api container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Restart triliovault-wlm-workloads container
+- name: Restart triliovault-wlm-api container (kolla_container)
+  vars:
+    service_name: "triliovault-wlm-api"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-api container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-wlm-workloads container (kolla_docker)
   vars:
     service_name: "triliovault-wlm-workloads"
     service: "{{ triliovault_services[service_name] }}"
@@ -73,10 +148,33 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-workloads container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Restart triliovault-wlm-scheduler container
+- name: Restart triliovault-wlm-workloads container (kolla_container)
+  vars:
+    service_name: "triliovault-wlm-workloads"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-workloads container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-wlm-scheduler container (kolla_docker)
   vars:
     service_name: "triliovault-wlm-scheduler"
     service: "{{ triliovault_services[service_name] }}"
@@ -92,10 +190,33 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-scheduler container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Restart triliovault-wlm-cron container
+- name: Restart triliovault-wlm-scheduler container (kolla_container)
+  vars:
+    service_name: "triliovault-wlm-scheduler"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-scheduler container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-wlm-cron container (kolla_docker)
   vars:
     service_name: "triliovault-wlm-cron"
     service: "{{ triliovault_services[service_name] }}"
@@ -111,5 +232,72 @@
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-cron container"
   when:
     - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
+
+- name: Restart triliovault-wlm-cron container (kolla_container)
+  vars:
+    service_name: "triliovault-wlm-cron"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-wlm-cron container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart triliovault-dms container (kolla_docker)
+  vars:
+    service_name: "triliovault-dms"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_docker:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    ipc_mode: "{{ service.ipc_mode | default('') }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-dms container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_docker'
+
+- name: Restart triliovault-dms container (kolla_container)
+  vars:
+    service_name: "triliovault-dms"
+    service: "{{ triliovault_services[service_name] }}"
+  become: true
+  kolla_container:
+    action: "recreate_or_restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ service.container_name }}"
+    image: "{{ service.image }}"
+    privileged: "{{ service.privileged | default(False) }}"
+    volumes: "{{ service.volumes|reject('equalto', '')|list }}"
+    dimensions: "{{ service.dimensions }}"
+    ipc_mode: "{{ service.ipc_mode | default('') }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  listen: "Restart triliovault-dms container"
+  when:
+    - kolla_action != "config"
+    - triliovault_kolla_module == 'kolla_container'
