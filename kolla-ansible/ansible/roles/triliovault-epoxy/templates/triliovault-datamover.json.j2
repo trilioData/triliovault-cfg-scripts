@@ -1,6 +1,4 @@
-{    
-    {% set triliovault_backup_target_type = 's3' if triliovault_backup_target in ['amazon_s3', 'other_s3_compatible'] else 'nfs' %}	
-
+{
     "command": "/opt/triliovault/start-triliovault-datamover.sh",
     "config_files": [
 		{
@@ -50,6 +48,6 @@
             "path": "/etc/ceph",
             "owner": "nova:nova",
             "recurse": true
-        }       
+        }
     ]
 }
