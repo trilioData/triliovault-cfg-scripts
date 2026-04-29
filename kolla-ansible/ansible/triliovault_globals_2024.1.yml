@@ -1,0 +1,110 @@
+############ Following variables are user configurable ##########
+### Cloud Details ###
+cloud_admin_username: ""
+cloud_admin_password: ""
+
+cloud_admin_projectname: ""
+cloud_admin_projectid: ""
+
+cloud_admin_domainname: ""
+cloud_admin_domainid: ""
+
+
+trustee_role: "member, creator"
+os_endpoint_type: "internal"
+
+# ## Project name in which triliovault keystone resources will get created
+# TriliovaultKeystoneServiceProjectName: "service"
+# TriliovaultKeystoneUserDomainName: "Default"
+# TriliovaultKeystoneUserRoleName: "admin"
+
+## Do not change this parameter value
+kolla_install_type: "source"
+
+############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
+## Whether to enable TrilioVault or not on OpenStack cloud
+enable_triliovault: "yes"
+
+horizon_source_image_prefix: "kolla-{{ kolla_base_distro }}-trilio-horizon-plugin"
+horizon_binary_image_prefix: "{{ kolla_base_distro }}-{{ kolla_install_type }}-trilio-horizon-plugin"
+
+triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
+
+
+## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
+## By default triliovault horizon will not be enabled on openstack horizon
+## NOTE: With this change, openstack horizon container will be replaced by triliovault horizon container.
+## Don't worry, triliovault horizon container image uses upstream kolla horizon container as base image
+
+#horizon_image_full: "{{ triliovault_horizon_image_full }}"
+
+## Triliovault dmapi_workers count
+## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
+## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
+## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
+## Default value of dmapi_workers is 16
+dmapi_workers: '16'
+
+## TrilioVault's containers tag
+## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
+triliovault_tag: "5.2.4-2024.1"
+triliovault_docker_username: ""
+triliovault_docker_password: ""
+triliovault_docker_registry: "docker.io"
+
+## triliovault backup target possible values: 'nfs'/'amazon_s3'/'other_s3_compatible'
+triliovault_backup_target: 'nfs'
+
+### 'NFS' backup target details
+## Valid for backup target 'nfs' only, provide full NFS share path.
+## If you want to use multiple nfs shares, then you can provide comma delimated list of shares to the following parameter
+triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
+## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
+## Keep default values, unless you have a special need.
+triliovault_nfs_options: 'nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10'
+
+## Valid for 'nfs' backup target only.
+## If backup target NFS share supports multiple endpoints/ips but in backend it's a single share then 
+## set 'is_multi_ip_nfs' paremeter to 'yes'. Otherwise it's value should be 'no'
+multi_ip_nfs_enabled: 'no'
+
+
+### 'amazon_s3/other_s3_compatible' backup target details
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
+triliovault_s3_access_key: ''
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 secret key
+triliovault_s3_secret_key: ''
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 region
+## if your s3 does not have any region, just keep the parameter as it is
+triliovault_s3_region_name: 'us-east-1'
+## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 bucket name
+triliovault_s3_bucket_name: ''
+## Valid for 'other_s3_compatible' backup target only, provide S3 endpoint url
+## This paramter is not valid for Amazon S3 backup target type, keep it as it is
+triliovault_s3_endpoint_url: ''
+
+## S3 signature version
+triliovault_s3_version: 'default'
+
+## S3 Auth version
+triliovault_s3_auth_version: 'DEFAULT'
+
+## Valid for 'other_s3_compatible' backup target only, if endpoints on 'https' ie SSL Enabled 
+## then change it to 'True', otherwise keep it as 'False'
+triliovault_s3_ssl_enabled: False
+
+## Whether to verify ceph s3 SSL/TLS certificate or not.
+triliovault_s3_ssl_verify: True
+
+## Valid for 'other_s3_compatible' backup target only, if endpoints on 'https' ie SSL Enabled
+## then user needs to copy the 's3 certificate file' to "/etc/kolla/config/triliovault/" 
+## directory on ansible server. You need to create this directory if not exists already.
+## And provide the cert file name as value of following parameter.
+triliovault_s3_ssl_cert_file_name: 's3-cert.pem'
+
+## Valid for 'other_s3_compatible' backup target only, if endpoints on 'https' ie SSL Enabled
+## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
+## Type: Boolean
+triliovault_copy_ceph_s3_ssl_cert: False
+
+
