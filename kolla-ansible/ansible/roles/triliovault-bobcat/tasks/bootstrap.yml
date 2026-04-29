@@ -18,7 +18,7 @@
   when:
     - not use_preconfigured_databases | bool
 
-- name: Create triliovault database users and ser permissions for zed and next releases
+- name: Create triliovault database users and set permissions for zed and next releases
   become: true
   kolla_toolbox:
     container_engine: "{{ kolla_container_engine }}"

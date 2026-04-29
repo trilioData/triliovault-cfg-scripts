@@ -335,11 +335,13 @@ triliovault_ks_users:
 ####################
 # Notification
 ####################
-triliovault_notification_topics:
-  - name: notifications
-    enabled: "{{ enable_ceilometer | bool }}"
-  - name: vitrage_notifications
-    enabled: "{{ enable_vitrage | bool }}"
+triliovault_notification_topics: >
+  {{
+    [{'name': 'notifications', 'enabled': enable_ceilometer | bool}] 
+    + 
+    ([{'name': 'vitrage_notifications', 'enabled': enable_vitrage | bool}] if enable_vitrage is defined else [])
+  }}
+
 
 triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
 
@@ -364,7 +366,7 @@ triliovault_db_details:
 ####################
 # TLS
 ####################
-triliovault_enable_tls_backend: "{{ kolla_enable_tls_backend }}"
+triliovault_enable_tls_backend: false
 
 
 ## TrilioVault Inventory for datamover.  Refer triliovault_inventory file. 
@@ -464,3 +466,7 @@ cinder_http_retries: '10'
 
 ##New_vars
 cloud_admin_role: 'admin'
+cloud_admin_authurl: "{{ keystone_public_url }}"
+cloud_admin_regionname: "{{ openstack_region_name }}"
+cloud_admin_interface: "{{ os_endpoint_type }}"
+cloud_admin_cacert: "{{ openstack_cacert }}"

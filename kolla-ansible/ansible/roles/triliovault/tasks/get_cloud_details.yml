@@ -8,11 +8,11 @@
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
-    mode: '0777'
+    mode: '0755'
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:
-    - "/tmp/create_cloud_trust.sh"
+    - "/etc/kolla/triliovault-wlm-api/create_cloud_trust.sh"
 
 
 - name: Copy Triliovault-cloudrc to localhost

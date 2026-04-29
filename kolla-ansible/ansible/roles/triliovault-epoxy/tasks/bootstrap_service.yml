@@ -1,0 +1,44 @@
+---
+- name: Running triliovault datamover api bootstrap container
+  vars:
+    triliovault_datamover_api: "{{ triliovault_services['triliovault-datamover-api'] }}"
+  become: true
+  kolla_container:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    detach: False
+    client_timeout: 600
+    environment:
+      KOLLA_BOOTSTRAP:
+      KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
+    image: "{{ triliovault_datamover_api.image }}"
+    labels:
+      BOOTSTRAP:
+    name: "bootstrap_triliovault_datamover_api"
+    restart_policy: oneshot
+    volumes: "{{ triliovault_datamover_api.volumes|reject('equalto', '')|list }}"
+  register: bootstrap_result
+  changed_when: bootstrap_result.stdout | default("") | length > 0
+  run_once: true
+  delegate_to: "{{ groups[triliovault_datamover_api.group][0] }}"
+
+- name: Running triliovault workloadmgr api bootstrap container
+  vars:
+    triliovault_wlm_api: "{{ triliovault_services['triliovault-wlm-api'] }}"
+  become: true
+  kolla_container:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    detach: False
+    client_timeout: 600
+    environment:
+      KOLLA_BOOTSTRAP:
+      KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
+    image: "{{ triliovault_wlm_api.image }}"
+    labels:
+      BOOTSTRAP:
+    name: "bootstrap_triliovault_wlm_api"
+    restart_policy: oneshot
+    volumes: "{{ triliovault_wlm_api.volumes|reject('equalto', '')|list }}"
+  run_once: True
+  delegate_to: "{{ groups[triliovault_wlm_api.group][0] }}"

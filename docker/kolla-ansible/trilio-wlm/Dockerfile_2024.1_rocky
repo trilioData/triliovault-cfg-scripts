@@ -1,0 +1,66 @@
+FROM quay.io/openstack.kolla/nova-api:2024.1-rocky-9
+MAINTAINER Trilio shyam.biradar@trilio.io
+
+LABEL name="kolla/openstack-nova-api-triliodata-wlm-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.2.0" \
+      release="5.2"\
+      type="source" \
+      summary="TrilioData trilio-datamover-api" \
+      description="TrilioData TrilioVault WLM Image based on Rocky OS"
+
+
+# switch to root and install a custom RPM packages, etc.
+USER root
+
+# temporary fix
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true && dnf config-manager --disable epel epel-cisco-openh264
+
+##Add trilio.repo which contains the path for TrilioVaultWLM RPM packages
+ADD trilio.repo /etc/yum.repos.d/
+
+## INSTALL REQUIRED PACKAGES
+RUN set -ex \
+     && dnf update -y \
+     && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
+     && dnf install -y fuse python3-neutronclient python3-retrying python3-cryptography
+
+RUN dnf install -y python3-novaclient \
+    && dnf remove -y --noautoremove python3-novaclient \
+    && dnf install -y python3-novaclient
+
+RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient
+
+RUN /usr/bin/pip3 install --upgrade pip && /usr/bin/pip3 install igraph && /usr/bin/pip3 install namedatomiclock \
+    && /usr/bin/pip3 install jinja2
+RUN dnf -y install python3-tzlocal
+
+
+# Installing TrilioVaultWLM packages
+RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
+
+##Copy conf files
+RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
+RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
+    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store  /var/lib/workloadmgr \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+
+## Kolla specific settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
+
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+## Nova user changes
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
+
+##Clean subscription
+RUN dnf clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Become nova user for further operations
+USER nova

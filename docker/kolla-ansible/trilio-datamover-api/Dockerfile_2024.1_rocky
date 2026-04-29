@@ -1,0 +1,51 @@
+FROM quay.io/openstack.kolla/nova-api:2024.1-rocky-9
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.2.0" \
+      release="5.2"\
+      type="source" \
+      summary="TrilioData trilio-datamover-api" \
+      description="TrilioData trilio-datamover-api"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+# temporary fix
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Add Trilio RPM Repo
+ADD trilio.repo /etc/yum.repos.d/
+
+##Install Required Packages
+RUN set -ex \
+    && dnf update -y \
+    && dnf install -y epel-release
+	
+##Install datamover packages
+RUN dnf install python3-dmapi-el9 python3-nova python3-devel -y
+
+## Create Config Dir
+RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
+    && chown -R dmapi:dmapi /var/log/triliovault \
+    && chown -R root:dmapi /etc/triliovault-datamover \
+    && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover
+	
+## Kolla specifc settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start
+
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+RUN usermod -a -G kolla dmapi
+
+##Clean subscription
+RUN yum clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Become nova user for further operations
+USER dmapi
