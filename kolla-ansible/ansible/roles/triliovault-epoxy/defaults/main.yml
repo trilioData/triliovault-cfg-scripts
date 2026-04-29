@@ -138,6 +138,17 @@ triliovault_services:
     run_group: "42436"
     volumes: "{{ triliovault_wlm_cron_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
+  triliovault-dms:
+    container_name: "triliovault_dms"
+    group: "{{ triliovault_dms_group }}"
+    image: "{{ triliovault_dms_image_full }}"
+    ipc_mode: "host"
+    enabled: True
+    privileged: True
+    run_user: "42436"
+    run_group: "42436"
+    volumes: "{{ triliovault_dms_default_volumes }}"
+    dimensions: "{{ triliovault_dms_dimensions }}"
 
 
 
@@ -150,7 +161,7 @@ triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/
 
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
-###### END OF DATAMOVER ## 
+###### END OF DATAMOVER ##
 
 
 ###### START OF WORKLOADMGR ####
@@ -159,6 +170,10 @@ triliovault_wlm_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ k
 
 triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
+
+###### START OF DMS ####
+triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_tag }}"
+triliovault_dms_dimensions: "{{ default_container_dimensions }}"
 
 # triliovault_wlm_ks_user_domain_name: "Default"
 ###### END OF WORKLOADMGR ####
@@ -257,6 +272,18 @@ triliovault_wlm_cron_default_volumes:
   - "libvirtd:/var/lib/libvirt"
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
+  - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+
+# DMS server runs on compute nodes (co-located with datamover) and on nodes running
+# wlm-api, wlm-workloads, and wlm-scheduler. Add all such nodes to the triliovault-dms group.
+triliovault_dms_default_volumes:
+  - "{{ node_config_directory }}/triliovault-dms/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
+  - "/var/log/kolla/triliovault-dms:/var/log/triliovault:rw"
+  - "/dev:/dev"
+  - "/lib/modules:/lib/modules:ro"
+  - "/run:/run:shared"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
 
@@ -399,6 +426,7 @@ triliovault_wlm_api_group: 'triliovault-wlm-api'
 triliovault_wlm_workloads_group: 'triliovault-wlm-workloads'
 triliovault_wlm_scheduler_group: 'triliovault-wlm-scheduler'
 triliovault_wlm_cron_group: 'triliovault-wlm-cron'
+triliovault_dms_group: 'triliovault-dms'
 
 
 
@@ -431,8 +459,8 @@ triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
 
 ##################
-# RabbitMQ 
-################# 
+# RabbitMQ
+#################
 triliovault_wlm_rabbitmq_user: "workloadmgr"
 triliovault_wlm_rpc_vhost: "workloadmgr"
 triliovault_tags:
@@ -444,43 +472,47 @@ triliovault_wlm_rabbitmq_users:
     vhost: "{{ triliovault_wlm_rpc_vhost }}"
     tags: "{{ triliovault_tags }}"
 
-
-
-## triliovault backup target possible values: 'nfs'/'amazon_s3'/'other_s3_compatible'
-triliovault_backup_target: 'nfs'
-
-### 'NFS' backup target details
-## Valid for backup target 'nfs' only, provide full NFS share path
-triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
-## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
-## Keep default values, unless you have a special need.
-triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
-
-
-### 'amazon_s3/other_s3_compatible' backup target details
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
-triliovault_s3_access_key: ''
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 secret key
-triliovault_s3_secret_key: ''
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 region
-## if your s3 does not have any region, just keep the parameter as it is
-triliovault_s3_region_name: 'us-east-1'
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 bucket name
-triliovault_s3_bucket_name: ''
-## Valid for 'other_s3_compatible' backup target only, provide S3 endpoint url
-## This paramter is not valid for Amazon S3 backup target type, keep it as it is
-triliovault_s3_endpoint_url: ''
-## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
-triliovault_s3_ssl_enabled: False
-
-## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed or issued by private authority,
-## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
-## Type: Boolean
-triliovault_copy_ceph_s3_ssl_cert: False
+# Set to true if your RabbitMQ cluster uses quorum queues (>= 3.13)
+rabbit_quorum_queue: false
 
 ## cinder
 ## cinder http retries default value
 cinder_http_retries: '10'
+
+##################
+# DMS (Trilio Dynamic Mount Service)
+##################
+# S3VaultFuse global config parameters (can be overridden in triliovault_globals.yml)
+s3vaultfuse_global:
+  default:
+    vault_storage_type: "s3"
+    vault_s3_max_pool_connections: 50
+    vault_s3_read_timeout: 30
+    vault_s3_max_attempts: 3
+    vault_s3_auth_version: "DEFAULT"
+    vault_s3_signature_version: "default"
+    vault_s3_ssl: "True"
+    vault_s3_ssl_verify: "True"
+    vault_s3_region_name: "us-east-1"
+    vault_segment_size: 33554432
+    vault_cache_size: 16
+    queue_depth: 100
+    worker_pool_size: 10
+    vault_retry_count: 2
+    vault_enable_threadpool: "True"
+    vault_threaded_filesystem: "True"
+    max_uploads_pending: 20
+    vault_logging_level: "error"
+    log_file: "/var/log/triliovault/triliovault-object-store.log"
+    log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
+    trace_function_calls: "False"
+    bucket_object_lock: "False"
+    use_manifest_suffix: "False"
+    azure_immutability_enabled: "False"
+    metadata_cache_max_items: 32
+    vault_cache_username: "nova"
+  s3fuse_sys_admin:
+    helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
 
 
 ##New_vars

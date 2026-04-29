@@ -15,12 +15,6 @@
             "owner": "nova",
             "perm": "0600"
         },
-        {
-            "source": "{{ container_config_directory }}/triliovault-object-store.conf",
-            "dest": "/etc/triliovault-object-store/triliovault-object-store.conf",
-            "owner": "nova",
-            "perm": "0600"
-        },
 		{
             "source": "{{ container_config_directory }}/triliovault-datamover.conf",
             "dest": "/etc/triliovault-datamover/triliovault-datamover.conf",
@@ -42,12 +36,6 @@
         {
             "source": "{{ container_config_directory }}/ceph",
             "dest": "/etc/ceph",
-            "owner": "nova",
-            "perm": "0600"
-        }{% endif %}{% if triliovault_copy_ceph_s3_ssl_cert | bool %},
-        {
-            "source": "{{ container_config_directory }}/{{ triliovault_s3_ssl_cert_file_name }}",
-            "dest": "/etc/triliovault-datamover/{{ triliovault_s3_ssl_cert_file_name }}",
             "owner": "nova",
             "perm": "0600"
         }{% endif %}

@@ -17,6 +17,12 @@
 			"dest": "/opt/triliovault/start-triliovault-datamover-api.sh",
 			"owner": "nova",
 			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/triliovault-dms-client.conf",
+			"dest": "/etc/triliovault-dms/client.conf.d/kolla-client.conf",
+			"owner": "dmapi",
+			"perm": "0640"
 		}
 	],
 	"permissions": [{
