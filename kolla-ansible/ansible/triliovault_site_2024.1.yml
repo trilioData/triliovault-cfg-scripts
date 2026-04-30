@@ -8,6 +8,7 @@
     - haproxy
     - keepalived
     - loadbalancer
+    - triliovault
   roles:
     - { role: loadbalancer,
         when: enable_loadbalancer | bool }
