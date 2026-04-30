@@ -38,10 +38,11 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
     && dnf install virt-v2v virtio-win nbdkit -y
 
-## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet install
-RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
+## Enable centos-openstack-zed repo for s3fuse eventlet dependency
+## Zed is the Rocky 9 equivalent of RHOSP17.1 (Wallaby) era eventlet
+RUN dnf install -y centos-release-openstack-zed
 RUN dnf install -y python3-s3fuse-plugin-el9
-RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
+RUN dnf remove -y centos-release-openstack-zed
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
