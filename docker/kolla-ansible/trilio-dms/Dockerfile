@@ -1,4 +1,4 @@
-FROM quay.io/openstack.kolla/openstack-base:2025.1-rocky-10
+FROM quay.io/openstack.kolla/openstack-base:2025.1-rocky-9
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-dms" \
@@ -8,7 +8,7 @@ LABEL name="kolla/trilio-dms" \
       release="6.2" \
       type="source" \
       summary="TrilioData TrilioVault DMS" \
-      description="TrilioData TrilioVault Dynamic Mount Service (Rocky Linux 10)"
+      description="TrilioData TrilioVault Dynamic Mount Service (Rocky Linux 9)"
 
 USER root
 
@@ -19,8 +19,11 @@ ADD trilio.repo /etc/yum.repos.d/
 
 RUN dnf install -y \
     fuse fuse-libs nfs-utils \
-    python3-triliovault-dms-el10 \
-    python3-s3fuse-plugin-el10
+    python3-trilio-dms-el9
+
+RUN dnf install -y --allowerasing \
+    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
+RUN dnf install -y python3-s3fuse-plugin-el9
 
 RUN ldconfig
 
