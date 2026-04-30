@@ -18,3 +18,7 @@ control
 
 [triliovault-wlm-cron:children]
 control
+
+[triliovault-dms:children]
+control
+compute

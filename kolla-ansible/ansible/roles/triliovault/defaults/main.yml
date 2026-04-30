@@ -35,6 +35,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_datamover_api_port }}"
         frontend_http_extra:
           - "retries 5"
@@ -93,6 +94,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
@@ -137,40 +139,54 @@ triliovault_services:
     run_group: "42436"
     volumes: "{{ triliovault_wlm_cron_default_volumes }}"
     dimensions: "{{ triliovault_wlm_dimensions }}"
-
+  triliovault-dms:
+    container_name: "triliovault_dms"
+    group: "{{ triliovault_dms_group }}"
+    image: "{{ triliovault_dms_image_full }}"
+    ipc_mode: "host"
+    enabled: True
+    privileged: True
+    run_user: "42436"
+    run_group: "42436"
+    volumes: "{{ triliovault_dms_default_volumes }}"
+    dimensions: "{{ triliovault_dms_dimensions }}"
 
 
 ####################
 # Docker
 ####################
-###### START  OF DATAMOVER ##
+###### START OF DATAMOVER ##
 triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
 triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
 
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
-###### END OF DATAMOVER ## 
+###### END OF DATAMOVER ##
 
 
 ###### START OF WORKLOADMGR ####
 triliovault_wlm_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
 
-
 triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
-# triliovault_wlm_ks_user_domain_name: "Default"
+###### START OF DMS ####
+triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_tag }}"
+triliovault_dms_dimensions: "{{ default_container_dimensions }}"
 ###### END OF WORKLOADMGR ####
 
+## These parameters are from cinder and nova roles.
+cinder_ceph_backends:
+  - name: "rbd-1"
+    cluster: "ceph"
+    enabled: "{{ cinder_backend_ceph | bool }}"
+nova_ceph_cluster: "ceph"
 
 
 ## Under this directory, triliovault datamover will mount the backup target.
-## This directory will get created on all compute hosts
-## This directory will get mounted inside triliovault datamover container as bind mount
-## This is needed to support 'snapshot mount' feature of triliovault
+## This directory will get created on all compute hosts.
 ## User needs to mount this directory on 'nova_compute' and 'nova_libvirt' container.
-
-triliovault_parent_data_directory: "/var/trilio" 
+triliovault_parent_data_directory: "/var/trilio"
 
 triliovault_datamover_user_id: "42436"
 triliovault_datamover_group_id: "42436"
@@ -195,6 +211,7 @@ triliovault_datamover_default_volumes:
   - "/lib/modules:/lib/modules:ro"
   - "/run:/run:shared"
   - "libvirtd:/var/lib/libvirt"
+  - /etc/ceph:/var/lib/kolla/src-ceph:ro
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
@@ -251,18 +268,27 @@ triliovault_wlm_cron_default_volumes:
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
+# DMS server runs on compute nodes (alongside datamover) and control nodes (alongside WLM services).
+triliovault_dms_default_volumes:
+  - "{{ node_config_directory }}/triliovault-dms/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
+  - "/var/log/kolla/triliovault-dms:/var/log/triliovault:rw"
+  - "/dev:/dev"
+  - "/lib/modules:/lib/modules:ro"
+  - "/run:/run:shared"
+  - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+
 
 ####################
 # OpenStack
 ####################
-
 
 triliovault_datamover_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 triliovault_datamover_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_datamover_api_port }}/v2"
 
 triliovault_wlm_api_internal_endpoint: "{{ internal_protocol }}://{{ nova_internal_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
 triliovault_wlm_api_public_endpoint: "{{ public_protocol }}://{{ nova_external_fqdn | put_address_in_context('url') }}:{{ triliovault_wlm_api_port }}/v1/$(tenant_id)s"
-
 
 triliovault_logging_debug: "{{ openstack_logging_debug }}"
 openstack_triliovault_auth: "{{ openstack_auth }}"
@@ -271,7 +297,6 @@ triliovault_datamover_api_listen_port: "{{ triliovault_datamover_api_port }}"
 
 triliovault_wlm_api_port: 8781
 triliovault_wlm_api_listen_port: "{{ triliovault_wlm_api_port }}"
-
 
 
 #####################
@@ -298,20 +323,17 @@ triliovault_ks_services:
     type: "datamover"
     description: "TrilioVault Datamover Api Service"
     endpoints: "{{ triliovault_datamover_api_service_endpoints }}"
-    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"  
+    triliovault_keystone_user: "{{ triliovault_datamover_keystone_user }}"
   - name: "TrilioVaultWLM"
     type: "workloads"
     description: "TrilioVaultWLM API Service"
     endpoints: "{{ triliovault_wlm_api_service_endpoints }}"
-    triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"  
+    triliovault_keystone_user: "{{ triliovault_wlm_keystone_user }}"
 
-triliovault_datamover_keystone_user: "dmapi"	
-triliovault_wlm_keystone_user : "triliovault"
-# Domain name in which "service" project is available.
+triliovault_datamover_keystone_user: "dmapi"
+triliovault_wlm_keystone_user: "triliovault"
 service_ks_register_domain: "default"
-# Number of retries for each task.
 service_ks_register_retries: 5
-# Delay between task retries.
 service_ks_register_delay: 10
 
 
@@ -328,31 +350,50 @@ triliovault_ks_users:
 ####################
 # Notification
 ####################
-triliovault_notification_topics:
-  - name: notifications
-    enabled: "{{ enable_ceilometer | bool }}"
-  - name: vitrage_notifications
-    enabled: "{{ enable_vitrage | bool }}"
+# Computed format handles missing enable_vitrage gracefully on older releases.
+triliovault_notification_topics: >
+  {{
+    [{'name': 'notifications', 'enabled': enable_ceilometer | bool}]
+    +
+    ([{'name': 'vitrage_notifications', 'enabled': enable_vitrage | bool}] if enable_vitrage is defined else [])
+  }}
 
 triliovault_enabled_notification_topics: "{{ triliovault_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
-
 
 
 ###### Optional configurable
 ## TrilioVault database user
 
 triliovault_db_details:
-  - group_name:  "triliovault-datamover-api"
-    database_user: "dmapi"
+  - group_name: "triliovault-datamover-api"
+    database_user: "{% if use_preconfigured_databases | default(false) | bool and use_common_mariadb_user | default(false) | bool %}{{ database_user }}{% else %}dmapi{% endif %}"
     database_password: "{{ triliovault_datamover_database_password }}"
     database_name: "dmapi"
     database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
-  - group_name:  "triliovault-wlm-api"
+  - group_name: "triliovault-wlm-api"
     database_name: "workloadmgr"
-    database_user: "workloadmgr"
+    database_user: "{% if use_preconfigured_databases | default(false) | bool and use_common_mariadb_user | default(false) | bool %}{{ database_user }}{% else %}workloadmgr{% endif %}"
     database_password: "{{ triliovault_wlm_database_password }}"
     database_address: "{{ database_address | put_address_in_context('url') }}:{{ database_port }}"
 
+####################
+# Database Sharding (Dalmatian / 2024.2+ with ProxySQL)
+####################
+# Falls back to database_user when ProxySQL is not enabled (older releases).
+triliovault_database_shard_root_user: "{% if enable_proxysql | default(false) | bool %}root_shard_{{ triliovault_database_shard_id }}{% else %}{{ database_user }}{% endif %}"
+triliovault_database_shard_id: "{{ mariadb_default_database_shard_id | default(0) | int }}"
+
+triliovault_database_shard:
+  users:
+    - user: "{{ triliovault_db_details[0].database_user }}"
+      password: "{{ triliovault_db_details[0].database_password }}"
+    - user: "{{ triliovault_db_details[1].database_user }}"
+      password: "{{ triliovault_db_details[1].database_password }}"
+  rules:
+    - schema: "{{ triliovault_db_details[0].database_name }}"
+      shard_id: "{{ triliovault_database_shard_id }}"
+    - schema: "{{ triliovault_db_details[1].database_name }}"
+      shard_id: "{{ triliovault_database_shard_id }}"
 
 ####################
 # TLS
@@ -360,31 +401,27 @@ triliovault_db_details:
 triliovault_enable_tls_backend: false
 
 
-## TrilioVault Inventory for datamover.  Refer triliovault_inventory file. 
+## TrilioVault Inventory groups — refer triliovault_inventory.txt
 triliovault_datamover_api_group: 'triliovault-datamover-api'
 triliovault_datamover_group: 'triliovault-datamover'
 triliovault_horizon_group: "horizon"
 
-## TrilioVault Inventory for workloadmgr.  Refer triliovault_inventory file. 
-## Since All workload manager Services get deployed on control nodes. We are not creating another inventory group for the same. 
 triliovault_wlm_api_group: 'triliovault-wlm-api'
 triliovault_wlm_workloads_group: 'triliovault-wlm-workloads'
 triliovault_wlm_scheduler_group: 'triliovault-wlm-scheduler'
 triliovault_wlm_cron_group: 'triliovault-wlm-cron'
-
+triliovault_dms_group: 'triliovault-dms'
 
 
 ## Log directories for triliovault services
 triliovault_kolla_log_dir: "/var/log/kolla/triliovault"
 
-##Below two dir are seems unused once build is stable will clean it.
 triliovault_datamover_log_dir: "{{ triliovault_kolla_log_dir }}"
 triliovault_datamover_api_log_dir: "{{ triliovault_kolla_log_dir }}"
 triliovault_wlm_api_log_dir: "{{ triliovault_kolla_log_dir }}"
 
 
-## Initializing kolla_install_type parameter as Zed release have removed this parameter.
-## Following is the default value for kolla_install_type variable.
+## Initializing kolla_install_type parameter as Zed release removed this parameter.
 kolla_install_type: "source"
 
 ############ Following variables are user configurable ##########
@@ -403,8 +440,8 @@ triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
 
 ##################
-# RabbitMQ 
-################# 
+# RabbitMQ
+#################
 triliovault_wlm_rabbitmq_user: "workloadmgr"
 triliovault_wlm_rpc_vhost: "workloadmgr"
 triliovault_tags:
@@ -416,44 +453,53 @@ triliovault_wlm_rabbitmq_users:
     vhost: "{{ triliovault_wlm_rpc_vhost }}"
     tags: "{{ triliovault_tags }}"
 
+# Set to true if your RabbitMQ cluster uses quorum queues (>= 3.13 / Bobcat+)
+rabbit_quorum_queue: false
 
-
-## triliovault backup target possible values: 'nfs'/'amazon_s3'/'other_s3_compatible'
-triliovault_backup_target: 'nfs'
-
-### 'NFS' backup target details
-## Valid for backup target 'nfs' only, provide full NFS share path
-triliovault_nfs_shares: '192.168.122.101:/opt/tvault'
-## Valid for backup target 'nfs' only, Following parameter takes NFS mount options. 
-## Keep default values, unless you have a special need.
-triliovault_nfs_options: 'nolock,soft,timeo=180,intr,lookupcache=none'
-
-
-### 'amazon_s3/other_s3_compatible' backup target details
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 access key
-triliovault_s3_access_key: ''
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 secret key
-triliovault_s3_secret_key: ''
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 region
-## if your s3 does not have any region, just keep the parameter as it is
-triliovault_s3_region_name: 'us-east-1'
-## Valid for 'amazon_s3'/'other_s3_compatible' backup target, provide S3 bucket name
-triliovault_s3_bucket_name: ''
-## Valid for 'other_s3_compatible' backup target only, provide S3 endpoint url
-## This paramter is not valid for Amazon S3 backup target type, keep it as it is
-triliovault_s3_endpoint_url: ''
-## Valid for 'ceph_s3' backup target only, If SSL is enabled on S3 endpoint url then change it to 'True', otherwise keep it as 'False'
-triliovault_s3_ssl_enabled: False
-
-## Valid for 'ceph_s3' backup target only, if SSL is enabled on S3 endpoint URL and SSL certificates are self signed or issued by private authority,
-## then, user needs to set this parameter value to: True , otherwise keep it's value as False.
-## Type: Boolean
-triliovault_copy_ceph_s3_ssl_cert: False
-
-## cinder
 ## cinder http retries default value
 cinder_http_retries: '10'
 
+##################
+# DMS (Trilio Dynamic Mount Service)
+##################
+# S3VaultFuse global config parameters (can be overridden in triliovault_globals.yml)
+s3vaultfuse_global:
+  default:
+    vault_storage_type: "s3"
+    vault_s3_max_pool_connections: 50
+    vault_s3_read_timeout: 30
+    vault_s3_max_attempts: 3
+    vault_s3_auth_version: "DEFAULT"
+    vault_s3_signature_version: "default"
+    vault_s3_ssl: "True"
+    vault_s3_ssl_verify: "True"
+    vault_s3_region_name: "us-east-1"
+    vault_segment_size: 33554432
+    vault_cache_size: 16
+    queue_depth: 100
+    worker_pool_size: 10
+    vault_retry_count: 2
+    vault_enable_threadpool: "True"
+    vault_threaded_filesystem: "True"
+    max_uploads_pending: 20
+    vault_logging_level: "error"
+    log_file: "/var/log/triliovault/triliovault-object-store.log"
+    log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
+    trace_function_calls: "False"
+    bucket_object_lock: "False"
+    use_manifest_suffix: "False"
+    azure_immutability_enabled: "False"
+    metadata_cache_max_items: 32
+    vault_cache_username: "nova"
+  s3fuse_sys_admin:
+    helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
+
+##################
+# Kolla module selection
+##################
+# kolla_docker was renamed to kolla_container in Bobcat (2023.2).
+# openstack_release is set by kolla-ansible in group_vars/all.yml for all supported releases.
+triliovault_kolla_module: "{% if openstack_release in ['zed', '2023.1'] %}kolla_docker{% else %}kolla_container{% endif %}"
 
 ##New_vars
 cloud_admin_role: 'admin'

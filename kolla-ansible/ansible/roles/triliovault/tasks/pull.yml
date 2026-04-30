@@ -1,5 +1,5 @@
 ---
-- name: Pulling triliovault images
+- name: Pulling triliovault images (kolla_docker)
   become: true
   kolla_docker:
     action: "pull_image"
@@ -11,20 +11,52 @@
   when:
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
+    - triliovault_kolla_module == 'kolla_docker'
   with_dict: "{{ triliovault_services }}"
   tags: triliovault
 
-- name: Pulling triliovault horizon image
+- name: Pulling triliovault images (kolla_container)
   become: true
-  kolla_docker:
+  kolla_container:
     action: "pull_image"
     common_options: "{{ docker_common_options }}"
-    image: "{{ triliovault_horizon_image_full  }}"
+    image: "{{ item.value.image }}"
     auth_username: "{{ triliovault_docker_username }}"
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   when:
-   - inventory_hostname in groups['horizon']
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+    - triliovault_kolla_module == 'kolla_container'
+  with_dict: "{{ triliovault_services }}"
+  tags: triliovault
+
+- name: Pulling triliovault horizon image (kolla_docker)
+  become: true
+  kolla_docker:
+    action: "pull_image"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ triliovault_horizon_image_full }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - inventory_hostname in groups['horizon']
+    - triliovault_kolla_module == 'kolla_docker'
+  tags: triliovault
+
+- name: Pulling triliovault horizon image (kolla_container)
+  become: true
+  kolla_container:
+    action: "pull_image"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ triliovault_horizon_image_full }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
+  when:
+    - inventory_hostname in groups['horizon']
+    - triliovault_kolla_module == 'kolla_container'
   tags: triliovault
 
 - name: Log into triliovault docker registry
@@ -35,5 +67,5 @@
     password: "{{ triliovault_docker_password }}"
     reauthorize: yes
   when:
-   - inventory_hostname in groups['horizon']
+    - inventory_hostname in groups['horizon']
   tags: triliovault

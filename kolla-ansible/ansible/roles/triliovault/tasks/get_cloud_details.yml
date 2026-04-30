@@ -5,10 +5,11 @@
     cloudrc_dest: "/etc/kolla/triliovault-cloudrc"
 
 - name: Copy Create Cloud Trust Ansible Node
+  become: true
   template:
     src: create_cloud_trust.sh
     dest: "{{ item }}"
-    mode: '0755'
+    mode: "0755"
   when:
     - inventory_hostname in groups[triliovault_wlm_api_group]
   with_items:

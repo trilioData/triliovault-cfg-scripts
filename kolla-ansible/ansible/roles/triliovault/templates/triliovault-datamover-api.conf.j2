@@ -21,6 +21,9 @@ api_paste_config = /etc/triliovault-datamover/api-paste.ini
 
 [database]
 connection = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
+connection_recycle_time = {{ database_connection_recycle_time }}
+max_pool_size = {{ database_max_pool_size }}
+max_retries = -1
 
 [keystone_authtoken]
 www_authenticate_uri = {{ keystone_internal_url }}
@@ -54,8 +57,16 @@ heartbeat_in_pthread = False
 ssl = true
 ssl_ca_file = {{ om_rabbitmq_cacert }}
 {% endif %}
-{% if om_enable_rabbitmq_high_availability | bool %}
+{% if om_enable_rabbitmq_high_availability | default(false) | bool %}
 amqp_durable_queues = true
+{% endif %}
+{% if om_enable_rabbitmq_quorum_queues | default(openstack_release not in ['zed', '2023.1']) | bool %}
+rabbit_quorum_queue = true
+rabbit_transient_quorum_queue = true
+{% endif %}
+{% if om_enable_rabbitmq_stream_fanout | default(false) | bool %}
+rabbit_stream_fanout = true
+rabbit_qos_prefetch_count = {{ om_rabbitmq_qos_prefetch_count | default(0) }}
 {% endif %}
 
 [oslo_middleware]

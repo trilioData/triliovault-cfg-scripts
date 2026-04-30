@@ -1,5 +1,5 @@
 ---
-- name: Stop wlm_cron service
+- name: Stop wlm_cron service (kolla_docker)
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
@@ -7,9 +7,23 @@
     action: "stop_container"
     common_options: "{{ docker_common_options }}"
     name: "{{ triliovault_wlm_cron.container_name }}"
-  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - triliovault_kolla_module == 'kolla_docker'
 
-- name: Starting triliovault workloadmgr cron container
+- name: Stop wlm_cron service (kolla_container)
+  vars:
+    triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
+  become: true
+  kolla_container:
+    action: "stop_container"
+    common_options: "{{ docker_common_options }}"
+    name: "{{ triliovault_wlm_cron.container_name }}"
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - triliovault_kolla_module == 'kolla_container'
+
+- name: Starting triliovault workloadmgr cron container (kolla_docker)
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
@@ -30,5 +44,33 @@
       - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
       - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
       - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
-  run_once: True
-  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+  run_once: true
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - triliovault_kolla_module == 'kolla_docker'
+
+- name: Starting triliovault workloadmgr cron container (kolla_container)
+  vars:
+    triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
+  become: true
+  kolla_container:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ triliovault_wlm_cron.image }}"
+    name: "{{ triliovault_wlm_cron.container_name }}"
+    volumes:
+      - "{{ node_config_directory }}/triliovault-wlm-cron/:{{ container_config_directory }}/:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
+      - "/var/log/kolla/triliovault-wlm-cron/:/var/log/triliovault:rw"
+      - "/dev:/dev"
+      - "/lib/modules:/lib/modules:ro"
+      - "/run:/run:shared"
+      - "libvirtd:/var/lib/libvirt"
+      - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
+      - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
+      - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+  run_once: true
+  when:
+    - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - triliovault_kolla_module == 'kolla_container'

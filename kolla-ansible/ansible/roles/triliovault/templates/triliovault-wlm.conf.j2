@@ -29,8 +29,8 @@ cloud_admin_role = {{ cloud_admin_role }}
 trustee_role = {{ trustee_role }}
 domain_name = {{ cloud_admin_domainid }}
 
-triliovault_user_domain_id = default 
-cloud_unique_id = {{ Triliovault_Wlm_User_ID }} 
+triliovault_user_domain_id = default
+cloud_unique_id = {{ Triliovault_Wlm_User_ID }}
 
 region_name_for_services = {{ openstack_region_name }}
 global_job_scheduler_override = False
@@ -66,47 +66,6 @@ rabbit_virtual_host = {{ triliovault_wlm_rpc_vhost }}
 compute_driver = libvirt.LibvirtDriver
 vault_storage_das_device = none
 
-{% if triliovault_backup_target == "nfs" %}
-
-vault_storage_type = nfs
-
-{% if multi_ip_nfs_enabled == "yes" %}
-vault_storage_nfs_export = "{{ triliovault_nfs_map[inventory_hostname] }}"
-{% else %}
-vault_storage_nfs_export = {{ triliovault_nfs_shares }}
-{% endif %}
-
-vault_storage_nfs_options = {{ triliovault_nfs_options }}
-
-{% elif triliovault_backup_target == "amazon_s3" %}
-
-vault_storage_type = s3
-vault_storage_nfs_export = TrilioVault
-vault_s3_auth_version = DEFAULT
-vault_s3_access_key_id = {{ triliovault_s3_access_key }}
-vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
-vault_s3_region_name = {{ triliovault_s3_region_name }}
-vault_s3_bucket = {{ triliovault_s3_bucket_name }}
-vault_s3_signature_version = {{ triliovault_s3_version }}
-{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
-
-{% elif triliovault_backup_target == "other_s3_compatible" %}
-
-vault_storage_type = s3
-vault_storage_nfs_export = TrilioVault
-vault_s3_auth_version = DEFAULT
-vault_s3_access_key_id = {{ triliovault_s3_access_key }}
-vault_s3_secret_access_key = {{ triliovault_s3_secret_key }}
-vault_s3_region_name = {{ triliovault_s3_region_name }}
-vault_s3_bucket = {{ triliovault_s3_bucket_name }}
-vault_s3_endpoint_url = {{ triliovault_s3_endpoint_url }}
-vault_s3_signature_version = {{ triliovault_s3_version }}
-{# vault_s3_auth_version = {{ triliovault_s3_auth_version }} #}
-vault_s3_ssl = {{ triliovault_s3_ssl_enabled }}
-vault_s3_ssl_cert = /etc/triliovault-wlm/{{ triliovault_s3_ssl_cert_file_name }}
-
-{% endif %}
-
 vault_enable_threadpool = True
 vault_s3_support_empty_dir = False
 
@@ -135,7 +94,7 @@ auth_type = password
 username = {{ triliovault_wlm_keystone_user }}
 password = {{ triliovault_wlm_keystone_password }}
 
-admin_user = {{ triliovault_wlm_keystone_user }} 
+admin_user = {{ triliovault_wlm_keystone_user }}
 admin_password = {{ triliovault_wlm_keystone_password }}
 
 project_domain_id = default
@@ -143,7 +102,7 @@ user_domain_id = default
 
 auth_plugin = password
 
-cafile = {{ openstack_cacert }} 
+cafile = {{ openstack_cacert }}
 
 insecure = False
 service_token_roles_required = True
@@ -152,7 +111,7 @@ service_token_roles_required = True
 client_retry_limit = 3
 endpoint_type = internal
 
-cafile = {{ openstack_cacert }} 
+cafile = {{ openstack_cacert }}
 
 insecure = False
 
@@ -175,6 +134,14 @@ heartbeat_in_pthread = False
 ssl = true
 ssl_ca_file = {{ om_rabbitmq_cacert }}
 {% endif %}
-{% if om_enable_rabbitmq_high_availability | bool %}
+{% if om_enable_rabbitmq_high_availability | default(false) | bool %}
 amqp_durable_queues = true
+{% endif %}
+{% if om_enable_rabbitmq_quorum_queues | default(openstack_release not in ['zed', '2023.1']) | bool %}
+rabbit_quorum_queue = true
+rabbit_transient_quorum_queue = true
+{% endif %}
+{% if om_enable_rabbitmq_stream_fanout | default(false) | bool %}
+rabbit_stream_fanout = true
+rabbit_qos_prefetch_count = {{ om_rabbitmq_qos_prefetch_count | default(0) }}
 {% endif %}

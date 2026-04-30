@@ -73,9 +73,10 @@
         ( inventory_hostname in groups[triliovault_wlm_api_group] ) or
         ( inventory_hostname in groups[triliovault_wlm_workloads_group] ) or
         ( inventory_hostname in groups[triliovault_wlm_scheduler_group] ) or
-        ( inventory_hostname in groups[triliovault_wlm_cron_group] )
+        ( inventory_hostname in groups[triliovault_wlm_cron_group] ) or
+        ( inventory_hostname in groups[triliovault_dms_group] )
 
-- name: Ensuring "{{ triliovault_parent_data_directory }}/triliovault-mounts"  directory exist
+- name: Ensuring "{{ triliovault_parent_data_directory }}/triliovault-mounts" directory exist
   become: true
   file:
     path: "{{ triliovault_parent_data_directory }}/triliovault-mounts"
@@ -88,7 +89,19 @@
         ( inventory_hostname in groups[triliovault_wlm_api_group] ) or
         ( inventory_hostname in groups[triliovault_wlm_workloads_group] ) or
         ( inventory_hostname in groups[triliovault_wlm_scheduler_group] ) or
-        ( inventory_hostname in groups[triliovault_wlm_cron_group] )
+        ( inventory_hostname in groups[triliovault_wlm_cron_group] ) or
+        ( inventory_hostname in groups[triliovault_dms_group] )
+
+- name: Create /run/dms directory for DMS server
+  become: true
+  file:
+    path: /run/dms
+    state: directory
+    owner: "{{ triliovault_datamover_user_id }}"
+    group: "{{ triliovault_datamover_group_id }}"
+    mode: "0755"
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
 
 - include_tasks: copy-certs.yml
   when:
@@ -143,32 +156,53 @@
   notify:
     - "Restart {{ item }} container"
 
-- name: Copying triliovault-wlm-object-store conf files
+- name: Copying triliovault-dms server conf files
   become: true
   template:
-    src: "triliovault-wlm-object-store.conf.j2"
-    dest: "/etc/kolla/{{ item }}/triliovault-object-store.conf"
-    mode: "0660"
+    src: "triliovault-dms-server.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-dms/triliovault-dms-server.conf"
+    mode: "0640"
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
+  notify:
+    - "Restart triliovault-dms container"
+
+- name: Copying s3vaultfuse-global conf files for DMS
+  become: true
+  template:
+    src: "s3vaultfuse-global.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-dms/s3vaultfuse-global.conf"
+    mode: "0644"
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
+  notify:
+    - "Restart triliovault-dms container"
+
+- name: Copying DMS client conf for WLM services
+  become: true
+  template:
+    src: "triliovault-dms-client.conf.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/triliovault-dms-client.conf"
+    mode: "0640"
   when:
     - inventory_hostname in groups[item]
   with_items:
     - triliovault-wlm-api
-    - triliovault-wlm-cron
-    - triliovault-wlm-scheduler
     - triliovault-wlm-workloads
+    - triliovault-wlm-scheduler
   notify:
     - "Restart {{ item }} container"
 
-- name: Copying triliovault-datamover-object-store conf files
+- name: Copying DMS client conf for DMAPI
   become: true
   template:
-    src: "triliovault-datamover-object-store.conf.j2"
-    dest: "/etc/kolla/triliovault-datamover/triliovault-object-store.conf"
-    mode: "0660"
+    src: "triliovault-dms-client.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-datamover-api/triliovault-dms-client.conf"
+    mode: "0640"
   when:
-    - inventory_hostname in groups[triliovault_datamover_group]
+    - inventory_hostname in groups[triliovault_datamover_api_group]
   notify:
-    - "Restart triliovault-datamover container"
+    - "Restart triliovault-datamover-api container"
 
 - name: Copying fuse conf files
   become: true
@@ -209,24 +243,6 @@
   notify:
     - "Restart triliovault-datamover container"
 
-- name: Copying triliovault-object-store-logging-conf files
-  become: true
-  template:
-    src: "triliovault-object-store-logging.conf.j2"
-    dest: "/etc/kolla/{{ item }}/triliovault-object-store-logging.conf"
-    mode: "0660"
-  when:
-    - inventory_hostname in groups[item]
-  with_items:
-    - triliovault-datamover
-    - triliovault-wlm-api
-    - triliovault-wlm-cron
-    - triliovault-wlm-scheduler
-    - triliovault-wlm-workloads
-  notify:
-    - "Restart {{ item }} container"
-
-
 - name: Copy triliovault-wlm-logging.conf file
   become: true
   template:
@@ -243,9 +259,8 @@
   notify:
     - "Restart {{ item }} container"
 
-
 ##api-paste.ini
-      
+
 - name: Copy triliovault-wlm api-paste.ini file
   become: true
   template:
@@ -272,25 +287,6 @@
     - nova_backend_ceph | bool
     - inventory_hostname in groups[triliovault_datamover_group]
 
-- name: Copy over triliovault backup target certs - ceph s3 
-  copy:
-    src: "{{ node_custom_config }}/triliovault/{{ triliovault_s3_ssl_cert_file_name }}"
-    dest: "{{ node_config_directory }}/{{ item }}/{{ triliovault_s3_ssl_cert_file_name }}"
-    mode: "0660"
-  become: true
-  when:
-    - triliovault_copy_ceph_s3_ssl_cert | bool
-    - inventory_hostname in groups[item]
-  with_items:
-    - triliovault-datamover
-    - triliovault-wlm-api
-    - triliovault-wlm-cron
-    - triliovault-wlm-scheduler
-    - triliovault-wlm-workloads
-  notify:
-    - "Restart {{ item }} container"
-
-
 - name: Copying over nova.conf for triliovault datamover service
   become: true
   vars:
@@ -305,7 +301,6 @@
     - enable_triliovault | bool
   notify:
     - "Restart triliovault-datamover container"
-
 
 - name: Copy TrilioVault Service Start Scripts
   template:
@@ -327,6 +322,3 @@
 
 - include_tasks: check-containers.yml
   when: kolla_action != "config"
-
-
-
