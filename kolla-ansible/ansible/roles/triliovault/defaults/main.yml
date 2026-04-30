@@ -171,7 +171,7 @@ triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
 ###### START OF DMS ####
-triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_tag }}"
+triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-trilio-dms:{{ triliovault_tag }}"
 triliovault_dms_dimensions: "{{ default_container_dimensions }}"
 ###### END OF WORKLOADMGR ####
 
