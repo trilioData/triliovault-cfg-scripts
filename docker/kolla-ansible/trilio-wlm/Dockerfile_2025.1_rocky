@@ -42,7 +42,13 @@ RUN /usr/bin/pip3 install --upgrade pip \
 RUN dnf -y install python3-tzlocal
 
 # Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
+# python3-shade was removed from OpenStack repos in Epoxy; install via pip then
+# download and force-install workloadmgr RPM bypassing the unsatisfied RPM dep
+RUN pip3 install shade \
+    && dnf download --downloaddir=/tmp python3-workloadmgr-el9 \
+    && rpm -ivh --nodeps /tmp/python3-workloadmgr-el9*.rpm \
+    && rm -f /tmp/python3-workloadmgr-el9*.rpm
+RUN dnf install python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
 RUN dnf install -y --allowerasing \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
 RUN dnf install -y python3-s3fuse-plugin-el9
