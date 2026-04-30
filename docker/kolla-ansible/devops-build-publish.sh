@@ -4,17 +4,14 @@
 # Builds and publishes T4O kolla-ansible container images.
 #
 # Usage:
-#   bash devops-build-publish.sh <tag> <openstack_release> <platform>
+#   bash devops-build-publish.sh <tag>
 #
 # Arguments:
-#   tag               Docker image tag (any format), e.g. 5.2.7-2025.1, shyam-tv7315-1
-#   openstack_release OpenStack release name, e.g. 2025.1, zed
-#   platform          OS platform, e.g. rocky, ubuntu
+#   tag   Docker image tag (any format), e.g. 5.2.7-2025.1, shyam-tv7315-1
 #
 # Examples:
-#   bash devops-build-publish.sh 5.2.7-2025.1 2025.1 rocky
-#   bash devops-build-publish.sh shyam-tv7315-1 2025.1 rocky
-#   bash devops-build-publish.sh 5.2.7-2025.1 2025.1 ubuntu
+#   bash devops-build-publish.sh 5.2.7-2025.1
+#   bash devops-build-publish.sh shyam-tv7315-1
 #
 # Published image format:
 #   docker.io/trilio/kolla-<container>:<tag>
@@ -22,22 +19,19 @@
 
 set -e
 
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <tag> <openstack_release> <platform>"
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <tag>"
     echo ""
-    echo "  tag               Docker image tag (any format)"
-    echo "  openstack_release e.g. 2025.1, 2024.1, zed"
-    echo "  platform          e.g. rocky, ubuntu"
+    echo "  tag   Docker image tag (any format), e.g. 5.2.7-2025.1"
     echo ""
-    echo "Examples:"
-    echo "  $0 5.2.7-2025.1    2025.1 rocky"
-    echo "  $0 shyam-tv7315-1  2025.1 rocky"
+    echo "Example:"
+    echo "  $0 5.2.7-2025.1"
     exit 1
 fi
 
 TAG="$1"
-OPENSTACK_RELEASE="$2"
-PLATFORM="$3"
+OPENSTACK_RELEASE="2025.1"
+PLATFORM="rocky"
 
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
