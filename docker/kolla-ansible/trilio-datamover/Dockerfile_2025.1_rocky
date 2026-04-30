@@ -38,11 +38,10 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
     && dnf install virt-v2v virtio-win nbdkit -y
 
-## Enable centos-openstack-yoga repo for s3fuse — Yoga ships eventlet 0.30.2
-## which satisfies python3-s3fuse-plugin-el9's eventlet <= 0.30.2-4 constraint
-RUN dnf install -y centos-release-openstack-yoga
-RUN dnf install -y python3-s3fuse-plugin-el9 --allowerasing
-RUN dnf remove -y centos-release-openstack-yoga
+## Downgrade eventlet to 0.30.2-1 from CBS to satisfy s3fuse eventlet <= 0.30.2-4 constraint
+RUN dnf install -y --allowerasing \
+    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
+RUN dnf install -y python3-s3fuse-plugin-el9
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
