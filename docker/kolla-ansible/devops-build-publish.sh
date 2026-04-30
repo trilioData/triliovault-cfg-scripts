@@ -17,8 +17,10 @@
 #   bash devops-build-publish.sh 5.2.7-2025.1 ubuntu
 #
 # Published image format:
-#   docker.io/trilio/kolla-trilio-<container>:<tag>
-#   e.g. docker.io/trilio/kolla-trilio-datamover:5.2.7-2025.1
+#   docker.io/trilio/kolla-<platform>-trilio-<container>:<tag>
+#   docker.io/trilio/kolla-trilio-dms:<tag>   (common, no platform)
+#   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:5.2.7-2025.1
+#        docker.io/trilio/kolla-ubuntu-trilio-datamover:5.2.7-2025.1
 #        docker.io/trilio/kolla-trilio-dms:5.2.7-2025.1
 
 set -e
@@ -80,7 +82,7 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
         continue
     fi
 
-    IMAGE="docker.io/trilio/kolla-${CONTAINER}:${TAG}"
+    IMAGE="docker.io/trilio/kolla-${PLATFORM}-${CONTAINER}:${TAG}"
 
     echo ""
     echo "--------------------------------------------------"
