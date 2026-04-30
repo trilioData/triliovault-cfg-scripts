@@ -1,32 +1,33 @@
 ---
 # cleanup_backup_targets.yml
 #
-# Cleans up old T4O 5.x backup target mount infrastructure from all kolla-ansible
-# nodes after upgrading to T4O 6.2.
+# Cleans up old T4O 5.x backup target mount infrastructure after upgrading to T4O 6.2.
 #
-# What it does (per node):
-#   1. Lazy-unmount old S3 FUSE mounts under vault_data_dir
-#   2. Lazy-unmount old NFS mounts under vault_data_dir
-#   3. Stop and remove old triliovault-object-store Docker containers
+# Play 1 — runs on all triliovault nodes (datamover + wlm):
+#   1. Stop and remove old triliovault-object-store Docker containers
+#   2. Lazy-unmount old S3 FUSE mounts under vault_data_dir
+#   3. Lazy-unmount old NFS mounts under vault_data_dir
 #   4. Remove old kolla config directory for object-store
-#   5. Remove empty mount point directories left after unmounting
+#   5. Remove empty mount-point directories left after unmounting
+#   6. Verify no mounts remain
+#
+# Play 2 — runs on localhost (ansible control node):
+#   7. Remove old backup target variables from /etc/kolla/globals.yml
 #
 # Ordering matters: old containers must be stopped BEFORE unmounting.
 # Running containers will immediately remount if you unmount while they are alive.
 #
 # Run AFTER T4O 6.2 is deployed (kolla-ansible upgrade --tags triliovault).
+# The 'never' tag prevents accidental execution — you MUST pass the explicit tag.
 #
-# Usage (tasks use 'never' tag, so you MUST pass the explicit tag):
+# Usage:
 #   ansible-playbook -i /etc/kolla/inventory cleanup_backup_targets.yml \
 #     --tags upgrade-and-clean-backup-target-mounts
-#
-# To limit to specific hosts:
-#   ansible-playbook -i /etc/kolla/inventory cleanup_backup_targets.yml \
-#     --tags upgrade-and-clean-backup-target-mounts --limit compute
 #
 # Variables (override via -e or group_vars):
 #   vault_data_dir: /var/trilio/triliovault-mounts    (default)
 #   kolla_node_config_directory: /etc/kolla            (default)
+#   kolla_globals_file: /etc/kolla/globals.yml         (default)
 
 - name: Clean up T4O 5.x backup target mounts and containers
   hosts: "triliovault-datamover:triliovault-wlm-api:triliovault-wlm-workloads:triliovault-wlm-scheduler"
@@ -137,4 +138,45 @@
       debug:
         msg: "Cleanup complete on {{ inventory_hostname }}. No remaining mounts under {{ vault_data_dir }}."
       when: remaining_mounts.stdout_lines | length == 0
+      tags: [upgrade-and-clean-backup-target-mounts, never]
+
+# -----------------------------------------------------------------------
+# Play 2: Remove old backup target variables from globals.yml
+# Runs once on the ansible control node (localhost).
+# -----------------------------------------------------------------------
+- name: Remove old backup target variables from globals.yml
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars:
+    kolla_globals_file: "/etc/kolla/globals.yml"
+
+  tasks:
+
+    - name: Remove old backup target variables from globals.yml
+      lineinfile:
+        path: "{{ kolla_globals_file }}"
+        regexp: "^\\s*{{ item }}\\s*:"
+        state: absent
+      loop:
+        - triliovault_backup_target
+        - triliovault_nfs_shares
+        - triliovault_nfs_options
+        - multi_ip_nfs_enabled
+        - triliovault_s3_access_key
+        - triliovault_s3_secret_key
+        - triliovault_s3_region_name
+        - triliovault_s3_bucket_name
+        - triliovault_s3_endpoint_url
+        - triliovault_s3_version
+        - triliovault_s3_auth_version
+        - triliovault_s3_ssl_enabled
+        - triliovault_s3_ssl_verify
+        - triliovault_s3_ssl_cert_file_name
+        - triliovault_copy_ceph_s3_ssl_cert
+      tags: [upgrade-and-clean-backup-target-mounts, never]
+
+    - name: Confirm globals.yml cleanup
+      debug:
+        msg: "Old backup target variables removed from {{ kolla_globals_file }}."
       tags: [upgrade-and-clean-backup-target-mounts, never]
