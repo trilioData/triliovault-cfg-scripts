@@ -28,10 +28,6 @@ RUN set -ex \
 ##Install datamover packages
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
-## Downgrade SQLAlchemy to compatible version
-RUN set -ex \
-    && /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51"
 
 ## Create Config Dir
 RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
