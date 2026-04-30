@@ -86,7 +86,7 @@ for CONTAINER in "${CONTAINERS[@]}"; do
         rm -f "$CONT_BUILD_DIR/Dockerfile_"*
     fi
 
-    docker build --no-cache --pull -t "$IMAGE" "$CONT_BUILD_DIR"
+    docker build --no-cache --pull --network host -t "$IMAGE" "$CONT_BUILD_DIR"
     docker push "$IMAGE"
 
     echo " Published : $IMAGE"
