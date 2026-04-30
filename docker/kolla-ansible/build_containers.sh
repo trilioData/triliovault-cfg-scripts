@@ -90,7 +90,7 @@ do
 	cp -R $base_dir/trilio-dms $base_dir/${dms_build_dir}/
 	cd $base_dir/${dms_build_dir}/trilio-dms/
 	sed -i "s/{VERSION}/${fury_repo}/g" trilio.repo
-	docker build --no-cache --pull -t trilio/kolla-trilio-dms:${tag}-${openstack_release} .
+	docker build --no-cache --pull -t trilio/kolla-trilio-dms:${tag} .
 	rm -rf $base_dir/${dms_build_dir}
     fi
 

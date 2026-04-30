@@ -65,7 +65,7 @@ do
     done
     # Publish trilio-dms — common image, not platform-specific
     if [[ " ${containers_to_build[*]} " =~ " trilio-dms " ]]; then
-	DMS_TAG="trilio/kolla-trilio-dms:${tag}-${openstack_release}"
+	DMS_TAG="trilio/kolla-trilio-dms:${tag}"
 	tagAndPushCont "${DMS_TAG}"
     fi
 
