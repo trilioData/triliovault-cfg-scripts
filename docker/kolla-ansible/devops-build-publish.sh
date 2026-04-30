@@ -126,7 +126,12 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
-    docker build --no-cache --pull --network host -t "$IMAGE" "$CONT_BUILD_DIR"
+    BUILD_ARGS=""
+    if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
+        BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${TRILIO_PIP_INDEX_URL}"
+    fi
+
+    docker build --no-cache --pull --network host $BUILD_ARGS -t "$IMAGE" "$CONT_BUILD_DIR"
     docker push "$IMAGE"
 
     echo " Published : $IMAGE"
