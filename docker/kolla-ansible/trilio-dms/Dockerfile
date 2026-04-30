@@ -13,7 +13,8 @@ LABEL name="kolla/trilio-dms" \
 USER root
 
 RUN dnf clean all
-RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
+    && dnf config-manager --disable centos-openstack-epoxy || true
 
 ADD trilio.repo /etc/yum.repos.d/
 
