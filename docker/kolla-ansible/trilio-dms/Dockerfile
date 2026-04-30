@@ -25,7 +25,7 @@ RUN dnf install -y \
 RUN ldconfig
 
 RUN /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install azure-storage-blob azure-core loguru
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
 RUN echo "user_allow_other" > /etc/fuse.conf
 

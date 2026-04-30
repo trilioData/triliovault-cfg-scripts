@@ -41,10 +41,11 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
 
-## Downgrade SQLAlchemy to compatible version
+## Downgrade SQLAlchemy to compatible version; install Azure blob storage deps
 RUN set -ex \
     && /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51"
+    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 

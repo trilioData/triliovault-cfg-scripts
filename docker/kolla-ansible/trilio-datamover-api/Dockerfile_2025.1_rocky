@@ -26,7 +26,7 @@ RUN set -ex \
     && dnf install -y epel-release
 	
 ##Install datamover packages
-RUN dnf install python3-dmapi-el9 python3-nova python3-devel -y
+RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
 ## Downgrade SQLAlchemy to compatible version
 RUN set -ex \
