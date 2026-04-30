@@ -39,7 +39,10 @@ RUN dnf -y install python3-tzlocal
 
 
 # Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
+RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 -y
+RUN dnf install -y --allowerasing \
+    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
+RUN dnf install -y python3-s3fuse-plugin-el9
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault

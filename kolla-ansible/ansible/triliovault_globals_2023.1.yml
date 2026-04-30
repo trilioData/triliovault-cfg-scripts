@@ -46,6 +46,8 @@ dmapi_workers: "16"
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_tag: "6.2.0-stable-2023.1"
+## DMS image tag does not include OpenStack release (common image across releases)
+triliovault_dms_tag: "6.2.0-stable"
 triliovault_docker_username: ""
 triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
