@@ -36,8 +36,12 @@ RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovaul
 ##Install datamover packages
 RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
-    && dnf install python3-s3fuse-plugin-el9 --nobest -y \
     && dnf install virt-v2v virtio-win nbdkit -y
+
+## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet install
+RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
+RUN dnf install -y python3-s3fuse-plugin-el9
+RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
