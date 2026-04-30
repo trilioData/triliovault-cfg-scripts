@@ -1,4 +1,4 @@
-FROM quay.io/openstack.kolla/openstack-base:2025.1-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2025.1-rocky-9
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-dms" \
@@ -13,11 +13,7 @@ LABEL name="kolla/trilio-dms" \
 USER root
 
 RUN dnf clean all
-RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
-    && sed -i \
-        -e '/^metalink=/d' \
-        -e 's|^baseurl=.*|baseurl=http://mirror.stream.centos.org/SIGs/9-stream/cloud/$basearch/openstack-epoxy/|' \
-        /etc/yum.repos.d/CentOS-OpenStack-epoxy.repo
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ADD trilio.repo /etc/yum.repos.d/
 
