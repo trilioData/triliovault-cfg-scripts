@@ -35,6 +35,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_datamover_api_port }}"
         frontend_http_extra:
           - "retries 5"
@@ -93,6 +94,7 @@ triliovault_services:
         enabled: "{{ enable_triliovault }}"
         mode: "http"
         external: true
+        external_fqdn: "{{ kolla_external_fqdn }}"
         port: "{{ triliovault_wlm_api_port }}"
         frontend_http_extra:
           - "retries 5"
@@ -495,10 +497,9 @@ s3vaultfuse_global:
 ##################
 # Kolla module selection
 ##################
-# Set to 'kolla_docker' for Zed/Antelope (Kolla Ansible < 17 / 2023.2).
-# From Bobcat (2023.2) onwards kolla_docker was renamed to kolla_container.
-# Default value covers Bobcat, Caracal, Dalmatian, Epoxy, Flamingo and later.
-triliovault_kolla_module: "kolla_container"
+# kolla_docker was renamed to kolla_container in Bobcat (2023.2).
+# openstack_release is set by kolla-ansible in group_vars/all.yml for all supported releases.
+triliovault_kolla_module: "{% if openstack_release in ['zed', '2023.1'] %}kolla_docker{% else %}kolla_container{% endif %}"
 
 ##New_vars
 cloud_admin_role: 'admin'

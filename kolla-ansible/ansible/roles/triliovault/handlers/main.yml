@@ -301,3 +301,11 @@
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
+
+- name: Restart proxysql container
+  become: true
+  kolla_container:
+    action: "restart_container"
+    common_options: "{{ docker_common_options }}"
+    name: "proxysql"
+    ignore_missing: true

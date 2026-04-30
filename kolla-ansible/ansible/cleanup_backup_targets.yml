@@ -1,0 +1,138 @@
+---
+# cleanup_backup_targets.yml
+#
+# Cleans up old T4O 5.x backup target mount infrastructure from all kolla-ansible
+# nodes after upgrading to T4O 6.2.
+#
+# What it does (per node):
+#   1. Lazy-unmount old S3 FUSE mounts under vault_data_dir
+#   2. Lazy-unmount old NFS mounts under vault_data_dir
+#   3. Stop and remove old triliovault-object-store Docker containers
+#   4. Remove old kolla config directory for object-store
+#   5. Remove empty mount point directories left after unmounting
+#
+# Ordering matters: old containers must be stopped BEFORE unmounting.
+# Running containers will immediately remount if you unmount while they are alive.
+#
+# Run AFTER T4O 6.2 is deployed (kolla-ansible upgrade --tags triliovault).
+#
+# Usage:
+#   ansible-playbook -i /etc/kolla/inventory cleanup_backup_targets.yml
+#
+# To limit to specific hosts:
+#   ansible-playbook -i /etc/kolla/inventory cleanup_backup_targets.yml --limit compute
+#
+# Variables (override via -e or group_vars):
+#   vault_data_dir: /var/trilio/triliovault-mounts    (default)
+#   kolla_node_config_directory: /etc/kolla            (default)
+
+- name: Clean up T4O 5.x backup target mounts and containers
+  hosts: "triliovault-datamover:triliovault-wlm-api:triliovault-wlm-workloads:triliovault-wlm-scheduler"
+  become: true
+  gather_facts: false
+  vars:
+    vault_data_dir: "/var/trilio/triliovault-mounts"
+    kolla_node_config_directory: "/etc/kolla"
+
+  tasks:
+
+    # -----------------------------------------------------------------------
+    # Step 1: Stop old object-store containers BEFORE unmounting.
+    # Container name pattern in kolla: triliovault_object_store* (underscores).
+    # Must stop before unmounting — running containers immediately remount.
+    # -----------------------------------------------------------------------
+    - name: Get list of old object-store containers
+      command: docker ps -a --format "{{ '{{' }}.Names{{ '}}' }}" --filter name=triliovault_object_store
+      register: object_store_containers
+      changed_when: false
+      failed_when: false
+      tags: cleanup-backup-targets
+
+    - name: Stop and remove old object-store containers
+      command: docker rm -f "{{ item }}"
+      loop: "{{ object_store_containers.stdout_lines }}"
+      when: object_store_containers.stdout_lines | length > 0
+      failed_when: false
+      tags: cleanup-backup-targets
+
+    - name: Report object-store containers removed
+      debug:
+        msg: "Removed {{ object_store_containers.stdout_lines | length }} old object-store container(s): {{ object_store_containers.stdout_lines }}"
+      when: object_store_containers.stdout_lines | length > 0
+      tags: cleanup-backup-targets
+
+    # -----------------------------------------------------------------------
+    # Step 2: Lazy-unmount S3 FUSE mounts under vault_data_dir.
+    # Sort reverse so deeper paths unmount before parents.
+    # -----------------------------------------------------------------------
+    - name: Lazy unmount all S3 FUSE mounts under vault_data_dir
+      shell: |
+        findmnt -r -n -o TARGET,FSTYPE | grep "^{{ vault_data_dir }}" \
+          | awk '$2 ~ /^fuse/ {print $1}' | sort -r | while read -r mnt; do
+            echo "Lazy unmounting FUSE: $mnt"
+            umount -l "$mnt" || true
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+      tags: cleanup-backup-targets
+
+    # -----------------------------------------------------------------------
+    # Step 3: Lazy-unmount NFS mounts under vault_data_dir.
+    # -----------------------------------------------------------------------
+    - name: Lazy unmount all NFS mounts under vault_data_dir
+      shell: |
+        findmnt -r -n -o TARGET,FSTYPE | grep "^{{ vault_data_dir }}" \
+          | awk '($2 == "nfs" || $2 == "nfs4") {print $1}' | sort -r | while read -r mnt; do
+            echo "Lazy unmounting NFS: $mnt"
+            umount -l -f "$mnt" || true
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+      tags: cleanup-backup-targets
+
+    # -----------------------------------------------------------------------
+    # Step 4: Remove old kolla config directory for object-store.
+    # -----------------------------------------------------------------------
+    - name: Remove old kolla object-store config directory
+      file:
+        path: "{{ kolla_node_config_directory }}/triliovault-object-store"
+        state: absent
+      tags: cleanup-backup-targets
+
+    # -----------------------------------------------------------------------
+    # Step 5: Remove empty mount-point subdirectories left after unmounting.
+    # vault_data_dir itself is preserved — DMS and datamover still reference it.
+    # -----------------------------------------------------------------------
+    - name: Remove empty mount-point subdirectories under vault_data_dir
+      shell: |
+        find "{{ vault_data_dir }}" -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
+      args:
+        executable: /bin/bash
+      changed_when: false
+      tags: cleanup-backup-targets
+
+    # -----------------------------------------------------------------------
+    # Step 6: Verify — report any remaining mounts.
+    # -----------------------------------------------------------------------
+    - name: Check for remaining mounts under vault_data_dir
+      shell: findmnt -r -n -o TARGET,FSTYPE,SOURCE | grep "^{{ vault_data_dir }}" || true
+      args:
+        executable: /bin/bash
+      register: remaining_mounts
+      changed_when: false
+      failed_when: false
+      tags: cleanup-backup-targets
+
+    - name: Warn if mounts still remain
+      debug:
+        msg: "WARNING: Remaining mounts found under {{ vault_data_dir }}. Manual cleanup may be required: {{ remaining_mounts.stdout_lines }}"
+      when: remaining_mounts.stdout_lines | length > 0
+      tags: cleanup-backup-targets
+
+    - name: Confirm cleanup complete
+      debug:
+        msg: "Cleanup complete on {{ inventory_hostname }}. No remaining mounts under {{ vault_data_dir }}."
+      when: remaining_mounts.stdout_lines | length == 0
+      tags: cleanup-backup-targets
