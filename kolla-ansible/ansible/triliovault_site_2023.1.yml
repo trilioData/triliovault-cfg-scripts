@@ -31,6 +31,7 @@
     - triliovault-wlm-workloads
     - triliovault-wlm-scheduler
     - triliovault-wlm-cron
+    - triliovault-dms
     - enable_triliovault | bool
   serial: '{{ kolla_serial|default("0") }}'
   roles:

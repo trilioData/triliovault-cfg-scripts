@@ -13,7 +13,7 @@
         when: enable_loadbalancer | bool }
   tasks:
     - include_role:
-        name: triliovault-epoxy
+        name: triliovault
         tasks_from: loadbalancer
       when:
         - inventory_hostname in groups['triliovault-datamover-api']
@@ -22,7 +22,7 @@
         - enable_triliovault | bool
         - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']
 
-- name: Apply role triliovault-epoxy
+- name: Apply role triliovault
   gather_facts: false
   hosts:
     - triliovault-datamover-api
@@ -35,6 +35,6 @@
     - enable_triliovault | bool
   serial: '{{ kolla_serial|default("0") }}'
   roles:
-    - { role: triliovault-epoxy,
+    - { role: triliovault,
         tags: triliovault,
         when: enable_triliovault | bool }
