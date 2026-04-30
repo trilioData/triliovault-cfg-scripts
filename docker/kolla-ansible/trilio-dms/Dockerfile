@@ -1,4 +1,4 @@
-FROM quay.io/openstack.kolla/glance-api:2025.1-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2025.1-rocky-9
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-dms" \
