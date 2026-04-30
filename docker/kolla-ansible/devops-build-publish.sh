@@ -31,18 +31,44 @@
 
 set -e
 
+usage() {
+    cat <<EOF
+Usage: $0 <tag> <os_platform> [container]
+
+  tag          Docker image tag (any format), e.g. 5.2.7-2025.1
+  os_platform  OS platform to build for: rocky | ubuntu
+  container    (optional) Build and publish a single container.
+               If omitted, all 5 containers are built.
+
+Containers:
+  trilio-datamover        Compute node datamover (OS-specific)
+  trilio-datamover-api    Control plane datamover API (OS-specific)
+  trilio-horizon-plugin   OpenStack Horizon UI plugin (OS-specific)
+  trilio-wlm              Workload Manager (OS-specific)
+  trilio-dms              Dynamic Mount Service (common image, no OS variant)
+
+Published image format:
+  docker.io/trilio/kolla-<platform>-<container>:<tag>   (OS-specific)
+  docker.io/trilio/kolla-trilio-dms:<tag>               (common)
+
+Examples:
+  $0 5.2.7-2025.1 rocky
+  $0 5.2.7-2025.1 ubuntu
+  $0 5.2.7-2025.1 rocky trilio-datamover
+  $0 5.2.7-2025.1 rocky trilio-dms
+
+Options:
+  -h, --help   Show this help message and exit.
+EOF
+}
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    usage
+    exit 0
+fi
+
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
-    echo "Usage: $0 <tag> <os_platform> [container]"
-    echo ""
-    echo "  tag          Docker image tag (any format), e.g. 5.2.7-2025.1"
-    echo "  os_platform  rocky | ubuntu"
-    echo "  container    (optional) trilio-datamover | trilio-datamover-api |"
-    echo "                          trilio-horizon-plugin | trilio-wlm | trilio-dms"
-    echo ""
-    echo "Examples:"
-    echo "  $0 5.2.7-2025.1 rocky"
-    echo "  $0 5.2.7-2025.1 rocky trilio-datamover"
-    echo "  $0 5.2.7-2025.1 rocky trilio-dms"
+    usage
     exit 1
 fi
 
