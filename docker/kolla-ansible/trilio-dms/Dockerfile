@@ -14,7 +14,9 @@ USER root
 
 RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
-    && dnf config-manager --save --setopt=centos-openstack-epoxy.skip_if_unavailable=true
+    && dnf config-manager --save \
+        --setopt=centos-openstack-epoxy.baseurl=https://mirror.stream.centos.org/SIGs/9-stream/cloud/x86_64/openstack-epoxy/ \
+        --setopt=centos-openstack-epoxy.metalink=
 
 ADD trilio.repo /etc/yum.repos.d/
 
