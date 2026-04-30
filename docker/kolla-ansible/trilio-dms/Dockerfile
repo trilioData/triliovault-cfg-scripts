@@ -14,7 +14,7 @@ USER root
 
 RUN dnf clean all
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
-    && dnf config-manager --disable centos-openstack-epoxy || true
+    && dnf config-manager --save --setopt=centos-openstack-epoxy.skip_if_unavailable=true
 
 ADD trilio.repo /etc/yum.repos.d/
 
