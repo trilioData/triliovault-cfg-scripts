@@ -31,6 +31,10 @@ do
     do
         for container_to_build in "${containers_to_build[@]}"
         do
+	    # trilio-dms is a common image published outside the platform loop
+	    if [[ ${container_to_build} == "trilio-dms" ]]; then
+		continue
+	    fi
 	    #Reset CONT_TAG
 	    CONT_TAG=""
 	    if [[ ${container_to_build} == *"horizon"* ]]
@@ -59,5 +63,11 @@ do
 	    fi
 	done
     done
+    # Publish trilio-dms — common image, not platform-specific
+    if [[ " ${containers_to_build[*]} " =~ " trilio-dms " ]]; then
+	DMS_TAG="trilio/kolla-trilio-dms:${tag}-${openstack_release}"
+	tagAndPushCont "${DMS_TAG}"
+    fi
+
     let count=count+1
 done
