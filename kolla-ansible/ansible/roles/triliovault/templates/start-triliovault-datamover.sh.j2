@@ -2,6 +2,6 @@
 set -ex
 
 ## Start TrilioVault Datamover Service
-/var/lib/kolla/venv/bin/python3 /usr/bin/tvault-contego \
+/usr/bin/python3 /usr/bin/tvault-contego \
 --config-file=/etc/nova/nova.conf \
 --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
