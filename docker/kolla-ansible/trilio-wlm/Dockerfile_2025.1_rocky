@@ -37,7 +37,9 @@ RUN /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install igraph namedatomiclock jinja2 \
     && /usr/bin/pip3 install "SQLAlchemy==1.4.51" \
     && pip3 install "SQLAlchemy==1.4.51" \
-    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru \
+    && /usr/bin/pip3 install sqlalchemy-utils \
+    && /var/lib/kolla/venv/bin/pip install sqlalchemy-utils
 
 RUN dnf -y install python3-tzlocal
 
