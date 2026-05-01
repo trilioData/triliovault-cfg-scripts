@@ -1,5 +1,5 @@
 [server]
-rabbitmq_url = rabbit://{% for host in groups[om_rpc_group] %}{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ 'api' | kolla_address(host) | put_address_in_context('url') }}:{{ rabbitmq_port | default('5672') }}{% if not loop.last %},{% endif %}{% endfor %}/{{ triliovault_wlm_rpc_vhost }}{% if om_enable_rabbitmq_tls | bool %}?ssl=1{% endif %}
+rabbitmq_url = {{ rpc_transport_url }}
 
 {% if rabbit_quorum_queue | bool %}
 rabbitmq_queue_type = quorum
