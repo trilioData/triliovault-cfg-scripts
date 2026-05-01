@@ -39,7 +39,8 @@ RUN /usr/bin/pip3 install --upgrade pip \
     && pip3 install "SQLAlchemy==1.4.51" \
     && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru \
     && /usr/bin/pip3 install sqlalchemy-utils defusedxml pyvmomi pymongo python-editor munch \
-    && /var/lib/kolla/venv/bin/pip install sqlalchemy-utils defusedxml pyvmomi pymongo python-editor munch
+    && /usr/bin/pip3 install oslo.messaging oslo.config oslo.log oslo.utils oslo.db oslo.serialization \
+        oslo.context oslo.middleware oslo.policy oslo.rootwrap oslo.service oslo.privsep oslo.reports
 
 RUN dnf -y install python3-tzlocal
 
