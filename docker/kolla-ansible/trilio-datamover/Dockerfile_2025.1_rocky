@@ -46,11 +46,19 @@ RUN dnf install -y python3-s3fuse-plugin-el9
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
 
-## Downgrade SQLAlchemy to compatible version; install Azure blob storage deps
+# oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+# Also pin in kolla venv since /var/lib/kolla/venv/bin/python3 is used to start the service
+RUN dnf install -y centos-release-openstack-antelope \
+    && dnf downgrade -y python3-oslo-db \
+    && dnf remove -y --noautoremove centos-release-openstack-antelope \
+    && dnf clean all
+
+## Downgrade SQLAlchemy and oslo.db in both system Python and kolla venv; install Azure deps
 RUN set -ex \
     && /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
-    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
