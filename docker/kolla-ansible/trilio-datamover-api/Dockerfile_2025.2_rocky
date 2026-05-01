@@ -1,10 +1,10 @@
-FROM quay.io/openstack.kolla/nova-api:2023.2-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2025.2-rocky-9
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
@@ -24,12 +24,19 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
     && dnf update -y \
     && dnf install -y epel-release
-	
+
 ##Install datamover packages
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
+# oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+RUN dnf install -y centos-release-openstack-antelope \
+    && dnf downgrade -y python3-oslo-db \
+    && dnf remove -y --noautoremove centos-release-openstack-antelope \
+    && dnf clean all
+
 ## Downgrade SQLAlchemy to compatible version
-RUN /usr/bin/pip3 install --upgrade pip \
+RUN set -ex \
+    && /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51"
 
 ## Create Config Dir
@@ -37,7 +44,7 @@ RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
     && chown -R dmapi:dmapi /var/log/triliovault \
     && chown -R root:dmapi /etc/triliovault-datamover \
     && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover
-	
+
 ## Kolla specifc settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_datamover_api_extend_start.sh /usr/local/bin/kolla_triliovault_datamover_api_extend_start

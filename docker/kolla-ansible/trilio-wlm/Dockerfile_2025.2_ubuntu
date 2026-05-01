@@ -1,10 +1,10 @@
-FROM quay.io/openstack.kolla/nova-api:2024.1-ubuntu-jammy
+FROM quay.io/openstack.kolla/nova-api:2025.2-ubuntu-noble
 MAINTAINER Trilio shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata--wlm-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
@@ -24,22 +24,25 @@ RUN set -ex \
      && apt-get -y update \
      && apt-get -y install zlib1g-dev libpython3-dev \
      && apt-get -y install libcurl4-openssl-dev libssl-dev python3-m2crypto libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev \
-     && apt-get -y install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system ntfs-3g \
+     && apt-get -y install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system libfuse2 ntfs-3g \
      && apt-get -y install python3-neutronclient python3-glanceclient \
      && pip3 --no-cache-dir install --upgrade pip \
      && pip3 --no-cache-dir install "SQLAlchemy==1.4.51" \
      && pip3 --no-cache-dir install --upgrade pyvmomi \
      && pip3 --no-cache-dir install azure-storage-blob==12.25.1 azure-core loguru \
+     && pip3 --no-cache-dir install sqlalchemy-utils defusedxml pymongo python-editor \
+     && /var/lib/kolla/venv/bin/pip install sqlalchemy-utils defusedxml pyvmomi pymongo python-editor \
      && apt-get clean -y
 
 # Installing TrilioVaultWLM packages
+##RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install ./tmp/workloadmgr_5.2.8.25_all.deb
 RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
 
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault 
+RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault
 RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
-    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
+    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store
 RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 
