@@ -28,6 +28,10 @@ RUN set -ex \
 ##Install datamover packages
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
+# oslo_db.concurrency was removed in modern oslo.db; inject a compatibility stub
+COPY oslo_db_concurrency_stub.py /tmp/oslo_db_concurrency_stub.py
+RUN python3 -c "import oslo_db, os, shutil; shutil.copy('/tmp/oslo_db_concurrency_stub.py', os.path.join(os.path.dirname(oslo_db.__file__), 'concurrency.py'))"
+
 ## Downgrade SQLAlchemy to compatible version
 RUN set -ex \
     && /usr/bin/pip3 install --upgrade pip \
