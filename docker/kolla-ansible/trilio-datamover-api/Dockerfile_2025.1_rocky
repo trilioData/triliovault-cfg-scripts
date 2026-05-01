@@ -28,9 +28,11 @@ RUN set -ex \
 ##Install datamover packages
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
-# oslo_db.concurrency was removed in modern oslo.db; inject a compatibility stub
-COPY oslo_db_concurrency_stub.py /tmp/oslo_db_concurrency_stub.py
-RUN python3 -c "import oslo_db, os, shutil; shutil.copy('/tmp/oslo_db_concurrency_stub.py', os.path.join(os.path.dirname(oslo_db.__file__), 'concurrency.py'))"
+# oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+RUN dnf install -y centos-release-openstack-antelope \
+    && dnf downgrade -y python3-oslo-db \
+    && dnf remove -y --noautoremove centos-release-openstack-antelope \
+    && dnf clean all
 
 ## Downgrade SQLAlchemy to compatible version
 RUN set -ex \
