@@ -29,15 +29,18 @@ RUN set -ex \
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
 # oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+# System-level downgrade covers /usr/bin/python3; also pin in kolla venv since we use
+# /var/lib/kolla/venv/bin/python3 to start the service (venv packages take priority)
 RUN dnf install -y centos-release-openstack-antelope \
     && dnf downgrade -y python3-oslo-db \
     && dnf remove -y --noautoremove centos-release-openstack-antelope \
     && dnf clean all
 
-## Downgrade SQLAlchemy to compatible version
+## Downgrade SQLAlchemy and oslo.db to compatible versions in both system Python and kolla venv
 RUN set -ex \
     && /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51"
+    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 
 ## Create Config Dir
 RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
