@@ -28,7 +28,7 @@ RUN set -ex \
      && apt-get -y install python3-neutronclient python3-glanceclient \
      && pip3 --no-cache-dir install --upgrade pip \
      && pip3 --no-cache-dir install "SQLAlchemy==1.4.51" \
-     && pip3 --no-cache-dir install --upgrade pyvmomi \
+     && pip3 --no-cache-dir install --upgrade pyvmomi munch \
      && pip3 --no-cache-dir install azure-storage-blob==12.25.1 azure-core loguru \
      && apt-get clean -y
 
