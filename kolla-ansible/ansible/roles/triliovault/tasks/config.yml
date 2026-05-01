@@ -156,14 +156,27 @@
   notify:
     - "Restart {{ item }} container"
 
-- name: Copying triliovault-dms server conf files
+- name: Copying triliovault-dms server conf files for control plane
   become: true
   template:
-    src: "triliovault-dms-server.conf.j2"
+    src: "triliovault-dms-server-ctlplane.conf.j2"
     dest: "{{ node_config_directory }}/triliovault-dms/triliovault-dms-server.conf"
     mode: "0640"
   when:
     - inventory_hostname in groups[triliovault_dms_group]
+    - inventory_hostname in groups.get('control', [])
+  notify:
+    - "Restart triliovault-dms container"
+
+- name: Copying triliovault-dms server conf files for data plane
+  become: true
+  template:
+    src: "triliovault-dms-server-dataplane.conf.j2"
+    dest: "{{ node_config_directory }}/triliovault-dms/triliovault-dms-server.conf"
+    mode: "0640"
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
+    - inventory_hostname in groups.get('compute', [])
   notify:
     - "Restart triliovault-dms container"
 
@@ -196,7 +209,7 @@
 - name: Copying DMS client conf for DMAPI
   become: true
   template:
-    src: "triliovault-dms-client.conf.j2"
+    src: "triliovault-dms-client-dmapi.conf.j2"
     dest: "{{ node_config_directory }}/triliovault-datamover-api/triliovault-dms-client.conf"
     mode: "0640"
   when:

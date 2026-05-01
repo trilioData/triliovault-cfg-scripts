@@ -22,7 +22,8 @@ RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-
 ## Downgrade oslo.db and SQLAlchemy for Epoxy compatibility
 RUN pip3 install --upgrade pip \
     && pip3 install "oslo.db<15.1.0" \
-    && pip3 install --ignore-installed "SQLAlchemy==1.4.51"
+    && pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 
 ## Kolla specifc settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start

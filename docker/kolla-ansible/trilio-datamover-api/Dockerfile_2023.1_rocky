@@ -30,7 +30,8 @@ RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-de
 
 ## Downgrade SQLAlchemy to compatible version
 RUN /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51"
+    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "SQLAlchemy==1.4.51"
 
 ## Create Config Dir
 RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \
