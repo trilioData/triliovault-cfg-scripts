@@ -1,7 +1,5 @@
 [client]
-# DMAPI DMS client connects to the compute-plane DMS server, which listens on
-# the standard kolla RPC transport (same vhost DMAPI uses for its own messaging).
-rabbitmq_url = {{ rpc_transport_url }}
+rabbitmq_url = rabbit://{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ kolla_internal_fqdn }}:{{ rabbitmq_port | default('5672') }}/{{ triliovault_wlm_rpc_vhost }}{% if om_enable_rabbitmq_tls | bool %}?ssl=1{% endif %}
 
 db_url = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
 

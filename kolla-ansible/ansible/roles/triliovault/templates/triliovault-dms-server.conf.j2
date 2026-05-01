@@ -1,12 +1,5 @@
 [server]
-# Control plane DMS communicates with WLM via the WLM RabbitMQ vhost.
-# Compute plane DMS communicates with DMAPI via the standard kolla RPC transport
-# (same connection DMAPI itself uses), so rpc_transport_url is used there.
-{% if inventory_hostname in groups.get('control', []) %}
 rabbitmq_url = rabbit://{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ kolla_internal_fqdn }}:{{ rabbitmq_port | default('5672') }}/{{ triliovault_wlm_rpc_vhost }}{% if om_enable_rabbitmq_tls | bool %}?ssl=1{% endif %}
-{% elif inventory_hostname in groups.get('compute', []) %}
-rabbitmq_url = {{ rpc_transport_url }}
-{% endif %}
 
 {% if rabbit_quorum_queue | bool %}
 rabbitmq_queue_type = quorum
