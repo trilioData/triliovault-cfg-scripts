@@ -196,7 +196,7 @@
 - name: Copying DMS client conf for DMAPI
   become: true
   template:
-    src: "triliovault-dms-client.conf.j2"
+    src: "triliovault-dms-client-dmapi.conf.j2"
     dest: "{{ node_config_directory }}/triliovault-datamover-api/triliovault-dms-client.conf"
     mode: "0640"
   when:
