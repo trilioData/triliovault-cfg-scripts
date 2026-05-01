@@ -501,26 +501,6 @@ s3vaultfuse_global:
 # openstack_release is set by kolla-ansible in group_vars/all.yml for all supported releases.
 triliovault_kolla_module: "{% if openstack_release in ['zed', '2023.1'] %}kolla_docker{% else %}kolla_container{% endif %}"
 
-##################
-# Backup target variables — defaults for T4O 6.2
-# In 6.2, backup targets are added post-deployment via CLI/UI, not at deploy time.
-# These defaults prevent Ansible from failing on templates that still reference
-# these variables (e.g. triliovault-datamover.json.j2 uses triliovault_copy_ceph_s3_ssl_cert).
-##################
-triliovault_backup_target: ""
-triliovault_copy_ceph_s3_ssl_cert: false
-triliovault_s3_ssl_cert_file_name: ""
-triliovault_nfs_shares: ""
-triliovault_nfs_options: ""
-multi_ip_nfs_enabled: "no"
-triliovault_s3_access_key: ""
-triliovault_s3_secret_key: ""
-triliovault_s3_region_name: ""
-triliovault_s3_bucket_name: ""
-triliovault_s3_endpoint_url: ""
-triliovault_s3_ssl_enabled: false
-triliovault_s3_ssl_verify: false
-
 ##New_vars
 cloud_admin_role: 'admin'
 cloud_admin_authurl: "{{ keystone_public_url }}"
