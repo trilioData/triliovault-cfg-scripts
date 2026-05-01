@@ -17,7 +17,7 @@ USER root
 
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
-RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-dmapi python3-nova --allow-unauthenticated
+RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-dmapi python3-trilio-dms python3-nova --allow-unauthenticated
 
 
 ## Kolla specifc settings

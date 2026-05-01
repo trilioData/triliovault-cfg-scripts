@@ -56,8 +56,5 @@ triliovault_docker_registry: "docker.io"
 ## Backup targets are now managed dynamically via the Trilio DMS service and
 ## added by the user post-deployment using the T4O CLI or Horizon UI.
 
-## Zed uses kolla_docker module (renamed to kolla_container in Bobcat)
-triliovault_kolla_module: "kolla_docker"
-
 ## Set to true if your RabbitMQ cluster uses quorum queues (version >= 3.13)
 # rabbit_quorum_queue: false
