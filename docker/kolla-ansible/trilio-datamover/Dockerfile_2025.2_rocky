@@ -1,0 +1,79 @@
+FROM quay.io/openstack.kolla/nova-compute:2025.2-rocky-9
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="kolla/trilio-datamover" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.2.8" \
+      release="5.2" \
+      type="source" \
+      summary="TrilioData Datamover" \
+      description="TrilioData Datamover"
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+RUN dnf clean all
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+
+##Copy RPM Repo
+ADD trilio.repo /etc/yum.repos.d/
+
+##Install Required Packages
+RUN set -ex \
+    && dnf update -y
+
+##Add nova user into the disk and kvm group
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
+
+## Create Config Dir.
+RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
+    && chown -R nova:nova /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault \
+    && chown -R root:nova /etc/triliovault-datamover  /etc/triliovault-object-store \
+    && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+
+##Install datamover packages
+RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
+    && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
+    && dnf install virt-v2v virtio-win nbdkit -y
+
+## Downgrade eventlet to 0.30.2-1 from CBS to satisfy s3fuse eventlet <= 0.30.2-4 constraint
+RUN dnf install -y --allowerasing \
+    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
+RUN dnf install -y python3-s3fuse-plugin-el9
+
+## Copy locally built virt-v2v-in-place binary
+COPY virt-v2v-in-place /usr/local/bin/
+
+# oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+# Also pin in kolla venv since /var/lib/kolla/venv/bin/python3 is used to start the service
+RUN dnf install -y centos-release-openstack-antelope \
+    && dnf downgrade -y python3-oslo-db \
+    && dnf remove -y --noautoremove centos-release-openstack-antelope \
+    && dnf clean all
+
+## Downgrade SQLAlchemy and oslo.db in both system Python and kolla venv; install Azure deps
+RUN set -ex \
+    && /usr/bin/pip3 install --upgrade pip \
+    && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
+## Kolla settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+
+##Copy conf files
+ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+COPY log-rotate-conf /etc/logrotate.d/tvault-contego
+
+##Clean subscription
+RUN dnf clean all
+RUN rm -f /etc/yum.repos.d/trilio.repo
+
+##Become nova user for further operations
+USER nova
