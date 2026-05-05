@@ -37,7 +37,7 @@
 {% if cinder_backend_power_flex|bool %}
         "/opt/emc/scaleio/openstack/connector.conf:/opt/emc/scaleio/openstack/connector.conf:ro",
 {% endif %}
-        "/var/lib/openstack/config/nova:/var/lib/kolla/config_files/nova:ro"
+        "{{ nova_config_dir }}:/var/lib/kolla/config_files/nova:ro"
     ]
 }
 

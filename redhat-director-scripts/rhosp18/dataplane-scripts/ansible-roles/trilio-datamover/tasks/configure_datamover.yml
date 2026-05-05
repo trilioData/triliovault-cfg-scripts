@@ -82,6 +82,16 @@
 #    group: '42436'
 #    mode: '0755'
 
+- name: Check for FR5 nova config path
+  become: true
+  ansible.builtin.stat:
+    path: /var/lib/openstack/nova
+  register: nova_config_fr5
+
+- name: Set nova config directory based on RHOSO version
+  ansible.builtin.set_fact:
+    nova_config_dir: "{{ '/var/lib/openstack/nova' if nova_config_fr5.stat.exists else '/var/lib/openstack/config/nova' }}"
+
 - name: Render triliovault-datamover container
   become: true
   ansible.builtin.template:
