@@ -37,6 +37,9 @@ RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 RUN mkdir /licenses
 COPY licensing.txt /licenses
 
+##Clean apt repo
+RUN rm -f /etc/apt/sources.list.d/trilio.list
+
 ##Become nova user for further operations
 USER dmapi
 

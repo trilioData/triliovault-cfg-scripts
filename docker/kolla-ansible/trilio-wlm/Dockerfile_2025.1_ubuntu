@@ -34,8 +34,14 @@ RUN set -ex \
      && apt-get clean -y
 
 # Installing TrilioVaultWLM packages
-##RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install ./tmp/workloadmgr_5.2.8.25_all.deb
-RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
+# python3-shade was removed from Ubuntu Noble repos in Epoxy; install shade via pip,
+# install remaining packages first via apt-get, then force-install workloadmgr last
+# via dpkg to bypass the unresolvable python3-shade dep without leaving apt in broken state
+RUN pip3 install shade \
+    && apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated \
+    && apt-get download workloadmgr \
+    && dpkg --force-depends -i workloadmgr*.deb \
+    && rm -f workloadmgr*.deb
 
 
 ##Copy conf files

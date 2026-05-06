@@ -48,6 +48,8 @@ RUN mkdir -p /var/triliovault-mounts \
 
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego
 
+##Clean apt repo
+RUN rm -f /etc/apt/sources.list.d/trilio.list
 
 ##Add license
 RUN mkdir /licenses
