@@ -20,9 +20,9 @@ RUN apt-get update -y
 RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-dmapi python3-trilio-dms python3-nova --allow-unauthenticated
 
 ## Downgrade oslo.db and SQLAlchemy for Epoxy compatibility
-RUN pip3 install --break-system-packages --upgrade pip \
-    && pip3 install --break-system-packages "oslo.db<15.1.0" \
-    && pip3 install --break-system-packages --ignore-installed "SQLAlchemy==1.4.51" \
+RUN pip3 install --upgrade pip \
+    && pip3 install "oslo.db<15.1.0" \
+    && pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
     && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 
 ## Kolla specifc settings

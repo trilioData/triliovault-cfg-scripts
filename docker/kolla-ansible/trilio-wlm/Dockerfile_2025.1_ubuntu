@@ -26,18 +26,18 @@ RUN set -ex \
      && apt-get -y install libcurl4-openssl-dev libssl-dev python3-m2crypto libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev \
      && apt-get -y install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system libfuse2 ntfs-3g \
      && apt-get -y install python3-neutronclient python3-glanceclient \
-     && pip3 --no-cache-dir install --break-system-packages --upgrade pip \
-     && pip3 --no-cache-dir install --break-system-packages "SQLAlchemy==1.4.51" \
-     && pip3 --no-cache-dir install --break-system-packages --upgrade pyvmomi \
-     && pip3 --no-cache-dir install --break-system-packages azure-storage-blob==12.25.1 azure-core loguru \
-     && pip3 --no-cache-dir install --break-system-packages sqlalchemy-utils defusedxml pymongo python-editor munch paramiko taskflow \
+     && pip3 --no-cache-dir install --upgrade pip \
+     && pip3 --no-cache-dir install "SQLAlchemy==1.4.51" \
+     && pip3 --no-cache-dir install --upgrade pyvmomi \
+     && pip3 --no-cache-dir install azure-storage-blob==12.25.1 azure-core loguru \
+     && pip3 --no-cache-dir install sqlalchemy-utils defusedxml pymongo python-editor munch paramiko taskflow \
      && apt-get clean -y
 
 # Installing TrilioVaultWLM packages
 # python3-shade was removed from Ubuntu Noble repos in Epoxy; install shade via pip,
 # install remaining packages first via apt-get, then force-install workloadmgr last
 # via dpkg to bypass the unresolvable python3-shade dep without leaving apt in broken state
-RUN pip3 install --break-system-packages shade \
+RUN pip3 install shade \
     && apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated \
     && apt-get download workloadmgr \
     && dpkg --force-depends -i workloadmgr*.deb \
