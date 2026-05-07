@@ -40,6 +40,25 @@
   when:
     - not use_preconfigured_databases | bool
 
+- name: Remove existing triliovault users from ProxySQL mysql_users
+  become: true
+  kolla_toolbox:
+    container_engine: "{{ kolla_container_engine }}"
+    module_name: community.mysql.mysql_query
+    module_args:
+      login_host: "{{ database_address }}"
+      login_port: "{{ proxysql_admin_port | default(6032) }}"
+      login_user: "{{ proxysql_login_user | default('kolla-admin') }}"
+      login_password: "{{ proxysql_admin_password }}"
+      query: "DELETE FROM mysql_users WHERE username='{{ item.database_user }}'"
+  with_items: "{{ triliovault_db_details }}"
+  run_once: True
+  delegate_to: "{{ groups[item.group_name][0] }}"
+  when:
+    - enable_proxysql | default(false) | bool
+    - not use_preconfigured_databases | bool
+    - openstack_release not in ['zed', '2023.1', '2023.2', '2024.1']
+
 - name: Register triliovault users in ProxySQL mysql_users
   become: true
   kolla_toolbox:
@@ -50,9 +69,7 @@
       login_port: "{{ proxysql_admin_port | default(6032) }}"
       login_user: "{{ proxysql_login_user | default('kolla-admin') }}"
       login_password: "{{ proxysql_admin_password }}"
-      query:
-        - "DELETE FROM mysql_users WHERE username='{{ item.database_user }}'"
-        - "INSERT INTO mysql_users (username, password, default_hostgroup, max_connections) VALUES ('{{ item.database_user }}', '{{ item.database_password }}', {{ triliovault_database_shard_id | default(0) }}, 200)"
+      query: "INSERT INTO mysql_users (username, password, default_hostgroup, max_connections) VALUES ('{{ item.database_user }}', '{{ item.database_password }}', {{ triliovault_database_shard_id | default(0) }}, 200)"
   with_items: "{{ triliovault_db_details }}"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0] }}"
@@ -61,7 +78,7 @@
     - not use_preconfigured_databases | bool
     - openstack_release not in ['zed', '2023.1', '2023.2', '2024.1']
 
-- name: Load and save triliovault ProxySQL users to runtime
+- name: Load triliovault ProxySQL users to runtime
   become: true
   kolla_toolbox:
     container_engine: "{{ kolla_container_engine }}"
@@ -71,9 +88,25 @@
       login_port: "{{ proxysql_admin_port | default(6032) }}"
       login_user: "{{ proxysql_login_user | default('kolla-admin') }}"
       login_password: "{{ proxysql_admin_password }}"
-      query:
-        - "LOAD MYSQL USERS TO RUNTIME"
-        - "SAVE MYSQL USERS TO DISK"
+      query: "LOAD MYSQL USERS TO RUNTIME"
+  run_once: True
+  delegate_to: "{{ groups['triliovault-datamover-api'][0] }}"
+  when:
+    - enable_proxysql | default(false) | bool
+    - not use_preconfigured_databases | bool
+    - openstack_release not in ['zed', '2023.1', '2023.2', '2024.1']
+
+- name: Save triliovault ProxySQL users to disk
+  become: true
+  kolla_toolbox:
+    container_engine: "{{ kolla_container_engine }}"
+    module_name: community.mysql.mysql_query
+    module_args:
+      login_host: "{{ database_address }}"
+      login_port: "{{ proxysql_admin_port | default(6032) }}"
+      login_user: "{{ proxysql_login_user | default('kolla-admin') }}"
+      login_password: "{{ proxysql_admin_password }}"
+      query: "SAVE MYSQL USERS TO DISK"
   run_once: True
   delegate_to: "{{ groups['triliovault-datamover-api'][0] }}"
   when:
