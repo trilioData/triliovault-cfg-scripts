@@ -46,6 +46,7 @@
   when:
     - enable_proxysql | default(false) | bool
     - not use_preconfigured_databases | bool
+    - openstack_release not in ['zed', '2023.1', '2023.2', '2024.1']
   notify:
     - Restart proxysql container
 
