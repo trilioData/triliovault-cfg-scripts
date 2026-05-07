@@ -51,6 +51,45 @@ RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-
 RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 
+## Install imp compatibility shim into kolla venv (imp was removed in Python 3.12)
+## workloadmgr still imports imp; alembic migrations run under the kolla venv Python
+RUN VENV_SP=$(/var/lib/kolla/venv/bin/python3 -c "import site; print(site.getsitepackages()[0])") \
+    && cat > "$VENV_SP/imp.py" << 'IMPEOF'
+"""Compatibility shim: the imp module was removed in Python 3.12."""
+import importlib.util
+import sys
+import types
+
+PY_SOURCE = 1
+PY_COMPILED = 2
+C_EXTENSION = 3
+
+def load_source(name, pathname, file=None):
+    spec = importlib.util.spec_from_file_location(name, pathname)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+def load_module(name, file, pathname, description):
+    return load_source(name, pathname)
+
+def find_module(name, path=None):
+    spec = importlib.util.find_spec(name)
+    if spec is None:
+        raise ImportError("No module named {!r}".format(name))
+    return None, spec.origin, ('', '', PY_SOURCE)
+
+def new_module(name):
+    return types.ModuleType(name)
+
+def acquire_lock():
+    pass
+
+def release_lock():
+    pass
+IMPEOF
+
 ## Kolla specific settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
