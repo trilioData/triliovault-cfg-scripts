@@ -6,11 +6,11 @@
 ## TODO: Uncomment following code once we get dmapi-dbsync tool
 
 if [[ "${!KOLLA_BOOTSTRAP[@]}" ]]; then
-    dmapi-dbsync
+    /var/lib/kolla/venv/bin/python3 /usr/bin/dmapi-dbsync
     exit 0
 fi
 
 if [[ "${!KOLLA_UPGRADE[@]}" ]]; then
-    dmapi-dbsync
+    /var/lib/kolla/venv/bin/python3 /usr/bin/dmapi-dbsync
     exit 0
 fi
