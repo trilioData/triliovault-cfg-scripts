@@ -12,7 +12,7 @@
     container_engine: "{{ kolla_container_engine }}"
     module_name: community.mysql.mysql_query
     module_args:
-      login_host: "{{ hostvars[groups['proxysql'][0]]['ansible_' + api_interface]['ipv4']['address'] }}"
+      login_host: "{{ database_address }}"
       login_port: "{{ proxysql_admin_port | default(6032) }}"
       login_user: "admin"
       login_password: "{{ proxysql_admin_password }}"
@@ -32,7 +32,7 @@
     container_engine: "{{ kolla_container_engine }}"
     module_name: community.mysql.mysql_query
     module_args:
-      login_host: "{{ hostvars[groups['proxysql'][0]]['ansible_' + api_interface]['ipv4']['address'] }}"
+      login_host: "{{ database_address }}"
       login_port: "{{ proxysql_admin_port | default(6032) }}"
       login_user: "admin"
       login_password: "{{ proxysql_admin_password }}"
