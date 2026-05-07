@@ -1,0 +1,13 @@
+[client]
+rabbitmq_url = {{ rpc_transport_url }}
+
+db_url = mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address }}/{{ triliovault_db_details[1].database_name }}
+
+request_timeout = 60
+log_level = INFO
+log_file = /var/log/triliovault/trilio-dms-client.log
+log_max_bytes = 26214400
+log_backup_count = 5
+db_pool_size = 20
+db_max_overflow = 40
+db_pool_recycle = 3600

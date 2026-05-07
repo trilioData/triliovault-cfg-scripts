@@ -39,6 +39,10 @@ do
 
         for container_to_build in "${containers_to_build[@]}"
         do
+		# trilio-dms is a common image built outside the platform loop
+		if [[ ${container_to_build} == "trilio-dms" ]]; then
+		    continue
+		fi
                 cp -R $base_dir/${container_to_build} $base_dir/${build_dir}/
 		#Build containers
 		echo -e "Creating ${container_to_build} container for kolla ${openstack_release} ${openstack_platform}"
@@ -77,5 +81,18 @@ do
     	# Clean the build_dir
 	rm -rf $base_dir/${build_dir}
     done
+    # Build trilio-dms — common image, not platform-specific
+    if [[ " ${containers_to_build[*]} " =~ " trilio-dms " ]]; then
+	echo -e "Creating trilio-dms container (common image) for ${openstack_release}"
+	dms_build_dir=tmp_docker_dms_${openstack_release}
+	rm -rf $base_dir/${dms_build_dir}
+	mkdir -p $base_dir/${dms_build_dir}
+	cp -R $base_dir/trilio-dms $base_dir/${dms_build_dir}/
+	cd $base_dir/${dms_build_dir}/trilio-dms/
+	sed -i "s/{VERSION}/${fury_repo}/g" trilio.repo
+	docker build --no-cache --pull -t trilio/kolla-trilio-dms:${tag} .
+	rm -rf $base_dir/${dms_build_dir}
+    fi
+
     let count=count+1
 done

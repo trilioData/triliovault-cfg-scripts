@@ -7,10 +7,11 @@
 - include_tasks: config.yml
   when: inventory_hostname in groups[triliovault_datamover_api_group] or
         inventory_hostname in groups[triliovault_datamover_group] or
-        inventory_hostname in groups[triliovault_wlm_api_group] or 
-        inventory_hostname in groups[triliovault_wlm_workloads_group] or 
-        inventory_hostname in groups[triliovault_wlm_scheduler_group] or 
-        inventory_hostname in groups[triliovault_wlm_cron_group]
+        inventory_hostname in groups[triliovault_wlm_api_group] or
+        inventory_hostname in groups[triliovault_wlm_workloads_group] or
+        inventory_hostname in groups[triliovault_wlm_scheduler_group] or
+        inventory_hostname in groups[triliovault_wlm_cron_group] or
+        inventory_hostname in groups[triliovault_dms_group]
 
 - include_tasks: bootstrap.yml
   when: inventory_hostname in groups[triliovault_datamover_api_group] or
@@ -21,7 +22,3 @@
 
 - include_tasks: start_wlm_cron_service.yml
   when: inventory_hostname in groups[triliovault_wlm_cron_group]
-
-- include_tasks: wlm_cloud_trust.yml
-  when: inventory_hostname in groups[triliovault_wlm_api_group]
-  run_once: True

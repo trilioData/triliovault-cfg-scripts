@@ -25,21 +25,26 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
      && dnf update -y \
      && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
-     && dnf install -y fuse python3-neutronclient python3-retrying python3-cryptography
+     && dnf install -y fuse fuse-libs python3-neutronclient python3-retrying python3-cryptography
 
 RUN dnf install -y python3-novaclient \
     && dnf remove -y --noautoremove python3-novaclient \
     && dnf install -y python3-novaclient --repo=centos-openstack-zed
 
-RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient
+RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient ntfs-3g
 
-RUN /usr/bin/pip3 install --upgrade pip && /usr/bin/pip3 install igraph && /usr/bin/pip3 install namedatomiclock \
-    && /usr/bin/pip3 install jinja2
+RUN /usr/bin/pip3 install --upgrade pip \
+    && /usr/bin/pip3 install igraph namedatomiclock jinja2 munch paramiko taskflow \
+    && /usr/bin/pip3 install "SQLAlchemy==1.4.51" \
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
 RUN dnf -y install python3-tzlocal
 
 
 # Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 -y
+RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
+RUN dnf install -y --allowerasing \
+    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
+RUN dnf install -y python3-s3fuse-plugin-el9
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault

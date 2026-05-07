@@ -1,0 +1,60 @@
+############ Following variables are user configurable ##########
+### Cloud Details ###
+cloud_admin_username: ""
+cloud_admin_password: ""
+
+cloud_admin_projectname: ""
+cloud_admin_projectid: ""
+
+cloud_admin_domainname: ""
+cloud_admin_domainid: ""
+
+trustee_role: "member, creator"
+os_endpoint_type: "internal"
+
+# ## Project name in which triliovault keystone resources will get created
+# TriliovaultKeystoneServiceProjectName: "service"
+# TriliovaultKeystoneUserDomainName: "Default"
+# TriliovaultKeystoneUserRoleName: "admin"
+
+## Do not change this parameter value
+kolla_install_type: "source"
+
+############ Copy all the following variables in this file to "/etc/kolla/globals.yaml" and configure their values.
+## Whether to enable TrilioVault or not on OpenStack cloud
+enable_triliovault: "yes"
+
+horizon_source_image_prefix: "kolla-{{ kolla_base_distro }}-trilio-horizon-plugin"
+horizon_binary_image_prefix: "{{ kolla_base_distro }}-{{ kolla_install_type }}-trilio-horizon-plugin"
+
+triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
+
+## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
+## By default triliovault horizon will not be enabled on openstack horizon
+## NOTE: With this change, openstack horizon container will be replaced by triliovault horizon container.
+## Don't worry, triliovault horizon container image uses upstream kolla horizon container as base image
+
+#horizon_image_full: "{{ triliovault_horizon_image_full }}"
+
+## Triliovault dmapi_workers count
+## This parameter value used to spawn the number of dmapi processes to handle the incoming api requests.
+## If your dmapi node has ‘n' cpu cores, It is recommended, to set this parameter to '4*n’.
+## If dmapi_workers field is not present in config file. The Default value will be equals to number of cores present on the node
+## Default value of dmapi_workers is 16
+dmapi_workers: "16"
+
+## TrilioVault's containers tag
+## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
+triliovault_tag: "6.2.0-stable-2025.1"
+## DMS image tag does not include OpenStack release (common image across releases)
+triliovault_dms_tag: "6.2.0-stable"
+triliovault_docker_username: ""
+triliovault_docker_password: ""
+triliovault_docker_registry: "docker.io"
+
+## NOTE: Backup target (NFS/S3) configuration has been removed in T4O 6.2.
+## Backup targets are now managed dynamically via the Trilio DMS service and
+## added by the user post-deployment using the T4O CLI or Horizon UI.
+
+## Set to true if your RabbitMQ cluster uses quorum queues (version >= 3.13)
+# rabbit_quorum_queue: false
