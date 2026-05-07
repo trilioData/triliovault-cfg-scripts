@@ -1,4 +1,4 @@
-FROM quay.io/openstack.kolla/nova-api:2025.1-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2024.1-ubuntu-jammy
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/trilio-dms" \
@@ -8,33 +8,23 @@ LABEL name="kolla/trilio-dms" \
       release="6.2" \
       type="source" \
       summary="TrilioData TrilioVault DMS" \
-      description="TrilioData TrilioVault Dynamic Mount Service (Rocky Linux 9)"
+      description="TrilioData TrilioVault Dynamic Mount Service (Ubuntu Jammy)"
 
 USER root
 
-RUN dnf clean all
-RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
 
-ADD trilio.repo /etc/yum.repos.d/
-
-RUN dnf install -y \
-    fuse fuse-libs nfs-utils \
-    python3-trilio-dms-el9
-
-RUN dnf install -y --allowerasing \
-    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y python3-s3fuse-plugin-el9
-
-RUN ldconfig
+RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
+    fuse libfuse2 nfs-common \
+    python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
 
 RUN /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
 RUN echo "user_allow_other" > /etc/fuse.conf
 
-RUN groupadd -f -g 42436 nova \
-    && id nova &>/dev/null || useradd -u 42436 -g 42436 -m -s /bin/bash nova \
-    && usermod -aG kolla nova
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG kolla nova
 
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
@@ -53,8 +43,8 @@ COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
 RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 
-RUN dnf clean all
-RUN rm -f /etc/yum.repos.d/trilio.repo
+RUN apt-get clean -y
+RUN rm -f /etc/apt/sources.list.d/trilio.list
 
 RUN mkdir /licenses
 COPY licensing.txt /licenses
