@@ -48,8 +48,8 @@
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ proxysql_admin_port | default(6032) }}"
-      login_user: "admin"
-      login_password: "{{ proxysql_admin_password }}"
+      login_user: "cluster_admin"
+      login_password: "{{ proxysql_cluster_password }}"
       query:
         - "DELETE FROM mysql_users WHERE username='{{ item.database_user }}'"
         - "INSERT INTO mysql_users (username, password, default_hostgroup, max_connections) VALUES ('{{ item.database_user }}', '{{ item.database_password }}', {{ triliovault_database_shard_id | default(0) }}, 200)"
@@ -69,8 +69,8 @@
     module_args:
       login_host: "{{ database_address }}"
       login_port: "{{ proxysql_admin_port | default(6032) }}"
-      login_user: "admin"
-      login_password: "{{ proxysql_admin_password }}"
+      login_user: "cluster_admin"
+      login_password: "{{ proxysql_cluster_password }}"
       query:
         - "LOAD MYSQL USERS TO RUNTIME"
         - "SAVE MYSQL USERS TO DISK"
