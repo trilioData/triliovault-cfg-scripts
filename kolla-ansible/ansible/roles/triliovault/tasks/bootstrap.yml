@@ -40,6 +40,15 @@
   when:
     - not use_preconfigured_databases | bool
 
+- name: Configure ProxySQL for triliovault
+  import_role:
+    name: proxysql-config
+  when:
+    - enable_proxysql | default(false) | bool
+    - not use_preconfigured_databases | bool
+  notify:
+    - Restart proxysql container
+
 - import_tasks: rabbitmq.yml
 
 - include_tasks: bootstrap_service.yml
