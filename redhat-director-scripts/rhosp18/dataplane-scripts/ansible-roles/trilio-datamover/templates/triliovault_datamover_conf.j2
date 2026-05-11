@@ -20,6 +20,7 @@ keyring_ext = .keyring
 [oslo_messaging_rabbit]
 rabbit_quorum_queue = {{ rabbit_quorum_queue }}
 ssl = {{ rabbit_ssl }}
+amqp_durable_queues = false
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 [dmapi_database]
@@ -30,9 +31,6 @@ helper_command = sudo /usr/bin/privsep-helper
 
 [conductor]
 use_local = True
-
-[oslo_messaging_rabbit]
-ssl = {{ oslomsg_rpc_use_ssl }}
 
 [cinder]
 http_retries = {{ cinder_http_retries }}
