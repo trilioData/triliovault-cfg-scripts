@@ -103,6 +103,7 @@
   when:
     - inventory_hostname in groups[triliovault_dms_group]
 
+- include_tasks: copy-certs.yml
 
 - import_tasks: get_cloud_details.yml
 

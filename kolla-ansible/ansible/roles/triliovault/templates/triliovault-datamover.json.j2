@@ -36,7 +36,13 @@
             "dest": "/etc/ceph",
             "owner": "nova",
             "perm": "0600"
-        }{% endif %}
+        }{% endif %},
+        {
+            "source": "{{ container_config_directory }}/ca-certificates",
+            "dest": "/var/lib/kolla/share/ca-certificates",
+            "owner": "root",
+            "perm": "0644"
+        }
     ],
     "permissions": [
         {
