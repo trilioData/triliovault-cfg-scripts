@@ -215,6 +215,7 @@ triliovault_datamover_default_volumes:
   - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
   - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+  - "{{ openstack_cacert + ':' + openstack_cacert + ':ro' if openstack_cacert is defined and openstack_cacert | length > 0 else '' }}"
 
 triliovault_wlm_api_default_volumes:
   - "{{ node_config_directory }}/triliovault-wlm-api/:{{ container_config_directory }}/:ro"
