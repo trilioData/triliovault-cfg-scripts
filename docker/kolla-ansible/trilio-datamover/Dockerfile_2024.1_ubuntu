@@ -22,9 +22,12 @@ RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-com
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y qemu-utils ceph-common python3-libvirt python3-cinderclient \
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated
 
-## oslo.config 9.7.1 removed log_opt_values which triggered catalog_info regex crash on Epoxy
-RUN /usr/bin/pip3 install "oslo.config==9.7.1" \
-    && /var/lib/kolla/venv/bin/pip install "oslo.config==9.7.1"
+## Reinstall nova from OpenStack 2024.1 (Epoxy) Ubuntu Cloud Archive to get updated catalog_info regex ([\w-]+ accepts block-storage)
+RUN add-apt-repository cloud-archive:caracal -y \
+    && apt-get update -y \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-common python3-nova \
+    && add-apt-repository --remove cloud-archive:caracal -y \
+    && apt-get update -y
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
