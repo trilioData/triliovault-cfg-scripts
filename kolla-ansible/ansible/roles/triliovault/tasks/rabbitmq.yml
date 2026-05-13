@@ -11,4 +11,13 @@
         service_rabbitmq_delegate_host: "{{ groups[om_rpc_group][0] | default }}"
       tags: rabbitmq_svc
 
+    - import_role:
+        name: service-rabbitmq
+      vars:
+        service_rabbitmq_users: "{{ triliovault_datamover_api_rabbitmq_users }}"
+        service_rabbitmq_run_once: false
+        service_rabbitmq_when: "{{ inventory_hostname == groups[triliovault_datamover_api_group][0] | default }}"
+        service_rabbitmq_delegate_host: "{{ groups[om_rpc_group][0] | default }}"
+      tags: rabbitmq_svc
+
 

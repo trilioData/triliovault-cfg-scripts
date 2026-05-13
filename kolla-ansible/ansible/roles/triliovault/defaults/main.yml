@@ -444,6 +444,8 @@ triliovault_docker_registry: "docker.io"
 #################
 triliovault_wlm_rabbitmq_user: "workloadmgr"
 triliovault_wlm_rpc_vhost: "workloadmgr"
+triliovault_datamover_api_rabbitmq_user: "dmapi"
+triliovault_datamover_api_rpc_vhost: "dmapi"
 triliovault_tags:
   - "administrator"
 
@@ -451,6 +453,12 @@ triliovault_wlm_rabbitmq_users:
   - user: "{{ triliovault_wlm_rabbitmq_user }}"
     password: "{{ om_rpc_password }}"
     vhost: "{{ triliovault_wlm_rpc_vhost }}"
+    tags: "{{ triliovault_tags }}"
+
+triliovault_datamover_api_rabbitmq_users:
+  - user: "{{ triliovault_datamover_api_rabbitmq_user }}"
+    password: "{{ om_rpc_password }}"
+    vhost: "{{ triliovault_datamover_api_rpc_vhost }}"
     tags: "{{ triliovault_tags }}"
 
 # Set to true if your RabbitMQ cluster uses quorum queues (>= 3.13 / Bobcat+)
