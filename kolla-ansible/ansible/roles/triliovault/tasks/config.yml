@@ -194,7 +194,7 @@
 - name: Copying DMS client conf for WLM services
   become: true
   template:
-    src: "triliovault-dms-client.conf.j2"
+    src: "triliovault-dms-client-wlm.conf.j2"
     dest: "{{ node_config_directory }}/{{ item }}/triliovault-dms-client.conf"
     mode: "0640"
   when:
