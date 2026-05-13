@@ -34,20 +34,13 @@ RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovaul
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 	
 ##Install datamover packages
-RUN dnf install python3-novaclient python3-monotonic udev fuse -y \
+RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
     && dnf install virt-v2v virtio-win nbdkit -y
 
 RUN dnf install -y --allowerasing \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
 RUN dnf install -y python3-s3fuse-plugin-el9
-
-## Upgrade nova from Caracal repo (29.4.x) to fix catalog_info regex (^[\w-]+:\w*:.*$ accepts block-storage)
-## Old image had python3-nova-29.2.0 with old regex ^\w+:\w*:.*$ which rejects block-storage::internalURL
-RUN dnf install -y centos-release-openstack-caracal \
-    && dnf install -y openstack-nova-common python3-nova \
-    && dnf remove -y centos-release-openstack-caracal \
-    && dnf clean all
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/

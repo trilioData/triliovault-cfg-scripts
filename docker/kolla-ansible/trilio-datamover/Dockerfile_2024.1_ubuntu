@@ -17,17 +17,10 @@ USER root
 ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 
-RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-novaclient python3-monotonic udev fuse \
+RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-common python3-nova \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-novaclient python3-monotonic udev fuse \
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y qemu-utils ceph-common python3-libvirt python3-cinderclient \
     && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated
-
-## Upgrade nova from Caracal Ubuntu Cloud Archive (29.4.x) to fix catalog_info regex (^[\w-]+:\w*:.*$ accepts block-storage)
-## Old image had nova 29.2.0 with old regex ^\w+:\w*:.*$ which rejects block-storage::internalURL
-RUN add-apt-repository cloud-archive:caracal -y \
-    && apt-get update -y \
-    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-common python3-nova \
-    && add-apt-repository --remove cloud-archive:caracal -y \
-    && apt-get update -y
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
