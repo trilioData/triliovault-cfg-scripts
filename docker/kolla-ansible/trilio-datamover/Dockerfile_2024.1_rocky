@@ -43,9 +43,9 @@ RUN dnf install -y --allowerasing \
 RUN dnf install -y python3-s3fuse-plugin-el9
 
 ## Install nova from Epoxy OpenStack repo to get updated catalog_info regex (^[\w-]+:\w*:.*$ accepts block-storage)
-RUN dnf install -y centos-release-openstack-caracal \
+RUN dnf install -y centos-release-openstack-epoxy \
     && dnf install -y openstack-nova-common python3-nova \
-    && dnf remove -y centos-release-openstack-caracal \
+    && dnf remove -y centos-release-openstack-epoxy \
     && dnf clean all
 
 ## Copy locally built virt-v2v-in-place binary
