@@ -203,6 +203,7 @@
     - triliovault-wlm-api
     - triliovault-wlm-workloads
     - triliovault-wlm-scheduler
+    - triliovault-wlm-cron
   notify:
     - "Restart {{ item }} container"
 
