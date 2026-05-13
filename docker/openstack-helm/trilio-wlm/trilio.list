@@ -1,1 +1,1 @@
-{DEB_REPO_URL}
+deb [trusted=yes] https://apt.fury.io/trilio-6-1/ /
