@@ -1,5 +1,5 @@
 [client]
-rabbitmq_url = {{ rpc_transport_url }}
+rabbitmq_url = rabbit://{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ kolla_internal_vip_address }}:{{ rabbitmq_port }}/{{ triliovault_wlm_rpc_vhost }}
 
 db_url = mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address }}/{{ triliovault_db_details[1].database_name }}
 
