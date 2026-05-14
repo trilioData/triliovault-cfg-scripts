@@ -1,5 +1,5 @@
 [client]
-rabbitmq_url = rabbit://{{ triliovault_wlm_rabbitmq_user }}:{{ om_rpc_password }}@{{ kolla_internal_vip_address }}:{{ rabbitmq_port }}/{{ triliovault_wlm_rpc_vhost }}
+rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rpc_group][0]]['ansible_' + hostvars[groups[om_rpc_group][0]]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}/
 
 db_url = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
 
