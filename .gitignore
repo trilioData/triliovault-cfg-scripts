@@ -11,3 +11,5 @@ deps/
 results.txt
 *.db
 tvo-chart-manifest.yaml
+docker/openstack-helm/trilio-wlm/trilio.list
+kubeconfig/

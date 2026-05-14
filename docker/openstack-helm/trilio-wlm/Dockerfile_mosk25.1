@@ -62,11 +62,11 @@ RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_user
 
 RUN apt install -y python3-neutronclient python3-glanceclient python3-attr \
     && apt-get install -y workloadmgr fuse3 python3-s3-fuse-plugin --allow-unauthenticated \
-    && mkdir -p /var/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store/ \
+    && mkdir -p /var/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /etc/triliovault-object-store/ \
     && chmod 777 /var/trilio \
     && chmod 777 /var/trilio/triliovault-mounts
 
-RUN chown -R nova.nova /var/lib/workloadmgr /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /var/triliovault /var/triliovault-mounts /etc/triliovault-object-store/
+RUN chown -R nova.nova /var/lib/workloadmgr /var/trilio /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/triliovault /var/triliovault-mounts /etc/triliovault-object-store/
 RUN usermod -aG disk nova
 
 ADD log-rotate-conf /etc/logrotate.d/workloadmgr-api.conf
