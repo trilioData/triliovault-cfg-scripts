@@ -71,6 +71,4 @@ RUN usermod -aG disk nova
 
 ADD log-rotate-conf /etc/logrotate.d/workloadmgr-api.conf
 
-RUN rm -rf /var/log/${PROJECT_DIR}
-
 USER nova
