@@ -24,6 +24,12 @@
 			"dest": "/opt/triliovault/start-triliovault-wlm-cron.sh",
 			"owner": "nova",
 			"perm": "0755"
+		},
+		{
+			"source": "{{ container_config_directory }}/triliovault-dms-client.conf",
+			"dest": "/etc/triliovault-dms/client.conf",
+			"owner": "nova",
+			"perm": "0640"
 		}
 	],
 	"permissions": [{

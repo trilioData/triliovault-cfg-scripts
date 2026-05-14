@@ -1,5 +1,5 @@
 [server]
-rabbitmq_url = {{ rpc_transport_url }}
+rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rpc_group][0]]['ansible_' + hostvars[groups[om_rpc_group][0]]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}//
 
 {% if rabbit_quorum_queue | bool %}
 rabbitmq_queue_type = quorum
