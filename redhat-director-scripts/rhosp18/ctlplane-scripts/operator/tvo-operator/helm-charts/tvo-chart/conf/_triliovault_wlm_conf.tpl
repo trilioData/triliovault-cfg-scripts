@@ -112,4 +112,5 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 rabbit_quorum_queue = {{ .Values.rabbitmq.cluster.rabbit_quorum_queue }}
+amqp_durable_queues = {{ if .Values.rabbitmq.cluster.rabbit_quorum_queue }}true{{ else }}false{{ end }}
 
