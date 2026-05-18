@@ -20,9 +20,7 @@ keyring_ext = .keyring
 [oslo_messaging_rabbit]
 rabbit_quorum_queue = {{ rabbit_quorum_queue }}
 ssl = {{ rabbit_ssl }}
-{% if not rabbit_quorum_queue | bool %}
-amqp_durable_queues = false
-{% endif %}
+amqp_durable_queues = {{ 'true' if rabbit_quorum_queue | bool else 'false' }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 [dmapi_database]
