@@ -20,8 +20,9 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 ADD trilio.repo /etc/yum.repos.d/
 
 ##Install Required Packages
+# Exclude iscsi-initiator-utils from update: 6.2.1.11 breaks iSCSI portal login; keep 6.2.1.9 from base image (TVAULT-7336)
 RUN set -ex \
-    && dnf update -y
+    && dnf update -y --exclude=iscsi-initiator-utils\*
 
 ##Add nova user into the disk and kvm group
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
