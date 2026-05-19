@@ -35,9 +35,9 @@ RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovaul
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 	
 ##Install datamover packages
-RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y \
-    && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
-    && dnf install virt-v2v virtio-win nbdkit -y
+RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y --exclude=iscsi-initiator-utils\* \
+    && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y --exclude=iscsi-initiator-utils\* \
+    && dnf install virt-v2v virtio-win nbdkit -y --exclude=iscsi-initiator-utils\*
 
 ## Downgrade eventlet to 0.30.2-1 from CBS to satisfy s3fuse eventlet <= 0.30.2-4 constraint
 RUN dnf install -y --allowerasing \
