@@ -40,13 +40,14 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install virt-v2v virtio-win nbdkit -y --exclude=iscsi-initiator-utils\*
 
 ## Downgrade eventlet to 0.30.2-1 from CBS to satisfy s3fuse eventlet <= 0.30.2-4 constraint
-RUN dnf install -y --allowerasing \
+RUN dnf install -y --allowerasing --exclude=iscsi-initiator-utils\* \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y python3-s3fuse-plugin-el9
+RUN dnf install -y --exclude=iscsi-initiator-utils\* python3-s3fuse-plugin-el9
 
-## Explicitly pin iscsi-initiator-utils to 6.2.1.9 (TVAULT-7336: 6.2.1.11 breaks iSCSI portal login)
-RUN rpm -q iscsi-initiator-utils | grep -q "6.2.1.9" || \
-    dnf install -y --allowerasing "iscsi-initiator-utils-6.2.1.9*" "iscsi-initiator-utils-iscsiuio-6.2.1.9*"
+## Verify iscsi-initiator-utils is 6.2.1.9 from the base image (TVAULT-7336: 6.2.1.11 breaks iSCSI portal login)
+## Rocky repos no longer carry 6.2.1.9; we preserve it by excluding it from all dnf steps above.
+RUN rpm -q iscsi-initiator-utils | grep -q "6.2.1.9" \
+    || { rpm -q iscsi-initiator-utils; echo "FATAL: iscsi-initiator-utils is not 6.2.1.9"; exit 1; }
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
