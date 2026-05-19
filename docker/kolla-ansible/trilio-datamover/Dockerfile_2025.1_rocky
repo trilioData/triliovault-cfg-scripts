@@ -44,6 +44,10 @@ RUN dnf install -y --allowerasing \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
 RUN dnf install -y python3-s3fuse-plugin-el9
 
+## Explicitly pin iscsi-initiator-utils to 6.2.1.9 (TVAULT-7336: 6.2.1.11 breaks iSCSI portal login)
+RUN rpm -q iscsi-initiator-utils | grep -q "6.2.1.9" || \
+    dnf install -y --allowerasing "iscsi-initiator-utils-6.2.1.9*" "iscsi-initiator-utils-iscsiuio-6.2.1.9*"
+
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
 
