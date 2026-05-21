@@ -815,8 +815,7 @@ conf:
   datamover:
     DEFAULT:
       log_config_append: /etc/triliovault-datamover/datamover_logging.conf
-      vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: ''
+
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: "/var/lib/trilio/triliovault-mounts"
       max_uploads_pending: 3
@@ -862,8 +861,7 @@ conf:
       neutron_api_insecure: False
       state_path: /opt/stack/data/workloadmgr
       vault_storage_das_device: none
-      vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: /var/lib/trilio/triliovault-mounts
       #The amount of time(in hrs) that snapshot upload operation should wait for the upload
@@ -1107,7 +1105,7 @@ conf:
       log_file: /var/log/triliovault/trilio-dms-server.log
       log_max_bytes: '26214400'
       log_backup_count: 5
-      s3vaultfuse_bin: /usr/bin/s3vaultfuse.py
+
       rootwrap_bin: /usr/bin/trilio-dms-rootwrap
       rootwrap_conf: /etc/triliovault-dms/rootwrap.conf
       worker_threads: 10
