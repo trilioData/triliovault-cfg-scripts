@@ -1,0 +1,21 @@
+[Unit]
+Description=TrilioVault Object Store Service - {{ backup_target_name }}
+StartLimitIntervalSec=120
+StartLimitInterval=120
+StartLimitBurst=20
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+LimitNOFILE=500000
+LimitNPROC=500000
+ExecStart=/usr/bin/s3vaultfuse --config-file=/etc/triliovault-object-store/triliovault-object-store-{{ backup_target_name }}.conf
+KillMode=control-group
+Restart=always
+RestartSec=30
+WorkingDirectory=/var/run
+
+[Install]
+WantedBy=multi-user.target
+

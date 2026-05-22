@@ -45,6 +45,13 @@ triliovault-cfg-scripts/
 └── tripleo/                        # TripleO (Train, Wallaby)
 ```
 
+## Branching Strategy for devops repo triliovault-cfg-scripts
+- For first release every series, we create one dev-stable/<RELEASE> branch for developemnt. For example for 6.1.0 release, we create dev-stable/6.1 branch. This branch gets used during active development period.
+- We create one more branch for this release called 'stable/<RELEASE>'. We merged dev-stable/<RELEASE> branch into stable/<RELEASE> branch in the last phase of that release development.
+- For next releases of T4O in that given series like 6.1.1, 6.1.2 etc, we create dev-maint<MINOR_RELEASE>/<MAJOR_RELEASE> branch.
+  Like for 6.1.2 release, we create dev-maint2/6.1 branch for development purpose.
+- We create one more branch covering all maintainance releases of that series, to hold stable code changes, called, maint/<MAJOR_RELEASE> like maint/6.1
+
 ---
 ### Details on how devops scripts are designed for each OpenStack distributions
 - We have separate scripts designed to deploy T4O product on each openstack distribution.
