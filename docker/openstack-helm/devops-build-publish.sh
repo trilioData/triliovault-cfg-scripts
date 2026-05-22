@@ -14,10 +14,9 @@
 #                       trilio-datamover | trilio-horizon-plugin
 #                     If omitted, all 4 containers are built.
 #
-# Environment variables:
-#   DEB_REPO_URL  Debian package repository URL substituted into trilio.list
-#                 (replaces the {DEB_REPO_URL} placeholder).
-#                 Required when building containers that use trilio.list.
+# Environment variables (required):
+#   DEB_REPO_URL   Trilio APT repo line, substituted into trilio.list
+#   PIP_REPO_URL   Trilio pip index URL, passed as TRILIO_PIP_INDEX_URL build arg (horizon-plugin)
 #
 # Published image format:
 #   docker.io/trilio/<container>-helm:<tag>-<openstack_release>
@@ -48,9 +47,8 @@ Published image format:
   docker.io/trilio/<container>-helm:<tag>-<openstack_release>
 
 Examples:
-  $0 5.2.7-mosk22.4 mosk22.4_yoga
-  $0 5.2.7-mosk22.4 mosk22.4_yoga trilio-datamover
-  DEB_REPO_URL=https://repo.fury.io/trilio/ $0 5.2.7-mosk22.4 mosk22.4_yoga
+  DEB_REPO_URL='deb https://...' PIP_REPO_URL='https://...' $0 5.2.7-mosk22.4 mosk22.4_yoga
+  DEB_REPO_URL='deb https://...' PIP_REPO_URL='https://...' $0 5.2.7-mosk22.4 mosk22.4_yoga trilio-datamover
 
 Options:
   -h, --help   Show this help message and exit.
@@ -70,6 +68,17 @@ fi
 TAG="$1"
 OPENSTACK_RELEASE="$2"
 SINGLE_CONTAINER="${3:-}"
+
+# Repo URLs must be supplied via environment variables — read from the
+# "Latest Build Details" Confluence page for the matching T4O release.
+if [ -z "${DEB_REPO_URL:-}" ]; then
+    echo "ERROR: DEB_REPO_URL env var is required."
+    exit 1
+fi
+if [ -z "${PIP_REPO_URL:-}" ]; then
+    echo "ERROR: PIP_REPO_URL env var is required (used for horizon-plugin)."
+    exit 1
+fi
 
 ALL_CONTAINERS=(trilio-wlm trilio-datamover-api trilio-datamover trilio-horizon-plugin)
 
@@ -129,12 +138,17 @@ for CONTAINER in "${ALL_CONTAINERS[@]}"; do
     cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
-    # Substitute DEB_REPO_URL placeholder in trilio.list if present
-    if [ -f "$CONT_BUILD_DIR/trilio.list" ] && [ -n "${DEB_REPO_URL:-}" ]; then
+    # Substitute repo URL placeholders
+    if [ -f "$CONT_BUILD_DIR/trilio.list" ]; then
         sed -i "s|{DEB_REPO_URL}|${DEB_REPO_URL}|g" "$CONT_BUILD_DIR/trilio.list"
     fi
 
-    docker build --no-cache --pull --network host -t "$IMAGE" "$CONT_BUILD_DIR"
+    BUILD_ARGS=""
+    if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
+        BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${PIP_REPO_URL}"
+    fi
+
+    docker build --no-cache --pull --network host $BUILD_ARGS -t "$IMAGE" "$CONT_BUILD_DIR"
     docker push "$IMAGE"
 
     echo " Published : $IMAGE"

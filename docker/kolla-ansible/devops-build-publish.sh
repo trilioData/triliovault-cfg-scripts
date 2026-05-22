@@ -15,11 +15,15 @@
 #                  trilio-horizon-plugin | trilio-wlm | trilio-dms
 #                If omitted, all 5 containers are built.
 #
+# Environment variables (required):
+#   RPM_REPO_URL   Trilio RPM repo baseurl  (rocky builds)
+#   DEB_REPO_URL   Trilio APT repo line     (ubuntu builds)
+#   PIP_REPO_URL   Trilio pip index URL     (horizon-plugin on both platforms)
+#
 # Examples:
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky
-#   bash devops-build-publish.sh 5.2.7-2025.1 ubuntu
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-datamover
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-dms
+#   RPM_REPO_URL='https://...' PIP_REPO_URL='https://...' bash devops-build-publish.sh 5.2.7-2025.1 rocky
+#   DEB_REPO_URL='deb https://...' PIP_REPO_URL='https://...' bash devops-build-publish.sh 5.2.7-2025.1 ubuntu
+#   RPM_REPO_URL='https://...' PIP_REPO_URL='https://...' bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-datamover
 #
 # Published image format:
 #   docker.io/trilio/kolla-<platform>-<container>:<tag>
@@ -74,7 +78,6 @@ TAG="$1"
 PLATFORM="$2"
 SINGLE_CONTAINER="${3:-}"
 OPENSTACK_RELEASE="2025.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-1/"
 
 case "$PLATFORM" in
     rocky|ubuntu) ;;
@@ -83,6 +86,21 @@ case "$PLATFORM" in
         exit 1
         ;;
 esac
+
+# Repo URLs must be supplied via environment variables — read from the
+# "Latest Build Details" Confluence page for the matching T4O release.
+if [ "$PLATFORM" = "rocky" ] && [ -z "${RPM_REPO_URL:-}" ]; then
+    echo "ERROR: RPM_REPO_URL env var is required for rocky builds."
+    exit 1
+fi
+if [ "$PLATFORM" = "ubuntu" ] && [ -z "${DEB_REPO_URL:-}" ]; then
+    echo "ERROR: DEB_REPO_URL env var is required for ubuntu builds."
+    exit 1
+fi
+if [ -z "${PIP_REPO_URL:-}" ]; then
+    echo "ERROR: PIP_REPO_URL env var is required (used for horizon-plugin)."
+    exit 1
+fi
 
 ALL_CONTAINERS=(trilio-datamover trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
 if [ -n "$SINGLE_CONTAINER" ]; then
@@ -150,10 +168,15 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
-    BUILD_ARGS=""
-    if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
-        BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${TRILIO_PIP_INDEX_URL}"
+    # Substitute repo URL placeholders
+    if [ "$PLATFORM" = "rocky" ] && [ -f "$CONT_BUILD_DIR/trilio.repo" ]; then
+        sed -i "s|{RPM_REPO_URL}|${RPM_REPO_URL}|g" "$CONT_BUILD_DIR/trilio.repo"
     fi
+    if [ "$PLATFORM" = "ubuntu" ] && [ -f "$CONT_BUILD_DIR/trilio.list" ]; then
+        sed -i "s|{DEB_REPO_URL}|${DEB_REPO_URL}|g" "$CONT_BUILD_DIR/trilio.list"
+    fi
+
+    BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${PIP_REPO_URL}"
 
     docker build --no-cache --pull --network host $BUILD_ARGS -t "$IMAGE" "$CONT_BUILD_DIR"
     docker push "$IMAGE"
@@ -180,6 +203,13 @@ if [ -z "$SINGLE_CONTAINER" ] || [ "$SINGLE_CONTAINER" = "trilio-dms" ]; then
         cp -R "$BASE_DIR/trilio-dms" "$DMS_BUILD_DIR"
         cp "$DMS_SOURCE_DF" "$DMS_BUILD_DIR/Dockerfile"
         rm -f "$DMS_BUILD_DIR/Dockerfile_"*
+
+        if [ "$PLATFORM" = "rocky" ] && [ -f "$DMS_BUILD_DIR/trilio.repo" ]; then
+            sed -i "s|{RPM_REPO_URL}|${RPM_REPO_URL}|g" "$DMS_BUILD_DIR/trilio.repo"
+        fi
+        if [ "$PLATFORM" = "ubuntu" ] && [ -f "$DMS_BUILD_DIR/trilio.list" ]; then
+            sed -i "s|{DEB_REPO_URL}|${DEB_REPO_URL}|g" "$DMS_BUILD_DIR/trilio.list"
+        fi
 
         docker build --no-cache --pull --network host -t "$DMS_IMAGE" "$DMS_BUILD_DIR"
         docker push "$DMS_IMAGE"
