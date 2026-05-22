@@ -44,7 +44,7 @@ if [ $# -ne 1 ]; then
 fi
 
 TAG="$1"
-BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "=================================================="
 echo " T4O RHOSO 18 Build & Publish"
@@ -57,7 +57,6 @@ echo "--------------------------------------------------"
 echo " Building control plane: tvo-operator:$TAG"
 echo "--------------------------------------------------"
 
-CTLPLANE_BUILD_DIR="$BASE_DIR/ctlplane-scripts/build"
 OPERATOR_DIR="$BASE_DIR/ctlplane-scripts/operator/tvo-operator"
 
 if [ ! -d "$OPERATOR_DIR" ]; then
