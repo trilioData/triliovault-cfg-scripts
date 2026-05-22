@@ -1,0 +1,150 @@
+options:
+  openstack-origin:
+    type: string
+    default: cloud:bionic-train
+    description: |
+      Repository from which to install. May be one of the following:
+      distro (default), ppa:somecustom/ppa, a deb url sources entry or a
+      supported Ubuntu Cloud Archive (UCA) release pocket.
+      .
+      Supported UCA sources include:
+      .
+      cloud:<series>-<openstack-release>
+      cloud:<series>-<openstack-release>/updates
+      cloud:<series>-<openstack-release>/staging
+      cloud:<series>-<openstack-release>/proposed
+      .
+      For series=Precise we support UCA for openstack-release=
+         * icehouse
+      .
+      For series=Trusty we support UCA for openstack-release=
+         * juno
+         * kilo
+         * ...
+      .
+      NOTE: updating this setting to a source that is known to provide
+      a later version of OpenStack will trigger a software upgrade.
+  triliovault-pkg-source:
+    type: string
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /"
+    description: Repository address of triliovault packages
+  max-wait-for-upload:
+    type: int
+    default: 48
+    description: |
+      The amount of time(in hrs) that snapshot upload
+      operation should wait for the upload
+      This option is ignored if Trilio is before 4.1.94
+  client-retry-limit:
+    type: int
+    default: 3
+    description: |
+      This is the number of times wlm will try to connect to
+      OpenStack services.
+      This option is ignored if Trilio is before 4.1.94
+  misfire-grace-time:
+    type: int
+    default: 600
+    description: |
+      misfire_grace_time is the grace time in which the global job
+      scheduler will consider to trigger the missed snapshots
+      The value is in seconds
+      This option is ignored if Trilio is before 4.1.94
+  trilio-backup-targets:
+    type: string
+    description: |
+      List Trilio Backup Targets
+    default": >
+        [
+          {
+            "backup-target-name": "S3_BT1",
+            "backup-target-type": "s3",
+            "is-default": true,
+            "s3-type": "amazon_s3",
+            "s3-access-key": "<ACCESS_KEY>",
+            "s3-secret-key": "<SECRET_KEY>",
+            "s3-region-name": "us-west-2",
+            "s3-bucket": "<BUCKET_NAME>",
+            "s3-endpoint-url": "",
+            "s3-signature-version": "default",
+            "s3-auth-version": "DEFAULT",
+            "s3-ssl-enabled": true,
+            "s3-ssl-verify": true,
+            "s3-self-signed-cert": false,
+            "s3-ssl-ca_cert": "",
+            "s3-bucket-object-lock-enabled": false
+          },
+          {
+            "backup-target-name": "S3_BT1",
+            "backup-target-type": "s3",
+            "is-default": true,
+            "s3-type": "other_s3",
+            "s3-access-key": "<ACCESS_KEY>",
+            "s3-secret-key": "<SECRET_KEY>",
+            "s3-region-name": "us-east-1",
+            "s3-bucket": "<BUCKET_NAME>",
+            "s3-endpoint-url": "<CEPH_S3_URL>",
+            "s3-signature-version": "default",
+            "s3-auth-version": "DEFAULT",
+            "s3-ssl-enabled": true,
+            "s3-ssl-verify": true,
+            "s3-self-signed-cert": true,
+            "s3-ssl-ca_cert": "-----BEGIN CERTIFICATE-----
+        SHKLLEffdfdfdfggdgdrrasbgnYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
+        MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
+        CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
+        9w0BCQEWHHBnqewlrodhssaksldgffegegrgmfvvdkcsoejdHhcNMTkwNjEzMDkx
+        -----END CERTIFICATE-----",
+            "s3-bucket-object-lock-enabled": false
+          },
+          {
+            "backup-target-name": "NFS_BT3",
+            "backup-target-type": "nfs",
+            "is-default": false,
+            "nfs-shares": "<NFS_SHARE>",
+            "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+          }
+        ]
+  trustee-role:
+    type: string
+    default: member
+    description: |
+       Workload manager trustee role.
+  is-vmware-migration-enabled:
+    type: boolean
+    default: False
+    description: If VMWare to OpenStack migration feature enabled or not
+  vcenter-url:
+    type: string
+    default:
+    description: VCenter URL
+  vcenter-username:
+    type: string
+    default:
+    description: VCenter login username
+  vcenter-password:
+    type: string
+    default:
+    description: VCenter login password
+  vcenter-nossl:
+    type: boolean
+    default: True
+    description: If SSL is not enabled on VCenter url
+  vcenter-ssl-cert:
+    type: string
+    default:
+    description: |
+      SSL CA certificate used to connect vcenter url
+  progress-tracking-update-interval:
+    type: int
+    default: 1200
+    description: |
+      Number of seconds to wait for progress tracking file updated before
+      we call contego crash
+      This option is ignored if Trilio is before 4.2
+  process-timeout:
+    type: int
+    default: 300
+    description: |
+      Process timeout in seconds, used in file-search tool
+      This option is ignored if Trilio is before 4.2

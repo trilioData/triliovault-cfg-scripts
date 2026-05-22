@@ -1,0 +1,11 @@
+includes: ['layer:openstack-api']
+options:
+  basic:
+    use_venv: True
+    include_system_packages: False
+    pip_packages:
+      - "packaging>=24.1"
+      - "setuptools==77.0.1"
+config:
+  deletes:
+    - worker-multiplier

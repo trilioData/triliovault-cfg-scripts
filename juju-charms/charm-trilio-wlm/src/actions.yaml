@@ -1,0 +1,22 @@
+create-cloud-admin-trust:
+  description: Create trust between Trilio WLM user and Cloud Admin
+  properties:
+    password:
+      type: string
+      description: Password for the cloud admin account
+  required:
+    - password
+create-license:
+  description: Create license for operation of TrilioVault. License file is provided as the 'license' resource.
+ghost-share:
+  description: "Bind mount NFS share 'host' for secondary Trilio Vault deployment"
+  properties:
+    nfs-shares:
+      type: string
+      description: Comma separated nfs-shares configuration option from secondary deployment. NFS shares must be provided in the same order as the nfs-shares configuration option for the local deployment.
+  required:
+    - nfs-shares
+update-trilio:
+  description: |
+    Update the trilio packages and run post-update steps such as rerender
+    configuration files and run any upgrade tasks such as database migrations.
