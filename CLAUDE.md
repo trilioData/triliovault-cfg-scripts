@@ -37,7 +37,7 @@ triliovault-cfg-scripts/
 ├── common/                         # Shared utilities (NFS map generator, nova user scripts)
 ├── conf-files/                     # Systemd service files and config templates
 ├── docker/                         # Dockerfiles for all TrilioVault component images
-├── juju-charms/                    # Juju charm bundles (Canonical OpenStack)
+├── juju-charms/                    # Juju charm source code for Canonical OpenStack (wlm, dmapi, data-mover, horizon-plugin)
 ├── kolla-ansible/                  # Kolla Ansible roles (Zed, Antelope, Bobcat)
 ├── migration-vm2os/                # VM to OpenStack migration helpers
 ├── openstack-helm/                 # Helm charts (OpenStack Helm / MOSK)
@@ -70,9 +70,12 @@ https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift
 
 
 3. Canonical OpenStack
--- We have designed four juju charms. 1. dmapi charm 2. data-mover charm 3. wlm charm 4. horizon plugin charm
--- We keep all charms on charmhub
--- Refer all juju syntaxes for development of these charms
+-- We have designed four juju charms. 1. wlm charm 2. dmapi charm 3. data-mover charm 4. horizon plugin charm
+-- Charm source code lives in juju-charms/ directory (charm-trilio-wlm, charm-trilio-dm-api, charm-trilio-data-mover, charm-trilio-horizon-plugin)
+-- We keep all charms published on Charmhub. Use charmcraft pack / charmcraft upload / charmcraft release from the charm subdirectory to build and publish.
+-- Charms use the charms_openstack framework with the reactive pattern (charms.reactive)
+-- Refer Juju and charms_openstack documentation for charm development
+-- Canonical OpenStack Charm Development Guide: https://opendev.org/openstack/charm-guide
 
 
 
@@ -84,11 +87,25 @@ https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift
 | `ansible/` | Generic OpenStack | Ansible roles | Any |
 | `kolla-ansible/` | Kolla OpenStack | Ansible + Kolla | Zed, Antelope, Bobcat |
 | `openstack-helm/` | OpenStack Helm / MOSK | Helm charts | Antelope, Bobcat, Epoxy |
-| `juju-charms/` | Canonical OpenStack | Juju charms | Yoga, Antelope, Bobcat, Caracal |
+| `juju-charms/` | Canonical OpenStack | Juju charms (reactive, charms_openstack) | Yoga, Antelope, Bobcat, Caracal |
 | `redhat-director-scripts/rhosp16/` | RHOSP 16 | Puppet + Heat | Queens |
 | `redhat-director-scripts/rhosp17/` | RHOSP 17 | Puppet + Heat | Wallaby |
 | `redhat-director-scripts/rhosp18/` | RHOSO 18 | Operator + Ansible | RHOSO 18.0 |
 | `tripleo/` | TripleO | Puppet + Heat | Train, Wallaby |
 
+---
 
+## Steps to Fix a Jira for Juju Charms
 
+Charm source code lives in `juju-charms/` — fixes go here AND in the standalone upstream charm repos.
+
+1. Identify which charm needs the fix (wlm, dm-api, data-mover, horizon-plugin)
+2. Identify the branch (e.g. `dev-maint8/6.1` for a 6.1.x maintenance release)
+3. Sync the relevant charm directory with upstream before starting:
+   - In the standalone charm repo (`C:\vscode-workspace\charm-trilio-*`), merge upstream branch
+   - Re-copy updated files into `juju-charms/<charm-name>/` (excluding `.git`)
+4. Create a topic branch in `triliovault-cfg-scripts` (e.g. `tv7147`)
+5. Make the fix inside `juju-charms/<charm-name>/src/`
+6. Commit, push, and raise a PR against the upstream `triliovault-cfg-scripts` branch
+7. Also raise a mirrored PR against the standalone upstream charm repo (`trilioData/charm-trilio-*`)
+8. Add both PR links as a comment on the Jira ticket
