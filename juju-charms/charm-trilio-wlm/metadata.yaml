@@ -1,0 +1,24 @@
+name: trilio-charmers-trilio-wlm
+display-name: TrilioVault Workload Manager
+maintainer: OpenStack Charmers <openstack-discuss@lists.openstack.org>
+summary: TrilioVault Workload Manager Service
+version: 6.0.0
+description: |
+  TrilioVault provides a backup and recovery solution that natively
+  integrates with OpenStack Clouds.
+  .
+  This charm provides the TrilioVault Workload Manager Service which
+  forms part of the TrilioVault solution.
+tags:
+- openstack
+- backup
+- storage
+series:
+- bionic
+- focal
+- jammy
+resources:
+  license:
+    type: file
+    filename: license.lic
+    description: TrilioVault License file
