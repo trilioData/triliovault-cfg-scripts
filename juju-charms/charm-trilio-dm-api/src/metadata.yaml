@@ -1,0 +1,21 @@
+name: trilio-charmers-trilio-dm-api
+maintainer: Trilio Support <support@trilio.io>
+display-name: TrilioVault Data Mover API
+summary: TrilioVault Data Mover API
+description: |
+  TrilioVault provides a backup and recovery solution that natively
+  integrates with OpenStack Clouds.
+  .
+  This charm provides the TrilioVault Data Mover API which
+  forms part of the TrilioVault solution.
+tags:
+- openstack
+- storage
+- backup
+provides:
+  dm-api:
+    interface: dm-api
+series:
+- bionic
+- focal
+- jammy

@@ -1,0 +1,13 @@
+options:
+  python-version:
+    type: int
+    default: 3
+    description: THIS OPTION IS DEPRECATED AND HAS NO EFFECT
+  triliovault-pkg-source:
+    type: string
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-0/ /"
+    description: Repository address of triliovault packages
+  openstack-encryption-support:
+    type: boolean
+    default: False
+    description: If Openstack has encryption(barbican) support (will be deprecated from 5.0)
