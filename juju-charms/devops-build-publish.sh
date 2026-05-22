@@ -2,16 +2,19 @@
 # devops-build-publish.sh
 #
 # Builds and publishes T4O Juju charms to Charmhub.
-# Runs charmcraft clean, pack, and release for each charm.
+# Runs charmcraft clean, pack, and upload --release for each charm.
 #
 # Usage:
-#   bash devops-build-publish.sh <channel> [charm]
+#   bash devops-build-publish.sh [charm]
 #
 # Arguments:
-#   channel  Charmhub release channel, e.g. latest/edge | 6.2/stable
-#   charm    (optional) Build and release only this charm:
-#              wlm | data-mover | dm-api | horizon-plugin
-#            If omitted, all 4 charms are built and released.
+#   charm  (optional) Build and release only this charm:
+#            wlm | data-mover | dm-api | horizon-plugin
+#          If omitted, all 4 charms are built and released.
+#
+# The release channel defaults to 6.0/candidate.
+# Override by setting the CHANNEL environment variable:
+#   CHANNEL=latest/edge bash devops-build-publish.sh
 #
 # Charms:
 #   charm-trilio-wlm              Workload Manager
@@ -23,18 +26,20 @@
 #   - charmcraft must be installed and logged in (charmcraft login)
 #
 # Examples:
-#   bash devops-build-publish.sh latest/edge
-#   bash devops-build-publish.sh 6.2/stable wlm
+#   bash devops-build-publish.sh
+#   bash devops-build-publish.sh wlm
+#   CHANNEL=latest/edge bash devops-build-publish.sh data-mover
 
 set -e
 
+CHANNEL="${CHANNEL:-6.0/candidate}"
+
 usage() {
     cat <<EOF
-Usage: $0 <channel> [charm]
+Usage: $0 [charm]
 
-  channel  Charmhub release channel, e.g. latest/edge | 6.2/stable
-  charm    (optional) Build and release a single charm.
-           If omitted, all 4 charms are built and released.
+  charm  (optional) Build and release a single charm.
+         If omitted, all 4 charms are built and released.
 
 Charm names (short):
   wlm             charm-trilio-wlm
@@ -42,10 +47,12 @@ Charm names (short):
   dm-api          charm-trilio-dm-api
   horizon-plugin  charm-trilio-horizon-plugin
 
+Channel: $CHANNEL  (override with CHANNEL=<channel>)
+
 Examples:
-  $0 latest/edge
-  $0 6.2/stable wlm
-  $0 latest/edge data-mover
+  $0
+  $0 wlm
+  CHANNEL=latest/edge $0 data-mover
 
 Options:
   -h, --help   Show this help message and exit.
@@ -57,13 +64,12 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
     exit 0
 fi
 
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+if [ $# -gt 1 ]; then
     usage
     exit 1
 fi
 
-CHANNEL="$1"
-SINGLE_CHARM="${2:-}"
+SINGLE_CHARM="${1:-}"
 
 # Map short name → directory name
 declare -A CHARM_DIR_MAP=(
