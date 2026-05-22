@@ -1,0 +1,6 @@
+pdm-backend
+poetry-core>=1.0.0
+git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
+
+git+https://github.com/juju/charm-helpers.git#egg=charmhelpers
+

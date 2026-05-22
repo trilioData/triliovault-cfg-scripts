@@ -1,0 +1,18 @@
+includes: [
+   'layer:openstack',
+   'interface:rabbitmq',
+   'interface:ceph-client',
+   'interface:mysql-shared',
+ ]
+options:
+  basic:
+    use_venv: true
+    include_system_packages: false
+    pip_packages:
+      - "multiline"
+      - "setuptools==77.0.1"
+      - "jaraco.functools>=4.3.0"
+      - "jaraco.text>=4.0.0"
+      - "packaging>=24.1"
+wheelhouse:
+  - wheelhouse/python_apt-2.4.0-cp310-cp310-linux_x86_64.whl

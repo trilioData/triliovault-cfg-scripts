@@ -1,0 +1,38 @@
+name: trilio-charmers-trilio-data-mover
+display-name: TrilioVault Data Mover
+summary: TrilioVault Data Mover Service
+maintainer: OpenStack Charmers <openstack-discuss@lists.openstack.org>
+description: |
+  TrilioVault provides a backup and recovery solution that natively
+  integrates with OpenStack Clouds.
+  .
+  This charm provides the TrilioVault Data Mover Service which
+  forms part of the TrilioVault solution.
+subordinate: true
+tags:
+- openstack
+- storage
+- backup
+series:
+- bionic
+- focal
+- jammy
+requires:
+  amqp:
+    interface: rabbitmq
+  juju-info:
+    interface: juju-info
+    scope: container
+  ceph:
+    interface: ceph-client
+  shared-db:
+    interface: mysql-shared
+provides:
+  data-mover:
+    interface: data-mover
+    scope: container
+resources:
+  vddk_bundle:
+    type: file
+    description: VMware VDDK Library
+    filename: vddk.tar.gz

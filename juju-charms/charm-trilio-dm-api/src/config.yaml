@@ -1,0 +1,76 @@
+---
+options:
+  openstack-origin:
+    type: string
+    default: cloud:bionic-train
+    description: |
+      Repository from which to install. May be one of the following:
+      distro (default), ppa:somecustom/ppa, a deb url sources entry or a
+      supported Ubuntu Cloud Archive (UCA) release pocket.
+      .
+      Supported UCA sources include:
+      .
+      cloud:<series>-<openstack-release>
+      cloud:<series>-<openstack-release>/updates
+      cloud:<series>-<openstack-release>/staging
+      cloud:<series>-<openstack-release>/proposed
+      .
+      For series=Precise we support UCA for openstack-release=
+         * icehouse
+      .
+      For series=Trusty we support UCA for openstack-release=
+         * juno
+         * kilo
+         * ...
+      .
+      NOTE: updating this setting to a source that is known to provide
+      a later version of OpenStack will trigger a software upgrade.
+  python-version:
+    type: int
+    default: 3
+    description: THIS OPTION IS DEPRECATED AND HAS NO EFFECT
+  triliovault-pkg-source:
+    type: string
+    default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /"
+    description: Repository address of triliovault packages
+  public-port:
+    type: int
+    default: 8784
+    description: DataMover API public endpoint port
+  internal-port:
+    type: int
+    default: 8784
+    description: DataMover API internal endpoint port
+  admin-port:
+    type: int
+    default: 8784
+    description: DataMover API admin endpoint port
+  dmapi-workers:
+    type: int
+    default: 16
+    description: |
+      Number of dmapi workers. This replaces the previous worker-muliplier option.
+  haproxy-queue-timeout:
+    type: int
+    default: 600000
+    description: |
+      Queue timeout configuration in ms for haproxy, used in HA
+      configurations.
+  haproxy-connect-timeout:
+    type: int
+    default: 600000
+    description: |
+      Connect timeout configuration in ms for haproxy, used in HA
+      configurations.
+  haproxy-client-timeout:
+    type: int
+    default: 600000
+    description: |
+      Client timeout configuration in ms for haproxy, used in HA
+      configurations.
+  haproxy-server-timeout:
+    type: int
+    default: 600000
+    description: |
+      Server timeout configuration in ms for haproxy, used in HA
+      configurations.
