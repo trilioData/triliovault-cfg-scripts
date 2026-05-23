@@ -1,2 +1,1 @@
 nova ALL = (root) NOPASSWD: /usr/bin/workloadmgr-rootwrap *
-nova ALL = (root) NOPASSWD: /var/lib/kolla/venv/bin/workloadmgr-rootwrap *
