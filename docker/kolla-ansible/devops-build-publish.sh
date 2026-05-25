@@ -2,14 +2,13 @@
 # devops-build-publish.sh
 #
 # Builds and publishes T4O kolla-ansible container images.
-# OS-specific containers are built for the given platform.
-# trilio-dms is a common image built regardless of platform.
+# All containers are platform-specific (rocky or ubuntu).
 #
 # Usage:
 #   bash devops-build-publish.sh <tag> <os_platform> [container]
 #
 # Arguments:
-#   tag          Docker image tag (any format), e.g. 5.2.7-2025.1
+#   tag          Docker image tag (any format), e.g. 6.2.0-2025.1
 #   os_platform  OS platform: rocky | ubuntu
 #   container    (optional) Build only this container:
 #                  trilio-datamover | trilio-datamover-api |
@@ -17,17 +16,17 @@
 #                If omitted, all 5 containers are built.
 #
 # Examples:
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky
-#   bash devops-build-publish.sh 5.2.7-2025.1 ubuntu
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-datamover
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-dms
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky
+#   bash devops-build-publish.sh 6.2.0-2025.1 ubuntu
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-datamover
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-dms
 #
 # Published image format:
 #   docker.io/trilio/kolla-<platform>-<container>:<tag>
-#   docker.io/trilio/kolla-trilio-dms:<tag>   (common, no platform)
-#   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:5.2.7-2025.1
-#        docker.io/trilio/kolla-ubuntu-trilio-datamover:5.2.7-2025.1
-#        docker.io/trilio/kolla-trilio-dms:5.2.7-2025.1
+#   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:6.2.0-2025.1
+#        docker.io/trilio/kolla-ubuntu-trilio-datamover:6.2.0-2025.1
+#        docker.io/trilio/kolla-rocky-trilio-dms:6.2.0-2025.1
+#        docker.io/trilio/kolla-ubuntu-trilio-dms:6.2.0-2025.1
 
 set -e
 
@@ -35,27 +34,26 @@ usage() {
     cat <<EOF
 Usage: $0 <tag> <os_platform> [container]
 
-  tag          Docker image tag (any format), e.g. 5.2.7-2025.1
+  tag          Docker image tag (any format), e.g. 6.2.0-2025.1
   os_platform  OS platform to build for: rocky | ubuntu
   container    (optional) Build and publish a single container.
                If omitted, all 5 containers are built.
 
 Containers:
-  trilio-datamover        Compute node datamover (OS-specific)
-  trilio-datamover-api    Control plane datamover API (OS-specific)
-  trilio-horizon-plugin   OpenStack Horizon UI plugin (OS-specific)
-  trilio-wlm              Workload Manager (OS-specific)
-  trilio-dms              Dynamic Mount Service (common image, no OS variant)
+  trilio-datamover        Compute node datamover
+  trilio-datamover-api    Control plane datamover API
+  trilio-horizon-plugin   OpenStack Horizon UI plugin
+  trilio-wlm              Workload Manager
+  trilio-dms              Dynamic Mount Service
 
 Published image format:
-  docker.io/trilio/kolla-<platform>-<container>:<tag>   (OS-specific)
-  docker.io/trilio/kolla-trilio-dms:<tag>               (common)
+  docker.io/trilio/kolla-<platform>-<container>:<tag>
 
 Examples:
-  $0 5.2.7-2025.1 rocky
-  $0 5.2.7-2025.1 ubuntu
-  $0 5.2.7-2025.1 rocky trilio-datamover
-  $0 5.2.7-2025.1 rocky trilio-dms
+  $0 6.2.0-2025.1 rocky
+  $0 6.2.0-2025.1 ubuntu
+  $0 6.2.0-2025.1 rocky trilio-datamover
+  $0 6.2.0-2025.1 rocky trilio-dms
 
 Options:
   -h, --help   Show this help message and exit.
@@ -76,7 +74,7 @@ TAG="$1"
 PLATFORM="$2"
 SINGLE_CONTAINER="${3:-}"
 OPENSTACK_RELEASE="2025.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-1/"
+TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
 
 case "$PLATFORM" in
     rocky|ubuntu) ;;
@@ -163,24 +161,31 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     echo " Published : $IMAGE"
 done
 
-# Build trilio-dms — common image, not OS-specific
+# Build trilio-dms — platform-specific (Dockerfile_rocky / Dockerfile_ubuntu)
 if [ -z "$SINGLE_CONTAINER" ] || [ "$SINGLE_CONTAINER" = "trilio-dms" ]; then
 
-    DMS_SOURCE_DF="$BASE_DIR/trilio-dms/Dockerfile"
-    DMS_IMAGE="docker.io/trilio/kolla-trilio-dms:${TAG}"
+    DMS_SOURCE_DF="$BASE_DIR/trilio-dms/Dockerfile_${PLATFORM}"
+    DMS_IMAGE="docker.io/trilio/kolla-${PLATFORM}-trilio-dms:${TAG}"
 
-    echo ""
-    echo "--------------------------------------------------"
-    echo " Building : $DMS_IMAGE  (common image)"
-    echo "--------------------------------------------------"
+    if [ ! -f "$DMS_SOURCE_DF" ]; then
+        echo ""
+        echo "SKIP: trilio-dms — $(basename "$DMS_SOURCE_DF") not found"
+    else
+        echo ""
+        echo "--------------------------------------------------"
+        echo " Building : $DMS_IMAGE"
+        echo "--------------------------------------------------"
 
-    DMS_BUILD_DIR="$BUILD_DIR/trilio-dms"
-    cp -R "$BASE_DIR/trilio-dms" "$DMS_BUILD_DIR"
+        DMS_BUILD_DIR="$BUILD_DIR/trilio-dms"
+        cp -R "$BASE_DIR/trilio-dms" "$DMS_BUILD_DIR"
+        cp "$DMS_SOURCE_DF" "$DMS_BUILD_DIR/Dockerfile"
+        rm -f "$DMS_BUILD_DIR/Dockerfile_"*
 
-    docker build --no-cache --pull --network host -t "$DMS_IMAGE" "$DMS_BUILD_DIR"
-    docker push "$DMS_IMAGE"
+        docker build --no-cache --pull --network host -t "$DMS_IMAGE" "$DMS_BUILD_DIR"
+        docker push "$DMS_IMAGE"
 
-    echo " Published : $DMS_IMAGE"
+        echo " Published : $DMS_IMAGE"
+    fi
 fi
 
 echo ""

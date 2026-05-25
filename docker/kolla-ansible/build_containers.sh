@@ -39,10 +39,6 @@ do
 
         for container_to_build in "${containers_to_build[@]}"
         do
-		# trilio-dms is a common image built outside the platform loop
-		if [[ ${container_to_build} == "trilio-dms" ]]; then
-		    continue
-		fi
                 cp -R $base_dir/${container_to_build} $base_dir/${build_dir}/
 		#Build containers
 		echo -e "Creating ${container_to_build} container for kolla ${openstack_release} ${openstack_platform}"
@@ -54,7 +50,7 @@ do
 		then
       		    if [ $(echo "$openstack_release"  | tr '[:upper:]' '[:lower:]') == "yoga" ]
     		    then
-		        #Dockerfile_yoga_centos_binary Dockerfile_yoga_centos_source Dockerfile_yoga_ubuntu_binary Dockerfile_yoga_ubuntu_source
+			#Dockerfile_yoga_centos_binary Dockerfile_yoga_centos_source Dockerfile_yoga_ubuntu_binary Dockerfile_yoga_ubuntu_source
 			for contType in "${horizon_cont_type[@]}"
 			do
 			    mv Dockerfile_${openstack_release}_${openstack_platform}_${contType} Dockerfile
@@ -71,8 +67,13 @@ do
 		        mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
 		        docker build --no-cache --pull -t trilio/${openstack_platform}-binary-${container_to_build}:${tag}-${openstack_release} .
 		    fi
+		elif [[ ${container_to_build} == "trilio-dms" ]]
+		then
+		    # DMS Dockerfiles are named Dockerfile_<platform> (no release prefix)
+		    mv Dockerfile_${openstack_platform} Dockerfile
+		    docker build --no-cache --pull -t trilio/kolla-${openstack_platform}-trilio-dms:${tag} .
 		else
-		    #Docker hub repo/tag for all non horizon containers to be in format <distro>-<os platform>-<container>. 
+		    #Docker hub repo/tag for all non horizon containers to be in format <distro>-<os platform>-<container>.
 		    #Eg. kolla-centos-trilio-dataover
 		    mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
 		    docker build --no-cache --pull -t trilio/kolla-${openstack_platform}-${container_to_build}:${tag}-${openstack_release} .
@@ -81,18 +82,6 @@ do
     	# Clean the build_dir
 	rm -rf $base_dir/${build_dir}
     done
-    # Build trilio-dms — common image, not platform-specific
-    if [[ " ${containers_to_build[*]} " =~ " trilio-dms " ]]; then
-	echo -e "Creating trilio-dms container (common image) for ${openstack_release}"
-	dms_build_dir=tmp_docker_dms_${openstack_release}
-	rm -rf $base_dir/${dms_build_dir}
-	mkdir -p $base_dir/${dms_build_dir}
-	cp -R $base_dir/trilio-dms $base_dir/${dms_build_dir}/
-	cd $base_dir/${dms_build_dir}/trilio-dms/
-	sed -i "s/{VERSION}/${fury_repo}/g" trilio.repo
-	docker build --no-cache --pull -t trilio/kolla-trilio-dms:${tag} .
-	rm -rf $base_dir/${dms_build_dir}
-    fi
 
     let count=count+1
 done

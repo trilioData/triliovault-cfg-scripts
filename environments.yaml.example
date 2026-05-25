@@ -1,0 +1,31 @@
+# environments.yaml.example
+#
+# Copy this file to environments.yaml and fill in your actual values.
+# environments.yaml is gitignored and will never be committed.
+#
+# Parameters:
+#   deploy_host   - user@IP or user@hostname for SSH access to the target OpenStack machine
+#   build_host - user@IP or user@hostname for SSH access to the build server
+#                (where Docker images / charms are built and pushed)
+#
+# Note: distro, openstack_release, and operating_system are NOT stored here.
+# They are inferred from the env-name and Jira ticket context at runtime.
+# T4O release version is read from the Jira ticket context.
+
+environments:
+
+  rhoso18-lab:
+    deploy_host: ubuntu@<IP>
+    build_host: ubuntu@<IP>
+
+  kolla-lab:
+    deploy_host: ubuntu@<IP>
+    build_host: ubuntu@<IP>
+
+  mosk-lab:
+    deploy_host: ubuntu@<IP>
+    build_host: ubuntu@<IP>
+
+  canonical-lab:
+    deploy_host: ubuntu@<IP>
+    build_host: ubuntu@<IP>

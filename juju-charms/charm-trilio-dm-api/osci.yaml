@@ -1,0 +1,71 @@
+- project:
+    templates:
+      - charm-unit-jobs-py36
+      - charm-unit-jobs-py38
+    check:
+      jobs:
+      - charm-build
+      - bionic-queens-41_trilio-api
+      - bionic-queens-42_trilio-api
+      - bionic-ussuri-42_trilio-api
+      - focal-ussuri-41_trilio-api
+      - focal-ussuri-42_trilio-api
+      - focal-wallaby-42_trilio-api
+      - jammy-yoga-42_trilio-api
+    vars:
+      needs_charm_build: true
+      charm_build_name: trilio-dm-api
+      build_type: charmcraft
+      charmcraft_channel: 2.0/stable
+- job:
+    name: focal-ussuri-42_trilio-api
+    parent: func-target
+    dependencies:
+      - osci-lint
+      - tox-py36
+      - tox-py38
+      - charm-build
+    vars:
+      tox_extra_args: '-- focal-ussuri-42'
+- job:
+    name: focal-ussuri-41_trilio-api
+    parent: func-target
+    dependencies:
+      - focal-ussuri-42_trilio-api
+    vars:
+      tox_extra_args: '-- focal-ussuri-41'
+- job:
+    name: focal-wallaby-42_trilio-api
+    parent: func-target
+    dependencies:
+      - focal-ussuri-42_trilio-api
+    vars:
+      tox_extra_args: '-- focal-wallaby-42'
+- job:
+    name: bionic-ussuri-42_trilio-api
+    parent: func-target
+    dependencies:
+      - focal-ussuri-42_trilio-api
+    vars:
+      tox_extra_args: '-- bionic-ussuri-42'
+- job:
+    name: bionic-queens-42_trilio-api
+    parent: func-target
+    dependencies:
+      - focal-ussuri-42_trilio-api
+    vars:
+      tox_extra_args: '-- bionic-queens-42'
+- job:
+    name: bionic-queens-41_trilio-api
+    parent: func-target
+    dependencies:
+      - bionic-queens-42_trilio-api
+    vars:
+      tox_extra_args: '-- bionic-queens-41'
+- job:
+    name: jammy-yoga-42_trilio-api
+    parent: func-target
+    dependencies:
+      - focal-wallaby-42_trilio-api
+    vars:
+      tox_extra_args: '-- jammy-yoga-42'

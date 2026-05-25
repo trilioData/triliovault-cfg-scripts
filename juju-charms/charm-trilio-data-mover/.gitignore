@@ -1,0 +1,12 @@
+build/
+.local/
+.testrepository/
+.tox/
+func-results.json
+test-charm/
+**/__pycache__
+.stestr
+.coverage
+cover
+*.swp
+*.charm
