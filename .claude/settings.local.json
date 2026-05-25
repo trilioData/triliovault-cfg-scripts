@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__pull_request_read",
+      "Bash(gh pr:*)",
+      "Bash(grep -A 120 \"^docker/redhat-director-scripts/docker/trilio-dms/Dockerfile$\")",
+      "Bash(gh api:*)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}

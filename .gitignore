@@ -11,7 +11,6 @@ deps/
 results.txt
 *.db
 tvo-chart-manifest.yaml
-.claude/
 # Local environment config — contains IPs, never commit
 environments.yaml
 # Claude-generated deployment/upgrade reports
