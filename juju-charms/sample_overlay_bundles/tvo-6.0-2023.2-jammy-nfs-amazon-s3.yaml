@@ -1,7 +1,8 @@
 series: jammy
 variables:
   openstack-origin: &openstack-origin distro
-  triliovault-pkg-source: &pkg-source       "deb [trusted=yes] https://apt.fury.io/trilio-stable-6-0 /"
+  triliovault-pkg-source: &pkg-source "deb [trusted=yes] https://apt.fury.io/trilio-stable-6-2 /"
+  keystone-auth-url: &keystone-auth-url "http://<KEYSTONE_HOST>:5000/v3"
 
 machines:
   '1':
@@ -12,102 +13,48 @@ machines:
 applications:
   trilio-data-mover:
     charm: trilio-charmers-trilio-data-mover
-    channel: 6.0/stable
-    revision: 21
+    channel: 6.2/stable
     options:
       triliovault-pkg-source: *pkg-source
-      trilio-backup-targets: >
-        [
-          {
-            "backup-target-name": "S3_BT1",
-            "backup-target-type": "s3",
-            "is-default": true,
-            "s3-type": "amazon_s3",
-            "s3-access-key": "",
-            "s3-secret-key": "",
-            "s3-region-name": "",
-            "s3-bucket": "",
-            "s3-endpoint-url": "",
-            "s3-signature-version": "default",
-            "s3-auth-version": "DEFAULT",
-            "s3-ssl-enabled": true,
-            "s3-ssl-verify": true,
-            "s3-self-signed-cert": false,
-            "s3-ssl-ca_cert": "",
-            "s3-bucket-object-lock-enabled": false
-          },
-          {
-            "backup-target-name": "NFS_BT2",
-            "backup-target-type": "nfs",
-            "is-default": false,
-            "nfs-shares": "192.2.1.33:/var/nsfshare1",
-            "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
-          }
-        ]
-      verbose: True
+      keystone-auth-url: *keystone-auth-url
+
   trilio-data-mover-mysql-router:
     charm: mysql-router
+
   trilio-dm-api:
     charm: trilio-charmers-trilio-dm-api
-    channel: 6.0/stable
-    revision: 17
-    num_units: 1
-    options:
-       triliovault-pkg-source: *pkg-source
-       openstack-origin: *openstack-origin
-    to:
-      - 'lxd:1'
-  trilio-dm-api-mysql-router:
-    charm: mysql-router
-  trilio-horizon-plugin:
-    charm: trilio-charmers-trilio-horizon-plugin
-    channel: 6.0/stable
-    revision: 10
-    options:
-       triliovault-pkg-source: *pkg-source
-       openstack-encryption-support: True
-  trilio-wlm-mysql-router:
-    charm: mysql-router
-  trilio-wlm:
-    charm: trilio-charmers-trilio-wlm
-    channel: 6.0/stable
-    revision: 17
+    channel: 6.2/stable
     num_units: 1
     options:
       triliovault-pkg-source: *pkg-source
       openstack-origin: *openstack-origin
-      trilio-backup-targets: >
-        [
-          {
-            "backup-target-name": "S3_BT1",
-            "backup-target-type": "s3",
-            "is-default": true,
-            "s3-type": "amazon_s3",
-            "s3-access-key": "",
-            "s3-secret-key": "",
-            "s3-region-name": "",
-            "s3-bucket": "",
-            "s3-endpoint-url": "",
-            "s3-signature-version": "default",
-            "s3-auth-version": "DEFAULT",
-            "s3-ssl-enabled": true,
-            "s3-ssl-verify": true,
-            "s3-self-signed-cert": false,
-            "s3-ssl-ca_cert": "",
-            "s3-bucket-object-lock-enabled": false
-          },
-          {
-            "backup-target-name": "NFS_BT3",
-            "backup-target-type": "nfs",
-            "is-default": false,
-            "nfs-shares": "192.2.1.33:/var/nsfshare1",
-            "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
-          }
-        ]
-      verbose: True
+    to:
+      - 'lxd:1'
+
+  trilio-dm-api-mysql-router:
+    charm: mysql-router
+
+  trilio-horizon-plugin:
+    charm: trilio-charmers-trilio-horizon-plugin
+    channel: 6.2/stable
+    options:
+      triliovault-pkg-source: *pkg-source
+      openstack-encryption-support: True
+
+  trilio-wlm-mysql-router:
+    charm: mysql-router
+
+  trilio-wlm:
+    charm: trilio-charmers-trilio-wlm
+    channel: 6.2/stable
+    num_units: 1
+    options:
+      triliovault-pkg-source: *pkg-source
+      openstack-origin: *openstack-origin
       trustee-role: creator,member
     to:
       - 'lxd:1'
+
 relations:
   # Triliovault horizon plugin relations
   # # relation with openstack-dashboard
