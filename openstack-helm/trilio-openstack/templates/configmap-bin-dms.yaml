@@ -18,7 +18,7 @@ limitations under the License.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: triliovault-bin-dms
+  name: triliovault-dms-bin
 data:
   triliovault-dms.sh: |
 {{ tuple "bin/_triliovault-dms.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}

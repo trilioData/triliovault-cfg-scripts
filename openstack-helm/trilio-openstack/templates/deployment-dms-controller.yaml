@@ -154,7 +154,7 @@ spec:
             defaultMode: 0444
         - name: triliovault-dms-bin
           configMap:
-            name: triliovault-bin-dms
+            name: triliovault-dms-bin
             defaultMode: 0555
         - name: pod-shared-triliovault-dms
           emptyDir: {}
