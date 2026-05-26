@@ -113,13 +113,6 @@ def render_config(*args):
             'triliovault-pkg-source', current_pkg_source)
         if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
             run_trilio_install_upgrade_packages(packages_to_install)
-            trilio_list = '/etc/apt/sources.list.d/trilio.list'
-            if os.path.exists(trilio_list):
-                try:
-                    os.remove(trilio_list)
-                    hookenv.log("Cleaned up trilio apt source list.")
-                except OSError as e:
-                    hookenv.log(f"Failed to remove trilio apt source: {e}", level=hookenv.WARNING)
             reactive.set_state('triliovault-packages.installed')
 
         charm_class.render_with_interfaces(args, configs=template_list)

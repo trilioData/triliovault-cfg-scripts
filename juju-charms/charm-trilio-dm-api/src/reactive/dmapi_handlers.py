@@ -49,10 +49,6 @@ def render_config(*args):
     with charm.provide_charm_instance() as charm_class:
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
-    # Clean up trilio apt source after packages are installed
-    trilio_list = '/etc/apt/sources.list.d/trilio.list'
-    if os.path.exists(trilio_list):
-        os.remove(trilio_list)
 
     # Render DMS client config for DMAPI
     amqp = reactive.endpoint_from_flag('amqp.available')
