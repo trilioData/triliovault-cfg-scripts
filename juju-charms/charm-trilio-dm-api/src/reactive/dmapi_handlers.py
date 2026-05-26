@@ -11,9 +11,13 @@
 # limitations under the License.
 
 import os
+import pwd
+import grp
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
+from charmhelpers.core.templating import render
+from charmhelpers.core import hookenv
 
 # This charm's library contains all of the handler code associated with
 # dmapi
@@ -49,6 +53,46 @@ def render_config(*args):
     trilio_list = '/etc/apt/sources.list.d/trilio.list'
     if os.path.exists(trilio_list):
         os.remove(trilio_list)
+
+    # Render DMS client config for DMAPI
+    amqp = reactive.endpoint_from_flag('amqp.available')
+    db_ep = reactive.endpoint_from_flag('shared-db.available')
+    if amqp and db_ep:
+        amqp_username = amqp.username()
+        amqp_password = amqp.password()
+        amqp_host = amqp.private_address()
+        amqp_port = amqp.ssl_port() or 5672
+        amqp_vhost = amqp.vhost()
+        transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
+
+        db_password = db_ep.password(prefix='dmapi')
+        db_user = 'dmapi'
+        db_host = '127.0.0.1'
+        db_name = 'dmapi'
+        db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}"
+
+        root_uid = pwd.getpwnam('root').pw_uid
+        nova_gid = grp.getgrnam('nova').gr_gid
+
+        dms_conf_dir = '/etc/triliovault-dms'
+        os.makedirs(dms_conf_dir, exist_ok=True)
+        os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
+        os.chown(dms_conf_dir, root_uid, nova_gid)
+
+        dms_client_context = {
+            'rabbitmq_url': transport_url,
+            'db_url': db_url,
+        }
+        dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'dmapi.conf')
+        render(
+            source='triliovault-dms-client.conf',
+            target=dms_client_conf_path,
+            context=dms_client_context,
+        )
+        os.chmod(dms_client_conf_path, 0o640)
+        os.chown(dms_client_conf_path, root_uid, nova_gid)
+        hookenv.log("DMS client config rendered for dmapi.")
+
     reactive.set_state("config.rendered")
 
 
