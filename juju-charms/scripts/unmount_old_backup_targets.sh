@@ -2,7 +2,8 @@
 # unmount_old_backup_targets.sh
 #
 # Unmounts old static backup target mounts from T4O 5.x/6.0/6.1 across all
-# nova-compute and WLM units in parallel using the Juju action mechanism.
+# trilio-data-mover and trilio-wlm units in parallel using the Juju action
+# mechanism.
 #
 # This uses the 'unmount-old-backup-targets' Juju action which runs on the
 # unit itself — no sequential ssh loop. Works for any number of compute nodes.
@@ -18,13 +19,13 @@
 #
 # Usage:
 #   bash unmount_old_backup_targets.sh \
-#     [--compute-app nova-compute] \
+#     [--compute-app trilio-data-mover] \
 #     [--wlm-app trilio-wlm] \
 #     [--timeout 300]
 
 set -e
 
-COMPUTE_APP="nova-compute"
+COMPUTE_APP="trilio-data-mover"
 WLM_APP="trilio-wlm"
 ACTION="unmount-old-backup-targets"
 TIMEOUT=300
