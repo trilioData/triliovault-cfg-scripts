@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import glob
 import os
 import pwd
 import grp
+import tempfile
 from subprocess import check_call, CalledProcessError
 from charmhelpers.core.host import restart_on_change
 import multiline
@@ -85,6 +87,31 @@ def run_trilio_install_upgrade_packages(packages):
 
         if pkg is None:
             print(f"Package {package_name} not found in the cache.")
+            continue
+
+        if package_name == 'workloadmgr' and cache.get('python3-shade') is None:
+            # python3-shade was removed from Ubuntu Noble repos in Epoxy; install
+            # shade via pip and force-install workloadmgr via dpkg to bypass the
+            # unresolvable python3-shade dep without leaving apt in broken state
+            print("Installing workloadmgr with python3-shade workaround (Noble)...")
+            try:
+                subprocess.run(['pip3', 'install', 'shade'], check=True)
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    subprocess.run(
+                        ['apt-get', 'download', 'workloadmgr'],
+                        check=True, cwd=tmpdir
+                    )
+                    deb_files = glob.glob(os.path.join(tmpdir, 'workloadmgr*.deb'))
+                    if deb_files:
+                        subprocess.run(
+                            ['dpkg', '--force-depends', '-i'] + deb_files,
+                            check=True
+                        )
+                        print("workloadmgr installed/upgraded successfully.")
+                    else:
+                        print("workloadmgr .deb not found after apt-get download.")
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to install/upgrade workloadmgr: {e}")
             continue
 
         if pkg.is_installed and pkg.is_upgradable:
