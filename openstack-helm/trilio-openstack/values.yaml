@@ -1214,6 +1214,12 @@ dependencies:
       jobs:
         - triliovault-wlm-ks-service
         - triliovault-datamover-ks-service
+    dms:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
     tests:
       jobs:
         - triliovault-wlm-db-sync

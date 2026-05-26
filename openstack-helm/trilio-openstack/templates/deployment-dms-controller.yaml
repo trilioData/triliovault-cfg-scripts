@@ -19,7 +19,6 @@ limitations under the License.
 {{- $tlsSecret := .Values.secrets.tls.workloads.wlm_api.internal -}}
 {{- end -}}
 
-
 {{- $serviceAccountName := "triliovault-dms" }}
 {{ tuple $envAll "dms" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 
@@ -146,6 +145,9 @@ spec:
             path: /lib/modules
         - name: run
           emptyDir: {}
+        - name: dev
+          hostPath:
+            path: /dev
         - name: triliovault-dms-etc
           secret:
             secretName: triliovault-etc-dms-controller

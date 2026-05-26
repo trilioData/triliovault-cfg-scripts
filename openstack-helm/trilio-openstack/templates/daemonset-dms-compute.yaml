@@ -12,11 +12,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.manifests.daemonset_dms }}
 {{- $envAll := . }}
 
 {{- $serviceAccountName := printf "%s-%s" "triliovault-dms" .Values.labels.dms_compute.node_selector_key }}
 {{ tuple $envAll "dms" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
