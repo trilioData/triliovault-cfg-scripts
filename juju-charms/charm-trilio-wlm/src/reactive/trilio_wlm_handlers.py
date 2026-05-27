@@ -15,6 +15,7 @@ import glob
 import os
 import pwd
 import grp
+import socket
 import tempfile
 import subprocess
 import json
@@ -269,7 +270,7 @@ def render_config(*args):
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'node_id': hookenv.unit_private_ip(),
+        'node_id': socket.gethostname(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }

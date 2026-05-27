@@ -13,6 +13,7 @@ import os
 import pwd
 import grp
 import shutil
+import socket
 import tarfile
 import subprocess
 from charmhelpers.core.templating import render
@@ -140,7 +141,7 @@ def render_config(*args):
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'node_id': hookenv.unit_private_ip(),
+        'node_id': socket.gethostname(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
