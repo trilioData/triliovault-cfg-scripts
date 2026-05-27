@@ -80,6 +80,8 @@ spec:
               readOnly: true
             - name: run
               mountPath: /run
+            - name: pod-shared-triliovault-dms
+              mountPath: /tmp/pod-shared-triliovault-dms
       containers:
         - name: triliovault-dms
 {{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
