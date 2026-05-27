@@ -117,7 +117,7 @@ spec:
               mountPath: /etc/triliovault-dms/s3vaultfuse-global.conf
               subPath: s3vaultfuse-global.conf
               readOnly: true
-            - name: triliovault-datamover-bin
+            - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
               readOnly: true

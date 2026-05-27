@@ -6,7 +6,7 @@ COMMAND="${@:-start}"
 function start () {
 
   # Start dms with static base config + dynamic overrides (node_id, rabbitmq_url)
-  /usr/bin/python3 /usr/bin/triliovault-dms \
+  /usr/bin/python3 /usr/bin/trilio-dms-server \
       --config-file=/etc/triliovault-dms/server.conf \
       --config-file=/tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf
 
