@@ -34,7 +34,7 @@
       login_port: "{{ proxysql_admin_port | default(6032) }}"
       login_user: "{{ proxysql_login_user | default('kolla-admin') }}"
       login_password: "{{ proxysql_admin_password }}"
-      query: "INSERT INTO mysql_users (username, password, default_hostgroup, max_connections) VALUES ('{{ item.database_user }}', '{{ item.database_password }}', {{ triliovault_database_shard_id | default(0) }}, 200)"
+      query: "INSERT INTO mysql_users (username, password, default_hostgroup, max_connections) VALUES ('{{ item.database_user }}', '{{ item.database_password }}', {{ triliovault_database_shard_id | default(0) }}, 10000)"
   with_items: "{{ triliovault_db_details }}"
   run_once: True
   delegate_to: "{{ groups[item.group_name][0] }}"
