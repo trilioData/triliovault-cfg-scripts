@@ -19,5 +19,3 @@ images:
     triliovault_datamover: docker.io/trilio/trilio-datamover-helm:shruti-6.1-antelope-1
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1-antelope-1
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1-antelope-1
-    triliovault_dms: docker.io/trilio/trilio-dms-helm:shruti-6.1-antelope-1
-    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:shruti-6.1-antelope-1

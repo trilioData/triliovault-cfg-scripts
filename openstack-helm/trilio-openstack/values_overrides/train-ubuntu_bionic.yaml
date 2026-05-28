@@ -19,6 +19,4 @@ images:
     triliovault_datamover: docker.io/trilio/trilio-datamover-helm:dev10-train-ubuntu_bionic
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:dev2-train-ubuntu_bionic
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:dev2-train-ubuntu_bionic
-    triliovault_dms: docker.io/trilio/trilio-dms-helm:dev11-train-ubuntu_bionic
-    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:dev11-train-ubuntu_bionic
 ...
