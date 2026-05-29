@@ -8,13 +8,6 @@ options:
     type: string
     default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /"
     description: Repository address of triliovault packages
-  keystone-auth-url:
-    type: string
-    default: ""
-    description: |
-      Keystone internal authentication URL used by the trilio-dms server for
-      Barbican token validation (e.g. http://<keystone-host>:5000/v3).
-      Required for DMS to retrieve S3 credentials from Barbican at mount time.
   is-vmware-migration-enabled:
     type: boolean
     default: False

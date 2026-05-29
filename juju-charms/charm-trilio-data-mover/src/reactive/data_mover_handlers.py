@@ -94,6 +94,7 @@ def run_trilio_install_upgrade_packages(packages):
 @reactive.when_not('is-update-status-hook')
 @reactive.when("shared-db.available")
 @reactive.when("amqp.available")
+@reactive.when("identity-service.available")
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
     ceph = reactive.endpoint_from_flag("ceph.available")
@@ -127,8 +128,25 @@ def render_config(*args):
     amqp_vhost = amqp.vhost()
     transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
 
-    charm_config = config()
-    keystone_auth_url = charm_config.get('keystone-auth-url', '')
+    identity_service = {}
+    relation_ids = hookenv.relation_ids('identity-service')
+    if relation_ids:
+        relation_id = relation_ids[0]
+        for unit in hookenv.related_units(relation_id):
+            unit_data = hookenv.relation_get(unit=unit, rid=relation_id)
+            if unit_data:
+                identity_service.update(unit_data)
+                break
+
+    if not identity_service:
+        hookenv.log("No identity service data available", level=hookenv.ERROR)
+        return
+
+    keystone_auth_url = "{}://{}:{}/v3".format(
+        identity_service.get('auth_protocol', 'http'),
+        identity_service.get('auth_host', ''),
+        identity_service.get('auth_port', '5000'),
+    )
 
     root_uid = pwd.getpwnam('root').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid

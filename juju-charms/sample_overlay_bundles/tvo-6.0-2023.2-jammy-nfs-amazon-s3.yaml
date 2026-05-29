@@ -2,7 +2,6 @@ series: jammy
 variables:
   openstack-origin: &openstack-origin distro
   triliovault-pkg-source: &pkg-source "deb [trusted=yes] https://apt.fury.io/trilio-stable-6-2 /"
-  keystone-auth-url: &keystone-auth-url "http://<KEYSTONE_HOST>:5000/v3"
 
 machines:
   '1':
@@ -16,7 +15,6 @@ applications:
     channel: 6.2/stable
     options:
       triliovault-pkg-source: *pkg-source
-      keystone-auth-url: *keystone-auth-url
 
   trilio-data-mover-mysql-router:
     charm: mysql-router
@@ -79,6 +77,9 @@ relations:
     - mysql-innodb-cluster:db-router
 
   # Triliovault Datamover relations
+  # # relation with keystone
+  - - trilio-data-mover:identity-service
+    - keystone:identity-service
   # # relation with AMQP server
   - - trilio-data-mover:amqp
     - rabbitmq-server:amqp
