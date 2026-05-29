@@ -230,11 +230,13 @@ done
 echo ""
 echo " Result: $COUNT_PASSED passed | $COUNT_FAILED failed | $COUNT_SKIPPED skipped"
 echo "=========================================================="
-echo ""
-echo " Report saved to: $REPORT_FILE"
-echo "=========================================================="
 
 # Exit non-zero if any charm failed so CI can detect partial failures
 if [ "$COUNT_FAILED" -gt 0 ]; then
+    echo ""
+    echo "Build report: $REPORT_FILE"
     exit 1
 fi
+
+echo ""
+echo "Build report: $REPORT_FILE"
