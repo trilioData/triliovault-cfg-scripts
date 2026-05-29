@@ -3,7 +3,8 @@
 #
 # Builds and publishes T4O Juju charms to Charmhub.
 # Runs charmcraft clean, pack, and upload --release for each charm.
-# Writes a build report to build-report-<timestamp>.txt when done.
+# All output (logs + summary) is written to build-report-<timestamp>.txt
+# and printed to the console simultaneously.
 #
 # Usage:
 #   bash devops-build-publish.sh [charm]
@@ -113,22 +114,27 @@ fi
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPORT_FILE="$BASE_DIR/build-report-$(date '+%Y%m%d-%H%M%S').txt"
 
-# Result tracking (set by build_and_release_charm)
-declare -A RESULT_STATUS
-declare -A RESULT_REVISION
-declare -A RESULT_FILE
-_LAST_REVISION=""
-_LAST_CHARM_FILE=""
+# Tee all stdout and stderr to the report file and the console simultaneously
+exec > >(tee "$REPORT_FILE") 2>&1
 
 echo "=================================================="
 echo " T4O Juju Charms Build & Publish"
+echo " Date    : $(date '+%Y-%m-%d %H:%M:%S')"
 echo " Channel : $CHANNEL"
 if [ -n "$SINGLE_CHARM" ]; then
 echo " Charm   : $SINGLE_CHARM (single)"
 else
 echo " Charm   : all"
 fi
+echo " Report  : $REPORT_FILE"
 echo "=================================================="
+
+# Result tracking (populated by build_and_release_charm)
+declare -A RESULT_STATUS
+declare -A RESULT_REVISION
+declare -A RESULT_FILE
+_LAST_REVISION=""
+_LAST_CHARM_FILE=""
 
 build_and_release_charm() {
     local SHORT_NAME="$1"
@@ -205,40 +211,30 @@ for SHORT_NAME in "${ALL_CHARMS[@]}"; do
     fi
 done
 
-# Write report to file and stdout
-write_report() {
-    local OUT="$1"
-    printf "==========================================================\n" >> "$OUT"
-    printf " T4O Juju Charms Build & Publish Report\n" >> "$OUT"
-    printf " Date    : %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$OUT"
-    printf " Channel : %s\n" "$CHANNEL" >> "$OUT"
-    printf "==========================================================\n" >> "$OUT"
-    printf "\n" >> "$OUT"
-    printf " %-35s %-8s %-10s %s\n" "Charm" "Status" "Revision" "File" >> "$OUT"
-    printf " %-35s %-8s %-10s %s\n" "-----" "------" "--------" "----" >> "$OUT"
-    for SHORT_NAME in "${ALL_CHARMS[@]}"; do
-        local DIR_NAME="${CHARM_DIR_MAP[$SHORT_NAME]}"
-        local STATUS="${RESULT_STATUS[$SHORT_NAME]:-SKIPPED}"
-        local REVISION="${RESULT_REVISION[$SHORT_NAME]:--}"
-        local FILE="${RESULT_FILE[$SHORT_NAME]:--}"
-        printf " %-35s %-8s %-10s %s\n" "$DIR_NAME" "$STATUS" "$REVISION" "$FILE" >> "$OUT"
-    done
-    printf "\n" >> "$OUT"
-    printf "==========================================================\n" >> "$OUT"
-    printf " Summary: %d passed | %d failed | %d skipped\n" "$COUNT_PASSED" "$COUNT_FAILED" "$COUNT_SKIPPED" >> "$OUT"
-    printf "==========================================================\n" >> "$OUT"
-}
-
-# Write to report file
-write_report "$REPORT_FILE"
-
-# Print report to stdout
+# Print summary table (captured by tee into report file automatically)
 echo ""
-cat "$REPORT_FILE"
+echo "=========================================================="
+echo " Build & Publish Summary"
+echo " Date    : $(date '+%Y-%m-%d %H:%M:%S')"
+echo " Channel : $CHANNEL"
+echo "=========================================================="
+printf " %-35s %-8s %-10s %s\n" "Charm" "Status" "Revision" "File"
+printf " %-35s %-8s %-10s %s\n" "-----" "------" "--------" "----"
+for SHORT_NAME in "${ALL_CHARMS[@]}"; do
+    DIR_NAME="${CHARM_DIR_MAP[$SHORT_NAME]}"
+    STATUS="${RESULT_STATUS[$SHORT_NAME]:-SKIPPED}"
+    REVISION="${RESULT_REVISION[$SHORT_NAME]:--}"
+    FILE="${RESULT_FILE[$SHORT_NAME]:--}"
+    printf " %-35s %-8s %-10s %s\n" "$DIR_NAME" "$STATUS" "$REVISION" "$FILE"
+done
 echo ""
-echo "Report saved to: $REPORT_FILE"
+echo " Result: $COUNT_PASSED passed | $COUNT_FAILED failed | $COUNT_SKIPPED skipped"
+echo "=========================================================="
+echo ""
+echo " Report saved to: $REPORT_FILE"
+echo "=========================================================="
 
-# Exit with error if any charm failed
+# Exit non-zero if any charm failed so CI can detect partial failures
 if [ "$COUNT_FAILED" -gt 0 ]; then
     exit 1
 fi
