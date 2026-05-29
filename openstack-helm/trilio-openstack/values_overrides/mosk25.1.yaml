@@ -21,6 +21,3 @@ images:
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:6.1.2-maint-2-mosk25.1
     triliovault_dms: docker.io/trilio/trilio-dms-helm:6.1.2-maint-2-mosk25.1
     triliovault_dms_init: docker.io/trilio/trilio-dms-helm:6.1.2-maint-2-mosk25.1
-
-manifests:
-  job_wlm_cloud_trust: true
