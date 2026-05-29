@@ -23,7 +23,12 @@
 #   charm-trilio-horizon-plugin   OpenStack Horizon UI plugin
 #
 # Prerequisites:
-#   - charmcraft must be installed and logged in (charmcraft login)
+#   - charmcraft must be installed
+#   - Charmhub credentials available via one of:
+#       a) CHARMCRAFT_AUTH env var (base64 credentials string)
+#       b) Credentials file at ~/.charmhub-creds (export once with:
+#            charmcraft login --export ~/.charmhub-creds)
+#       c) Already logged in interactively (charmcraft login)
 #
 # Examples:
 #   bash devops-build-publish.sh
@@ -33,6 +38,14 @@
 set -e
 
 CHANNEL="${CHANNEL:-6.0/candidate}"
+
+# Load Charmhub credentials non-interactively if not already set
+CHARMHUB_CREDS_FILE="${CHARMHUB_CREDS_FILE:-$HOME/.charmhub-creds}"
+if [ -z "${CHARMCRAFT_AUTH:-}" ] && [ -f "$CHARMHUB_CREDS_FILE" ]; then
+    export CHARMCRAFT_AUTH
+    CHARMCRAFT_AUTH=$(cat "$CHARMHUB_CREDS_FILE")
+    echo "Loaded Charmhub credentials from $CHARMHUB_CREDS_FILE"
+fi
 
 usage() {
     cat <<EOF
