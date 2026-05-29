@@ -2,6 +2,11 @@ series: jammy
 variables:
   openstack-origin: &openstack-origin distro
   triliovault-pkg-source: &pkg-source "deb [trusted=yes] https://apt.fury.io/trilio-stable-6-2 /"
+  # Charm revisions — update these from build-report-*.txt after running devops-build-publish.sh
+  wlm-revision: &wlm-revision 1
+  data-mover-revision: &data-mover-revision 1
+  dm-api-revision: &dm-api-revision 1
+  horizon-plugin-revision: &horizon-plugin-revision 1
 
 machines:
   '1':
@@ -13,6 +18,7 @@ applications:
   trilio-data-mover:
     charm: trilio-charmers-trilio-data-mover
     channel: 6.2/stable
+    revision: *data-mover-revision
     options:
       triliovault-pkg-source: *pkg-source
 
@@ -22,6 +28,7 @@ applications:
   trilio-dm-api:
     charm: trilio-charmers-trilio-dm-api
     channel: 6.2/stable
+    revision: *dm-api-revision
     num_units: 1
     options:
       triliovault-pkg-source: *pkg-source
@@ -35,6 +42,7 @@ applications:
   trilio-horizon-plugin:
     charm: trilio-charmers-trilio-horizon-plugin
     channel: 6.2/stable
+    revision: *horizon-plugin-revision
     options:
       triliovault-pkg-source: *pkg-source
       openstack-encryption-support: True
@@ -45,6 +53,7 @@ applications:
   trilio-wlm:
     charm: trilio-charmers-trilio-wlm
     channel: 6.2/stable
+    revision: *wlm-revision
     num_units: 1
     options:
       triliovault-pkg-source: *pkg-source
