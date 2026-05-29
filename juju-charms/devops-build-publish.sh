@@ -123,6 +123,9 @@ build_and_release_charm() {
     echo " Cleaning previous build artifacts..."
     charmcraft clean
 
+    echo " Removing any existing .charm files..."
+    rm -f ./*.charm
+
     echo " Packing charm..."
     charmcraft pack
 
