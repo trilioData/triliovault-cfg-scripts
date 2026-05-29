@@ -62,6 +62,13 @@ Charm names (short):
 
 Channel: $CHANNEL  (override with CHANNEL=<channel>)
 
+Charmhub authentication (non-interactive):
+  Export credentials once:
+    charmcraft login --export ~/.charmhub-creds
+  The script loads ~/.charmhub-creds automatically on subsequent runs.
+  Or pass credentials directly:
+    CHARMCRAFT_AUTH=\$(cat ~/.charmhub-creds) $0
+
 Examples:
   $0
   $0 wlm
