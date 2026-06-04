@@ -117,10 +117,7 @@ spec:
               name: triliovault-wlm-etc
               readOnly: true
               subPath: wlm_logging.conf
-            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: object_store_logging.conf
+
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf

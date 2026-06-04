@@ -203,7 +203,7 @@ type: Opaque
 data:
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
   wlm_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm_logging | b64enc }}
-  object_store_logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.object_store_logging | b64enc }}
+
   policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
   fuse.conf: {{ .Values.conf.fuse | b64enc }}
   triliovault-wlm.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.wlm | b64enc }}

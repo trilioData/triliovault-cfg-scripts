@@ -19,7 +19,6 @@ limitations under the License.
 {{- $tlsSecret := .Values.secrets.tls.workloads.wlm_api.internal -}}
 {{- end -}}
 
-
 {{- $serviceAccountName := "triliovault-dms" }}
 {{ tuple $envAll "dms" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 
@@ -60,6 +59,29 @@ spec:
       imagePullSecrets:
         - name: triliovault-image-registry
 {{ end }}
+      initContainers:
+{{ tuple $envAll "dms" $envAll.Values.pod.mounts.triliovault_dms.init_container | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+        - name: dms-init
+{{ tuple $envAll "triliovault_dms_init" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_dms_init" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - /tmp/triliovault-dms-init.sh
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: triliovault-dms-bin
+              mountPath: /tmp/triliovault-dms-init.sh
+              subPath: triliovault-dms-init.sh
+              readOnly: true
+            - name: run
+              mountPath: /run
+            - name: pod-shared-triliovault-dms
+              mountPath: /tmp/pod-shared-triliovault-dms
       containers:
         - name: triliovault-dms
 {{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
@@ -93,10 +115,14 @@ spec:
               name: libmodules
               readOnly: true
             - name: varlogtriliovaultdms
-              mountPath: /var/log/triliovault-dms
+              mountPath: /var/log/triliovault
             - name: triliovault-dms-etc
               mountPath: /etc/triliovault-dms/server.conf
               subPath: server.conf
+              readOnly: true
+            - name: triliovault-dms-etc
+              mountPath: /etc/triliovault-dms/s3vaultfuse-global.conf
+              subPath: s3vaultfuse-global.conf
               readOnly: true
             - name: triliovault-dms-bin
               mountPath: /tmp/triliovault-dms.sh
@@ -123,13 +149,18 @@ spec:
         - name: libmodules
           hostPath:
             path: /lib/modules
+        - name: run
+          emptyDir: {}
+        - name: dev
+          hostPath:
+            path: /dev
         - name: triliovault-dms-etc
           secret:
             secretName: triliovault-etc-dms-controller
             defaultMode: 0444
         - name: triliovault-dms-bin
           configMap:
-            name: triliovault-bin-dms
+            name: triliovault-dms-bin
             defaultMode: 0555
         - name: pod-shared-triliovault-dms
           emptyDir: {}
