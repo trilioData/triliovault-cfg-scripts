@@ -42,6 +42,8 @@ RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-
     && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
 RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+RUN ln -s /usr/bin/workloadmgr-rootwrap /var/lib/kolla/venv/bin/workloadmgr-rootwrap
 
 ## Kolla specific settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start

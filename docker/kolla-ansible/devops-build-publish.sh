@@ -8,7 +8,7 @@
 #   bash devops-build-publish.sh <tag> <os_platform> [container]
 #
 # Arguments:
-#   tag          Docker image tag (any format), e.g. 5.2.7-2025.1
+#   tag          Docker image tag (any format), e.g. 6.2.0-2025.1
 #   os_platform  OS platform: rocky | ubuntu
 #   container    (optional) Build only this container:
 #                  trilio-datamover | trilio-datamover-api |
@@ -16,17 +16,17 @@
 #                If omitted, all 5 containers are built.
 #
 # Examples:
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky
-#   bash devops-build-publish.sh 5.2.7-2025.1 ubuntu
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-datamover
-#   bash devops-build-publish.sh 5.2.7-2025.1 rocky trilio-dms
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky
+#   bash devops-build-publish.sh 6.2.0-2025.1 ubuntu
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-datamover
+#   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-dms
 #
 # Published image format:
 #   docker.io/trilio/kolla-<platform>-<container>:<tag>
-#   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:5.2.7-2025.1
-#        docker.io/trilio/kolla-ubuntu-trilio-datamover:5.2.7-2025.1
-#        docker.io/trilio/kolla-rocky-trilio-dms:5.2.7-2025.1
-#        docker.io/trilio/kolla-ubuntu-trilio-dms:5.2.7-2025.1
+#   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:6.2.0-2025.1
+#        docker.io/trilio/kolla-ubuntu-trilio-datamover:6.2.0-2025.1
+#        docker.io/trilio/kolla-rocky-trilio-dms:6.2.0-2025.1
+#        docker.io/trilio/kolla-ubuntu-trilio-dms:6.2.0-2025.1
 
 set -e
 
@@ -34,7 +34,7 @@ usage() {
     cat <<EOF
 Usage: $0 <tag> <os_platform> [container]
 
-  tag          Docker image tag (any format), e.g. 5.2.7-2025.1
+  tag          Docker image tag (any format), e.g. 6.2.0-2025.1
   os_platform  OS platform to build for: rocky | ubuntu
   container    (optional) Build and publish a single container.
                If omitted, all 5 containers are built.
@@ -50,10 +50,10 @@ Published image format:
   docker.io/trilio/kolla-<platform>-<container>:<tag>
 
 Examples:
-  $0 5.2.7-2025.1 rocky
-  $0 5.2.7-2025.1 ubuntu
-  $0 5.2.7-2025.1 rocky trilio-datamover
-  $0 5.2.7-2025.1 rocky trilio-dms
+  $0 6.2.0-2025.1 rocky
+  $0 6.2.0-2025.1 ubuntu
+  $0 6.2.0-2025.1 rocky trilio-datamover
+  $0 6.2.0-2025.1 rocky trilio-dms
 
 Options:
   -h, --help   Show this help message and exit.
@@ -74,7 +74,7 @@ TAG="$1"
 PLATFORM="$2"
 SINGLE_CONTAINER="${3:-}"
 OPENSTACK_RELEASE="2025.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-1/"
+TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
 
 case "$PLATFORM" in
     rocky|ubuntu) ;;

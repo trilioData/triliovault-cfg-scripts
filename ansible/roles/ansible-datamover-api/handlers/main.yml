@@ -1,6 +1,0 @@
----
-- name: restart tvault-datamover-api
-  service: name=tvault-datamover-api state=restarted
-
-- name: update timezone
-  command: dpkg-reconfigure --frontend noninteractive tzdata

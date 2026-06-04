@@ -1,6 +1,0 @@
----
-- name: restart webserver
-  service: name={{WebServer}} state=restarted
-
-- name: update timezone
-  command: dpkg-reconfigure --frontend noninteractive tzdata
