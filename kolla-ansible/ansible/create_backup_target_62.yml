@@ -38,9 +38,9 @@
         name: bt_data
       delegate_to: localhost
 
-    - name: Set backup target name from type
+    - name: Set backup target name
       set_fact:
-        bt_name: "{{ bt_data.backup_target.type | lower | replace('_', '-') }}-backup-target-1"
+        bt_name: "{{ 'nfs' if bt_data.backup_target.type | lower == 'nfs' else 's3' }}-backup-target-1"
 
     - name: Create NFS backup target
       shell: >
