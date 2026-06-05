@@ -15,7 +15,6 @@
 #
 # Usage:
 #   ansible-playbook -i triliovault_inventory.txt create_backup_target_62.yml \
-#     -e backup_target_name=my-bt \
 #     [--tags create-backup-target-62]
 #
 # For S3 targets, supply the secret key via env var or extra var:
@@ -29,7 +28,6 @@
     - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
-    bt_name: "{{ backup_target_name | default('default-backup-target') }}"
     collected_file: "{{ backup_target_collected_file | default('existing_backup_targets.yaml') }}"
 
   tasks:
@@ -39,6 +37,10 @@
         file: "{{ collected_file }}"
         name: bt_data
       delegate_to: localhost
+
+    - name: Set backup target name from type
+      set_fact:
+        bt_name: "{{ bt_data.backup_target.type | lower | replace('_', '-') }}-backup-target-1"
 
     - name: Create NFS backup target
       shell: >
