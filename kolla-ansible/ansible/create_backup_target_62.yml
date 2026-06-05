@@ -15,9 +15,7 @@
 # the deploy/config step via get_cloud_details.yml).
 #
 # Usage:
-#   ansible-playbook -i <INVENTORY> \
-#     roles/triliovault/tasks/create_backup_target_62.yml \
-#     [--tags create-backup-target-62]
+#   ansible-playbook -i <INVENTORY> create_backup_target_62.yml
 #
 # For S3 targets, supply the secret key via env var or extra var:
 #   export TRILIOVAULT_S3_SECRET_KEY=<key>
@@ -26,8 +24,6 @@
 - name: Create T4O 6.2 backup target
   hosts: "{{ (groups[triliovault_wlm_api_group | default('triliovault-wlm-api')] | first) }}"
   gather_facts: false
-  tags:
-    - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
     cloudrc: "/etc/kolla/triliovault-cloudrc"
