@@ -15,25 +15,20 @@
 #
 # Usage:
 #   ansible-playbook -i triliovault_inventory.txt create_backup_target_62.yml \
-#     [-e backup_target_name=my-bt] \
-#     [-e backup_target_collected_file=existing_backup_targets.yaml] \
+#     -e backup_target_name=my-bt \
 #     [--tags create-backup-target-62]
 #
-# For S3 targets, export the S3 secret key before running:
+# For S3 targets, supply the secret key via env var or extra var:
 #   export TRILIOVAULT_S3_SECRET_KEY=<key>
-# Or pass it as an extra variable:
 #   -e triliovault_s3_secret_key=<key>
 
 - name: Create T4O 6.2 backup target
   hosts: "{{ (groups[triliovault_wlm_api_group | default('triliovault-wlm-api')] | first) }}"
   gather_facts: false
-  vars_files:
-    - /etc/kolla/globals.yml
   tags:
     - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
-    container_runtime: "{{ kolla_container_runtime | default('docker') }}"
     bt_name: "{{ backup_target_name | default('default-backup-target') }}"
     collected_file: "{{ backup_target_collected_file | default('existing_backup_targets.yaml') }}"
 
@@ -47,7 +42,7 @@
 
     - name: Create NFS backup target
       shell: >
-        {{ container_runtime }} exec {{ wlm_container }}
+        docker exec {{ wlm_container }}
         workloadmgr backup-target-create
         --name "{{ bt_name }}"
         --type nfs
@@ -79,7 +74,7 @@
 
     - name: Create S3 backup target
       shell: >
-        {{ container_runtime }} exec {{ wlm_container }}
+        docker exec {{ wlm_container }}
         workloadmgr backup-target-create
         --name "{{ bt_name }}"
         --type "{{ bt_data.backup_target.type }}"
@@ -97,7 +92,7 @@
 
     - name: Verify backup target list
       shell: >
-        {{ container_runtime }} exec {{ wlm_container }}
+        docker exec {{ wlm_container }}
         workloadmgr backup-target-list
       become: true
       register: bt_list_result
