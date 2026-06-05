@@ -32,6 +32,7 @@
     - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
+    container_runtime: "{{ kolla_container_runtime | default('docker') }}"
     bt_name: "{{ backup_target_name | default('default-backup-target') }}"
     openrc_file: "{{ backup_target_openrc | default('/etc/kolla/admin-openrc.sh') }}"
     collected_file: "{{ backup_target_collected_file | default('existing_backup_targets.yaml') }}"
@@ -51,39 +52,6 @@
     - name: Show backup target type
       debug:
         msg: "Backup target type: {{ bt_data.backup_target.type }}"
-
-    # -----------------------------------------------------------------------
-    # Detect container runtime (docker or podman)
-    # -----------------------------------------------------------------------
-    - name: Detect container runtime with running WLM container
-      shell: |
-        for rt in docker podman; do
-          if command -v "$rt" >/dev/null 2>&1 && \
-             "$rt" ps --format '{{ "{{" }}.Names{{ "}}" }}' 2>/dev/null | \
-             grep -q "^{{ wlm_container }}$"; then
-            echo "$rt"
-            exit 0
-          fi
-        done
-        echo "none"
-      register: container_runtime_result
-      changed_when: false
-      become: true
-
-    - name: Fail if WLM container not found
-      fail:
-        msg: >
-          Container '{{ wlm_container }}' not found via docker or podman.
-          Ensure T4O 6.2 is deployed and all containers are running.
-      when: container_runtime_result.stdout | trim == "none"
-
-    - name: Set container runtime fact
-      set_fact:
-        container_runtime: "{{ container_runtime_result.stdout | trim }}"
-
-    - name: Show detected container runtime
-      debug:
-        msg: "Container runtime: {{ container_runtime }}"
 
     # -----------------------------------------------------------------------
     # Copy OpenRC into the container so openstack CLI can authenticate
