@@ -9,14 +9,13 @@
 # Reads backup target config from existing_backup_targets.yaml produced by
 # collect_backup_targets.sh (run BEFORE the upgrade).
 #
-# workloadmgr and trilio-dms-cli execute inside the triliovault_wlm_api
-# container on the controller node — these tools ship inside the container
-# image and are not available on the host.
+# workloadmgr executes inside the triliovault_wlm_api container on the
+# controller node — it is not available on the host. For S3 targets,
+# workloadmgr handles Barbican storage internally (same as fresh install).
 #
 # Usage:
 #   ansible-playbook -i triliovault_inventory.txt create_backup_target_62.yml \
 #     [-e backup_target_name=my-bt] \
-#     [-e backup_target_openrc=/etc/kolla/admin-openrc.sh] \
 #     [-e backup_target_collected_file=existing_backup_targets.yaml] \
 #     [--tags create-backup-target-62]
 #
@@ -28,44 +27,24 @@
 - name: Create T4O 6.2 backup target
   hosts: "{{ (groups[triliovault_wlm_api_group | default('triliovault-wlm-api')] | first) }}"
   gather_facts: false
+  vars_files:
+    - /etc/kolla/globals.yml
   tags:
     - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
     container_runtime: "{{ kolla_container_runtime | default('docker') }}"
     bt_name: "{{ backup_target_name | default('default-backup-target') }}"
-    openrc_file: "{{ backup_target_openrc | default('/etc/kolla/admin-openrc.sh') }}"
     collected_file: "{{ backup_target_collected_file | default('existing_backup_targets.yaml') }}"
-    container_openrc_path: "/tmp/triliovault-cloudrc-bt-$$"
 
   tasks:
 
-    # -----------------------------------------------------------------------
-    # Load collected backup target config from the Ansible host
-    # -----------------------------------------------------------------------
     - name: Load backup target config from collected YAML
       include_vars:
         file: "{{ collected_file }}"
         name: bt_data
       delegate_to: localhost
 
-    - name: Show backup target type
-      debug:
-        msg: "Backup target type: {{ bt_data.backup_target.type }}"
-
-    # -----------------------------------------------------------------------
-    # Copy OpenRC into the container so openstack CLI can authenticate
-    # (needed for S3 backup targets only)
-    # -----------------------------------------------------------------------
-    - name: Copy OpenRC file into WLM container
-      shell: >
-        {{ container_runtime }} cp {{ openrc_file }} {{ wlm_container }}:{{ container_openrc_path }}
-      become: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    # -----------------------------------------------------------------------
-    # NFS backup target — create directly via workloadmgr inside container
-    # -----------------------------------------------------------------------
     - name: Create NFS backup target
       shell: >
         {{ container_runtime }} exec {{ wlm_container }}
@@ -76,18 +55,9 @@
         --nfs-options "{{ bt_data.backup_target.nfs_options | default('nolock,soft,timeo=180,intr,lookupcache=none') }}"
         --is-default true
       become: true
-      register: nfs_bt_result
       when: bt_data.backup_target.type | lower == 'nfs'
 
-    - name: Show NFS backup target creation output
-      debug:
-        var: nfs_bt_result.stdout_lines
-      when: bt_data.backup_target.type | lower == 'nfs'
-
-    # -----------------------------------------------------------------------
-    # S3 backup target
-    # -----------------------------------------------------------------------
-    - name: Set S3 secret key fact
+    - name: Set S3 secret key
       set_fact:
         s3_secret_key: >-
           {{
@@ -107,109 +77,24 @@
         - bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
         - s3_secret_key | default('') == ''
 
-    - name: Create DMS secret payload inside WLM container
-      shell: |
-        {{ container_runtime }} exec {{ wlm_container }} bash -c '
-          trilio-dms-cli secret-payload create \
-            --access-key "{{ bt_data.backup_target.s3_access_key }}" \
-            --secret-key "{{ s3_secret_key }}" \
-            --bucket "{{ bt_data.backup_target.s3_bucket }}" \
-            {% if bt_data.backup_target.s3_endpoint | default("") %}
-            --endpoint-url "{{ bt_data.backup_target.s3_endpoint }}" \
-            {% endif %}
-            -o /tmp/trilio_secret_payload.json \
-          && cat /tmp/trilio_secret_payload.json
-        '
-      become: true
-      register: dms_payload_result
-      no_log: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Resolve Barbican public endpoint inside WLM container
-      shell: |
-        {{ container_runtime }} exec {{ wlm_container }} bash -c '
-          source {{ container_openrc_path }}
-          OS_INTERFACE=public openstack endpoint list \
-            --service key-manager --interface public -f json 2>/dev/null | \
-          python3 -c "
-        import json, sys
-        eps = json.load(sys.stdin)
-        if not eps: sys.exit(1)
-        url = eps[0][\"URL\"].rstrip(\"/\")
-        if url.endswith(\"/v1\"):
-            url = url[:-3]
-        print(url)
-        "
-        '
-      become: true
-      register: barbican_endpoint_result
-      changed_when: false
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Fail if Barbican endpoint not found
-      fail:
-        msg: "Could not resolve Barbican public endpoint from keystone catalog."
-      when:
-        - bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-        - barbican_endpoint_result.stdout | trim == ''
-
-    - name: Store S3 credentials in Barbican inside WLM container
-      shell: |
-        {{ container_runtime }} exec {{ wlm_container }} bash -c '
-          source {{ container_openrc_path }}
-          openstack secret store \
-            --name "secret-key-{{ bt_name | replace(" ", "-") }}" \
-            --payload "$(cat /tmp/trilio_secret_payload.json)" \
-            -f json
-        '
-      become: true
-      register: barbican_store_result
-      no_log: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Build normalised Barbican secret href
-      set_fact:
-        secret_href: >-
-          {{
-            barbican_endpoint_result.stdout | trim
-          }}/v1/secrets/{{
-            (barbican_store_result.stdout | from_json).get('Secret href', '')
-            | regex_search('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-          }}
-      no_log: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Create S3 backup target via workloadmgr inside WLM container
+    - name: Create S3 backup target
       shell: >
         {{ container_runtime }} exec {{ wlm_container }}
         workloadmgr backup-target-create
         --name "{{ bt_name }}"
         --type "{{ bt_data.backup_target.type }}"
-        --secret-ref "{{ secret_href }}"
+        --s3-access-key "{{ bt_data.backup_target.s3_access_key }}"
+        --s3-secret-key "{{ s3_secret_key }}"
+        --s3-bucket-name "{{ bt_data.backup_target.s3_bucket }}"
+        --s3-region "{{ bt_data.backup_target.s3_region | default('us-east-1') }}"
+        {% if bt_data.backup_target.s3_endpoint | default('') %}
+        --s3-endpoint-url "{{ bt_data.backup_target.s3_endpoint }}"
+        {% endif %}
         --is-default true
       become: true
-      register: s3_bt_result
+      no_log: true
       when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
 
-    - name: Show S3 backup target creation output
-      debug:
-        var: s3_bt_result.stdout_lines
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    # -----------------------------------------------------------------------
-    # Clean up temp files in container
-    # -----------------------------------------------------------------------
-    - name: Remove temp files from WLM container
-      shell: >
-        {{ container_runtime }} exec {{ wlm_container }}
-        rm -f {{ container_openrc_path }} /tmp/trilio_secret_payload.json
-      become: true
-      ignore_errors: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    # -----------------------------------------------------------------------
-    # Verify
-    # -----------------------------------------------------------------------
     - name: Verify backup target list
       shell: >
         {{ container_runtime }} exec {{ wlm_container }}
