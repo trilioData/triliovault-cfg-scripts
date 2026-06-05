@@ -10,11 +10,13 @@
 # collect_backup_targets.sh (run BEFORE the upgrade).
 #
 # workloadmgr executes inside the triliovault_wlm_api container on the
-# controller node — it is not available on the host. For S3 targets,
-# workloadmgr handles Barbican storage internally (same as fresh install).
+# controller node. Cloud admin credentials are sourced from the rendered
+# triliovault-cloudrc file at /etc/kolla/triliovault-cloudrc (produced by
+# the deploy/config step via get_cloud_details.yml).
 #
 # Usage:
-#   ansible-playbook -i triliovault_inventory.txt create_backup_target_62.yml \
+#   ansible-playbook -i <INVENTORY> \
+#     roles/triliovault/tasks/create_backup_target_62.yml \
 #     [--tags create-backup-target-62]
 #
 # For S3 targets, supply the secret key via env var or extra var:
@@ -28,6 +30,7 @@
     - create-backup-target-62
   vars:
     wlm_container: "triliovault_wlm_api"
+    cloudrc: "/etc/kolla/triliovault-cloudrc"
     collected_file: "{{ backup_target_collected_file | default('existing_backup_targets.yaml') }}"
 
   tasks:
@@ -43,14 +46,20 @@
         bt_name: "{{ 'nfs' if bt_data.backup_target.type | lower == 'nfs' else 's3' }}-backup-target-1"
 
     - name: Create NFS backup target
-      shell: >
-        docker exec {{ wlm_container }}
-        workloadmgr backup-target-create
-        --name "{{ bt_name }}"
-        --type nfs
-        --nfs-shares "{{ bt_data.backup_target.nfs_shares }}"
-        --nfs-options "{{ bt_data.backup_target.nfs_options | default('nolock,soft,timeo=180,intr,lookupcache=none') }}"
-        --is-default true
+      shell: |
+        set -a; source {{ cloudrc }}; set +a
+        docker exec \
+          -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
+          -e OS_PROJECT_NAME -e OS_PROJECT_ID \
+          -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          {{ wlm_container }} \
+          workloadmgr backup-target-create \
+            --name "{{ bt_name }}" \
+            --type nfs \
+            --nfs-shares "{{ bt_data.backup_target.nfs_shares }}" \
+            --nfs-options "{{ bt_data.backup_target.nfs_options | default('nolock,soft,timeo=180,intr,lookupcache=none') }}" \
+            --is-default true
       become: true
       when: bt_data.backup_target.type | lower == 'nfs'
 
@@ -75,27 +84,39 @@
         - s3_secret_key | default('') == ''
 
     - name: Create S3 backup target
-      shell: >
-        docker exec {{ wlm_container }}
-        workloadmgr backup-target-create
-        --name "{{ bt_name }}"
-        --type "{{ bt_data.backup_target.type }}"
-        --s3-access-key "{{ bt_data.backup_target.s3_access_key }}"
-        --s3-secret-key "{{ s3_secret_key }}"
-        --s3-bucket-name "{{ bt_data.backup_target.s3_bucket }}"
-        --s3-region "{{ bt_data.backup_target.s3_region | default('us-east-1') }}"
-        {% if bt_data.backup_target.s3_endpoint | default('') %}
-        --s3-endpoint-url "{{ bt_data.backup_target.s3_endpoint }}"
-        {% endif %}
-        --is-default true
+      shell: |
+        set -a; source {{ cloudrc }}; set +a
+        docker exec \
+          -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
+          -e OS_PROJECT_NAME -e OS_PROJECT_ID \
+          -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          {{ wlm_container }} \
+          workloadmgr backup-target-create \
+            --name "{{ bt_name }}" \
+            --type "{{ bt_data.backup_target.type }}" \
+            --s3-access-key "{{ bt_data.backup_target.s3_access_key }}" \
+            --s3-secret-key "{{ s3_secret_key }}" \
+            --s3-bucket-name "{{ bt_data.backup_target.s3_bucket }}" \
+            --s3-region "{{ bt_data.backup_target.s3_region | default('us-east-1') }}" \
+            {% if bt_data.backup_target.s3_endpoint | default('') %}
+            --s3-endpoint-url "{{ bt_data.backup_target.s3_endpoint }}" \
+            {% endif %}
+            --is-default true
       become: true
       no_log: true
       when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
 
     - name: Verify backup target list
-      shell: >
-        docker exec {{ wlm_container }}
-        workloadmgr backup-target-list
+      shell: |
+        set -a; source {{ cloudrc }}; set +a
+        docker exec \
+          -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
+          -e OS_PROJECT_NAME -e OS_PROJECT_ID \
+          -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          {{ wlm_container }} \
+          workloadmgr backup-target-list
       become: true
       register: bt_list_result
       changed_when: false
