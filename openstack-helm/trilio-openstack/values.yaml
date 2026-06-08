@@ -67,6 +67,7 @@ images:
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:shruti-6.1.0-bobcat-2
     triliovault_dms: docker.io/trilio/trilio-dms-helm:shruti-6.1.0-bobcat-2
+    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:shruti-6.1.0-bobcat-2
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -129,6 +130,15 @@ pod:
           readOnlyRootFilesystem: false
           runAsUser: 0
           runAsGroup: 42424
+        triliovault_dms:
+          readOnlyRootFilesystem: false
+          privileged: true
+          runAsUser: 42424
+          runAsGroup: 42424
+        triliovault_dms_init:
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsGroup: 42424
         wlm_cloud_trust_creation:
           readOnlyRootFilesystem: false
           runAsUser: 42424
@@ -175,6 +185,11 @@ pod:
     triliovault_datamover:
       init_container: null
       triliovault_datamover:
+        volumeMounts:
+        volumes:
+    triliovault_dms:
+      init_container: null
+      triliovault_dms:
         volumeMounts:
         volumes:
     triliovault_tests:
@@ -815,8 +830,7 @@ conf:
   datamover:
     DEFAULT:
       log_config_append: /etc/triliovault-datamover/datamover_logging.conf
-      vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: ''
+
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: "/var/lib/trilio/triliovault-mounts"
       max_uploads_pending: 3
@@ -862,8 +876,7 @@ conf:
       neutron_api_insecure: False
       state_path: /opt/stack/data/workloadmgr
       vault_storage_das_device: none
-      vault_s3_auth_version: DEFAULT
-      vault_s3_ssl_cert: "/etc/triliovault-wlm/s3-cert.pem"
+
       vault_data_directory_old: "/var/triliovault"
       vault_data_directory: /var/lib/trilio/triliovault-mounts
       #The amount of time(in hrs) that snapshot upload operation should wait for the upload
@@ -1107,18 +1120,18 @@ conf:
       log_file: /var/log/triliovault/trilio-dms-server.log
       log_max_bytes: '26214400'
       log_backup_count: 5
+
       s3vaultfuse_bin: /usr/bin/s3vaultfuse.py
       rootwrap_bin: /usr/bin/trilio-dms-rootwrap
       rootwrap_conf: /etc/triliovault-dms/rootwrap.conf
       worker_threads: 10
-      # Barbican SSL verification (optional, default: False)
-      # Set to True to enable SSL certificate verification for Barbican API
-      # Set to False to disable SSL verification (useful for self-signed certificates)
-      barbican_ssl_verify: False
-      # Barbican CA bundle path (optional, default: None - uses system CA bundle)
-      # Use this for custom/self-signed certificates
-      # barbican_ca_bundle = /etc/ssl/certs/custom-ca-bundle.crt
 
+      # Set to 'quorum' if your RabbitMQ cluster uses quorum queues (>= 3.13)
+      # rabbitmq_queue_type: quorum
+
+      # Barbican SSL verification
+      barbican_ssl_verify: True
+      barbican_ca_bundle: /etc/ssl/certs/openstack-ca-bundle.pem
 
 bootstrap:
   enabled: false
@@ -1201,6 +1214,12 @@ dependencies:
       jobs:
         - triliovault-wlm-ks-service
         - triliovault-datamover-ks-service
+    dms:
+      jobs:
+        - triliovault-wlm-db-sync
+        - triliovault-wlm-rabbit-init
+        - triliovault-wlm-ks-endpoints
+        - triliovault-wlm-ks-user
     tests:
       jobs:
         - triliovault-wlm-db-sync

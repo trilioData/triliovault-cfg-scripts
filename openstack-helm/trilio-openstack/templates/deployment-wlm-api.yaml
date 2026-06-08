@@ -125,10 +125,7 @@ spec:
             - name: trilio-mounts
               mountPath: /var/lib/trilio
               mountPropagation: Bidirectional
-            - mountPath: /etc/triliovault-object-store/object_store_logging.conf
-              name: triliovault-wlm-etc
-              readOnly: true
-              subPath: object_store_logging.conf
+
             - name: triliovault-wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
               subPath: triliovault-wlm.conf

@@ -4,7 +4,7 @@
 # Reads T4O 5.2 backup target configuration from globals.yml and saves it
 # to existing_backup_targets.yaml BEFORE upgrading to T4O 6.2.
 #
-# This file is used as input for upgrade_backup_target_62.sh after the upgrade.
+# This file is used as input for create_backup_target_62.yml after the upgrade.
 # It must be run before the upgrade because cleanup_backup_targets.yml removes
 # backup target variables from globals.yml as part of the upgrade cleanup.
 #
@@ -23,9 +23,6 @@
 #
 # Output:
 #   existing_backup_targets.yaml  (path overridable with -o)
-#
-# NOTE: The S3 secret key (triliovault_s3_secret_key) is written REDACTED.
-#       You will be prompted to enter it when running upgrade_backup_target_62.sh.
 
 set -e
 
@@ -85,7 +82,7 @@ if bt_type.lower() == 'nfs':
 
 elif bt_type.lower() in ('amazon_s3', 'other_s3_compatible'):
     config['s3_access_key']          = d.get('triliovault_s3_access_key', '')
-    config['s3_secret_key']          = 'REDACTED'
+    config['s3_secret_key']          = d.get('triliovault_s3_secret_key', '')
     config['s3_bucket']              = d.get('triliovault_s3_bucket_name', '')
     config['s3_region']              = d.get('triliovault_s3_region_name', 'us-east-1')
     config['s3_endpoint']            = d.get('triliovault_s3_endpoint_url', '')
@@ -96,7 +93,7 @@ elif bt_type.lower() in ('amazon_s3', 'other_s3_compatible'):
     config['s3_ssl_cert_file_name']  = d.get('triliovault_s3_ssl_cert_file_name', '')
     config['copy_ceph_s3_ssl_cert']  = d.get('triliovault_copy_ceph_s3_ssl_cert', False)
     print("  S3 access key      : " + str(config['s3_access_key']))
-    print("  S3 secret key      : REDACTED (enter manually during upgrade_backup_target_62.sh)")
+    print("  S3 secret key      : " + ("(set)" if config['s3_secret_key'] else "(empty)"))
     print("  S3 bucket          : " + str(config['s3_bucket']))
     print("  S3 region          : " + str(config['s3_region']))
     print("  S3 endpoint        : " + str(config['s3_endpoint'] or '(default)'))
@@ -116,9 +113,6 @@ with open(output_path, 'w') as f:
     f.write("# T4O 5.2 Backup Target Configuration\n")
     f.write("# Collected before upgrade to T4O 6.2\n")
     f.write("#\n")
-    f.write("# IMPORTANT: S3 secret key is REDACTED. You will be prompted for it\n")
-    f.write("# when running upgrade_backup_target_62.sh after the upgrade.\n")
-    f.write("#\n")
     yaml.dump(output, f, default_flow_style=False, allow_unicode=True)
 
 print("  Written: " + output_path)
@@ -130,4 +124,4 @@ log ""
 log "Next steps:"
 log "  1. Upgrade to T4O 6.2:  kolla-ansible upgrade --tags triliovault"
 log "  2. Run cleanup:          ansible-playbook cleanup_backup_targets.yml --tags upgrade-and-clean-backup-target-mounts"
-log "  3. Re-create BT:         bash upgrade_backup_target_62.sh -f $OUTPUT --openrc /etc/kolla/admin-openrc.sh"
+log "  3. Re-create BT:         ansible-playbook -i <INVENTORY> create_backup_target_62.yml"

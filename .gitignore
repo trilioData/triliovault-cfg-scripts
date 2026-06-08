@@ -11,6 +11,10 @@ deps/
 results.txt
 *.db
 tvo-chart-manifest.yaml
+.claude/
+kubeconfig/
+# Ignore DMS investigation folder
+DMS/
 .claude/settings.local.json
 # Local environment config — contains IPs, never commit
 environments.yaml
