@@ -51,7 +51,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           workloadmgr backup-target-create \
             --btt-name "{{ bt_name }}" \
@@ -83,7 +83,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           trilio-dms-cli secret-payload create \
             --access-key "{{ bt_data.backup_target.s3_access_key }}" \
@@ -104,7 +104,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           openstack secret store \
             --name "secret-key-{{ bt_name }}" \
@@ -123,7 +123,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_CACERT \
           -e OS_INTERFACE=public \
           {{ wlm_container }} \
           openstack endpoint list \
@@ -150,7 +150,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           workloadmgr backup-target-create \
             --btt-name "{{ bt_name }}" \
@@ -173,7 +173,7 @@
           -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
           -e OS_PROJECT_NAME -e OS_PROJECT_ID \
           -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE \
+          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           workloadmgr backup-target-list
       become: true
