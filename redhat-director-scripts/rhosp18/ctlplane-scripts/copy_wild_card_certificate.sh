@@ -5,17 +5,13 @@
 # It copies the wildcard cert secret from the 'openstack' namespace to the
 # 'trilio-openstack' namespace under all the secret names Trilio expects.
 #
-# Usage: ./create_wildcard_cert_secrets.sh <wildcard-secret-name> <ca-bundle-secret-name>
-# Example: ./create_wildcard_cert_secrets.sh <openstack-wildcard-cert-secret-name> <ca-bundle-secret-name>
+# Usage: ./copy_wild_card_certificate.sh <wildcard-secret-name>
+# Example: ./copy_wild_card_certificate.sh <openstack-wildcard-cert-secret-name>
 #
 # Arguments:
 #   <wildcard-secret-name>  : Name of the wildcard TLS secret in the 'openstack' namespace
-#   <ca-bundle-secret-name> : Name of the CA bundle secret in the 'openstack' namespace.
-#                             If found, it is copied to 'trilio-openstack' as 'combined-ca-bundle'.
-#                             If not found, a message is printed and the script continues.
 #
-# Pre-requisite: The wildcard certificate must already include the following DNS names
-# (PUBLIC_ENDPOINT_DOMAIN is auto-detected from the openstackclient pod):
+# Pre-requisite: The wildcard certificate must already include the following DNS names:
 #   *.trilio-openstack.svc
 #   *.trilio-openstack.svc.cluster.local
 #   *.<PUBLIC_ENDPOINT_DOMAIN>
@@ -23,50 +19,17 @@
 
 set -e
 
-if [[ -z "$1" || -z "$2" ]]; then
-  echo "Usage: $0 <wildcard-secret-name> <ca-bundle-secret-name>"
+if [[ -z "$1" ]]; then
+  echo "Usage: $0 <wildcard-secret-name>"
   echo "  <wildcard-secret-name>  : Name of the wildcard TLS secret in the 'openstack' namespace"
-  echo "  <ca-bundle-secret-name> : Name of the CA bundle secret in the 'openstack' namespace"
   exit 1
 fi
 
 WILDCARD_SECRET_NAME="$1"
-CA_BUNDLE_INPUT_SECRET="$2"
 SOURCE_NAMESPACE="openstack"
 TARGET_NAMESPACE="trilio-openstack"
-
-# ── Auto-detect PUBLIC_ENDPOINT_DOMAIN ────────────────────────────────────────
-echo "Detecting PUBLIC_ENDPOINT_DOMAIN from openstackclient pod..."
-
-OC_POD=$(oc get pod -n "$SOURCE_NAMESPACE" -l app=openstackclient \
-  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-
-if [[ -z "$OC_POD" ]]; then
-  echo "Error: openstackclient pod not found in '$SOURCE_NAMESPACE' namespace"
-  exit 1
-fi
-
-ENDPOINT_URL=$(oc exec -n "$SOURCE_NAMESPACE" "$OC_POD" -- \
-  openstack endpoint list --interface public --service identity -f value -c URL \
-  2>/dev/null | head -1)
-
-if [[ -z "$ENDPOINT_URL" ]]; then
-  echo "Error: Failed to retrieve public Keystone endpoint URL from openstackclient pod"
-  exit 1
-fi
-
-# Extract domain: https://keystone-public-openstack.apps.example.com:5000 -> apps.example.com
-HOSTNAME=$(echo "$ENDPOINT_URL" | sed 's|https://||;s|/.*||;s|:.*||')
-PUBLIC_ENDPOINT_DOMAIN=$(echo "$HOSTNAME" | cut -d'.' -f2-)
-
-echo "Detected PUBLIC_ENDPOINT_DOMAIN: $PUBLIC_ENDPOINT_DOMAIN"
-echo ""
-echo "The wildcard certificate must cover the following Trilio DNS names:"
-echo "  *.trilio-openstack.svc"
-echo "  *.trilio-openstack.svc.cluster.local"
-echo "  *.$PUBLIC_ENDPOINT_DOMAIN"
-echo "  *.trilio-rabbitmq-cluster-nodes.trilio-openstack"
-echo ""
+CA_BUNDLE_SECRET="combined-ca-bundle"
+OC_POD="openstackclient"
 
 # ── Validate wildcard secret exists ───────────────────────────────────────────
 if ! oc get secret "$WILDCARD_SECRET_NAME" -n "$SOURCE_NAMESPACE" > /dev/null 2>&1; then
@@ -88,13 +51,6 @@ oc get secret "$WILDCARD_SECRET_NAME" -n "$SOURCE_NAMESPACE" \
 oc get secret "$WILDCARD_SECRET_NAME" -n "$SOURCE_NAMESPACE" \
   -o jsonpath='{.data.tls\.key}' | base64 -d > "$TEMP_DIR/tls.key"
 
-# Extract CA cert if present in the wildcard secret
-CA_CRT=$(oc get secret "$WILDCARD_SECRET_NAME" -n "$SOURCE_NAMESPACE" \
-  -o jsonpath='{.data.ca\.crt}' 2>/dev/null || true)
-if [[ -n "$CA_CRT" ]]; then
-  echo "$CA_CRT" | base64 -d > "$TEMP_DIR/ca.crt"
-fi
-
 # ── Create all Trilio cert secrets in trilio-openstack ────────────────────────
 TRILIO_CERT_SECRETS=(
   "cert-triliovault-wlm-public-svc"
@@ -115,29 +71,47 @@ for SECRET_NAME in "${TRILIO_CERT_SECRETS[@]}"; do
     --cert="$TEMP_DIR/tls.crt" \
     --key="$TEMP_DIR/tls.key"
 
-  if [[ -f "$TEMP_DIR/ca.crt" ]]; then
-    oc patch secret "$SECRET_NAME" -n "$TARGET_NAMESPACE" \
-      --type='json' \
-      -p="[{\"op\": \"add\", \"path\": \"/data/ca.crt\", \"value\": \"$(base64 -w0 "$TEMP_DIR/ca.crt")\"}]"
-  fi
-
   oc describe secret "$SECRET_NAME" -n "$TARGET_NAMESPACE"
 done
 
 # ── Copy CA bundle to trilio-openstack as combined-ca-bundle ──────────────────
 echo ""
-echo "Checking for CA bundle secret '$CA_BUNDLE_INPUT_SECRET' in '$SOURCE_NAMESPACE'..."
+echo "Checking for CA bundle secret '$CA_BUNDLE_SECRET' in '$SOURCE_NAMESPACE'..."
 
-if ! oc get secret "$CA_BUNDLE_INPUT_SECRET" -n "$SOURCE_NAMESPACE" > /dev/null 2>&1; then
-  echo "Secret '$CA_BUNDLE_INPUT_SECRET' does not exist in '$SOURCE_NAMESPACE'. Skipping combined-ca-bundle creation."
+if ! oc get secret "$CA_BUNDLE_SECRET" -n "$SOURCE_NAMESPACE" > /dev/null 2>&1; then
+  echo "INFO: Secret '$CA_BUNDLE_SECRET' was NOT found in '$SOURCE_NAMESPACE' namespace."
+  echo "      This is expected when using a certificate signed by a public CA."
+  echo "      Extracting system CA bundle from openstackclient pod to create 'combined-ca-bundle'..."
+
+  oc exec -n "$SOURCE_NAMESPACE" "$OC_POD" -- \
+    cat /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem > "$TEMP_DIR/tls-ca-bundle.pem"
+
+  if [[ ! -s "$TEMP_DIR/tls-ca-bundle.pem" ]]; then
+    echo "WARNING: Failed to extract CA bundle from openstackclient pod '$OC_POD'."
+    echo "         Create 'combined-ca-bundle' manually in '$TARGET_NAMESPACE'."
+  else
+    oc delete secret "combined-ca-bundle" -n "$TARGET_NAMESPACE" 2>/dev/null || true
+
+    oc create secret generic "combined-ca-bundle" -n "$TARGET_NAMESPACE" \
+      --from-file=internal-ca-bundle.pem="$TEMP_DIR/tls-ca-bundle.pem" \
+      --from-file=tls-ca-bundle.pem="$TEMP_DIR/tls-ca-bundle.pem"
+
+    echo "INFO: Secret 'combined-ca-bundle' created in '$TARGET_NAMESPACE' using system CA bundle"
+    echo "      extracted from openstackclient pod '$OC_POD' in '$SOURCE_NAMESPACE' namespace."
+  fi
 else
-  INTERNAL_CA_BUNDLE=$(oc get secret "$CA_BUNDLE_INPUT_SECRET" -n "$SOURCE_NAMESPACE" \
+  echo "INFO: Secret '$CA_BUNDLE_SECRET' found in '$SOURCE_NAMESPACE' namespace."
+  echo "      This indicates RHOSO is using an internal/self-signed CA."
+  echo "      Copying '$CA_BUNDLE_SECRET' from '$SOURCE_NAMESPACE' to '$TARGET_NAMESPACE'..."
+
+  INTERNAL_CA_BUNDLE=$(oc get secret "$CA_BUNDLE_SECRET" -n "$SOURCE_NAMESPACE" \
     -o jsonpath='{.data.internal-ca-bundle\.pem}' | base64 -d)
-  TLS_CA_BUNDLE=$(oc get secret "$CA_BUNDLE_INPUT_SECRET" -n "$SOURCE_NAMESPACE" \
+  TLS_CA_BUNDLE=$(oc get secret "$CA_BUNDLE_SECRET" -n "$SOURCE_NAMESPACE" \
     -o jsonpath='{.data.tls-ca-bundle\.pem}' | base64 -d)
 
   if [[ -z "$INTERNAL_CA_BUNDLE" || -z "$TLS_CA_BUNDLE" ]]; then
-    echo "Secret '$CA_BUNDLE_INPUT_SECRET' found but could not extract expected data. Skipping combined-ca-bundle creation."
+    echo "WARNING: Secret '$CA_BUNDLE_SECRET' found but could not extract 'internal-ca-bundle.pem'"
+    echo "         or 'tls-ca-bundle.pem' data. Skipping combined-ca-bundle creation."
   else
     echo "$INTERNAL_CA_BUNDLE" > "$TEMP_DIR/internal-ca-bundle.pem"
     echo "$TLS_CA_BUNDLE" > "$TEMP_DIR/tls-ca-bundle.pem"
@@ -148,7 +122,8 @@ else
       --from-file=internal-ca-bundle.pem="$TEMP_DIR/internal-ca-bundle.pem" \
       --from-file=tls-ca-bundle.pem="$TEMP_DIR/tls-ca-bundle.pem"
 
-    echo "Secret 'combined-ca-bundle' created in '$TARGET_NAMESPACE'."
+    echo "INFO: Secret 'combined-ca-bundle' successfully copied from '$SOURCE_NAMESPACE'"
+    echo "      to '$TARGET_NAMESPACE' namespace."
   fi
 fi
 
