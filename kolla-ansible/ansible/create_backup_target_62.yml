@@ -16,10 +16,6 @@
 #
 # Usage:
 #   ansible-playbook -i <INVENTORY> create_backup_target_62.yml
-#
-# For S3 targets, supply the secret key via env var or extra var:
-#   export TRILIOVAULT_S3_SECRET_KEY=<key>
-#   -e triliovault_s3_secret_key=<key>
 
 - name: Create T4O 6.2 backup target
   hosts: "{{ (groups[triliovault_wlm_api_group | default('triliovault-wlm-api')] | first) }}"
@@ -59,26 +55,6 @@
       become: true
       when: bt_data.backup_target.type | lower == 'nfs'
 
-    - name: Set S3 secret key
-      set_fact:
-        s3_secret_key: >-
-          {{
-            triliovault_s3_secret_key
-            if triliovault_s3_secret_key is defined and triliovault_s3_secret_key != ''
-            else lookup('env', 'TRILIOVAULT_S3_SECRET_KEY')
-          }}
-      no_log: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Fail if S3 secret key not provided
-      fail:
-        msg: >
-          S3 secret key is required. Either export TRILIOVAULT_S3_SECRET_KEY
-          or pass -e triliovault_s3_secret_key=<key>.
-      when:
-        - bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-        - s3_secret_key | default('') == ''
-
     - name: Create S3 backup target
       shell: |
         set -a; source {{ cloudrc }}; set +a
@@ -92,7 +68,7 @@
             --name "{{ bt_name }}" \
             --type "{{ bt_data.backup_target.type }}" \
             --s3-access-key "{{ bt_data.backup_target.s3_access_key }}" \
-            --s3-secret-key "{{ s3_secret_key }}" \
+            --s3-secret-key "{{ bt_data.backup_target.s3_secret_key }}" \
             --s3-bucket-name "{{ bt_data.backup_target.s3_bucket }}" \
             --s3-region "{{ bt_data.backup_target.s3_region | default('us-east-1') }}" \
             {% if bt_data.backup_target.s3_endpoint | default('') %}
