@@ -33,9 +33,30 @@ echo "[]" > $OUTPUT_FILE
 WLM_POD=$(kubectl get pods -n $ACTIVE_NAMESPACE -l component=wlm-api -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || true)
 if [ -n "$WLM_POD" ]; then
     echo "Querying existing WLM pod: $WLM_POD for 6.1 backup targets..."
-    
-    # We must ensure the API is responding
-    WLM_BT_JSON=$(kubectl exec -n $ACTIVE_NAMESPACE $WLM_POD -- bash -c "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure backup-target-list --format json" 2>/dev/null || echo "[]")
+
+    # Extract admin credentials from the keystone-admin secret (service user gets HTTP 401)
+    ADMIN_SECRET="triliovault-keystone-admin"
+    OS_AUTH_URL=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_AUTH_URL}' 2>/dev/null | base64 --decode || true)
+    OS_PASSWORD=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_PASSWORD}' 2>/dev/null | base64 --decode || true)
+    OS_USERNAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_USERNAME}' 2>/dev/null | base64 --decode || true)
+    OS_PROJECT_NAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_PROJECT_NAME}' 2>/dev/null | base64 --decode || true)
+    OS_USER_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_USER_DOMAIN_NAME}' 2>/dev/null | base64 --decode || echo "default")
+    OS_PROJECT_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_PROJECT_DOMAIN_NAME}' 2>/dev/null | base64 --decode || echo "default")
+
+    WLM_BT_JSON=$(kubectl exec -n $ACTIVE_NAMESPACE $WLM_POD -- bash -c "
+      export OS_AUTH_URL='$OS_AUTH_URL'
+      export OS_PASSWORD='$OS_PASSWORD'
+      export OS_USERNAME='$OS_USERNAME'
+      export OS_PROJECT_NAME='$OS_PROJECT_NAME'
+      export OS_USER_DOMAIN_NAME='$OS_USER_DOMAIN_NAME'
+      export OS_PROJECT_DOMAIN_NAME='$OS_PROJECT_DOMAIN_NAME'
+      export OS_IDENTITY_API_VERSION=3
+      export OS_REGION_NAME=RegionOne
+      export OS_CACERT=/etc/ssl/certs/openstack-ca-bundle.pem
+      # Force internal endpoint — public DNS is not resolvable from inside the pod
+      export OS_ENDPOINT_OVERRIDE=http://triliovault-wlm-api.${ACTIVE_NAMESPACE}.svc.cluster.local:8780
+      workloadmgr --insecure backup-target-list --format json 2>/dev/null
+    " 2>/dev/null || echo "[]")
     
     BT_COUNT=$(echo "$WLM_BT_JSON" | jq 'length')
     if [ "$BT_COUNT" -gt 0 ]; then
