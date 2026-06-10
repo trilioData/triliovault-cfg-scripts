@@ -34,12 +34,6 @@ exec_in_wlm() {
     kubectl exec -n $NAMESPACE $WLM_POD -- bash -c "source /etc/triliovault-wlm/admin-openrc.sh && export OS_ENDPOINT_TYPE=internal && $*"
 }
 
-# Ensure tools are available inside pod
-if ! exec_in_wlm "command -v trilio-dms-cli" >/dev/null 2>&1; then
-    echo "ERROR: trilio-dms-cli not found in $WLM_POD. Migration cannot proceed."
-    exit 1
-fi
-
 PASS=0
 FAIL=0
 
