@@ -1,7 +1,7 @@
 [client]
 rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rpc_group][0]]['ansible_' + hostvars[groups[om_rpc_group][0]]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}//
 
-db_url = mysql+pymysql://{{ triliovault_db_details[0].database_user }}:{{ triliovault_datamover_database_password }}@{{ triliovault_db_details[0].database_address }}/{{ triliovault_db_details[0].database_name }}
+db_url = mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address }}/{{ triliovault_db_details[1].database_name }}
 
 request_timeout = 60
 log_level = INFO
