@@ -8,61 +8,6 @@ options:
     type: string
     default: "deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /"
     description: Repository address of triliovault packages
-  trilio-backup-targets:
-    type: string
-    description: |
-      List Trilio Backup Targets
-    default": >
-        [
-          {
-            "backup-target-name": "S3_BT1",
-            "backup-target-type": "s3",
-            "is-default": true,
-            "s3-type": "amazon_s3",
-            "s3-access-key": "<ACCESS_KEY>",
-            "s3-secret-key": "<SECRET_KEY>",
-            "s3-region-name": "us-west-2",
-            "s3-bucket": "<BUCKET_NAME>",
-            "s3-endpoint-url": "",
-            "s3-signature-version": "default",
-            "s3-auth-version": "DEFAULT",
-            "s3-ssl-enabled": true,
-            "s3-ssl-verify": true,
-            "s3-self-signed-cert": false,
-            "s3-ssl-ca_cert": "",
-            "s3-bucket-object-lock-enabled": false
-          },
-          {
-            "backup-target-name": "S3_BT1",
-            "backup-target-type": "s3",
-            "is-default": true,
-            "s3-type": "other_s3",
-            "s3-access-key": "<ACCESS_KEY>",
-            "s3-secret-key": "<SECRET_KEY>",
-            "s3-region-name": "us-east-1",
-            "s3-bucket": "<BUCKET_NAME>",
-            "s3-endpoint-url": "<CEPH_S3_URL>",
-            "s3-signature-version": "default",
-            "s3-auth-version": "DEFAULT",
-            "s3-ssl-enabled": true,
-            "s3-ssl-verify": true,
-            "s3-self-signed-cert": true,
-            "s3-ssl-ca_cert": "-----BEGIN CERTIFICATE-----
-        SHKLLEffdfdfdfggdgdrrasbgnYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
-        MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
-        CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
-        9w0BCQEWHHBnqewlrodhssaksldgffegegrgmfvvdkcsoejdHhcNMTkwNjEzMDkx
-        -----END CERTIFICATE-----",
-            "s3-bucket-object-lock-enabled": false
-          },
-          {
-            "backup-target-name": "NFS_BT3",
-            "backup-target-type": "nfs",
-            "is-default": false,
-            "nfs-shares": "<NFS_SHARE>",
-            "nfs-options": "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
-          }
-        ]
   is-vmware-migration-enabled:
     type: boolean
     default: False

@@ -1,3 +1,9 @@
+unmount-old-backup-targets:
+  description: |
+    Unmount old static backup target mounts left over from T4O 5.x/6.0/6.1.
+    Stops tvault-object-store service and lazy-unmounts all mounts under
+    /var/triliovault-mounts on this unit. Run this on all data-mover units
+    after upgrading to T4O 6.2 charms.
 ghost-share:
   description: "Bind mount NFS share 'host' for secondary Trilio Vault deployment"
   properties:

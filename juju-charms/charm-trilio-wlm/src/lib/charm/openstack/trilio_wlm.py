@@ -11,14 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import collections
 import copy
 import subprocess
-from charmhelpers.core.hookenv import config
 import charmhelpers.core.hookenv as hookenv
 import charmhelpers.contrib.openstack.utils as os_utils
-import multiline
 import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.plugins
@@ -117,6 +114,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         "python3-contegoclient",
         "python3-s3-fuse-plugin",
         "python-apt",
+        "python3-trilio-dms",
     ]
 
     python_version = 3
@@ -213,26 +211,21 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         return self.endpoint_template.format(super().internal_url)
 
 
+    dms_server_conf = "/etc/triliovault-dms/dms-server.conf"
+    dms_client_conf = "/etc/triliovault-dms/client.conf.d/wlm.conf"
+
     @property
     def services(self):
         """Determine the services associated with this class"""
-        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
+        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads", "trilio-dms"]
 
         if not reactive.flags.is_flag_set("ha.available"):
             # Only manage wlm-cron service when running solo as an
             # instance across the cluster which will be managed by
             # corosync and pacemaker
             _svcs.append("wlm-cron")
-        charm_config = config()
-        backup_targets = multiline.loads(charm_config.get('trilio-backup-targets', '[]'), multiline=True)
-        for target in backup_targets:
-            service_name = f"tvault-object-store-{target['backup-target-name']}.service"
-            if target['backup-target-type'] == 's3':
-                _svcs.append(service_name)
-            # You can add similar handling for other types like NFS if needed
 
         return _svcs
-
 
     @property
     def restart_map(self):
@@ -241,6 +234,8 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
             self.workloadmgr_log_conf: self.services,
+            self.dms_server_conf: ["trilio-dms"],
+            self.dms_client_conf: ["trilio-dms"],
         }
 
         return _restart_map
@@ -350,32 +345,6 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         return hookenv.leader_get("trusted")
 
     def custom_assess_status_check(self):
-        """Check required configuration options are set"""
-        charm_config = config()
-        backup_targets = multiline.loads(charm_config.get('trilio-backup-targets', '[]'), multiline=True)
-        for target in backup_targets:
-            check_config_set = []
-
-            if target['backup-target-type'] == "nfs":
-                check_config_set = ['nfs-shares']
-            elif target['backup-target-type'] == "s3":
-                check_config_set = [
-                    "s3-access-key",
-                    "s3-secret-key",
-                    "s3-region-name",
-                    "s3-bucket"
-                ]
-            # Check for unset or empty configuration values for mandatory keys
-            unset_config = [c for c in check_config_set if not target.get(c)]
-            if unset_config:
-                return "blocked", "{} configuration not set for backup target {}".format(
-                    ', '.join(unset_config), target['backup-target-name'])
-
-            # Check if the backup target type is supported
-            if target['backup-target-type'] not in ["nfs", "s3"]:
-                return "blocked", "Backup target type '{}' not supported for backup target {}".format(
-                    target['backup-target-type'], target['backup-target-name'])
-
         return None, None
 
 

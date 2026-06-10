@@ -27,6 +27,8 @@ requires:
     interface: ceph-client
   shared-db:
     interface: mysql-shared
+  identity-service:
+    interface: keystone
 provides:
   data-mover:
     interface: data-mover

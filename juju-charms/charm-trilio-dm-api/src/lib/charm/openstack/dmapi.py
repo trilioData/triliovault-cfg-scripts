@@ -171,7 +171,7 @@ class DmapiCharm(plugins.TrilioVaultCharm):
     @property
     def packages(self):
         if self.python_version == 3:
-            return ["python3-nova", "python3-dmapi"]
+            return ["python3-nova", "python3-dmapi", "python3-trilio-dms"]
         return ["python-nova", "dmapi"]
 
 
@@ -184,7 +184,7 @@ class DmapiCharmiUssur40(DmapiCharm):
     @property
     def packages(self):
         if self.python_version == 3:
-            return ["python3-nova", "python3-dmapi",
+            return ["python3-nova", "python3-dmapi", "python3-trilio-dms",
                     "python3-retrying"]
         return ["python-nova", "dmapi", "python-retrying"]
 
