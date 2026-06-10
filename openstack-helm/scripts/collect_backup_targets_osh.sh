@@ -12,9 +12,15 @@ echo "=========================================================="
 echo " Collecting Existing Backup Targets (T4O 5.2 / 6.1)"
 echo "=========================================================="
 
-# 1. Fresh Install Check
-if ! helm status $RELEASE_NAME -n $NAMESPACE >/dev/null 2>&1; then
-    echo "No existing Helm release '$RELEASE_NAME' found in namespace '$NAMESPACE'."
+# 1. Fresh Install / Release Check
+if helm status $RELEASE_NAME -n $NAMESPACE >/dev/null 2>&1; then
+    ACTIVE_NAMESPACE=$NAMESPACE
+    ACTIVE_RELEASE=$RELEASE_NAME
+elif helm status triliovault -n triliovault >/dev/null 2>&1; then
+    ACTIVE_NAMESPACE="triliovault"
+    ACTIVE_RELEASE="triliovault"
+else
+    echo "No existing Helm release found in 'trilio-openstack' or 'triliovault' namespaces."
     echo "This appears to be a fresh installation. No backup targets to collect."
     echo "[]" > $OUTPUT_FILE
     exit 0
@@ -24,12 +30,12 @@ fi
 echo "[]" > $OUTPUT_FILE
 
 # 2. Try 6.1 Mode (via WLM Pod API)
-WLM_POD=$(kubectl get pods -n $NAMESPACE -l component=wlm-api -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || true)
+WLM_POD=$(kubectl get pods -n $ACTIVE_NAMESPACE -l component=wlm-api -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || true)
 if [ -n "$WLM_POD" ]; then
     echo "Querying existing WLM pod: $WLM_POD for 6.1 backup targets..."
     
     # We must ensure the API is responding
-    WLM_BT_JSON=$(kubectl exec -n $NAMESPACE $WLM_POD -- bash -c "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure backup-target-list --format json" 2>/dev/null || echo "[]")
+    WLM_BT_JSON=$(kubectl exec -n $ACTIVE_NAMESPACE $WLM_POD -- bash -c "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure backup-target-list --format json" 2>/dev/null || echo "[]")
     
     BT_COUNT=$(echo "$WLM_BT_JSON" | jq 'length')
     if [ "$BT_COUNT" -gt 0 ]; then
@@ -45,8 +51,8 @@ if [ -n "$WLM_POD" ]; then
                 SECRET_NAME="secret-key-${BT_NAME// /-}"
                 
                 # Fetch secret
-                ACCESS_KEY=$(kubectl get secret -n $NAMESPACE $SECRET_NAME -o jsonpath="{.data.access_key}" 2>/dev/null | base64 --decode || true)
-                SECRET_KEY=$(kubectl get secret -n $NAMESPACE $SECRET_NAME -o jsonpath="{.data.secret_key}" 2>/dev/null | base64 --decode || true)
+                ACCESS_KEY=$(kubectl get secret -n $ACTIVE_NAMESPACE $SECRET_NAME -o jsonpath="{.data.access_key}" 2>/dev/null | base64 --decode || true)
+                SECRET_KEY=$(kubectl get secret -n $ACTIVE_NAMESPACE $SECRET_NAME -o jsonpath="{.data.secret_key}" 2>/dev/null | base64 --decode || true)
                 
                 BT_OBJ=$(echo "$BT_OBJ" | jq ". + {\"access_key\": \"$ACCESS_KEY\", \"secret_key\": \"$SECRET_KEY\", \"migration_source\": \"6.1\"}")
             else
@@ -64,7 +70,7 @@ fi
 
 # 3. 5.2 Mode (via Helm Values)
 echo "No native WLM backup targets found. Checking Helm values for 5.2 static configuration..."
-VALUES_JSON=$(helm get values $RELEASE_NAME -n $NAMESPACE -o json)
+VALUES_JSON=$(helm get values $ACTIVE_RELEASE -n $ACTIVE_NAMESPACE -o json)
 
 BT_TYPE=$(echo "$VALUES_JSON" | jq -r '.conf.triliovault.backup_target_type // empty')
 
