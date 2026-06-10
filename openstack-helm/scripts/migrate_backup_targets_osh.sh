@@ -30,8 +30,29 @@ kubectl wait pods -n $NAMESPACE -l component=wlm-api --for=condition=Ready --tim
 
 WLM_POD=$(kubectl get pods -n $NAMESPACE -l component=wlm-api -o jsonpath="{.items[0].metadata.name}")
 
+# Build OpenStack credentials from the k8s secret — the pod has no admin-openrc.sh
+ADMIN_SECRET="triliovault-keystone-admin"
+OS_AUTH_URL=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_AUTH_URL}' | base64 --decode)
+OS_PASSWORD=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_PASSWORD}' | base64 --decode)
+OS_USERNAME=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_USERNAME}' | base64 --decode)
+OS_PROJECT_NAME=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_PROJECT_NAME}' | base64 --decode)
+OS_USER_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_USER_DOMAIN_NAME}' | base64 --decode || echo "default")
+OS_PROJECT_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $NAMESPACE -o jsonpath='{.data.OS_PROJECT_DOMAIN_NAME}' | base64 --decode || echo "default")
+
 exec_in_wlm() {
-    kubectl exec -n $NAMESPACE $WLM_POD -- bash -c "source /etc/triliovault-wlm/admin-openrc.sh && export OS_ENDPOINT_TYPE=internal && $*"
+    kubectl exec -n $NAMESPACE $WLM_POD -- bash -c "
+      export OS_AUTH_URL=$(printf '%q' "$OS_AUTH_URL")
+      export OS_PASSWORD=$(printf '%q' "$OS_PASSWORD")
+      export OS_USERNAME=$(printf '%q' "$OS_USERNAME")
+      export OS_PROJECT_NAME=$(printf '%q' "$OS_PROJECT_NAME")
+      export OS_USER_DOMAIN_NAME=$(printf '%q' "$OS_USER_DOMAIN_NAME")
+      export OS_PROJECT_DOMAIN_NAME=$(printf '%q' "$OS_PROJECT_DOMAIN_NAME")
+      export OS_IDENTITY_API_VERSION=3
+      export OS_REGION_NAME=RegionOne
+      export OS_CACERT=/etc/ssl/certs/openstack-ca-bundle.pem
+      export OS_INTERFACE=internal
+      $*
+    "
 }
 
 PASS=0
@@ -40,7 +61,8 @@ FAIL=0
 for i in $(seq 0 $((COUNT - 1))); do
     BT_OBJ=$(echo "$TARGETS" | jq -c ".[$i]")
     MIG_SOURCE=$(echo "$BT_OBJ" | jq -r '.migration_source')
-    BT_NAME=$(echo "$BT_OBJ" | jq -r '.name // ."Name"')
+    # 6.1 workloadmgr JSON has no name field — fall back to sanitised Backend Endpoint or ID
+    BT_NAME=$(echo "$BT_OBJ" | jq -r '.name // ."Name" // ."Backend Endpoint" // .ID' | tr '/' '-' | tr '.' '-')
     BT_TYPE=$(echo "$BT_OBJ" | jq -r '.type // ."Type"')
     
     echo ""
