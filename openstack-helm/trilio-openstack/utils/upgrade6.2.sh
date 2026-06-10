@@ -11,6 +11,13 @@ cd ../../
 
 echo -e "Starting T4O 6.2 Upgrade..."
 
+# Dynamically extract RabbitMQ credentials so Helm doesn't auto-generate new ones
+bash ./trilio-openstack/utils/collect_rabbitmq_creds.sh
+if [ $? -ne 0 ]; then
+    echo "Failed to collect RabbitMQ credentials. Aborting upgrade."
+    exit 1
+fi
+
 # We use 'upgrade --install' to safely apply changes over the existing release
 helm upgrade --install trilio-openstack ./trilio-openstack --namespace=trilio-openstack \
 --values=./trilio-openstack/values_overrides/image_pull_secrets.yaml \
@@ -20,7 +27,11 @@ helm upgrade --install trilio-openstack ./trilio-openstack --namespace=trilio-op
 --values=./trilio-openstack/values_overrides/tls_public_endpoint.yaml \
 --values=./trilio-openstack/values_overrides/ceph.yaml \
 --values=./trilio-openstack/values_overrides/ingress.yaml \
---values=./trilio-openstack/values_overrides/triliovault_passwords.yaml
+--values=./trilio-openstack/values_overrides/triliovault_passwords.yaml \
+--values=./trilio-openstack/values_overrides/rabbitmq_upgrade_creds.yaml
+
+# Clean up runtime credentials file
+rm -f ./trilio-openstack/values_overrides/rabbitmq_upgrade_creds.yaml
 
 echo -e "Waiting for trilio-openstack pods to transition to the running state..."
 
