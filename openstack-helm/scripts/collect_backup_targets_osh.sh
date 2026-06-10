@@ -43,24 +43,36 @@ if [ -n "$WLM_POD" ]; then
     OS_USER_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_USER_DOMAIN_NAME}' 2>/dev/null | base64 --decode || echo "default")
     OS_PROJECT_DOMAIN_NAME=$(kubectl get secret $ADMIN_SECRET -n $ACTIVE_NAMESPACE -o jsonpath='{.data.OS_PROJECT_DOMAIN_NAME}' 2>/dev/null | base64 --decode || echo "default")
 
-    WLM_BT_JSON=$(kubectl exec -n $ACTIVE_NAMESPACE $WLM_POD -- bash -c "
-      export OS_AUTH_URL='$OS_AUTH_URL'
-      export OS_PASSWORD='$OS_PASSWORD'
-      export OS_USERNAME='$OS_USERNAME'
-      export OS_PROJECT_NAME='$OS_PROJECT_NAME'
-      export OS_USER_DOMAIN_NAME='$OS_USER_DOMAIN_NAME'
-      export OS_PROJECT_DOMAIN_NAME='$OS_PROJECT_DOMAIN_NAME'
+    WLM_ENDPOINT="http://triliovault-wlm-api.${ACTIVE_NAMESPACE}.svc.cluster.local:8780"
+    # Use printf %q to safely escape credentials — prevents special chars in passwords breaking the shell
+    Q_PASSWORD=$(printf '%q' "$OS_PASSWORD")
+    Q_AUTH_URL=$(printf '%q' "$OS_AUTH_URL")
+    Q_USERNAME=$(printf '%q' "$OS_USERNAME")
+    Q_PROJECT=$(printf '%q' "$OS_PROJECT_NAME")
+    Q_UDOM=$(printf '%q' "$OS_USER_DOMAIN_NAME")
+    Q_PDOM=$(printf '%q' "$OS_PROJECT_DOMAIN_NAME")
+
+    WLM_BT_JSON=$(kubectl exec -n "$ACTIVE_NAMESPACE" "$WLM_POD" -- bash -c "
+      export OS_AUTH_URL=$Q_AUTH_URL
+      export OS_PASSWORD=$Q_PASSWORD
+      export OS_USERNAME=$Q_USERNAME
+      export OS_PROJECT_NAME=$Q_PROJECT
+      export OS_USER_DOMAIN_NAME=$Q_UDOM
+      export OS_PROJECT_DOMAIN_NAME=$Q_PDOM
       export OS_IDENTITY_API_VERSION=3
       export OS_REGION_NAME=RegionOne
       export OS_CACERT=/etc/ssl/certs/openstack-ca-bundle.pem
-      # Force internal endpoint — public DNS is not resolvable from inside the pod
-      export OS_ENDPOINT_OVERRIDE=http://triliovault-wlm-api.${ACTIVE_NAMESPACE}.svc.cluster.local:8780
+      export OS_INTERFACE=internal
       workloadmgr --insecure backup-target-list --format json 2>/dev/null
     " 2>/dev/null || echo "[]")
-    
+
+    # Strip any preamble lines kubectl/Python may inject before the JSON array
+    WLM_BT_JSON=$(echo "$WLM_BT_JSON" | awk '/^\[/{found=1} found{print}')
+    [ -z "$WLM_BT_JSON" ] && WLM_BT_JSON="[]"
+
     BT_COUNT=$(echo "$WLM_BT_JSON" | jq 'length')
     if [ "$BT_COUNT" -gt 0 ]; then
-        echo "Found $BT_COUNT backup target(s) natively in WLM (6.1 architecture)."
+        echo "Found $BT_COUNT backup target(s) natively in WLM."
         
         FINAL_JSON="[]"
         for i in $(seq 0 $((BT_COUNT - 1))); do
@@ -68,16 +80,46 @@ if [ -n "$WLM_POD" ]; then
             BT_TYPE=$(echo "$BT_OBJ" | jq -r '."Type" // .type // "s3"')
             
             if [[ "$BT_TYPE" == *"s3"* ]]; then
-                BT_NAME=$(echo "$BT_OBJ" | jq -r '."Name"')
-                SECRET_NAME="secret-key-${BT_NAME// /-}"
-                
-                # Fetch secret
-                ACCESS_KEY=$(kubectl get secret -n $ACTIVE_NAMESPACE $SECRET_NAME -o jsonpath="{.data.access_key}" 2>/dev/null | base64 --decode || true)
-                SECRET_KEY=$(kubectl get secret -n $ACTIVE_NAMESPACE $SECRET_NAME -o jsonpath="{.data.secret_key}" 2>/dev/null | base64 --decode || true)
-                
-                BT_OBJ=$(echo "$BT_OBJ" | jq ". + {\"access_key\": \"$ACCESS_KEY\", \"secret_key\": \"$SECRET_KEY\", \"migration_source\": \"6.1\"}")
+                BT_ENDPOINT=$(echo "$BT_OBJ" | jq -r '."Backend Endpoint" // ""')
+                BT_ID=$(echo "$BT_OBJ" | jq -r '.ID // ""')
+                ACCESS_KEY=""
+                SECRET_KEY=""
+                ENDPOINT_URL=""
+
+                # Scan all 6.1 object-store secrets and match by Backend Endpoint
+                while IFS= read -r SECRET_NAME; do
+                    [ -z "$SECRET_NAME" ] && continue
+                    SLUG="${SECRET_NAME#trilio-object-store-etc-single-bt-}"
+                    CONF_KEY="trilio-object-store-${SLUG}.conf"
+
+                    # Use jq to safely decode — avoids jsonpath single-quote interpolation issues
+                    CONF_DATA=$(kubectl get secret -n $ACTIVE_NAMESPACE "$SECRET_NAME" \
+                        -o json 2>/dev/null \
+                        | jq -r --arg k "$CONF_KEY" '.data[$k] // "" | @base64d')
+                    [ -z "$CONF_DATA" ] && continue
+
+                    # vault_storage_nfs_export = domain/bucket or bucket — matches WLM Backend Endpoint directly
+                    CONF_NFS_EXPORT=$(echo "$CONF_DATA" | awk -F' = ' '/^vault_storage_nfs_export/{print $2}' | tr -d '\r')
+                    CONF_BUCKET=$(echo "$CONF_DATA" | awk -F' = ' '/^vault_s3_bucket/{print $2}' | tr -d '\r')
+
+                    if [[ "$BT_ENDPOINT" == "$CONF_NFS_EXPORT" ]] || [[ "$BT_ENDPOINT" == "$CONF_BUCKET" ]]; then
+                        ACCESS_KEY=$(echo "$CONF_DATA" | awk -F' = ' '/^vault_s3_access_key_id/{print $2}' | tr -d '\r')
+                        SECRET_KEY=$(echo "$CONF_DATA" | awk -F' = ' '/^vault_s3_secret_access_key/{print $2}' | tr -d '\r')
+                        ENDPOINT_URL=$(echo "$CONF_DATA" | awk -F' = ' '/^vault_s3_endpoint_url/{print $2}' | tr -d '\r ')
+                        echo "  Matched 6.1 credentials via secret $SECRET_NAME for target $BT_ID"
+                        break
+                    fi
+                done < <(kubectl get secrets -n $ACTIVE_NAMESPACE \
+                    -o jsonpath='{.items[*].metadata.name}' 2>/dev/null \
+                    | tr ' ' '\n' | grep '^trilio-object-store-etc-single-bt-')
+
+                BT_OBJ=$(echo "$BT_OBJ" | jq \
+                    --arg ak "$ACCESS_KEY" \
+                    --arg sk "$SECRET_KEY" \
+                    --arg ep "$ENDPOINT_URL" \
+                    '. + {"access_key": $ak, "secret_key": $sk, "endpoint_url": $ep, "migration_source": "6.1"}')
             else
-                BT_OBJ=$(echo "$BT_OBJ" | jq ". + {\"migration_source\": \"6.1\"}")
+                BT_OBJ=$(echo "$BT_OBJ" | jq '. + {"migration_source": "6.1"}')
             fi
             
             FINAL_JSON=$(echo "$FINAL_JSON" | jq ". + [$BT_OBJ]")
