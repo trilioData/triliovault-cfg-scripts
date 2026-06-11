@@ -108,7 +108,7 @@ def render_dms_client_config(*args):
     os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
-    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'dmapi.conf')
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'triliovault-dms-client-dynamic.conf')
     render(
         source='triliovault-dms-client.conf',
         target=dms_client_conf_path,
