@@ -69,16 +69,17 @@ for i in $(seq 0 $((COUNT - 1))); do
     echo "----------------------------------------------------"
     echo "Processing target: $BT_NAME (Type: $BT_TYPE, Source: $MIG_SOURCE)"
     
-    # Check if target already exists natively in 6.2 (by name)
-    EXISTS=$(exec_in_wlm "workloadmgr --insecure backup-target-list --format json" | jq -r ".[] | select(.Name == \"$BT_NAME\") | .ID")
-    
     if [[ "$BT_TYPE" == *"nfs"* ]]; then
+        # 6.1 JSON has no nfs_shares field — use Backend Endpoint directly
+        NFS_EXPORT=$(echo "$BT_OBJ" | jq -r '.nfs_shares // ."Backend Endpoint"')
+        
+        # Check if target already exists natively in 6.2 (by Backend Endpoint or Name)
+        EXISTS=$(exec_in_wlm "workloadmgr --insecure backup-target-list --format json" | jq -r ".[] | select(.Name == \"$BT_NAME\" or .\"Backend Endpoint\" == \"$NFS_EXPORT\") | .ID")
+        
         if [ -n "$EXISTS" ]; then
-            echo "NFS Target $BT_NAME already exists in WLM database. No migration needed."
+            echo "NFS Target '$NFS_EXPORT' already exists in WLM database. No migration needed."
             PASS=$((PASS + 1))
         else
-            # 6.1 JSON has no nfs_shares field — use Backend Endpoint directly
-            NFS_EXPORT=$(echo "$BT_OBJ" | jq -r '.nfs_shares // ."Backend Endpoint"')
             echo "Creating NFS Target '$BT_NAME' in 6.2 DB (export: $NFS_EXPORT)..."
             # 6.2 workloadmgr uses --btt-name, --filesystem-export, --default (flag, no value)
             exec_in_wlm "workloadmgr --insecure backup-target-create --btt-name '$BT_NAME' --type nfs --filesystem-export '$NFS_EXPORT' --default" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
@@ -87,10 +88,12 @@ for i in $(seq 0 $((COUNT - 1))); do
         # S3 Targets require Barbican Migration
         ACCESS_KEY=$(echo "$BT_OBJ" | jq -r '.s3_access_key // .access_key')
         SECRET_KEY=$(echo "$BT_OBJ" | jq -r '.s3_secret_key // .secret_key')
-        BUCKET=$(echo "$BT_OBJ" | jq -r '.s3_bucket // .bucket // ."Backend Endpoint"')
-        
+        BUCKET_RAW=$(echo "$BT_OBJ" | jq -r '.s3_bucket // .bucket // ."Backend Endpoint"')
         # Clean backend endpoint bucket name if from 6.1
-        BUCKET=$(echo "$BUCKET" | awk -F'/' '{print $NF}')
+        BUCKET=$(echo "$BUCKET_RAW" | awk -F'/' '{print $NF}')
+        
+        # Check if target already exists natively in 6.2 (by Backend Endpoint or Name)
+        EXISTS=$(exec_in_wlm "workloadmgr --insecure backup-target-list --format json" | jq -r ".[] | select(.Name == \"$BT_NAME\" or .\"Backend Endpoint\" == \"$BUCKET_RAW\") | .ID")
         
         if [ -z "$SECRET_KEY" ] || [ "$SECRET_KEY" == "null" ]; then
             read -rsp "Enter S3 Secret Key for $BT_NAME: " SECRET_KEY
