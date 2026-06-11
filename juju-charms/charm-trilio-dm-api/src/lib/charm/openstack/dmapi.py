@@ -24,7 +24,6 @@ import charmhelpers.core.hookenv as hookenv
 DMAPI_DIR = "/etc/triliovault-datamover"
 DMAPI_CONF = os.path.join(DMAPI_DIR, "triliovault-datamover-api.conf")
 DMAPI_LOG_CONF = os.path.join(DMAPI_DIR, "datamover_api_logging.conf")
-DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 
 plugins.trilio.make_trilio_handlers()
 
@@ -46,11 +45,6 @@ class DmapiDBAdapter(adapters.DatabaseRelationAdapter):
     def dmapi_uri(self):
         """URI for dmapi DB"""
         return self.get_uri(prefix="dmapi")
-
-    @property
-    def wlm_uri(self):
-        """URI for workloadmgr DB (used by DMS client)"""
-        return self.get_uri(prefix="wlm")
 
 
 class DmapiAdapters(adapters.OpenStackAPIRelationAdapters):
@@ -94,8 +88,7 @@ class DmapiCharm(plugins.TrilioVaultCharm):
 
     # The restart map defines which services should be restarted when a given
     # file changes
-    restart_map = {DMAPI_CONF: services, DMAPI_LOG_CONF: services,
-                   DMS_CLIENT_CONF: services}
+    restart_map = {DMAPI_CONF: services, DMAPI_LOG_CONF: services}
 
     adapters_class = DmapiAdapters
 
