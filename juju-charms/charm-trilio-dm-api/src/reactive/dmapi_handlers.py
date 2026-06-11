@@ -61,10 +61,10 @@ def render_config(*args):
         amqp_vhost = amqp.vhost()
         transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
 
-        db_password = db_ep.password(prefix='dmapi')
-        db_user = 'dmapi'
+        db_password = db_ep.password(prefix='wlm')
+        db_user = 'workloadmgr'
         db_host = '127.0.0.1'
-        db_name = 'dmapi'
+        db_name = 'workloadmgr'
         db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}"
 
         root_uid = pwd.getpwnam('root').pw_uid
@@ -112,7 +112,7 @@ def cluster_connected(hacluster):
 def check_dmapi_db():
     db_ep = reactive.endpoint_from_flag('shared-db.available')
     if db_ep:
-        if db_ep.password(prefix='dmapi'):
+        if db_ep.password(prefix='dmapi') and db_ep.password(prefix='wlm'):
             reactive.set_state("dmapi-db.ready")
         else:
             with charm.provide_charm_instance() as instance:

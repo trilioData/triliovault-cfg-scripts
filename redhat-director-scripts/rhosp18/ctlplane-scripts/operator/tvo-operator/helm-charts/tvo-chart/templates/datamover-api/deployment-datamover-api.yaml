@@ -106,6 +106,19 @@ spec:
               value: "{{- .Values.database.common.port -}}"
             - name: DMAPI_DATABASE_NAME
               value: "{{- .Values.database.datamover_api.database -}}"
+            - name: WLM_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: WlmDatabasePassword
+            - name: WLM_DATABASE_USER
+              value: "{{- .Values.database.wlm_api.user -}}"
+            - name: WLM_DATABASE_HOST
+              value: "{{- .Values.database.common.host -}}"
+            - name: WLM_DATABASE_PORT
+              value: "{{- .Values.database.common.port -}}"
+            - name: WLM_DATABASE_NAME
+              value: "{{- .Values.database.wlm_api.database -}}"
           terminationMessagePath: /var/log/termination-log
           volumeMounts:
             - name: triliovault-datamover-api-bin
