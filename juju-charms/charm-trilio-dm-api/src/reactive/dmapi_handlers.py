@@ -50,10 +50,12 @@ def render_config(*args):
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
 
-    # Render DMS client config for DMAPI
+    # Render DMS client config for DMAPI using WLM DB config options
     amqp = reactive.endpoint_from_flag('amqp.available')
-    db_ep = reactive.endpoint_from_flag('shared-db.available')
-    if amqp and db_ep:
+    charm_config = hookenv.config()
+    wlm_db_host = charm_config.get('wlm-db-host', '')
+    wlm_db_password = charm_config.get('wlm-db-password', '')
+    if amqp and wlm_db_host and wlm_db_password:
         amqp_username = amqp.username()
         amqp_password = amqp.password()
         amqp_host = amqp.private_address()
@@ -61,11 +63,10 @@ def render_config(*args):
         amqp_vhost = amqp.vhost()
         transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
 
-        db_password = db_ep.password(prefix='wlm')
-        db_user = 'workloadmgr'
-        db_host = '127.0.0.1'
-        db_name = 'workloadmgr'
-        db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}"
+        wlm_db_user = charm_config.get('wlm-db-user', 'workloadmgr')
+        wlm_db_port = charm_config.get('wlm-db-port', 3306)
+        wlm_db_name = charm_config.get('wlm-db-name', 'workloadmgr')
+        db_url = f"mysql+pymysql://{wlm_db_user}:{wlm_db_password}@{wlm_db_host}:{wlm_db_port}/{wlm_db_name}"
 
         root_uid = pwd.getpwnam('root').pw_uid
         nova_gid = grp.getgrnam('nova').gr_gid
@@ -88,6 +89,8 @@ def render_config(*args):
         os.chmod(dms_client_conf_path, 0o640)
         os.chown(dms_client_conf_path, root_uid, nova_gid)
         hookenv.log("DMS client config rendered for dmapi.")
+    else:
+        hookenv.log("Skipping DMS client config: wlm-db-host or wlm-db-password not set.")
 
     reactive.set_state("config.rendered")
 
@@ -112,7 +115,7 @@ def cluster_connected(hacluster):
 def check_dmapi_db():
     db_ep = reactive.endpoint_from_flag('shared-db.available')
     if db_ep:
-        if db_ep.password(prefix='dmapi') and db_ep.password(prefix='wlm'):
+        if db_ep.password(prefix='dmapi'):
             reactive.set_state("dmapi-db.ready")
         else:
             with charm.provide_charm_instance() as instance:
