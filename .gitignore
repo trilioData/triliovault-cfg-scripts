@@ -21,3 +21,6 @@ environments.yaml
 # Claude-generated deployment/upgrade reports
 deployment-report-*.md
 upgrade-report-*.md
+
+# Ignore package source lists in docker builds
+trilio.list
