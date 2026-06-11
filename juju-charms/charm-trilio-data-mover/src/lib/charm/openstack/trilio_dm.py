@@ -11,11 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import copy
 import os
-import multiline
-from charmhelpers.core.hookenv import config
 import charmhelpers.core.hookenv as hookenv
 import charmhelpers.contrib.openstack.utils as os_utils
 
@@ -108,7 +105,7 @@ class TrilioDataMoverBaseCharm(
 
     required_relations = ["amqp", "shared-db"]
 
-    base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt"]
+    base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
 
     # configuration file permissions
     user = "root"
@@ -180,71 +177,24 @@ class TrilioDataMoverBaseCharm(
             },
         ]
 
+    dms_server_conf = "/etc/triliovault-dms/dms-server.conf"
+
     @property
     def services(self):
-        _svcs = ["tvault-contego"]
-        charm_config = config()
-        backup_targets = multiline.loads(charm_config.get('trilio-backup-targets', '[]'), multiline=True)
-        for target in backup_targets:
-            service_name = f"tvault-object-store-{target['backup-target-name']}.service"
-            if target['backup-target-type'] == 's3':
-                _svcs.append(service_name)
-    
-        return _svcs
+        return ["tvault-contego", "trilio-dms"]
 
     @property
     def restart_map(self):
         _restart_map = {
             self.data_mover_conf: self.services,
             self.datamover_log_conf: self.services,
+            self.dms_server_conf: ["trilio-dms"],
         }
         if reactive.flags.is_flag_set("ceph.available"):
             _restart_map[self.ceph_conf] = self.services
-        all_object_store_services = []
-        charm_config = config()
-        backup_targets = multiline.loads(charm_config.get('trilio-backup-targets', '[]'), multiline=True)
-        for target in backup_targets:
-            if target['backup-target-type'] == 's3':
-                service_name = f"tvault-object-store-{target['backup-target-name']}.service"
-                object_store_conf = f"/etc/triliovault-object-store/triliovault-object-store-{target['backup-target-name']}.conf"
-                s3_cert_file = f"/etc/triliovault-object-store/s3-cert-{target['backup-target-name']}.pem"
-                all_object_store_services.append(service_name)
-                _restart_map[object_store_conf] = [service_name]
-                _restart_map[s3_cert_file] = [service_name]
-
-        # Assign all object store services to the common logging configuration file
-        if all_object_store_services:
-            _restart_map[self.object_store_log_conf] = all_object_store_services
-
         return _restart_map
 
     def custom_assess_status_check(self):
-        """Check required configuration options are set"""
-        charm_config = config()
-        backup_targets = multiline.loads(charm_config.get('trilio-backup-targets', '[]'), multiline=True)
-        for target in backup_targets:
-            check_config_set = []
-
-            if target['backup-target-type'] == "nfs":
-                check_config_set = ['nfs-shares']
-            elif target['backup-target-type'] == "s3":
-                check_config_set = [
-                    "s3-access-key",
-                    "s3-secret-key",
-                    "s3-region-name",
-                    "s3-bucket"
-                ]
-            # Check for unset or empty configuration values for mandatory keys
-            unset_config = [c for c in check_config_set if not target.get(c)]
-            if unset_config:
-                return "blocked", "{} configuration not set for backup target {}".format(
-                    ', '.join(unset_config), target['backup-target-name'])
-
-            # Check if the backup target type is supported
-            if target['backup-target-type'] not in ["nfs", "s3"]:
-                return "blocked", "Backup target type '{}' not supported for backup target {}".format(
-                    target['backup-target-type'], target['backup-target-name'])
-
         return None, None
 
     def request_access_to_groups(self, ceph):

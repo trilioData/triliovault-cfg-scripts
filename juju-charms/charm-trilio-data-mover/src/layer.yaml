@@ -3,6 +3,7 @@ includes: [
    'interface:rabbitmq',
    'interface:ceph-client',
    'interface:mysql-shared',
+   'interface:keystone',
  ]
 options:
   basic:
