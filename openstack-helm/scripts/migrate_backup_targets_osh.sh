@@ -62,7 +62,7 @@ for i in $(seq 0 $((COUNT - 1))); do
     BT_OBJ=$(echo "$TARGETS" | jq -c ".[$i]")
     MIG_SOURCE=$(echo "$BT_OBJ" | jq -r '.migration_source')
     # 6.1 workloadmgr JSON has no name field — fall back to sanitised Backend Endpoint or ID
-    BT_NAME=$(echo "$BT_OBJ" | jq -r '.name // ."Name" // ."Backend Endpoint" // .ID' | tr '/' '-' | tr '.' '-')
+    BT_NAME=$(echo "$BT_OBJ" | jq -r '.name // ."Name" // ."Backend Endpoint" // .ID' | tr '/.:' '-')
     BT_TYPE=$(echo "$BT_OBJ" | jq -r '.type // ."Type"')
     
     echo ""
@@ -77,10 +77,11 @@ for i in $(seq 0 $((COUNT - 1))); do
             echo "NFS Target $BT_NAME already exists in WLM database. No migration needed."
             PASS=$((PASS + 1))
         else
-            NFS_SHARES=$(echo "$BT_OBJ" | jq -r '.nfs_shares')
-            NFS_OPTS=$(echo "$BT_OBJ" | jq -r '.nfs_options')
-            echo "Creating 5.2 NFS Target in 6.2 DB..."
-            exec_in_wlm "workloadmgr --insecure backup-target-create --name '$BT_NAME' --type nfs --nfs-shares '$NFS_SHARES' --nfs-options '$NFS_OPTS' --is-default true" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
+            # 6.1 JSON has no nfs_shares field — use Backend Endpoint directly
+            NFS_EXPORT=$(echo "$BT_OBJ" | jq -r '.nfs_shares // ."Backend Endpoint"')
+            echo "Creating NFS Target '$BT_NAME' in 6.2 DB (export: $NFS_EXPORT)..."
+            # 6.2 workloadmgr uses --btt-name, --filesystem-export, --default (flag, no value)
+            exec_in_wlm "workloadmgr --insecure backup-target-create --btt-name '$BT_NAME' --type nfs --filesystem-export '$NFS_EXPORT' --default" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
         fi
     elif [[ "$BT_TYPE" == *"s3"* ]]; then
         # S3 Targets require Barbican Migration
@@ -97,7 +98,15 @@ for i in $(seq 0 $((COUNT - 1))); do
         fi
         
         echo "Pushing S3 credentials to OpenStack Barbican..."
-        
+
+        # trilio-dms-cli is a 6.2-only tool — skip S3 migration if pod is still on 6.1 images
+        if ! exec_in_wlm "command -v trilio-dms-cli" >/dev/null 2>&1; then
+            echo "SKIP: trilio-dms-cli not found in WLM pod. S3 migration requires 6.2 images."
+            echo "      Run migrate_backup_targets_osh.sh again after upgrading to T4O 6.2."
+            FAIL=$((FAIL + 1))
+            continue
+        fi
+
         # Build secret JSON via trilio-dms-cli inside WLM
         exec_in_wlm "trilio-dms-cli secret-payload create --access-key '$ACCESS_KEY' --secret-key '$SECRET_KEY' --bucket '$BUCKET' -o /tmp/secret.json"
         
@@ -123,8 +132,8 @@ for i in $(seq 0 $((COUNT - 1))); do
             echo "Modifying existing 6.1 Target with new Barbican Secret Ref..."
             exec_in_wlm "workloadmgr --insecure backup-target-modify --secret-ref '$FINAL_HREF' $EXISTS" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
         else
-            echo "Creating 5.2 S3 Target in 6.2 DB..."
-            exec_in_wlm "workloadmgr --insecure backup-target-create --name '$BT_NAME' --type amazon_s3 --secret-ref '$FINAL_HREF' --is-default true" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
+            echo "Creating S3 Target '$BT_NAME' in 6.2 DB..."
+            exec_in_wlm "workloadmgr --insecure backup-target-create --btt-name '$BT_NAME' --type amazon_s3 --secret-ref '$FINAL_HREF' --default" && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
         fi
         
         # Cleanup
