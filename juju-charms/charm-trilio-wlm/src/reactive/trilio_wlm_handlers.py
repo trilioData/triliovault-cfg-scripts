@@ -340,6 +340,17 @@ def register_endpoints_and_request_notification(identity_service):
         instance.assess_status()
 
 
+@reactive.when('wlm-db.connected')
+@reactive.when('shared-db.available')
+def publish_wlm_db_credentials(*args):
+    shared_db = reactive.RelationBase.from_state('shared-db.available')
+    if shared_db and shared_db.password():
+        for rid in hookenv.relation_ids('wlm-db'):
+            hookenv.relation_set(relation_id=rid,
+                                 workloadmgr_password=shared_db.password())
+        hookenv.log("Published workloadmgr DB password to wlm-db relation.")
+
+
 @reactive.when_any("config.changed.triliovault-pkg-source",
                    "config.changed.openstack-origin")
 def install_source_changed():

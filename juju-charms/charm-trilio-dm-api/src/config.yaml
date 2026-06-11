@@ -74,23 +74,3 @@ options:
     description: |
       Server timeout configuration in ms for haproxy, used in HA
       configurations.
-  wlm-db-host:
-    type: string
-    default: ""
-    description: MySQL hostname for the workloadmgr database (used by DMS client)
-  wlm-db-port:
-    type: int
-    default: 3306
-    description: MySQL port for the workloadmgr database
-  wlm-db-user:
-    type: string
-    default: "workloadmgr"
-    description: MySQL username for the workloadmgr database
-  wlm-db-password:
-    type: string
-    default: ""
-    description: MySQL password for the workloadmgr database
-  wlm-db-name:
-    type: string
-    default: "workloadmgr"
-    description: MySQL database name for workloadmgr

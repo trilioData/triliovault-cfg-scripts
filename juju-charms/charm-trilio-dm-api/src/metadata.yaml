@@ -15,6 +15,9 @@ tags:
 provides:
   dm-api:
     interface: dm-api
+requires:
+  wlm-db:
+    interface: trilio-wlm-db
 series:
 - bionic
 - focal
