@@ -17,7 +17,7 @@ images:
     triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-2023.2
     triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-2023.2
     triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-2023.2
-    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:6.2.0-stable-2023.2
+    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:6.1.8-2023.2
     triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:6.2.0-stable-2023.2
     triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:6.2.0-stable-2023.2
     triliovault_dms: docker.io/trilio/trilio-dms-helm:test-dms-2
