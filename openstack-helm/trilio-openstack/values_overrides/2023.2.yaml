@@ -1,5 +1,6 @@
 ---
 images:
+  pull_policy: "Always"
   tags:
     bootstrap: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
     db_init: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
