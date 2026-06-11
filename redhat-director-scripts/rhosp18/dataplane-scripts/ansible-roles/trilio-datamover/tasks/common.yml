@@ -1,0 +1,25 @@
+---
+- name: Ensure vault data directory exists
+  become: true
+  file:
+    path: "{{ vault_data_dir }}"
+    state: directory
+    owner: '42436'
+    group: '42436'
+    mode: '0755'
+
+- name: Check if /var/lib/openstack/config/containers exists
+  become: true
+  ansible.builtin.stat:
+    path: /var/lib/openstack/config/containers
+  register: containers_dir
+
+- name: Create /var/lib/openstack/config/containers if not present
+  become: true
+  file:
+    path: /var/lib/openstack/config/containers
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not containers_dir.stat.exists
