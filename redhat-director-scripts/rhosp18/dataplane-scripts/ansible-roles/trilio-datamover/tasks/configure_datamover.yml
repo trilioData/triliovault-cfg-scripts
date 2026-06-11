@@ -8,17 +8,14 @@
     mode: '0644'
 
 
-- name: Create Trilio datamover directories
+- name: Create Trilio datamover log directory
   become: true
   file:
-    path: "{{ item }}"
+    path: /var/log/containers/triliovault-datamover
     state: directory
     owner: '42436'
     group: '42436'
     mode: '0744'
-  with_items:
-    - "{{ vault_data_dir }}"
-    - /var/log/containers/triliovault-datamover
 
 - name: Create Trilio datamover configuration file
   become: true
