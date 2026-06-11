@@ -8,7 +8,13 @@
     group: '42436'
     mode: '0755'
 
-- name: Ensure /var/lib/openstack/config/containers directory exists
+- name: Check if /var/lib/openstack/config/containers exists
+  become: true
+  ansible.builtin.stat:
+    path: /var/lib/openstack/config/containers
+  register: containers_dir
+
+- name: Create /var/lib/openstack/config/containers if not present
   become: true
   file:
     path: /var/lib/openstack/config/containers
@@ -16,3 +22,4 @@
     owner: root
     group: root
     mode: '0755'
+  when: not containers_dir.stat.exists
