@@ -109,7 +109,7 @@ def render_dms_client_config(*args):
 
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
-        source='triliovault-dms-client.conf',
+        source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
         context={'rabbitmq_url': transport_url, 'db_url': db_url},
     )

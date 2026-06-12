@@ -92,13 +92,6 @@ class DmapiCharm(plugins.TrilioVaultCharm):
     restart_map = {DMAPI_CONF: services, DMAPI_LOG_CONF: services,
                    DMS_CLIENT_CONF: services}
 
-    @property
-    def config_files(self):
-        return [
-            conf_path for conf_path in self.restart_map.keys()
-            if conf_path != DMS_CLIENT_CONF
-        ]
-
     adapters_class = DmapiAdapters
 
     # Resource when in HA mode

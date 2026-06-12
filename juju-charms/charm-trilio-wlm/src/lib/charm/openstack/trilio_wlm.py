@@ -240,21 +240,6 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
 
         return _restart_map
 
-    @property
-    def config_files(self):
-        """Config files to auto-render via render_with_interfaces.
-
-        DMS configs are excluded here because they require custom context
-        (rabbitmq_url, node_id, auth_url) built in the handler, and their
-        templates are rendered explicitly there. They remain in restart_map
-        so trilio-dms is restarted when those files change.
-        """
-        return [
-            conf_path for conf_path in self.restart_map.keys()
-            if conf_path not in (self.dms_server_conf, self.dms_client_conf)
-        ]
-
-
     def configure_ha_resources(self, hacluster):
         """Inform the ha subordinate about each service it should manage.
 
@@ -412,7 +397,6 @@ class TrilioWLMCharmUssuri41Base(TrilioWLMBaseCharm):
         "python3-neutronclient",
         "python3-apt",
         "python3-retrying",
-        "python3-trilio-dms",
     ]
 
     all_packages = [
@@ -426,7 +410,6 @@ class TrilioWLMCharmUssuri41Base(TrilioWLMBaseCharm):
         "python3-neutronclient",
         "python3-apt",
         "python3-retrying",
-        "python3-trilio-dms",
     ]
 
 

@@ -144,7 +144,7 @@ def render_config(*args):
     haproxy_port = 8780
     api_port = determine_api_port(haproxy_port, singlenode_mode=True)
     with charm.provide_charm_instance() as charm_class:
-        packages_to_install = charm_class.base_packages
+        packages_to_install = TrilioWLMBaseCharm().base_packages
         hookenv.log(f"Trilio Wlm Charm Packages: {packages_to_install}")
         current_pkg_source = hookenv.config('triliovault-pkg-source')
         is_trilio_pkg_source_changed = reactive.helpers.data_changed('triliovault-pkg-source', current_pkg_source)
@@ -274,7 +274,7 @@ def render_config(*args):
     }
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
-        source='triliovault-dms-server.conf',
+        source='etc_triliovault-dms_server.conf',
         target=dms_server_conf_path,
         context=dms_server_context,
     )
@@ -288,7 +288,7 @@ def render_config(*args):
     }
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
-        source='triliovault-dms-client.conf',
+        source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
         context=dms_client_context,
     )
