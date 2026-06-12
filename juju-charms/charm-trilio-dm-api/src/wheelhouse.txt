@@ -1,4 +1,4 @@
-setuptools==82.0.1
+setuptools==77.0.3
 setuptools-scm>=8.0
 jaraco.functools>=4.0
 jaraco.text>=4.0.0
