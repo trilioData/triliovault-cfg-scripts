@@ -211,8 +211,8 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         return self.endpoint_template.format(super().internal_url)
 
 
-    dms_server_conf = "/etc/triliovault-dms/dms-server.conf"
-    dms_client_conf = "/etc/triliovault-dms/client.conf.d/wlm.conf"
+    dms_server_conf = "/etc/triliovault-dms/server.conf"
+    dms_client_conf = "/etc/triliovault-dms/client.conf"
 
     @property
     def services(self):
@@ -234,8 +234,6 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
             self.workloadmgr_log_conf: self.services,
-            self.dms_server_conf: ["trilio-dms"],
-            self.dms_client_conf: ["trilio-dms"],
         }
 
         return _restart_map

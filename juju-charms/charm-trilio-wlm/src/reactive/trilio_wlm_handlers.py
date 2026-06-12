@@ -265,7 +265,6 @@ def render_config(*args):
     # Render DMS server config (WLM control-plane nodes also run trilio-dms server)
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
     dms_server_context = {
@@ -274,7 +273,7 @@ def render_config(*args):
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
-    dms_server_conf_path = os.path.join(dms_conf_dir, 'dms-server.conf')
+    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
         source='triliovault-dms-server.conf',
         target=dms_server_conf_path,
@@ -288,7 +287,7 @@ def render_config(*args):
         'rabbitmq_url': transport_url,
         'db_url': f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
     }
-    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'wlm.conf')
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
         source='triliovault-dms-client.conf',
         target=dms_client_conf_path,
