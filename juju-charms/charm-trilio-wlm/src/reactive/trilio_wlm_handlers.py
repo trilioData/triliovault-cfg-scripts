@@ -144,8 +144,7 @@ def render_config(*args):
     haproxy_port = 8780
     api_port = determine_api_port(haproxy_port, singlenode_mode=True)
     with charm.provide_charm_instance() as charm_class:
-        trilio_charm_instance = trilio_wlm.TrilioWLMBaseCharm()
-        packages_to_install = trilio_charm_instance.base_packages
+        packages_to_install = charm_class.base_packages
         hookenv.log(f"Trilio Wlm Charm Packages: {packages_to_install}")
         current_pkg_source = hookenv.config('triliovault-pkg-source')
         is_trilio_pkg_source_changed = reactive.helpers.data_changed('triliovault-pkg-source', current_pkg_source)

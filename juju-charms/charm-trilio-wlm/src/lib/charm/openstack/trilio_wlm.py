@@ -412,6 +412,7 @@ class TrilioWLMCharmUssuri41Base(TrilioWLMBaseCharm):
         "python3-neutronclient",
         "python3-apt",
         "python3-retrying",
+        "python3-trilio-dms",
     ]
 
     all_packages = [
@@ -425,6 +426,7 @@ class TrilioWLMCharmUssuri41Base(TrilioWLMBaseCharm):
         "python3-neutronclient",
         "python3-apt",
         "python3-retrying",
+        "python3-trilio-dms",
     ]
 
 

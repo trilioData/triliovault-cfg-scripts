@@ -106,8 +106,7 @@ def render_config(*args):
             "/etc/triliovault-datamover/datamover_logging.conf",
             "/etc/triliovault-object-store/object_store_logging.conf",
         ]
-        trilio_charm_instance = trilio_dm.TrilioDataMoverBaseCharm()
-        packages_to_install = trilio_charm_instance.base_packages
+        packages_to_install = charm_class.base_packages
         hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")
 
         current_pkg_source = hookenv.config('triliovault-pkg-source')
@@ -118,6 +117,7 @@ def render_config(*args):
             reactive.set_state('triliovault-packages.installed')
 
         charm_class.render_with_interfaces(args, configs=template_list)
+        charm_class.assess_status()
 
     # Retrieve AMQP connection details from the amqp interface
     amqp = reactive.RelationBase.from_state('amqp.available')
