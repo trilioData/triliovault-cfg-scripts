@@ -2,13 +2,13 @@ ARG FROM=openstackhelm/nova:2023.2-ubuntu_jammy
 FROM ${FROM}
 
 LABEL maintainer="shyam.biradar@trilio.io" \
-      name="trilio/trilio-dms" \
-      version="6.2.0" \
-      release="6.2" \
-      vendor="TrilioData" \
-      summary="TrilioData Dynamic Mount Service" \
-      description="TrilioData Dynamic Mount Service container image" \
-      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+    name="trilio/trilio-dms" \
+    version="6.2.0" \
+    release="6.2" \
+    vendor="TrilioData" \
+    summary="TrilioData Dynamic Mount Service" \
+    description="TrilioData Dynamic Mount Service container image" \
+    org.opencontainers.image.authors="kanav.malhotra@trilio.io"
 
 USER root
 
@@ -29,17 +29,17 @@ COPY trilio.list /etc/apt/sources.list.d/
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        apt-utils \
-        software-properties-common \
-        ca-certificates \
-        python3 \
-        python3-pip \
-        nfs-common \
-        fuse \
-        libfuse2 \
-        default-mysql-client; \
+    apt-utils \
+    software-properties-common \
+    ca-certificates \
+    python3 \
+    python3-pip \
+    nfs-common \
+    fuse \
+    libfuse2 \
+    default-mysql-client; \
     apt-get update && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
-        python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated; \
+    python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated; \
     pip3 install --no-cache-dir --upgrade pip; \
     pip3 install --no-cache-dir azure-storage-blob==12.25.1 azure-core loguru; \
     echo "user_allow_other" > /etc/fuse.conf; \
@@ -48,11 +48,11 @@ RUN set -eux; \
 
 # Setup project structure
 RUN mkdir -p \
-        ${TRILIO_MOUNT_DIR} \
-        /etc/${PROJECT_DIR} \
-        /opt/${PROJECT_DIR} \
-        /var/log/${PROJECT_DIR} \
-        /run/dms/ \
+    ${TRILIO_MOUNT_DIR} \
+    /etc/${PROJECT_DIR} \
+    /opt/${PROJECT_DIR} \
+    /var/log/${PROJECT_DIR} \
+    /run/dms/ \
     && chmod 777 ${TRILIO_MOUNT_DIR}
 
 # Copy and configure nova user script
@@ -64,11 +64,11 @@ RUN set -eux; \
     chmod +x /opt/${PROJECT_DIR}/nova_userid.sh; \
     ./opt/${PROJECT_DIR}/nova_userid.sh; \
     chown -R nova:nova \
-        /etc/${PROJECT_DIR} \
-        /opt/${PROJECT_DIR} \
-        /var/log/${PROJECT_DIR} \
-        /run/dms/ \
-        ${TRILIO_MOUNT_DIR}
+    /etc/${PROJECT_DIR} \
+    /opt/${PROJECT_DIR} \
+    /var/log/${PROJECT_DIR} \
+    /run/dms/ \
+    ${TRILIO_MOUNT_DIR}
 
 # Add nova to disk group
 RUN usermod -aG disk nova
