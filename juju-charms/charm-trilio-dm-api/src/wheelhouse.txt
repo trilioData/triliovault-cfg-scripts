@@ -3,7 +3,7 @@ setuptools-scm==9.2.2
 jaraco.functools>=4.0
 jaraco.text>=4.0.0
 packaging==26.2
-vcs-versioning==0.0.1
+vcs-versioning==1.1.1
 pdm-backend
 poetry-core>=1.0.0
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
