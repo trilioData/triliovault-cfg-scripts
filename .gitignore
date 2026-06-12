@@ -22,5 +22,3 @@ environments.yaml
 deployment-report-*.md
 upgrade-report-*.md
 
-# Ignore package source lists in docker builds
-trilio.list
