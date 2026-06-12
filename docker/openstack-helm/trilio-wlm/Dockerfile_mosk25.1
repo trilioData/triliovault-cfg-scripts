@@ -61,7 +61,7 @@ RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
 RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_userid.sh
 
 RUN apt install -y python3-neutronclient python3-glanceclient python3-attr \
-    && apt-get install -y workloadmgr fuse3 python3-s3-fuse-plugin --allow-unauthenticated \
+    && apt-get install -y workloadmgr fuse3 python3-s3-fuse-plugin python3-trilio-dms python3-contegoclient --allow-unauthenticated \
     && mkdir -p /var/trilio/triliovault-mounts /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store/ \
     && chmod 777 /var/trilio \
     && chmod 777 /var/trilio/triliovault-mounts

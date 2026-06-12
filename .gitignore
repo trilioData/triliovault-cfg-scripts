@@ -21,3 +21,4 @@ environments.yaml
 # Claude-generated deployment/upgrade reports
 deployment-report-*.md
 upgrade-report-*.md
+
