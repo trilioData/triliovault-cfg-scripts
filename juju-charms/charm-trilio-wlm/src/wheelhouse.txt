@@ -1,5 +1,5 @@
 pip==23.3.2
-setuptools==67.6.1
+setuptools==82.0.1
 pdm-backend
 poetry-core>=1.0.0
 setuptools-scm>=8.0
