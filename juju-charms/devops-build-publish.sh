@@ -109,8 +109,8 @@ ALL_CHARMS=(wlm data-mover dm-api horizon-plugin)
 # These are added to src/wheelhouse/ before charmcraft pack and removed
 # immediately after so they do not persist in the source tree.
 declare -A CHARM_EXTRA_WHEELS=(
-    [wlm]="setuptools-scm==9.2.2 packaging==26.2"
-    [dm-api]="setuptools-scm==9.2.2 packaging==26.2"
+    [wlm]="setuptools-scm==9.2.2 vcs-versioning==1.1.1 packaging==26.2"
+    [dm-api]="setuptools-scm==9.2.2 vcs-versioning==1.1.1 packaging==26.2"
 )
 
 if [ -n "$SINGLE_CHARM" ]; then
@@ -178,6 +178,7 @@ build_and_release_charm() {
         python3 -m pip download $EXTRA_WHEELS \
             --dest src/wheelhouse \
             --only-binary :all: \
+            --python-version 3.10 \
             --quiet
         while IFS= read -r whl; do
             [ -n "$whl" ] && _BUILD_WHEELS+=("$whl")
