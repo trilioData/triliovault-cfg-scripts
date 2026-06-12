@@ -250,8 +250,8 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         so trilio-dms is restarted when those files change.
         """
         return [
-            f for f in self.restart_map.keys()
-            if f not in (self.dms_server_conf, self.dms_client_conf)
+            conf_path for conf_path in self.restart_map.keys()
+            if conf_path not in (self.dms_server_conf, self.dms_client_conf)
         ]
 
 

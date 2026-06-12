@@ -197,8 +197,8 @@ class TrilioDataMoverBaseCharm(
     @property
     def config_files(self):
         return [
-            f for f in self.restart_map.keys()
-            if f != self.dms_server_conf
+            conf_path for conf_path in self.restart_map.keys()
+            if conf_path != self.dms_server_conf
         ]
 
     def custom_assess_status_check(self):
