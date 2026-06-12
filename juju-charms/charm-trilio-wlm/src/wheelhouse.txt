@@ -3,6 +3,8 @@ setuptools==67.6.1
 pdm-backend
 poetry-core>=1.0.0
 setuptools-scm==9.2.2
+vcs-versioning==1.1.1
+packaging==26.2
 calver<=2022.6.26
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
 
