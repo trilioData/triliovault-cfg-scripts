@@ -234,9 +234,25 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
             self.workloadmgr_log_conf: self.services,
+            self.dms_server_conf: ["trilio-dms"],
+            self.dms_client_conf: ["trilio-dms"],
         }
 
         return _restart_map
+
+    @property
+    def config_files(self):
+        """Config files to auto-render via render_with_interfaces.
+
+        DMS configs are excluded here because they require custom context
+        (rabbitmq_url, node_id, auth_url) built in the handler, and their
+        templates are rendered explicitly there. They remain in restart_map
+        so trilio-dms is restarted when those files change.
+        """
+        return [
+            f for f in self.restart_map.keys()
+            if f not in (self.dms_server_conf, self.dms_client_conf)
+        ]
 
 
     def configure_ha_resources(self, hacluster):
