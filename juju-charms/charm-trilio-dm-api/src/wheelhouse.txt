@@ -1,5 +1,5 @@
-setuptools==77.0.3
-setuptools-scm>=8.0
+setuptools==67.6.1
+setuptools-scm==9.2.2
 jaraco.functools>=4.0
 jaraco.text>=4.0.0
 packaging>=24.1
