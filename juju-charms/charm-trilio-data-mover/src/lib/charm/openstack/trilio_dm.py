@@ -177,7 +177,7 @@ class TrilioDataMoverBaseCharm(
             },
         ]
 
-    dms_server_conf = "/etc/triliovault-dms/dms-server.conf"
+    dms_server_conf = "/etc/triliovault-dms/server.conf"
 
     @property
     def services(self):
@@ -193,6 +193,13 @@ class TrilioDataMoverBaseCharm(
         if reactive.flags.is_flag_set("ceph.available"):
             _restart_map[self.ceph_conf] = self.services
         return _restart_map
+
+    @property
+    def config_files(self):
+        return [
+            f for f in self.restart_map.keys()
+            if f != self.dms_server_conf
+        ]
 
     def custom_assess_status_check(self):
         return None, None

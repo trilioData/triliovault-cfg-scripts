@@ -154,7 +154,6 @@ def render_config(*args):
     # Render DMS server config
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
     dms_server_context = {
@@ -163,7 +162,7 @@ def render_config(*args):
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
-    dms_server_conf_path = os.path.join(dms_conf_dir, 'dms-server.conf')
+    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
         source='triliovault-dms-server.conf',
         target=dms_server_conf_path,
