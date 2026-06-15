@@ -247,7 +247,23 @@ def render_config(*args):
     }
 
     root_uid = pwd.getpwnam('root').pw_uid
+    nova_uid = pwd.getpwnam('nova').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid
+
+    # Pre-create WLM log files with nova ownership so services can write to them.
+    log_dir = '/var/log/triliovault'
+    os.makedirs(log_dir, exist_ok=True)
+    os.chown(log_dir, nova_uid, nova_gid)
+    for log_file_name in [
+        'triliovault-wlm-api.log',
+        'triliovault-wlm-cron.log',
+        'triliovault-wlm-scheduler.log',
+        'triliovault-wlm-workloads.log',
+    ]:
+        log_file = os.path.join(log_dir, log_file_name)
+        if not os.path.exists(log_file):
+            open(log_file, 'w').close()
+        os.chown(log_file, nova_uid, nova_gid)
 
     wlm_conf_dir = "/etc/triliovault-wlm"
     wlm_conf_file_path = '/etc/triliovault-wlm/triliovault-wlm.conf'

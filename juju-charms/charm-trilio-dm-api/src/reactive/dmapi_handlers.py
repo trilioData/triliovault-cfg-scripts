@@ -46,6 +46,18 @@ def render_config(*args):
     """
     with charm.provide_charm_instance() as charm_class:
         charm_class.upgrade_if_available(args)
+
+    # Pre-create log file with dmapi ownership so the service can write to it.
+    # /var/log/triliovault/ is nova:nova 755 — dmapi user cannot create files there.
+    log_dir = '/var/log/triliovault'
+    os.makedirs(log_dir, exist_ok=True)
+    dmapi_uid = pwd.getpwnam('dmapi').pw_uid
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
+    log_file = os.path.join(log_dir, 'triliovault-datamover-api.log')
+    if not os.path.exists(log_file):
+        open(log_file, 'w').close()
+    os.chown(log_file, dmapi_uid, dmapi_gid)
+
     with charm.provide_charm_instance() as charm_class:
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
