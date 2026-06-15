@@ -1,5 +1,5 @@
 --only-binary setuptools,setuptools-scm,jaraco.functools,jaraco.text,packaging,vcs-versioning,pdm-backend,poetry-core
-setuptools==67.6.1
+setuptools==77.0.1
 setuptools-scm==9.2.2
 jaraco.functools>=4.0
 jaraco.text>=4.0.0
