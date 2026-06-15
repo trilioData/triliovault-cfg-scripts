@@ -1,3 +1,4 @@
+--only-binary pip,setuptools,pdm-backend,poetry-core,setuptools-scm,vcs-versioning,packaging
 pip==23.3.2
 setuptools==67.6.1
 pdm-backend
