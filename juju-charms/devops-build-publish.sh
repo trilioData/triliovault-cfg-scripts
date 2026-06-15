@@ -103,16 +103,6 @@ declare -A CHARM_DIR_MAP=(
 
 ALL_CHARMS=(wlm data-mover dm-api horizon-plugin)
 
-# Per-charm binary wheels to download at build time (not committed to git).
-# Required when charmcraft fetches source tarballs whose build deps are
-# incompatible with the charm's pinned setuptools version.
-# These are added to src/wheelhouse/ before charmcraft pack and removed
-# immediately after so they do not persist in the source tree.
-declare -A CHARM_EXTRA_WHEELS=(
-    [wlm]="setuptools-scm==9.2.2 vcs-versioning==1.1.1 packaging==26.2"
-    [dm-api]="setuptools-scm==9.2.2 vcs-versioning==1.1.1 packaging==26.2"
-)
-
 if [ -n "$SINGLE_CHARM" ]; then
     if [ -z "${CHARM_DIR_MAP[$SINGLE_CHARM]+x}" ]; then
         echo "ERROR: Unknown charm '$SINGLE_CHARM'."
@@ -167,27 +157,6 @@ build_and_release_charm() {
 
     cd "$CHARM_PATH"
 
-    # Download per-charm binary wheels at build time (not committed to git)
-    local EXTRA_WHEELS="${CHARM_EXTRA_WHEELS[$SHORT_NAME]:-}"
-    local -a _BUILD_WHEELS=()
-    if [ -n "$EXTRA_WHEELS" ]; then
-        echo " Downloading build-time binary wheels: $EXTRA_WHEELS"
-        local _wh_before
-        _wh_before=$(ls src/wheelhouse/*.whl 2>/dev/null | sort || echo "")
-        # shellcheck disable=SC2086
-        python3 -m pip download $EXTRA_WHEELS \
-            --dest src/wheelhouse \
-            --only-binary :all: \
-            --python-version 3.10 \
-            --quiet
-        while IFS= read -r whl; do
-            [ -n "$whl" ] && _BUILD_WHEELS+=("$whl")
-        done < <(comm -13 \
-            <(echo "$_wh_before") \
-            <(ls src/wheelhouse/*.whl 2>/dev/null | sort || echo ""))
-        echo " Downloaded: ${_BUILD_WHEELS[*]:-none}"
-    fi
-
     echo " Cleaning previous build artifacts..."
     charmcraft clean
 
@@ -196,12 +165,6 @@ build_and_release_charm() {
 
     echo " Packing charm..."
     charmcraft pack
-
-    # Remove build-time wheels — they were only needed for the pack step
-    if [ "${#_BUILD_WHEELS[@]}" -gt 0 ]; then
-        echo " Removing build-time wheels from src/wheelhouse/ ..."
-        rm -f "${_BUILD_WHEELS[@]}"
-    fi
 
     # Find the built .charm file
     _LAST_CHARM_FILE=$(ls *.charm 2>/dev/null | head -1)
