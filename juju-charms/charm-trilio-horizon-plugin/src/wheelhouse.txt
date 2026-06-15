@@ -1,4 +1,4 @@
---only-binary :all:
+--only-binary setuptools,setuptools-scm,pdm-backend,poetry-core,calver,MarkupSafe
 setuptools==67.6.1
 setuptools-scm==9.2.2
 pdm-backend
