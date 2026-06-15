@@ -1,5 +1,6 @@
---only-binary setuptools,pdm-backend,poetry-core
+--only-binary setuptools,setuptools-scm,pdm-backend,poetry-core
 setuptools==67.6.1
+setuptools-scm==9.2.2
 pdm-backend
 poetry-core>=1.0.0
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
