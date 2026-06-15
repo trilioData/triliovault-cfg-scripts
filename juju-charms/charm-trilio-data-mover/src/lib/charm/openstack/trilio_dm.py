@@ -178,17 +178,19 @@ class TrilioDataMoverBaseCharm(
         ]
 
     dms_server_conf = "/etc/triliovault-dms/server.conf"
+    dms_s3vaultfuse_conf = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 
     @property
     def services(self):
-        return ["tvault-contego", "trilio-dms"]
+        return ["tvault-contego", "trilio-dms-server"]
 
     @property
     def restart_map(self):
         _restart_map = {
             self.data_mover_conf: self.services,
             self.datamover_log_conf: self.services,
-            self.dms_server_conf: ["trilio-dms"],
+            self.dms_server_conf: ["trilio-dms-server"],
+            self.dms_s3vaultfuse_conf: ["trilio-dms-server"],
         }
         if reactive.flags.is_flag_set("ceph.available"):
             _restart_map[self.ceph_conf] = self.services

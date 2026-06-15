@@ -18,6 +18,7 @@ import charms_openstack.charm as charm
 import charms.reactive as reactive
 from charmhelpers.core.templating import render
 from charmhelpers.core import hookenv
+from charmhelpers.core import host
 
 # This charm's library contains all of the handler code associated with
 # dmapi
@@ -61,6 +62,11 @@ def render_config(*args):
     with charm.provide_charm_instance() as charm_class:
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
+
+    # DMS server must not run on DMAPI nodes — only the client library is needed here.
+    # python3-trilio-dms installs the systemd unit; explicitly stop and disable it.
+    host.service('disable', 'trilio-dms-server')
+    host.service('stop', 'trilio-dms-server')
 
     reactive.set_state("config.rendered")
 

@@ -213,6 +213,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
 
     dms_server_conf = "/etc/triliovault-dms/server.conf"
     dms_client_conf = "/etc/triliovault-dms/client.conf"
+    dms_s3vaultfuse_conf = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 
     @property
     def services(self):
@@ -236,6 +237,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.workloadmgr_log_conf: self.services,
             self.dms_server_conf: ["trilio-dms-server"],
             self.dms_client_conf: ["trilio-dms-server"],
+            self.dms_s3vaultfuse_conf: ["trilio-dms-server"],
         }
 
         return _restart_map
