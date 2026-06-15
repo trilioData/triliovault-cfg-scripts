@@ -166,11 +166,6 @@ build_and_release_charm() {
 
     cd "$CHARM_PATH"
 
-    echo " Pre-downloading transitive dependencies from wheelhouse.txt..."
-    python3 -m pip download -r src/wheelhouse.txt \
-        --dest src/wheelhouse \
-        --quiet
-
     echo " Cleaning previous build artifacts..."
     charmcraft clean
 
