@@ -41,6 +41,9 @@ RUN mkdir -p /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /va
 
 # Copy license file
 RUN mkdir /licenses
+COPY licensing.txt /licenses
 
+# Clean up unnecessary files
+RUN rm -f /etc/apt/sources.list.d/trilio.list
 # Become dmapi user for further operations
 USER dmapi
