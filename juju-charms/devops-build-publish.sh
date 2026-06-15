@@ -49,6 +49,15 @@ if [ -z "${CHARMCRAFT_AUTH:-}" ] && [ -f "$CHARMHUB_CREDS_FILE" ]; then
     echo "Loaded Charmhub credentials from $CHARMHUB_CREDS_FILE"
 fi
 
+# Validate credentials are still active before starting any builds
+if ! charmcraft whoami &>/dev/null; then
+    echo "ERROR: Charmhub credentials are expired or invalid."
+    echo ""
+    echo "Re-export credentials with a 1-year TTL using:"
+    echo "  charmcraft login --export $CHARMHUB_CREDS_FILE --ttl 31536000"
+    exit 1
+fi
+
 usage() {
     cat <<EOF
 Usage: $0 [charm]
