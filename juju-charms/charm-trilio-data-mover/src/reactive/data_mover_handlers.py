@@ -106,8 +106,7 @@ def render_config(*args):
             "/etc/triliovault-datamover/datamover_logging.conf",
             "/etc/triliovault-object-store/object_store_logging.conf",
         ]
-        trilio_charm_instance = trilio_dm.TrilioDataMoverBaseCharm()
-        packages_to_install = trilio_charm_instance.base_packages
+        packages_to_install = trilio_dm.TrilioDataMoverBaseCharm().base_packages
         hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")
 
         current_pkg_source = hookenv.config('triliovault-pkg-source')
@@ -154,30 +153,39 @@ def render_config(*args):
     # Render DMS server config
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'node_id': socket.gethostname(),
+        'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
-    dms_server_conf_path = os.path.join(dms_conf_dir, 'dms-server.conf')
+    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
-        source='triliovault-dms-server.conf',
+        source='etc_triliovault-dms_server.conf',
         target=dms_server_conf_path,
         context=dms_server_context,
     )
     os.chmod(dms_server_conf_path, 0o640)
     os.chown(dms_server_conf_path, root_uid, nova_gid)
 
+    # Render s3vaultfuse global config for DMS server
+    dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
+    render(
+        source='etc_triliovault-dms_s3vaultfuse-global.conf',
+        target=dms_s3vaultfuse_conf_path,
+        context={},
+    )
+    os.chmod(dms_s3vaultfuse_conf_path, 0o644)
+    os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
+
     # Enable and (re)start DMS server service
-    host.service('enable', 'trilio-dms')
-    if host.service_running('trilio-dms'):
-        host.service('restart', 'trilio-dms')
+    host.service('enable', 'trilio-dms-server')
+    if host.service_running('trilio-dms-server'):
+        host.service('restart', 'trilio-dms-server')
     else:
-        host.service('start', 'trilio-dms')
+        host.service('start', 'trilio-dms-server')
 
     set_state("config.rendered")
 

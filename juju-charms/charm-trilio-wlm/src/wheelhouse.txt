@@ -1,8 +1,11 @@
+--only-binary pip,setuptools,pdm-backend,poetry-core,setuptools-scm,vcs-versioning,packaging
 pip==23.3.2
 setuptools==67.6.1
 pdm-backend
 poetry-core>=1.0.0
-setuptools-scm>=8.0
+setuptools-scm==9.2.2
+vcs-versioning==1.1.1
+packaging==26.2
 calver<=2022.6.26
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
 

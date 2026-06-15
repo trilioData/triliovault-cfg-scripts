@@ -1,8 +1,10 @@
-setuptools==77.0.1
-setuptools-scm>=8.0
+--only-binary setuptools,setuptools-scm,jaraco.functools,jaraco.text,packaging,vcs-versioning,pdm-backend,poetry-core
+setuptools==77.0.3
+setuptools-scm==9.2.2
 jaraco.functools>=4.0
 jaraco.text>=4.0.0
-packaging>=24.1
+packaging==26.2
+vcs-versioning==1.1.1
 pdm-backend
 poetry-core>=1.0.0
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack

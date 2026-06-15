@@ -18,6 +18,7 @@ import charms_openstack.charm as charm
 import charms.reactive as reactive
 from charmhelpers.core.templating import render
 from charmhelpers.core import hookenv
+from charmhelpers.core import host
 
 # This charm's library contains all of the handler code associated with
 # dmapi
@@ -46,9 +47,26 @@ def render_config(*args):
     """
     with charm.provide_charm_instance() as charm_class:
         charm_class.upgrade_if_available(args)
+
+    # Pre-create log file with dmapi ownership so the service can write to it.
+    # /var/log/triliovault/ is nova:nova 755 — dmapi user cannot create files there.
+    log_dir = '/var/log/triliovault'
+    os.makedirs(log_dir, exist_ok=True)
+    dmapi_uid = pwd.getpwnam('dmapi').pw_uid
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
+    log_file = os.path.join(log_dir, 'triliovault-datamover-api.log')
+    if not os.path.exists(log_file):
+        open(log_file, 'w').close()
+    os.chown(log_file, dmapi_uid, dmapi_gid)
+
     with charm.provide_charm_instance() as charm_class:
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
+
+    # DMS server must not run on DMAPI nodes — only the client library is needed here.
+    # python3-trilio-dms installs the systemd unit; explicitly stop and disable it.
+    host.service('disable', 'trilio-dms-server')
+    host.service('stop', 'trilio-dms-server')
 
     reactive.set_state("config.rendered")
 
@@ -109,7 +127,7 @@ def render_dms_client_config(*args):
 
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
-        source='triliovault-dms-client.conf',
+        source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
         context={'rabbitmq_url': transport_url, 'db_url': db_url},
     )

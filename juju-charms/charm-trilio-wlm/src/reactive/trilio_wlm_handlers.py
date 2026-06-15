@@ -144,8 +144,7 @@ def render_config(*args):
     haproxy_port = 8780
     api_port = determine_api_port(haproxy_port, singlenode_mode=True)
     with charm.provide_charm_instance() as charm_class:
-        trilio_charm_instance = trilio_wlm.TrilioWLMBaseCharm()
-        packages_to_install = trilio_charm_instance.base_packages
+        packages_to_install = TrilioWLMBaseCharm().base_packages
         hookenv.log(f"Trilio Wlm Charm Packages: {packages_to_install}")
         current_pkg_source = hookenv.config('triliovault-pkg-source')
         is_trilio_pkg_source_changed = reactive.helpers.data_changed('triliovault-pkg-source', current_pkg_source)
@@ -248,7 +247,23 @@ def render_config(*args):
     }
 
     root_uid = pwd.getpwnam('root').pw_uid
+    nova_uid = pwd.getpwnam('nova').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid
+
+    # Pre-create WLM log files with nova ownership so services can write to them.
+    log_dir = '/var/log/triliovault'
+    os.makedirs(log_dir, exist_ok=True)
+    os.chown(log_dir, nova_uid, nova_gid)
+    for log_file_name in [
+        'triliovault-wlm-api.log',
+        'triliovault-wlm-cron.log',
+        'triliovault-wlm-scheduler.log',
+        'triliovault-wlm-workloads.log',
+    ]:
+        log_file = os.path.join(log_dir, log_file_name)
+        if not os.path.exists(log_file):
+            open(log_file, 'w').close()
+        os.chown(log_file, nova_uid, nova_gid)
 
     wlm_conf_dir = "/etc/triliovault-wlm"
     wlm_conf_file_path = '/etc/triliovault-wlm/triliovault-wlm.conf'
@@ -262,21 +277,20 @@ def render_config(*args):
     os.chmod(wlm_conf_dir, 0o755)
     os.chown(wlm_conf_dir, root_uid, nova_gid)
 
-    # Render DMS server config (WLM control-plane nodes also run trilio-dms server)
+    # Render DMS server config (WLM control-plane nodes also run trilio-dms-server server)
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'node_id': socket.gethostname(),
+        'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
-    dms_server_conf_path = os.path.join(dms_conf_dir, 'dms-server.conf')
+    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
-        source='triliovault-dms-server.conf',
+        source='etc_triliovault-dms_server.conf',
         target=dms_server_conf_path,
         context=dms_server_context,
     )
@@ -288,21 +302,31 @@ def render_config(*args):
         'rabbitmq_url': transport_url,
         'db_url': f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
     }
-    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'wlm.conf')
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
-        source='triliovault-dms-client.conf',
+        source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
         context=dms_client_context,
     )
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, nova_gid)
 
+    # Render s3vaultfuse global config for DMS server
+    dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
+    render(
+        source='etc_triliovault-dms_s3vaultfuse-global.conf',
+        target=dms_s3vaultfuse_conf_path,
+        context={},
+    )
+    os.chmod(dms_s3vaultfuse_conf_path, 0o644)
+    os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
+
     # Enable and (re)start DMS server service
-    host.service('enable', 'trilio-dms')
-    if host.service_running('trilio-dms'):
-        host.service('restart', 'trilio-dms')
+    host.service('enable', 'trilio-dms-server')
+    if host.service_running('trilio-dms-server'):
+        host.service('restart', 'trilio-dms-server')
     else:
-        host.service('start', 'trilio-dms')
+        host.service('start', 'trilio-dms-server')
 
     # Disable and stop the default tvault-object-store service (no longer used in 6.2)
     host.service('disable', 'tvault-object-store.service')
