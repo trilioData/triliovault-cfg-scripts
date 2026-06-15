@@ -277,7 +277,7 @@ def render_config(*args):
     os.chmod(wlm_conf_dir, 0o755)
     os.chown(wlm_conf_dir, root_uid, nova_gid)
 
-    # Render DMS server config (WLM control-plane nodes also run trilio-dms server)
+    # Render DMS server config (WLM control-plane nodes also run trilio-dms-server server)
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
@@ -312,11 +312,11 @@ def render_config(*args):
     os.chown(dms_client_conf_path, root_uid, nova_gid)
 
     # Enable and (re)start DMS server service
-    host.service('enable', 'trilio-dms')
-    if host.service_running('trilio-dms'):
-        host.service('restart', 'trilio-dms')
+    host.service('enable', 'trilio-dms-server')
+    if host.service_running('trilio-dms-server'):
+        host.service('restart', 'trilio-dms-server')
     else:
-        host.service('start', 'trilio-dms')
+        host.service('start', 'trilio-dms-server')
 
     # Disable and stop the default tvault-object-store service (no longer used in 6.2)
     host.service('disable', 'tvault-object-store.service')

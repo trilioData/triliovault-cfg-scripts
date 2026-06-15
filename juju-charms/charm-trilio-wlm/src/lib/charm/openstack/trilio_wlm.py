@@ -217,7 +217,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
     @property
     def services(self):
         """Determine the services associated with this class"""
-        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads", "trilio-dms"]
+        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads", "trilio-dms-server"]
 
         if not reactive.flags.is_flag_set("ha.available"):
             # Only manage wlm-cron service when running solo as an
@@ -234,8 +234,8 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
             self.workloadmgr_log_conf: self.services,
-            self.dms_server_conf: ["trilio-dms"],
-            self.dms_client_conf: ["trilio-dms"],
+            self.dms_server_conf: ["trilio-dms-server"],
+            self.dms_client_conf: ["trilio-dms-server"],
         }
 
         return _restart_map
