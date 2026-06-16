@@ -1,4 +1,4 @@
---only-binary setuptools,setuptools-scm,pdm-backend,poetry-core,calver,MarkupSafe
+--only-binary setuptools,setuptools-scm,pdm-backend,poetry-core,calver,MarkupSafe,packaging,hatchling,flit_core,flit_scm,trove_classifiers,jinja2,anyio,dnspython,idna,netaddr,netifaces,pathspec,pbr,pip,pluggy,psutil,pyaml,pyyaml,sniffio,tomli,wheel,Cython
 setuptools==67.6.1
 setuptools-scm==9.2.2
 pdm-backend
