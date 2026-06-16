@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import configparser
 import os
 import pwd
 import grp
@@ -156,20 +155,6 @@ def render_config(*args):
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
-    # Derive rabbitmq_queue_type from nova.conf rabbit_quorum_queue setting
-    rabbitmq_queue_type = ''
-    nova_conf = '/etc/nova/nova.conf'
-    if os.path.exists(nova_conf):
-        nova_parser = configparser.ConfigParser()
-        nova_parser.read(nova_conf)
-        for section in ('oslo_messaging_rabbit', 'DEFAULT'):
-            try:
-                if nova_parser.get(section, 'rabbit_quorum_queue').lower() in ('true', '1', 'yes'):
-                    rabbitmq_queue_type = 'quorum'
-                    break
-            except (configparser.NoSectionError, configparser.NoOptionError):
-                continue
-
     # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
     ca_cert = identity_service.get('ca_cert', '')
     if ca_cert:
@@ -180,7 +165,6 @@ def render_config(*args):
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'rabbitmq_queue_type': rabbitmq_queue_type,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
