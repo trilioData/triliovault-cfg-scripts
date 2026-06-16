@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import configparser
 import glob
 import os
 import pwd
@@ -238,6 +239,9 @@ def render_config(*args):
             'transport_url': transport_url,
             'vhost': amqp_vhost,
             'triliovault_hostnames': my_host_ip,
+            'rabbit_quorum_queue': charm_config.get('rabbit-quorum-queue', False),
+            'amqp_durable_queues': charm_config.get('amqp-durable-queues', False),
+            'rabbitmq_ssl': bool(amqp.ssl_port()),
         },
         'backup_targets': [],
         'amqp': amqp,
@@ -282,11 +286,35 @@ def render_config(*args):
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
+    # Derive rabbitmq_queue_type from nova.conf rabbit_quorum_queue setting
+    rabbitmq_queue_type = ''
+    nova_conf = '/etc/nova/nova.conf'
+    if os.path.exists(nova_conf):
+        nova_parser = configparser.ConfigParser()
+        nova_parser.read(nova_conf)
+        for section in ('oslo_messaging_rabbit', 'DEFAULT'):
+            try:
+                if nova_parser.get(section, 'rabbit_quorum_queue').lower() in ('true', '1', 'yes'):
+                    rabbitmq_queue_type = 'quorum'
+                    break
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                continue
+
+    # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
+    ca_cert = identity_service.get('ca_cert', '')
+    if ca_cert:
+        host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
+        barbican_ca_bundle = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
+    else:
+        barbican_ca_bundle = ''
+
     dms_server_context = {
         'rabbitmq_url': transport_url,
+        'rabbitmq_queue_type': rabbitmq_queue_type,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
-        'barbican_ssl_verify': 'False',
+        'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
+        'barbican_ca_bundle': barbican_ca_bundle,
     }
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
@@ -301,6 +329,7 @@ def render_config(*args):
     dms_client_context = {
         'rabbitmq_url': transport_url,
         'db_url': f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+        'node_id': socket.getfqdn(),
     }
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(

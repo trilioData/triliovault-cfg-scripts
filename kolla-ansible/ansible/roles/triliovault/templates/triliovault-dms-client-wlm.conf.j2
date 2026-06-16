@@ -3,6 +3,8 @@ rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rp
 
 db_url = mysql+pymysql://{{ triliovault_db_details[1].database_user }}:{{ triliovault_wlm_database_password }}@{{ triliovault_db_details[1].database_address }}/{{ triliovault_db_details[1].database_name }}
 
+node_id = {{ inventory_hostname }}
+
 request_timeout = 60
 log_level = INFO
 log_file = /var/log/triliovault/trilio-dms-client.log

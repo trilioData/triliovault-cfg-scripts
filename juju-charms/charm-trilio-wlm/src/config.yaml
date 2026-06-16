@@ -93,3 +93,18 @@ options:
     description: |
       Process timeout in seconds, used in file-search tool
       This option is ignored if Trilio is before 4.2
+  rabbit-quorum-queue:
+    type: boolean
+    default: False
+    description: |
+      Enable RabbitMQ quorum queues (rabbit_quorum_queue and
+      rabbit_transient_quorum_queue). Set to True when RabbitMQ is configured
+      with quorum queues (equivalent to om_enable_rabbitmq_quorum_queues in
+      kolla-ansible).
+  amqp-durable-queues:
+    type: boolean
+    default: False
+    description: |
+      Enable durable AMQP queues (amqp_durable_queues). Set to True when
+      RabbitMQ HA is enabled (equivalent to om_enable_rabbitmq_high_availability
+      in kolla-ansible).
