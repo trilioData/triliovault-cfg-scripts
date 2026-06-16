@@ -1,6 +1,7 @@
---only-binary setuptools,setuptools-scm,pdm-backend,poetry-core,calver,MarkupSafe,packaging,hatchling,flit_core,flit_scm,trove_classifiers,jinja2,anyio,dnspython,idna,netaddr,pathspec,pbr,pip,pluggy,psutil,pyaml,pyyaml,sniffio,tomli,wheel,Cython
+--only-binary setuptools,setuptools-scm,pdm-backend,poetry-core,calver,MarkupSafe,packaging,hatchling,flit_core,flit_scm,trove_classifiers,jinja2,anyio,dnspython,idna,netaddr,pathspec,pbr,pip,pluggy,psutil,pyaml,pyyaml,sniffio,tomli,wheel,Cython,typing_extensions
 setuptools==67.6.1
 setuptools-scm==9.2.2
+typing_extensions>=4.0
 pdm-backend
 poetry-core>=1.0.0
 git+https://opendev.org/openstack/charms.openstack.git#egg=charms.openstack
