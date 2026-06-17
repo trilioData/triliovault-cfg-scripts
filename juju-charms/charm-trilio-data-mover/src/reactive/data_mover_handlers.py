@@ -94,7 +94,7 @@ def run_trilio_install_upgrade_packages(packages):
 @reactive.when_not('is-update-status-hook')
 @reactive.when("shared-db.available")
 @reactive.when("amqp.available")
-@reactive.when("identity-service.available")
+@reactive.when("identity-service.joined")
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
     ceph = reactive.endpoint_from_flag("ceph.available")
