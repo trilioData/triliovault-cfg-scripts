@@ -118,14 +118,6 @@ def render_config(*args):
 
         charm_class.render_with_interfaces(args, configs=template_list)
 
-    set_state("config.rendered")
-
-
-@reactive.when_not('is-update-status-hook')
-@reactive.when("amqp.available")
-@reactive.when("identity-service.available")
-def render_dms_server_config(*args):
-    """Render DMS server and s3vaultfuse configs for the trilio-dms-server service."""
     amqp = reactive.RelationBase.from_state('amqp.available')
     amqp_username = amqp.username()
     amqp_password = amqp.password()
@@ -199,6 +191,8 @@ def render_dms_server_config(*args):
     else:
         host.service('start', 'trilio-dms-server')
     hookenv.log("DMS server config rendered for data-mover.")
+
+    set_state("config.rendered")
 
 
 @reactive.when_not('is-update-status-hook')
