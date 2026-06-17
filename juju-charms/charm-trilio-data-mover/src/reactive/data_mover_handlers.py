@@ -155,11 +155,20 @@ def render_config(*args):
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
+    # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
+    ca_cert = identity_service.get('ca_cert', '')
+    if ca_cert:
+        host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
+        barbican_ca_bundle = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
+    else:
+        barbican_ca_bundle = ''
+
     dms_server_context = {
         'rabbitmq_url': transport_url,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
-        'barbican_ssl_verify': 'False',
+        'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
+        'barbican_ca_bundle': barbican_ca_bundle,
     }
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(

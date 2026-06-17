@@ -13,9 +13,11 @@
 import os
 import pwd
 import grp
+import socket
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
+from charms.reactive import hook
 from charmhelpers.core.templating import render
 from charmhelpers.core import hookenv
 from charmhelpers.core import host
@@ -68,6 +70,32 @@ def render_config(*args):
     host.service('disable', 'trilio-dms-server')
     host.service('stop', 'trilio-dms-server')
 
+    # Render DMS client config with rabbitmq_url and node_id from amqp relation.
+    # db_url is left empty here and filled in by render_dms_client_config() when
+    # the wlm-db relation becomes available.
+    amqp = reactive.endpoint_from_flag('amqp.available')
+    transport_url = (
+        f"rabbit://{amqp.username()}:{amqp.password()}"
+        f"@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
+    )
+    root_uid = pwd.getpwnam('root').pw_uid
+    nova_gid = grp.getgrnam('nova').gr_gid
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, nova_gid)
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
+    render(
+        source='etc_triliovault-dms_client.conf',
+        target=dms_client_conf_path,
+        context={
+            'rabbitmq_url': transport_url,
+            'db_url': '',
+            'node_id': socket.getfqdn(),
+        },
+    )
+    os.chmod(dms_client_conf_path, 0o640)
+    os.chown(dms_client_conf_path, root_uid, nova_gid)
+
     reactive.set_state("config.rendered")
 
 
@@ -84,6 +112,16 @@ def cluster_connected(hacluster):
     with charm.provide_charm_instance() as charm_class:
         charm_class.configure_ha_resources(hacluster)
         charm_class.assess_status()
+
+
+@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
+def wlm_db_connected():
+    reactive.set_state('wlm-db.connected')
+
+
+@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
+def wlm_db_disconnected():
+    reactive.clear_state('wlm-db.connected')
 
 
 @reactive.when('wlm-db.connected')
@@ -129,11 +167,16 @@ def render_dms_client_config(*args):
     render(
         source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
-        context={'rabbitmq_url': transport_url, 'db_url': db_url},
+        context={
+            'rabbitmq_url': transport_url,
+            'db_url': db_url,
+            'node_id': socket.getfqdn(),
+        },
     )
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, nova_gid)
     hookenv.log("DMS client config rendered for dmapi via wlm-db relation.")
+    host.service_restart('tvault-datamover-api')
 
 
 @reactive.when("shared-db.available")

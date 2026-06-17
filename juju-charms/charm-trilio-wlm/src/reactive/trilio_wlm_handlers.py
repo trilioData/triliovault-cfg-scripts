@@ -282,11 +282,20 @@ def render_config(*args):
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
+    # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
+    ca_cert = identity_service.get('ca_cert', '')
+    if ca_cert:
+        host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
+        barbican_ca_bundle = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
+    else:
+        barbican_ca_bundle = ''
+
     dms_server_context = {
         'rabbitmq_url': transport_url,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
-        'barbican_ssl_verify': 'False',
+        'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
+        'barbican_ca_bundle': barbican_ca_bundle,
     }
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
@@ -301,6 +310,7 @@ def render_config(*args):
     dms_client_context = {
         'rabbitmq_url': transport_url,
         'db_url': f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+        'node_id': socket.getfqdn(),
     }
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
@@ -362,6 +372,16 @@ def register_endpoints_and_request_notification(identity_service):
             instance.admin_url,
             requested_roles=[instance.options.trustee_role])
         instance.assess_status()
+
+
+@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
+def wlm_db_connected():
+    reactive.set_state('wlm-db.connected')
+
+
+@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
+def wlm_db_disconnected():
+    reactive.clear_state('wlm-db.connected')
 
 
 @reactive.when('wlm-db.connected')

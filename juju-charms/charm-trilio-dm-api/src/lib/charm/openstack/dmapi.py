@@ -89,8 +89,7 @@ class DmapiCharm(plugins.TrilioVaultCharm):
 
     # The restart map defines which services should be restarted when a given
     # file changes
-    restart_map = {DMAPI_CONF: services, DMAPI_LOG_CONF: services,
-                   DMS_CLIENT_CONF: services}
+    restart_map = {DMAPI_CONF: services, DMAPI_LOG_CONF: services}
 
     adapters_class = DmapiAdapters
 
