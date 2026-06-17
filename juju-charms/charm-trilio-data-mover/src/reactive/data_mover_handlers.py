@@ -118,7 +118,14 @@ def render_config(*args):
 
         charm_class.render_with_interfaces(args, configs=template_list)
 
-    # Retrieve AMQP connection details from the amqp interface
+    set_state("config.rendered")
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("amqp.available")
+@reactive.when("identity-service.available")
+def render_dms_server_config(*args):
+    """Render DMS server and s3vaultfuse configs for the trilio-dms-server service."""
     amqp = reactive.RelationBase.from_state('amqp.available')
     amqp_username = amqp.username()
     amqp_password = amqp.password()
@@ -138,7 +145,7 @@ def render_config(*args):
                 break
 
     if not identity_service:
-        hookenv.log("No identity service data available", level=hookenv.ERROR)
+        hookenv.log("No identity service data available for DMS server config", level=hookenv.ERROR)
         return
 
     keystone_auth_url = "{}://{}:{}/v3".format(
@@ -150,12 +157,10 @@ def render_config(*args):
     root_uid = pwd.getpwnam('root').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid
 
-    # Render DMS server config
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
     os.chown(dms_conf_dir, root_uid, nova_gid)
 
-    # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
     ca_cert = identity_service.get('ca_cert', '')
     if ca_cert:
         host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
@@ -179,7 +184,6 @@ def render_config(*args):
     os.chmod(dms_server_conf_path, 0o640)
     os.chown(dms_server_conf_path, root_uid, nova_gid)
 
-    # Render s3vaultfuse global config for DMS server
     dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
     render(
         source='etc_triliovault-dms_s3vaultfuse-global.conf',
@@ -189,14 +193,12 @@ def render_config(*args):
     os.chmod(dms_s3vaultfuse_conf_path, 0o644)
     os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
 
-    # Enable and (re)start DMS server service
     host.service('enable', 'trilio-dms-server')
     if host.service_running('trilio-dms-server'):
         host.service('restart', 'trilio-dms-server')
     else:
         host.service('start', 'trilio-dms-server')
-
-    set_state("config.rendered")
+    hookenv.log("DMS server config rendered for data-mover.")
 
 
 @reactive.when_not('is-update-status-hook')
