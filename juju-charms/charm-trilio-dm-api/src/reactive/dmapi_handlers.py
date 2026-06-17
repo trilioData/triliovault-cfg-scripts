@@ -79,10 +79,9 @@ def render_config(*args):
         f"@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
     )
     root_uid = pwd.getpwnam('root').pw_uid
-    nova_gid = grp.getgrnam('nova').gr_gid
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.chown(dms_conf_dir, root_uid, nova_gid)
+    os.chown(dms_conf_dir, root_uid, dmapi_gid)
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
         source='etc_triliovault-dms_client.conf',
@@ -94,7 +93,7 @@ def render_config(*args):
         },
     )
     os.chmod(dms_client_conf_path, 0o640)
-    os.chown(dms_client_conf_path, root_uid, nova_gid)
+    os.chown(dms_client_conf_path, root_uid, dmapi_gid)
 
     reactive.set_state("config.rendered")
 
@@ -157,11 +156,11 @@ def render_dms_client_config(*args):
     db_url = f"mysql+pymysql://workloadmgr:{wlm_db_password}@{mysql_host}:3306/workloadmgr"
 
     root_uid = pwd.getpwnam('root').pw_uid
-    nova_gid = grp.getgrnam('nova').gr_gid
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
 
     dms_conf_dir = '/etc/triliovault-dms'
     os.makedirs(dms_conf_dir, exist_ok=True)
-    os.chown(dms_conf_dir, root_uid, nova_gid)
+    os.chown(dms_conf_dir, root_uid, dmapi_gid)
 
     dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
     render(
@@ -174,7 +173,7 @@ def render_dms_client_config(*args):
         },
     )
     os.chmod(dms_client_conf_path, 0o640)
-    os.chown(dms_client_conf_path, root_uid, nova_gid)
+    os.chown(dms_client_conf_path, root_uid, dmapi_gid)
     hookenv.log("DMS client config rendered for dmapi via wlm-db relation.")
     host.service_restart('tvault-datamover-api')
 
