@@ -13,6 +13,7 @@
 import os
 import pwd
 import grp
+import socket
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
@@ -129,11 +130,16 @@ def render_dms_client_config(*args):
     render(
         source='etc_triliovault-dms_client.conf',
         target=dms_client_conf_path,
-        context={'rabbitmq_url': transport_url, 'db_url': db_url},
+        context={
+            'rabbitmq_url': transport_url,
+            'db_url': db_url,
+            'node_id': socket.getfqdn(),
+        },
     )
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, nova_gid)
     hookenv.log("DMS client config rendered for dmapi via wlm-db relation.")
+    host.service_restart('tvault-datamover-api')
 
 
 @reactive.when("shared-db.available")
