@@ -374,6 +374,16 @@ def register_endpoints_and_request_notification(identity_service):
         instance.assess_status()
 
 
+@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
+def wlm_db_connected():
+    reactive.set_state('wlm-db.connected')
+
+
+@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
+def wlm_db_disconnected():
+    reactive.clear_state('wlm-db.connected')
+
+
 @reactive.when('wlm-db.connected')
 @reactive.when('shared-db.available')
 def publish_wlm_db_credentials(*args):

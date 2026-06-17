@@ -17,6 +17,7 @@ import socket
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
+from charms.reactive import hook
 from charmhelpers.core.templating import render
 from charmhelpers.core import hookenv
 from charmhelpers.core import host
@@ -111,6 +112,16 @@ def cluster_connected(hacluster):
     with charm.provide_charm_instance() as charm_class:
         charm_class.configure_ha_resources(hacluster)
         charm_class.assess_status()
+
+
+@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
+def wlm_db_connected():
+    reactive.set_state('wlm-db.connected')
+
+
+@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
+def wlm_db_disconnected():
+    reactive.clear_state('wlm-db.connected')
 
 
 @reactive.when('wlm-db.connected')
