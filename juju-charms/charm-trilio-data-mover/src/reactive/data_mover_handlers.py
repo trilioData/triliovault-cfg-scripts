@@ -100,23 +100,6 @@ def render_config(*args):
     ceph = reactive.endpoint_from_flag("ceph.available")
     if ceph:
         args = (ceph,) + args
-    with charm.provide_charm_instance() as charm_class:
-        template_list = [
-            "/etc/triliovault-datamover/triliovault-datamover.conf",
-            "/etc/triliovault-datamover/datamover_logging.conf",
-            "/etc/triliovault-object-store/object_store_logging.conf",
-        ]
-        packages_to_install = trilio_dm.TrilioDataMoverBaseCharm().base_packages
-        hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")
-
-        current_pkg_source = hookenv.config('triliovault-pkg-source')
-        is_trilio_pkg_source_changed = reactive.helpers.data_changed(
-            'triliovault-pkg-source', current_pkg_source)
-        if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
-            run_trilio_install_upgrade_packages(packages_to_install)
-            reactive.set_state('triliovault-packages.installed')
-
-        charm_class.render_with_interfaces(args, configs=template_list)
 
     amqp = reactive.RelationBase.from_state('amqp.available')
     amqp_username = amqp.username()
@@ -191,6 +174,24 @@ def render_config(*args):
     else:
         host.service('start', 'trilio-dms-server')
     hookenv.log("DMS server config rendered for data-mover.")
+
+    with charm.provide_charm_instance() as charm_class:
+        template_list = [
+            "/etc/triliovault-datamover/triliovault-datamover.conf",
+            "/etc/triliovault-datamover/datamover_logging.conf",
+            "/etc/triliovault-object-store/object_store_logging.conf",
+        ]
+        packages_to_install = trilio_dm.TrilioDataMoverBaseCharm().base_packages
+        hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")
+
+        current_pkg_source = hookenv.config('triliovault-pkg-source')
+        is_trilio_pkg_source_changed = reactive.helpers.data_changed(
+            'triliovault-pkg-source', current_pkg_source)
+        if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
+            run_trilio_install_upgrade_packages(packages_to_install)
+            reactive.set_state('triliovault-packages.installed')
+
+        charm_class.render_with_interfaces(args, configs=template_list)
 
     set_state("config.rendered")
 
