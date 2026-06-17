@@ -115,6 +115,7 @@ def cluster_connected(hacluster):
 
 @hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
 def wlm_db_connected():
+    reactive.clear_state('wlm-db.connected')
     reactive.set_state('wlm-db.connected')
 
 
