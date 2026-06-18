@@ -118,6 +118,22 @@ def render_config(*args):
 
         charm_class.render_with_interfaces(args, configs=template_list)
 
+    set_state("config.rendered")
+
+
+@reactive.when("identity-service.connected")
+def request_keystone_notification(identity_service):
+    """Request Keystone auth notifications so identity-service.available is set."""
+    with charm.provide_charm_instance() as instance:
+        identity_service.request_notification(['nova', 'cinderv3', 'cinder', 'glance'])
+        instance.assess_status()
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("amqp.available")
+@reactive.when("identity-service.available")
+def render_dms_config(*args):
+    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
     amqp = reactive.RelationBase.from_state('amqp.available')
     transport_url = f"rabbit://{amqp.username()}:{amqp.password()}@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
 
@@ -133,7 +149,6 @@ def render_config(*args):
 
     if not identity_service:
         hookenv.log("No identity service data available for DMS server config", level=hookenv.ERROR)
-        set_state("config.rendered")
         return
 
     keystone_auth_url = "{}://{}:{}/v3".format(
@@ -170,8 +185,6 @@ def render_config(*args):
         host.service('restart', 'trilio-dms-server')
     else:
         host.service('start', 'trilio-dms-server')
-
-    set_state("config.rendered")
 
 
 @reactive.when_not('is-update-status-hook')

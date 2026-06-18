@@ -103,7 +103,7 @@ class TrilioDataMoverBaseCharm(
     service_type = "data-mover"
     default_service = "triliovault-datamover"
 
-    required_relations = ["amqp", "shared-db"]
+    required_relations = ["amqp", "shared-db", "identity-service"]
 
     base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
 
