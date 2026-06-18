@@ -65,6 +65,7 @@ POD_IP=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '
 
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-ids.conf << EOF
 [DEFAULT]
+host = ${NODE_NAME}
 triliovault_hostnames = ${POD_IP}
 cloud_admin_user_id = $CLOUD_ADMIN_USER_ID
 cloud_admin_domain = $CLOUD_ADMIN_DOMAIN_ID
