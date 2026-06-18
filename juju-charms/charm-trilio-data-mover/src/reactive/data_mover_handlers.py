@@ -132,7 +132,7 @@ def request_keystone_notification(identity_service):
 
 @reactive.when_not('is-update-status-hook')
 @reactive.when("amqp.available")
-@reactive.when("identity-service.available")
+@reactive.when("identity-service.connected")
 def render_dms_config(*args):
     """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
     amqp = reactive.RelationBase.from_state('amqp.available')
@@ -148,8 +148,8 @@ def render_dms_config(*args):
                 identity_service.update(unit_data)
                 break
 
-    if not identity_service:
-        hookenv.log("No identity service data available for DMS server config", level=hookenv.ERROR)
+    if not identity_service.get('auth_host'):
+        hookenv.log("Keystone auth_host not yet available, skipping DMS config", level=hookenv.WARNING)
         return
 
     keystone_auth_url = "{}://{}:{}/v3".format(
