@@ -94,86 +94,11 @@ def run_trilio_install_upgrade_packages(packages):
 @reactive.when_not('is-update-status-hook')
 @reactive.when("shared-db.available")
 @reactive.when("amqp.available")
-@reactive.when("identity-service.joined")
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
     ceph = reactive.endpoint_from_flag("ceph.available")
     if ceph:
         args = (ceph,) + args
-
-    amqp = reactive.RelationBase.from_state('amqp.available')
-    amqp_username = amqp.username()
-    amqp_password = amqp.password()
-    amqp_host = amqp.private_address()
-    amqp_port = amqp.ssl_port() or 5672
-    amqp_vhost = amqp.vhost()
-    transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
-
-    identity_service = {}
-    relation_ids = hookenv.relation_ids('identity-service')
-    if relation_ids:
-        relation_id = relation_ids[0]
-        for unit in hookenv.related_units(relation_id):
-            unit_data = hookenv.relation_get(unit=unit, rid=relation_id)
-            if unit_data:
-                identity_service.update(unit_data)
-                break
-
-    if not identity_service:
-        hookenv.log("No identity service data available for DMS server config", level=hookenv.ERROR)
-        return
-
-    keystone_auth_url = "{}://{}:{}/v3".format(
-        identity_service.get('auth_protocol', 'http'),
-        identity_service.get('auth_host', ''),
-        identity_service.get('auth_port', '5000'),
-    )
-
-    root_uid = pwd.getpwnam('root').pw_uid
-    nova_gid = grp.getgrnam('nova').gr_gid
-
-    dms_conf_dir = '/etc/triliovault-dms'
-    os.makedirs(dms_conf_dir, exist_ok=True)
-    os.chown(dms_conf_dir, root_uid, nova_gid)
-
-    ca_cert = identity_service.get('ca_cert', '')
-    if ca_cert:
-        host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
-        barbican_ca_bundle = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
-    else:
-        barbican_ca_bundle = ''
-
-    dms_server_context = {
-        'rabbitmq_url': transport_url,
-        'node_id': socket.getfqdn(),
-        'auth_url': keystone_auth_url,
-        'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
-        'barbican_ca_bundle': barbican_ca_bundle,
-    }
-    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
-    render(
-        source='etc_triliovault-dms_server.conf',
-        target=dms_server_conf_path,
-        context=dms_server_context,
-    )
-    os.chmod(dms_server_conf_path, 0o640)
-    os.chown(dms_server_conf_path, root_uid, nova_gid)
-
-    dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
-    render(
-        source='etc_triliovault-dms_s3vaultfuse-global.conf',
-        target=dms_s3vaultfuse_conf_path,
-        context={},
-    )
-    os.chmod(dms_s3vaultfuse_conf_path, 0o644)
-    os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
-
-    host.service('enable', 'trilio-dms-server')
-    if host.service_running('trilio-dms-server'):
-        host.service('restart', 'trilio-dms-server')
-    else:
-        host.service('start', 'trilio-dms-server')
-    hookenv.log("DMS server config rendered for data-mover.")
 
     with charm.provide_charm_instance() as charm_class:
         template_list = [
@@ -192,6 +117,59 @@ def render_config(*args):
             reactive.set_state('triliovault-packages.installed')
 
         charm_class.render_with_interfaces(args, configs=template_list)
+
+    amqp = reactive.RelationBase.from_state('amqp.available')
+    transport_url = f"rabbit://{amqp.username()}:{amqp.password()}@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
+
+    identity_service = {}
+    relation_ids = hookenv.relation_ids('identity-service')
+    if relation_ids:
+        relation_id = relation_ids[0]
+        for unit in hookenv.related_units(relation_id):
+            unit_data = hookenv.relation_get(unit=unit, rid=relation_id)
+            if unit_data:
+                identity_service.update(unit_data)
+                break
+
+    if not identity_service:
+        hookenv.log("No identity service data available for DMS server config", level=hookenv.ERROR)
+        set_state("config.rendered")
+        return
+
+    keystone_auth_url = "{}://{}:{}/v3".format(
+        identity_service.get('auth_protocol', 'http'),
+        identity_service.get('auth_host', ''),
+        identity_service.get('auth_port', '5000'),
+    )
+
+    root_uid = pwd.getpwnam('root').pw_uid
+    nova_gid = grp.getgrnam('nova').gr_gid
+
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, nova_gid)
+
+    dms_server_context = {
+        'rabbitmq_url': transport_url,
+        'node_id': socket.gethostname(),
+        'auth_url': keystone_auth_url,
+        'barbican_ssl_verify': 'False',
+    }
+    dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
+    render(
+        source='triliovault-dms-server.conf',
+        target=dms_server_conf_path,
+        context=dms_server_context,
+    )
+    os.chmod(dms_server_conf_path, 0o640)
+    os.chown(dms_server_conf_path, root_uid, nova_gid)
+
+    host.service('enable', 'trilio-dms-server')
+    if host.service_running('trilio-dms-server'):
+        host.service('restart', 'trilio-dms-server')
+    else:
+        host.service('start', 'trilio-dms-server')
 
     set_state("config.rendered")
 
