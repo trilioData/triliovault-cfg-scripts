@@ -123,8 +123,9 @@ def render_config(*args):
 
 @reactive.when("identity-service.connected")
 def request_keystone_notification(identity_service):
-    """Request Keystone auth notifications so identity-service.available is set."""
+    """Request Keystone endpoint info so identity-service.available is set."""
     with charm.provide_charm_instance() as instance:
+        identity_service.request_keystone_endpoint_information()
         identity_service.request_notification(['nova', 'cinderv3', 'cinder', 'glance'])
         instance.assess_status()
 
