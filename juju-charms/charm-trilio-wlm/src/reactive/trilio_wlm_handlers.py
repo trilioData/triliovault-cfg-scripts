@@ -151,6 +151,9 @@ def render_config(*args):
         if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
             run_trilio_install_upgrade_packages(packages_to_install)
             reactive.set_state('triliovault-packages.installed')
+            if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
+                host.service('stop', 'tvault-object-store')
+                host.service('disable', 'tvault-object-store')
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
 
