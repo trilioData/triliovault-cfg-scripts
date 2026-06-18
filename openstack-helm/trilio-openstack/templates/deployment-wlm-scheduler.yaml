@@ -75,6 +75,10 @@ spec:
 {{- end }}
             - name: POD_NAME
               value: "triliovault-wlm-scheduler"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           command:
             - /tmp/triliovault-wlm-scheduler-init.sh
           terminationMessagePath: /var/log/termination-log
@@ -92,6 +96,15 @@ spec:
 {{ tuple $envAll "triliovault_wlm_scheduler" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.wlm_scheduler | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
 {{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_wlm_scheduler" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: DMS_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           command:
             - /tmp/triliovault-wlm-scheduler.sh
             - start
