@@ -163,7 +163,7 @@ def render_dms_config(*args):
 
     dms_server_context = {
         'rabbitmq_url': transport_url,
-        'node_id': socket.gethostname(),
+        'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
