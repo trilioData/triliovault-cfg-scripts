@@ -123,6 +123,7 @@ def render_config(*args):
     set_state("config.rendered")
 
 
+@reactive.when_not('is-update-status-hook')
 @reactive.when("identity-service.connected")
 def request_keystone_notification(identity_service):
     """Request Keystone endpoint info so identity-service.available is set."""
@@ -160,20 +161,26 @@ def render_dms_config(*args):
         identity_service.get('auth_port', '5000'),
     )
 
-    root_uid = pwd.getpwnam('root').pw_uid
-    nova_gid = grp.getgrnam('nova').gr_gid
-
-    dms_conf_dir = '/etc/triliovault-dms'
-    os.makedirs(dms_conf_dir, exist_ok=True)
-    os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
-    os.chown(dms_conf_dir, root_uid, nova_gid)
-
     dms_server_context = {
         'rabbitmq_url': transport_url,
         'node_id': socket.gethostname(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
+
+    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
+        return
+
+    root_uid = pwd.getpwnam('root').pw_uid
+    nova_gid = grp.getgrnam('nova').gr_gid
+
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    client_conf_d = os.path.join(dms_conf_dir, 'client.conf.d')
+    os.makedirs(client_conf_d, exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, nova_gid)
+    os.chown(client_conf_d, root_uid, nova_gid)
+
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
         source='triliovault-dms-server.conf',

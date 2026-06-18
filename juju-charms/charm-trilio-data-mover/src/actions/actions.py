@@ -36,12 +36,11 @@ import charm.openstack.trilio_dm  # noqa
 
 
 def unmount_old_backup_targets(*args):
-    """Unmount old static backup target mounts from T4O 5.x/6.0/6.1.
+    """Lazy-unmount all mounts under /var/triliovault-mounts on this unit.
 
-    Stops tvault-object-store and lazy-unmounts all mounts under
-    /var/triliovault-mounts on this unit. Safe to run after upgrading
-    to T4O 6.2 charms. Designed to run in parallel across all units
-    via: juju run trilio-data-mover/* unmount-old-backup-targets
+    Safe to run after upgrading to T4O 6.2 charms. Designed to run in
+    parallel across all units via:
+    juju run trilio-data-mover/* unmount-old-backup-targets
     """
     mount_base = '/var/triliovault-mounts'
     results = []
