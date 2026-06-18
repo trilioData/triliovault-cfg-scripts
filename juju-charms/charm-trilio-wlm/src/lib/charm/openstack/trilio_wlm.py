@@ -103,7 +103,6 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
     workloadmgr_conf = "/etc/triliovault-wlm/triliovault-wlm.conf"
     api_paste_ini = "/etc/triliovault-wlm/api-paste.ini"
     alembic_ini = "/etc/triliovault-wlm/alembic.ini"
-    object_store_logging_conf = "/etc/triliovault-object-store/object_store_logging.conf"
     workloadmgr_log_conf = "/etc/triliovault-wlm/wlm_logging.conf"
 
     base_packages = [

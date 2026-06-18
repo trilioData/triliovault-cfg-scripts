@@ -94,17 +94,16 @@ def run_trilio_install_upgrade_packages(packages):
 @reactive.when_not('is-update-status-hook')
 @reactive.when("shared-db.available")
 @reactive.when("amqp.available")
-@reactive.when("identity-service.available")
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
     ceph = reactive.endpoint_from_flag("ceph.available")
     if ceph:
         args = (ceph,) + args
+
     with charm.provide_charm_instance() as charm_class:
         template_list = [
             "/etc/triliovault-datamover/triliovault-datamover.conf",
             "/etc/triliovault-datamover/datamover_logging.conf",
-            "/etc/triliovault-object-store/object_store_logging.conf",
         ]
         packages_to_install = trilio_dm.TrilioDataMoverBaseCharm().base_packages
         hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")
@@ -115,17 +114,32 @@ def render_config(*args):
         if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
             run_trilio_install_upgrade_packages(packages_to_install)
             reactive.set_state('triliovault-packages.installed')
+            if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
+                host.service('stop', 'tvault-object-store')
+                host.service('disable', 'tvault-object-store')
 
         charm_class.render_with_interfaces(args, configs=template_list)
 
-    # Retrieve AMQP connection details from the amqp interface
+    set_state("config.rendered")
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("identity-service.connected")
+def request_keystone_notification(identity_service):
+    """Request Keystone endpoint info so identity-service.available is set."""
+    with charm.provide_charm_instance() as instance:
+        identity_service.request_keystone_endpoint_information()
+        identity_service.request_notification(['nova', 'cinderv3', 'cinder', 'glance'])
+        instance.assess_status()
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("amqp.available")
+@reactive.when("identity-service.connected")
+def render_dms_config(*args):
+    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
     amqp = reactive.RelationBase.from_state('amqp.available')
-    amqp_username = amqp.username()
-    amqp_password = amqp.password()
-    amqp_host = amqp.private_address()
-    amqp_port = amqp.ssl_port() or 5672
-    amqp_vhost = amqp.vhost()
-    transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
+    transport_url = f"rabbit://{amqp.username()}:{amqp.password()}@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
 
     identity_service = {}
     relation_ids = hookenv.relation_ids('identity-service')
@@ -137,8 +151,8 @@ def render_config(*args):
                 identity_service.update(unit_data)
                 break
 
-    if not identity_service:
-        hookenv.log("No identity service data available", level=hookenv.ERROR)
+    if not identity_service.get('auth_host'):
+        hookenv.log("Keystone auth_host not yet available, skipping DMS config", level=hookenv.WARNING)
         return
 
     keystone_auth_url = "{}://{}:{}/v3".format(
@@ -147,56 +161,40 @@ def render_config(*args):
         identity_service.get('auth_port', '5000'),
     )
 
-    root_uid = pwd.getpwnam('root').pw_uid
-    nova_gid = grp.getgrnam('nova').gr_gid
-
-    # Render DMS server config
-    dms_conf_dir = '/etc/triliovault-dms'
-    os.makedirs(dms_conf_dir, exist_ok=True)
-    os.chown(dms_conf_dir, root_uid, nova_gid)
-
-    # Derive barbican CA bundle from identity-service relation ca_cert (canonical way)
-    ca_cert = identity_service.get('ca_cert', '')
-    if ca_cert:
-        host.install_ca_cert(ca_cert, 'keystone_juju_ca_cert')
-        barbican_ca_bundle = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
-    else:
-        barbican_ca_bundle = ''
-
     dms_server_context = {
         'rabbitmq_url': transport_url,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
-        'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
-        'barbican_ca_bundle': barbican_ca_bundle,
+        'barbican_ssl_verify': 'False',
     }
+
+    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
+        return
+
+    root_uid = pwd.getpwnam('root').pw_uid
+    nova_gid = grp.getgrnam('nova').gr_gid
+
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    client_conf_d = os.path.join(dms_conf_dir, 'client.conf.d')
+    os.makedirs(client_conf_d, exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, nova_gid)
+    os.chown(client_conf_d, root_uid, nova_gid)
+
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(
-        source='etc_triliovault-dms_server.conf',
+        source='triliovault-dms-server.conf',
         target=dms_server_conf_path,
         context=dms_server_context,
     )
     os.chmod(dms_server_conf_path, 0o640)
     os.chown(dms_server_conf_path, root_uid, nova_gid)
 
-    # Render s3vaultfuse global config for DMS server
-    dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
-    render(
-        source='etc_triliovault-dms_s3vaultfuse-global.conf',
-        target=dms_s3vaultfuse_conf_path,
-        context={},
-    )
-    os.chmod(dms_s3vaultfuse_conf_path, 0o644)
-    os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
-
-    # Enable and (re)start DMS server service
     host.service('enable', 'trilio-dms-server')
     if host.service_running('trilio-dms-server'):
         host.service('restart', 'trilio-dms-server')
     else:
         host.service('start', 'trilio-dms-server')
-
-    set_state("config.rendered")
 
 
 @reactive.when_not('is-update-status-hook')
