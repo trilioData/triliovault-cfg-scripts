@@ -41,5 +41,5 @@ class TestTrilioDataMoverRockyCharms(Helper):
         self.patch_object(trilio_dm.hookenv, "config")
         self.config.return_value = "experimental-s3"
         self.assertEqual(
-            dm_charm.services, ["triliovault-datamover", "triliovault-object-store"]
+            dm_charm.services, ["triliovault-datamover"]
         )

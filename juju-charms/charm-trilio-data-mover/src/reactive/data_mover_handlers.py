@@ -104,7 +104,6 @@ def render_config(*args):
         template_list = [
             "/etc/triliovault-datamover/triliovault-datamover.conf",
             "/etc/triliovault-datamover/datamover_logging.conf",
-            "/etc/triliovault-object-store/object_store_logging.conf",
         ]
         packages_to_install = trilio_dm.TrilioDataMoverBaseCharm().base_packages
         hookenv.log(f"Trilio Datamover Charm Packages: {packages_to_install}")

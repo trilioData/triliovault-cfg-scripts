@@ -338,10 +338,6 @@ def render_config(*args):
     else:
         host.service('start', 'trilio-dms-server')
 
-    # Disable and stop the default tvault-object-store service (no longer used in 6.2)
-    host.service('disable', 'tvault-object-store.service')
-    host.service('stop', 'tvault-object-store.service')
-
     set_state("config.rendered")
 
 

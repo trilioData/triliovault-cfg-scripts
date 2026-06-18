@@ -98,7 +98,6 @@ class TrilioDataMoverBaseCharm(
     data_mover_conf = "/etc/triliovault-datamover/triliovault-datamover.conf"
     logrotate_conf = "/etc/logrotate.d/triliovault-datamover"
     datamover_log_conf = "/etc/triliovault-datamover/datamover_logging.conf"
-    object_store_log_conf = "/etc/triliovault-object-store/object_store_logging.conf"
 
     service_type = "data-mover"
     default_service = "triliovault-datamover"

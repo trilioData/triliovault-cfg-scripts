@@ -47,22 +47,6 @@ def unmount_old_backup_targets(*args):
     results = []
     errors = []
 
-    # Stop tvault-object-store to prevent it re-mounting on startup
-    try:
-        active = subprocess.run(
-            ['systemctl', 'is-active', 'tvault-object-store'],
-            capture_output=True, text=True)
-        if active.stdout.strip() == 'active':
-            subprocess.run(['systemctl', 'stop', 'tvault-object-store'], check=True)
-            results.append('tvault-object-store: stopped')
-        subprocess.run(['systemctl', 'disable', 'tvault-object-store'],
-                       capture_output=True)
-        results.append('tvault-object-store: disabled')
-    except subprocess.CalledProcessError as e:
-        errors.append('tvault-object-store stop failed: {}'.format(e))
-    except FileNotFoundError:
-        results.append('tvault-object-store: not present')
-
     # Find all triliovault mounts
     findmnt = subprocess.run(
         ['findmnt', '-rn', '-o', 'TARGET'],
