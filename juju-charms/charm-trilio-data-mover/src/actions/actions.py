@@ -46,6 +46,19 @@ def unmount_old_backup_targets(*args):
     results = []
     errors = []
 
+    # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
+    try:
+        kill = subprocess.run(['pkill', '-f', 's3vaultfuse'],
+                              capture_output=True)
+        if kill.returncode == 0:
+            results.append('s3vaultfuse: processes killed')
+        elif kill.returncode == 1:
+            results.append('s3vaultfuse: no processes running')
+        else:
+            errors.append('pkill s3vaultfuse returned: {}'.format(kill.returncode))
+    except FileNotFoundError:
+        errors.append('pkill not found')
+
     # Find all triliovault mounts
     findmnt = subprocess.run(
         ['findmnt', '-rn', '-o', 'TARGET'],
