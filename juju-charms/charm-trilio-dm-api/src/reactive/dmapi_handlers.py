@@ -95,7 +95,7 @@ def render_config(*args):
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, dmapi_gid)
 
-    reactive.set_state("config.rendered")
+    reactive.set_flag("config.rendered")
 
 
 @reactive.when("config.rendered")
@@ -115,13 +115,13 @@ def cluster_connected(hacluster):
 
 @hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
 def wlm_db_connected():
-    reactive.clear_state('wlm-db.connected')
-    reactive.set_state('wlm-db.connected')
+    reactive.clear_flag('wlm-db.connected')
+    reactive.set_flag('wlm-db.connected')
 
 
 @hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
 def wlm_db_disconnected():
-    reactive.clear_state('wlm-db.connected')
+    reactive.clear_flag('wlm-db.connected')
 
 
 @reactive.when('wlm-db.connected')
@@ -185,7 +185,7 @@ def check_dmapi_db():
     db_ep = reactive.endpoint_from_flag('shared-db.available')
     if db_ep:
         if db_ep.password(prefix='dmapi'):
-            reactive.set_state("dmapi-db.ready")
+            reactive.set_flag("dmapi-db.ready")
         else:
             with charm.provide_charm_instance() as instance:
                 for db in instance.get_database_setup():

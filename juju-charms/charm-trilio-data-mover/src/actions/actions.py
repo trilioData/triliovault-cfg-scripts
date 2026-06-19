@@ -46,21 +46,44 @@ def unmount_old_backup_targets(*args):
     results = []
     errors = []
 
-    # Find all triliovault mounts
-    findmnt = subprocess.run(
-        ['findmnt', '-rn', '-o', 'TARGET'],
-        capture_output=True, text=True)
-    mounts = [m for m in findmnt.stdout.splitlines() if mount_base in m]
+    # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
+    try:
+        kill = subprocess.run(['pkill', '-f', 's3vaultfuse'],
+                              capture_output=True)
+        if kill.returncode == 0:
+            results.append('s3vaultfuse: processes killed')
+        elif kill.returncode == 1:
+            results.append('s3vaultfuse: no processes running')
+        else:
+            errors.append('pkill s3vaultfuse returned: {}'.format(kill.returncode))
+    except FileNotFoundError:
+        errors.append('pkill not found')
 
-    if not mounts:
+    # Get all mounts with FSTYPE, sorted deepest-first to avoid busy-parent errors
+    findmnt = subprocess.run(
+        ['findmnt', '-rn', '-o', 'TARGET,FSTYPE'],
+        capture_output=True, text=True)
+    all_mounts = [
+        line.split() for line in findmnt.stdout.splitlines()
+        if mount_base in line and len(line.split()) >= 2
+    ]
+    all_mounts.sort(key=lambda x: x[0], reverse=True)
+
+    if not all_mounts:
         results.append('no mounts found under {}'.format(mount_base))
     else:
-        for mount in mounts:
+        for parts in all_mounts:
+            target, fstype = parts[0], parts[1]
+            # NFS mounts need -f (force) in addition to -l (lazy)
+            if fstype in ('nfs', 'nfs4'):
+                cmd = ['umount', '-l', '-f', target]
+            else:
+                cmd = ['umount', '-l', target]
             try:
-                subprocess.run(['umount', '-l', mount], check=True)
-                results.append('unmounted: {}'.format(mount))
+                subprocess.run(cmd, check=True)
+                results.append('unmounted ({}): {}'.format(fstype, target))
             except subprocess.CalledProcessError as e:
-                errors.append('umount failed for {}: {}'.format(mount, e))
+                errors.append('umount failed for {}: {}'.format(target, e))
 
     hookenv.action_set({'results': '\n'.join(results)})
     if errors:

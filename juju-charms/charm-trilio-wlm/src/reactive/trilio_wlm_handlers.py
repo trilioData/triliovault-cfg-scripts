@@ -25,7 +25,7 @@ from charmhelpers.core.templating import render
 from charmhelpers.core.hookenv import config, log
 from charmhelpers.core import hookenv
 from charmhelpers.core import host
-from charms.reactive import when, set_state
+from charms.reactive import when, set_flag
 # This charm's library contains all of the handler code for this charm
 import charm.openstack.trilio_wlm as trilio_wlm  # noqa
 from charm.openstack.trilio_wlm import TrilioWLMBaseCharm
@@ -68,7 +68,7 @@ def run_trilio_install_upgrade_packages(packages):
 
     :param packages: A list of package names to install or upgrade.
     """
-    set_state('maintenance', 'Running Trilio Install Upgrade Packages')
+    set_flag('maintenance', 'Running Trilio Install Upgrade Packages')
     dpkg_opts = [
         '--option', 'Dpkg::Options::=--force-confnew',
         '--option', 'Dpkg::Options::=--force-confdef',
@@ -150,7 +150,7 @@ def render_config(*args):
         is_trilio_pkg_source_changed = reactive.helpers.data_changed('triliovault-pkg-source', current_pkg_source)
         if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
             run_trilio_install_upgrade_packages(packages_to_install)
-            reactive.set_state('triliovault-packages.installed')
+            reactive.set_flag('triliovault-packages.installed')
             if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
                 host.service('stop', 'tvault-object-store')
                 host.service('disable', 'tvault-object-store')
@@ -341,7 +341,7 @@ def render_config(*args):
     else:
         host.service('start', 'trilio-dms-server')
 
-    set_state("config.rendered")
+    set_flag("config.rendered")
 
 
 @reactive.when("config.rendered")
@@ -375,13 +375,13 @@ def register_endpoints_and_request_notification(identity_service):
 
 @hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
 def wlm_db_connected():
-    reactive.clear_state('wlm-db.connected')
-    reactive.set_state('wlm-db.connected')
+    reactive.clear_flag('wlm-db.connected')
+    reactive.set_flag('wlm-db.connected')
 
 
 @hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
 def wlm_db_disconnected():
-    reactive.clear_state('wlm-db.connected')
+    reactive.clear_flag('wlm-db.connected')
 
 
 @reactive.when('wlm-db.connected')
