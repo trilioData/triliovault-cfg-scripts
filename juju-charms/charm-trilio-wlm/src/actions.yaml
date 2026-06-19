@@ -1,24 +1,27 @@
 unmount-old-backup-targets:
   description: |
     Unmount old static backup target mounts left over from T4O 5.x/6.0/6.1.
-    Stops tvault-object-store service and lazy-unmounts all mounts under
-    /var/triliovault-mounts on this unit. Run this on the trilio-wlm unit
-    after upgrading to T4O 6.2 charms.
+    Kills any running s3vaultfuse processes, then lazy-unmounts all mounts
+    under /var/triliovault-mounts deepest-first (NFS with umount -l -f,
+    FUSE with umount -l). Run this on the trilio-wlm unit after upgrading
+    to T4O 6.2 charms.
 create-backup-targets:
   description: |
-    Create T4O 6.2 backup targets from old 6.1 trilio-backup-targets JSON.
-    Pass the backup-targets JSON from the old 6.1 overlay bundle's
-    trilio-backup-targets config option. Run on the trilio-wlm leader unit
-    after upgrading to 6.2 and running unmount-old-backup-targets.
+    Create T4O 6.2 backup targets from an old 6.1 overlay bundle YAML file.
+    Copy the bundle file to the unit first using juju scp, then pass the
+    file path. The action reads trilio-backup-targets from the bundle and
+    calls workloadmgr backup-target-create for each entry. Run on the
+    trilio-wlm leader unit after upgrading to 6.2 and running
+    unmount-old-backup-targets.
   properties:
-    backup-targets:
+    bundle-file:
       type: string
       description: |
-        JSON list of backup targets in the same format as the old 6.1
-        trilio-backup-targets charm config option (array of objects with
-        backup-target-name, backup-target-type, and type-specific keys).
+        Absolute path to the old 6.1 overlay bundle YAML file on the
+        trilio-wlm leader unit. Use juju scp to copy the file to the unit
+        before running this action.
   required:
-    - backup-targets
+    - bundle-file
 create-cloud-admin-trust:
   description: Create trust between Trilio WLM user and Cloud Admin
   properties:

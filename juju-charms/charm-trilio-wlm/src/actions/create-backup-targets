@@ -90,22 +90,53 @@ def unmount_old_backup_targets(*args):
 
 
 def create_backup_targets(*args):
-    """Create backup targets from old 6.1 trilio-backup-targets JSON.
+    """Create backup targets from an old 6.1 overlay bundle YAML file.
 
     Run on the trilio-wlm leader unit after upgrade to T4O 6.2 and
-    after running unmount-old-backup-targets.
+    after running unmount-old-backup-targets. Copy the bundle file to
+    the unit with juju scp before calling this action.
     """
     import json
+    import yaml
 
     if not hookenv.is_leader():
         hookenv.function_fail('Action must be run on the leader unit')
         return
 
-    backup_targets_json = hookenv.action_get('backup-targets')
+    bundle_file = hookenv.action_get('bundle-file')
+    if not os.path.isfile(bundle_file):
+        hookenv.function_fail('File not found: {}'.format(bundle_file))
+        return
+
     try:
-        backup_targets = json.loads(backup_targets_json)
+        with open(bundle_file, 'r') as fh:
+            bundle = yaml.safe_load(fh)
+    except Exception as e:
+        hookenv.function_fail('Failed to parse bundle YAML: {}'.format(e))
+        return
+
+    # Extract trilio-backup-targets from wlm or data-mover application options
+    apps = bundle.get('applications', {})
+    backup_targets_raw = None
+    for app_name in ('trilio-wlm', 'trilio-data-mover'):
+        opts = apps.get(app_name, {}).get('options', {})
+        if 'trilio-backup-targets' in opts:
+            backup_targets_raw = opts['trilio-backup-targets']
+            break
+
+    if backup_targets_raw is None:
+        hookenv.function_fail(
+            'trilio-backup-targets not found under '
+            'applications.trilio-wlm.options or '
+            'applications.trilio-data-mover.options in {}'.format(bundle_file)
+        )
+        return
+
+    try:
+        backup_targets = json.loads(backup_targets_raw)
     except (json.JSONDecodeError, TypeError) as e:
-        hookenv.function_fail('Invalid backup-targets JSON: {}'.format(e))
+        hookenv.function_fail(
+            'Failed to parse trilio-backup-targets JSON: {}'.format(e))
         return
 
     identity_service = reactive.endpoint_from_name('identity-service')
