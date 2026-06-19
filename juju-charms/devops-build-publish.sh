@@ -14,7 +14,7 @@
 #            wlm | data-mover | dm-api | horizon-plugin
 #          If omitted, all 4 charms are built and released.
 #
-# The release channel defaults to 6.0/candidate.
+# The release channel defaults to 6.2/candidate.
 # Override by setting the CHANNEL environment variable:
 #   CHANNEL=latest/edge bash devops-build-publish.sh
 #
@@ -39,7 +39,7 @@
 
 set -e
 
-CHANNEL="${CHANNEL:-6.0/candidate}"
+CHANNEL="${CHANNEL:-6.2/candidate}"
 
 # Load Charmhub credentials non-interactively if not already set
 CHARMHUB_CREDS_FILE="${CHARMHUB_CREDS_FILE:-$HOME/.charmhub-creds}"

@@ -4,6 +4,21 @@ unmount-old-backup-targets:
     Stops tvault-object-store service and lazy-unmounts all mounts under
     /var/triliovault-mounts on this unit. Run this on the trilio-wlm unit
     after upgrading to T4O 6.2 charms.
+create-backup-targets:
+  description: |
+    Create T4O 6.2 backup targets from old 6.1 trilio-backup-targets JSON.
+    Pass the backup-targets JSON from the old 6.1 overlay bundle's
+    trilio-backup-targets config option. Run on the trilio-wlm leader unit
+    after upgrading to 6.2 and running unmount-old-backup-targets.
+  properties:
+    backup-targets:
+      type: string
+      description: |
+        JSON list of backup targets in the same format as the old 6.1
+        trilio-backup-targets charm config option (array of objects with
+        backup-target-name, backup-target-type, and type-specific keys).
+  required:
+    - backup-targets
 create-cloud-admin-trust:
   description: Create trust between Trilio WLM user and Cloud Admin
   properties:

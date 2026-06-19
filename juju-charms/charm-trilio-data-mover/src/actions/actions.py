@@ -59,21 +59,31 @@ def unmount_old_backup_targets(*args):
     except FileNotFoundError:
         errors.append('pkill not found')
 
-    # Find all triliovault mounts
+    # Get all mounts with FSTYPE, sorted deepest-first to avoid busy-parent errors
     findmnt = subprocess.run(
-        ['findmnt', '-rn', '-o', 'TARGET'],
+        ['findmnt', '-rn', '-o', 'TARGET,FSTYPE'],
         capture_output=True, text=True)
-    mounts = [m for m in findmnt.stdout.splitlines() if mount_base in m]
+    all_mounts = [
+        line.split() for line in findmnt.stdout.splitlines()
+        if mount_base in line and len(line.split()) >= 2
+    ]
+    all_mounts.sort(key=lambda x: x[0], reverse=True)
 
-    if not mounts:
+    if not all_mounts:
         results.append('no mounts found under {}'.format(mount_base))
     else:
-        for mount in mounts:
+        for parts in all_mounts:
+            target, fstype = parts[0], parts[1]
+            # NFS mounts need -f (force) in addition to -l (lazy)
+            if fstype in ('nfs', 'nfs4'):
+                cmd = ['umount', '-l', '-f', target]
+            else:
+                cmd = ['umount', '-l', target]
             try:
-                subprocess.run(['umount', '-l', mount], check=True)
-                results.append('unmounted: {}'.format(mount))
+                subprocess.run(cmd, check=True)
+                results.append('unmounted ({}): {}'.format(fstype, target))
             except subprocess.CalledProcessError as e:
-                errors.append('umount failed for {}: {}'.format(mount, e))
+                errors.append('umount failed for {}: {}'.format(target, e))
 
     hookenv.action_set({'results': '\n'.join(results)})
     if errors:
