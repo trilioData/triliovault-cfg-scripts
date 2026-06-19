@@ -20,7 +20,7 @@ from charmhelpers.core.templating import render
 from charmhelpers.core.hookenv import config, log
 from charmhelpers.core import hookenv
 from charmhelpers.core import host
-from charms.reactive import when, set_state, hook, set_flag, clear_flag
+from charms.reactive import when, set_flag, clear_flag, hook
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
@@ -50,7 +50,7 @@ def run_trilio_install_upgrade_packages(packages):
     Install or upgrade the specified apt packages using the python-apt library.
     :param packages: A list of package names to install or upgrade.
     """
-    set_state('maintenance', 'Running Trilio Install Upgrade Packages')
+    set_flag('maintenance', 'Running Trilio Install Upgrade Packages')
     dpkg_opts = [
         '--option', 'Dpkg::Options::=--force-confnew',
         '--option', 'Dpkg::Options::=--force-confdef',
@@ -113,14 +113,14 @@ def render_config(*args):
             'triliovault-pkg-source', current_pkg_source)
         if is_trilio_pkg_source_changed or not reactive.is_state('triliovault-packages.installed'):
             run_trilio_install_upgrade_packages(packages_to_install)
-            reactive.set_state('triliovault-packages.installed')
+            reactive.set_flag('triliovault-packages.installed')
             if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
                 host.service('stop', 'tvault-object-store')
                 host.service('disable', 'tvault-object-store')
 
         charm_class.render_with_interfaces(args, configs=template_list)
 
-    set_state("config.rendered")
+    set_flag("config.rendered")
 
 
 @reactive.when_not('is-update-status-hook')
