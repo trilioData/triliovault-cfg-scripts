@@ -107,14 +107,21 @@ def unmount_old_backup_targets(*args):
 
 
 def create_backup_targets(*args):
-    """Create backup targets from an old 6.1 overlay bundle YAML file.
+    """Create backup targets from a previous-release overlay bundle YAML file.
 
-    Run on the trilio-wlm leader unit after upgrade to T4O 6.2 and
-    after running unmount-old-backup-targets. Copy the bundle file to
-    the unit with juju scp before calling this action.
+    For each entry in trilio-backup-targets:
+    - If a matching target already exists in WLM DB (matched by endpoint),
+      it is deleted first then recreated fresh.
+    - NFS targets are created directly via workloadmgr backup-target-create.
+    - S3 targets require a Barbican secret (mandatory in T4O 6.2). The action
+      uses trilio-dms-cli to build the DMS secret payload, stores it in
+      Barbican via openstack secret store, then passes --secret-ref to
+      workloadmgr backup-target-create.
     """
     import json
+    import tempfile
     import yaml
+    from urllib.parse import urlparse
 
     if not hookenv.is_leader():
         hookenv.function_fail('Action must be run on the leader unit')
@@ -132,7 +139,6 @@ def create_backup_targets(*args):
         hookenv.function_fail('Failed to parse bundle YAML: {}'.format(e))
         return
 
-    # Extract trilio-backup-targets from wlm or data-mover application options
     apps = bundle.get('applications', {})
     backup_targets_raw = None
     for app_name in ('trilio-wlm', 'trilio-data-mover'):
@@ -166,7 +172,7 @@ def create_backup_targets(*args):
         identity_service.service_host(),
         identity_service.service_port(),
     )
-    base_cmd = [
+    wlm_base = [
         'workloadmgr',
         '--os-username', identity_service.service_username(),
         '--os-password', identity_service.service_password(),
@@ -178,51 +184,242 @@ def create_backup_targets(*args):
         '--os-region-name', hookenv.config('region'),
     ]
 
+    # openstack CLI env for Barbican (secret store)
+    os_env = os.environ.copy()
+    os_env.update({
+        'OS_USERNAME': identity_service.service_username(),
+        'OS_PASSWORD': identity_service.service_password(),
+        'OS_AUTH_URL': auth_url,
+        'OS_USER_DOMAIN_NAME': 'service_domain',
+        'OS_PROJECT_DOMAIN_ID': identity_service.service_domain_id(),
+        'OS_PROJECT_ID': identity_service.service_tenant_id(),
+        'OS_PROJECT_NAME': identity_service.service_tenant(),
+        'OS_REGION_NAME': hookenv.config('region'),
+        'OS_IDENTITY_API_VERSION': '3',
+    })
+
+    # List existing backup targets from WLM DB
+    try:
+        list_proc = subprocess.run(
+            wlm_base + ['backup-target-list', '--format', 'json'],
+            capture_output=True, text=True, check=True)
+        existing_targets = (json.loads(list_proc.stdout)
+                            if list_proc.stdout.strip() else [])
+    except subprocess.CalledProcessError as e:
+        hookenv.function_fail(
+            'Failed to list existing backup targets: {}'.format(e.stderr.strip()))
+        return
+    except json.JSONDecodeError:
+        existing_targets = []
+
+    def find_existing_id(bt_type, endpoint_hint):
+        for t in existing_targets:
+            if t.get('Type', '').lower() != bt_type:
+                continue
+            if endpoint_hint in t.get('Backend Endpoint', ''):
+                return t.get('ID')
+        return None
+
     results = []
     errors = []
 
     for bt in backup_targets:
         name = bt.get('backup-target-name', 'unnamed')
         bt_type = bt.get('backup-target-type', '').lower()
-        cmd = base_cmd + ['backup-target-create',
-                          '--backup-target-name', name,
-                          '--backup-target-type', bt_type]
+
         if bt_type == 'nfs':
-            cmd += ['--nfs-shares', bt.get('nfs-shares', '')]
+            nfs_shares = bt.get('nfs-shares', '')
+            existing_id = find_existing_id('nfs', nfs_shares)
+            if existing_id:
+                try:
+                    subprocess.run(
+                        wlm_base + ['backup-target-delete', existing_id],
+                        capture_output=True, text=True, check=True)
+                    results.append('{}: deleted existing (id={})'.format(
+                        name, existing_id))
+                except subprocess.CalledProcessError as e:
+                    errors.append('{}: delete failed — {}'.format(
+                        name, e.stderr.strip()))
+                    continue
+
+            cmd = wlm_base + [
+                'backup-target-create',
+                '--backup-target-name', name,
+                '--backup-target-type', 'nfs',
+                '--nfs-shares', nfs_shares,
+            ]
             if bt.get('nfs-options'):
                 cmd += ['--nfs-options', bt['nfs-options']]
+            try:
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                results.append('{}: created (nfs)'.format(name))
+            except subprocess.CalledProcessError as e:
+                errors.append('{}: create failed — {}'.format(
+                    name, e.stderr.strip()))
+
         elif bt_type == 's3':
-            cmd += [
-                '--s3-access-key', bt.get('s3-access-key', ''),
-                '--s3-secret-key', bt.get('s3-secret-key', ''),
-                '--s3-region-name', bt.get('s3-region-name', ''),
-                '--s3-bucket', bt.get('s3-bucket', ''),
-                '--s3-type', bt.get('s3-type', 'amazon_s3'),
-            ]
-            if bt.get('s3-endpoint-url'):
-                cmd += ['--s3-endpoint-url', bt['s3-endpoint-url']]
-            if bt.get('s3-ssl-enabled') is not None:
-                cmd += ['--s3-ssl-enabled', str(bt['s3-ssl-enabled']).lower()]
-            if bt.get('s3-ssl-verify') is not None:
-                cmd += ['--s3-ssl-verify', str(bt['s3-ssl-verify']).lower()]
-            if bt.get('s3-ssl-ca_cert'):
-                cmd += ['--s3-ssl-ca-cert', bt['s3-ssl-ca_cert']]
-            if bt.get('s3-signature-version'):
-                cmd += ['--s3-signature-version', bt['s3-signature-version']]
-            if bt.get('s3-auth-version'):
-                cmd += ['--s3-auth-version', bt['s3-auth-version']]
-            if bt.get('s3-bucket-object-lock-enabled') is not None:
-                cmd += ['--s3-bucket-object-lock-enabled',
-                        str(bt['s3-bucket-object-lock-enabled']).lower()]
+            bucket = bt.get('s3-bucket', '')
+            endpoint_url = bt.get('s3-endpoint-url', '')
+            access_key = bt.get('s3-access-key', '')
+            secret_key = bt.get('s3-secret-key', '')
+            s3_type = bt.get('s3-type', 'amazon_s3')
+            ssl_enabled = bt.get('s3-ssl-enabled', False)
+            ssl_verify = bt.get('s3-ssl-verify', False)
+            ssl_ca_cert = bt.get('s3-ssl-ca_cert', '')
+
+            existing_id = find_existing_id('s3', bucket)
+            if existing_id:
+                try:
+                    subprocess.run(
+                        wlm_base + ['backup-target-delete', existing_id],
+                        capture_output=True, text=True, check=True)
+                    results.append('{}: deleted existing (id={})'.format(
+                        name, existing_id))
+                except subprocess.CalledProcessError as e:
+                    errors.append('{}: delete failed — {}'.format(
+                        name, e.stderr.strip()))
+                    continue
+
+            # filesystem-export: hostname/bucket for Ceph-style; bucket for Amazon S3
+            if endpoint_url:
+                parsed = urlparse(endpoint_url)
+                filesystem_export = '{}/{}'.format(parsed.hostname, bucket)
+            else:
+                filesystem_export = bucket
+
+            secret_json_path = None
+            cert_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                        suffix='.json', delete=False) as tmp:
+                    secret_json_path = tmp.name
+
+                if ssl_ca_cert and ssl_verify:
+                    with tempfile.NamedTemporaryFile(
+                            suffix='.pem', delete=False, mode='w') as cert_tmp:
+                        cert_tmp.write(ssl_ca_cert)
+                        cert_path = cert_tmp.name
+
+                dms_cmd = [
+                    'trilio-dms-cli', 'secret-payload', 'create',
+                    '--access-key', access_key,
+                    '--secret-key', secret_key,
+                    '--bucket', bucket,
+                    '--filesystem-export', filesystem_export,
+                    '-o', secret_json_path,
+                ]
+                if endpoint_url:
+                    dms_cmd += ['--endpoint-url', endpoint_url]
+                if ssl_enabled:
+                    dms_cmd.append('--ssl')
+                if ssl_verify:
+                    dms_cmd.append('--ssl-verify')
+                if cert_path:
+                    dms_cmd += ['--ssl-cert', cert_path]
+
+                try:
+                    subprocess.run(dms_cmd, capture_output=True,
+                                   text=True, check=True)
+                except subprocess.CalledProcessError as e:
+                    errors.append('{}: trilio-dms-cli create failed — {}'.format(
+                        name, e.stderr.strip()))
+                    continue
+                except FileNotFoundError:
+                    errors.append(
+                        '{}: trilio-dms-cli not found on this unit'.format(name))
+                    continue
+
+                try:
+                    subprocess.run(
+                        ['trilio-dms-cli', 'secret-payload', 'validate',
+                         secret_json_path],
+                        capture_output=True, text=True, check=True)
+                except subprocess.CalledProcessError as e:
+                    errors.append(
+                        '{}: DMS secret validation failed — {}'.format(
+                            name, e.stderr.strip()))
+                    continue
+
+                with open(secret_json_path, 'r') as f:
+                    secret_payload = f.read().strip()
+
+                store_proc = subprocess.run(
+                    ['openstack', 'secret', 'store',
+                     '--name', 'secret-key-{}'.format(name),
+                     '--payload', secret_payload,
+                     '-f', 'json'],
+                    capture_output=True, text=True, env=os_env)
+                if store_proc.returncode != 0:
+                    errors.append(
+                        '{}: openstack secret store failed — {}'.format(
+                            name, store_proc.stderr.strip()))
+                    continue
+
+                try:
+                    store_data = json.loads(store_proc.stdout)
+                    if isinstance(store_data, list):
+                        store_data = store_data[0] if store_data else {}
+                    secret_href = (store_data.get('secret_href')
+                                   or store_data.get('Secret href')
+                                   or store_data.get('href', ''))
+                except (json.JSONDecodeError, IndexError):
+                    errors.append(
+                        '{}: failed to parse Barbican response'.format(name))
+                    continue
+
+                if not secret_href:
+                    errors.append(
+                        '{}: empty secret href from Barbican'.format(name))
+                    continue
+
+                cmd = wlm_base + [
+                    'backup-target-create',
+                    '--backup-target-name', name,
+                    '--backup-target-type', 's3',
+                    '--s3-bucket', bucket,
+                    '--s3-type', s3_type,
+                    '--secret-ref', secret_href,
+                ]
+                if endpoint_url:
+                    cmd += ['--s3-endpoint-url', endpoint_url]
+                if bt.get('s3-region-name'):
+                    cmd += ['--s3-region-name', bt['s3-region-name']]
+                if bt.get('s3-ssl-enabled') is not None:
+                    cmd += ['--s3-ssl-enabled',
+                            str(bt['s3-ssl-enabled']).lower()]
+                if bt.get('s3-ssl-verify') is not None:
+                    cmd += ['--s3-ssl-verify',
+                            str(bt['s3-ssl-verify']).lower()]
+                if bt.get('s3-ssl-ca_cert'):
+                    cmd += ['--s3-ssl-ca-cert', bt['s3-ssl-ca_cert']]
+                if bt.get('s3-signature-version'):
+                    cmd += ['--s3-signature-version',
+                            bt['s3-signature-version']]
+                if bt.get('s3-auth-version'):
+                    cmd += ['--s3-auth-version', bt['s3-auth-version']]
+                if bt.get('s3-bucket-object-lock-enabled') is not None:
+                    cmd += ['--s3-bucket-object-lock-enabled',
+                            str(bt['s3-bucket-object-lock-enabled']).lower()]
+
+                try:
+                    subprocess.run(cmd, capture_output=True,
+                                   text=True, check=True)
+                    results.append('{}: created (s3, secret-ref={})'.format(
+                        name, secret_href))
+                except subprocess.CalledProcessError as e:
+                    errors.append('{}: create failed — {}'.format(
+                        name, e.stderr.strip()))
+
+            finally:
+                for path in [secret_json_path, cert_path]:
+                    if path:
+                        try:
+                            os.unlink(path)
+                        except OSError:
+                            pass
+
         else:
             errors.append('{}: unsupported type {}'.format(name, bt_type))
-            continue
-
-        try:
-            subprocess.run(cmd, capture_output=True, text=True, check=True)
-            results.append('{}: created'.format(name))
-        except subprocess.CalledProcessError as e:
-            errors.append('{}: failed — {}'.format(name, e.stderr.strip()))
 
     hookenv.action_set({'results': '\n'.join(results)})
     if errors:
