@@ -45,6 +45,23 @@ def unmount_old_backup_targets(*args):
     results = []
     errors = []
 
+    # Stop and disable all tvault-object-store-*.service units so they cannot
+    # remount targets while we are cleaning up
+    list_result = subprocess.run(
+        ['systemctl', 'list-units', '--all', '--plain', '--no-legend',
+         'tvault-object-store-*.service'],
+        capture_output=True, text=True)
+    ots_units = [
+        line.split()[0] for line in list_result.stdout.splitlines()
+        if line.strip()
+    ]
+    for svc in ots_units:
+        subprocess.run(['systemctl', 'stop', svc], capture_output=True)
+        subprocess.run(['systemctl', 'disable', svc], capture_output=True)
+        results.append('stopped and disabled: {}'.format(svc))
+    if not ots_units:
+        results.append('tvault-object-store: no units found')
+
     # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
     try:
         kill = subprocess.run(['pkill', '-f', 's3vaultfuse'],
