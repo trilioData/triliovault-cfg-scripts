@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Unmount old backup targets on all trilio-wlm and trilio-data-mover units.
 # Detects Juju client version and uses the appropriate command syntax.
 # Run this script from a node where the juju client is installed and
