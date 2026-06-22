@@ -51,11 +51,40 @@ print('\n'.join(units))
 fi
 
 echo ""
-echo "=== Done. Verify no stale mounts remain ==="
+echo "=== Verifying no stale mounts remain ==="
+FAILED=0
+set +e
+
 if [ "${JUJU_MAJOR}" -ge 3 ]; then
-    juju exec --application trilio-wlm 'findmnt | grep triliovault || echo "No stale mounts"'
-    juju exec --application trilio-data-mover 'findmnt | grep triliovault || echo "No stale mounts"'
+    WLM_MOUNTS=$(juju exec --application trilio-wlm 'findmnt | grep triliovault-mounts || true')
+    DM_MOUNTS=$(juju exec --application trilio-data-mover 'findmnt | grep triliovault-mounts || true')
 else
-    juju run --application trilio-wlm 'findmnt | grep triliovault || echo "No stale mounts"'
-    juju run --application trilio-data-mover 'findmnt | grep triliovault || echo "No stale mounts"'
+    WLM_MOUNTS=$(juju run --application trilio-wlm 'findmnt | grep triliovault-mounts || true')
+    DM_MOUNTS=$(juju run --application trilio-data-mover 'findmnt | grep triliovault-mounts || true')
 fi
+
+if echo "$WLM_MOUNTS" | grep -q 'triliovault-mounts'; then
+    echo "WARNING: Stale mounts found on trilio-wlm units:"
+    echo "$WLM_MOUNTS"
+    FAILED=1
+else
+    echo "trilio-wlm: all units clean"
+fi
+
+if echo "$DM_MOUNTS" | grep -q 'triliovault-mounts'; then
+    echo "WARNING: Stale mounts found on trilio-data-mover units:"
+    echo "$DM_MOUNTS"
+    FAILED=1
+else
+    echo "trilio-data-mover: all units clean"
+fi
+
+echo ""
+if [ "${FAILED}" -eq 1 ]; then
+    echo "FAILED: Stale mounts remain on one or more units."
+    echo "Review the output above and manually investigate the affected"
+    echo "units before proceeding to create new backup targets."
+    exit 1
+fi
+
+echo "SUCCESS: All units are clean. Proceed to create backup targets (Step 6)."
