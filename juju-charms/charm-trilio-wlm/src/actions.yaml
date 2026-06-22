@@ -7,12 +7,15 @@ unmount-old-backup-targets:
     to T4O 6.2 charms.
 create-backup-targets:
   description: |
-    Create T4O 6.2 backup targets from an old 6.1 overlay bundle YAML file.
-    Copy the bundle file to the unit first using juju scp, then pass the
+    Create T4O 6.2 backup targets from a previous-release overlay bundle YAML
+    file. Copy the bundle file to the unit first using juju scp, then pass the
     file path. The action reads trilio-backup-targets from the bundle and
-    calls workloadmgr backup-target-create for each entry. Run on the
-    trilio-wlm leader unit after upgrading to 6.2 and running
-    unmount-old-backup-targets.
+    recreates each entry: if a matching target already exists in WLM it is
+    deleted first. NFS targets are created directly. S3 targets require
+    Barbican (mandatory in 6.2): the action uses trilio-dms-cli to build the
+    DMS secret payload, stores it in Barbican, and passes --secret-ref to
+    workloadmgr backup-target-create. Run on the trilio-wlm leader unit after
+    upgrading to 6.2 and running unmount-old-backup-targets.
   properties:
     bundle-file:
       type: string
