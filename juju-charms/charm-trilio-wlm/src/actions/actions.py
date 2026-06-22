@@ -244,12 +244,12 @@ def create_backup_targets(*args):
 
             cmd = wlm_base + [
                 'backup-target-create',
-                '--backup-target-name', name,
-                '--backup-target-type', 'nfs',
-                '--nfs-shares', nfs_shares,
+                '--btt-name', name,
+                '--type', 'nfs',
+                '--filesystem-export', nfs_shares,
             ]
             if bt.get('nfs-options'):
-                cmd += ['--nfs-options', bt['nfs-options']]
+                cmd += ['--nfs-mount-opts', bt['nfs-options']]
             try:
                 subprocess.run(cmd, capture_output=True, text=True, check=True)
                 results.append('{}: created (nfs)'.format(name))
@@ -280,12 +280,14 @@ def create_backup_targets(*args):
                         name, e.stderr.strip()))
                     continue
 
-            # filesystem-export: hostname/bucket for Ceph-style; bucket for Amazon S3
+            # filesystem-export format required by trilio-dms-cli:
+            #   S3-compatible endpoint: s3server:<hostname>/<bucket>
+            #   AWS S3 (no endpoint):   s3server:/<bucket>
             if endpoint_url:
                 parsed = urlparse(endpoint_url)
-                filesystem_export = '{}/{}'.format(parsed.hostname, bucket)
+                filesystem_export = 's3server:{}/{}'.format(parsed.hostname, bucket)
             else:
-                filesystem_export = bucket
+                filesystem_export = 's3server:/{}'.format(bucket)
 
             secret_json_path = None
             cert_path = None
@@ -372,34 +374,17 @@ def create_backup_targets(*args):
                         '{}: empty secret href from Barbican'.format(name))
                     continue
 
+                # In T4O 6.2, all S3 connection details (endpoint, SSL,
+                # credentials) are stored in the Barbican secret. Only
+                # --btt-name, --type, --s3-bucket, and --secret-ref are
+                # passed to backup-target-create.
                 cmd = wlm_base + [
                     'backup-target-create',
-                    '--backup-target-name', name,
-                    '--backup-target-type', 's3',
+                    '--btt-name', name,
+                    '--type', 's3',
                     '--s3-bucket', bucket,
-                    '--s3-type', s3_type,
                     '--secret-ref', secret_href,
                 ]
-                if endpoint_url:
-                    cmd += ['--s3-endpoint-url', endpoint_url]
-                if bt.get('s3-region-name'):
-                    cmd += ['--s3-region-name', bt['s3-region-name']]
-                if bt.get('s3-ssl-enabled') is not None:
-                    cmd += ['--s3-ssl-enabled',
-                            str(bt['s3-ssl-enabled']).lower()]
-                if bt.get('s3-ssl-verify') is not None:
-                    cmd += ['--s3-ssl-verify',
-                            str(bt['s3-ssl-verify']).lower()]
-                if bt.get('s3-ssl-ca_cert'):
-                    cmd += ['--s3-ssl-ca-cert', bt['s3-ssl-ca_cert']]
-                if bt.get('s3-signature-version'):
-                    cmd += ['--s3-signature-version',
-                            bt['s3-signature-version']]
-                if bt.get('s3-auth-version'):
-                    cmd += ['--s3-auth-version', bt['s3-auth-version']]
-                if bt.get('s3-bucket-object-lock-enabled') is not None:
-                    cmd += ['--s3-bucket-object-lock-enabled',
-                            str(bt['s3-bucket-object-lock-enabled']).lower()]
 
                 try:
                     subprocess.run(cmd, capture_output=True,
