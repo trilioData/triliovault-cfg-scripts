@@ -24,6 +24,7 @@ import charmhelpers.core.hookenv as hookenv
 DMAPI_DIR = "/etc/triliovault-datamover"
 DMAPI_CONF = os.path.join(DMAPI_DIR, "triliovault-datamover-api.conf")
 DMAPI_LOG_CONF = os.path.join(DMAPI_DIR, "datamover_api_logging.conf")
+DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 
 plugins.trilio.make_trilio_handlers()
 

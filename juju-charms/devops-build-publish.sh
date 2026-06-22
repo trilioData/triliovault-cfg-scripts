@@ -14,7 +14,7 @@
 #            wlm | data-mover | dm-api | horizon-plugin
 #          If omitted, all 4 charms are built and released.
 #
-# The release channel defaults to 6.0/candidate.
+# The release channel defaults to 6.2/candidate.
 # Override by setting the CHANNEL environment variable:
 #   CHANNEL=latest/edge bash devops-build-publish.sh
 #
@@ -39,7 +39,7 @@
 
 set -e
 
-CHANNEL="${CHANNEL:-6.0/candidate}"
+CHANNEL="${CHANNEL:-6.2/candidate}"
 
 # Load Charmhub credentials non-interactively if not already set
 CHARMHUB_CREDS_FILE="${CHARMHUB_CREDS_FILE:-$HOME/.charmhub-creds}"
@@ -47,6 +47,15 @@ if [ -z "${CHARMCRAFT_AUTH:-}" ] && [ -f "$CHARMHUB_CREDS_FILE" ]; then
     export CHARMCRAFT_AUTH
     CHARMCRAFT_AUTH=$(cat "$CHARMHUB_CREDS_FILE")
     echo "Loaded Charmhub credentials from $CHARMHUB_CREDS_FILE"
+fi
+
+# Validate credentials are still active before starting any builds
+if ! charmcraft whoami &>/dev/null; then
+    echo "ERROR: Charmhub credentials are expired or invalid."
+    echo ""
+    echo "Re-export credentials with a 1-year TTL using:"
+    echo "  charmcraft login --export $CHARMHUB_CREDS_FILE --ttl 31536000"
+    exit 1
 fi
 
 usage() {

@@ -34,6 +34,9 @@
     params: "nbds_max=128"
     state: "present"
 
+- name: Create common Trilio directories
+  ansible.builtin.include_tasks: common.yml
+
 - name: Configure and install triliovault DMS services
   ansible.builtin.include_tasks: configure_dms.yml
 

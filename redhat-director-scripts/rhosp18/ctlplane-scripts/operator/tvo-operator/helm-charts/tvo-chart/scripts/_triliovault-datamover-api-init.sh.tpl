@@ -39,7 +39,7 @@ tee > /tmp/pod-shared-triliovault-datamover-api/triliovault-dms-client-dynamic.c
 rabbitmq_url = rabbit://${DMAPI_RABBIT_USER}:${DMAPI_RABBIT_PASSWORD}@${DMAPI_RABBIT_HOST}:5671/${DMAPI_RABBIT_VHOST}?ssl=${RABBIT_SSL_ENABLED_NUM}
 
 # Database connection
-db_url = mysql+pymysql://${DMAPI_DATABASE_USER}:${DMAPI_DATABASE_PASSWORD}@${DMAPI_DATABASE_HOST}:${DMAPI_DATABASE_PORT}/${DMAPI_DATABASE_NAME}
+db_url = mysql+pymysql://${WLM_DATABASE_USER}:${WLM_DATABASE_PASSWORD}@${WLM_DATABASE_HOST}:${WLM_DATABASE_PORT}/${WLM_DATABASE_NAME}
 
 node_id = ${NODE_NAME}
 

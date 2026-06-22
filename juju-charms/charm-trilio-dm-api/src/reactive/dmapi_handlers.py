@@ -13,11 +13,14 @@
 import os
 import pwd
 import grp
+import socket
 
 import charms_openstack.charm as charm
 import charms.reactive as reactive
+from charms.reactive import hook
 from charmhelpers.core.templating import render
 from charmhelpers.core import hookenv
+from charmhelpers.core import host
 
 # This charm's library contains all of the handler code associated with
 # dmapi
@@ -46,50 +49,53 @@ def render_config(*args):
     """
     with charm.provide_charm_instance() as charm_class:
         charm_class.upgrade_if_available(args)
+
+    # Pre-create log file with dmapi ownership so the service can write to it.
+    # /var/log/triliovault/ is nova:nova 755 — dmapi user cannot create files there.
+    log_dir = '/var/log/triliovault'
+    os.makedirs(log_dir, exist_ok=True)
+    dmapi_uid = pwd.getpwnam('dmapi').pw_uid
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
+    log_file = os.path.join(log_dir, 'triliovault-datamover-api.log')
+    if not os.path.exists(log_file):
+        open(log_file, 'w').close()
+    os.chown(log_file, dmapi_uid, dmapi_gid)
+
     with charm.provide_charm_instance() as charm_class:
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
 
-    # Render DMS client config for DMAPI
+    # DMS server must not run on DMAPI nodes — only the client library is needed here.
+    # python3-trilio-dms installs the systemd unit; explicitly stop and disable it.
+    host.service('disable', 'trilio-dms-server')
+    host.service('stop', 'trilio-dms-server')
+
+    # Render DMS client config with rabbitmq_url and node_id from amqp relation.
+    # db_url is left empty here and filled in by render_dms_client_config() when
+    # the wlm-db relation becomes available.
     amqp = reactive.endpoint_from_flag('amqp.available')
-    db_ep = reactive.endpoint_from_flag('shared-db.available')
-    if amqp and db_ep:
-        amqp_username = amqp.username()
-        amqp_password = amqp.password()
-        amqp_host = amqp.private_address()
-        amqp_port = amqp.ssl_port() or 5672
-        amqp_vhost = amqp.vhost()
-        transport_url = f"rabbit://{amqp_username}:{amqp_password}@{amqp_host}:{amqp_port}/{amqp_vhost}"
-
-        db_password = db_ep.password(prefix='dmapi')
-        db_user = 'dmapi'
-        db_host = '127.0.0.1'
-        db_name = 'dmapi'
-        db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}"
-
-        root_uid = pwd.getpwnam('root').pw_uid
-        nova_gid = grp.getgrnam('nova').gr_gid
-
-        dms_conf_dir = '/etc/triliovault-dms'
-        os.makedirs(dms_conf_dir, exist_ok=True)
-        os.makedirs(os.path.join(dms_conf_dir, 'client.conf.d'), exist_ok=True)
-        os.chown(dms_conf_dir, root_uid, nova_gid)
-
-        dms_client_context = {
+    transport_url = (
+        f"rabbit://{amqp.username()}:{amqp.password()}"
+        f"@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
+    )
+    root_uid = pwd.getpwnam('root').pw_uid
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, dmapi_gid)
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
+    render(
+        source='etc_triliovault-dms_client.conf',
+        target=dms_client_conf_path,
+        context={
             'rabbitmq_url': transport_url,
-            'db_url': db_url,
-        }
-        dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf.d', 'dmapi.conf')
-        render(
-            source='triliovault-dms-client.conf',
-            target=dms_client_conf_path,
-            context=dms_client_context,
-        )
-        os.chmod(dms_client_conf_path, 0o640)
-        os.chown(dms_client_conf_path, root_uid, nova_gid)
-        hookenv.log("DMS client config rendered for dmapi.")
+            'db_url': '',
+            'node_id': socket.getfqdn(),
+        },
+    )
+    os.chmod(dms_client_conf_path, 0o640)
+    os.chown(dms_client_conf_path, root_uid, dmapi_gid)
 
-    reactive.set_state("config.rendered")
+    reactive.set_flag("config.rendered")
 
 
 @reactive.when("config.rendered")
@@ -107,13 +113,79 @@ def cluster_connected(hacluster):
         charm_class.assess_status()
 
 
+@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
+def wlm_db_connected():
+    reactive.clear_flag('wlm-db.connected')
+    reactive.set_flag('wlm-db.connected')
+
+
+@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
+def wlm_db_disconnected():
+    reactive.clear_flag('wlm-db.connected')
+
+
+@reactive.when('wlm-db.connected')
+@reactive.when('shared-db.available')
+@reactive.when('amqp.available')
+def render_dms_client_config(*args):
+    """Render DMS client config for dmapi using workloadmgr DB credentials from wlm-db relation."""
+    wlm_db_password = None
+    for rid in hookenv.relation_ids('wlm-db'):
+        for unit in hookenv.related_units(rid):
+            data = hookenv.relation_get(unit=unit, rid=rid)
+            wlm_db_password = data.get('workloadmgr_password', '')
+            if wlm_db_password:
+                break
+
+    if not wlm_db_password:
+        hookenv.log("wlm-db relation has no workloadmgr_password yet, skipping DMS client config.")
+        return
+
+    mysql_host = '127.0.0.1'
+    for rid in hookenv.relation_ids('shared-db'):
+        for unit in hookenv.related_units(rid):
+            data = hookenv.relation_get(unit=unit, rid=rid)
+            if data.get('db_host'):
+                mysql_host = data['db_host']
+                break
+
+    amqp = reactive.endpoint_from_flag('amqp.available')
+    transport_url = (
+        f"rabbit://{amqp.username()}:{amqp.password()}"
+        f"@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
+    )
+    db_url = f"mysql+pymysql://workloadmgr:{wlm_db_password}@{mysql_host}:3306/workloadmgr"
+
+    root_uid = pwd.getpwnam('root').pw_uid
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
+
+    dms_conf_dir = '/etc/triliovault-dms'
+    os.makedirs(dms_conf_dir, exist_ok=True)
+    os.chown(dms_conf_dir, root_uid, dmapi_gid)
+
+    dms_client_conf_path = os.path.join(dms_conf_dir, 'client.conf')
+    render(
+        source='etc_triliovault-dms_client.conf',
+        target=dms_client_conf_path,
+        context={
+            'rabbitmq_url': transport_url,
+            'db_url': db_url,
+            'node_id': socket.getfqdn(),
+        },
+    )
+    os.chmod(dms_client_conf_path, 0o640)
+    os.chown(dms_client_conf_path, root_uid, dmapi_gid)
+    hookenv.log("DMS client config rendered for dmapi via wlm-db relation.")
+    host.service_restart('tvault-datamover-api')
+
+
 @reactive.when("shared-db.available")
 @reactive.when_not("dmapi-db.ready")
 def check_dmapi_db():
     db_ep = reactive.endpoint_from_flag('shared-db.available')
     if db_ep:
         if db_ep.password(prefix='dmapi'):
-            reactive.set_state("dmapi-db.ready")
+            reactive.set_flag("dmapi-db.ready")
         else:
             with charm.provide_charm_instance() as instance:
                 for db in instance.get_database_setup():

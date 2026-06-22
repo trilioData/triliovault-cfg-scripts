@@ -103,7 +103,6 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
     workloadmgr_conf = "/etc/triliovault-wlm/triliovault-wlm.conf"
     api_paste_ini = "/etc/triliovault-wlm/api-paste.ini"
     alembic_ini = "/etc/triliovault-wlm/alembic.ini"
-    object_store_logging_conf = "/etc/triliovault-object-store/object_store_logging.conf"
     workloadmgr_log_conf = "/etc/triliovault-wlm/wlm_logging.conf"
 
     base_packages = [
@@ -211,13 +210,14 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         return self.endpoint_template.format(super().internal_url)
 
 
-    dms_server_conf = "/etc/triliovault-dms/dms-server.conf"
-    dms_client_conf = "/etc/triliovault-dms/client.conf.d/wlm.conf"
+    dms_server_conf = "/etc/triliovault-dms/server.conf"
+    dms_client_conf = "/etc/triliovault-dms/client.conf"
+    dms_s3vaultfuse_conf = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 
     @property
     def services(self):
         """Determine the services associated with this class"""
-        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads", "trilio-dms"]
+        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads", "trilio-dms-server"]
 
         if not reactive.flags.is_flag_set("ha.available"):
             # Only manage wlm-cron service when running solo as an
@@ -234,12 +234,12 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
             self.workloadmgr_log_conf: self.services,
-            self.dms_server_conf: ["trilio-dms"],
-            self.dms_client_conf: ["trilio-dms"],
+            self.dms_server_conf: ["trilio-dms-server"],
+            self.dms_client_conf: ["trilio-dms-server"],
+            self.dms_s3vaultfuse_conf: ["trilio-dms-server"],
         }
 
         return _restart_map
-
 
     def configure_ha_resources(self, hacluster):
         """Inform the ha subordinate about each service it should manage.

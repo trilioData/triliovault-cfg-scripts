@@ -36,48 +36,71 @@ import charm.openstack.trilio_dm  # noqa
 
 
 def unmount_old_backup_targets(*args):
-    """Unmount old static backup target mounts from T4O 5.x/6.0/6.1.
+    """Lazy-unmount all mounts under /var/triliovault-mounts on this unit.
 
-    Stops tvault-object-store and lazy-unmounts all mounts under
-    /var/triliovault-mounts on this unit. Safe to run after upgrading
-    to T4O 6.2 charms. Designed to run in parallel across all units
-    via: juju run trilio-data-mover/* unmount-old-backup-targets
+    Safe to run after upgrading to T4O 6.2 charms. Designed to run in
+    parallel across all units via:
+    juju run trilio-data-mover/* unmount-old-backup-targets
     """
     mount_base = '/var/triliovault-mounts'
     results = []
     errors = []
 
-    # Stop tvault-object-store to prevent it re-mounting on startup
-    try:
-        active = subprocess.run(
-            ['systemctl', 'is-active', 'tvault-object-store'],
-            capture_output=True, text=True)
-        if active.stdout.strip() == 'active':
-            subprocess.run(['systemctl', 'stop', 'tvault-object-store'], check=True)
-            results.append('tvault-object-store: stopped')
-        subprocess.run(['systemctl', 'disable', 'tvault-object-store'],
-                       capture_output=True)
-        results.append('tvault-object-store: disabled')
-    except subprocess.CalledProcessError as e:
-        errors.append('tvault-object-store stop failed: {}'.format(e))
-    except FileNotFoundError:
-        results.append('tvault-object-store: not present')
-
-    # Find all triliovault mounts
-    findmnt = subprocess.run(
-        ['findmnt', '-rn', '-o', 'TARGET'],
+    # Stop and disable all tvault-object-store-*.service units so they cannot
+    # remount targets while we are cleaning up
+    list_result = subprocess.run(
+        ['systemctl', 'list-units', '--all', '--plain', '--no-legend',
+         'tvault-object-store-*.service'],
         capture_output=True, text=True)
-    mounts = [m for m in findmnt.stdout.splitlines() if mount_base in m]
+    ots_units = [
+        line.split()[0] for line in list_result.stdout.splitlines()
+        if line.strip()
+    ]
+    for svc in ots_units:
+        subprocess.run(['systemctl', 'stop', svc], capture_output=True)
+        subprocess.run(['systemctl', 'disable', svc], capture_output=True)
+        results.append('stopped and disabled: {}'.format(svc))
+    if not ots_units:
+        results.append('tvault-object-store: no units found')
 
-    if not mounts:
+    # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
+    try:
+        kill = subprocess.run(['pkill', '-f', 's3vaultfuse'],
+                              capture_output=True)
+        if kill.returncode == 0:
+            results.append('s3vaultfuse: processes killed')
+        elif kill.returncode == 1:
+            results.append('s3vaultfuse: no processes running')
+        else:
+            errors.append('pkill s3vaultfuse returned: {}'.format(kill.returncode))
+    except FileNotFoundError:
+        errors.append('pkill not found')
+
+    # Get all mounts with FSTYPE, sorted deepest-first to avoid busy-parent errors
+    findmnt = subprocess.run(
+        ['findmnt', '-rn', '-o', 'TARGET,FSTYPE'],
+        capture_output=True, text=True)
+    all_mounts = [
+        line.split() for line in findmnt.stdout.splitlines()
+        if mount_base in line and len(line.split()) >= 2
+    ]
+    all_mounts.sort(key=lambda x: x[0], reverse=True)
+
+    if not all_mounts:
         results.append('no mounts found under {}'.format(mount_base))
     else:
-        for mount in mounts:
+        for parts in all_mounts:
+            target, fstype = parts[0], parts[1]
+            # NFS mounts need -f (force) in addition to -l (lazy)
+            if fstype in ('nfs', 'nfs4'):
+                cmd = ['umount', '-l', '-f', target]
+            else:
+                cmd = ['umount', '-l', target]
             try:
-                subprocess.run(['umount', '-l', mount], check=True)
-                results.append('unmounted: {}'.format(mount))
+                subprocess.run(cmd, check=True)
+                results.append('unmounted ({}): {}'.format(fstype, target))
             except subprocess.CalledProcessError as e:
-                errors.append('umount failed for {}: {}'.format(mount, e))
+                errors.append('umount failed for {}: {}'.format(target, e))
 
     hookenv.action_set({'results': '\n'.join(results)})
     if errors:
