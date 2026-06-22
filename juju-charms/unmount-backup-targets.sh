@@ -33,8 +33,18 @@ else
 
     echo ""
     echo "=== Unmounting on trilio-data-mover units ==="
-    for unit in $(juju status trilio-data-mover --format=json | \
-      python3 -c "import sys,json; [print(u) for u in json.load(sys.stdin)['applications']['trilio-data-mover']['units']]"); do
+    for unit in $(juju status --format=json | \
+      python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+units = []
+for app in d['applications'].values():
+    for u in app.get('units', {}).values():
+        for sub in u.get('subordinates', {}).keys():
+            if sub.startswith('trilio-data-mover/'):
+                units.append(sub)
+print('\n'.join(units))
+"); do
         echo "  Running on ${unit} ..."
         juju run-action --wait "${unit}" unmount-old-backup-targets
     done
