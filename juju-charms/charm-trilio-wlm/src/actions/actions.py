@@ -374,6 +374,30 @@ def create_backup_targets(*args):
                         '{}: empty secret href from Barbican'.format(name))
                     continue
 
+                # Normalize the href when Barbican's host_href is not
+                # configured — it returns https://None:<port>/... in that
+                # case. Extract the UUID and rebuild using the public endpoint.
+                parsed_href = urlparse(secret_href)
+                if not parsed_href.hostname or \
+                        parsed_href.hostname.lower() == 'none':
+                    ep_proc = subprocess.run(
+                        ['openstack', 'endpoint', 'list',
+                         '--service', 'key-manager',
+                         '--interface', 'public', '-f', 'json'],
+                        capture_output=True, text=True, env=os_env)
+                    if ep_proc.returncode == 0:
+                        try:
+                            eps = json.loads(ep_proc.stdout)
+                            if eps:
+                                barbican_base = eps[0]['URL'].rstrip('/')
+                                secret_uuid = secret_href.rstrip('/').split('/')[-1]
+                                if not barbican_base.endswith('/v1'):
+                                    barbican_base += '/v1'
+                                secret_href = '{}/secrets/{}'.format(
+                                    barbican_base, secret_uuid)
+                        except (json.JSONDecodeError, IndexError, KeyError):
+                            pass
+
                 # In T4O 6.2, all S3 connection details (endpoint, SSL,
                 # credentials) are stored in the Barbican secret. Only
                 # --btt-name, --type, --s3-bucket, and --secret-ref are
