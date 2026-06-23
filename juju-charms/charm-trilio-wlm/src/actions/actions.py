@@ -196,7 +196,6 @@ def create_backup_targets(*args):
         'OS_PROJECT_NAME': identity_service.service_tenant(),
         'OS_REGION_NAME': hookenv.config('region'),
         'OS_IDENTITY_API_VERSION': '3',
-        'OS_INSECURE': '1',
     })
 
     # List existing backup targets from WLM DB
@@ -347,7 +346,7 @@ def create_backup_targets(*args):
                     secret_payload = f.read().strip()
 
                 store_proc = subprocess.run(
-                    ['openstack', 'secret', 'store',
+                    ['openstack', '--insecure', 'secret', 'store',
                      '--name', 'secret-key-{}'.format(name),
                      '--payload', secret_payload,
                      '-f', 'json'],
@@ -382,7 +381,7 @@ def create_backup_targets(*args):
                 if not parsed_href.hostname or \
                         parsed_href.hostname.lower() == 'none':
                     ep_proc = subprocess.run(
-                        ['openstack', 'endpoint', 'list',
+                        ['openstack', '--insecure', 'endpoint', 'list',
                          '--service', 'key-manager',
                          '--interface', 'public', '-f', 'json'],
                         capture_output=True, text=True, env=os_env)
