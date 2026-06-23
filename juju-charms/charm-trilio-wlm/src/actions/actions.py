@@ -197,10 +197,6 @@ def create_backup_targets(*args):
         'OS_REGION_NAME': hookenv.config('region'),
         'OS_IDENTITY_API_VERSION': '3',
     })
-    # Remove OS_CACERT so openstack CLI uses the system default CA bundle.
-    # A charm-set OS_CACERT may point to a cert that is not valid for all
-    # endpoints (e.g. Barbican), causing SSL verification failures.
-    os_env.pop('OS_CACERT', None)
 
     # List existing backup targets from WLM DB
     try:
