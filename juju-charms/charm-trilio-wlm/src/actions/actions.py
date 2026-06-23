@@ -196,6 +196,7 @@ def create_backup_targets(*args):
         'OS_PROJECT_NAME': identity_service.service_tenant(),
         'OS_REGION_NAME': hookenv.config('region'),
         'OS_IDENTITY_API_VERSION': '3',
+        'OS_INSECURE': '1',
     })
 
     # List existing backup targets from WLM DB
