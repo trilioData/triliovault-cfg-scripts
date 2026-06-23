@@ -376,34 +376,38 @@ def create_backup_targets(*args):
 
                 # Normalize the href when Barbican's host_href is not
                 # configured — it returns https://None:<port>/... in that
-                # case. Extract the UUID and rebuild using the public endpoint.
+                # case. Use keystoneauth1 (available in charm env) to look
+                # up the real public Barbican endpoint from the service
+                # catalog, avoiding subprocess/SSL/environment issues.
                 parsed_href = urlparse(secret_href)
                 if not parsed_href.hostname or \
                         parsed_href.hostname.lower() == 'none':
-                    ep_proc = subprocess.run(
-                        ['openstack', 'endpoint', 'list',
-                         '--service', 'key-manager',
-                         '--interface', 'public', '-f', 'json'],
-                        capture_output=True, text=True, env=os_env)
-                    if ep_proc.returncode == 0:
-                        try:
-                            eps = json.loads(ep_proc.stdout)
-                            if eps:
-                                barbican_base = eps[0]['URL'].rstrip('/')
-                                secret_uuid = secret_href.rstrip('/').split('/')[-1]
-                                if not barbican_base.endswith('/v1'):
-                                    barbican_base += '/v1'
-                                secret_href = '{}/secrets/{}'.format(
-                                    barbican_base, secret_uuid)
-                        except (json.JSONDecodeError, IndexError, KeyError) as e:
-                            errors.append(
-                                '{}: href normalization parse error — {}'.format(
-                                    name, e))
-                    else:
+                    try:
+                        from keystoneauth1.identity import v3 as ks_v3
+                        from keystoneauth1 import session as ks_session
+                        cacert = os_env.get('OS_CACERT') or False
+                        ks_auth = ks_v3.Password(
+                            auth_url=auth_url,
+                            username=identity_service.service_username(),
+                            password=identity_service.service_password(),
+                            user_domain_name='service_domain',
+                            project_id=identity_service.service_tenant_id(),
+                        )
+                        ks_sess = ks_session.Session(
+                            auth=ks_auth, verify=cacert)
+                        barbican_endpoint = ks_sess.get_endpoint(
+                            service_type='key-manager', interface='public')
+                        if barbican_endpoint:
+                            secret_uuid = secret_href.rstrip('/').split('/')[-1]
+                            base = barbican_endpoint.rstrip('/')
+                            if not base.endswith('/v1'):
+                                base += '/v1'
+                            secret_href = '{}/secrets/{}'.format(
+                                base, secret_uuid)
+                    except Exception as e:
                         errors.append(
-                            '{}: endpoint list failed (rc={}) — {}'.format(
-                                name, ep_proc.returncode,
-                                ep_proc.stderr.strip()))
+                            '{}: href normalization failed — {}'.format(
+                                name, e))
 
                 # In T4O 6.2, all S3 connection details (endpoint, SSL,
                 # credentials) are stored in the Barbican secret. Only
