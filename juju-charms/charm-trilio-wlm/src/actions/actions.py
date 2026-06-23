@@ -197,6 +197,10 @@ def create_backup_targets(*args):
         'OS_REGION_NAME': hookenv.config('region'),
         'OS_IDENTITY_API_VERSION': '3',
     })
+    # Remove OS_CACERT so openstack CLI uses the system default CA bundle.
+    # A charm-set OS_CACERT may point to a cert that is not valid for all
+    # endpoints (e.g. Barbican), causing SSL verification failures.
+    os_env.pop('OS_CACERT', None)
 
     # List existing backup targets from WLM DB
     try:
@@ -346,7 +350,7 @@ def create_backup_targets(*args):
                     secret_payload = f.read().strip()
 
                 store_proc = subprocess.run(
-                    ['openstack', '--insecure', 'secret', 'store',
+                    ['openstack', 'secret', 'store',
                      '--name', 'secret-key-{}'.format(name),
                      '--payload', secret_payload,
                      '-f', 'json'],
@@ -381,7 +385,7 @@ def create_backup_targets(*args):
                 if not parsed_href.hostname or \
                         parsed_href.hostname.lower() == 'none':
                     ep_proc = subprocess.run(
-                        ['openstack', '--insecure', 'endpoint', 'list',
+                        ['openstack', 'endpoint', 'list',
                          '--service', 'key-manager',
                          '--interface', 'public', '-f', 'json'],
                         capture_output=True, text=True, env=os_env)
@@ -395,8 +399,15 @@ def create_backup_targets(*args):
                                     barbican_base += '/v1'
                                 secret_href = '{}/secrets/{}'.format(
                                     barbican_base, secret_uuid)
-                        except (json.JSONDecodeError, IndexError, KeyError):
-                            pass
+                        except (json.JSONDecodeError, IndexError, KeyError) as e:
+                            errors.append(
+                                '{}: href normalization parse error — {}'.format(
+                                    name, e))
+                    else:
+                        errors.append(
+                            '{}: endpoint list failed (rc={}) — {}'.format(
+                                name, ep_proc.returncode,
+                                ep_proc.stderr.strip()))
 
                 # In T4O 6.2, all S3 connection details (endpoint, SSL,
                 # credentials) are stored in the Barbican secret. Only
