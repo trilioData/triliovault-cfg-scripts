@@ -23,6 +23,13 @@ create-backup-targets:
         Absolute path to the old 6.1 overlay bundle YAML file on the
         trilio-wlm leader unit. Use juju scp to copy the file to the unit
         before running this action.
+    openrc-file:
+      type: string
+      description: |
+        Optional path to an OpenRC file on the unit whose credentials are used
+        for openstack secret store. Use when workloadmgr's internal Barbican
+        user differs from the charm's service user. Copy the file to the unit
+        first using juju scp.
   required:
     - bundle-file
 create-cloud-admin-trust:

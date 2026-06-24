@@ -128,6 +128,7 @@ def create_backup_targets(*args):
         return
 
     bundle_file = hookenv.action_get('bundle-file')
+    openrc_file = hookenv.action_get('openrc-file')
     if not os.path.isfile(bundle_file):
         hookenv.function_fail('File not found: {}'.format(bundle_file))
         return
@@ -197,6 +198,22 @@ def create_backup_targets(*args):
         'OS_REGION_NAME': hookenv.config('region'),
         'OS_IDENTITY_API_VERSION': '3',
     })
+
+    # Overlay os_env with credentials from openrc-file if provided.
+    # Use this when workloadmgr's internal Barbican user differs from the
+    # charm's service user (403 Forbidden on secret retrieval).
+    if openrc_file and os.path.isfile(openrc_file):
+        with open(openrc_file) as fh:
+            for line in fh:
+                line = line.strip()
+                if line.startswith('export '):
+                    line = line[7:]
+                if '=' in line and not line.startswith('#'):
+                    key, _, val = line.partition('=')
+                    key = key.strip()
+                    val = val.strip().strip('"').strip("'")
+                    if key.startswith('OS_'):
+                        os_env[key] = val
 
     # List existing backup targets from WLM DB
     try:
@@ -426,14 +443,16 @@ def create_backup_targets(*args):
                 if idx == 0:
                     cmd.append('--default')
 
-                try:
-                    subprocess.run(cmd, capture_output=True,
-                                   text=True, check=True)
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True)
+                output = (proc.stdout + proc.stderr).strip()
+                if proc.returncode != 0 or \
+                        'ERROR' in proc.stdout or 'Error:' in proc.stdout:
+                    errors.append('{}: create failed — {}'.format(
+                        name, output))
+                else:
                     results.append('{}: created (s3, secret-ref={})'.format(
                         name, secret_href))
-                except subprocess.CalledProcessError as e:
-                    errors.append('{}: create failed — {}'.format(
-                        name, e.stderr.strip()))
 
             finally:
                 for path in [secret_json_path, cert_path]:
@@ -445,6 +464,50 @@ def create_backup_targets(*args):
 
         else:
             errors.append('{}: unsupported type {}'.format(name, bt_type))
+
+    # -----------------------------------------------------------------------
+    # Verification: confirm each created target appears in backup-target-list
+    # and each created secret appears in openstack secret list.
+    # -----------------------------------------------------------------------
+    created_names = set()
+    for r in results:
+        created_names.add(r.split(':')[0].strip())
+
+    if created_names:
+        # Verify backup targets
+        try:
+            bt_list_proc = subprocess.run(
+                wlm_base + ['backup-target-list', '--format', 'json'],
+                capture_output=True, text=True)
+            bt_list = (json.loads(bt_list_proc.stdout)
+                       if bt_list_proc.stdout.strip() else [])
+            bt_names_in_wlm = {t.get('Name', t.get('BTT Name', ''))
+                                for t in bt_list}
+            for name in created_names:
+                if name not in bt_names_in_wlm:
+                    errors.append(
+                        '{}: not found in backup-target-list after creation'
+                        ' — WLM may have rejected it'.format(name))
+        except Exception as e:
+            errors.append('backup-target-list verification failed: {}'.format(e))
+
+        # Verify secrets
+        try:
+            sec_list_proc = subprocess.run(
+                ['openstack', 'secret', 'list', '-f', 'json'],
+                capture_output=True, text=True, env=os_env)
+            sec_list = (json.loads(sec_list_proc.stdout)
+                        if sec_list_proc.stdout.strip() else [])
+            sec_names_in_barbican = {
+                s.get('Name', '') for s in sec_list}
+            for name in created_names:
+                secret_name = 'secret-key-{}'.format(name)
+                if secret_name not in sec_names_in_barbican:
+                    errors.append(
+                        '{}: secret "{}" not found in Barbican after'
+                        ' creation'.format(name, secret_name))
+        except Exception as e:
+            errors.append('secret list verification failed: {}'.format(e))
 
     hookenv.action_set({'results': '\n'.join(results)})
     if errors:
