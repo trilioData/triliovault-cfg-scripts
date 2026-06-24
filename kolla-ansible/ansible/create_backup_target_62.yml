@@ -77,9 +77,11 @@
         set -a; source {{ cloudrc }}; set +a
         ENDPOINT_FLAG=""
         SSL_FLAG="--ssl"
-        FILESYSTEM_EXP="{{ bt_data.backup_target.s3_endpoint | urlsplit('hostname') }}/{{ bt_data.backup_target.s3_bucket }}"
         if [ -n "{{ bt_data.backup_target.s3_endpoint | default('') }}" ]; then
           ENDPOINT_FLAG="--endpoint-url {{ bt_data.backup_target.s3_endpoint }}"
+          FILESYSTEM_EXP="{{ bt_data.backup_target.s3_endpoint | urlsplit('hostname') }}/{{ bt_data.backup_target.s3_bucket }}"
+        else
+          FILESYSTEM_EXP="{{ bt_data.backup_target.s3_bucket }}"
         fi
         if [ "{{ bt_data.backup_target.s3_ssl_enabled | lower }}" == "false" ]; then
           SSL_FLAG="--no-ssl "

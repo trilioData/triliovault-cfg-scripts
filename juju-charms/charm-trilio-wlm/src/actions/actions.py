@@ -223,7 +223,7 @@ def create_backup_targets(*args):
     results = []
     errors = []
 
-    for bt in backup_targets:
+    for idx, bt in enumerate(backup_targets):
         name = bt.get('backup-target-name', 'unnamed')
         bt_type = bt.get('backup-target-type', '').lower()
 
@@ -250,6 +250,8 @@ def create_backup_targets(*args):
             ]
             if bt.get('nfs-options'):
                 cmd += ['--nfs-mount-opts', bt['nfs-options']]
+            if idx == 0:
+                cmd.append('--default')
             try:
                 subprocess.run(cmd, capture_output=True, text=True, check=True)
                 results.append('{}: created (nfs)'.format(name))
@@ -285,9 +287,9 @@ def create_backup_targets(*args):
             #   AWS S3 (no endpoint):   s3server:/<bucket>
             if endpoint_url:
                 parsed = urlparse(endpoint_url)
-                filesystem_export = 's3server:{}/{}'.format(parsed.hostname, bucket)
+                filesystem_export = '{}/{}'.format(parsed.hostname, bucket)
             else:
-                filesystem_export = 's3server:/{}'.format(bucket)
+                filesystem_export = bucket
 
             secret_json_path = None
             cert_path = None
@@ -312,12 +314,11 @@ def create_backup_targets(*args):
                 ]
                 if endpoint_url:
                     dms_cmd += ['--endpoint-url', endpoint_url]
-                if ssl_enabled:
-                    dms_cmd.append('--ssl')
-                if ssl_verify:
-                    dms_cmd.append('--ssl-verify')
-                if cert_path:
-                    dms_cmd += ['--ssl-cert', cert_path]
+                dms_cmd.append('--ssl' if ssl_enabled else '--no-ssl')
+                if ssl_verify and cert_path:
+                    dms_cmd += ['--ssl-verify', '--ssl-cert', cert_path]
+                else:
+                    dms_cmd.append('--no-ssl-verify')
 
                 try:
                     subprocess.run(dms_cmd, capture_output=True,
@@ -420,6 +421,10 @@ def create_backup_targets(*args):
                     '--s3-bucket', bucket,
                     '--secret-ref', secret_href,
                 ]
+                if endpoint_url:
+                    cmd += ['--s3-endpoint-url', endpoint_url]
+                if idx == 0:
+                    cmd.append('--default')
 
                 try:
                     subprocess.run(cmd, capture_output=True,
