@@ -242,7 +242,7 @@ PYEOF
     if [ "$BT_TYPE" = "nfs" ]; then
         if [ -n "$EXISTING_ID" ]; then
             echo "  EXISTS (id=$EXISTING_ID) — updating nfs-mount-opts only"
-            OUT=$(run_remote "workloadmgr backup-target-update $EXISTING_ID --nfs-mount-opts '$NFS_OPTIONS'")
+            OUT=$(run_remote "workloadmgr backup-target-modify --nfs-mount-opts '$NFS_OPTIONS' $EXISTING_ID")
             echo "$OUT"
             if echo "$OUT" | grep -qiE '^ERROR|^Error:'; then
                 echo "  ERROR: update failed for $BT_NAME" >&2
@@ -357,7 +357,7 @@ print('')
 
         if [ -n "$EXISTING_ID" ]; then
             echo "  EXISTS (id=$EXISTING_ID) — updating secret-ref only"
-            UPDATE_OUT=$(run_remote "workloadmgr backup-target-update $EXISTING_ID --secret-ref '$SECRET_HREF'")
+            UPDATE_OUT=$(run_remote "workloadmgr backup-target-modify --secret-ref '$SECRET_HREF' $EXISTING_ID")
             echo "$UPDATE_OUT"
             if echo "$UPDATE_OUT" | grep -qiE '^ERROR|^Error:'; then
                 echo "  ERROR: update failed for $BT_NAME" >&2
