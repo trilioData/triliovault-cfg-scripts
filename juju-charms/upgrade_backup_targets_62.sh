@@ -115,7 +115,7 @@ run_remote() {
          s/(--secret-key[[:space:]]+)[^[:space:]]*/\1[MASKED]/g;
          s/(--access-key[[:space:]]+)[^[:space:]]*/\1[MASKED]/g')
     echo ""
-    echo "  >> $safe_cmd"
+    echo "  # $safe_cmd"
     juju ssh --pty=false "$WLM_UNIT" \
         "source $REMOTE_OPENRC 2>/dev/null; $cmd" < /dev/null 2>&1
 }
@@ -346,7 +346,7 @@ print('')
             SECRET_UUID="${SECRET_HREF##*/}"
             ENDPOINT_OUT=$(run_remote "openstack endpoint list --service key-manager --interface public -f value -c URL")
             echo "$ENDPOINT_OUT"
-            BARBICAN_URL=$(echo "$ENDPOINT_OUT" | grep -v '^$' | grep -v '^  >>' | head -1)
+            BARBICAN_URL=$(echo "$ENDPOINT_OUT" | grep -v '^$' | grep -v '^  #' | head -1)
             if [ -n "$BARBICAN_URL" ]; then
                 BARBICAN_BASE="${BARBICAN_URL%/}"
                 echo "$BARBICAN_BASE" | grep -q '/v1$' || BARBICAN_BASE="${BARBICAN_BASE}/v1"
