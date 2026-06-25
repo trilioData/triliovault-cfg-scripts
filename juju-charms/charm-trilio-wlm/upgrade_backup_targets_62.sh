@@ -209,8 +209,18 @@ for t in data:
     if t.get('Type','').lower() != bt_type:
         continue
     ep = t.get('Backend Endpoint','')
-    # NFS: exact match on share path; S3: substring (bucket within hostname/bucket)
-    matched = (ep == fs_export) if bt_type == 'nfs' else (fs_export in ep)
+    if bt_type == 'nfs':
+        # NFS: exact match on share path (e.g. 192.168.0.51:/home/canonical)
+        matched = (ep == fs_export)
+    else:
+        # S3: fs_export is 'hostname/bucket' (S3-compatible) or 'bucket' (AWS S3).
+        # Check both hostname and bucket are present as substrings in Backend Endpoint.
+        parts = fs_export.split('/', 1)
+        if len(parts) == 2:
+            host, bucket = parts
+            matched = (host in ep) and (bucket in ep)
+        else:
+            matched = (fs_export in ep)
     if matched:
         print(t.get('ID',''))
         sys.exit(0)
