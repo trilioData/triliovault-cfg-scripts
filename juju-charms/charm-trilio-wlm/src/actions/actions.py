@@ -534,9 +534,12 @@ def create_backup_targets(*args):
         except Exception as e:
             errors.append('secret list verification failed: {}'.format(e))
 
+    log_path = '/tmp/trilio_create_bt_cmdlog.txt'
+    with open(log_path, 'w') as _lf:
+        _lf.write('\n\n'.join(cmd_log))
     hookenv.action_set({
         'results': '\n'.join(results),
-        'cmd-log': '\n\n'.join(cmd_log),
+        'cmd-log-file': log_path,
     })
     if errors:
         hookenv.function_fail('Errors:\n' + '\n'.join(errors))
