@@ -77,10 +77,11 @@ echo "INFO: using unit: $WLM_UNIT"
 # rc file with only OS_* exports (no commands, no OS_CACERT) and copy it
 # to the unit. Certs are already in the trusted path on the unit.
 # ---------------------------------------------------------------------------
-CLEAN_OPENRC=$(mktemp /tmp/trilio_openrc_clean_XXXXXX)
+CLEAN_OPENRC="/tmp/trilio_openrc_clean_$$.tmp"
+EXISTING_FILE=""
 
 cleanup() {
-    rm -f "$CLEAN_OPENRC"
+    rm -f "$CLEAN_OPENRC" "${EXISTING_FILE:-}"
     juju ssh --pty=false "$WLM_UNIT" "rm -f $REMOTE_OPENRC" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -110,13 +111,13 @@ run_remote() {
     safe_cmd=$(echo "$cmd" | sed -E \
         's/(--os-password[[:space:]]+)[^[:space:]]*/\1[MASKED]/g;
          s/(OS_PASSWORD=)[^[:space:]]*/\1[MASKED]/g;
-         s/(--payload[[:space:]]+)[^[:space:]]*/\1[MASKED]/g;
+         s/(--payload[[:space:]]+).+/\1[MASKED]/g;
          s/(--secret-key[[:space:]]+)[^[:space:]]*/\1[MASKED]/g;
          s/(--access-key[[:space:]]+)[^[:space:]]*/\1[MASKED]/g')
     echo ""
     echo "  >> $safe_cmd"
     juju ssh --pty=false "$WLM_UNIT" \
-        "source $REMOTE_OPENRC 2>/dev/null; $cmd" 2>&1
+        "source $REMOTE_OPENRC 2>/dev/null; $cmd" < /dev/null 2>&1
 }
 
 # ---------------------------------------------------------------------------
@@ -159,6 +160,8 @@ lines = sys.stdin.read()
 m = re.search(r'\[.*\]', lines, re.DOTALL)
 print(m.group(0) if m else '[]')
 ")
+EXISTING_FILE="/tmp/trilio_existing_$$.json"
+echo "$EXISTING_JSON" > "$EXISTING_FILE"
 
 # ---------------------------------------------------------------------------
 # Process each backup target
@@ -203,10 +206,11 @@ while IFS= read -r BT_JSON; do
     echo "  filesystem-export (existence key): $FS_EXPORT"
 
     # Check if a matching backup target already exists in WLM
-    EXISTING_ID=$(echo "$EXISTING_JSON" | python3 - "$FS_EXPORT" "$BT_TYPE" <<'PYEOF'
+    EXISTING_ID=$(python3 - "$EXISTING_FILE" "$FS_EXPORT" "$BT_TYPE" <<'PYEOF'
 import sys, json
-data = json.load(sys.stdin)
-fs_export, bt_type = sys.argv[1], sys.argv[2]
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+fs_export, bt_type = sys.argv[2], sys.argv[3]
 for t in data:
     if t.get('Type','').lower() != bt_type:
         continue
@@ -296,7 +300,7 @@ PYEOF
         echo "$OUT"
         if [ $DMS_RC -ne 0 ]; then
             echo "  ERROR: trilio-dms-cli failed for $BT_NAME" >&2
-            juju ssh --pty=false "$WLM_UNIT" "rm -f $REMOTE_SECRET_JSON $REMOTE_CERT" 2>/dev/null || true
+            juju ssh --pty=false "$WLM_UNIT" "rm -f $REMOTE_SECRET_JSON $REMOTE_CERT" < /dev/null 2>/dev/null || true
             ERRORS=$((ERRORS + 1))
             IDX=$((IDX + 1))
             continue
@@ -309,7 +313,7 @@ PYEOF
         echo "$STORE_OUT"
 
         # Clean up secret payload file from unit
-        juju ssh --pty=false "$WLM_UNIT" "rm -f $REMOTE_SECRET_JSON $REMOTE_CERT" 2>/dev/null || true
+        juju ssh --pty=false "$WLM_UNIT" "rm -f $REMOTE_SECRET_JSON $REMOTE_CERT" < /dev/null 2>/dev/null || true
 
         # Parse secret href from store output (strip any SSH banner lines)
         SECRET_HREF=$(echo "$STORE_OUT" | python3 -c "
