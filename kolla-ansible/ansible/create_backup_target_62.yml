@@ -76,20 +76,33 @@
       shell: |
         set -a; source {{ cloudrc }}; set +a
         ENDPOINT_FLAG=""
+        SSL_FLAG="--ssl"
         if [ -n "{{ bt_data.backup_target.s3_endpoint | default('') }}" ]; then
           ENDPOINT_FLAG="--endpoint-url {{ bt_data.backup_target.s3_endpoint }}"
+          FILESYSTEM_EXP="{{ bt_data.backup_target.s3_endpoint | urlsplit('hostname') }}/{{ bt_data.backup_target.s3_bucket }}"
+        else
+          FILESYSTEM_EXP="{{ bt_data.backup_target.s3_bucket }}"
         fi
+        if [ "{{ bt_data.backup_target.s3_ssl_enabled | lower }}" == "false" ]; then
+          SSL_FLAG="--no-ssl "
+        fi
+        if [ "{{ bt_data.backup_target.s3_ssl_verify | lower }}" == "true" ]; then
+          docker cp {{ bt_data.backup_target.s3_ssl_cert_file_name }} {{ wlm_container }}:/tmp/s3-cert.pem
+          SSL_VERIFY_FLAG="--ssl-verify --ssl-cert /tmp/s3-cert.pem "
+        else
+          SSL_VERIFY_FLAG="--no-ssl-verify"
+        fi
+
         docker exec \
-          -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
-          -e OS_PROJECT_NAME -e OS_PROJECT_ID \
-          -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_INTERFACE -e OS_CACERT \
           {{ wlm_container }} \
           trilio-dms-cli secret-payload create \
             --access-key "{{ bt_data.backup_target.s3_access_key }}" \
             --secret-key "{{ bt_data.backup_target.s3_secret_key }}" \
             --bucket "{{ bt_data.backup_target.s3_bucket }}" \
+            $SSL_FLAG \
+            $SSL_VERIFY_FLAG \
             $ENDPOINT_FLAG \
+            --filesystem-export $FILESYSTEM_EXP \
             -o /tmp/bt_secret.json
         docker cp {{ wlm_container }}:/tmp/bt_secret.json /tmp/triliovault_bt_secret.json
         docker exec {{ wlm_container }} rm -f /tmp/bt_secret.json
@@ -116,29 +129,6 @@
       register: barbican_secret_result
       when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
 
-    - name: Resolve public Barbican endpoint
-      shell: |
-        set -a; source {{ cloudrc }}; set +a
-        docker exec \
-          -e OS_AUTH_URL -e OS_USERNAME -e OS_PASSWORD \
-          -e OS_PROJECT_NAME -e OS_PROJECT_ID \
-          -e OS_USER_DOMAIN_NAME -e OS_PROJECT_DOMAIN_ID \
-          -e OS_IDENTITY_API_VERSION -e OS_REGION_NAME -e OS_CACERT \
-          -e OS_INTERFACE=public \
-          {{ wlm_container }} \
-          openstack endpoint list \
-            --service key-manager --interface public -f value -c URL
-      become: true
-      register: barbican_public_raw
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
-    - name: Build normalised Barbican secret ref
-      set_fact:
-        s3_secret_ref: >-
-          {{ (barbican_public_raw.stdout_lines[0] | trim) | regex_replace('/v1$', '') }}/v1/secrets/{{ (barbican_secret_result.stdout | from_json)['Secret href'].split('/') | last }}
-      no_log: true
-      when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
-
     - name: Create S3 backup target
       shell: |
         set -a; source {{ cloudrc }}; set +a
@@ -154,10 +144,10 @@
           {{ wlm_container }} \
           workloadmgr backup-target-create \
             --btt-name "{{ bt_name }}" \
-            --type "{{ bt_data.backup_target.type }}" \
+            --type s3 \
             --s3-bucket "{{ bt_data.backup_target.s3_bucket }}" \
             $ENDPOINT_FLAG \
-            --secret-ref "{{ s3_secret_ref }}" \
+            --secret-ref "{{ (barbican_secret_result.stdout | from_json)['Secret href'] }}" \
             --default
       become: true
       no_log: true
@@ -183,3 +173,4 @@
     - name: Show backup target list
       debug:
         var: bt_list_result.stdout_lines
+

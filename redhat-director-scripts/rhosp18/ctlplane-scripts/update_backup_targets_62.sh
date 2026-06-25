@@ -338,15 +338,21 @@ for i in $(seq 0 $((TOTAL - 1))); do
       bash -c "cat > ${POD_CERT_FILE}"
   fi
 
+  # Build filesystem-export: hostname/bucket for S3-compatible endpoints,
+  # bucket name only for AWS S3 (no endpoint URL).
+  if [ -n "${ENDPOINT_URL}" ]; then
+    FILESYSTEM_EXP=$(python3 -c "from urllib.parse import urlparse; print(urlparse('${ENDPOINT_URL}').hostname)")/${BUCKET}
+  else
+    FILESYSTEM_EXP="${BUCKET}"
+  fi
+
   # Build trilio-dms-cli argument list
-  # --filesystem-export is the Backend Endpoint value from workloadmgr
-  # backup-target-list (same as filesystem_export in backup-target-show).
   DMS_CMD="trilio-dms-cli secret-payload create"
   DMS_CMD="${DMS_CMD} --access-key '${ACCESS_KEY}'"
   DMS_CMD="${DMS_CMD} --secret-key '${SECRET_KEY}'"
   DMS_CMD="${DMS_CMD} --bucket '${BUCKET}'"
-  DMS_CMD="${DMS_CMD} --filesystem-export '${WLM_NAME}'"
-  DMS_CMD="${DMS_CMD} --endpoint-url '${ENDPOINT_URL}'"
+  DMS_CMD="${DMS_CMD} --filesystem-export '${FILESYSTEM_EXP}'"
+  [ -n "${ENDPOINT_URL}" ] && DMS_CMD="${DMS_CMD} --endpoint-url '${ENDPOINT_URL}'"
   [ "${SSL}"            = "true" ] && DMS_CMD="${DMS_CMD} --ssl"
   [ "${SSL_VERIFY}"     = "true" ] && DMS_CMD="${DMS_CMD} --ssl-verify"
   [ "${HAS_SSL_CERT}"   = "true" ] && DMS_CMD="${DMS_CMD} --ssl-cert ${POD_CERT_FILE}"
