@@ -5,33 +5,6 @@ unmount-old-backup-targets:
     under /var/triliovault-mounts deepest-first (NFS with umount -l -f,
     FUSE with umount -l). Run this on the trilio-wlm unit after upgrading
     to T4O 6.2 charms.
-create-backup-targets:
-  description: |
-    Create T4O 6.2 backup targets from a previous-release overlay bundle YAML
-    file. Copy the bundle file to the unit first using juju scp, then pass the
-    file path. The action reads trilio-backup-targets from the bundle and
-    recreates each entry: if a matching target already exists in WLM it is
-    deleted first. NFS targets are created directly. S3 targets require
-    Barbican (mandatory in 6.2): the action uses trilio-dms-cli to build the
-    DMS secret payload, stores it in Barbican, and passes --secret-ref to
-    workloadmgr backup-target-create. Run on the trilio-wlm leader unit after
-    upgrading to 6.2 and running unmount-old-backup-targets.
-  properties:
-    bundle-file:
-      type: string
-      description: |
-        Absolute path to the old 6.1 overlay bundle YAML file on the
-        trilio-wlm leader unit. Use juju scp to copy the file to the unit
-        before running this action.
-    openrc-file:
-      type: string
-      description: |
-        Optional path to an OpenRC file on the unit whose credentials are used
-        for openstack secret store. Use when workloadmgr's internal Barbican
-        user differs from the charm's service user. Copy the file to the unit
-        first using juju scp.
-  required:
-    - bundle-file
 create-cloud-admin-trust:
   description: Create trust between Trilio WLM user and Cloud Admin
   properties:
