@@ -149,12 +149,11 @@ echo "INFO: found $BT_COUNT backup target(s) in bundle"
 # ---------------------------------------------------------------------------
 echo ""
 echo "INFO: fetching existing backup targets from WLM..."
-EXISTING_JSON=$(run_remote "workloadmgr backup-target-list --format json" | \
-    python3 -c "
-import sys
+EXISTING_RAW=$(run_remote "workloadmgr backup-target-list --format json")
+echo "$EXISTING_RAW"
+EXISTING_JSON=$(echo "$EXISTING_RAW" | python3 -c "
+import sys, re
 lines = sys.stdin.read()
-# juju ssh may prepend SSH warning lines; extract the JSON array
-import re
 m = re.search(r'\[.*\]', lines, re.DOTALL)
 print(m.group(0) if m else '[]')
 ")
@@ -163,6 +162,7 @@ print(m.group(0) if m else '[]')
 # Process each backup target
 # ---------------------------------------------------------------------------
 IDX=0
+PROCESSED=0
 while IFS= read -r BT_JSON; do
     BT_NAME=$(echo "$BT_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('backup-target-name','unnamed'))")
     BT_TYPE=$(echo  "$BT_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('backup-target-type','').lower())")
@@ -206,14 +206,19 @@ import sys, json
 data = json.load(sys.stdin)
 fs_export, bt_type = sys.argv[1], sys.argv[2]
 for t in data:
-    if t.get('Type','').lower() == bt_type and fs_export in t.get('Backend Endpoint',''):
+    if t.get('Type','').lower() != bt_type:
+        continue
+    ep = t.get('Backend Endpoint','')
+    # NFS: exact match on share path; S3: substring (bucket within hostname/bucket)
+    matched = (ep == fs_export) if bt_type == 'nfs' else (fs_export in ep)
+    if matched:
         print(t.get('ID',''))
         sys.exit(0)
 print('')
 PYEOF
     )
 
-    [ "$IDX" -eq 0 ] && DEFAULT_FLAG="--default" || DEFAULT_FLAG=""
+    [ "$PROCESSED" -eq 0 ] && DEFAULT_FLAG="--default" || DEFAULT_FLAG=""
 
     # -----------------------------------------------------------------------
     # NFS
@@ -323,9 +328,9 @@ print('')
         if echo "$SECRET_HREF" | grep -q '//None:'; then
             echo "  WARNING: Barbican returned None hostname in href, resolving public endpoint..."
             SECRET_UUID="${SECRET_HREF##*/}"
-            BARBICAN_URL=$(run_remote "openstack endpoint list --service key-manager --interface public -f value -c URL" | \
-                grep -v '^$' | head -1)
-            echo "$BARBICAN_URL"
+            ENDPOINT_OUT=$(run_remote "openstack endpoint list --service key-manager --interface public -f value -c URL")
+            echo "$ENDPOINT_OUT"
+            BARBICAN_URL=$(echo "$ENDPOINT_OUT" | grep -v '^$' | grep -v '^  >>' | head -1)
             if [ -n "$BARBICAN_URL" ]; then
                 BARBICAN_BASE="${BARBICAN_URL%/}"
                 echo "$BARBICAN_BASE" | grep -q '/v1$' || BARBICAN_BASE="${BARBICAN_BASE}/v1"
@@ -361,6 +366,7 @@ print('')
     fi
 
     IDX=$((IDX + 1))
+    PROCESSED=$((PROCESSED + 1))
 done < <(echo "$BACKUP_TARGETS_JSON" | python3 -c "
 import sys, json
 for bt in json.load(sys.stdin):
