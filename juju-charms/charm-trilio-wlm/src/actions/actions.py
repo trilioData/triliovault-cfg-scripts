@@ -217,7 +217,7 @@ def create_backup_targets(*args):
 
     # List existing backup targets from WLM DB
     try:
-        list_proc = subprocess.run(
+        list_proc = _run(
             wlm_base + ['backup-target-list', '--format', 'json'],
             capture_output=True, text=True, check=True)
         existing_targets = (json.loads(list_proc.stdout)
@@ -239,6 +239,32 @@ def create_backup_targets(*args):
 
     results = []
     errors = []
+    cmd_log = []
+    _SENSITIVE_FLAGS = frozenset({
+        '--os-password', '--password', '--secret-key',
+        '--access-key', '--payload',
+    })
+
+    def _run(cmd, **kwargs):
+        safe = []
+        mask_next = False
+        for a in cmd:
+            safe.append('[MASKED]' if mask_next else str(a))
+            mask_next = str(a) in _SENSITIVE_FLAGS
+        check = kwargs.pop('check', False)
+        proc = subprocess.run(cmd, **kwargs)
+        cmd_log.append(
+            'CMD: {}\nRC: {}\nSTDOUT: {}\nSTDERR: {}'.format(
+                ' '.join(safe),
+                proc.returncode,
+                (proc.stdout or '').strip(),
+                (proc.stderr or '').strip(),
+            )
+        )
+        if check and proc.returncode != 0:
+            raise subprocess.CalledProcessError(
+                proc.returncode, cmd, proc.stdout, proc.stderr)
+        return proc
 
     for idx, bt in enumerate(backup_targets):
         name = bt.get('backup-target-name', 'unnamed')
@@ -249,7 +275,7 @@ def create_backup_targets(*args):
             existing_id = find_existing_id('nfs', nfs_shares)
             if existing_id:
                 try:
-                    subprocess.run(
+                    _run(
                         wlm_base + ['backup-target-delete', existing_id],
                         capture_output=True, text=True, check=True)
                     results.append('{}: deleted existing (id={})'.format(
@@ -270,7 +296,7 @@ def create_backup_targets(*args):
             if idx == 0:
                 cmd.append('--default')
             try:
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                _run(cmd, capture_output=True, text=True, check=True)
                 results.append('{}: created (nfs)'.format(name))
             except subprocess.CalledProcessError as e:
                 errors.append('{}: create failed — {}'.format(
@@ -289,7 +315,7 @@ def create_backup_targets(*args):
             existing_id = find_existing_id('s3', bucket)
             if existing_id:
                 try:
-                    subprocess.run(
+                    _run(
                         wlm_base + ['backup-target-delete', existing_id],
                         capture_output=True, text=True, check=True)
                     results.append('{}: deleted existing (id={})'.format(
@@ -338,8 +364,8 @@ def create_backup_targets(*args):
                     dms_cmd.append('--no-ssl-verify')
 
                 try:
-                    subprocess.run(dms_cmd, capture_output=True,
-                                   text=True, check=True)
+                    _run(dms_cmd, capture_output=True,
+                         text=True, check=True)
                 except subprocess.CalledProcessError as e:
                     errors.append('{}: trilio-dms-cli create failed — {}'.format(
                         name, e.stderr.strip()))
@@ -350,7 +376,7 @@ def create_backup_targets(*args):
                     continue
 
                 try:
-                    subprocess.run(
+                    _run(
                         ['trilio-dms-cli', 'secret-payload', 'validate',
                          secret_json_path],
                         capture_output=True, text=True, check=True)
@@ -363,7 +389,7 @@ def create_backup_targets(*args):
                 with open(secret_json_path, 'r') as f:
                     secret_payload = f.read().strip()
 
-                store_proc = subprocess.run(
+                store_proc = _run(
                     ['openstack', 'secret', 'store',
                      '--name', 'secret-key-{}'.format(name),
                      '--payload', secret_payload,
@@ -443,8 +469,7 @@ def create_backup_targets(*args):
                 if idx == 0:
                     cmd.append('--default')
 
-                proc = subprocess.run(
-                    cmd, capture_output=True, text=True)
+                proc = _run(cmd, capture_output=True, text=True)
                 output = (proc.stdout + proc.stderr).strip()
                 if proc.returncode != 0 or \
                         'ERROR' in proc.stdout or 'Error:' in proc.stdout:
@@ -476,7 +501,7 @@ def create_backup_targets(*args):
     if created_names:
         # Verify backup targets
         try:
-            bt_list_proc = subprocess.run(
+            bt_list_proc = _run(
                 wlm_base + ['backup-target-list', '--format', 'json'],
                 capture_output=True, text=True)
             bt_list = (json.loads(bt_list_proc.stdout)
@@ -493,7 +518,7 @@ def create_backup_targets(*args):
 
         # Verify secrets
         try:
-            sec_list_proc = subprocess.run(
+            sec_list_proc = _run(
                 ['openstack', 'secret', 'list', '-f', 'json'],
                 capture_output=True, text=True, env=os_env)
             sec_list = (json.loads(sec_list_proc.stdout)
@@ -509,7 +534,10 @@ def create_backup_targets(*args):
         except Exception as e:
             errors.append('secret list verification failed: {}'.format(e))
 
-    hookenv.action_set({'results': '\n'.join(results)})
+    hookenv.action_set({
+        'results': '\n'.join(results),
+        'cmd-log': '\n\n'.join(cmd_log),
+    })
     if errors:
         hookenv.function_fail('Errors:\n' + '\n'.join(errors))
 
