@@ -50,22 +50,24 @@ done
 # ---------------------------------------------------------------------------
 # Find active WLM unit (leader preferred, else first active unit)
 # ---------------------------------------------------------------------------
-echo "INFO: locating active $WLM_APP unit..."
+echo "INFO: locating active/blocked $WLM_APP unit..."
 WLM_UNIT=$(juju status "$WLM_APP" --format json 2>/dev/null | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 units = d.get('applications',{}).get('$WLM_APP',{}).get('units',{})
-# Leader with active workload status first
+ok = {'active', 'blocked'}
+# Leader with active or blocked workload status first
 for name, info in units.items():
     ws = info.get('workload-status',{}).get('current','')
-    if info.get('leader') and ws == 'active':
+    if info.get('leader') and ws in ok:
         print(name); sys.exit(0)
-# Any active unit as fallback
+# Any active or blocked unit as fallback (not error)
 for name, info in units.items():
-    if info.get('workload-status',{}).get('current','') == 'active':
+    ws = info.get('workload-status',{}).get('current','')
+    if ws in ok:
         print(name); sys.exit(0)
 sys.exit(1)
-" 2>/dev/null) || { echo "ERROR: no active $WLM_APP unit found"; exit 1; }
+" 2>/dev/null) || { echo "ERROR: no active/blocked $WLM_APP unit found"; exit 1; }
 
 echo "INFO: using unit: $WLM_UNIT"
 
