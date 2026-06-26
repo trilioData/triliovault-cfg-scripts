@@ -4,6 +4,7 @@ source /tmp/triliovault-cloudrc
 export OS_PROJECT_ID=$(openstack project show -f value -c id "${OS_PROJECT_NAME}")
 
 sleep 2m
+trust_created=false
 for attempt in {1..10};
 do
         echo -e "Attempting to create wlm-cloud admin trust, Attempt Number: $attempt"
@@ -16,6 +17,7 @@ do
             continue
         elif [ $status -eq 0 ]; then
             echo -e "wlm cloud admin trust created successfully"
+            trust_created=true
             break
         else
             echo -e "wlm cloud admin trust creation failed, re-trying"
@@ -23,3 +25,8 @@ do
             continue
         fi
 done
+
+if [ "$trust_created" != "true" ]; then
+    echo -e "wlm cloud admin trust creation failed after all attempts. Exiting."
+    exit 1
+fi
