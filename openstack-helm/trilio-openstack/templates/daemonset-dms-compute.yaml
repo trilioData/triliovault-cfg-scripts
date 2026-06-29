@@ -81,6 +81,8 @@ spec:
               mountPath: /tmp/pod-shared-triliovault-dms
             - name: varlibtrilio
               mountPath: /var/lib/trilio
+            - name: varlogtriliovaultdms
+              mountPath: /var/log/triliovault
       containers:
         - name: triliovault-dms
 {{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
