@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-setup_trilio.py — Automate T4O setup on Kolla-Ansible OpenStack.
+prepare_install_upgrade.py — Automate T4O setup on Kolla-Ansible OpenStack.
 
-Performs all pre-deployment configuration steps for both fresh install
-and upgrade scenarios:
+Performs all pre-deployment configuration steps for both install and
+upgrade scenarios:
 
   1. Prepare and copy the triliovault Ansible role
   2. Merge Trilio globals into /etc/kolla/globals.yml
@@ -13,8 +13,8 @@ and upgrade scenarios:
   6. Patch nova-cell volumes for snapshot mount support
   7. Create Horizon custom settings directory and file
 
-Fresh install vs upgrade behaviour differences:
-  globals.yml  — fresh: append Trilio block; upgrade: replace block keeping
+Install vs upgrade behaviour differences:
+  globals.yml  — install: append Trilio block; upgrade: replace block keeping
                  customer-set values for empty-default parameters (credentials
                  etc.), update Trilio-owned values (tags, fixed defaults).
   passwords.yml — both modes: generate only the keys that are missing;
@@ -24,22 +24,22 @@ Fresh install vs upgrade behaviour differences:
   inventory    — both modes: fully replace the Trilio block.
 
 Usage:
-    python3 setup_trilio.py --os-release <release> --mode <fresh|upgrade>
-                            [--venv-path <path>]
-                            [--inventory-file <path>]
-                            [--globals-file <path>]
+    python3 prepare_install_upgrade.py --os-release <release> --mode <install|upgrade>
+                                       [--venv-path <path>]
+                                       [--inventory-file <path>]
+                                       [--globals-file <path>]
 
 Arguments:
     --os-release       OpenStack release name (e.g. 2025.1, 2024.2, 2023.1, zed)
-    --mode             'fresh' for new install, 'upgrade' for existing deployment
+    --mode             'install' for new install, 'upgrade' for existing deployment
     --venv-path        Path to kolla-ansible venv (default: /opt/kolla-venv)
     --inventory-file   Path to kolla inventory file (default: /root/multinode)
     --globals-file     Path to kolla globals.yml  (default: /etc/kolla/globals.yml)
 
 Examples:
-    python3 setup_trilio.py --os-release 2025.1 --mode fresh
-    python3 setup_trilio.py --os-release 2025.1 --mode upgrade
-    python3 setup_trilio.py --os-release 2024.2 --mode upgrade \\
+    python3 prepare_install_upgrade.py --os-release 2025.1 --mode install
+    python3 prepare_install_upgrade.py --os-release 2025.1 --mode upgrade
+    python3 prepare_install_upgrade.py --os-release 2024.2 --mode upgrade \\
         --venv-path /opt/kolla-venv --inventory-file /root/multinode
 """
 
@@ -296,7 +296,7 @@ def step_passwords(passwords_file, mode):
 
     backup_file(passwords_file)
     with open(passwords_file, 'a', encoding='utf-8') as f:
-        f.write('\n# Trilio passwords — added by setup_trilio.py\n')
+        f.write('\n# Trilio passwords — added by prepare_install_upgrade.py\n')
         for key, val in new_passwords.items():
             f.write(f'{key}: {val}\n')
 
@@ -432,8 +432,8 @@ def parse_args():
         help=f'OpenStack release name ({", ".join(SUPPORTED_RELEASES)})',
     )
     parser.add_argument(
-        '--mode', required=True, choices=['fresh', 'upgrade'],
-        help='fresh = new install, upgrade = existing deployment',
+        '--mode', required=True, choices=['install', 'upgrade'],
+        help='install = new install, upgrade = existing deployment',
     )
     parser.add_argument(
         '--venv-path', default='/opt/kolla-venv',
@@ -515,7 +515,7 @@ def main():
     print("\nNext steps:")
     print("  1. Review /etc/kolla/globals.yml")
     print("     Fill in any empty Trilio parameters (credentials, docker login, etc.)")
-    if mode == 'fresh':
+    if mode == 'install':
         print("     Set: cloud_admin_username, cloud_admin_password,")
         print("          cloud_admin_projectname, cloud_admin_projectid,")
         print("          cloud_admin_domainname, cloud_admin_domainid,")
