@@ -392,10 +392,11 @@ def step_passwords(passwords_file, mode, backup_dir):
     # Normalized = kolla (no trailing blank lines) + blank line + Trilio section
     normalized = kolla_part + '\n\n' + trilio_part if trilio_part else None
 
+    backup_file(passwords_file, backup_dir)
+
     if not missing:
         # Normalize trailing blank lines even when skipping password generation
         if normalized and normalized != current:
-            backup_file(passwords_file, backup_dir)
             write_file(passwords_file, normalized)
             print("  All Trilio password keys already present — normalized blank lines")
         else:
@@ -408,8 +409,6 @@ def step_passwords(passwords_file, mode, backup_dir):
         print(f"  Generating {len(missing)} password(s)")
 
     new_passwords = {k: generate_password() for k in missing}
-
-    backup_file(passwords_file, backup_dir)
     with open(passwords_file, 'w', encoding='utf-8') as f:
         f.write(kolla_part + '\n')
         f.write('\n' + _TRILIO_PWD_COMMENT)
