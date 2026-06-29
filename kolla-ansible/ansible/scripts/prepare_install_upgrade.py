@@ -333,6 +333,21 @@ def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
 
 # ─── Passwords ────────────────────────────────────────────────────────────────
 
+_TRILIO_PWD_COMMENT = '# Trilio passwords — added by prepare_install_upgrade.py\n'
+
+
+def _split_passwords_file(content):
+    """
+    Split passwords.yml into (kolla_section, trilio_section).
+    kolla_section: everything before our comment marker, trailing whitespace stripped.
+    trilio_section: our comment + Trilio key lines (empty string if not yet present).
+    """
+    idx = content.find(_TRILIO_PWD_COMMENT)
+    if idx >= 0:
+        return content[:idx].rstrip(), content[idx:]
+    return content.rstrip(), ''
+
+
 def step_passwords(passwords_file, mode, backup_dir):
     print("\n[3] passwords.yml")
 
@@ -343,8 +358,18 @@ def step_passwords(passwords_file, mode, backup_dir):
     existing = yaml.safe_load(current) or {}
     missing = [k for k in TRILIO_PASSWORD_KEYS if k not in existing]
 
+    kolla_part, trilio_part = _split_passwords_file(current)
+    # Normalized = kolla (no trailing blank lines) + blank line + Trilio section
+    normalized = kolla_part + '\n\n' + trilio_part if trilio_part else None
+
     if not missing:
-        print("  All Trilio password keys already present — skipping")
+        # Normalize trailing blank lines even when skipping password generation
+        if normalized and normalized != current:
+            backup_file(passwords_file, backup_dir)
+            write_file(passwords_file, normalized)
+            print("  All Trilio password keys already present — normalized blank lines")
+        else:
+            print("  All Trilio password keys already present — skipping")
         return
 
     if mode == 'upgrade':
@@ -356,8 +381,11 @@ def step_passwords(passwords_file, mode, backup_dir):
 
     backup_file(passwords_file, backup_dir)
     with open(passwords_file, 'w', encoding='utf-8') as f:
-        f.write(current.rstrip('\n') + '\n')
-        f.write('\n# Trilio passwords — added by prepare_install_upgrade.py\n')
+        f.write(kolla_part + '\n')
+        f.write('\n' + _TRILIO_PWD_COMMENT)
+        if trilio_part:
+            # Preserve existing Trilio passwords (lines after the comment)
+            f.write(trilio_part[len(_TRILIO_PWD_COMMENT):].lstrip('\n'))
         for key, val in new_passwords.items():
             f.write(f'{key}: {val}\n')
 
