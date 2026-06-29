@@ -12,6 +12,18 @@ set -ex
 mkdir -p /run/dms/s3 /run/dms/locks
 chown -R 42424:42424 /run/dms
 
+# The nova base image (openstackhelm/nova) leaves host-mounted directories root-owned.
+# Since this init container runs as root (runAsUser: 0), ensure both the mount
+# directory and the log directory are owned by the nova user (42424) before the
+# DMS server starts:
+#   - /var/lib/trilio/triliovault-mounts: DMS creates per-backup-target subdirs here;
+#     without correct ownership the mkdir call fails with "Failed to create mount directory".
+#   - /var/log/triliovault: DMS server writes runtime logs here; root ownership
+#     prevents the nova process from writing any log output.
+mkdir -p /var/lib/trilio/triliovault-mounts
+mkdir -p /var/log/triliovault
+chown -R 42424:42424 /var/lib/trilio /var/log/triliovault
+
 # Create the dynamic config handoff file.
 # The NODE_NAME environment variable is injected via the Kubernetes Downward API.
 # Note: rabbitmq_url is handled statically via helm-toolkit in server.conf.
