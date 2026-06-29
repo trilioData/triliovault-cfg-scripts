@@ -52,6 +52,26 @@ import subprocess
 import sys
 from datetime import datetime
 
+LOG_FILE = 'prepare_install_upgrade.log'
+
+
+class _Tee:
+    """Write to both a file and the original stream simultaneously."""
+    def __init__(self, stream, log_fh):
+        self._stream = stream
+        self._log = log_fh
+
+    def write(self, data):
+        self._stream.write(data)
+        self._log.write(data)
+
+    def flush(self):
+        self._stream.flush()
+        self._log.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
 try:
     import yaml
 except ImportError:
@@ -79,6 +99,12 @@ NOVA_CELL_VOLUME_KEYS = [
 
 TRILIO_VOLUME_ENTRY = '"/var/trilio:/var/trilio:shared"'
 
+# site.yml play names owned by Trilio — used to strip orphaned plays
+TRILIO_PLAY_NAMES = [
+    'Apply haproxy config for triliovault services',
+    'Apply role triliovault',
+]
+
 HORIZON_SETTINGS_CONTENT = (
     'from openstack_dashboard.settings import HORIZON_CONFIG\n'
     'HORIZON_CONFIG["customization_module"] = "trilio_dashboard.overrides"\n'
@@ -97,12 +123,20 @@ def die(msg):
     sys.exit(1)
 
 
-def backup_file(filepath):
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup = f"{filepath}.trilio_backup_{ts}"
-    shutil.copy2(filepath, backup)
-    print(f"    backup → {backup}")
-    return backup
+def backup_file(filepath, backup_dir):
+    """Copy filepath into backup_dir before modification. Handles basename collisions."""
+    os.makedirs(backup_dir, exist_ok=True)
+    basename = os.path.basename(filepath)
+    dest = os.path.join(backup_dir, basename)
+    if os.path.exists(dest):
+        base, ext = os.path.splitext(basename)
+        counter = 1
+        while os.path.exists(dest):
+            dest = os.path.join(backup_dir, f"{base}_{counter}{ext}")
+            counter += 1
+    shutil.copy2(filepath, dest)
+    print(f"    backup → {dest}")
+    return dest
 
 
 def read_file(filepath):
@@ -130,6 +164,24 @@ def _make_block(content):
 
 def has_marker_block(text):
     return MARKER_BEGIN in text and MARKER_END in text
+
+
+def _strip_trilio_plays(text):
+    """
+    Remove Trilio-owned plays from site.yml content, identified by their
+    - name: fields. Used to clean up plays added outside the marker block
+    (e.g. from a manual setup before this script existed).
+    """
+    segments = re.split(r'(?=^- name:)', text, flags=re.MULTILINE)
+    filtered = []
+    for seg in segments:
+        if any(f'- name: {name}' in seg for name in TRILIO_PLAY_NAMES):
+            # Remove this play and strip trailing blank lines from the previous segment
+            if filtered:
+                filtered[-1] = filtered[-1].rstrip('\n') + '\n'
+        else:
+            filtered.append(seg)
+    return ''.join(filtered)
 
 
 def extract_block_content(text):
@@ -233,7 +285,7 @@ def merge_globals_content(template_text, old_values):
     return ''.join(result), new_keys
 
 
-def step_globals(globals_file, trilio_globals_file, mode):
+def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
     print("\n[2] globals.yml")
 
     if not os.path.exists(trilio_globals_file):
@@ -245,25 +297,33 @@ def step_globals(globals_file, trilio_globals_file, mode):
     old_values = {}
     has_existing_block = has_marker_block(current_globals)
 
-    if mode == 'upgrade' and has_existing_block:
-        block_content = extract_block_content(current_globals)
-        if block_content:
-            old_values = _parse_kv_raw(block_content)
-            print(f"  Found existing Trilio block with {len(old_values)} parameter(s)")
+    if mode == 'upgrade':
+        if has_existing_block:
+            block_content = extract_block_content(current_globals)
+            if block_content:
+                old_values = _parse_kv_raw(block_content)
+                print(f"  Found existing Trilio block with {len(old_values)} parameter(s)")
+        else:
+            # No marker block — system was set up manually; scan full file for existing values
+            old_values = _parse_kv_raw(current_globals)
+            print(f"  No existing marker block — reading existing values from globals.yml")
 
     merged_text, new_keys = merge_globals_content(template_text, old_values)
 
-    backup_file(globals_file)
+    backup_file(globals_file, backup_dir)
     action = insert_or_replace_block(globals_file, merged_text)
     print(f"  {action} Trilio globals block in {globals_file}")
 
-    if new_keys:
-        print("  NEW parameters added (review and configure if needed):")
-        for k in new_keys:
+    # Only report keys with empty defaults — these are the ones the user must fill in
+    template_kv = _parse_kv_raw(template_text)
+    actionable_new = [k for k in new_keys if _is_empty_yaml_value(template_kv.get(k, ''))]
+    if actionable_new:
+        print("  NEW parameters (empty — fill in before deploying):")
+        for k in actionable_new:
             print(f"    + {k}")
 
     if old_values:
-        template_keys = set(_parse_kv_raw(template_text).keys())
+        template_keys = set(template_kv.keys())
         removed = [k for k in old_values if k not in template_keys]
         if removed:
             print("  Parameters removed (no longer in this release):")
@@ -273,7 +333,7 @@ def step_globals(globals_file, trilio_globals_file, mode):
 
 # ─── Passwords ────────────────────────────────────────────────────────────────
 
-def step_passwords(passwords_file, mode):
+def step_passwords(passwords_file, mode, backup_dir):
     print("\n[3] passwords.yml")
 
     if not os.path.exists(passwords_file):
@@ -294,8 +354,9 @@ def step_passwords(passwords_file, mode):
 
     new_passwords = {k: generate_password() for k in missing}
 
-    backup_file(passwords_file)
-    with open(passwords_file, 'a', encoding='utf-8') as f:
+    backup_file(passwords_file, backup_dir)
+    with open(passwords_file, 'w', encoding='utf-8') as f:
+        f.write(current.rstrip('\n') + '\n')
         f.write('\n# Trilio passwords — added by prepare_install_upgrade.py\n')
         for key, val in new_passwords.items():
             f.write(f'{key}: {val}\n')
@@ -305,22 +366,33 @@ def step_passwords(passwords_file, mode):
 
 # ─── Site.yml ─────────────────────────────────────────────────────────────────
 
-def step_site(site_file, trilio_site_file):
+def step_site(site_file, trilio_site_file, backup_dir):
     print("\n[4] site.yml")
 
     if not os.path.exists(trilio_site_file):
         die(f"Trilio site file not found: {trilio_site_file}")
 
-    site_content = read_file(trilio_site_file)
+    new_site_content = read_file(trilio_site_file)
+    current = read_file(site_file)
 
-    backup_file(site_file)
-    action = insert_or_replace_block(site_file, site_content)
-    print(f"  {action} Trilio plays block in {site_file}")
+    # Remove existing marker block (handles re-runs via this script)
+    if has_marker_block(current):
+        block_pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
+        current = re.sub(block_pattern, '', current, flags=re.DOTALL)
+
+    # Remove any Trilio plays sitting outside the marker block
+    # (handles manual setups and mixed states like the one above)
+    current = _strip_trilio_plays(current)
+
+    backup_file(site_file, backup_dir)
+    updated = current.rstrip('\n') + '\n\n' + _make_block(new_site_content)
+    write_file(site_file, updated)
+    print(f"  replaced Trilio plays block in {site_file}")
 
 
 # ─── Inventory ────────────────────────────────────────────────────────────────
 
-def step_inventory(inventory_file, trilio_inventory_file):
+def step_inventory(inventory_file, trilio_inventory_file, backup_dir):
     print("\n[5] Inventory")
 
     if not os.path.exists(inventory_file):
@@ -328,7 +400,7 @@ def step_inventory(inventory_file, trilio_inventory_file):
 
     inv_content = read_file(trilio_inventory_file)
 
-    backup_file(inventory_file)
+    backup_file(inventory_file, backup_dir)
     action = insert_or_replace_block(inventory_file, inv_content)
     print(f"  {action} Trilio inventory block in {inventory_file}")
 
@@ -355,7 +427,7 @@ def step_role(script_dir, os_release, venv_path):
 
 # ─── Nova-cell volumes ────────────────────────────────────────────────────────
 
-def step_nova_cell_volumes(venv_path):
+def step_nova_cell_volumes(venv_path, backup_dir):
     """Append /var/trilio mount to nova_libvirt and nova_compute volume lists."""
     print("\n[6] Nova-cell volumes")
 
@@ -394,7 +466,7 @@ def step_nova_cell_volumes(venv_path):
         patched.append(key)
 
     if patched:
-        backup_file(nova_defaults)
+        backup_file(nova_defaults, backup_dir)
         write_file(nova_defaults, content)
         print(f"  Patched: {', '.join(patched)}")
     else:
@@ -491,6 +563,17 @@ def main():
         if not os.path.exists(path):
             die(f"{label} not found: {path}")
 
+    # Create a single timestamped backup directory for this run
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_dir = os.path.join(os.getcwd(), 'backup', ts)
+    os.makedirs(backup_dir, exist_ok=True)
+
+    # Tee all output to prepare_install_upgrade.log in cwd
+    log_path = os.path.join(os.getcwd(), LOG_FILE)
+    log_fh = open(log_path, 'w', encoding='utf-8')
+    sys.stdout = _Tee(sys.__stdout__, log_fh)
+    sys.stderr = _Tee(sys.__stderr__, log_fh)
+
     print("=" * 60)
     print("Trilio Kolla-Ansible Setup")
     print("=" * 60)
@@ -499,14 +582,16 @@ def main():
     print(f"  Venv path     : {venv_path}")
     print(f"  Inventory     : {inventory_file}")
     print(f"  Globals       : {globals_file}")
+    print(f"  Backup dir    : {backup_dir}")
+    print(f"  Log file      : {log_path}")
     print("=" * 60)
 
     step_role(script_dir, os_release, venv_path)
-    step_globals(globals_file, trilio_globals, mode)
-    step_passwords(passwords_file, mode)
-    step_site(site_yml, trilio_site)
-    step_inventory(inventory_file, trilio_inventory)
-    step_nova_cell_volumes(venv_path)
+    step_globals(globals_file, trilio_globals, mode, backup_dir)
+    step_passwords(passwords_file, mode, backup_dir)
+    step_site(site_yml, trilio_site, backup_dir)
+    step_inventory(inventory_file, trilio_inventory, backup_dir)
+    step_nova_cell_volumes(venv_path, backup_dir)
     step_horizon()
 
     print("\n" + "=" * 60)
@@ -520,12 +605,20 @@ def main():
         print("          cloud_admin_projectname, cloud_admin_projectid,")
         print("          cloud_admin_domainname, cloud_admin_domainid,")
         print("          triliovault_docker_username, triliovault_docker_password")
-    print("  2. docker login to Trilio registry:")
-    print("     ansible -i multinode control -m shell \\")
-    print("       -a 'docker login -u <user> -p <pass> docker.io' --become")
-    print(f"  3. kolla-ansible pull -i {inventory_file} --tags triliovault")
-    print(f"  4. kolla-ansible deploy -i {inventory_file} --tags triliovault")
-    print("  5. Run wlm_cloud_trust.yml after deployment completes")
+        print("  2. docker login to Trilio registry:")
+        print("     ansible -i multinode control -m shell \\")
+        print("       -a 'docker login -u <user> -p <pass> docker.io' --become")
+        print(f"  3. kolla-ansible pull -i {inventory_file} --tags triliovault")
+        print(f"  4. kolla-ansible deploy -i {inventory_file} --tags triliovault")
+        print("  5. Run wlm_cloud_trust.yml after deployment completes")
+    else:
+        print(f"  2. kolla-ansible pull -i {inventory_file} --tags triliovault")
+        print(f"  3. kolla-ansible upgrade -i {inventory_file} --tags triliovault")
+
+    print(f"\nOutput saved to: {log_path}")
+    log_fh.close()
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
 
 
 if __name__ == '__main__':
