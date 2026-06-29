@@ -655,13 +655,13 @@ def main():
     print("Setup complete.")
     print("=" * 60)
     print("\nNext steps:")
-    print("  1. Review /etc/kolla/globals.yml")
-    print("     Fill in any empty Trilio parameters (credentials, docker login, etc.)")
     if mode == 'install':
-        print("     Set: cloud_admin_username, cloud_admin_password,")
-        print("          cloud_admin_projectname, cloud_admin_projectid,")
-        print("          cloud_admin_domainname, cloud_admin_domainid,")
-        print("          triliovault_docker_username, triliovault_docker_password")
+        print("  1. Edit /etc/kolla/globals.yml")
+        print("     Fill in all empty Trilio parameters:")
+        print("       cloud_admin_username, cloud_admin_password,")
+        print("       cloud_admin_projectname, cloud_admin_projectid,")
+        print("       cloud_admin_domainname, cloud_admin_domainid,")
+        print("       triliovault_docker_username, triliovault_docker_password")
         print("  2. docker login to Trilio registry:")
         print("     ansible -i multinode control -m shell \\")
         print("       -a 'docker login -u <user> -p <pass> docker.io' --become")
@@ -669,6 +669,7 @@ def main():
         print(f"  4. kolla-ansible deploy -i {inventory_file} --tags triliovault")
         print("  5. Run wlm_cloud_trust.yml after deployment completes")
     else:
+        print("  1. Edit triliovault_tag in /etc/kolla/globals.yml if needed")
         print(f"  2. kolla-ansible pull -i {inventory_file} --tags triliovault")
         print(f"  3. kolla-ansible upgrade -i {inventory_file} --tags triliovault")
 
