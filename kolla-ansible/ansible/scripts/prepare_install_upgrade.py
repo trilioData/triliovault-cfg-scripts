@@ -166,6 +166,24 @@ def has_marker_block(text):
     return MARKER_BEGIN in text and MARKER_END in text
 
 
+def _strip_trilio_keys(text, template_keys):
+    """
+    Remove top-level YAML key lines from text where the key is in template_keys.
+    Used to clean manually-added Trilio settings from globals.yml before the
+    marker block is appended, preventing duplicate key entries.
+    """
+    lines = text.splitlines(keepends=True)
+    result = []
+    for line in lines:
+        m = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*:', line)
+        if m and m.group(1) in template_keys:
+            continue
+        result.append(line)
+    cleaned = ''.join(result)
+    # Collapse any runs of blank lines left by the removals
+    return re.sub(r'\n{3,}', '\n\n', cleaned)
+
+
 def _strip_trilio_plays(text):
     """
     Remove Trilio-owned plays from site.yml content, identified by their
@@ -304,14 +322,26 @@ def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
                 old_values = _parse_kv_raw(block_content)
                 print(f"  Found existing Trilio block with {len(old_values)} parameter(s)")
         else:
-            # No marker block — system was set up manually; scan full file for existing values
+            # Pre-script setup: scan full file for existing values
             old_values = _parse_kv_raw(current_globals)
             print(f"  No existing marker block — reading existing values from globals.yml")
+            # Strip orphaned Trilio keys to prevent duplicates after block is appended
+            template_keys = set(_parse_kv_raw(template_text).keys())
+            current_globals = _strip_trilio_keys(current_globals, template_keys)
 
     merged_text, new_keys = merge_globals_content(template_text, old_values)
 
     backup_file(globals_file, backup_dir)
-    action = insert_or_replace_block(globals_file, merged_text)
+    # Build updated content from in-memory current_globals (may have been cleaned above)
+    block = _make_block(merged_text)
+    if has_existing_block:
+        pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
+        updated = re.sub(pattern, block, current_globals, flags=re.DOTALL)
+        action = 'replaced'
+    else:
+        updated = current_globals.rstrip('\n') + '\n\n' + block
+        action = 'appended'
+    write_file(globals_file, updated)
     print(f"  {action} Trilio globals block in {globals_file}")
 
     # Only report keys with empty defaults — these are the ones the user must fill in
