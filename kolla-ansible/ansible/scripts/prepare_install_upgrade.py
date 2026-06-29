@@ -315,32 +315,31 @@ def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
     old_values = {}
     has_existing_block = has_marker_block(current_globals)
 
+    template_keys = set(_parse_kv_raw(template_text).keys())
+
     if mode == 'upgrade':
         if has_existing_block:
             block_content = extract_block_content(current_globals)
             if block_content:
                 old_values = _parse_kv_raw(block_content)
                 print(f"  Found existing Trilio block with {len(old_values)} parameter(s)")
+            # Remove the marker block so we can clean the rest of the file
+            pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
+            current_globals = re.sub(pattern, '', current_globals, flags=re.DOTALL)
         else:
             # Pre-script setup: scan full file for existing values
             old_values = _parse_kv_raw(current_globals)
             print(f"  No existing marker block — reading existing values from globals.yml")
-            # Strip orphaned Trilio keys to prevent duplicates after block is appended
-            template_keys = set(_parse_kv_raw(template_text).keys())
-            current_globals = _strip_trilio_keys(current_globals, template_keys)
+
+        # Strip any Trilio keys sitting outside the marker block (both cases above)
+        current_globals = _strip_trilio_keys(current_globals, template_keys)
 
     merged_text, new_keys = merge_globals_content(template_text, old_values)
 
     backup_file(globals_file, backup_dir)
-    # Build updated content from in-memory current_globals (may have been cleaned above)
     block = _make_block(merged_text)
-    if has_existing_block:
-        pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
-        updated = re.sub(pattern, block, current_globals, flags=re.DOTALL)
-        action = 'replaced'
-    else:
-        updated = current_globals.rstrip('\n') + '\n\n' + block
-        action = 'appended'
+    updated = current_globals.rstrip('\n') + '\n\n' + block
+    action = 'replaced' if has_existing_block else 'appended'
     write_file(globals_file, updated)
     print(f"  {action} Trilio globals block in {globals_file}")
 
