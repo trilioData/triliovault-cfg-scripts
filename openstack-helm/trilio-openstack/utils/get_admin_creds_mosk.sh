@@ -42,7 +42,11 @@ cd ../
 tee > values_overrides/admin_creds.yaml  << EOF
 
 conf:
-  wlm: 
+  triliovault:
+    cloud_admin_user_name: $OS_USERNAME
+    cloud_admin_project_name: $OS_PROJECT_NAME
+    cloud_admin_domain_name: $OS_USER_DOMAIN_NAME
+  wlm:
     keystone_authtoken:
       memcached_servers: memcached.openstack.svc.$INTERNAL_DOMAIN_NAME:11211
 endpoints:
