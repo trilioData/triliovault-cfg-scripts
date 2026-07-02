@@ -107,3 +107,7 @@ Variables come from `defaults/main.yml` and injected globals. Use `{{ variable }
 2. Run `scripts/prepare_triliovault_role.py` to set up the role
 3. Run `generate-dynamic-values.sh` to produce runtime config
 4. `ansible-playbook -i triliovault_inventory.txt triliovault_site_<version>.yml`
+
+### Known Constraints
+- **`gather_facts: false` relies on kolla-ansible's fact cache**: `triliovault_site_<version>.yml` plays run with `gather_facts: false`, but templates still reference `ansible_*` facts (e.g. `ansible_fqdn`, `ansible_<iface>.ipv4.address`). This works because kolla-ansible's own deployment (a prerequisite before installing the T4O add-on) already gathered and cached facts for the same inventory. Don't assume facts are missing just because this playbook disables gathering.
+- **DMS `node_id` must be `ansible_fqdn`, not `inventory_hostname`**: `inventory_hostname` is just the name/alias used in the Ansible inventory file and is not guaranteed to be a resolvable hostname. DMS server `node_id` must match `OS-EXT-SRV-ATTR:host` from nova, and client-side `node_id` must be a real FQDN — use `ansible_fqdn` in these templates.
