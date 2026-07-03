@@ -16,10 +16,10 @@
 #   - MySQL init and RabbitMQ init jobs
 #
 # The trilio-openstack namespace itself and T4O control plane pods are NOT removed.
-# To uninstall T4O control plane: helm uninstall tvo --namespace trilio-openstack
+# To uninstall T4O control plane: bash scripts/uninstall_ctlplane.sh
 #
 # Usage:
-#   bash uninstall_infra.sh [--yes]
+#   bash scripts/uninstall_infra.sh [--yes]
 #
 # Options:
 #   --yes   Skip confirmation prompt
@@ -117,7 +117,7 @@ echo "=================================================="
 info "Infrastructure uninstall complete."
 echo ""
 echo "  To redeploy infrastructure:"
-echo "    bash prepare.sh"
+echo "    bash deploy_infra.sh"
 echo "  Then deploy T4O control plane:"
 echo "    bash deploy_ctlplane.sh"
 echo "=================================================="

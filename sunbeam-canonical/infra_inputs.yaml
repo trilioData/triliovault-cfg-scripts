@@ -12,7 +12,7 @@
 #   RabbitMQ: rabbitmq/cluster-operator (MPL 2.0) — CRD: RabbitmqCluster
 #
 # prepare.sh deploys infra automatically using this file.
-# To reinstall from scratch: bash uninstall_infra.sh && bash prepare.sh
+# To reinstall from scratch: bash scripts/uninstall_infra.sh && bash prepare.sh
 
 # ---------------------------------------------------------------------------
 # MySQL InnoDB Cluster

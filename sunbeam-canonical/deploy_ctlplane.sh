@@ -4,14 +4,15 @@
 # Deploys T4O control plane on Sunbeam (MicroK8s) by reading ctlplane_inputs.yaml.
 #
 # Prerequisites:
-#   - bash prepare.sh completed (tools, nodes labeled, images populated, infra deployed)
-#   - ctlplane_inputs.yaml reviewed (images populated by prepare.sh from manual_inputs.yaml)
+#   - bash prepare.sh completed (tools, nodes labeled, images populated)
+#   - bash deploy_infra.sh completed (MySQL + RabbitMQ running)
+#   - ctlplane_inputs.yaml reviewed
 #
 # Steps performed:
-#   1. Generate trilio-ctlplane-values.yaml from cluster secrets + ctlplane_inputs.yaml
-#   2. Merge image tags and registry auth into the values file
-#   3. Install or upgrade the tvo Helm release
-#   4. Verify all T4O pods are Running
+#   1. Read passwords from ctlplane_inputs.yaml
+#   2. Auto-detect Keystone credentials
+#   3. Generate trilio-ctlplane-values.yaml
+#   4. Install or upgrade the tvo Helm release
 #
 # Usage:
 #   bash deploy_ctlplane.sh [--inputs-file ctlplane_inputs.yaml]
@@ -25,17 +26,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
+NAMESPACE="trilio-openstack"
+INFRA_SECRET="trilio-infra-passwords"
+VALUES_FILE="${CTLPLANE_SCRIPTS}/trilio-ctlplane-values.yaml"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
+need()  { echo -e "${RED}[NEED]${NC}  $*"; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --inputs-file)  CTLPLANE_INPUTS="$2"; shift 2 ;;
-        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        -h|--help) sed -n '2,22p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
 done
@@ -79,50 +84,166 @@ echo "=================================================="
 # ---------- Verify infra is deployed ----------
 
 kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null || \
-    err "MySQL InnoDB Cluster not found. Run 'bash prepare.sh' first."
+    err "MySQL InnoDB Cluster not found. Run 'bash deploy_infra.sh' first."
 kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null || \
-    err "RabbitMQ cluster not found. Run 'bash prepare.sh' first."
-kubectl get secret trilio-infra-passwords -n "$NAMESPACE" &>/dev/null || \
-    err "Secret 'trilio-infra-passwords' not found. Run 'bash prepare.sh' first."
+    err "RabbitMQ cluster not found. Run 'bash deploy_infra.sh' first."
+kubectl get secret "$INFRA_SECRET" -n "$NAMESPACE" &>/dev/null || \
+    err "Secret '$INFRA_SECRET' not found. Run 'bash deploy_infra.sh' first."
 
-# ---------- Step 1: Generate trilio-ctlplane-values.yaml ----------
+# ---------- Step 1: Read passwords from ctlplane_inputs.yaml ----------
 
-step "Step 1: Generating trilio-ctlplane-values.yaml from cluster..."
+step "Step 1: Reading passwords from ctlplane_inputs.yaml..."
 
-bash "${CTLPLANE_SCRIPTS}/generate_overrides.sh" \
-    --registry-login-enabled "${REGISTRY_LOGIN}" \
-    --registry-url           "${REGISTRY_URL}" \
-    --registry-username      "${REGISTRY_USER}" \
-    --registry-password      "${REGISTRY_PASS}"
-
-# ---------- Step 2: Merge image tags into generated values file ----------
-
-step "Step 2: Merging image tags from ctlplane_inputs.yaml..."
-
-VALUES_FILE="${CTLPLANE_SCRIPTS}/trilio-ctlplane-values.yaml"
-[ -f "$VALUES_FILE" ] || err "Values file not found: $VALUES_FILE"
-
-python3 - <<PYEOF
+get_password() {
+    local key="$1"
+    python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
-
-with open('${VALUES_FILE}') as f:
-    vals = yaml.safe_load(f)
-
-vals.setdefault('images', {})
-vals['images']['triliovault_wlm']           = '${WLM_IMAGE}'
-vals['images']['triliovault_datamover_api'] = '${DMAPI_IMAGE}'
-vals['images']['triliovault_dms']           = '${DMS_IMAGE}'
-vals['images']['pull_policy']               = '${PULL_POLICY}'
-
-with open('${VALUES_FILE}', 'w') as f:
-    yaml.dump(vals, f, default_flow_style=False, allow_unicode=True)
-
-print("Image tags merged into ${VALUES_FILE}.")
+try:
+    d = yaml.safe_load(open('${CTLPLANE_INPUTS}'))
+    val = (d.get('passwords') or {}).get('${key}') or ''
+    print(val)
+except Exception:
+    print('')
 PYEOF
+}
 
-# ---------- Step 3: Helm install / upgrade ----------
+DB_HOST="trilio-mysql.${NAMESPACE}.svc.cluster.local"
+DB_ROOT_PASSWORD=$(get_password "mysql_root")
+MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm")
+MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi")
+RABBITMQ_HOST="trilio-rabbitmq.${NAMESPACE}.svc.cluster.local"
+RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm")
+RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
+WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm")
+DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi")
 
-step "Step 3: Deploying T4O control plane via Helm..."
+[ -z "$DB_ROOT_PASSWORD" ] && \
+    err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
+
+info "DB host      : $DB_HOST"
+info "RabbitMQ host: $RABBITMQ_HOST"
+
+# ---------- Step 2: Auto-detect Keystone credentials ----------
+
+step "Step 2: Auto-detecting Keystone credentials..."
+
+if command -v sunbeam &>/dev/null; then
+    OPENRC_OUTPUT=$(sunbeam openrc 2>/dev/null || echo "")
+    [ -n "$OPENRC_OUTPUT" ] && eval "$OPENRC_OUTPUT" 2>/dev/null || true
+fi
+
+if [ -z "${OS_AUTH_URL:-}" ]; then
+    KS_IP=$(kubectl -n openstack get service keystone-internal \
+        -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+    [ -n "$KS_IP" ] && OS_AUTH_URL="http://${KS_IP}:5000/v3"
+fi
+if [ -z "${OS_PASSWORD:-}" ]; then
+    OS_PASSWORD=$(kubectl -n openstack get secret keystone-keystone-admin \
+        -o jsonpath='{.data.OS_PASSWORD}' 2>/dev/null | base64 -d 2>/dev/null || echo "")
+fi
+if [ -z "${OS_USERNAME:-}" ]; then
+    OS_USERNAME=$(kubectl -n openstack get secret keystone-keystone-admin \
+        -o jsonpath='{.data.OS_USERNAME}' 2>/dev/null | base64 -d 2>/dev/null || echo "admin")
+fi
+if [ -z "${OS_PROJECT_NAME:-}" ]; then
+    OS_PROJECT_NAME=$(kubectl -n openstack get secret keystone-keystone-admin \
+        -o jsonpath='{.data.OS_PROJECT_NAME}' 2>/dev/null | base64 -d 2>/dev/null || echo "admin")
+fi
+if [ -z "${OS_REGION_NAME:-}" ]; then
+    OS_REGION_NAME=$(kubectl -n openstack get secret keystone-keystone-admin \
+        -o jsonpath='{.data.OS_REGION_NAME}' 2>/dev/null | base64 -d 2>/dev/null || echo "RegionOne")
+fi
+
+# ctlplane_inputs.yaml values (populated by prepare.sh) take precedence over auto-detected
+KS_AUTH_URL=$(get_input "keystone.auth_url" "${OS_AUTH_URL:-}")
+KS_ADMIN_USER=$(get_input "keystone.admin_user" "${OS_USERNAME:-admin}")
+KS_ADMIN_PASS=$(get_input "keystone.admin_password" "${OS_PASSWORD:-}")
+KS_ADMIN_PROJECT=$(get_input "keystone.admin_project" "${OS_PROJECT_NAME:-admin}")
+KS_REGION=$(get_input "keystone.region_name" "${OS_REGION_NAME:-RegionOne}")
+
+[ -n "$KS_AUTH_URL" ] && info "Keystone URL : $KS_AUTH_URL" || \
+    warn "Keystone URL not detected — fill keystone.auth_url in ctlplane_inputs.yaml"
+
+# Prompt for any remaining missing required values
+prompt_value() {
+    local var_name="$1" label="$2"
+    local current_val; current_val="$(eval "echo \"\${${var_name}:-}\"")"
+    if [ -z "$current_val" ]; then
+        need "$label not detected — enter it now:"
+        local input; read -r -p "  > " input
+        eval "${var_name}=\"${input}\""
+    fi
+}
+
+prompt_value KS_AUTH_URL   "Keystone auth URL"
+prompt_value KS_ADMIN_PASS "OpenStack admin password"
+
+# ---------- Step 3: Write trilio-ctlplane-values.yaml ----------
+
+step "Step 3: Generating trilio-ctlplane-values.yaml..."
+
+cat > "$VALUES_FILE" <<EOF
+# TVO Helm Chart — Generated Values
+# WARNING: This file contains passwords. Do NOT commit it to git.
+
+images:
+  triliovault_wlm:           "${WLM_IMAGE}"
+  triliovault_datamover_api: "${DMAPI_IMAGE}"
+  triliovault_dms:           "${DMS_IMAGE}"
+  pull_policy:               "${PULL_POLICY}"
+  trilio_container_registry_login_enabled: ${REGISTRY_LOGIN}
+  registry_url:      "${REGISTRY_URL}"
+  registry_username: "${REGISTRY_USER}"
+  registry_password: "${REGISTRY_PASS}"
+
+keystone:
+  auth_url:       "${KS_AUTH_URL}"
+  admin_user:     "${KS_ADMIN_USER}"
+  admin_password: "${KS_ADMIN_PASS}"
+  admin_project:  "${KS_ADMIN_PROJECT}"
+  region_name:    "${KS_REGION}"
+  wlm_api:
+    password: "${WLM_KEYSTONE_PASSWORD}"
+  datamover_api:
+    password: "${DMAPI_KEYSTONE_PASSWORD}"
+
+database:
+  host:          "${DB_HOST}"
+  port:          "6446"
+  root_password: "${DB_ROOT_PASSWORD}"
+  wlm_api:
+    password: "${MYSQL_WLM_PASSWORD}"
+  datamover_api:
+    password: "${MYSQL_DMAPI_PASSWORD}"
+
+rabbitmq:
+  host: "${RABBITMQ_HOST}"
+  port: "5672"
+  wlm_api:
+    user:     "workloadmgr"
+    password: "${RABBITMQ_WLM_PASSWORD}"
+    vhost:    "workloadmgr"
+  datamover_api:
+    user:     "dmapi"
+    password: "${RABBITMQ_DMAPI_PASSWORD}"
+    vhost:    "dmapi"
+
+service:
+  wlm_api:
+    type:      NodePort
+    port:      8781
+    node_port: 30781
+  datamover_api:
+    type:      NodePort
+    port:      8784
+    node_port: 30784
+EOF
+
+info "Values written to: ${VALUES_FILE}"
+
+# ---------- Step 4: Helm install / upgrade ----------
+
+step "Step 4: Deploying T4O control plane via Helm..."
 
 helm upgrade --install tvo \
     "${CTLPLANE_SCRIPTS}/helm-charts/tvo-chart" \
@@ -132,9 +253,9 @@ helm upgrade --install tvo \
 
 info "Helm release 'tvo' deployed successfully."
 
-# ---------- Step 4: Verify ----------
+# ---------- Step 5: Verify ----------
 
-step "Step 4: Verifying T4O control plane pods..."
+step "Step 5: Verifying T4O control plane pods..."
 
 kubectl get pods -n "${NAMESPACE}" -l app.kubernetes.io/managed-by=Helm
 

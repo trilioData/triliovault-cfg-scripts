@@ -8,7 +8,8 @@
 #   4. Install Ansible + community.docker collection
 #   5. Create trilio-openstack namespace and label control plane nodes
 #   6. Auto-detect Keystone URL and admin credentials; update ctlplane_inputs.yaml
-#   7. Print next steps
+#   7. Generate service passwords (32-char alphanumeric, skip if already set)
+#   8. Print next steps
 #
 # After this script completes:
 #   1. Run: bash deploy_infra.sh     — deploy MySQL + RabbitMQ
@@ -299,6 +300,45 @@ content = patch_if_empty(content, 'region_name',    '${OS_REGION_NAME:-}')
 with open('${CTLPLANE_INPUTS}', 'w') as f:
     f.write(content)
 print("ctlplane_inputs.yaml updated with auto-detected Keystone values.")
+PYEOF
+
+# ---------- Step 7: Generate service passwords ----------
+
+step "Step 7: Generating service passwords (skip if already set)..."
+
+python3 - <<PYEOF
+import secrets, string, re
+
+with open('${CTLPLANE_INPUTS}') as f:
+    content = f.read()
+
+def gen_password():
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(32))
+
+def fill_if_empty(text, key, indent='  '):
+    """Replace <indent><key>: "" with a generated password, only when empty."""
+    pat = r'(' + re.escape(indent + key) + r':\s*)""'
+    if not re.search(pat, text):
+        return text  # key absent or already has a value — leave unchanged
+    return re.sub(pat, r'\g<1>"' + gen_password() + '"', text)
+
+generated = []
+for key in ['mysql_root', 'mysql_wlm', 'mysql_dmapi',
+            'rabbitmq_wlm', 'rabbitmq_dmapi',
+            'keystone_wlm', 'keystone_dmapi']:
+    before = content
+    content = fill_if_empty(content, key)
+    if content != before:
+        generated.append(key)
+
+with open('${CTLPLANE_INPUTS}', 'w') as f:
+    f.write(content)
+
+if generated:
+    print(f"Generated passwords for: {', '.join(generated)}")
+else:
+    print("All passwords already set — skipping.")
 PYEOF
 
 # ---------- Summary ----------

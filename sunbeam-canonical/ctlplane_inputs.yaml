@@ -60,3 +60,18 @@ keystone:
   admin_password: ""         # auto: from keystone-keystone-admin secret
   admin_project:  "admin"
   region_name:    "RegionOne"
+
+# ---------------------------------------------------------------------------
+# Passwords                                                        [auto]
+# prepare.sh generates these once and writes them here.
+# Do not change after infra is deployed — MySQL, RabbitMQ, and Keystone
+# accounts are created with these values on first run.
+# ---------------------------------------------------------------------------
+passwords:
+  mysql_root:     ""
+  mysql_wlm:      ""
+  mysql_dmapi:    ""
+  rabbitmq_wlm:   ""
+  rabbitmq_dmapi: ""
+  keystone_wlm:   ""
+  keystone_dmapi: ""
