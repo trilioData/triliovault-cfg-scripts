@@ -14,34 +14,36 @@
 #   1. Installs the MySQL Operator into the mysql-operator namespace
 #   2. Installs the RabbitMQ Cluster Operator into the rabbitmq-system namespace
 #   3. Generates random passwords and stores them in 'trilio-infra-passwords' secret
-#   4. Deploys MySQL InnoDB Cluster (trilio-mysql, 3 instances)
+#   4. Deploys MySQL InnoDB Cluster (trilio-mysql)
 #   5. Initializes MySQL: creates workloadmgr and dmapi databases and users
-#   6. Deploys RabbitMQ cluster (trilio-rabbitmq, 3 replicas)
+#   6. Deploys RabbitMQ cluster (trilio-rabbitmq)
 #   7. Initializes RabbitMQ: creates workloadmgr and dmapi vhosts, users, permissions
 #   8. Creates NodePort services for compute node access (MySQL :30306, RabbitMQ :30672)
 #
 # After this script completes, run:
-#   bash utils/generate_overrides.sh
+#   bash generate_overrides.sh
 #
 # Prerequisites:
 #   - kubectl configured against the MicroK8s cluster
 #   - Internet access to pull operator manifests and container images
 #   - Nodes labeled: kubectl label node <NODE> triliovault-control-plane=enabled
+#   - python3 with PyYAML (sudo apt install python3-yaml)
 #
 # Usage:
-#   bash utils/deploy_infra.sh [--force-regenerate]
+#   bash deploy_infra.sh [--inputs-file infra_inputs.yaml] [--force-regenerate]
 #
 # Options:
+#   --inputs-file        Path to infra_inputs.yaml (default: infra_inputs.yaml in script dir)
 #   --force-regenerate   Regenerate all passwords even if they already exist
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CTLPLANE_DIR="${SCRIPT_DIR}/.."
-INFRA_DIR="${CTLPLANE_DIR}/infra"
+CTLPLANE_DIR="${SCRIPT_DIR}"
 NAMESPACE="trilio-openstack"
 FORCE_REGENERATE=false
 PASSWORDS_SECRET="trilio-infra-passwords"
+INPUTS_FILE="${SCRIPT_DIR}/infra_inputs.yaml"
 
 MYSQL_OPERATOR_NS="mysql-operator"
 RABBITMQ_OPERATOR_NS="rabbitmq-system"
@@ -54,17 +56,71 @@ step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --inputs-file)      INPUTS_FILE="$2"; shift 2 ;;
         --force-regenerate) FORCE_REGENERATE=true; shift ;;
-        -h|--help) sed -n '2,38p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        -h|--help) sed -n '2,43p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
 done
 
+# ---------- Read infra_inputs.yaml ----------
+
+[ -f "$INPUTS_FILE" ] || err "inputs file not found: $INPUTS_FILE"
+
+# Helper: read a dotted key from infra_inputs.yaml, return default if missing/null
+get_input() {
+    local key="$1" default="$2"
+    python3 - <<PYEOF 2>/dev/null || echo "$default"
+import yaml, sys
+try:
+    d = yaml.safe_load(open('${INPUTS_FILE}'))
+    keys = '${key}'.split('.')
+    val = d
+    for k in keys:
+        val = val[k]
+    if val is None or val == '':
+        print('${default}')
+    else:
+        print(val)
+except Exception:
+    print('${default}')
+PYEOF
+}
+
+MYSQL_INSTANCES=$(get_input "mysql.instances" "3")
+MYSQL_IMAGE=$(get_input "mysql.image" "")
+MYSQL_ROUTER_IMAGE=$(get_input "mysql.router_image" "")
+MYSQL_ROUTER_INSTANCES=$(get_input "mysql.router_instances" "1")
+MYSQL_STORAGE_CLASS=$(get_input "mysql.storage.storage_class" "")
+MYSQL_STORAGE_SIZE=$(get_input "mysql.storage.storage_size" "10Gi")
+MYSQL_CPU_REQ=$(get_input "mysql.resources.requests.cpu" "250m")
+MYSQL_MEM_REQ=$(get_input "mysql.resources.requests.memory" "512Mi")
+MYSQL_CPU_LIM=$(get_input "mysql.resources.limits.cpu" "1000m")
+MYSQL_MEM_LIM=$(get_input "mysql.resources.limits.memory" "2Gi")
+
+RABBIT_REPLICAS=$(get_input "rabbitmq.replicas" "3")
+RABBIT_IMAGE=$(get_input "rabbitmq.image" "")
+RABBIT_STORAGE_CLASS=$(get_input "rabbitmq.storage.storage_class" "")
+RABBIT_STORAGE_SIZE=$(get_input "rabbitmq.storage.storage_size" "8Gi")
+RABBIT_CPU_REQ=$(get_input "rabbitmq.resources.requests.cpu" "100m")
+RABBIT_MEM_REQ=$(get_input "rabbitmq.resources.requests.memory" "256Mi")
+RABBIT_CPU_LIM=$(get_input "rabbitmq.resources.limits.cpu" "500m")
+RABBIT_MEM_LIM=$(get_input "rabbitmq.resources.limits.memory" "1Gi")
+RABBIT_QUORUM=$(get_input "rabbitmq.quorum_queues.enabled" "false")
+RABBIT_EXTRA_CONFIG=$(python3 - <<PYEOF 2>/dev/null || echo ""
+import yaml
+d = yaml.safe_load(open('${INPUTS_FILE}'))
+val = d.get('rabbitmq', {}).get('additional_config', '') or ''
+print(val.strip())
+PYEOF
+)
+
 echo "=================================================="
 echo " TrilioVault Infrastructure Deployment"
 echo " Namespace  : $NAMESPACE"
-echo " Database   : MySQL InnoDB Cluster (mysql/mysql-operator)"
-echo " Messaging  : RabbitMQ (rabbitmq/cluster-operator)"
+echo " Inputs     : $INPUTS_FILE"
+echo " MySQL      : ${MYSQL_INSTANCES} instances, ${MYSQL_STORAGE_SIZE} storage"
+echo " RabbitMQ   : ${RABBIT_REPLICAS} replicas, ${RABBIT_STORAGE_SIZE} storage"
 echo "=================================================="
 
 # ---------- Step 1: Install MySQL Operator for Kubernetes ----------
@@ -169,9 +225,44 @@ info "MySQL credential secrets created."
 
 # ---------- Step 6: Deploy MySQL InnoDB Cluster ----------
 
-step "Deploying MySQL InnoDB Cluster (trilio-mysql, 3 instances)..."
+step "Deploying MySQL InnoDB Cluster (trilio-mysql, ${MYSQL_INSTANCES} instances)..."
 
-kubectl apply -f "${INFRA_DIR}/mysql-cr.yaml"
+# Build the InnoDBCluster CR from infra_inputs.yaml values.
+# storageClassName and image are omitted when empty (operator picks defaults).
+MYSQL_CR=$(cat <<CREOF
+apiVersion: mysql.oracle.com/v2
+kind: InnoDBCluster
+metadata:
+  name: trilio-mysql
+  namespace: ${NAMESPACE}
+spec:
+  secretName: trilio-mysql-root
+  tlsUseSelfSigned: true
+  instances: ${MYSQL_INSTANCES}
+  router:
+    instances: ${MYSQL_ROUTER_INSTANCES}
+  datadirVolumeClaimTemplate:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${MYSQL_STORAGE_SIZE}
+$([ -n "$MYSQL_STORAGE_CLASS" ] && echo "    storageClassName: ${MYSQL_STORAGE_CLASS}" || true)
+  podSpec:
+    nodeSelector:
+      triliovault-control-plane: "enabled"
+$([ -n "$MYSQL_IMAGE" ] && echo "    image: ${MYSQL_IMAGE}" || true)
+    resources:
+      requests:
+        cpu: "${MYSQL_CPU_REQ}"
+        memory: "${MYSQL_MEM_REQ}"
+      limits:
+        cpu: "${MYSQL_CPU_LIM}"
+        memory: "${MYSQL_MEM_LIM}"
+$([ -n "$MYSQL_ROUTER_IMAGE" ] && printf "  routerSpec:\n    podSpec:\n      image: %s" "${MYSQL_ROUTER_IMAGE}" || true)
+CREOF
+)
+echo "$MYSQL_CR" | kubectl apply -f -
 
 info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes)..."
 kubectl wait innodbcluster/trilio-mysql \
@@ -243,9 +334,52 @@ info "MySQL databases and users created."
 
 # ---------- Step 8: Deploy RabbitMQ Cluster ----------
 
-step "Deploying RabbitMQ cluster (trilio-rabbitmq, 3 replicas)..."
+step "Deploying RabbitMQ cluster (trilio-rabbitmq, ${RABBIT_REPLICAS} replicas)..."
 
-kubectl apply -f "${INFRA_DIR}/rabbitmq-cr.yaml"
+# Build quorum queue config block when enabled
+RABBIT_QUORUM_CONF=""
+if [ "$RABBIT_QUORUM" = "true" ] || [ "$RABBIT_QUORUM" = "True" ]; then
+    RABBIT_QUORUM_CONF=$'\n          default_queue_type = quorum\n          raft.wal_max_size_bytes = 134217728\n          raft.segment_max_entries = 32768'
+fi
+
+# Build combined additional_config block
+RABBIT_CONF_BLOCK=""
+if [ -n "$RABBIT_QUORUM_CONF" ] || [ -n "$RABBIT_EXTRA_CONFIG" ]; then
+    RABBIT_CONF_BLOCK="  rabbitmq:
+    additionalConfig: |
+$(echo "${RABBIT_QUORUM_CONF}${RABBIT_EXTRA_CONFIG}" | sed 's/^/      /')"
+fi
+
+RABBIT_CR=$(cat <<CREOF
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: trilio-rabbitmq
+  namespace: ${NAMESPACE}
+spec:
+  replicas: ${RABBIT_REPLICAS}
+$([ -n "$RABBIT_IMAGE" ] && printf "  image: %s" "${RABBIT_IMAGE}" || true)
+  persistence:
+    storage: ${RABBIT_STORAGE_SIZE}
+$([ -n "$RABBIT_STORAGE_CLASS" ] && echo "    storageClassName: ${RABBIT_STORAGE_CLASS}" || true)
+  resources:
+    requests:
+      cpu: "${RABBIT_CPU_REQ}"
+      memory: "${RABBIT_MEM_REQ}"
+    limits:
+      cpu: "${RABBIT_CPU_LIM}"
+      memory: "${RABBIT_MEM_LIM}"
+${RABBIT_CONF_BLOCK}
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              triliovault-control-plane: "enabled"
+CREOF
+)
+echo "$RABBIT_CR" | kubectl apply -f -
 
 info "Waiting for RabbitMQ cluster to be ready (3-5 minutes)..."
 kubectl wait rabbitmqcluster/trilio-rabbitmq \
@@ -388,5 +522,5 @@ echo ""
 echo "  Credentials stored in secret: ${PASSWORDS_SECRET}"
 echo ""
 echo "  Next step:"
-echo "    bash utils/generate_overrides.sh"
+echo "    bash generate_overrides.sh"
 echo "=================================================="

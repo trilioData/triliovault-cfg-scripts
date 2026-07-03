@@ -1,0 +1,105 @@
+# infra_inputs.yaml
+#
+# T4O Infrastructure Configuration — Sunbeam (MicroK8s / Kubernetes)
+#
+# Used by deploy_infra.sh to configure:
+#   - MySQL InnoDB Cluster  (MySQL Operator for Kubernetes, GPL 2.0)
+#   - RabbitMQ Cluster      (RabbitMQ Cluster Operator, MPL 2.0)
+#
+# All settings have sensible defaults for a Sunbeam lab/production deployment.
+# Edit only the parameters relevant to your environment.
+#
+# Usage:
+#   bash deploy_infra.sh                           # uses this file from the same directory
+#   bash deploy_infra.sh --inputs-file /path/to/infra_inputs.yaml
+
+# ---------------------------------------------------------------------------
+# MySQL InnoDB Cluster
+# Managed by MySQL Operator for Kubernetes (mysql/mysql-operator)
+# CRD: InnoDBCluster
+# Docs: https://dev.mysql.com/doc/mysql-operator/en/mysql-operator-introduction.html
+# ---------------------------------------------------------------------------
+mysql:
+  # Number of MySQL instances in the InnoDB Cluster.
+  # Minimum 3 for HA (tolerates loss of 1 instance without downtime).
+  instances: 3
+
+  # Container image for MySQL server instances.
+  # Leave empty to use the operator default.
+  # Override to pin a specific version or use an internal mirror.
+  image: ""
+
+  # Container image for MySQL Router (connection routing / failover).
+  # Leave empty to use the operator default (matches server image version).
+  router_image: ""
+
+  # Number of MySQL Router instances.
+  router_instances: 1
+
+  # Storage configuration for each MySQL instance's data directory (PVC).
+  storage:
+    # Kubernetes StorageClass name.
+    # Leave empty to use the cluster's default StorageClass.
+    # For Sunbeam on MicroK8s: "microk8s-hostpath" or your Ceph/LVM class.
+    storage_class: ""
+
+    # Size of the PVC for each MySQL instance's data directory.
+    storage_size: "10Gi"
+
+  # CPU and memory resource requests/limits per MySQL server pod.
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+# ---------------------------------------------------------------------------
+# RabbitMQ Cluster
+# Managed by RabbitMQ Cluster Operator (rabbitmq/cluster-operator)
+# CRD: RabbitmqCluster
+# Docs: https://www.rabbitmq.com/kubernetes/operator/operator-overview
+# ---------------------------------------------------------------------------
+rabbitmq:
+  # Number of RabbitMQ replicas in the cluster.
+  # Minimum 3 for HA (tolerates loss of 1 replica without downtime).
+  replicas: 3
+
+  # Container image for RabbitMQ.
+  # Leave empty to use the operator default (latest stable).
+  # Override to pin a specific version or use an internal mirror.
+  # Quorum queues require RabbitMQ >= 3.13.
+  image: ""
+
+  # Persistent storage for each RabbitMQ replica's message data.
+  storage:
+    # Kubernetes StorageClass name.
+    # Leave empty to use the cluster's default StorageClass.
+    storage_class: ""
+
+    # Size of the PVC for each RabbitMQ replica.
+    storage_size: "8Gi"
+
+  # CPU and memory resource requests/limits per RabbitMQ pod.
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+  # Quorum queue settings.
+  # Enable only when using RabbitMQ >= 3.13 (required for quorum queue support).
+  # When enabled, T4O services must also set rabbit_quorum_queue: true in
+  # group_vars/trilio_data_plane.yml and in trilio-ctlplane-values.yaml.
+  quorum_queues:
+    enabled: false
+
+  # Additional rabbitmq.conf lines appended to the cluster configuration.
+  # Leave empty for defaults. Example:
+  #   additional_config: |
+  #     vm_memory_high_watermark.relative = 0.6
+  #     channel_max = 2048
+  additional_config: ""

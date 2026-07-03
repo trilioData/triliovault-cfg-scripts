@@ -1,9 +1,9 @@
-# TVO Helm Chart — Default Values Reference
+# TVO Helm Chart — Override Values Reference
 #
 # This file documents all configurable parameters for the tvo-chart release.
 # Do NOT use this file directly — generate trilio-ctlplane-values.yaml by running:
 #
-#   bash utils/generate_overrides.sh
+#   bash generate_overrides.sh
 #
 # generate_overrides.sh auto-populates Keystone credentials, node IP, and
 # all MySQL/RabbitMQ passwords from the cluster. Only the registry auth
