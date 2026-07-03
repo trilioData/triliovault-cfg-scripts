@@ -12,8 +12,8 @@
 # If you ran deploy_infra.sh first, this script needs zero user input.
 #
 # Usage:
-#   bash utils/generate_overrides.sh
-#   bash utils/generate_overrides.sh --db-host <HOST> --db-root-password <PASS> --rabbitmq-host <HOST>
+#   bash generate_overrides.sh
+#   bash generate_overrides.sh --db-host <HOST> --db-root-password <PASS> --rabbitmq-host <HOST>
 #
 # Optional flags:
 #   --db-host            MySQL/MariaDB host (skip auto-detect)
@@ -22,14 +22,14 @@
 #   --rabbitmq-port      RabbitMQ port (default: 5672)
 #   --node-ip            MicroK8s node IP for NodePort (auto-detected if omitted)
 #
-# Output: trilio-ctlplane-values.yaml in ctlplane-scripts/ (one level up from utils/)
+# Output: trilio-ctlplane-values.yaml in the same directory as this script
 #
 # WARNING: trilio-ctlplane-values.yaml contains passwords. Do NOT commit it to git.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CTLPLANE_DIR="${SCRIPT_DIR}/.."
+CTLPLANE_DIR="${SCRIPT_DIR}"
 OVERRIDES_FILE="${CTLPLANE_DIR}/trilio-ctlplane-values.yaml"
 NAMESPACE="trilio-openstack"
 INFRA_SECRET="trilio-infra-passwords"
