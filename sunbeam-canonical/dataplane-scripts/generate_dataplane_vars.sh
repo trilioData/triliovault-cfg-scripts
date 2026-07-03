@@ -1,7 +1,7 @@
 #!/bin/bash
-# generate_compute_vars.sh
+# generate_dataplane_vars.sh
 #
-# Auto-populates group_vars/compute.yml for DataMover deployment on compute nodes.
+# Auto-populates group_vars/trilio_data_plane.yml for DataMover deployment on data plane nodes.
 #
 # Reads from:
 #   - trilio-infra-passwords secret (populated by ctlplane-scripts/utils/deploy_infra.sh)
@@ -15,10 +15,10 @@
 #   trilio_version, container images, registry auth, SSL flags, Ceph settings
 #
 # Usage:
-#   bash generate_compute_vars.sh [--node-ip <IP>] [--rabbitmq-port <PORT>] [--db-port <PORT>]
+#   bash generate_dataplane_vars.sh [--node-ip <IP>] [--rabbitmq-port <PORT>] [--db-port <PORT>]
 #
 # Options:
-#   --node-ip        MicroK8s node IP reachable from compute nodes (auto-detected if omitted)
+#   --node-ip        MicroK8s node IP reachable from data plane nodes (auto-detected if omitted)
 #   --rabbitmq-port  NodePort for RabbitMQ (default: 30672)
 #   --db-port        NodePort for MySQL    (default: 30306)
 #   -h, --help       Show this help and exit
@@ -26,7 +26,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VARS_FILE="${SCRIPT_DIR}/group_vars/compute.yml"
+VARS_FILE="${SCRIPT_DIR}/group_vars/trilio_data_plane.yml"
 NAMESPACE="trilio-openstack"
 INFRA_SECRET="trilio-infra-passwords"
 
@@ -50,11 +50,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "=================================================="
-echo " Generate Compute Vars — DataMover group_vars"
+echo " Generate DataPlane Vars — DataMover group_vars"
 echo " Target: $VARS_FILE"
 echo "=================================================="
 
-[ -f "$VARS_FILE" ] || err "group_vars/compute.yml not found at $VARS_FILE"
+[ -f "$VARS_FILE" ] || err "group_vars/trilio_data_plane.yml not found at $VARS_FILE"
 
 # ---------- 1. Read infra passwords ----------
 
@@ -103,7 +103,7 @@ fi
 [ -n "$KEYSTONE_AUTH_URL" ] && info "Keystone URL: $KEYSTONE_AUTH_URL" \
     || warn "Could not detect Keystone URL — leaving placeholder in vars file."
 
-# ---------- 4. Patch group_vars/compute.yml ----------
+# ---------- 4. Patch group_vars/trilio_data_plane.yml ----------
 
 info "Patching $VARS_FILE ..."
 
@@ -129,7 +129,7 @@ fi
 
 echo ""
 echo "=================================================="
-info "group_vars/compute.yml updated."
+info "group_vars/trilio_data_plane.yml updated."
 echo ""
 echo "  dmapi_transport_url       : $TRANSPORT_URL"
 echo "  dmapi_database_connection : $DB_CONN"

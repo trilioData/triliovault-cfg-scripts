@@ -1,7 +1,7 @@
 ---
-# group_vars/compute.yml
+# group_vars/trilio_data_plane.yml
 #
-# User-facing configuration for T4O DataMover deployment on Sunbeam compute nodes.
+# User-facing configuration for T4O DataMover deployment on Sunbeam data plane nodes.
 # Edit this file before running install_datamover.yml or upgrade_datamover.yml.
 #
 # All parameters here override the role defaults in:
