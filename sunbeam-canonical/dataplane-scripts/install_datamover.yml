@@ -1,0 +1,50 @@
+---
+# Playbook to install TrilioVault DataMover on all Sunbeam compute nodes
+# Run from the Sunbeam primary/bootstrap node which has SSH access to all compute nodes
+# via MAAS-injected SSH keys.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini install_datamover.yml
+#   ansible-playbook -i inventory.ini install_datamover.yml --tags trilio-configure  # reconfigure only
+#   ansible-playbook -i inventory.ini install_datamover.yml --limit compute01       # single node
+#
+# To generate inventory.ini from a live Sunbeam cluster, run:
+#   sunbeam cluster list | awk '/compute/ {print $1}' > compute_hosts.txt
+#   # or use: openstack hypervisor list -f value -c 'Hypervisor Hostname'
+#
+- name: Install TrilioVault DataMover on Sunbeam compute nodes
+  hosts: compute
+  gather_facts: true
+  become: false
+
+  vars:
+    # Override these in inventory group_vars/compute.yml or on the command line
+    # Required: trilio_apt_repo_url, dmapi_transport_url, dmapi_database_connection
+
+  roles:
+    - role: trilio-openstack
+
+- name: Verify DataMover service status on all compute nodes
+  hosts: compute
+  gather_facts: false
+
+  tasks:
+    - name: Get tvault-contego service status
+      ansible.builtin.command: systemctl is-active tvault-contego
+      register: dm_status
+      changed_when: false
+      failed_when: false
+      become: true
+
+    - name: Report DataMover service status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: tvault-contego is {{ dm_status.stdout }}"
+
+    - name: Collect failed nodes
+      ansible.builtin.set_fact:
+        dm_failed: "{{ dm_status.stdout != 'active' }}"
+
+    - name: Fail if any DataMover service is not active
+      ansible.builtin.fail:
+        msg: "tvault-contego is NOT running on {{ inventory_hostname }} (status: {{ dm_status.stdout }})"
+      when: dm_failed

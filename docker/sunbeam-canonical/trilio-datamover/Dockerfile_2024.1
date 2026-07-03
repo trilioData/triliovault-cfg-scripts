@@ -1,0 +1,47 @@
+FROM quay.io/openstack.kolla/nova-compute:2024.1-ubuntu-jammy
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="sunbeam/trilio-datamover" \
+      vendor="TrilioData" \
+      version="6.2.0" \
+      release="6.2" \
+      summary="TrilioData Datamover" \
+      description="TrilioData Datamover Image based on Ubuntu Jammy for Sunbeam Canonical OpenStack"
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+
+ADD trilio.list /etc/apt/sources.list.d/
+
+RUN apt-get update -y \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-common python3-nova \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-novaclient python3-monotonic udev fuse \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y qemu-utils ceph-common python3-libvirt python3-cinderclient \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated \
+    && apt-get clean -y
+
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+
+RUN usermod -aG disk nova \
+ && usermod -aG kvm nova
+
+RUN mkdir -p /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault-mounts \
+ && mkdir -p /var/triliovault \
+ && chmod 777 /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault \
+ && chmod 777 /var/triliovault
+
+ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+
+RUN mkdir -p /licenses
+COPY licensing.txt /licenses
+
+RUN rm -f /etc/apt/sources.list.d/trilio.list
+
+USER nova

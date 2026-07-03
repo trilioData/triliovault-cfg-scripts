@@ -1,0 +1,25 @@
+FROM quay.io/openstack.kolla/horizon:2024.1-ubuntu-jammy
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="sunbeam/trilio-horizon-plugin" \
+      vendor="TrilioData" \
+      version="6.2.0" \
+      release="6.2" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Sunbeam Canonical OpenStack"
+
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+
+RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
+    pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
+
+RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py \
+       /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/enabled/ \
+    && cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py \
+       /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/templatetags/
+
+RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py collectstatic --clear --noinput
+RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py compress --force
+
+RUN mkdir -p /licenses
+COPY licensing.txt /licenses

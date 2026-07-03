@@ -1,0 +1,37 @@
+[loggers]
+keys=root,tvault_contego
+
+[handlers]
+keys=stdout,watchedfile
+
+[formatters]
+keys=context,default
+
+[logger_root]
+level=WARNING
+handlers=stdout
+
+[logger_tvault_contego]
+level=INFO
+handlers=watchedfile
+qualname=tvault_contego
+propagate=0
+
+[handler_stdout]
+class=StreamHandler
+args=(sys.stdout,)
+formatter=context
+
+[handler_watchedfile]
+class=handlers.WatchedFileHandler
+args=('{{ trilio_log_dir }}/tvault-contego.log',)
+formatter=context
+
+[formatter_context]
+class=oslo_log.formatters.ContextFormatter
+format=%(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [%(request_id)s %(user_identity)s] %(instance)s%(message)s
+datefmt=%Y-%m-%d %H:%M:%S
+
+[formatter_default]
+format=%(message)s
+datefmt=%Y-%m-%d %H:%M:%S

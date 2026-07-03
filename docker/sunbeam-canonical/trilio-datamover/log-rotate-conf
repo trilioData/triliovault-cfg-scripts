@@ -1,0 +1,9 @@
+/var/log/tvault-contego/tvault-contego.log {
+daily
+missingok
+notifempty
+copytruncate
+size=25M
+rotate 3
+compress
+}

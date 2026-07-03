@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triliovault-datamover-api-bin
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "tvo.labels" . | nindent 4 }}
+data:
+  dmapi-db-init.sh: |
+    #!/bin/bash
+    set -ex
+    datamover-manage db_sync
+  dmapi-keystone-init.sh: |
+    #!/bin/bash
+    set -ex
+    # Create datamover service user
+    openstack user create --domain default --password {{ .Values.keystone.datamover_api.password }} {{ .Values.keystone.datamover_api.username }} || true
+    openstack role add --project service --user {{ .Values.keystone.datamover_api.username }} admin || true
+    # Create datamover service
+    openstack service create --name datamover --description "TrilioVault DataMover API" datamover || true
+    # Create endpoints — NodePort so datamover agents on bare-metal can reach the API
+    NODE_IP={{ .Values.service.node_ip }}
+    openstack endpoint create --region {{ .Values.keystone.region }} datamover public http://${NODE_IP}:{{ .Values.service.datamover_api.node_port }}/v1/%\(tenant_id\)s || true
+    openstack endpoint create --region {{ .Values.keystone.region }} datamover internal http://${NODE_IP}:{{ .Values.service.datamover_api.node_port }}/v1/%\(tenant_id\)s || true
+    openstack endpoint create --region {{ .Values.keystone.region }} datamover admin http://${NODE_IP}:{{ .Values.service.datamover_api.node_port }}/v1/%\(tenant_id\)s || true

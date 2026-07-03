@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-wlm-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "tvo.labels" . | nindent 4 }}
+    component: wlm-api
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_wlm_api }}
+  selector:
+    matchLabels:
+      application: triliovault
+      component: wlm-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: wlm-api
+    spec:
+      serviceAccountName: triliovault-wlm
+      {{- include "tvo.imagePullSecrets" . | nindent 6 }}
+      nodeSelector:
+        {{ .Values.labels.wlm_api.node_selector_key }}: {{ .Values.labels.wlm_api.node_selector_value }}
+      securityContext:
+        runAsUser: {{ .Values.common.nova_user_id }}
+        fsGroup: {{ .Values.common.nova_group_id }}
+      containers:
+        - name: triliovault-wlm-api
+          image: {{ .Values.images.triliovault_wlm }}
+          imagePullPolicy: {{ .Values.images.pull_policy }}
+          command: ["/bin/bash", "-c", "workloadmgr-api --config-file /etc/triliovault-wlm/triliovault-wlm.conf"]
+          ports:
+            - name: wlm-api
+              containerPort: 8781
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 8781
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8781
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.pod.resources.wlm_api | nindent 12 }}
+          env:
+            - name: OS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-openstack-secret
+                  key: CloudAdminPassword
+          volumeMounts:
+            - name: wlm-etc
+              mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
+              subPath: triliovault-wlm.conf
+              readOnly: true
+            - name: trilio-logs
+              mountPath: /var/log/triliovault
+            - name: trilio-mounts
+              mountPath: {{ .Values.common.vault_data_dir }}
+              mountPropagation: Bidirectional
+      volumes:
+        - name: wlm-etc
+          secret:
+            secretName: triliovault-wlm-etc
+            defaultMode: 0444
+        - name: trilio-logs
+          emptyDir: {}
+        - name: trilio-mounts
+          hostPath:
+            path: {{ .Values.common.vault_data_dir }}
+            type: DirectoryOrCreate

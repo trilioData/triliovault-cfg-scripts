@@ -1,0 +1,48 @@
+## MySQL InnoDB Cluster for TrilioVault
+## Managed by: MySQL Operator for Kubernetes (mysql/mysql-operator)
+## Cluster name: trilio-mysql  Namespace: trilio-openstack
+##
+## 3-instance InnoDB Cluster with 1 MySQL Router instance.
+## MySQL Router handles read-write routing and automatic failover.
+## Tolerates loss of 1 instance without downtime.
+##
+## Root password is read from the 'trilio-mysql-root' secret,
+## created by deploy_infra.sh before this CR is applied.
+##
+## Connection endpoint (inside cluster):
+##   trilio-mysql.trilio-openstack.svc.cluster.local:6446  (read-write via router)
+##
+## Connection endpoint (compute nodes via NodePort):
+##   <node-ip>:30306  (maps to router port 6446)
+
+apiVersion: mysql.oracle.com/v2
+kind: InnoDBCluster
+metadata:
+  name: trilio-mysql
+  namespace: trilio-openstack
+spec:
+  secretName: trilio-mysql-root
+  tlsUseSelfSigned: true
+
+  instances: 3
+
+  router:
+    instances: 1
+
+  datadirVolumeClaimTemplate:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
+
+  podSpec:
+    nodeSelector:
+      triliovault-control-plane: "enabled"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"

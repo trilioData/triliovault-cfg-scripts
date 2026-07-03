@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triliovault-datamover-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "tvo.labels" . | nindent 4 }}
+    component: datamover-api
+spec:
+  replicas: {{ .Values.pod.replicas.triliovault_datamover_api }}
+  selector:
+    matchLabels:
+      application: triliovault
+      component: datamover-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: datamover-api
+    spec:
+      serviceAccountName: triliovault-datamover-api
+      {{- include "tvo.imagePullSecrets" . | nindent 6 }}
+      nodeSelector:
+        {{ .Values.labels.datamover_api.node_selector_key }}: {{ .Values.labels.datamover_api.node_selector_value }}
+      securityContext:
+        runAsUser: {{ .Values.common.dmapi_user_id }}
+        fsGroup: {{ .Values.common.dmapi_group_id }}
+      containers:
+        - name: triliovault-datamover-api
+          image: {{ .Values.images.triliovault_datamover_api }}
+          imagePullPolicy: {{ .Values.images.pull_policy }}
+          command: ["/bin/bash", "-c", "apache2ctl -D FOREGROUND"]
+          ports:
+            - name: dmapi
+              containerPort: 8784
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 8784
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8784
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.pod.resources.datamover_api | nindent 12 }}
+          volumeMounts:
+            - name: dmapi-etc
+              mountPath: /etc/datamover/datamover.conf
+              subPath: triliovault-datamover-api.conf
+              readOnly: true
+            - name: dmapi-logs
+              mountPath: /var/log/triliovault
+      volumes:
+        - name: dmapi-etc
+          secret:
+            secretName: triliovault-datamover-api-etc
+            defaultMode: 0444
+        - name: dmapi-logs
+          emptyDir: {}

@@ -1,0 +1,170 @@
+## TrilioVault for OpenStack - Sunbeam Canonical OpenStack
+## Helm Chart Values
+
+namespace: "trilio-openstack"
+
+## Node selector labels for pod scheduling.
+## Label control plane nodes with: kubectl label node <NODE> triliovault-control-plane=enabled
+## All control plane services (wlm-*, datamover-api, jobs) are restricted to those nodes.
+labels:
+  wlm_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_cron:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_scheduler:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  wlm_workloads:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  datamover_api:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+  job:
+    node_selector_key: triliovault-control-plane
+    node_selector_value: enabled
+
+images:
+  triliovault_wlm:           "docker.io/trilio/trilio-wlm:6.2.1-stable-caracal-ubuntu_jammy"
+  triliovault_datamover_api: "docker.io/trilio/trilio-datamover-api:6.2.1-stable-caracal-ubuntu_jammy"
+  triliovault_dms:           "docker.io/trilio/trilio-dms:6.2.1-stable-caracal-ubuntu_jammy"
+  pull_policy: "IfNotPresent"
+  # Set trilio_container_registry_login_enabled to true and supply credentials
+  # when pulling from a private registry. Leave false for public docker.io images.
+  trilio_container_registry_login_enabled: false
+  registry_url: "docker.io"
+  registry_username: ""
+  registry_password: ""
+
+common:
+  nova_user_id: "42436"
+  nova_group_id: "42436"
+  dmapi_user_id: "63630"
+  trustee_role: "creator"
+  dmapi_workers: "4"
+  vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+
+## OpenStack cloud admin credentials
+## These are used to register Keystone endpoints and create service users
+keystone:
+  auth_url: ""                        # e.g. http://keystone.openstack.svc:5000/v3
+  admin_user: "admin"
+  admin_password: ""
+  admin_project: "admin"
+  admin_domain: "Default"
+  region_name: "RegionOne"
+  interface: "internal"
+  service_project_name: "service"
+  service_project_domain: "Default"
+  ssl_verify: false
+  datamover_api:
+    user: "dmapi"
+    password: ""
+    service_name: "dmapi"
+    service_type: "datamover"
+    service_desc: "TrilioVault Datamover API Service"
+    internal_endpoint: "http://trilio-dmapi.trilio-openstack.svc:8784/v2"
+    public_endpoint: ""               # Set if external access required
+  wlm_api:
+    user: "triliovault"
+    password: ""
+    service_name: "TrilioVaultWLM"
+    service_type: "workloads"
+    service_desc: "TrilioVault Workloadmgr API Service"
+    internal_endpoint: "http://trilio-wlm-api.trilio-openstack.svc:8781/v1/$(tenant_id)s"
+    public_endpoint: ""               # Set if external access required
+
+## T4O's own database (bring your own or deploy alongside)
+database:
+  host: ""                            # e.g. trilio-mysql.trilio-openstack.svc
+  port: "3306"
+  root_user: "root"
+  root_password: ""
+  datamover_api:
+    user: "dmapi"
+    password: ""
+    database: "dmapi"
+  wlm_api:
+    user: "workloadmgr"
+    password: ""
+    database: "workloadmgr"
+
+## T4O's own RabbitMQ
+## Must be exposed via NodePort so DataMover on compute nodes can connect
+rabbitmq:
+  host: ""                            # e.g. trilio-rabbitmq.trilio-openstack.svc
+  port: "5672"
+  ssl: false
+  datamover_api:
+    user: "dmapi"
+    password: ""
+    vhost: "dmapi"
+  wlm_api:
+    user: "workloadmgr"
+    password: ""
+    vhost: "workloadmgr"
+
+## Service exposure
+## Use NodePort to allow DataMover on compute nodes to reach control plane
+service:
+  wlm_api:
+    type: NodePort
+    port: 8781
+    node_port: 30781
+  datamover_api:
+    type: NodePort
+    port: 8784
+    node_port: 30784
+
+pod:
+  replicas:
+    triliovault_wlm_api: 1
+    triliovault_wlm_workloads: 1
+    triliovault_wlm_scheduler: 1
+    triliovault_wlm_cron: 1           # MUST remain 1 - singleton
+    triliovault_datamover_api: 1
+  resources:
+    wlm_api:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    datamover_api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+## DMS (Dynamic Mount Service) S3/object-store config
+dms:
+  s3vaultfuse:
+    default:
+      vault_storage_type: "s3"
+      vault_s3_max_pool_connections: 50
+      vault_s3_read_timeout: 30
+      vault_s3_max_attempts: 3
+      vault_s3_ssl: "True"
+      vault_s3_ssl_verify: "True"
+      vault_s3_region_name: "us-east-1"
+      vault_segment_size: 33554432
+      vault_cache_size: 16
+      queue_depth: 100
+      worker_pool_size: 10
+      vault_retry_count: 2
+      vault_enable_threadpool: "True"
+      vault_threaded_filesystem: "True"
+      max_uploads_pending: 20
+      vault_logging_level: "error"
+      log_file: "/var/log/triliovault/triliovault-object-store.log"
+      trace_function_calls: "False"
+      bucket_object_lock: "False"
+      use_manifest_suffix: "False"
+      azure_immutability_enabled: "False"
+      metadata_cache_max_items: 32
+      vault_cache_username: "nova"
