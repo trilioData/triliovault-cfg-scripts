@@ -1,13 +1,13 @@
 #!/bin/bash
-# deploy_tvo_control_plane.sh
+# prepare.sh
 #
-# Combines Step 1 and Step 2 of the T4O control plane install:
+# Prepares the environment for T4O control plane installation:
 #   1. Install Helm CLI (skipped if already installed)
 #   2. Create trilio-openstack namespace and label control plane nodes
 #      (skips nodes already labeled triliovault-control-plane=enabled)
 #
 # Usage:
-#   bash deploy_tvo_control_plane.sh [--helm-version <VERSION>] [--node-count <N>]
+#   bash prepare.sh [--helm-version <VERSION>] [--node-count <N>]
 #
 # Options:
 #   --helm-version   Helm version to install (default: 3.17.2)
@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "=================================================="
-echo " T4O Control Plane — Step 1 + Step 2"
+echo " T4O Control Plane — Prepare Environment"
 echo " Namespace  : $NAMESPACE"
 echo " Node count : $NODE_COUNT"
 echo "=================================================="
