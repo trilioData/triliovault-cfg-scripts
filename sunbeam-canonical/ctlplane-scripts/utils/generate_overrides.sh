@@ -1,7 +1,7 @@
 #!/bin/bash
 # generate_overrides.sh
 #
-# Auto-generates overrides.yaml for the tvo-chart Helm release.
+# Auto-generates trilio-ctlplane-values.yaml for the tvo-chart Helm release.
 #
 # Priority order for each value:
 #   1. CLI flag (--db-host etc.)
@@ -22,15 +22,15 @@
 #   --rabbitmq-port      RabbitMQ port (default: 5672)
 #   --node-ip            MicroK8s node IP for NodePort (auto-detected if omitted)
 #
-# Output: overrides.yaml in ctlplane-scripts/ (one level up from utils/)
+# Output: trilio-ctlplane-values.yaml in ctlplane-scripts/ (one level up from utils/)
 #
-# WARNING: overrides.yaml contains passwords. Do NOT commit it to git.
+# WARNING: trilio-ctlplane-values.yaml contains passwords. Do NOT commit it to git.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CTLPLANE_DIR="${SCRIPT_DIR}/.."
-OVERRIDES_FILE="${CTLPLANE_DIR}/overrides.yaml"
+OVERRIDES_FILE="${CTLPLANE_DIR}/trilio-ctlplane-values.yaml"
 NAMESPACE="trilio-openstack"
 INFRA_SECRET="trilio-infra-passwords"
 
@@ -176,7 +176,7 @@ gen_password() { openssl rand -hex 20; }
 WLM_KEYSTONE_PASSWORD=$(gen_password)
 DMAPI_KEYSTONE_PASSWORD=$(gen_password)
 
-# ---------- 6. Write overrides.yaml ----------
+# ---------- 6. Write trilio-ctlplane-values.yaml ----------
 
 info "Writing ${OVERRIDES_FILE} ..."
 
@@ -238,7 +238,7 @@ EOF
 
 echo ""
 echo "=================================================="
-info "overrides.yaml written to:"
+info "trilio-ctlplane-values.yaml written to:"
 echo "    ${OVERRIDES_FILE}"
 echo ""
 if [ "$INFRA_SECRET_EXISTS" = true ]; then
@@ -250,6 +250,6 @@ echo ""
 echo "    helm upgrade --install tvo \\"
 echo "      helm-charts/tvo-chart \\"
 echo "      --namespace trilio-openstack \\"
-echo "      --values overrides.yaml \\"
+echo "      --values trilio-ctlplane-values.yaml \\"
 echo "      --wait --timeout 15m"
 echo "=================================================="

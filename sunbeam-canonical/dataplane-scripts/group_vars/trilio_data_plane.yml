@@ -37,7 +37,7 @@ trilio_container_registry_password: ""
 
 # ---------------------------------------------------------------------------
 # DataMover Connectivity
-# These values come from generate_overrides.sh output (overrides.yaml).
+# These values come from generate_overrides.sh output (trilio-ctlplane-values.yaml).
 # dmapi_transport_url  — RabbitMQ URL for the dmapi vhost
 #   NodePort format (compute nodes): rabbit://dmapi:<pass>@<node-ip>:30672/dmapi
 # dmapi_database_connection — MySQL connection for the dmapi database
