@@ -3,16 +3,17 @@
 #
 # Prepares the full Sunbeam environment for T4O deployment:
 #   1. Verify prerequisites (kubectl, python3-yaml)
-#   2. Install Helm CLI
-#   3. Install Ansible + community.docker collection
-#   4. Create trilio-openstack namespace and label control plane nodes
-#   5. Auto-detect Keystone URL and admin credentials; update ctlplane_inputs.yaml
-#   6. Deploy MySQL InnoDB Cluster and RabbitMQ (skipped with a warning if already present)
-#   7. Print next steps
+#   2. Propagate manual_inputs.yaml (image tag + registry) into ctlplane/dataplane yamls
+#   3. Install Helm CLI
+#   4. Install Ansible + community.docker collection
+#   5. Create trilio-openstack namespace and label control plane nodes
+#   6. Auto-detect Keystone URL and admin credentials; update ctlplane_inputs.yaml
+#   7. Deploy MySQL InnoDB Cluster and RabbitMQ (skipped with a warning if already present)
+#   8. Print next steps
 #
 # After this script completes:
 #   1. Review ctlplane_inputs.yaml  — confirm images, storage class, registry auth
-#   2. Review dataplane_inputs.yaml — set images, registry auth, Ceph/SSL flags
+#   2. Review dataplane_inputs.yaml — set Ceph/SSL flags if needed
 #   3. Run: bash deploy_ctlplane.sh
 #   4. Run: bash deploy_dataplane.sh
 #
@@ -29,6 +30,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
+DATAPLANE_INPUTS="${SCRIPT_DIR}/dataplane_inputs.yaml"
+MANUAL_INPUTS="${SCRIPT_DIR}/manual_inputs.yaml"
+INFRA_INPUTS="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 SKIP_INFRA=false
 NODE_COUNT_OVERRIDE=""
@@ -71,12 +75,13 @@ echo "=================================================="
 echo " T4O Sunbeam — Prepare Environment"
 echo "=================================================="
 
-# ---------- Step 0: Prerequisites ----------
+# ---------- Step 1: Prerequisites ----------
 
-step "Step 0: Checking prerequisites..."
+step "Step 1: Checking prerequisites..."
 command -v kubectl &>/dev/null || err "kubectl not found. Run: microk8s config > ~/.kube/config"
 python3 -c "import yaml" 2>/dev/null || err "python3-yaml not found. Run: sudo apt install python3-yaml"
 [ -f "$CTLPLANE_INPUTS" ]  || err "ctlplane_inputs.yaml not found: $CTLPLANE_INPUTS"
+[ -f "$DATAPLANE_INPUTS" ] || err "dataplane_inputs.yaml not found: $DATAPLANE_INPUTS"
 info "Prerequisites OK."
 
 NAMESPACE=$(get_input "namespace" "trilio-openstack")
@@ -87,9 +92,85 @@ info "Namespace  : $NAMESPACE"
 info "Node count : $NODE_COUNT"
 info "Helm ver   : $HELM_VERSION"
 
-# ---------- Step 1: Install Helm CLI ----------
+# ---------- Step 2: Propagate manual_inputs.yaml ----------
 
-step "Step 1: Install Helm CLI..."
+step "Step 2: Propagating manual_inputs.yaml into ctlplane/dataplane yamls..."
+
+if [ -f "$MANUAL_INPUTS" ]; then
+    python3 - <<PYEOF
+import re, yaml
+
+with open('${MANUAL_INPUTS}') as f:
+    m = yaml.safe_load(f)
+
+TAG       = str(m.get('trilio_image_tag', '') or '').strip()
+REG_LOGIN = bool(m.get('registry_login_enabled', False))
+REG_URL   = str(m.get('registry_url', '') or '').strip()
+REG_USER  = str(m.get('registry_username', '') or '').strip()
+REG_PASS  = str(m.get('registry_password', '') or '').strip()
+
+REGISTRY  = REG_URL if REG_URL else 'docker.io'
+
+
+def set_str_if_empty(text, key, value, indent=''):
+    """Replace '<indent><key>: ""' with the given value, only when currently empty."""
+    if not value:
+        return text
+    pat = r'(' + re.escape(indent + key) + r':\s*)""'
+    return re.sub(pat, r'\g<1>"' + value.replace('\\\\', '\\\\\\\\').replace('"', '\\\\"') + '"', text)
+
+
+def set_bool(text, key, value, indent=''):
+    """Always overwrite a boolean key with the given value."""
+    pat = r'(' + re.escape(indent + key) + r':\s*)(true|false)'
+    return re.sub(pat, r'\g<1>' + ('true' if value else 'false'), text, flags=re.IGNORECASE)
+
+
+# ---- Patch ctlplane_inputs.yaml ----
+with open('${CTLPLANE_INPUTS}') as f:
+    ctl = f.read()
+
+if TAG:
+    ctl = set_str_if_empty(ctl, 'triliovault_wlm',           f'{REGISTRY}/trilio/trilio-wlm-canonical:{TAG}',           '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_datamover_api', f'{REGISTRY}/trilio/trilio-datamover-api-canonical:{TAG}', '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_dms',           f'{REGISTRY}/trilio/trilio-dms-canonical:{TAG}',           '  ')
+
+ctl = set_bool(ctl,           'login_enabled', REG_LOGIN, '  ')
+if REG_URL:  ctl = set_str_if_empty(ctl, 'url',      REG_URL,  '  ')
+if REG_USER: ctl = set_str_if_empty(ctl, 'username', REG_USER, '  ')
+if REG_PASS: ctl = set_str_if_empty(ctl, 'password', REG_PASS, '  ')
+
+with open('${CTLPLANE_INPUTS}', 'w') as f:
+    f.write(ctl)
+
+# ---- Patch dataplane_inputs.yaml ----
+with open('${DATAPLANE_INPUTS}') as f:
+    dp = f.read()
+
+if TAG:
+    dp = set_str_if_empty(dp, 'trilio_version',              TAG.split('-')[0])
+    dp = set_str_if_empty(dp, 'triliovault_datamover_image', f'{REGISTRY}/trilio/trilio-datamover-canonical:{TAG}')
+    dp = set_str_if_empty(dp, 'triliovault_wlm_image',       f'{REGISTRY}/trilio/trilio-wlm-canonical:{TAG}')
+    dp = set_str_if_empty(dp, 'triliovault_dms_image',       f'{REGISTRY}/trilio/trilio-dms-canonical:{TAG}')
+
+dp = set_bool(dp,           'trilio_container_registry_login_enabled', REG_LOGIN)
+if REG_URL:  dp = set_str_if_empty(dp, 'trilio_container_registry_url',      REG_URL)
+if REG_USER: dp = set_str_if_empty(dp, 'trilio_container_registry_username', REG_USER)
+if REG_PASS: dp = set_str_if_empty(dp, 'trilio_container_registry_password', REG_PASS)
+
+with open('${DATAPLANE_INPUTS}', 'w') as f:
+    f.write(dp)
+
+print(f"Tag '{TAG}' and registry settings propagated to ctlplane and dataplane yamls.")
+PYEOF
+else
+    warn "manual_inputs.yaml not found — skipping image tag propagation."
+    warn "Fill image tags manually in ctlplane_inputs.yaml and dataplane_inputs.yaml."
+fi
+
+# ---------- Step 3: Install Helm CLI ----------
+
+step "Step 3: Install Helm CLI..."
 
 if command -v helm &>/dev/null; then
     info "Helm already installed ($(helm version --short 2>/dev/null)) — skipping."
@@ -103,9 +184,9 @@ else
     info "Helm $(helm version --short) installed."
 fi
 
-# ---------- Step 2: Install Ansible ----------
+# ---------- Step 4: Install Ansible ----------
 
-step "Step 2: Install Ansible and community.docker collection..."
+step "Step 4: Install Ansible and community.docker collection..."
 
 if command -v ansible &>/dev/null; then
     info "Ansible already installed ($(ansible --version | head -1)) — skipping."
@@ -125,9 +206,9 @@ else
     ansible-galaxy collection install community.docker
 fi
 
-# ---------- Step 3: Create namespace and label nodes ----------
+# ---------- Step 5: Create namespace and label nodes ----------
 
-step "Step 3: Create namespace '$NAMESPACE' and label control plane nodes..."
+step "Step 5: Create namespace '$NAMESPACE' and label control plane nodes..."
 
 if kubectl get namespace "$NAMESPACE" &>/dev/null; then
     info "Namespace '$NAMESPACE' already exists."
@@ -165,9 +246,9 @@ TOTAL=$(kubectl get nodes -l triliovault-control-plane=enabled \
     --no-headers 2>/dev/null | wc -l | tr -d ' ')
 info "triliovault-control-plane=enabled nodes: ${TOTAL}"
 
-# ---------- Step 4: Auto-detect Keystone values ----------
+# ---------- Step 6: Auto-detect Keystone values ----------
 
-step "Step 4: Auto-detecting Keystone credentials from Sunbeam..."
+step "Step 6: Auto-detecting Keystone credentials from Sunbeam..."
 
 if command -v sunbeam &>/dev/null; then
     OPENRC=$(sunbeam openrc 2>/dev/null || echo "")
@@ -225,9 +306,11 @@ with open('${CTLPLANE_INPUTS}', 'w') as f:
 print("ctlplane_inputs.yaml updated with auto-detected Keystone values.")
 PYEOF
 
-# ---------- Step 5: Deploy MySQL and RabbitMQ infrastructure ----------
+# ---------- Step 7: Deploy MySQL and RabbitMQ infrastructure ----------
 
-step "Step 5: Deploy infrastructure (MySQL InnoDB Cluster + RabbitMQ)..."
+step "Step 7: Deploy infrastructure (MySQL InnoDB Cluster + RabbitMQ)..."
+
+[ -f "$INFRA_INPUTS" ] || err "infra_inputs.yaml not found: $INFRA_INPUTS"
 
 if [ "$SKIP_INFRA" = true ]; then
     info "--skip-infra: skipping infrastructure deployment."
@@ -251,18 +334,7 @@ else
     fi
 
     if [ "$MYSQL_EXISTS" = false ] || [ "$RABBIT_EXISTS" = false ]; then
-        # Write a temp infra_inputs.yaml from ctlplane_inputs.yaml mysql/rabbitmq sections
-        TEMP_INFRA="$(mktemp /tmp/infra_inputs_XXXXXX.yaml)"
-        python3 - <<PYEOF
-import yaml
-with open('${CTLPLANE_INPUTS}') as f:
-    c = yaml.safe_load(f)
-infra = {'mysql': c.get('mysql', {}), 'rabbitmq': c.get('rabbitmq', {})}
-with open('${TEMP_INFRA}', 'w') as f:
-    yaml.dump(infra, f, default_flow_style=False)
-PYEOF
-        bash "${CTLPLANE_SCRIPTS}/deploy_infra.sh" --inputs-file "${TEMP_INFRA}"
-        rm -f "${TEMP_INFRA}"
+        bash "${SCRIPT_DIR}/deploy_infra.sh" --inputs-file "${INFRA_INPUTS}"
     else
         info "Both MySQL and RabbitMQ are already deployed — no infra changes made."
     fi
@@ -274,9 +346,10 @@ echo ""
 echo "=================================================="
 info "Preparation complete."
 echo ""
-echo "  Review and edit before deploying:"
+echo "  Review before deploying (optional):"
 echo "    vi ctlplane_inputs.yaml    # images, storage_class, registry auth"
-echo "    vi dataplane_inputs.yaml   # images, registry auth, Ceph/SSL flags"
+echo "    vi dataplane_inputs.yaml   # Ceph/SSL flags"
+echo "    vi infra_inputs.yaml       # MySQL/RabbitMQ sizing"
 echo ""
 echo "  To redeploy infra from scratch:"
 echo "    bash uninstall_infra.sh"

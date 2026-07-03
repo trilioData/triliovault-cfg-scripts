@@ -1,0 +1,37 @@
+# manual_inputs.yaml
+#
+# Quick-start configuration for T4O on Sunbeam.
+# Fill trilio_image_tag and registry auth here, then run:
+#
+#   bash prepare.sh
+#
+# prepare.sh propagates trilio_image_tag and registry settings into
+# ctlplane_inputs.yaml and dataplane_inputs.yaml automatically.
+#
+# For advanced customization (storage class, resource limits, SSL, Ceph flags):
+#   ctlplane_inputs.yaml  — namespace, node count, Keystone, Helm version
+#   dataplane_inputs.yaml — SSL flags, Ceph flags, storage paths
+#   infra_inputs.yaml     — MySQL and RabbitMQ sizing, storage class, images
+
+# ---------------------------------------------------------------------------
+# T4O Image Tag                                                      [manual]
+# Full tag format: <T4O-version>-<openstack-release>
+# Example: 6.2.1-2024.1  (T4O 6.2.1 on OpenStack Caracal / 2024.1)
+#
+# prepare.sh constructs the following full image URLs from this tag:
+#   docker.io/trilio/trilio-wlm-canonical:<tag>
+#   docker.io/trilio/trilio-datamover-api-canonical:<tag>
+#   docker.io/trilio/trilio-dms-canonical:<tag>
+#   docker.io/trilio/trilio-datamover-canonical:<tag>
+# ---------------------------------------------------------------------------
+trilio_image_tag: "6.2.1-2024.1"
+
+# ---------------------------------------------------------------------------
+# Container Registry Authentication                                  [manual]
+# Set registry_login_enabled: true when pulling from a private or
+# authenticated registry. Leave false for public docker.io images.
+# ---------------------------------------------------------------------------
+registry_login_enabled: false
+registry_url:           "docker.io"
+registry_username:      ""
+registry_password:      ""

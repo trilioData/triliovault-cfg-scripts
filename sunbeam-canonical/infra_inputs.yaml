@@ -1,0 +1,79 @@
+# infra_inputs.yaml
+#
+# T4O Infrastructure Configuration for Sunbeam (MicroK8s)
+# Configures MySQL InnoDB Cluster and RabbitMQ Cluster.
+#
+# Usage:
+#   bash deploy_infra.sh              # uses this file by default
+#   bash deploy_infra.sh --inputs-file /path/to/custom.yaml
+#
+# Operators:
+#   MySQL:    mysql/mysql-operator (GPL 2.0)  — CRD: InnoDBCluster
+#   RabbitMQ: rabbitmq/cluster-operator (MPL 2.0) — CRD: RabbitmqCluster
+#
+# prepare.sh deploys infra automatically using this file.
+# To reinstall from scratch: bash uninstall_infra.sh && bash prepare.sh
+
+# ---------------------------------------------------------------------------
+# MySQL InnoDB Cluster
+# ---------------------------------------------------------------------------
+mysql:
+  # Number of MySQL server instances. Minimum 3 for HA (tolerates 1 failure).
+  instances: 3
+
+  # MySQL server container image.
+  # Leave empty to use the operator's default (latest validated version).
+  image: ""
+
+  # Number of MySQL Router instances (handles connection routing and failover).
+  router_instances: 1
+  router_image: ""           # empty = matches server image version
+
+  storage:
+    # Kubernetes StorageClass for each instance's data PVC.
+    # Leave empty to use the cluster's default StorageClass.
+    # MicroK8s: "microk8s-hostpath" | Ceph: "rook-ceph-block" | LVM: "local-storage"
+    storage_class: ""
+    storage_size: "10Gi"
+
+  resources:
+    requests:
+      cpu:    "250m"
+      memory: "512Mi"
+    limits:
+      cpu:    "1000m"
+      memory: "2Gi"
+
+# ---------------------------------------------------------------------------
+# RabbitMQ Cluster
+# ---------------------------------------------------------------------------
+rabbitmq:
+  # Number of RabbitMQ replicas. Minimum 3 for HA (tolerates 1 failure).
+  replicas: 3
+
+  # RabbitMQ container image.
+  # Leave empty to use the operator's default (latest stable).
+  # Quorum queues require RabbitMQ >= 3.13.
+  image: ""
+
+  storage:
+    # Kubernetes StorageClass for each replica's message data PVC.
+    storage_class: ""
+    storage_size: "8Gi"
+
+  resources:
+    requests:
+      cpu:    "100m"
+      memory: "256Mi"
+    limits:
+      cpu:    "500m"
+      memory: "1Gi"
+
+  quorum_queues:
+    # Enable only when using RabbitMQ >= 3.13.
+    # When true, also set rabbit_quorum_queue: true in dataplane_inputs.yaml.
+    enabled: false
+
+  # Extra rabbitmq.conf lines appended to the cluster configuration.
+  # Example: "vm_memory_high_watermark.relative = 0.6\nchannel_max = 2048"
+  additional_config: ""

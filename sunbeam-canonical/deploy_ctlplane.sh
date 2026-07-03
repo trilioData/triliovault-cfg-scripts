@@ -4,8 +4,8 @@
 # Deploys T4O control plane on Sunbeam (MicroK8s) by reading ctlplane_inputs.yaml.
 #
 # Prerequisites:
-#   - bash prepare.sh completed (Helm, Ansible, nodes labeled, MySQL + RabbitMQ deployed)
-#   - ctlplane_inputs.yaml reviewed and configured (images, registry auth)
+#   - bash prepare.sh completed (tools, nodes labeled, images populated, infra deployed)
+#   - ctlplane_inputs.yaml reviewed (images populated by prepare.sh from manual_inputs.yaml)
 #
 # Steps performed:
 #   1. Generate trilio-ctlplane-values.yaml from cluster secrets + ctlplane_inputs.yaml
@@ -60,9 +60,9 @@ PYEOF
 }
 
 NAMESPACE=$(get_input "namespace" "trilio-openstack")
-WLM_IMAGE=$(get_input "images.triliovault_wlm" "docker.io/trilio/trilio-wlm:6.2.1-stable-caracal-ubuntu_jammy")
-DMAPI_IMAGE=$(get_input "images.triliovault_datamover_api" "docker.io/trilio/trilio-datamover-api:6.2.1-stable-caracal-ubuntu_jammy")
-DMS_IMAGE=$(get_input "images.triliovault_dms" "docker.io/trilio/trilio-dms:6.2.1-stable-caracal-ubuntu_jammy")
+WLM_IMAGE=$(get_input "images.triliovault_wlm" "docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1")
+DMAPI_IMAGE=$(get_input "images.triliovault_datamover_api" "docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1")
+DMS_IMAGE=$(get_input "images.triliovault_dms" "docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1")
 PULL_POLICY=$(get_input "images.pull_policy" "IfNotPresent")
 REGISTRY_LOGIN=$(get_input "registry.login_enabled" "false")
 REGISTRY_URL=$(get_input "registry.url" "docker.io")

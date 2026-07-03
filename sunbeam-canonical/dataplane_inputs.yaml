@@ -2,30 +2,34 @@
 #
 # T4O Data Plane Configuration for Sunbeam (MicroK8s)
 #
-# Edit the [manual] sections before running deploy_dataplane.sh.
-# deploy_dataplane.sh auto-populates the [auto] connectivity values from the cluster.
+# Quick-start: fill manual_inputs.yaml (image tag + registry), then run bash prepare.sh.
+# prepare.sh auto-fills image tags and registry settings from manual_inputs.yaml.
+# deploy_dataplane.sh auto-populates connectivity values from cluster secrets.
 #
 # Usage:
-#   vi dataplane_inputs.yaml      # set [manual] values (images, registry, flags)
+#   vi manual_inputs.yaml         # set trilio_image_tag and registry auth
+#   bash prepare.sh               # fills image tags from manual_inputs.yaml
 #   bash deploy_dataplane.sh      # auto-fills connectivity, runs Ansible
 
 # ---------------------------------------------------------------------------
-# T4O Version                                                        [manual]
+# T4O Version                                         [auto from manual_inputs.yaml]
+# prepare.sh fills this from manual_inputs.yaml trilio_image_tag (version part).
 # ---------------------------------------------------------------------------
-trilio_version: "6.2.1"
+trilio_version: ""
 
 # ---------------------------------------------------------------------------
-# Container Images                                                   [manual]
-# Update on every T4O release.
+# Container Images                                    [auto from manual_inputs.yaml]
+# prepare.sh populates these from manual_inputs.yaml trilio_image_tag.
 # Format: docker.io/trilio/<component>-canonical:<version>-<openstack-release>
+# Override here only if you need per-component image customization.
 # ---------------------------------------------------------------------------
-triliovault_datamover_image: "docker.io/trilio/trilio-datamover-canonical:6.2.1-2024.1"
-triliovault_wlm_image:       "docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1"
-triliovault_dms_image:       "docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1"
+triliovault_datamover_image: ""
+triliovault_wlm_image:       ""
+triliovault_dms_image:       ""
 
 # ---------------------------------------------------------------------------
-# Container Registry Authentication                                  [manual]
-# Set login_enabled: true when pulling from a private / authenticated registry.
+# Container Registry Authentication                   [auto from manual_inputs.yaml]
+# prepare.sh populates these from manual_inputs.yaml registry settings.
 # ---------------------------------------------------------------------------
 trilio_container_registry_login_enabled: false
 trilio_container_registry_url:           "docker.io"
