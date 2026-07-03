@@ -28,10 +28,11 @@ trilio_image_tag: "6.2.1-2024.1"
 
 # ---------------------------------------------------------------------------
 # Container Registry Authentication                                  [manual]
-# Set registry_login_enabled: true when pulling from a private or
-# authenticated registry. Leave false for public docker.io images.
+# Set login_enabled: true when pulling from a private or authenticated registry.
+# Leave false for public docker.io images.
 # ---------------------------------------------------------------------------
-registry_login_enabled: false
-registry_url:           "docker.io"
-registry_username:      ""
-registry_password:      ""
+trilio_registry_auth:
+  login_enabled: false
+  url:           "docker.io"
+  username:      ""
+  password:      ""

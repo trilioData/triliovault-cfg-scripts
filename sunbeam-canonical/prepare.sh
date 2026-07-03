@@ -98,10 +98,11 @@ with open('${MANUAL_INPUTS}') as f:
     m = yaml.safe_load(f)
 
 TAG       = str(m.get('trilio_image_tag', '') or '').strip()
-REG_LOGIN = bool(m.get('trilio_registry_login_enabled', False))
-REG_URL   = str(m.get('trilio_registry_url', '') or '').strip()
-REG_USER  = str(m.get('trilio_registry_username', '') or '').strip()
-REG_PASS  = str(m.get('trilio_registry_password', '') or '').strip()
+reg       = m.get('trilio_registry_auth', {}) or {}
+REG_LOGIN = bool(reg.get('login_enabled', False))
+REG_URL   = str(reg.get('url', '') or '').strip()
+REG_USER  = str(reg.get('username', '') or '').strip()
+REG_PASS  = str(reg.get('password', '') or '').strip()
 
 REGISTRY  = REG_URL if REG_URL else 'docker.io'
 
