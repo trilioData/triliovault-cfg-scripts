@@ -1,0 +1,43 @@
+[DEFAULT]
+
+vault_data_directory = {{ vault_data_dir }}
+vault_data_directory_old = /var/triliovault
+qemu_agent_ping_timeout = 30
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+max_uploads_pending = 3
+max_commit_pending = 3
+dmapi_transport_url = {{ dmapi_transport_url }}
+
+{% if cinder_backend_ceph | bool %}
+[libvirt]
+images_rbd_ceph_conf = {{ libvirt_images_rbd_ceph_conf }}
+rbd_user = {{ ceph_cinder_user }}
+
+[ceph]
+keyring_ext = .keyring
+{% endif %}
+
+[keystone_authtoken]
+auth_url = {{ keystone_auth_url }}
+insecure = {{ 'true' if not keystone_ssl_verify | bool else 'false' }}
+
+[oslo_messaging_rabbit]
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+ssl = {{ rabbit_ssl }}
+oslomsg_rpc_use_ssl = {{ oslomsg_rpc_use_ssl }}
+amqp_durable_queues = {{ 'true' if rabbit_quorum_queue | bool else 'false' }}
+
+[dmapi_database]
+connection = {{ dmapi_database_connection }}
+
+[contego_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
+
+[conductor]
+use_local = True
+
+[cinder]
+http_retries = {{ cinder_http_retries }}
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper

@@ -1,0 +1,49 @@
+FROM quay.io/openstack.kolla/nova-api:2024.1-ubuntu-jammy
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="sunbeam/trilio-wlm" \
+      vendor="TrilioData" \
+      version="6.2.0" \
+      release="6.2" \
+      summary="TrilioData WorkloadManager" \
+      description="TrilioData TrilioVault WLM Image based on Ubuntu Jammy for Sunbeam Canonical OpenStack"
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+
+ADD trilio.list /etc/apt/sources.list.d/
+
+RUN set -ex \
+     && apt-get -y update \
+     && apt-get -y install zlib1g-dev libpython3-dev \
+     && apt-get -y install libcurl4-openssl-dev libssl-dev python3-m2crypto libmysqlclient-dev qemu-utils libxml2-dev libxslt-dev \
+     && apt-get -y install nfs-common swig python3-guestfs libguestfs-tools libvirt-daemon-system ntfs-3g \
+     && apt-get -y install python3-neutronclient python3-glanceclient \
+     && pip3 --no-cache-dir install --upgrade pip \
+     && pip3 --no-cache-dir install "SQLAlchemy==1.4.51" \
+     && pip3 --no-cache-dir install --upgrade pyvmomi munch paramiko taskflow \
+     && pip3 --no-cache-dir install azure-storage-blob==12.25.1 azure-core loguru \
+     && apt-get clean -y
+
+RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
+
+RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault
+RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
+    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk nova
+
+ADD log-rotate-conf /etc/logrotate.d/workloadmgr.conf
+
+RUN mkdir -p /licenses
+COPY licensing.txt /licenses
+
+RUN rm -f /etc/apt/sources.list.d/trilio.list
+
+USER nova
