@@ -8,22 +8,19 @@
 #   4. Install Ansible + community.docker collection
 #   5. Create trilio-openstack namespace and label control plane nodes
 #   6. Auto-detect Keystone URL and admin credentials; update ctlplane_inputs.yaml
-#   7. Deploy MySQL InnoDB Cluster and RabbitMQ (skipped with a warning if already present)
-#   8. Print next steps
+#   7. Print next steps
 #
 # After this script completes:
-#   1. Review ctlplane_inputs.yaml  — confirm images, storage class, registry auth
-#   2. Review dataplane_inputs.yaml — set Ceph/SSL flags if needed
-#   3. Run: bash deploy_ctlplane.sh
-#   4. Run: bash deploy_dataplane.sh
+#   1. Run: bash deploy_infra.sh     — deploy MySQL + RabbitMQ
+#   2. Run: bash deploy_ctlplane.sh  — deploy T4O control plane
+#   3. Run: bash deploy_dataplane.sh — deploy T4O data plane
 #
 # Usage:
-#   bash prepare.sh [--node-count N] [--helm-version X.Y.Z] [--skip-infra]
+#   bash prepare.sh [--node-count N] [--helm-version X.Y.Z]
 #
 # Options:
 #   --node-count     Override node_count from ctlplane_inputs.yaml
 #   --helm-version   Override helm_version from ctlplane_inputs.yaml
-#   --skip-infra     Skip MySQL + RabbitMQ deployment (useful for re-runs)
 #   -h, --help       Show this help and exit
 
 set -euo pipefail
@@ -32,9 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 DATAPLANE_INPUTS="${SCRIPT_DIR}/dataplane_inputs.yaml"
 MANUAL_INPUTS="${SCRIPT_DIR}/manual_inputs.yaml"
-INFRA_INPUTS="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
-SKIP_INFRA=false
 NODE_COUNT_OVERRIDE=""
 HELM_VERSION_OVERRIDE=""
 
@@ -48,8 +43,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --node-count)    NODE_COUNT_OVERRIDE="$2"; shift 2 ;;
         --helm-version)  HELM_VERSION_OVERRIDE="$2"; shift 2 ;;
-        --skip-infra)    SKIP_INFRA=true; shift ;;
-        -h|--help) sed -n '2,30p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
 done
@@ -104,10 +98,10 @@ with open('${MANUAL_INPUTS}') as f:
     m = yaml.safe_load(f)
 
 TAG       = str(m.get('trilio_image_tag', '') or '').strip()
-REG_LOGIN = bool(m.get('registry_login_enabled', False))
-REG_URL   = str(m.get('registry_url', '') or '').strip()
-REG_USER  = str(m.get('registry_username', '') or '').strip()
-REG_PASS  = str(m.get('registry_password', '') or '').strip()
+REG_LOGIN = bool(m.get('trilio_registry_login_enabled', False))
+REG_URL   = str(m.get('trilio_registry_url', '') or '').strip()
+REG_USER  = str(m.get('trilio_registry_username', '') or '').strip()
+REG_PASS  = str(m.get('trilio_registry_password', '') or '').strip()
 
 REGISTRY  = REG_URL if REG_URL else 'docker.io'
 
@@ -306,40 +300,6 @@ with open('${CTLPLANE_INPUTS}', 'w') as f:
 print("ctlplane_inputs.yaml updated with auto-detected Keystone values.")
 PYEOF
 
-# ---------- Step 7: Deploy MySQL and RabbitMQ infrastructure ----------
-
-step "Step 7: Deploy infrastructure (MySQL InnoDB Cluster + RabbitMQ)..."
-
-[ -f "$INFRA_INPUTS" ] || err "infra_inputs.yaml not found: $INFRA_INPUTS"
-
-if [ "$SKIP_INFRA" = true ]; then
-    info "--skip-infra: skipping infrastructure deployment."
-else
-    MYSQL_EXISTS=false; RABBIT_EXISTS=false
-
-    if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
-        MYSQL_STATUS=$(kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" \
-            -o jsonpath='{.status.cluster.status}' 2>/dev/null || echo "Unknown")
-        warn "MySQL InnoDB Cluster 'trilio-mysql' already exists (status: ${MYSQL_STATUS}) — skipping MySQL deployment."
-        warn "To reinstall MySQL, run: bash uninstall_infra.sh"
-        MYSQL_EXISTS=true
-    fi
-
-    if kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null; then
-        RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
-            -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
-        warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping RabbitMQ deployment."
-        warn "To reinstall RabbitMQ, run: bash uninstall_infra.sh"
-        RABBIT_EXISTS=true
-    fi
-
-    if [ "$MYSQL_EXISTS" = false ] || [ "$RABBIT_EXISTS" = false ]; then
-        bash "${SCRIPT_DIR}/deploy_infra.sh" --inputs-file "${INFRA_INPUTS}"
-    else
-        info "Both MySQL and RabbitMQ are already deployed — no infra changes made."
-    fi
-fi
-
 # ---------- Summary ----------
 
 echo ""
@@ -347,14 +307,12 @@ echo "=================================================="
 info "Preparation complete."
 echo ""
 echo "  Review before deploying (optional):"
-echo "    vi ctlplane_inputs.yaml    # images, storage_class, registry auth"
+echo "    vi ctlplane_inputs.yaml    # images, node count, registry auth"
 echo "    vi dataplane_inputs.yaml   # Ceph/SSL flags"
-echo "    vi infra_inputs.yaml       # MySQL/RabbitMQ sizing"
+echo "    vi infra_inputs.yaml       # MySQL/RabbitMQ sizing and storage class"
 echo ""
-echo "  To redeploy infra from scratch:"
-echo "    bash uninstall_infra.sh"
-echo ""
-echo "  Deploy:"
+echo "  Deploy in order:"
+echo "    bash deploy_infra.sh       # MySQL + RabbitMQ infrastructure"
 echo "    bash deploy_ctlplane.sh    # T4O control plane (Helm)"
 echo "    bash deploy_dataplane.sh   # T4O data plane (Ansible)"
 echo "=================================================="
