@@ -1,0 +1,65 @@
+# TVO Helm Chart — Override Values Reference
+#
+# This file documents all configurable parameters for the tvo-chart release.
+# Do NOT use this file directly — generate trilio-ctlplane-values.yaml by running:
+#
+#   bash generate_overrides.sh
+#
+# generate_overrides.sh auto-populates Keystone credentials, node IP, and
+# all MySQL/RabbitMQ passwords from the cluster. Only the registry auth
+# parameters and image tags may need manual editing after generation.
+#
+# File: trilio-ctlplane-values.yaml  (output of generate_overrides.sh)
+# Note: trilio-ctlplane-values.yaml contains passwords — do NOT commit it to git.
+
+images:
+  triliovault_wlm:           "docker.io/trilio/trilio-wlm:6.2.1-stable-caracal-ubuntu_jammy"
+  triliovault_datamover_api: "docker.io/trilio/trilio-datamover-api:6.2.1-stable-caracal-ubuntu_jammy"
+  triliovault_dms:           "docker.io/trilio/trilio-dms:6.2.1-stable-caracal-ubuntu_jammy"
+  pull_policy: "IfNotPresent"
+  trilio_container_registry_login_enabled: false
+  registry_url: "docker.io"
+  registry_username: ""
+  registry_password: ""
+
+keystone:
+  auth_url: ""                 # auto-populated by generate_overrides.sh
+  admin_user: "admin"
+  admin_password: ""           # auto-populated by generate_overrides.sh
+  admin_project: "admin"
+  region_name: "RegionOne"
+  wlm_api:
+    password: ""               # auto-populated by generate_overrides.sh
+  datamover_api:
+    password: ""               # auto-populated by generate_overrides.sh
+
+database:
+  host: ""                     # auto-populated: trilio-mysql.<ns>.svc.cluster.local
+  port: "6446"                 # MySQL Router port (not 3306)
+  root_password: ""            # auto-populated by generate_overrides.sh
+  wlm_api:
+    password: ""               # auto-populated by generate_overrides.sh
+  datamover_api:
+    password: ""               # auto-populated by generate_overrides.sh
+
+rabbitmq:
+  host: ""                     # auto-populated: trilio-rabbitmq.<ns>.svc.cluster.local
+  port: "5672"
+  wlm_api:
+    user: "workloadmgr"
+    password: ""               # auto-populated by generate_overrides.sh
+    vhost: "workloadmgr"
+  datamover_api:
+    user: "dmapi"
+    password: ""               # auto-populated by generate_overrides.sh
+    vhost: "dmapi"
+
+service:
+  wlm_api:
+    type: NodePort
+    port: 8781
+    node_port: 30781
+  datamover_api:
+    type: NodePort
+    port: 8784
+    node_port: 30784

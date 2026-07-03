@@ -1,31 +1,31 @@
 ---
-# Playbook to install TrilioVault DataMover on all Sunbeam compute nodes
-# Run from the Sunbeam primary/bootstrap node which has SSH access to all compute nodes
+# Playbook to install TrilioVault DataMover on all Sunbeam data plane nodes
+# Run from the Sunbeam primary/bootstrap node which has SSH access to all data plane nodes
 # via MAAS-injected SSH keys.
 #
 # Usage:
 #   ansible-playbook -i inventory.ini install_datamover.yml
 #   ansible-playbook -i inventory.ini install_datamover.yml --tags trilio-configure  # reconfigure only
-#   ansible-playbook -i inventory.ini install_datamover.yml --limit compute01       # single node
+#   ansible-playbook -i inventory.ini install_datamover.yml --limit node01           # single node
 #
 # To generate inventory.ini from a live Sunbeam cluster, run:
-#   sunbeam cluster list | awk '/compute/ {print $1}' > compute_hosts.txt
-#   # or use: openstack hypervisor list -f value -c 'Hypervisor Hostname'
+#   openstack hypervisor list -f value -c 'Hypervisor Hostname' | \
+#       awk 'BEGIN{print "[trilio_data_plane]"} {print $1}' > inventory.ini
 #
-- name: Install TrilioVault DataMover on Sunbeam compute nodes
-  hosts: compute
+- name: Install TrilioVault DataMover on Sunbeam data plane nodes
+  hosts: trilio_data_plane
   gather_facts: true
   become: false
 
   vars:
-    # Override these in inventory group_vars/compute.yml or on the command line
-    # Required: trilio_apt_repo_url, dmapi_transport_url, dmapi_database_connection
+    # Override these in group_vars/trilio_data_plane.yml or on the command line.
+    # Run generate_dataplane_vars.sh to auto-populate connectivity values.
 
   roles:
     - role: trilio-openstack
 
-- name: Verify DataMover service status on all compute nodes
-  hosts: compute
+- name: Verify DataMover service status on all data plane nodes
+  hosts: trilio_data_plane
   gather_facts: false
 
   tasks:

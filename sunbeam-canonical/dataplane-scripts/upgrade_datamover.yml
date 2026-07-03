@@ -5,11 +5,11 @@
 #
 # Usage:
 #   ansible-playbook -i inventory.ini upgrade_datamover.yml
-#   ansible-playbook -i inventory.ini upgrade_datamover.yml --limit compute01  # single node
+#   ansible-playbook -i inventory.ini upgrade_datamover.yml --limit node01      # single node
 #   ansible-playbook -i inventory.ini upgrade_datamover.yml -e "serial_count=5% # upgrade 5% at a time
 #
 - name: Pre-upgrade health check
-  hosts: compute
+  hosts: trilio_data_plane
   gather_facts: false
   serial: "{{ serial_count | default('100%') }}"
 
@@ -27,14 +27,14 @@
       when: pre_status.stdout != "active"
 
 - name: Rolling upgrade of TrilioVault DataMover
-  hosts: compute
+  hosts: trilio_data_plane
   gather_facts: true
   serial: 1
   max_fail_percentage: 0
 
   vars:
-    # Override in group_vars/compute.yml
-    # Required: trilio_apt_repo_url, dmapi_transport_url, dmapi_database_connection
+    # Override in group_vars/trilio_data_plane.yml.
+    # Run generate_dataplane_vars.sh to auto-populate connectivity values.
 
   tasks:
     - name: Upgrade tvault-contego on this node
@@ -43,7 +43,7 @@
         tasks_from: upgrade.yml
 
 - name: Post-upgrade verification across all nodes
-  hosts: compute
+  hosts: trilio_data_plane
   gather_facts: false
 
   tasks:

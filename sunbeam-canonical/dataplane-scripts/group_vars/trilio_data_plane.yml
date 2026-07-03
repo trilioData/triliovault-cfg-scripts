@@ -1,0 +1,78 @@
+---
+# group_vars/trilio_data_plane.yml
+#
+# User-facing configuration for T4O DataMover deployment on Sunbeam data plane nodes.
+# Edit this file before running install_datamover.yml or upgrade_datamover.yml.
+#
+# All parameters here override the role defaults in:
+#   ansible-roles/trilio-openstack/defaults/main.yml
+#
+# Advanced parameters (s3vaultfuse tuning, log paths, service name) are left
+# in defaults/main.yml — override here only if you need non-default values.
+
+# ---------------------------------------------------------------------------
+# T4O Version
+# ---------------------------------------------------------------------------
+trilio_version: "6.2.1"
+
+# ---------------------------------------------------------------------------
+# Container Images
+# Update these on every T4O release.
+# Format: docker.io/trilio/<component>-canonical:<version>-<os-release>
+# ---------------------------------------------------------------------------
+triliovault_datamover_image: "docker.io/trilio/trilio-datamover-canonical:6.2.1-2024.1"
+triliovault_wlm_image:       "docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1"
+triliovault_dms_image:       "docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1"
+
+# ---------------------------------------------------------------------------
+# Container Registry Authentication
+# Set trilio_container_registry_login_enabled: true and fill in credentials
+# when pulling from a private registry.
+# Leave false for public docker.io images (no credentials required).
+# ---------------------------------------------------------------------------
+trilio_container_registry_login_enabled: false
+trilio_container_registry_url:      "docker.io"
+trilio_container_registry_username: ""
+trilio_container_registry_password: ""
+
+# ---------------------------------------------------------------------------
+# DataMover Connectivity
+# These values come from generate_overrides.sh output (trilio-ctlplane-values.yaml).
+# dmapi_transport_url  — RabbitMQ URL for the dmapi vhost
+#   NodePort format (compute nodes): rabbit://dmapi:<pass>@<node-ip>:30672/dmapi
+# dmapi_database_connection — MySQL connection for the dmapi database
+#   NodePort format (compute nodes): mysql+pymysql://dmapi:<pass>@<node-ip>:30306/dmapi
+# ---------------------------------------------------------------------------
+dmapi_transport_url:       "rabbit://dmapi:<DMAPI_RABBIT_PASSWORD>@<MICROK8S_NODE_IP>:30672/dmapi"
+dmapi_database_connection: "mysql+pymysql://dmapi:<DMAPI_DB_PASSWORD>@<MICROK8S_NODE_IP>:30306/dmapi"
+
+# ---------------------------------------------------------------------------
+# Keystone
+# ---------------------------------------------------------------------------
+keystone_auth_url:    "http://<KEYSTONE_IP>:5000/v3"
+keystone_ssl_verify:  false
+
+# ---------------------------------------------------------------------------
+# RabbitMQ / Oslo Messaging
+# Set rabbit_ssl and oslomsg_rpc_use_ssl to true if RabbitMQ is TLS-enabled.
+# Set rabbit_quorum_queue to true if the cluster uses quorum queues.
+# ---------------------------------------------------------------------------
+rabbit_ssl:           false
+rabbit_quorum_queue:  false
+oslomsg_rpc_use_ssl:  false
+
+# ---------------------------------------------------------------------------
+# Ceph / Cinder
+# Set cinder_backend_ceph: true when the OpenStack Cinder backend uses Ceph.
+# If enabled, fill in the Ceph config path and Cinder user name.
+# ---------------------------------------------------------------------------
+cinder_backend_ceph:           false
+libvirt_images_rbd_ceph_conf:  "/etc/ceph/ceph.conf"
+ceph_cinder_user:              "cinder"
+
+# ---------------------------------------------------------------------------
+# Storage
+# Local directory on each compute node used for DataMover mount points.
+# Ensure the filesystem has sufficient space for backup staging.
+# ---------------------------------------------------------------------------
+vault_data_dir: "/var/lib/trilio/triliovault-mounts"
