@@ -114,8 +114,20 @@ echo "=================================================="
 
 MYSQL_EXISTS=false
 RABBIT_EXISTS=false
+MYSQL_OPERATOR_EXISTS=false
+RABBIT_OPERATOR_EXISTS=false
 
 step "Checking existing infrastructure..."
+
+if kubectl get deployment mysql-operator -n "$NAMESPACE" &>/dev/null; then
+    info "MySQL Operator already deployed in $NAMESPACE — skipping Step 1."
+    MYSQL_OPERATOR_EXISTS=true
+fi
+
+if kubectl get deployment rabbitmq-cluster-operator -n "$NAMESPACE" &>/dev/null; then
+    info "RabbitMQ Cluster Operator already deployed in $NAMESPACE — skipping Step 2."
+    RABBIT_OPERATOR_EXISTS=true
+fi
 
 if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
     MYSQL_STATUS=$(kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" \
@@ -140,6 +152,7 @@ fi
 
 # ---------- Step 1: Install MySQL Operator ----------
 
+if [ "$MYSQL_OPERATOR_EXISTS" = false ]; then
 step "Step 1: Installing MySQL Operator for Kubernetes in namespace $NAMESPACE..."
 
 MYSQL_OP_MANIFEST=$(mktemp)
@@ -204,9 +217,11 @@ kubectl wait deployment/mysql-operator \
     --timeout=300s
 
 info "MySQL Operator ready."
+fi  # MYSQL_OPERATOR_EXISTS
 
 # ---------- Step 2: Install RabbitMQ Cluster Operator ----------
 
+if [ "$RABBIT_OPERATOR_EXISTS" = false ]; then
 step "Step 2: Installing RabbitMQ Cluster Operator in namespace $NAMESPACE..."
 
 RABBIT_OP_MANIFEST=$(mktemp)
@@ -258,6 +273,7 @@ kubectl wait deployment/rabbitmq-cluster-operator \
     --timeout=300s
 
 info "RabbitMQ Cluster Operator ready."
+fi  # RABBIT_OPERATOR_EXISTS
 
 # ---------- Step 3: Read passwords from ctlplane_inputs.yaml ----------
 
