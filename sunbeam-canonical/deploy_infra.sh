@@ -230,11 +230,24 @@ curl -fsSL \
     -o "$RABBIT_OP_MANIFEST"
 
 # Patch the manifest: move all resources into $NAMESPACE, skip Namespace object creation.
+# Also skip cert-manager resources (Certificate, Issuer) and the webhook configurations
+# that depend on them if cert-manager is not installed in the cluster.
 python3 - <<PYEOF
-import yaml
+import subprocess, yaml
 
 OLD_NS = 'rabbitmq-system'
 NEW_NS = '${NAMESPACE}'
+
+certmgr = subprocess.run(
+    ['kubectl', 'get', 'crd', 'certificates.cert-manager.io'],
+    capture_output=True, timeout=10
+).returncode == 0
+
+if not certmgr:
+    print("cert-manager not found — skipping Certificate, Issuer and webhook resources.")
+
+CERTMGR_KINDS = {'Certificate', 'Issuer', 'ClusterIssuer'}
+WEBHOOK_KINDS  = {'MutatingWebhookConfiguration', 'ValidatingWebhookConfiguration'}
 
 def replace_ns(obj):
     if isinstance(obj, dict):
@@ -254,7 +267,10 @@ patched = []
 for doc in docs:
     if doc is None:
         continue
-    if doc.get('kind') == 'Namespace':
+    kind = doc.get('kind', '')
+    if kind == 'Namespace':
+        continue
+    if not certmgr and kind in CERTMGR_KINDS | WEBHOOK_KINDS:
         continue
     replace_ns(doc)
     patched.append(doc)
