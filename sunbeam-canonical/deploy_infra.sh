@@ -46,6 +46,30 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
 
+# Poll CRD + pod status every 10 s until the resource reaches Ready condition.
+wait_with_pod_status() {
+    local resource="$1" namespace="$2" timeout_secs="$3"
+    local deadline=$((SECONDS + timeout_secs))
+
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        echo ""
+        echo -e "${GREEN}[$(date '+%H:%M:%S')]${NC} ${resource}:"
+        kubectl get "$resource" -n "$namespace" 2>/dev/null || true
+        echo ""
+        echo "  Pods in ${namespace}:"
+        kubectl get pods -n "$namespace" 2>/dev/null || true
+
+        if kubectl wait "$resource" -n "$namespace" \
+                --for=condition=Ready --timeout=1s &>/dev/null 2>&1; then
+            return 0
+        fi
+
+        sleep 10
+    done
+
+    err "Timed out waiting for ${resource} to be Ready after $((timeout_secs / 60)) minutes"
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --inputs-file)  INPUTS_FILE="$2"; shift 2 ;;
@@ -177,6 +201,12 @@ def replace_ns(obj):
                 obj[k] = NEW_NS
             else:
                 replace_ns(v)
+        # Also fix env vars like MYSQL_OPERATOR_ENABLED_NAMESPACES whose
+        # value is the old namespace — the patching above only catches
+        # keys literally named 'namespace', not env var value fields.
+        if obj.get('name', '').endswith(('_NAMESPACE', '_NAMESPACES')) and \
+                obj.get('value') == OLD_NS:
+            obj['value'] = NEW_NS
     elif isinstance(obj, list):
         for item in obj:
             replace_ns(item)
@@ -264,6 +294,23 @@ for doc in docs:
     if doc.get('kind', '') in SKIP_KINDS:
         continue
     replace_ns(doc)
+    # Remove the webhook TLS cert volume/mount from the operator Deployment.
+    # The Certificate resource that would create 'cluster-operator-webhook-server-cert'
+    # is skipped (no cert-manager on Sunbeam), so the pod can never start with that
+    # volume. The MutatingWebhookConfiguration is also skipped, so the API server
+    # never calls this webhook — the operator works fine without it.
+    if doc.get('kind') == 'Deployment' and \
+            doc.get('metadata', {}).get('name') == 'rabbitmq-cluster-operator':
+        pod_spec = doc.get('spec', {}).get('template', {}).get('spec', {})
+        pod_spec['volumes'] = [
+            v for v in pod_spec.get('volumes', [])
+            if v.get('name') != 'cluster-operator-webhook-certs'
+        ]
+        for c in pod_spec.get('containers', []):
+            c['volumeMounts'] = [
+                vm for vm in c.get('volumeMounts', [])
+                if vm.get('name') != 'cluster-operator-webhook-certs'
+            ]
     patched.append(doc)
 
 with open('${RABBIT_OP_MANIFEST}', 'w') as f:
@@ -386,11 +433,8 @@ $([ -n "$MYSQL_IMAGE" ] && echo "    image: ${MYSQL_IMAGE}" || true)
 $([ -n "$MYSQL_ROUTER_IMAGE" ] && printf "  routerSpec:\n    podSpec:\n      image: %s" "${MYSQL_ROUTER_IMAGE}" || true)
 CREOF
 
-    info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes)..."
-    kubectl wait innodbcluster/trilio-mysql \
-        -n "$NAMESPACE" \
-        --for=condition=Ready \
-        --timeout=20m
+    info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes, polling every 10s)..."
+    wait_with_pod_status innodbcluster/trilio-mysql "$NAMESPACE" 1200
     info "MySQL InnoDB Cluster ready."
 
     # ---------- Step 6: Initialize MySQL ----------
@@ -483,9 +527,8 @@ ${RABBIT_CONF_BLOCK}
               triliovault-control-plane: "enabled"
 CREOF
 
-    info "Waiting for RabbitMQ cluster to be ready (3-5 minutes)..."
-    kubectl wait rabbitmqcluster/trilio-rabbitmq \
-        -n "$NAMESPACE" --for=condition=Ready --timeout=10m
+    info "Waiting for RabbitMQ cluster to be ready (3-5 minutes, polling every 10s)..."
+    wait_with_pod_status rabbitmqcluster/trilio-rabbitmq "$NAMESPACE" 600
     info "RabbitMQ cluster ready."
 
     # ---------- Step 8: Initialize RabbitMQ ----------
