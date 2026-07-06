@@ -11,6 +11,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/uninstall_ctlplane.log"
+exec > >(tee "$LOG_FILE") 2>&1
 NAMESPACE="${NAMESPACE:-trilio-openstack}"
 RELEASE_NAME="${RELEASE_NAME:-tvo}"
 
@@ -32,6 +35,7 @@ echo "=================================================="
 echo " T4O Control Plane — Uninstall"
 echo " Namespace : ${NAMESPACE}"
 echo " Release   : ${RELEASE_NAME}"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 echo ""
 warn "This will remove all T4O control plane services (wlm, datamover-api)."

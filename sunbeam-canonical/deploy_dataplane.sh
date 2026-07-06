@@ -26,6 +26,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/deploy_dataplane.log"
+exec > >(tee "$LOG_FILE") 2>&1
 DATAPLANE_INPUTS="${SCRIPT_DIR}/dataplane_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 DATAPLANE_SCRIPTS="${SCRIPT_DIR}/dataplane-scripts"
@@ -55,6 +57,7 @@ done
 echo "=================================================="
 echo " T4O Sunbeam — Deploy Data Plane"
 echo " Inputs    : $DATAPLANE_INPUTS"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Step 1: Auto-populate connectivity values ----------

@@ -31,6 +31,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/deploy_infra.log"
+exec > >(tee "$LOG_FILE") 2>&1
 INPUTS_FILE="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 NAMESPACE="trilio-openstack"
@@ -105,6 +107,7 @@ echo " Namespace  : $NAMESPACE"
 echo " Inputs     : $INPUTS_FILE"
 echo " MySQL      : ${MYSQL_INSTANCES} instances, ${MYSQL_STORAGE_SIZE} storage"
 echo " RabbitMQ   : ${RABBIT_REPLICAS} replicas, ${RABBIT_STORAGE_SIZE} storage"
+echo " Log        : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Skip if already deployed ----------

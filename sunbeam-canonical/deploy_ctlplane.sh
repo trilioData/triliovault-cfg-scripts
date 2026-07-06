@@ -24,6 +24,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/deploy_ctlplane.log"
+exec > >(tee "$LOG_FILE") 2>&1
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NAMESPACE="trilio-openstack"
@@ -79,6 +81,7 @@ echo " T4O Sunbeam — Deploy Control Plane"
 echo " Inputs    : $CTLPLANE_INPUTS"
 echo " Namespace : $NAMESPACE"
 echo " WLM image : $WLM_IMAGE"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Verify infra is deployed ----------

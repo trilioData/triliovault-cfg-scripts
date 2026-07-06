@@ -33,6 +33,10 @@ MANUAL_INPUTS="${SCRIPT_DIR}/manual_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NODE_COUNT_OVERRIDE=""
 HELM_VERSION_OVERRIDE=""
+LOG_FILE="${SCRIPT_DIR}/prepare.log"
+exec > >(tee "$LOG_FILE") 2>&1
+CTLPLANE_CHANGES=()
+DATAPLANE_CHANGES=()
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -68,6 +72,7 @@ PYEOF
 
 echo "=================================================="
 echo " T4O Sunbeam — Prepare Environment"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Step 1: Prerequisites ----------
@@ -162,6 +167,8 @@ with open('${DATAPLANE_INPUTS}', 'w') as f:
 
 print(f"Tag '{TAG}' and registry settings propagated to ctlplane and dataplane yamls.")
 PYEOF
+    CTLPLANE_CHANGES+=("images + registry auth")
+    DATAPLANE_CHANGES+=("images + registry auth")
 else
     warn "manual_inputs.yaml not found — skipping image tag propagation."
     warn "Fill image tags manually in ctlplane_inputs.yaml and dataplane_inputs.yaml."
@@ -304,6 +311,7 @@ with open('${CTLPLANE_INPUTS}', 'w') as f:
     f.write(content)
 print("ctlplane_inputs.yaml updated with auto-detected Keystone values.")
 PYEOF
+CTLPLANE_CHANGES+=("Keystone credentials")
 
 # ---------- Step 7: Generate service passwords ----------
 
@@ -343,12 +351,23 @@ if generated:
 else:
     print("All passwords already set — skipping.")
 PYEOF
+CTLPLANE_CHANGES+=("service passwords")
 
 # ---------- Summary ----------
 
 echo ""
 echo "=================================================="
 info "Preparation complete."
+echo ""
+echo "  Files written this run:"
+if [ ${#CTLPLANE_CHANGES[@]} -gt 0 ]; then
+    joined=$(IFS=', '; echo "${CTLPLANE_CHANGES[*]}")
+    echo "    ctlplane_inputs.yaml   — ${joined}"
+fi
+if [ ${#DATAPLANE_CHANGES[@]} -gt 0 ]; then
+    joined=$(IFS=', '; echo "${DATAPLANE_CHANGES[*]}")
+    echo "    dataplane_inputs.yaml  — ${joined}"
+fi
 echo ""
 echo "  Review before deploying (optional):"
 echo "    vi ctlplane_inputs.yaml    # images, node count, registry auth"

@@ -26,6 +26,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/uninstall_infra.log"
+exec > >(tee "$LOG_FILE") 2>&1
 NAMESPACE="trilio-openstack"
 AUTO_CONFIRM=false
 
@@ -46,6 +49,7 @@ done
 echo "=================================================="
 echo " TrilioVault Infrastructure — Uninstall"
 echo " Namespace : $NAMESPACE"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 echo ""
 warn "This will permanently delete MySQL and RabbitMQ data and all passwords."
