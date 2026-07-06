@@ -1,6 +1,6 @@
-FROM ghcr.io/canonical/horizon:2024.1
+FROM ghcr.io/canonical/horizon:2023.2
 # Uncomment below to use the latest edge image instead of stable:
-# FROM ghcr.io/canonical/horizon:2024.1-24.04_edge
+# FROM ghcr.io/canonical/horizon:2023.2-22.04_edge
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="sunbeam-canonical-trilio-horizon-plugin" \
@@ -15,7 +15,7 @@ LABEL name="sunbeam-canonical-trilio-horizon-plugin" \
 ##Install required packages
 ARG TRILIO_PIP_INDEX_URL="DEFAULT"
 RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
-RUN export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip3 install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps --break-system-packages
+RUN export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip3 install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
 RUN TRILIO_PKG=$(python3 -c "import trilio_dashboard, os; print(os.path.dirname(trilio_dashboard.__file__))") && cp ${TRILIO_PKG}/local/enabled/*.py /usr/lib/python3/dist-packages/openstack_dashboard/enabled/
 RUN TRILIO_PKG=$(python3 -c "import trilio_dashboard, os; print(os.path.dirname(trilio_dashboard.__file__))") && cp ${TRILIO_PKG}/templatetags/*.py /usr/lib/python3/dist-packages/openstack_dashboard/templatetags/
 
