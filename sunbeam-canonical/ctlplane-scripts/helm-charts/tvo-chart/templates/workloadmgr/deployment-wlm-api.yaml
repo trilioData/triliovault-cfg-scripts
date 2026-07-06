@@ -57,6 +57,7 @@ spec:
                 secretKeyRef:
                   name: trilio-openstack-secret
                   key: CloudAdminPassword
+            {{- include "tvo.caBundleEnv" . | nindent 12 }}
           volumeMounts:
             - name: wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
@@ -67,6 +68,7 @@ spec:
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: wlm-etc
           secret:
@@ -78,3 +80,4 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

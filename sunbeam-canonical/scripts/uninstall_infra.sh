@@ -125,6 +125,10 @@ kubectl delete deployment rabbitmq-cluster-operator     -n "$NAMESPACE" --ignore
 kubectl delete serviceaccount rabbitmq-cluster-operator -n "$NAMESPACE" --ignore-not-found
 kubectl delete clusterrole mysql-operator mysql-sidecar mysql-switchover --ignore-not-found
 kubectl delete clusterrolebinding mysql-operator-rolebinding             --ignore-not-found
+kubectl delete mutatingwebhookconfiguration \
+    cluster-operator-mutating-webhook-configuration --ignore-not-found
+kubectl delete validatingwebhookconfiguration \
+    cluster-operator-validating-webhook-configuration --ignore-not-found
 info "Operators removed."
 
 echo ""

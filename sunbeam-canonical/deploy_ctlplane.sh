@@ -181,6 +181,22 @@ prompt_value() {
 prompt_value KS_AUTH_URL   "Keystone auth URL"
 prompt_value KS_ADMIN_PASS "OpenStack admin password"
 
+# ---------- Step 2.5: CA bundle ----------
+
+CA_CERT_FILE="${SCRIPT_DIR}/sunbeam-ca.crt"
+CA_BUNDLE_CM=""
+if [ -f "$CA_CERT_FILE" ]; then
+    step "Step 2.5: Creating CA bundle ConfigMap from sunbeam-ca.crt..."
+    kubectl create configmap trilio-ca-bundle \
+        --from-file=ca.crt="${CA_CERT_FILE}" \
+        -n "$NAMESPACE" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    CA_BUNDLE_CM="trilio-ca-bundle"
+    info "CA bundle ConfigMap 'trilio-ca-bundle' created."
+else
+    info "sunbeam-ca.crt not found — no CA bundle. Run 'bash prepare.sh' to extract it."
+fi
+
 # ---------- Step 3: Write trilio-ctlplane-values.yaml ----------
 
 step "Step 3: Generating trilio-ctlplane-values.yaml..."
@@ -240,6 +256,9 @@ service:
     type:      NodePort
     port:      8784
     node_port: 30784
+
+tls:
+  ca_bundle_configmap: "${CA_BUNDLE_CM}"
 EOF
 
 info "Values written to: ${VALUES_FILE}"

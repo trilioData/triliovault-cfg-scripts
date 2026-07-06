@@ -51,6 +51,10 @@ spec:
             periodSeconds: 30
           resources:
             {{- toYaml .Values.pod.resources.datamover_api | nindent 12 }}
+          {{- if .Values.tls.ca_bundle_configmap }}
+          env:
+            {{- include "tvo.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: dmapi-etc
               mountPath: /etc/datamover/datamover.conf
@@ -58,6 +62,7 @@ spec:
               readOnly: true
             - name: dmapi-logs
               mountPath: /var/log/triliovault
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: dmapi-etc
           secret:
@@ -65,3 +70,4 @@ spec:
             defaultMode: 0444
         - name: dmapi-logs
           emptyDir: {}
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

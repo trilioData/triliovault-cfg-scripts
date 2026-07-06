@@ -141,6 +141,13 @@ pod:
         memory: "512Mi"
         cpu: "500m"
 
+## TLS
+## ca_bundle_configmap: name of a ConfigMap containing a 'ca.crt' key with the OpenStack CA chain.
+## Set automatically by deploy_ctlplane.sh when OS_CACERT is present in sunbeam openrc output.
+## Leave empty when OpenStack endpoints are HTTP (no TLS verification needed).
+tls:
+  ca_bundle_configmap: ""
+
 ## DMS (Dynamic Mount Service) S3/object-store config
 dms:
   s3vaultfuse:

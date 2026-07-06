@@ -233,21 +233,15 @@ curl -fsSL \
 # Also skip cert-manager resources (Certificate, Issuer) and the webhook configurations
 # that depend on them if cert-manager is not installed in the cluster.
 python3 - <<PYEOF
-import subprocess, yaml
+import yaml
 
 OLD_NS = 'rabbitmq-system'
 NEW_NS = '${NAMESPACE}'
 
-certmgr = subprocess.run(
-    ['kubectl', 'get', 'crd', 'certificates.cert-manager.io'],
-    capture_output=True, timeout=10
-).returncode == 0
-
-if not certmgr:
-    print("cert-manager not found — skipping Certificate, Issuer and webhook resources.")
-
-CERTMGR_KINDS = {'Certificate', 'Issuer', 'ClusterIssuer'}
-WEBHOOK_KINDS  = {'MutatingWebhookConfiguration', 'ValidatingWebhookConfiguration'}
+# Skip cert-manager resources and admission webhooks — cert-manager is not deployed
+# alongside T4O on Sunbeam; the operator functions correctly without them.
+SKIP_KINDS = {'Namespace', 'Certificate', 'Issuer', 'ClusterIssuer',
+              'MutatingWebhookConfiguration', 'ValidatingWebhookConfiguration'}
 
 def replace_ns(obj):
     if isinstance(obj, dict):
@@ -267,10 +261,7 @@ patched = []
 for doc in docs:
     if doc is None:
         continue
-    kind = doc.get('kind', '')
-    if kind == 'Namespace':
-        continue
-    if not certmgr and kind in CERTMGR_KINDS | WEBHOOK_KINDS:
+    if doc.get('kind', '') in SKIP_KINDS:
         continue
     replace_ns(doc)
     patched.append(doc)
@@ -278,6 +269,12 @@ for doc in docs:
 with open('${RABBIT_OP_MANIFEST}', 'w') as f:
     yaml.dump_all(patched, f, default_flow_style=False)
 PYEOF
+
+# Remove stale webhook configurations from any prior partial run
+kubectl delete mutatingwebhookconfiguration \
+    cluster-operator-mutating-webhook-configuration --ignore-not-found 2>/dev/null || true
+kubectl delete validatingwebhookconfiguration \
+    cluster-operator-validating-webhook-configuration --ignore-not-found 2>/dev/null || true
 
 kubectl apply -f "$RABBIT_OP_MANIFEST"
 rm -f "$RABBIT_OP_MANIFEST"
