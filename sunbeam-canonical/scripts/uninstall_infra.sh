@@ -26,6 +26,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/uninstall_infra.log"
+exec > >(tee "$LOG_FILE") 2>&1
 NAMESPACE="trilio-openstack"
 AUTO_CONFIRM=false
 
@@ -46,6 +49,7 @@ done
 echo "=================================================="
 echo " TrilioVault Infrastructure — Uninstall"
 echo " Namespace : $NAMESPACE"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 echo ""
 warn "This will permanently delete MySQL and RabbitMQ data and all passwords."
@@ -111,6 +115,21 @@ for SECRET in trilio-infra-passwords trilio-mysql-root trilio-mysql-wlm trilio-m
     kubectl delete secret "$SECRET" -n "$NAMESPACE" --ignore-not-found
 done
 info "Credential secrets removed."
+
+# ---------- Remove Operators ----------
+
+step "Removing MySQL and RabbitMQ operators..."
+kubectl delete deployment mysql-operator                -n "$NAMESPACE" --ignore-not-found
+kubectl delete serviceaccount mysql-operator-sa         -n "$NAMESPACE" --ignore-not-found
+kubectl delete deployment rabbitmq-cluster-operator     -n "$NAMESPACE" --ignore-not-found
+kubectl delete serviceaccount rabbitmq-cluster-operator -n "$NAMESPACE" --ignore-not-found
+kubectl delete clusterrole mysql-operator mysql-sidecar mysql-switchover --ignore-not-found
+kubectl delete clusterrolebinding mysql-operator-rolebinding             --ignore-not-found
+kubectl delete mutatingwebhookconfiguration \
+    cluster-operator-mutating-webhook-configuration --ignore-not-found
+kubectl delete validatingwebhookconfiguration \
+    cluster-operator-validating-webhook-configuration --ignore-not-found
+info "Operators removed."
 
 echo ""
 echo "=================================================="

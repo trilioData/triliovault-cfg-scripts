@@ -8,8 +8,9 @@
 #   4. Install Ansible + community.docker collection
 #   5. Create trilio-openstack namespace and label control plane nodes
 #   6. Auto-detect Keystone URL and admin credentials; update ctlplane_inputs.yaml
-#   7. Generate service passwords (32-char alphanumeric, skip if already set)
-#   8. Print next steps
+#   7. Extract OpenStack CA certificate (from sunbeam openrc or Juju self-signed-certificates)
+#   8. Generate service passwords (32-char alphanumeric, skip if already set)
+#   9. Print next steps
 #
 # After this script completes:
 #   1. Run: bash deploy_infra.sh     — deploy MySQL + RabbitMQ
@@ -33,6 +34,10 @@ MANUAL_INPUTS="${SCRIPT_DIR}/manual_inputs.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NODE_COUNT_OVERRIDE=""
 HELM_VERSION_OVERRIDE=""
+LOG_FILE="${SCRIPT_DIR}/prepare.log"
+exec > >(tee "$LOG_FILE") 2>&1
+CTLPLANE_CHANGES=()
+DATAPLANE_CHANGES=()
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -68,13 +73,17 @@ PYEOF
 
 echo "=================================================="
 echo " T4O Sunbeam — Prepare Environment"
+echo " Log       : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Step 1: Prerequisites ----------
 
 step "Step 1: Checking prerequisites..."
 command -v kubectl &>/dev/null || err "kubectl not found. Run: microk8s config > ~/.kube/config"
-python3 -c "import yaml" 2>/dev/null || err "python3-yaml not found. Run: sudo apt install python3-yaml"
+python3 -c "import yaml" 2>/dev/null || {
+    info "python3-yaml not found. Installing..."
+    sudo apt install -y python3-yaml
+}
 [ -f "$CTLPLANE_INPUTS" ]  || err "ctlplane_inputs.yaml not found: $CTLPLANE_INPUTS"
 [ -f "$DATAPLANE_INPUTS" ] || err "dataplane_inputs.yaml not found: $DATAPLANE_INPUTS"
 info "Prerequisites OK."
@@ -159,6 +168,8 @@ with open('${DATAPLANE_INPUTS}', 'w') as f:
 
 print(f"Tag '{TAG}' and registry settings propagated to ctlplane and dataplane yamls.")
 PYEOF
+    CTLPLANE_CHANGES+=("images + registry auth")
+    DATAPLANE_CHANGES+=("images + registry auth")
 else
     warn "manual_inputs.yaml not found — skipping image tag propagation."
     warn "Fill image tags manually in ctlplane_inputs.yaml and dataplane_inputs.yaml."
@@ -220,11 +231,11 @@ if [ "$ALREADY_COUNT" -ge "$NODE_COUNT" ]; then
     info "${ALREADY_COUNT} node(s) already labeled triliovault-control-plane=enabled — skipping."
 else
     NEEDED=$(( NODE_COUNT - ALREADY_COUNT ))
-    info "${ALREADY_COUNT} already labeled. Labeling ${NEEDED} more from openstack-control-plane=enabled pool..."
+    info "${ALREADY_COUNT} already labeled. Labeling ${NEEDED} more from available nodes..."
 
-    CANDIDATES=$(kubectl get nodes -l openstack-control-plane=enabled \
+    CANDIDATES=$(kubectl get nodes \
         -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
-    [ -n "$CANDIDATES" ] || err "No nodes with openstack-control-plane=enabled. Is Sunbeam running?"
+    [ -n "$CANDIDATES" ] || err "No nodes found in the cluster. Is kubectl configured correctly?"
 
     LABELED=0
     for NODE in $CANDIDATES; do
@@ -301,12 +312,114 @@ with open('${CTLPLANE_INPUTS}', 'w') as f:
     f.write(content)
 print("ctlplane_inputs.yaml updated with auto-detected Keystone values.")
 PYEOF
+CTLPLANE_CHANGES+=("Keystone credentials")
 
-# ---------- Step 7: Generate service passwords ----------
+# ---------- Step 7: Extract CA certificate ----------
 
-step "Step 7: Generating service passwords (skip if already set)..."
+step "Step 7: Extracting OpenStack CA certificate..."
 
-python3 - <<PYEOF
+CA_CERT_FILE="${SCRIPT_DIR}/sunbeam-ca.crt"
+CA_EXTRACTED=false
+
+# Try 1: OS_CACERT already set by sunbeam openrc (evaluated above in Step 6)
+if [ -n "${OS_CACERT:-}" ] && [ -f "${OS_CACERT}" ]; then
+    cp "${OS_CACERT}" "${CA_CERT_FILE}"
+    info "CA cert copied from OS_CACERT: ${OS_CACERT}"
+    CA_EXTRACTED=true
+fi
+
+# Try 2: juju run self-signed-certificates get-ca-certificate
+if [ "$CA_EXTRACTED" = false ] && command -v juju &>/dev/null; then
+    info "OS_CACERT not found — querying Juju for CA certificate..."
+
+    CERT_UNIT=$(juju status self-signed-certificates --format json 2>/dev/null | \
+        python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    units = d['applications']['self-signed-certificates']['units']
+    print(next(iter(units)))
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+
+    if [ -n "$CERT_UNIT" ]; then
+        CA_PEM=$(juju run "${CERT_UNIT}" get-ca-certificate --format json 2>/dev/null | \
+            python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    cert = list(d.values())[0]['results']['ca-certificate']
+    print(cert.strip())
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+
+        if [ -n "$CA_PEM" ]; then
+            printf '%s\n' "$CA_PEM" > "${CA_CERT_FILE}"
+            info "CA cert extracted from Juju unit '${CERT_UNIT}'."
+            CA_EXTRACTED=true
+        else
+            warn "Juju action returned no certificate from '${CERT_UNIT}'."
+        fi
+    else
+        warn "Juju application 'self-signed-certificates' not found."
+    fi
+fi
+
+if [ "$CA_EXTRACTED" = true ]; then
+    info "CA certificate saved: ${CA_CERT_FILE}"
+    CTLPLANE_CHANGES+=("CA cert file")
+else
+    # No CA cert — check if Keystone is using TLS on any interface.
+    # If TLS is detected we must fail: T4O services cannot verify Keystone without the chain.
+    TLS_DETECTED=false
+    TLS_SOURCE=""
+
+    # Check 1: URL scheme of the detected auth URL
+    if [[ "${OS_AUTH_URL:-}" == https://* ]]; then
+        TLS_DETECTED=true
+        TLS_SOURCE="${OS_AUTH_URL}"
+    fi
+
+    # Check 2: TLS probe on all three Keystone service interfaces in the openstack namespace
+    if [ "$TLS_DETECTED" = false ]; then
+        for SVC in keystone-public keystone-internal keystone-admin; do
+            SVC_IP=$(kubectl -n openstack get service "$SVC" \
+                -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+            SVC_PORT=$(kubectl -n openstack get service "$SVC" \
+                -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "")
+            [ -z "$SVC_IP" ] || [ -z "$SVC_PORT" ] && continue
+            if openssl s_client -connect "${SVC_IP}:${SVC_PORT}" \
+                    -timeout 3 </dev/null 2>/dev/null | grep -q "BEGIN CERTIFICATE"; then
+                TLS_DETECTED=true
+                TLS_SOURCE="${SVC} (${SVC_IP}:${SVC_PORT})"
+                break
+            fi
+        done
+    fi
+
+    if [ "$TLS_DETECTED" = true ]; then
+        err "Keystone is using TLS (detected on: ${TLS_SOURCE}) but no CA certificate was found.
+     T4O services cannot connect to Keystone without the CA chain.
+
+     Fix options:
+       1. Ensure 'sunbeam openrc' exports OS_CACERT pointing to a valid CA file, then re-run.
+       2. Run the Juju action manually and save the output:
+            juju run self-signed-certificates/<unit> get-ca-certificate
+            (paste the PEM block to: ${CA_CERT_FILE})
+       3. Re-run: bash prepare.sh"
+    else
+        warn "CA certificate not found and no TLS detected on Keystone interfaces."
+        warn "If Keystone later requires TLS, place the CA cert at: ${CA_CERT_FILE} and re-run."
+    fi
+fi
+
+# ---------- Step 8: Generate service passwords ----------
+
+step "Step 8: Generating service passwords (skip if already set)..."
+
+PW_OUT=$(python3 - <<PYEOF
 import secrets, string, re
 
 with open('${CTLPLANE_INPUTS}') as f:
@@ -340,12 +453,27 @@ if generated:
 else:
     print("All passwords already set — skipping.")
 PYEOF
+)
+echo "$PW_OUT"
+if [[ "$PW_OUT" == Generated* ]]; then
+    CTLPLANE_CHANGES+=("service passwords → ${CTLPLANE_INPUTS}")
+fi
 
 # ---------- Summary ----------
 
 echo ""
 echo "=================================================="
 info "Preparation complete."
+echo ""
+echo "  Files written this run:"
+if [ ${#CTLPLANE_CHANGES[@]} -gt 0 ]; then
+    joined=$(IFS=', '; echo "${CTLPLANE_CHANGES[*]}")
+    echo "    ${CTLPLANE_INPUTS}   — ${joined}"
+fi
+if [ ${#DATAPLANE_CHANGES[@]} -gt 0 ]; then
+    joined=$(IFS=', '; echo "${DATAPLANE_CHANGES[*]}")
+    echo "    ${DATAPLANE_INPUTS}  — ${joined}"
+fi
 echo ""
 echo "  Review before deploying (optional):"
 echo "    vi ctlplane_inputs.yaml    # images, node count, registry auth"

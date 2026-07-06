@@ -39,6 +39,7 @@ spec:
             - name: wlm-bin
               mountPath: /tmp/bin
               readOnly: true
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: wlm-etc
           secret:
@@ -48,3 +49,4 @@ spec:
           configMap:
             name: triliovault-wlm-bin
             defaultMode: 0555
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

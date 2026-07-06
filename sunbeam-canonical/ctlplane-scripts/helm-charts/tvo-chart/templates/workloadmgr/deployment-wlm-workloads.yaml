@@ -30,6 +30,10 @@ spec:
           image: {{ .Values.images.triliovault_wlm }}
           imagePullPolicy: {{ .Values.images.pull_policy }}
           command: ["/bin/bash", "-c", "workloadmgr-workloads --config-file /etc/triliovault-wlm/triliovault-wlm.conf"]
+          {{- if .Values.tls.ca_bundle_configmap }}
+          env:
+            {{- include "tvo.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
@@ -40,6 +44,7 @@ spec:
             - name: trilio-mounts
               mountPath: {{ .Values.common.vault_data_dir }}
               mountPropagation: Bidirectional
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: wlm-etc
           secret:
@@ -51,3 +56,4 @@ spec:
           hostPath:
             path: {{ .Values.common.vault_data_dir }}
             type: DirectoryOrCreate
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

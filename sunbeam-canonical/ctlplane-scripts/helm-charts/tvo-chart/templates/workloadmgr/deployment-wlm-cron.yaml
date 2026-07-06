@@ -41,6 +41,10 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          {{- if .Values.tls.ca_bundle_configmap }}
+          env:
+            {{- include "tvo.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: wlm-etc
               mountPath: /etc/triliovault-wlm/triliovault-wlm.conf
@@ -48,6 +52,7 @@ spec:
               readOnly: true
             - name: trilio-logs
               mountPath: /var/log/triliovault
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: wlm-etc
           secret:
@@ -55,3 +60,4 @@ spec:
             defaultMode: 0444
         - name: trilio-logs
           emptyDir: {}
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

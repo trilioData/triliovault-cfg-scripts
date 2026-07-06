@@ -46,12 +46,15 @@ spec:
               value: Default
             - name: OS_IDENTITY_API_VERSION
               value: "3"
+            {{- include "tvo.caBundleEnv" . | nindent 12 }}
           volumeMounts:
             - name: wlm-bin
               mountPath: /tmp/bin
               readOnly: true
+            {{- include "tvo.caBundleVolumeMount" . | nindent 12 }}
       volumes:
         - name: wlm-bin
           configMap:
             name: triliovault-wlm-bin
             defaultMode: 0555
+        {{- include "tvo.caBundleVolume" . | nindent 8 }}

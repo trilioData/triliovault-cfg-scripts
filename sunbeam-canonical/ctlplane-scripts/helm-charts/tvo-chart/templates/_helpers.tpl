@@ -18,3 +18,33 @@ imagePullSecrets:
   - name: trilio-registry-secret
 {{- end }}
 {{- end }}
+
+{{/*
+CA bundle volume — only rendered when tls.ca_bundle_configmap is set.
+Mount path: /etc/ssl/certs/sunbeam-ca.crt (ca.crt key from the ConfigMap).
+*/}}
+{{- define "tvo.caBundleVolume" -}}
+{{- if .Values.tls.ca_bundle_configmap }}
+- name: ca-bundle
+  configMap:
+    name: {{ .Values.tls.ca_bundle_configmap }}
+{{- end }}
+{{- end }}
+
+{{- define "tvo.caBundleVolumeMount" -}}
+{{- if .Values.tls.ca_bundle_configmap }}
+- name: ca-bundle
+  mountPath: /etc/ssl/certs/sunbeam-ca.crt
+  subPath: ca.crt
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "tvo.caBundleEnv" -}}
+{{- if .Values.tls.ca_bundle_configmap }}
+- name: OS_CACERT
+  value: /etc/ssl/certs/sunbeam-ca.crt
+- name: REQUESTS_CA_BUNDLE
+  value: /etc/ssl/certs/sunbeam-ca.crt
+{{- end }}
+{{- end }}

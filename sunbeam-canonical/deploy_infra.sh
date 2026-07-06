@@ -8,8 +8,8 @@
 # To reinstall from scratch: bash scripts/uninstall_infra.sh
 #
 # What this script does:
-#   1. Installs MySQL Operator for Kubernetes (mysql-operator namespace)
-#   2. Installs RabbitMQ Cluster Operator (rabbitmq-system namespace)
+#   1. Installs MySQL Operator for Kubernetes (trilio-openstack namespace)
+#   2. Installs RabbitMQ Cluster Operator (trilio-openstack namespace)
 #   3. Reads passwords from ctlplane_inputs.yaml and syncs to trilio-infra-passwords secret
 #   4. Deploys MySQL InnoDB Cluster (trilio-mysql)
 #   5. Initializes MySQL: creates workloadmgr and dmapi databases and users
@@ -31,12 +31,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/deploy_infra.log"
+exec > >(tee "$LOG_FILE") 2>&1
 INPUTS_FILE="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 NAMESPACE="trilio-openstack"
 PASSWORDS_SECRET="trilio-infra-passwords"
-MYSQL_OPERATOR_NS="mysql-operator"
-RABBITMQ_OPERATOR_NS="rabbitmq-system"
+MYSQL_OPERATOR_NS="$NAMESPACE"
+RABBITMQ_OPERATOR_NS="$NAMESPACE"
+APPLY_CHANGES=false
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -44,9 +47,34 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
 
+# Poll CRD + pod status every 10 s until the resource reaches Ready condition.
+wait_with_pod_status() {
+    local resource="$1" namespace="$2" timeout_secs="$3"
+    local deadline=$((SECONDS + timeout_secs))
+
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        echo ""
+        echo -e "${GREEN}[$(date '+%H:%M:%S')]${NC} ${resource}:"
+        kubectl get "$resource" -n "$namespace" 2>/dev/null || true
+        echo ""
+        echo "  Pods in ${namespace}:"
+        kubectl get pods -n "$namespace" 2>/dev/null || true
+
+        if kubectl wait "$resource" -n "$namespace" \
+                --for=condition=Ready --timeout=1s &>/dev/null 2>&1; then
+            return 0
+        fi
+
+        sleep 10
+    done
+
+    err "Timed out waiting for ${resource} to be Ready after $((timeout_secs / 60)) minutes"
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --inputs-file)  INPUTS_FILE="$2"; shift 2 ;;
+        --inputs-file)   INPUTS_FILE="$2"; shift 2 ;;
+        --apply-changes) APPLY_CHANGES=true; shift ;;
         -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
@@ -105,14 +133,35 @@ echo " Namespace  : $NAMESPACE"
 echo " Inputs     : $INPUTS_FILE"
 echo " MySQL      : ${MYSQL_INSTANCES} instances, ${MYSQL_STORAGE_SIZE} storage"
 echo " RabbitMQ   : ${RABBIT_REPLICAS} replicas, ${RABBIT_STORAGE_SIZE} storage"
+echo " Log        : $LOG_FILE"
 echo "=================================================="
 
 # ---------- Skip if already deployed ----------
 
 MYSQL_EXISTS=false
 RABBIT_EXISTS=false
+MYSQL_OPERATOR_EXISTS=false
+RABBIT_OPERATOR_EXISTS=false
 
 step "Checking existing infrastructure..."
+
+if kubectl get deployment mysql-operator -n "$NAMESPACE" &>/dev/null; then
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "MySQL Operator already deployed — re-applying updated manifest (--apply-changes)."
+    else
+        info "MySQL Operator already deployed in $NAMESPACE — skipping Step 1."
+        MYSQL_OPERATOR_EXISTS=true
+    fi
+fi
+
+if kubectl get deployment rabbitmq-cluster-operator -n "$NAMESPACE" &>/dev/null; then
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "RabbitMQ Cluster Operator already deployed — re-applying updated manifest (--apply-changes)."
+    else
+        info "RabbitMQ Cluster Operator already deployed in $NAMESPACE — skipping Step 2."
+        RABBIT_OPERATOR_EXISTS=true
+    fi
+fi
 
 if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
     MYSQL_STATUS=$(kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" \
@@ -123,11 +172,15 @@ if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
 fi
 
 if kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null; then
-    RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
-        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
-    warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping."
-    warn "To reinstall: bash scripts/uninstall_infra.sh"
-    RABBIT_EXISTS=true
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "RabbitMQ cluster already exists — re-applying manifest (--apply-changes)."
+    else
+        RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
+            -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
+        warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping."
+        warn "To reinstall: bash scripts/uninstall_infra.sh"
+        RABBIT_EXISTS=true
+    fi
 fi
 
 if [ "$MYSQL_EXISTS" = true ] && [ "$RABBIT_EXISTS" = true ]; then
@@ -137,12 +190,69 @@ fi
 
 # ---------- Step 1: Install MySQL Operator ----------
 
-step "Step 1: Installing MySQL Operator for Kubernetes..."
+if [ "$MYSQL_OPERATOR_EXISTS" = false ]; then
+step "Step 1: Installing MySQL Operator for Kubernetes in namespace $NAMESPACE..."
+
+MYSQL_OP_MANIFEST=$(mktemp)
+curl -fsSL \
+    https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-operator.yaml \
+    -o "$MYSQL_OP_MANIFEST"
+
+# Patch the manifest: move all resources into $NAMESPACE, skip Namespace object creation
+# (trilio-openstack already exists), and inject MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN=cluster.local
+# into the Deployment — required on MicroK8s/Sunbeam because DNS-based cluster domain
+# auto-detection fails with "Name or service not known".
+python3 - <<PYEOF
+import yaml
+
+OLD_NS = 'mysql-operator'
+NEW_NS = '${NAMESPACE}'
+
+def replace_ns(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == 'namespace' and v == OLD_NS:
+                obj[k] = NEW_NS
+            else:
+                replace_ns(v)
+        # Also fix env vars like MYSQL_OPERATOR_ENABLED_NAMESPACES whose
+        # value is the old namespace — the patching above only catches
+        # keys literally named 'namespace', not env var value fields.
+        if obj.get('name', '').endswith(('_NAMESPACE', '_NAMESPACES')) and \
+                obj.get('value') == OLD_NS:
+            obj['value'] = NEW_NS
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_ns(item)
+
+with open('${MYSQL_OP_MANIFEST}') as f:
+    docs = list(yaml.safe_load_all(f))
+
+patched = []
+for doc in docs:
+    if doc is None:
+        continue
+    if doc.get('kind') == 'Namespace':
+        continue
+    replace_ns(doc)
+    if doc.get('kind') == 'Deployment' and \
+       doc.get('metadata', {}).get('name') == 'mysql-operator':
+        containers = doc['spec']['template']['spec']['containers']
+        for c in containers:
+            env = c.setdefault('env', [])
+            if not any(e.get('name') == 'MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN' for e in env):
+                env.append({'name': 'MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN',
+                            'value': 'cluster.local'})
+    patched.append(doc)
+
+with open('${MYSQL_OP_MANIFEST}', 'w') as f:
+    yaml.dump_all(patched, f, default_flow_style=False)
+PYEOF
 
 kubectl apply -f \
     https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-crds.yaml
-kubectl apply -f \
-    https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-operator.yaml
+kubectl apply -f "$MYSQL_OP_MANIFEST"
+rm -f "$MYSQL_OP_MANIFEST"
 
 info "Waiting for MySQL Operator to be ready..."
 kubectl wait deployment/mysql-operator \
@@ -151,13 +261,79 @@ kubectl wait deployment/mysql-operator \
     --timeout=300s
 
 info "MySQL Operator ready."
+fi  # MYSQL_OPERATOR_EXISTS
 
 # ---------- Step 2: Install RabbitMQ Cluster Operator ----------
 
-step "Step 2: Installing RabbitMQ Cluster Operator..."
+if [ "$RABBIT_OPERATOR_EXISTS" = false ]; then
+step "Step 2: Installing RabbitMQ Cluster Operator in namespace $NAMESPACE..."
 
-kubectl apply -f \
-    "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"
+RABBIT_OP_MANIFEST=$(mktemp)
+curl -fsSL \
+    "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml" \
+    -o "$RABBIT_OP_MANIFEST"
+
+# Patch the manifest: move all resources into $NAMESPACE, skip Namespace object creation.
+# Also skip cert-manager resources (Certificate, Issuer) and the webhook configurations
+# that depend on them if cert-manager is not installed in the cluster.
+python3 - <<PYEOF
+import yaml
+
+OLD_NS = 'rabbitmq-system'
+NEW_NS = '${NAMESPACE}'
+
+# Skip cert-manager resources and admission webhooks — cert-manager is not deployed
+# alongside T4O on Sunbeam; the operator functions correctly without them.
+SKIP_KINDS = {'Namespace', 'Certificate', 'Issuer', 'ClusterIssuer',
+              'MutatingWebhookConfiguration', 'ValidatingWebhookConfiguration'}
+
+def replace_ns(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == 'namespace' and v == OLD_NS:
+                obj[k] = NEW_NS
+            else:
+                replace_ns(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_ns(item)
+
+with open('${RABBIT_OP_MANIFEST}') as f:
+    docs = list(yaml.safe_load_all(f))
+
+patched = []
+for doc in docs:
+    if doc is None:
+        continue
+    if doc.get('kind', '') in SKIP_KINDS:
+        continue
+    replace_ns(doc)
+    patched.append(doc)
+
+with open('${RABBIT_OP_MANIFEST}', 'w') as f:
+    yaml.dump_all(patched, f, default_flow_style=False)
+PYEOF
+
+# The operator binary unconditionally starts a webhook server (controller-runtime
+# hardcodes it) and reads TLS certs from /tmp/k8s-webhook-server/serving-certs/.
+# cert-manager is not available on Sunbeam, so generate a self-signed cert instead.
+# The MutatingWebhookConfiguration is skipped (in SKIP_KINDS) so the API server
+# never calls the webhook — the cert just needs to exist for the process to start.
+info "Generating self-signed TLS cert for RabbitMQ operator webhook server..."
+openssl req -x509 -newkey rsa:2048 \
+    -keyout /tmp/rabbit-webhook-tls.key \
+    -out    /tmp/rabbit-webhook-tls.crt \
+    -days 3650 -nodes \
+    -subj "/CN=rabbitmq-cluster-operator-webhook" 2>/dev/null
+kubectl create secret tls cluster-operator-webhook-server-cert \
+    -n "$NAMESPACE" \
+    --cert=/tmp/rabbit-webhook-tls.crt \
+    --key=/tmp/rabbit-webhook-tls.key \
+    --dry-run=client -o yaml | kubectl apply -f -
+rm -f /tmp/rabbit-webhook-tls.key /tmp/rabbit-webhook-tls.crt
+
+kubectl apply -f "$RABBIT_OP_MANIFEST"
+rm -f "$RABBIT_OP_MANIFEST"
 
 info "Waiting for RabbitMQ Cluster Operator to be ready..."
 kubectl wait deployment/rabbitmq-cluster-operator \
@@ -166,6 +342,7 @@ kubectl wait deployment/rabbitmq-cluster-operator \
     --timeout=300s
 
 info "RabbitMQ Cluster Operator ready."
+fi  # RABBIT_OPERATOR_EXISTS
 
 # ---------- Step 3: Read passwords from ctlplane_inputs.yaml ----------
 
@@ -193,39 +370,44 @@ RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
 [ -z "$MYSQL_ROOT_PASSWORD" ] && \
     err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
 
-# Sync to K8s secret so upgrade scripts and external tooling can still read from it
-kubectl delete secret "$PASSWORDS_SECRET" -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic "$PASSWORDS_SECRET" \
+apply_secret() {
+    local name="$1"; shift
+    if [ "$APPLY_CHANGES" = true ]; then
+        kubectl create secret generic "$name" "$@" --dry-run=client -o yaml | kubectl apply -f -
+        info "Secret '$name' applied."
+    elif ! kubectl get secret "$name" -n "$NAMESPACE" &>/dev/null; then
+        kubectl create secret generic "$name" "$@"
+        info "Secret '$name' created."
+    else
+        info "Secret '$name' already exists — skipping."
+    fi
+}
+
+apply_secret "$PASSWORDS_SECRET" \
     -n "$NAMESPACE" \
     --from-literal=mysql-root-password="${MYSQL_ROOT_PASSWORD}" \
     --from-literal=mysql-wlm-password="${MYSQL_WLM_PASSWORD}" \
     --from-literal=mysql-dmapi-password="${MYSQL_DMAPI_PASSWORD}" \
     --from-literal=rabbitmq-wlm-password="${RABBITMQ_WLM_PASSWORD}" \
     --from-literal=rabbitmq-dmapi-password="${RABBITMQ_DMAPI_PASSWORD}"
-info "Passwords synced to secret '$PASSWORDS_SECRET'."
 
 # ---------- Step 4: Create MySQL credential secrets ----------
 
 step "Step 4: Creating MySQL credential secrets..."
 
-kubectl delete secret trilio-mysql-root -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-root \
+apply_secret trilio-mysql-root \
     -n "$NAMESPACE" \
     --from-literal=rootUser=root \
     --from-literal=rootPassword="${MYSQL_ROOT_PASSWORD}" \
     --from-literal=rootHost='%'
 
-kubectl delete secret trilio-mysql-wlm -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-wlm \
+apply_secret trilio-mysql-wlm \
     -n "$NAMESPACE" \
     --from-literal=password="${MYSQL_WLM_PASSWORD}"
 
-kubectl delete secret trilio-mysql-dmapi -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-dmapi \
+apply_secret trilio-mysql-dmapi \
     -n "$NAMESPACE" \
     --from-literal=password="${MYSQL_DMAPI_PASSWORD}"
-
-info "MySQL credential secrets created."
 
 # ---------- Step 5: Deploy MySQL InnoDB Cluster ----------
 
@@ -265,11 +447,8 @@ $([ -n "$MYSQL_IMAGE" ] && echo "    image: ${MYSQL_IMAGE}" || true)
 $([ -n "$MYSQL_ROUTER_IMAGE" ] && printf "  routerSpec:\n    podSpec:\n      image: %s" "${MYSQL_ROUTER_IMAGE}" || true)
 CREOF
 
-    info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes)..."
-    kubectl wait innodbcluster/trilio-mysql \
-        -n "$NAMESPACE" \
-        --for=condition=Ready \
-        --timeout=20m
+    info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes, polling every 10s)..."
+    wait_with_pod_status innodbcluster/trilio-mysql "$NAMESPACE" 1200
     info "MySQL InnoDB Cluster ready."
 
     # ---------- Step 6: Initialize MySQL ----------
@@ -319,6 +498,14 @@ fi
 
 # ---------- Step 7: Deploy RabbitMQ Cluster ----------
 
+# Always clean up stale webhook configs before creating a RabbitmqCluster.
+# These are left behind by partial or pre-fix deploys and block RabbitmqCluster
+# creation with an "operation not permitted" webhook dial error.
+kubectl delete mutatingwebhookconfiguration \
+    cluster-operator-mutating-webhook-configuration --ignore-not-found 2>/dev/null || true
+kubectl delete validatingwebhookconfiguration \
+    cluster-operator-validating-webhook-configuration --ignore-not-found 2>/dev/null || true
+
 if [ "$RABBIT_EXISTS" = false ]; then
     step "Step 7: Deploying RabbitMQ cluster (${RABBIT_REPLICAS} replicas)..."
 
@@ -352,19 +539,20 @@ $([ -n "$RABBIT_STORAGE_CLASS" ] && echo "    storageClassName: ${RABBIT_STORAGE
     limits:
       cpu: "${RABBIT_CPU_LIM}"
       memory: "${RABBIT_MEM_LIM}"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: triliovault-control-plane
+            operator: In
+            values:
+            - "enabled"
 ${RABBIT_CONF_BLOCK}
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            nodeSelector:
-              triliovault-control-plane: "enabled"
 CREOF
 
-    info "Waiting for RabbitMQ cluster to be ready (3-5 minutes)..."
-    kubectl wait rabbitmqcluster/trilio-rabbitmq \
-        -n "$NAMESPACE" --for=condition=Ready --timeout=10m
+    info "Waiting for RabbitMQ cluster to be ready (3-5 minutes, polling every 10s)..."
+    wait_with_pod_status rabbitmqcluster/trilio-rabbitmq "$NAMESPACE" 600
     info "RabbitMQ cluster ready."
 
     # ---------- Step 8: Initialize RabbitMQ ----------
