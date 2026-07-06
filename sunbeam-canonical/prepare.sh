@@ -419,7 +419,7 @@ fi
 
 step "Step 8: Generating service passwords (skip if already set)..."
 
-python3 - <<PYEOF
+PW_OUT=$(python3 - <<PYEOF
 import secrets, string, re
 
 with open('${CTLPLANE_INPUTS}') as f:
@@ -453,7 +453,11 @@ if generated:
 else:
     print("All passwords already set — skipping.")
 PYEOF
-CTLPLANE_CHANGES+=("service passwords")
+)
+echo "$PW_OUT"
+if [[ "$PW_OUT" == Generated* ]]; then
+    CTLPLANE_CHANGES+=("service passwords → ${CTLPLANE_INPUTS}")
+fi
 
 # ---------- Summary ----------
 
@@ -464,11 +468,11 @@ echo ""
 echo "  Files written this run:"
 if [ ${#CTLPLANE_CHANGES[@]} -gt 0 ]; then
     joined=$(IFS=', '; echo "${CTLPLANE_CHANGES[*]}")
-    echo "    ctlplane_inputs.yaml   — ${joined}"
+    echo "    ${CTLPLANE_INPUTS}   — ${joined}"
 fi
 if [ ${#DATAPLANE_CHANGES[@]} -gt 0 ]; then
     joined=$(IFS=', '; echo "${DATAPLANE_CHANGES[*]}")
-    echo "    dataplane_inputs.yaml  — ${joined}"
+    echo "    ${DATAPLANE_INPUTS}  — ${joined}"
 fi
 echo ""
 echo "  Review before deploying (optional):"
