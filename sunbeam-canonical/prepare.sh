@@ -74,7 +74,10 @@ echo "=================================================="
 
 step "Step 1: Checking prerequisites..."
 command -v kubectl &>/dev/null || err "kubectl not found. Run: microk8s config > ~/.kube/config"
-python3 -c "import yaml" 2>/dev/null || err "python3-yaml not found. Run: sudo apt install python3-yaml"
+python3 -c "import yaml" 2>/dev/null || {
+    info "python3-yaml not found. Installing..."
+    sudo apt install -y python3-yaml
+}
 [ -f "$CTLPLANE_INPUTS" ]  || err "ctlplane_inputs.yaml not found: $CTLPLANE_INPUTS"
 [ -f "$DATAPLANE_INPUTS" ] || err "dataplane_inputs.yaml not found: $DATAPLANE_INPUTS"
 info "Prerequisites OK."
@@ -220,11 +223,11 @@ if [ "$ALREADY_COUNT" -ge "$NODE_COUNT" ]; then
     info "${ALREADY_COUNT} node(s) already labeled triliovault-control-plane=enabled — skipping."
 else
     NEEDED=$(( NODE_COUNT - ALREADY_COUNT ))
-    info "${ALREADY_COUNT} already labeled. Labeling ${NEEDED} more from openstack-control-plane=enabled pool..."
+    info "${ALREADY_COUNT} already labeled. Labeling ${NEEDED} more from available nodes..."
 
-    CANDIDATES=$(kubectl get nodes -l openstack-control-plane=enabled \
+    CANDIDATES=$(kubectl get nodes \
         -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
-    [ -n "$CANDIDATES" ] || err "No nodes with openstack-control-plane=enabled. Is Sunbeam running?"
+    [ -n "$CANDIDATES" ] || err "No nodes found in the cluster. Is kubectl configured correctly?"
 
     LABELED=0
     for NODE in $CANDIDATES; do
