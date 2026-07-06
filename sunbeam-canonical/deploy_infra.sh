@@ -304,28 +304,29 @@ for doc in docs:
     if doc.get('kind', '') in SKIP_KINDS:
         continue
     replace_ns(doc)
-    # Remove the webhook TLS cert volume/mount from the operator Deployment.
-    # The Certificate resource that would create 'cluster-operator-webhook-server-cert'
-    # is skipped (no cert-manager on Sunbeam), so the pod can never start with that
-    # volume. The MutatingWebhookConfiguration is also skipped, so the API server
-    # never calls this webhook — the operator works fine without it.
-    if doc.get('kind') == 'Deployment' and \
-            doc.get('metadata', {}).get('name') == 'rabbitmq-cluster-operator':
-        pod_spec = doc.get('spec', {}).get('template', {}).get('spec', {})
-        pod_spec['volumes'] = [
-            v for v in pod_spec.get('volumes', [])
-            if v.get('name') != 'cluster-operator-webhook-certs'
-        ]
-        for c in pod_spec.get('containers', []):
-            c['volumeMounts'] = [
-                vm for vm in c.get('volumeMounts', [])
-                if vm.get('name') != 'cluster-operator-webhook-certs'
-            ]
     patched.append(doc)
 
 with open('${RABBIT_OP_MANIFEST}', 'w') as f:
     yaml.dump_all(patched, f, default_flow_style=False)
 PYEOF
+
+# The operator binary unconditionally starts a webhook server (controller-runtime
+# hardcodes it) and reads TLS certs from /tmp/k8s-webhook-server/serving-certs/.
+# cert-manager is not available on Sunbeam, so generate a self-signed cert instead.
+# The MutatingWebhookConfiguration is skipped (in SKIP_KINDS) so the API server
+# never calls the webhook — the cert just needs to exist for the process to start.
+info "Generating self-signed TLS cert for RabbitMQ operator webhook server..."
+openssl req -x509 -newkey rsa:2048 \
+    -keyout /tmp/rabbit-webhook-tls.key \
+    -out    /tmp/rabbit-webhook-tls.crt \
+    -days 3650 -nodes \
+    -subj "/CN=rabbitmq-cluster-operator-webhook" 2>/dev/null
+kubectl create secret tls cluster-operator-webhook-server-cert \
+    -n "$NAMESPACE" \
+    --cert=/tmp/rabbit-webhook-tls.crt \
+    --key=/tmp/rabbit-webhook-tls.key \
+    --dry-run=client -o yaml | kubectl apply -f -
+rm -f /tmp/rabbit-webhook-tls.key /tmp/rabbit-webhook-tls.crt
 
 kubectl apply -f "$RABBIT_OP_MANIFEST"
 rm -f "$RABBIT_OP_MANIFEST"
