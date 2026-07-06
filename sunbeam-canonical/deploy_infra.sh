@@ -39,6 +39,7 @@ NAMESPACE="trilio-openstack"
 PASSWORDS_SECRET="trilio-infra-passwords"
 MYSQL_OPERATOR_NS="$NAMESPACE"
 RABBITMQ_OPERATOR_NS="$NAMESPACE"
+APPLY_CHANGES=false
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -72,7 +73,8 @@ wait_with_pod_status() {
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --inputs-file)  INPUTS_FILE="$2"; shift 2 ;;
+        --inputs-file)   INPUTS_FILE="$2"; shift 2 ;;
+        --apply-changes) APPLY_CHANGES=true; shift ;;
         -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
@@ -144,13 +146,21 @@ RABBIT_OPERATOR_EXISTS=false
 step "Checking existing infrastructure..."
 
 if kubectl get deployment mysql-operator -n "$NAMESPACE" &>/dev/null; then
-    info "MySQL Operator already deployed in $NAMESPACE — skipping Step 1."
-    MYSQL_OPERATOR_EXISTS=true
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "MySQL Operator already deployed — re-applying updated manifest (--apply-changes)."
+    else
+        info "MySQL Operator already deployed in $NAMESPACE — skipping Step 1."
+        MYSQL_OPERATOR_EXISTS=true
+    fi
 fi
 
 if kubectl get deployment rabbitmq-cluster-operator -n "$NAMESPACE" &>/dev/null; then
-    info "RabbitMQ Cluster Operator already deployed in $NAMESPACE — skipping Step 2."
-    RABBIT_OPERATOR_EXISTS=true
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "RabbitMQ Cluster Operator already deployed — re-applying updated manifest (--apply-changes)."
+    else
+        info "RabbitMQ Cluster Operator already deployed in $NAMESPACE — skipping Step 2."
+        RABBIT_OPERATOR_EXISTS=true
+    fi
 fi
 
 if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
@@ -317,12 +327,6 @@ with open('${RABBIT_OP_MANIFEST}', 'w') as f:
     yaml.dump_all(patched, f, default_flow_style=False)
 PYEOF
 
-# Remove stale webhook configurations from any prior partial run
-kubectl delete mutatingwebhookconfiguration \
-    cluster-operator-mutating-webhook-configuration --ignore-not-found 2>/dev/null || true
-kubectl delete validatingwebhookconfiguration \
-    cluster-operator-validating-webhook-configuration --ignore-not-found 2>/dev/null || true
-
 kubectl apply -f "$RABBIT_OP_MANIFEST"
 rm -f "$RABBIT_OP_MANIFEST"
 
@@ -483,6 +487,14 @@ JOBEOF
 fi
 
 # ---------- Step 7: Deploy RabbitMQ Cluster ----------
+
+# Always clean up stale webhook configs before creating a RabbitmqCluster.
+# These are left behind by partial or pre-fix deploys and block RabbitmqCluster
+# creation with an "operation not permitted" webhook dial error.
+kubectl delete mutatingwebhookconfiguration \
+    cluster-operator-mutating-webhook-configuration --ignore-not-found 2>/dev/null || true
+kubectl delete validatingwebhookconfiguration \
+    cluster-operator-validating-webhook-configuration --ignore-not-found 2>/dev/null || true
 
 if [ "$RABBIT_EXISTS" = false ]; then
     step "Step 7: Deploying RabbitMQ cluster (${RABBIT_REPLICAS} replicas)..."
