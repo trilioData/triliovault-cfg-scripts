@@ -116,6 +116,17 @@ for SECRET in trilio-infra-passwords trilio-mysql-root trilio-mysql-wlm trilio-m
 done
 info "Credential secrets removed."
 
+# ---------- Remove Operators ----------
+
+step "Removing MySQL and RabbitMQ operators..."
+kubectl delete deployment mysql-operator                -n "$NAMESPACE" --ignore-not-found
+kubectl delete serviceaccount mysql-operator-sa         -n "$NAMESPACE" --ignore-not-found
+kubectl delete deployment rabbitmq-cluster-operator     -n "$NAMESPACE" --ignore-not-found
+kubectl delete serviceaccount rabbitmq-cluster-operator -n "$NAMESPACE" --ignore-not-found
+kubectl delete clusterrole mysql-operator mysql-sidecar mysql-switchover --ignore-not-found
+kubectl delete clusterrolebinding mysql-operator-rolebinding             --ignore-not-found
+info "Operators removed."
+
 echo ""
 echo "=================================================="
 info "Infrastructure uninstall complete."

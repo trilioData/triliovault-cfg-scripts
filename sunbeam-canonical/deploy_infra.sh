@@ -8,8 +8,8 @@
 # To reinstall from scratch: bash scripts/uninstall_infra.sh
 #
 # What this script does:
-#   1. Installs MySQL Operator for Kubernetes (mysql-operator namespace)
-#   2. Installs RabbitMQ Cluster Operator (rabbitmq-system namespace)
+#   1. Installs MySQL Operator for Kubernetes (trilio-openstack namespace)
+#   2. Installs RabbitMQ Cluster Operator (trilio-openstack namespace)
 #   3. Reads passwords from ctlplane_inputs.yaml and syncs to trilio-infra-passwords secret
 #   4. Deploys MySQL InnoDB Cluster (trilio-mysql)
 #   5. Initializes MySQL: creates workloadmgr and dmapi databases and users
@@ -37,8 +37,8 @@ INPUTS_FILE="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 NAMESPACE="trilio-openstack"
 PASSWORDS_SECRET="trilio-infra-passwords"
-MYSQL_OPERATOR_NS="mysql-operator"
-RABBITMQ_OPERATOR_NS="rabbitmq-system"
+MYSQL_OPERATOR_NS="$NAMESPACE"
+RABBITMQ_OPERATOR_NS="$NAMESPACE"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -140,12 +140,62 @@ fi
 
 # ---------- Step 1: Install MySQL Operator ----------
 
-step "Step 1: Installing MySQL Operator for Kubernetes..."
+step "Step 1: Installing MySQL Operator for Kubernetes in namespace $NAMESPACE..."
+
+MYSQL_OP_MANIFEST=$(mktemp)
+curl -fsSL \
+    https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-operator.yaml \
+    -o "$MYSQL_OP_MANIFEST"
+
+# Patch the manifest: move all resources into $NAMESPACE, skip Namespace object creation
+# (trilio-openstack already exists), and inject MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN=cluster.local
+# into the Deployment — required on MicroK8s/Sunbeam because DNS-based cluster domain
+# auto-detection fails with "Name or service not known".
+python3 - <<PYEOF
+import yaml
+
+OLD_NS = 'mysql-operator'
+NEW_NS = '${NAMESPACE}'
+
+def replace_ns(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == 'namespace' and v == OLD_NS:
+                obj[k] = NEW_NS
+            else:
+                replace_ns(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_ns(item)
+
+with open('${MYSQL_OP_MANIFEST}') as f:
+    docs = list(yaml.safe_load_all(f))
+
+patched = []
+for doc in docs:
+    if doc is None:
+        continue
+    if doc.get('kind') == 'Namespace':
+        continue
+    replace_ns(doc)
+    if doc.get('kind') == 'Deployment' and \
+       doc.get('metadata', {}).get('name') == 'mysql-operator':
+        containers = doc['spec']['template']['spec']['containers']
+        for c in containers:
+            env = c.setdefault('env', [])
+            if not any(e.get('name') == 'MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN' for e in env):
+                env.append({'name': 'MYSQL_OPERATOR_K8S_CLUSTER_DOMAIN',
+                            'value': 'cluster.local'})
+    patched.append(doc)
+
+with open('${MYSQL_OP_MANIFEST}', 'w') as f:
+    yaml.dump_all(patched, f, default_flow_style=False)
+PYEOF
 
 kubectl apply -f \
     https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-crds.yaml
-kubectl apply -f \
-    https://raw.githubusercontent.com/mysql/mysql-operator/trunk/deploy/deploy-operator.yaml
+kubectl apply -f "$MYSQL_OP_MANIFEST"
+rm -f "$MYSQL_OP_MANIFEST"
 
 info "Waiting for MySQL Operator to be ready..."
 kubectl wait deployment/mysql-operator \
@@ -157,10 +207,49 @@ info "MySQL Operator ready."
 
 # ---------- Step 2: Install RabbitMQ Cluster Operator ----------
 
-step "Step 2: Installing RabbitMQ Cluster Operator..."
+step "Step 2: Installing RabbitMQ Cluster Operator in namespace $NAMESPACE..."
 
-kubectl apply -f \
-    "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"
+RABBIT_OP_MANIFEST=$(mktemp)
+curl -fsSL \
+    "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml" \
+    -o "$RABBIT_OP_MANIFEST"
+
+# Patch the manifest: move all resources into $NAMESPACE, skip Namespace object creation.
+python3 - <<PYEOF
+import yaml
+
+OLD_NS = 'rabbitmq-system'
+NEW_NS = '${NAMESPACE}'
+
+def replace_ns(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == 'namespace' and v == OLD_NS:
+                obj[k] = NEW_NS
+            else:
+                replace_ns(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_ns(item)
+
+with open('${RABBIT_OP_MANIFEST}') as f:
+    docs = list(yaml.safe_load_all(f))
+
+patched = []
+for doc in docs:
+    if doc is None:
+        continue
+    if doc.get('kind') == 'Namespace':
+        continue
+    replace_ns(doc)
+    patched.append(doc)
+
+with open('${RABBIT_OP_MANIFEST}', 'w') as f:
+    yaml.dump_all(patched, f, default_flow_style=False)
+PYEOF
+
+kubectl apply -f "$RABBIT_OP_MANIFEST"
+rm -f "$RABBIT_OP_MANIFEST"
 
 info "Waiting for RabbitMQ Cluster Operator to be ready..."
 kubectl wait deployment/rabbitmq-cluster-operator \
