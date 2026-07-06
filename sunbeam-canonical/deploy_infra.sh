@@ -172,11 +172,15 @@ if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
 fi
 
 if kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null; then
-    RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
-        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
-    warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping."
-    warn "To reinstall: bash scripts/uninstall_infra.sh"
-    RABBIT_EXISTS=true
+    if [ "$APPLY_CHANGES" = true ]; then
+        info "RabbitMQ cluster already exists — re-applying manifest (--apply-changes)."
+    else
+        RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
+            -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
+        warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping."
+        warn "To reinstall: bash scripts/uninstall_infra.sh"
+        RABBIT_EXISTS=true
+    fi
 fi
 
 if [ "$MYSQL_EXISTS" = true ] && [ "$RABBIT_EXISTS" = true ]; then
@@ -366,39 +370,44 @@ RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
 [ -z "$MYSQL_ROOT_PASSWORD" ] && \
     err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
 
-# Sync to K8s secret so upgrade scripts and external tooling can still read from it
-kubectl delete secret "$PASSWORDS_SECRET" -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic "$PASSWORDS_SECRET" \
+apply_secret() {
+    local name="$1"; shift
+    if [ "$APPLY_CHANGES" = true ]; then
+        kubectl create secret generic "$name" "$@" --dry-run=client -o yaml | kubectl apply -f -
+        info "Secret '$name' applied."
+    elif ! kubectl get secret "$name" -n "$NAMESPACE" &>/dev/null; then
+        kubectl create secret generic "$name" "$@"
+        info "Secret '$name' created."
+    else
+        info "Secret '$name' already exists — skipping."
+    fi
+}
+
+apply_secret "$PASSWORDS_SECRET" \
     -n "$NAMESPACE" \
     --from-literal=mysql-root-password="${MYSQL_ROOT_PASSWORD}" \
     --from-literal=mysql-wlm-password="${MYSQL_WLM_PASSWORD}" \
     --from-literal=mysql-dmapi-password="${MYSQL_DMAPI_PASSWORD}" \
     --from-literal=rabbitmq-wlm-password="${RABBITMQ_WLM_PASSWORD}" \
     --from-literal=rabbitmq-dmapi-password="${RABBITMQ_DMAPI_PASSWORD}"
-info "Passwords synced to secret '$PASSWORDS_SECRET'."
 
 # ---------- Step 4: Create MySQL credential secrets ----------
 
 step "Step 4: Creating MySQL credential secrets..."
 
-kubectl delete secret trilio-mysql-root -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-root \
+apply_secret trilio-mysql-root \
     -n "$NAMESPACE" \
     --from-literal=rootUser=root \
     --from-literal=rootPassword="${MYSQL_ROOT_PASSWORD}" \
     --from-literal=rootHost='%'
 
-kubectl delete secret trilio-mysql-wlm -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-wlm \
+apply_secret trilio-mysql-wlm \
     -n "$NAMESPACE" \
     --from-literal=password="${MYSQL_WLM_PASSWORD}"
 
-kubectl delete secret trilio-mysql-dmapi -n "$NAMESPACE" --ignore-not-found
-kubectl create secret generic trilio-mysql-dmapi \
+apply_secret trilio-mysql-dmapi \
     -n "$NAMESPACE" \
     --from-literal=password="${MYSQL_DMAPI_PASSWORD}"
-
-info "MySQL credential secrets created."
 
 # ---------- Step 5: Deploy MySQL InnoDB Cluster ----------
 
@@ -530,14 +539,16 @@ $([ -n "$RABBIT_STORAGE_CLASS" ] && echo "    storageClassName: ${RABBIT_STORAGE
     limits:
       cpu: "${RABBIT_CPU_LIM}"
       memory: "${RABBIT_MEM_LIM}"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: triliovault-control-plane
+            operator: In
+            values:
+            - "enabled"
 ${RABBIT_CONF_BLOCK}
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            nodeSelector:
-              triliovault-control-plane: "enabled"
 CREOF
 
     info "Waiting for RabbitMQ cluster to be ready (3-5 minutes, polling every 10s)..."
