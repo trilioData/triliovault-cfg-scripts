@@ -1,25 +1,27 @@
-FROM quay.io/openstack.kolla/horizon:2024.1-ubuntu-jammy
+FROM registry.jujucharms.com/charm/ctws3sfxf7i2j12tvw9obbkcq9q0576tozepc/horizon-image
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
-LABEL name="sunbeam/trilio-horizon-plugin" \
+LABEL name="sunbeam-canonical-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="6.2.0" \
+      version="6.2.1" \
       release="6.2" \
+      type="source" \
       summary="TrilioVault Horizon Plugin" \
       description="TrilioVault Horizon Plugin for Sunbeam Canonical OpenStack"
 
+##Install required packages
 ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
+RUN export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip3 install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps --break-system-packages
+RUN TRILIO_PKG=$(python3 -c "import trilio_dashboard, os; print(os.path.dirname(trilio_dashboard.__file__))") && cp ${TRILIO_PKG}/local/enabled/*.py /usr/lib/python3/dist-packages/openstack_dashboard/enabled/
+RUN TRILIO_PKG=$(python3 -c "import trilio_dashboard, os; print(os.path.dirname(trilio_dashboard.__file__))") && cp ${TRILIO_PKG}/templatetags/*.py /usr/lib/python3/dist-packages/openstack_dashboard/templatetags/
 
-RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
-    pip install --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
+#
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py collectstatic --clear --noinput
+RUN /usr/bin/python3 /usr/share/openstack-dashboard/manage.py compress --force
 
-RUN cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/local/enabled/*.py \
-       /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/enabled/ \
-    && cp /var/lib/kolla/venv/lib/python3.10/site-packages/trilio_dashboard/templatetags/*.py \
-       /var/lib/kolla/venv/lib/python3.10/site-packages/openstack_dashboard/templatetags/
 
-RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py collectstatic --clear --noinput
-RUN /var/lib/kolla/venv/bin/python /var/lib/kolla/venv/bin/manage.py compress --force
-
-RUN mkdir -p /licenses
+## Add license
+RUN mkdir /licenses
 COPY licensing.txt /licenses
