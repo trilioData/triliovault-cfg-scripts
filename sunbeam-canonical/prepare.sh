@@ -136,9 +136,10 @@ with open('${CTLPLANE_INPUTS}') as f:
     ctl = f.read()
 
 if TAG:
-    ctl = set_str_if_empty(ctl, 'triliovault_wlm',           f'{REGISTRY}/trilio/trilio-wlm-canonical:{TAG}',           '  ')
-    ctl = set_str_if_empty(ctl, 'triliovault_datamover_api', f'{REGISTRY}/trilio/trilio-datamover-api-canonical:{TAG}', '  ')
-    ctl = set_str_if_empty(ctl, 'triliovault_dms',           f'{REGISTRY}/trilio/trilio-dms-canonical:{TAG}',           '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_wlm',           f'{REGISTRY}/trilio/trilio-wlm-canonical:{TAG}',                '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_datamover_api', f'{REGISTRY}/trilio/trilio-datamover-api-canonical:{TAG}',     '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_dms',           f'{REGISTRY}/trilio/trilio-dms-canonical:{TAG}',                '  ')
+    ctl = set_str_if_empty(ctl, 'triliovault_horizon',       f'{REGISTRY}/trilio/trilio-horizon-plugin-sunbeam:{TAG}',      '  ')
 
 ctl = set_bool(ctl,           'login_enabled', REG_LOGIN, '  ')
 if REG_URL:  ctl = set_str_if_empty(ctl, 'url',      REG_URL,  '  ')

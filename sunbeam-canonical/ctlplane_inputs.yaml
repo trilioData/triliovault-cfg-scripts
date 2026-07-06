@@ -36,6 +36,7 @@ images:
   triliovault_wlm:           ""
   triliovault_datamover_api: ""
   triliovault_dms:           ""
+  triliovault_horizon:       ""
   pull_policy: "IfNotPresent"
 
 # ---------------------------------------------------------------------------
