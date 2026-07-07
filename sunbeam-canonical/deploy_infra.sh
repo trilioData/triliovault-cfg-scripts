@@ -530,24 +530,27 @@ if [ "$RABBIT_EXISTS" = false ]; then
     [ -z "$RABBIT_IMAGE" ] && RABBIT_IMAGE="rabbitmq:3.13-management" && \
         info "Using fallback RabbitMQ image: $RABBIT_IMAGE"
 
-    # cluster_formation.target_cluster_size_hint is required in RabbitMQ 3.13+ —
-    # the operator startup probe checks /api/health/checks/reached-target-cluster-size
-    # which returns 404 unless this setting is present in rabbitmq.conf.
-    # Always inject it explicitly; do not rely on operator auto-injection.
-    RABBIT_CONF_LINES="cluster_formation.target_cluster_size_hint = ${RABBIT_REPLICAS}"
+    RABBIT_CONF_LINES=""
     if [ "$RABBIT_QUORUM" = "true" ] || [ "$RABBIT_QUORUM" = "True" ]; then
-        RABBIT_CONF_LINES="${RABBIT_CONF_LINES}
-default_queue_type = quorum
+        RABBIT_CONF_LINES="default_queue_type = quorum
 raft.wal_max_size_bytes = 134217728
 raft.segment_max_entries = 32768"
     fi
     if [ -n "$RABBIT_EXTRA_CONFIG" ]; then
-        RABBIT_CONF_LINES="${RABBIT_CONF_LINES}
+        if [ -n "$RABBIT_CONF_LINES" ]; then
+            RABBIT_CONF_LINES="${RABBIT_CONF_LINES}
 ${RABBIT_EXTRA_CONFIG}"
+        else
+            RABBIT_CONF_LINES="${RABBIT_EXTRA_CONFIG}"
+        fi
     fi
-    RABBIT_CONF_BLOCK="  rabbitmq:
+    if [ -n "$RABBIT_CONF_LINES" ]; then
+        RABBIT_CONF_BLOCK="  rabbitmq:
     additionalConfig: |
 $(echo "${RABBIT_CONF_LINES}" | sed 's/^/      /')"
+    else
+        RABBIT_CONF_BLOCK=""
+    fi
 
     kubectl apply -f - <<CREOF
 apiVersion: rabbitmq.com/v1beta1
