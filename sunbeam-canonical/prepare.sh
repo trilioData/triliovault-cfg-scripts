@@ -18,9 +18,11 @@
 #   3. Run: bash deploy_dataplane.sh — deploy T4O data plane
 #
 # Usage:
-#   bash prepare.sh [--node-count N] [--helm-version X.Y.Z]
+#   bash prepare.sh --mode install|upgrade [--node-count N] [--helm-version X.Y.Z]
 #
 # Options:
+#   --mode           install: generate passwords and back up passwords.yaml before writing
+#                    upgrade: skip password generation; existing passwords.yaml is preserved
 #   --node-count     Override node_count from ctlplane_inputs.yaml
 #   --helm-version   Override helm_version from ctlplane_inputs.yaml
 #   -h, --help       Show this help and exit
@@ -32,9 +34,11 @@ CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
 DATAPLANE_INPUTS="${SCRIPT_DIR}/dataplane_inputs.yaml"
 MANUAL_INPUTS="${SCRIPT_DIR}/manual_inputs.yaml"
 PASSWORDS_FILE="${SCRIPT_DIR}/passwords.yaml"
+BACKUP_DIR="${SCRIPT_DIR}/backup"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NODE_COUNT_OVERRIDE=""
 HELM_VERSION_OVERRIDE=""
+MODE="install"
 LOG_FILE="${SCRIPT_DIR}/prepare.log"
 exec > >(tee "$LOG_FILE") 2>&1
 CTLPLANE_CHANGES=()
@@ -48,9 +52,13 @@ step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --mode)
+            [[ "$2" == "install" || "$2" == "upgrade" ]] || \
+                err "--mode must be 'install' or 'upgrade'"
+            MODE="$2"; shift 2 ;;
         --node-count)    NODE_COUNT_OVERRIDE="$2"; shift 2 ;;
         --helm-version)  HELM_VERSION_OVERRIDE="$2"; shift 2 ;;
-        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        -h|--help) sed -n '2,30p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
 done
@@ -417,11 +425,28 @@ else
     fi
 fi
 
-# ---------- Step 8: Generate service passwords ----------
+# ---------- Step 8: Manage service passwords ----------
 
-step "Step 8: Generating service passwords in passwords.yaml (skip if already set)..."
+step "Step 8: Managing service passwords (mode: ${MODE})..."
 
-PW_OUT=$(python3 - <<PYEOF
+if [ "$MODE" = "upgrade" ]; then
+    if [ -f "$PASSWORDS_FILE" ]; then
+        info "Upgrade mode — password generation skipped. Existing passwords.yaml preserved."
+    else
+        warn "Upgrade mode but passwords.yaml not found. Run with --mode install to generate passwords."
+    fi
+else
+    # install mode: backup existing passwords.yaml, then generate any missing passwords
+
+    if [ -f "$PASSWORDS_FILE" ]; then
+        mkdir -p "$BACKUP_DIR"
+        TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+        BACKUP_FILE="${BACKUP_DIR}/passwords_${TIMESTAMP}.yaml"
+        cp "$PASSWORDS_FILE" "$BACKUP_FILE"
+        info "Password backup saved: $BACKUP_FILE"
+    fi
+
+    PW_OUT=$(python3 - <<PYEOF
 import secrets, string, re, os, yaml
 
 PASSWORDS_FILE = '${PASSWORDS_FILE}'
@@ -508,10 +533,11 @@ if generated:
 else:
     print("All passwords already set -- skipping.")
 PYEOF
-)
-echo "$PW_OUT"
-if [[ "$PW_OUT" == Generated* || "$PW_OUT" == Migrated* ]]; then
-    CTLPLANE_CHANGES+=("service passwords -> ${PASSWORDS_FILE}")
+    )
+    echo "$PW_OUT"
+    if [[ "$PW_OUT" == Generated* || "$PW_OUT" == Migrated* ]]; then
+        CTLPLANE_CHANGES+=("service passwords -> ${PASSWORDS_FILE}")
+    fi
 fi
 
 # ---------- Summary ----------
