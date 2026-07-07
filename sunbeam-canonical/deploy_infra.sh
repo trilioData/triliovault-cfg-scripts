@@ -49,7 +49,7 @@ step()  { echo ""; echo -e "${GREEN}==>${NC} $*"; }
 
 # Poll CRD + pod status every 10 s until the resource reaches Ready condition.
 wait_with_pod_status() {
-    local resource="$1" namespace="$2" timeout_secs="$3"
+    local resource="$1" namespace="$2" timeout_secs="$3" ready_condition="${4:-condition=Ready}"
     local deadline=$((SECONDS + timeout_secs))
 
     while [ "$SECONDS" -lt "$deadline" ]; do
@@ -61,7 +61,7 @@ wait_with_pod_status() {
         kubectl get pods -n "$namespace" 2>/dev/null || true
 
         if kubectl wait "$resource" -n "$namespace" \
-                --for=condition=Ready --timeout=1s &>/dev/null 2>&1; then
+                --for="$ready_condition" --timeout=1s &>/dev/null 2>&1; then
             return 0
         fi
 
@@ -448,7 +448,8 @@ $([ -n "$MYSQL_ROUTER_IMAGE" ] && printf "  routerSpec:\n    podSpec:\n      ima
 CREOF
 
     info "Waiting for MySQL InnoDB Cluster to be ready (8-12 minutes, polling every 10s)..."
-    wait_with_pod_status innodbcluster/trilio-mysql "$NAMESPACE" 1200
+    wait_with_pod_status innodbcluster/trilio-mysql "$NAMESPACE" 1200 \
+        'jsonpath={.status.cluster.status}=ONLINE'
     info "MySQL InnoDB Cluster ready."
 
     # ---------- Step 6: Initialize MySQL ----------
