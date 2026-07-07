@@ -22,9 +22,11 @@
 #   - kubectl configured against the MicroK8s cluster
 #
 # Usage:
-#   bash deploy_infra.sh [--inputs-file infra_inputs.yaml]
+#   bash deploy_infra.sh --mode install|upgrade [--inputs-file infra_inputs.yaml]
 #
 # Options:
+#   --mode          install: deploy missing resources; verify all pods and clusters Running at end
+#                   upgrade: re-apply operator manifests and force-update K8s secrets; skip cluster CRs
 #   --inputs-file   Path to infra_inputs.yaml (default: same dir as this script)
 #   -h, --help      Show this help and exit
 
@@ -40,7 +42,7 @@ NAMESPACE="trilio-openstack"
 PASSWORDS_SECRET="trilio-infra-passwords"
 MYSQL_OPERATOR_NS="$NAMESPACE"
 RABBITMQ_OPERATOR_NS="$NAMESPACE"
-APPLY_CHANGES=false
+MODE=""
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
@@ -74,12 +76,20 @@ wait_with_pod_status() {
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --inputs-file)   INPUTS_FILE="$2"; shift 2 ;;
-        --apply-changes) APPLY_CHANGES=true; shift ;;
-        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        --mode)
+            [[ "$2" == "install" || "$2" == "upgrade" ]] || \
+                err "--mode must be 'install' or 'upgrade'"
+            MODE="$2"; shift 2 ;;
+        --inputs-file) INPUTS_FILE="$2"; shift 2 ;;
+        -h|--help) sed -n '2,32p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *) err "Unknown argument: $1" ;;
     esac
 done
+
+if [ -z "$MODE" ]; then
+    sed -n '2,32p' "$0" | sed 's/^# \?//'
+    exit 1
+fi
 
 [ -f "$INPUTS_FILE" ] || err "infra_inputs.yaml not found: $INPUTS_FILE"
 
@@ -147,8 +157,8 @@ RABBIT_OPERATOR_EXISTS=false
 step "Checking existing infrastructure..."
 
 if kubectl get deployment mysql-operator -n "$NAMESPACE" &>/dev/null; then
-    if [ "$APPLY_CHANGES" = true ]; then
-        info "MySQL Operator already deployed — re-applying updated manifest (--apply-changes)."
+    if [ "$MODE" = "upgrade" ]; then
+        info "MySQL Operator already deployed — re-applying updated manifest (upgrade mode)."
     else
         info "MySQL Operator already deployed in $NAMESPACE — skipping Step 1."
         MYSQL_OPERATOR_EXISTS=true
@@ -156,8 +166,8 @@ if kubectl get deployment mysql-operator -n "$NAMESPACE" &>/dev/null; then
 fi
 
 if kubectl get deployment rabbitmq-cluster-operator -n "$NAMESPACE" &>/dev/null; then
-    if [ "$APPLY_CHANGES" = true ]; then
-        info "RabbitMQ Cluster Operator already deployed — re-applying updated manifest (--apply-changes)."
+    if [ "$MODE" = "upgrade" ]; then
+        info "RabbitMQ Cluster Operator already deployed — re-applying updated manifest (upgrade mode)."
     else
         info "RabbitMQ Cluster Operator already deployed in $NAMESPACE — skipping Step 2."
         RABBIT_OPERATOR_EXISTS=true
@@ -167,26 +177,23 @@ fi
 if kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null; then
     MYSQL_STATUS=$(kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" \
         -o jsonpath='{.status.cluster.status}' 2>/dev/null || echo "Unknown")
-    warn "MySQL InnoDB Cluster 'trilio-mysql' already exists (status: ${MYSQL_STATUS}) — skipping."
-    warn "To reinstall: bash scripts/uninstall_infra.sh"
+    if [ "$MODE" = "upgrade" ]; then
+        info "MySQL InnoDB Cluster already exists (status: ${MYSQL_STATUS}) — skipping cluster CR (upgrade mode)."
+    else
+        info "MySQL InnoDB Cluster already exists (status: ${MYSQL_STATUS}) — skipping."
+    fi
     MYSQL_EXISTS=true
 fi
 
 if kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null; then
-    if [ "$APPLY_CHANGES" = true ]; then
-        info "RabbitMQ cluster already exists — re-applying manifest (--apply-changes)."
+    RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
+        -o jsonpath='{.status.conditions[?(@.type=="AllReplicasReady")].status}' 2>/dev/null || echo "Unknown")
+    if [ "$MODE" = "upgrade" ]; then
+        info "RabbitMQ cluster already exists (AllReplicasReady: ${RABBIT_STATUS}) — skipping cluster CR (upgrade mode)."
     else
-        RABBIT_STATUS=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
-            -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
-        warn "RabbitMQ cluster 'trilio-rabbitmq' already exists (status: ${RABBIT_STATUS}) — skipping."
-        warn "To reinstall: bash scripts/uninstall_infra.sh"
-        RABBIT_EXISTS=true
+        info "RabbitMQ cluster already exists (AllReplicasReady: ${RABBIT_STATUS}) — skipping."
     fi
-fi
-
-if [ "$MYSQL_EXISTS" = true ] && [ "$RABBIT_EXISTS" = true ]; then
-    info "Both MySQL and RabbitMQ are already deployed — nothing to do."
-    exit 0
+    RABBIT_EXISTS=true
 fi
 
 # ---------- Step 1: Install MySQL Operator ----------
@@ -372,7 +379,7 @@ RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
 
 apply_secret() {
     local name="$1"; shift
-    if [ "$APPLY_CHANGES" = true ]; then
+    if [ "$MODE" = "upgrade" ]; then
         kubectl create secret generic "$name" "$@" --dry-run=client -o yaml | kubectl apply -f -
         info "Secret '$name' applied."
     elif ! kubectl get secret "$name" -n "$NAMESPACE" &>/dev/null; then
@@ -647,6 +654,46 @@ if ! kubectl get service trilio-rabbitmq-nodeport -n "$NAMESPACE" &>/dev/null; t
     info "RabbitMQ NodePort created: 30672 -> 5672"
 else
     info "RabbitMQ NodePort service already exists."
+fi
+
+# ---------- Verification (install mode) ----------
+
+if [ "$MODE" = "install" ]; then
+    step "Verifying infrastructure state..."
+    VERIFY_FAILED=false
+
+    MYSQL_STATUS=$(kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" \
+        -o jsonpath='{.status.cluster.status}' 2>/dev/null || echo "")
+    if [ "$MYSQL_STATUS" = "ONLINE" ]; then
+        info "MySQL InnoDB Cluster: ONLINE"
+    else
+        warn "MySQL InnoDB Cluster status: ${MYSQL_STATUS:-not found}"
+        VERIFY_FAILED=true
+    fi
+
+    RABBIT_READY=$(kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" \
+        -o jsonpath='{.status.conditions[?(@.type=="AllReplicasReady")].status}' 2>/dev/null || echo "")
+    if [ "$RABBIT_READY" = "True" ]; then
+        info "RabbitMQ Cluster: AllReplicasReady"
+    else
+        warn "RabbitMQ Cluster AllReplicasReady: ${RABBIT_READY:-unknown}"
+        VERIFY_FAILED=true
+    fi
+
+    NOT_RUNNING=$(kubectl get pods -n "$NAMESPACE" --no-headers 2>/dev/null \
+        | grep -v " Running " | grep -v "Completed" || true)
+    if [ -z "$NOT_RUNNING" ]; then
+        info "All pods in $NAMESPACE are Running."
+    else
+        warn "Pods not in Running state:"
+        echo "$NOT_RUNNING"
+        VERIFY_FAILED=true
+    fi
+
+    if [ "$VERIFY_FAILED" = true ]; then
+        err "Infrastructure verification failed. Check pod and cluster status above."
+    fi
+    info "Infrastructure verification passed."
 fi
 
 echo ""

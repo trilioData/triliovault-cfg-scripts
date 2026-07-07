@@ -38,7 +38,7 @@ BACKUP_DIR="${SCRIPT_DIR}/backup"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NODE_COUNT_OVERRIDE=""
 HELM_VERSION_OVERRIDE=""
-MODE="install"
+MODE=""
 LOG_FILE="${SCRIPT_DIR}/prepare.log"
 exec > >(tee "$LOG_FILE") 2>&1
 CTLPLANE_CHANGES=()
@@ -62,6 +62,11 @@ while [[ $# -gt 0 ]]; do
         *) err "Unknown argument: $1" ;;
     esac
 done
+
+if [ -z "$MODE" ]; then
+    sed -n '2,30p' "$0" | sed 's/^# \?//'
+    exit 1
+fi
 
 # ---------- Helper: read a value from ctlplane_inputs.yaml ----------
 
