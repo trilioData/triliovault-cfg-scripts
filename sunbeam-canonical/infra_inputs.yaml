@@ -79,7 +79,6 @@ rabbitmq:
 
   # Extra rabbitmq.conf lines appended to the cluster configuration.
   # cluster_formation.target_cluster_size_hint must match the replicas count above.
-  # Required by the RabbitMQ 3.13 operator startup probe — the probe calls
-  # /api/health/checks/reached-target-cluster-size which returns 404 if not set.
+  # Tells RabbitMQ to wait for all N nodes before declaring the cluster fully formed.
   additional_config: |
     cluster_formation.target_cluster_size_hint = 3

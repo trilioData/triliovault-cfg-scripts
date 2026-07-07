@@ -379,15 +379,8 @@ RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi_password")
 
 apply_secret() {
     local name="$1"; shift
-    if [ "$MODE" = "upgrade" ]; then
-        kubectl create secret generic "$name" "$@" --dry-run=client -o yaml | kubectl apply -f -
-        info "Secret '$name' applied."
-    elif ! kubectl get secret "$name" -n "$NAMESPACE" &>/dev/null; then
-        kubectl create secret generic "$name" "$@"
-        info "Secret '$name' created."
-    else
-        info "Secret '$name' already exists — skipping."
-    fi
+    kubectl create secret generic "$name" "$@" --dry-run=client -o yaml | kubectl apply -f -
+    info "Secret '$name' applied."
 }
 
 apply_secret "$PASSWORDS_SECRET" \
@@ -581,6 +574,21 @@ $([ -n "$RABBIT_STORAGE_CLASS" ] && echo "    storageClassName: ${RABBIT_STORAGE
             values:
             - "enabled"
 ${RABBIT_CONF_BLOCK}
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: rabbitmq
+              startupProbe:
+                tcpSocket:
+                  port: 5672
+                initialDelaySeconds: 10
+                timeoutSeconds: 5
+                periodSeconds: 10
+                successThreshold: 1
+                failureThreshold: 30
 CREOF
 
     info "Waiting for RabbitMQ cluster to be ready (3-5 minutes, polling every 10s)..."
