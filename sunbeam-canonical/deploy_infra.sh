@@ -35,6 +35,7 @@ LOG_FILE="${SCRIPT_DIR}/deploy_infra.log"
 exec > >(tee "$LOG_FILE") 2>&1
 INPUTS_FILE="${SCRIPT_DIR}/infra_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
+PASSWORDS_FILE="${SCRIPT_DIR}/passwords.yaml"
 NAMESPACE="trilio-openstack"
 PASSWORDS_SECRET="trilio-infra-passwords"
 MYSQL_OPERATOR_NS="$NAMESPACE"
@@ -114,10 +115,10 @@ RABBIT_REPLICAS=$(get_input "rabbitmq.replicas" "3")
 RABBIT_IMAGE=$(get_input "rabbitmq.image" "")
 RABBIT_STORAGE_CLASS=$(get_input "rabbitmq.storage.storage_class" "")
 RABBIT_STORAGE_SIZE=$(get_input "rabbitmq.storage.storage_size" "8Gi")
-RABBIT_CPU_REQ=$(get_input "rabbitmq.resources.requests.cpu" "100m")
-RABBIT_MEM_REQ=$(get_input "rabbitmq.resources.requests.memory" "256Mi")
+RABBIT_CPU_REQ=$(get_input "rabbitmq.resources.requests.cpu" "500m")
+RABBIT_MEM_REQ=$(get_input "rabbitmq.resources.requests.memory" "512Mi")
 RABBIT_CPU_LIM=$(get_input "rabbitmq.resources.limits.cpu" "500m")
-RABBIT_MEM_LIM=$(get_input "rabbitmq.resources.limits.memory" "1Gi")
+RABBIT_MEM_LIM=$(get_input "rabbitmq.resources.limits.memory" "512Mi")
 RABBIT_QUORUM=$(get_input "rabbitmq.quorum_queues.enabled" "false")
 RABBIT_EXTRA_CONFIG=$(python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
@@ -353,9 +354,8 @@ get_password() {
     python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
 try:
-    d = yaml.safe_load(open('${CTLPLANE_INPUTS}'))
-    val = (d.get('passwords') or {}).get('${key}') or ''
-    print(val)
+    d = yaml.safe_load(open('${PASSWORDS_FILE}')) or {}
+    print(str(d.get('${key}') or ''))
 except Exception:
     print('')
 PYEOF
@@ -368,7 +368,7 @@ RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm")
 RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
 
 [ -z "$MYSQL_ROOT_PASSWORD" ] && \
-    err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
+    err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."
 
 apply_secret() {
     local name="$1"; shift

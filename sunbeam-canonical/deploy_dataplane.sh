@@ -30,6 +30,7 @@ LOG_FILE="${SCRIPT_DIR}/deploy_dataplane.log"
 exec > >(tee "$LOG_FILE") 2>&1
 DATAPLANE_INPUTS="${SCRIPT_DIR}/dataplane_inputs.yaml"
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
+PASSWORDS_FILE="${SCRIPT_DIR}/passwords.yaml"
 DATAPLANE_SCRIPTS="${SCRIPT_DIR}/dataplane-scripts"
 INVENTORY="${SCRIPT_DIR}/inventory.ini"
 RESOLVED_VARS="${SCRIPT_DIR}/.dataplane_resolved.yml"
@@ -67,24 +68,23 @@ step "Step 1: Auto-populating connectivity from ctlplane_inputs.yaml and cluster
 kubectl get innodbcluster trilio-mysql -n "$NAMESPACE" &>/dev/null || \
     err "MySQL cluster not found. Run 'bash deploy_infra.sh' first."
 
-get_ctlplane_password() {
+get_password() {
     local key="$1"
     python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
 try:
-    d = yaml.safe_load(open('${CTLPLANE_INPUTS}'))
-    val = (d.get('passwords') or {}).get('${key}') or ''
-    print(val)
+    d = yaml.safe_load(open('${PASSWORDS_FILE}')) or {}
+    print(str(d.get('${key}') or ''))
 except Exception:
     print('')
 PYEOF
 }
 
-DMAPI_RABBIT_PASSWORD=$(get_ctlplane_password "rabbitmq_dmapi")
-DMAPI_DB_PASSWORD=$(get_ctlplane_password "mysql_dmapi")
+DMAPI_RABBIT_PASSWORD=$(get_password "rabbitmq_dmapi")
+DMAPI_DB_PASSWORD=$(get_password "mysql_dmapi")
 
 [ -z "$DMAPI_RABBIT_PASSWORD" ] && \
-    err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
+    err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."
 
 NODE_IP=$(kubectl get nodes -l openstack-control-plane=enabled \
     -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' \

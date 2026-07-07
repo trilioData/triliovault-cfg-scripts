@@ -9,7 +9,7 @@
 #   - ctlplane_inputs.yaml reviewed
 #
 # Steps performed:
-#   1. Read passwords from ctlplane_inputs.yaml
+#   1. Read passwords from passwords.yaml
 #   2. Auto-detect Keystone credentials
 #   3. Generate trilio-ctlplane-values.yaml
 #   4. Install or upgrade the tvo Helm release
@@ -27,6 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/deploy_ctlplane.log"
 exec > >(tee "$LOG_FILE") 2>&1
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
+PASSWORDS_FILE="${SCRIPT_DIR}/passwords.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NAMESPACE="trilio-openstack"
 INFRA_SECRET="trilio-infra-passwords"
@@ -94,18 +95,17 @@ kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null || \
 kubectl get secret "$INFRA_SECRET" -n "$NAMESPACE" &>/dev/null || \
     err "Secret '$INFRA_SECRET' not found. Run 'bash deploy_infra.sh' first."
 
-# ---------- Step 1: Read passwords from ctlplane_inputs.yaml ----------
+# ---------- Step 1: Read passwords from passwords.yaml ----------
 
-step "Step 1: Reading passwords from ctlplane_inputs.yaml..."
+step "Step 1: Reading passwords from passwords.yaml..."
 
 get_password() {
     local key="$1"
     python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
 try:
-    d = yaml.safe_load(open('${CTLPLANE_INPUTS}'))
-    val = (d.get('passwords') or {}).get('${key}') or ''
-    print(val)
+    d = yaml.safe_load(open('${PASSWORDS_FILE}')) or {}
+    print(str(d.get('${key}') or ''))
 except Exception:
     print('')
 PYEOF
@@ -122,7 +122,7 @@ WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm")
 DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi")
 
 [ -z "$DB_ROOT_PASSWORD" ] && \
-    err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
+    err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."
 
 info "DB host      : $DB_HOST"
 info "RabbitMQ host: $RABBITMQ_HOST"

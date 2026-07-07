@@ -61,13 +61,14 @@ rabbitmq:
     storage_class: ""
     storage_size: "8Gi"
 
+  # NOTE: RabbitMQ operator requires memory request == limit (Guaranteed QoS).
   resources:
     requests:
-      cpu:    "100m"
-      memory: "256Mi"
+      cpu:    "500m"
+      memory: "512Mi"
     limits:
       cpu:    "500m"
-      memory: "1Gi"
+      memory: "512Mi"
 
   quorum_queues:
     # Enable only when using RabbitMQ >= 3.13.
