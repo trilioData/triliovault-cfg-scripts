@@ -78,5 +78,7 @@ rabbitmq:
     enabled: false
 
   # Extra rabbitmq.conf lines appended to the cluster configuration.
+  # Note: cluster_formation.target_cluster_size_hint is always auto-injected by
+  # deploy_infra.sh based on the replicas count — do not set it here.
   # Example: "vm_memory_high_watermark.relative = 0.6\nchannel_max = 2048"
   additional_config: ""
