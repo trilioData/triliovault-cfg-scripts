@@ -592,7 +592,8 @@ ${RABBIT_CONF_BLOCK}
 CREOF
 
     info "Waiting for RabbitMQ cluster to be ready (3-5 minutes, polling every 10s)..."
-    wait_with_pod_status rabbitmqcluster/trilio-rabbitmq "$NAMESPACE" 600
+    wait_with_pod_status rabbitmqcluster/trilio-rabbitmq "$NAMESPACE" 600 \
+        'condition=AllReplicasReady'
     info "RabbitMQ cluster ready."
 
     # ---------- Step 8: Initialize RabbitMQ ----------
