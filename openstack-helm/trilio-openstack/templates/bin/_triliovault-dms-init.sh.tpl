@@ -25,9 +25,10 @@ mkdir -p /var/log/triliovault
 chown -R 42424:42424 /var/lib/trilio /var/log/triliovault
 
 # Create the dynamic config handoff file.
-# The NODE_NAME environment variable is injected via the Kubernetes Downward API.
+# The NODE_NAME environment variable is injected via the Kubernetes Downward API, but WLM routes using FQDN.
+# We use hostname -f instead of NODE_NAME to ensure the queue name matches WLM's target precisely.
 # Note: rabbitmq_url is handled statically via helm-toolkit in server.conf.
 tee > /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf << EOF
 [server]
-node_id = ${NODE_NAME}
+node_id = $(hostname -f)
 EOF

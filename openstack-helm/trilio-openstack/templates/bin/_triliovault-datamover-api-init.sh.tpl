@@ -41,9 +41,5 @@ dmapi_listen = $datamover_api_ip_address
 my_ip = $datamover_api_ip_address
 EOF
 
-# TV-7402: Inject missing mount decorator for vast_instance
-sed -i 's/    def vast_instance(self, context, instance_uuid, params):/    @send_dms_mount_backup_target_request\n    def vast_instance(self, context, instance_uuid, params):/g' /usr/lib/python3/dist-packages/dmapi/api/openstack/api.py
-
-
 
 
