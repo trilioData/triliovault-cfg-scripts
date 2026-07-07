@@ -22,7 +22,7 @@ function start () {
   CMD="/usr/bin/python3 /usr/bin/tvault-contego"
   CMD+=" --config-file=/etc/nova/nova.conf"
   CMD+=" --config-file=/etc/triliovault-datamover/triliovault-datamover.conf"
-  <INJECT_CONFIG_FILES>
+  CMD+=" --config-file=/tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf"
 
   eval $CMD
   status=$?

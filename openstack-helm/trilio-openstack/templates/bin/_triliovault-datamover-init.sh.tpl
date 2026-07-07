@@ -21,4 +21,8 @@ chown nova:nova /var/log/triliovault /var/trilio /var/lib/trilio
 
 touch /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
 
-<INJECT_INIT_FILES>
+DATAMOVER_FQDN=$(hostname -f)
+cat <<EOF > /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
+[DEFAULT]
+host = ${DATAMOVER_FQDN}
+EOF
