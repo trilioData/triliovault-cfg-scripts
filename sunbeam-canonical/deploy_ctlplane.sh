@@ -112,14 +112,14 @@ PYEOF
 }
 
 DB_HOST="trilio-mysql.${NAMESPACE}.svc.cluster.local"
-DB_ROOT_PASSWORD=$(get_password "mysql_root")
-MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm")
-MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi")
+DB_ROOT_PASSWORD=$(get_password "mysql_root_password")
+MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm_password")
+MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi_password")
 RABBITMQ_HOST="trilio-rabbitmq.${NAMESPACE}.svc.cluster.local"
-RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm")
-RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
-WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm")
-DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi")
+RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm_password")
+RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi_password")
+WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm_password")
+DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi_password")
 
 [ -z "$DB_ROOT_PASSWORD" ] && \
     err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."

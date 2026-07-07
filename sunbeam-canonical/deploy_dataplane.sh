@@ -80,8 +80,8 @@ except Exception:
 PYEOF
 }
 
-DMAPI_RABBIT_PASSWORD=$(get_password "rabbitmq_dmapi")
-DMAPI_DB_PASSWORD=$(get_password "mysql_dmapi")
+DMAPI_RABBIT_PASSWORD=$(get_password "rabbitmq_dmapi_password")
+DMAPI_DB_PASSWORD=$(get_password "mysql_dmapi_password")
 
 [ -z "$DMAPI_RABBIT_PASSWORD" ] && \
     err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."

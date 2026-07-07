@@ -1,5 +1,5 @@
 # Generated at runtime — contain credentials, do not commit
-passwords.yaml
+# Note: passwords.yaml is tracked as an empty template; do not commit it after prepare.sh fills it in
 backup/
 ctlplane_inputs.yaml
 .dataplane_resolved.yml

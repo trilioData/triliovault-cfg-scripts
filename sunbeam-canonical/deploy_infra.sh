@@ -368,11 +368,11 @@ except Exception:
 PYEOF
 }
 
-MYSQL_ROOT_PASSWORD=$(get_password "mysql_root")
-MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm")
-MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi")
-RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm")
-RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
+MYSQL_ROOT_PASSWORD=$(get_password "mysql_root_password")
+MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm_password")
+MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi_password")
+RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm_password")
+RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi_password")
 
 [ -z "$MYSQL_ROOT_PASSWORD" ] && \
     err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."
