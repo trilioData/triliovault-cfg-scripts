@@ -56,6 +56,8 @@ spec:
         fsGroup: 42424
       affinity:
 {{ tuple $envAll "triliovault" "wlm_api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         {{ .Values.labels.wlm_api.node_selector_key }}: {{ .Values.labels.wlm_api.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.wlm_api.timeout | default "30" }}
