@@ -62,13 +62,15 @@ rabbitmq:
     storage_size: "8Gi"
 
   # NOTE: RabbitMQ operator requires memory request == limit (Guaranteed QoS).
+  # 1Gi is the minimum recommended — 512Mi is too tight; RabbitMQ hits the memory
+  # high watermark on startup (default 0.4 × available) causing pods to restart.
   resources:
     requests:
       cpu:    "500m"
-      memory: "512Mi"
+      memory: "1Gi"
     limits:
       cpu:    "500m"
-      memory: "512Mi"
+      memory: "1Gi"
 
   quorum_queues:
     # Enable only when using RabbitMQ >= 3.13.
