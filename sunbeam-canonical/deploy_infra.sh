@@ -510,6 +510,19 @@ kubectl delete validatingwebhookconfiguration \
 if [ "$RABBIT_EXISTS" = false ]; then
     step "Step 7: Deploying RabbitMQ cluster (${RABBIT_REPLICAS} replicas)..."
 
+    # The MutatingWebhookConfiguration is skipped (no cert-manager on Sunbeam), so the
+    # operator's admission webhook never runs and does not inject the default image into
+    # the CR spec. The image must always be set explicitly or the StatefulSet gets empty
+    # image fields and pods fail to create.
+    if [ -z "$RABBIT_IMAGE" ]; then
+        RABBIT_IMAGE=$(kubectl get deployment rabbitmq-cluster-operator -n "$NAMESPACE" \
+            -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="DEFAULT_RABBITMQ_IMAGE")].value}' \
+            2>/dev/null || echo "")
+        [ -n "$RABBIT_IMAGE" ] && info "Using operator default RabbitMQ image: $RABBIT_IMAGE"
+    fi
+    [ -z "$RABBIT_IMAGE" ] && RABBIT_IMAGE="rabbitmq:3.13-management" && \
+        info "Using fallback RabbitMQ image: $RABBIT_IMAGE"
+
     RABBIT_CONF_BLOCK=""
     RABBIT_QUORUM_CONF=""
     if [ "$RABBIT_QUORUM" = "true" ] || [ "$RABBIT_QUORUM" = "True" ]; then
@@ -529,7 +542,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   replicas: ${RABBIT_REPLICAS}
-$([ -n "$RABBIT_IMAGE" ] && printf "  image: %s" "${RABBIT_IMAGE}" || true)
+  image: ${RABBIT_IMAGE}
   persistence:
     storage: ${RABBIT_STORAGE_SIZE}
 $([ -n "$RABBIT_STORAGE_CLASS" ] && echo "    storageClassName: ${RABBIT_STORAGE_CLASS}" || true)
