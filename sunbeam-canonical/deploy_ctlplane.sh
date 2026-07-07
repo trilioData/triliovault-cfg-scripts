@@ -9,7 +9,7 @@
 #   - ctlplane_inputs.yaml reviewed
 #
 # Steps performed:
-#   1. Read passwords from ctlplane_inputs.yaml
+#   1. Read passwords from passwords.yaml
 #   2. Auto-detect Keystone credentials
 #   3. Generate trilio-ctlplane-values.yaml
 #   4. Install or upgrade the tvo Helm release
@@ -27,6 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/deploy_ctlplane.log"
 exec > >(tee "$LOG_FILE") 2>&1
 CTLPLANE_INPUTS="${SCRIPT_DIR}/ctlplane_inputs.yaml"
+PASSWORDS_FILE="${SCRIPT_DIR}/passwords.yaml"
 CTLPLANE_SCRIPTS="${SCRIPT_DIR}/ctlplane-scripts"
 NAMESPACE="trilio-openstack"
 INFRA_SECRET="trilio-infra-passwords"
@@ -70,6 +71,7 @@ NAMESPACE=$(get_input "namespace" "trilio-openstack")
 WLM_IMAGE=$(get_input "images.triliovault_wlm" "docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1")
 DMAPI_IMAGE=$(get_input "images.triliovault_datamover_api" "docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1")
 DMS_IMAGE=$(get_input "images.triliovault_dms" "docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1")
+HORIZON_IMAGE=$(get_input "images.triliovault_horizon" "")
 PULL_POLICY=$(get_input "images.pull_policy" "IfNotPresent")
 REGISTRY_LOGIN=$(get_input "registry.login_enabled" "false")
 REGISTRY_URL=$(get_input "registry.url" "docker.io")
@@ -93,35 +95,34 @@ kubectl get rabbitmqcluster trilio-rabbitmq -n "$NAMESPACE" &>/dev/null || \
 kubectl get secret "$INFRA_SECRET" -n "$NAMESPACE" &>/dev/null || \
     err "Secret '$INFRA_SECRET' not found. Run 'bash deploy_infra.sh' first."
 
-# ---------- Step 1: Read passwords from ctlplane_inputs.yaml ----------
+# ---------- Step 1: Read passwords from passwords.yaml ----------
 
-step "Step 1: Reading passwords from ctlplane_inputs.yaml..."
+step "Step 1: Reading passwords from passwords.yaml..."
 
 get_password() {
     local key="$1"
     python3 - <<PYEOF 2>/dev/null || echo ""
 import yaml
 try:
-    d = yaml.safe_load(open('${CTLPLANE_INPUTS}'))
-    val = (d.get('passwords') or {}).get('${key}') or ''
-    print(val)
+    d = yaml.safe_load(open('${PASSWORDS_FILE}')) or {}
+    print(str(d.get('${key}') or ''))
 except Exception:
     print('')
 PYEOF
 }
 
 DB_HOST="trilio-mysql.${NAMESPACE}.svc.cluster.local"
-DB_ROOT_PASSWORD=$(get_password "mysql_root")
-MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm")
-MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi")
+DB_ROOT_PASSWORD=$(get_password "mysql_root_password")
+MYSQL_WLM_PASSWORD=$(get_password "mysql_wlm_password")
+MYSQL_DMAPI_PASSWORD=$(get_password "mysql_dmapi_password")
 RABBITMQ_HOST="trilio-rabbitmq.${NAMESPACE}.svc.cluster.local"
-RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm")
-RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi")
-WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm")
-DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi")
+RABBITMQ_WLM_PASSWORD=$(get_password "rabbitmq_wlm_password")
+RABBITMQ_DMAPI_PASSWORD=$(get_password "rabbitmq_dmapi_password")
+WLM_KEYSTONE_PASSWORD=$(get_password "keystone_wlm_password")
+DMAPI_KEYSTONE_PASSWORD=$(get_password "keystone_dmapi_password")
 
 [ -z "$DB_ROOT_PASSWORD" ] && \
-    err "Passwords not set in ctlplane_inputs.yaml. Run 'bash prepare.sh' first."
+    err "Passwords not set in passwords.yaml. Run 'bash prepare.sh' first."
 
 info "DB host      : $DB_HOST"
 info "RabbitMQ host: $RABBITMQ_HOST"
@@ -292,14 +293,52 @@ else
     info "All T4O control plane pods are Running."
 fi
 
+# ---------- Step 6: Deploy Trilio Horizon Plugin ----------
+
+step "Step 6: Deploying Trilio Horizon Plugin..."
+
+if [ -z "$HORIZON_IMAGE" ]; then
+    warn "images.triliovault_horizon not set in ctlplane_inputs.yaml — skipping Horizon plugin."
+    warn "Run 'bash prepare.sh' to populate it, or set images.triliovault_horizon manually."
+elif ! command -v juju &>/dev/null; then
+    warn "juju CLI not found — skipping Horizon plugin deployment."
+    warn "Run manually: juju attach-resource horizon horizon-image=${HORIZON_IMAGE}"
+elif ! juju status horizon --format json &>/dev/null 2>&1; then
+    warn "Juju application 'horizon' not found — skipping Horizon plugin deployment."
+    warn "Run manually once horizon is deployed: juju attach-resource horizon horizon-image=${HORIZON_IMAGE}"
+else
+    info "Attaching Trilio Horizon image: $HORIZON_IMAGE"
+    juju attach-resource horizon horizon-image="$HORIZON_IMAGE"
+
+    info "Waiting for Horizon pod to become Running (timeout: 5m)..."
+    HORIZON_TIMEOUT=300
+    HORIZON_ELAPSED=0
+    HORIZON_INTERVAL=15
+    while [ $HORIZON_ELAPSED -lt $HORIZON_TIMEOUT ]; do
+        HORIZON_POD_COUNT=$(kubectl get pods -n openstack \
+            -l app.kubernetes.io/name=horizon \
+            --no-headers 2>/dev/null | wc -l | tr -d ' ')
+        HORIZON_NOT_RUNNING=$(kubectl get pods -n openstack \
+            -l app.kubernetes.io/name=horizon \
+            --no-headers 2>/dev/null | grep -v " Running " | grep -v "Completed" || true)
+        if [ "$HORIZON_POD_COUNT" -gt 0 ] && [ -z "$HORIZON_NOT_RUNNING" ]; then
+            info "Horizon pod is Running with Trilio plugin."
+            break
+        fi
+        sleep $HORIZON_INTERVAL
+        HORIZON_ELAPSED=$(( HORIZON_ELAPSED + HORIZON_INTERVAL ))
+        info "Waiting for Horizon pod... (${HORIZON_ELAPSED}s/${HORIZON_TIMEOUT}s)"
+    done
+    if [ $HORIZON_ELAPSED -ge $HORIZON_TIMEOUT ]; then
+        warn "Horizon pod did not become Running within ${HORIZON_TIMEOUT}s."
+        warn "Check: kubectl get pods -n openstack -l app.kubernetes.io/name=horizon"
+    fi
+fi
+
 echo ""
 echo "=================================================="
 info "Control plane deployment complete."
 echo ""
 echo "  Next step:"
 echo "    bash deploy_dataplane.sh"
-echo ""
-echo "  NOTE: Horizon plugin is not deployed by this script."
-echo "        Deploy it separately via juju attach-resource"
-echo "        once the Trilio Horizon image for Sunbeam is available."
 echo "=================================================="

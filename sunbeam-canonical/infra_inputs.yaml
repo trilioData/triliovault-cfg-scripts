@@ -61,10 +61,13 @@ rabbitmq:
     storage_class: ""
     storage_size: "8Gi"
 
+  # NOTE: RabbitMQ operator requires memory request == limit (Guaranteed QoS).
+  # 1Gi is the minimum recommended — 512Mi is too tight; RabbitMQ hits the memory
+  # high watermark on startup (default 0.4 × available) causing pods to restart.
   resources:
     requests:
-      cpu:    "100m"
-      memory: "256Mi"
+      cpu:    "500m"
+      memory: "1Gi"
     limits:
       cpu:    "500m"
       memory: "1Gi"
@@ -75,5 +78,7 @@ rabbitmq:
     enabled: false
 
   # Extra rabbitmq.conf lines appended to the cluster configuration.
-  # Example: "vm_memory_high_watermark.relative = 0.6\nchannel_max = 2048"
-  additional_config: ""
+  # cluster_formation.target_cluster_size_hint must match the replicas count above.
+  # Tells RabbitMQ to wait for all N nodes before declaring the cluster fully formed.
+  additional_config: |
+    cluster_formation.target_cluster_size_hint = 3
