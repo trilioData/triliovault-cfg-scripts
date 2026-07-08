@@ -19,8 +19,6 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-  # TV-7402: Inject missing mount decorator for vast_instance
-  sed -i 's/    def vast_instance(self, context, instance_uuid, params):/    @send_dms_mount_backup_target_request\n    def vast_instance(self, context, instance_uuid, params):/g' /usr/lib/python3/dist-packages/dmapi/api/openstack/api.py
   exec /var/lib/openstack/bin/python3 /usr/bin/dmapi-api \
        --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf \
        --config-file /tmp/pod-shared-triliovault-datamover-api/triliovault-datamover-api-my-ip.conf
