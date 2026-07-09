@@ -127,10 +127,12 @@ spec:
       driver: "messagingv2"
       ssl: true
       namespace: "trilio-openstack"
+      rabbit_quorum_queue: true
+      rabbit_transient_quorum_queue: true
+      amqp_durable_queues: true
     cluster:
       api_version: "rabbitmq.com/v1beta1"
       replicas: 3
-      rabbit_quorum_queue: false
       resources:
         requests:
           cpu: "1"
@@ -159,9 +161,7 @@ spec:
           ssl_options.fail_if_no_peer_cert = false
           ssl_options.depth = 1
 
-          # Quorum queue optimizations (Raft-based), Uncomment following three parameters if your rabbitm image supports quorum queue. It should have version >= 3.13
-          #raft.wal_max_size_bytes = 134217728
-          #raft.segment_max_entries = 32768
+          # Manual Change: default_queue_type parameter is removed starting RHOSO18 FR5 (18.0.17) release, since quorum queues become the default without it. Only uncomment on pre-FR5 releases (< 18.0.17) if you want to enable quorum queues.
           #default_queue_type = quorum
 
           # Memory and disk management (adjusted for 2Gi memory)

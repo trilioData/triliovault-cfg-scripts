@@ -28,7 +28,9 @@ with open(SECRET_FILE) as f:
 # Extract data
 rabbit_host = data["spec"]["rabbitmq"]["common"].get("host", "")
 rabbit_ssl = data["spec"]["rabbitmq"]["common"].get("ssl", True)
-rabbit_quorum_queue = data["spec"]["rabbitmq"]["cluster"].get("rabbit_quorum_queue", False)
+rabbit_quorum_queue = data["spec"]["rabbitmq"]["common"].get("rabbit_quorum_queue", True)
+rabbit_transient_quorum_queue = data["spec"]["rabbitmq"]["common"].get("rabbit_transient_quorum_queue", True)
+amqp_durable_queues = data["spec"]["rabbitmq"]["common"].get("amqp_durable_queues", True)
 database_host = data["spec"]["database"]["common"].get("host", "")
 database_port = data["spec"]["database"]["common"].get("port", "3306")
 keystone_auth_url = data["spec"]["keystone"]["common"].get("auth_url", "")
@@ -47,6 +49,10 @@ with open(CM_FILE, "r") as f:
             updated_lines.append(f'    rabbit_ssl: {str(rabbit_ssl).lower()}\n')
         elif "rabbit_quorum_queue:" in line:
             updated_lines.append(f'    rabbit_quorum_queue: {str(rabbit_quorum_queue).lower()}\n')
+        elif "rabbit_transient_quorum_queue:" in line:
+            updated_lines.append(f'    rabbit_transient_quorum_queue: {str(rabbit_transient_quorum_queue).lower()}\n')
+        elif "amqp_durable_queues:" in line:
+            updated_lines.append(f'    amqp_durable_queues: {str(amqp_durable_queues).lower()}\n')
         elif "database_host:" in line:
             updated_lines.append(f'    database_host: "{database_host}"\n')
         elif "database_port:" in line:
