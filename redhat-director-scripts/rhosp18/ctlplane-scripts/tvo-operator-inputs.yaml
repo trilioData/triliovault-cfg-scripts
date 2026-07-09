@@ -130,7 +130,9 @@ spec:
     cluster:
       api_version: "rabbitmq.com/v1beta1"
       replicas: 3
-      rabbit_quorum_queue: false
+      rabbit_quorum_queue: true
+      rabbit_transient_quorum_queue: true
+      amqp_durable_queues: true
       resources:
         requests:
           cpu: "1"

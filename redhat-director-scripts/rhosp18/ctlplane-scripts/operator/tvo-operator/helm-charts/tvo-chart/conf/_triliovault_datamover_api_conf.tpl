@@ -35,7 +35,9 @@ auth_uri = {{ .Values.keystone.common.auth_uri }}
 ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 rabbit_quorum_queue = {{ .Values.rabbitmq.cluster.rabbit_quorum_queue }}
-amqp_durable_queues = {{ if .Values.rabbitmq.cluster.rabbit_quorum_queue }}true{{ else }}false{{ end }}
+rabbit_transient_quorum_queue = {{ .Values.rabbitmq.cluster.rabbit_transient_quorum_queue }}
+amqp_durable_queues = {{ .Values.rabbitmq.cluster.amqp_durable_queues }}
+heartbeat_in_pthread = false
 
 [oslo_messaging_notifications]
 driver = {{ .Values.rabbitmq.common.driver }}

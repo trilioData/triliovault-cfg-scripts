@@ -119,6 +119,37 @@ def fetch_and_extract_cluster_domain():
         print(f"Failed to fetch Glance endpoint: {e}")
         return None, None
 
+# Function to fetch OpenStack's Nova rabbitmq queue type (Quorum vs Mirrored/Classic)
+def get_openstack_rabbit_quorum_state():
+    try:
+        print("Checking OpenStack Nova rabbitmq queue type...")
+        result = subprocess.run(
+            ["oc", "get", "transporturl", "nova-api-transport", "-n", "openstack", "-o", "jsonpath={.status.queueType}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        queue_type = result.stdout.strip()
+        if not queue_type:
+            print("nova-api-transport queueType not found. Leaving rabbit_quorum_queue as configured.")
+            return None
+        print(f"OpenStack Nova rabbitmq queueType: '{queue_type}'")
+        return queue_type.lower() == "quorum"
+    except subprocess.CalledProcessError:
+        print("Failed to fetch nova-api-transport queueType. Leaving rabbit_quorum_queue as configured.")
+        return None
+
+# Function to sync T4O's rabbitmq client params (rabbit_quorum_queue, amqp_durable_queues) with OpenStack's
+def update_rabbit_params():
+    quorum_enabled = get_openstack_rabbit_quorum_state()
+    if quorum_enabled is None:
+        return
+    if "spec" in yaml_data and "rabbitmq" in yaml_data["spec"] and "cluster" in yaml_data["spec"]["rabbitmq"]:
+        yaml_data["spec"]["rabbitmq"]["cluster"]["rabbit_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["cluster"]["rabbit_transient_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["cluster"]["amqp_durable_queues"] = quorum_enabled
+        print(f"- Updated rabbitmq.cluster.rabbit_quorum_queue, rabbit_transient_quorum_queue and amqp_durable_queues to: {quorum_enabled}")
+
 # Function to update keystone endpoints for trilio services
 def update_keystone_endpoints():
     glance_url, cluster_domain = fetch_and_extract_cluster_domain()
@@ -203,7 +234,7 @@ if keystone_url:
 
 
 update_keystone_endpoints()
-print("Calling rabbit params method")
+update_rabbit_params()
 with open(yaml_file, "w") as file:
     yaml_parser.dump(yaml_data, file)
 
