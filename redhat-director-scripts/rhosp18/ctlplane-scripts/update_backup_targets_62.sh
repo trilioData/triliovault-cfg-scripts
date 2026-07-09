@@ -258,7 +258,7 @@ print(json.dumps(inv.get('backup_targets', [])))")
 TOTAL=$(echo "${BT_JSON_LIST}" | jq 'length')
 log "Total backup targets in inventory: ${TOTAL}"
 
-PASS=0; FAIL=0; SKIP=0
+PASS=0; FAIL=0; SKIP=0; NFS_SKIPPED=0
 
 for i in $(seq 0 $((TOTAL - 1))); do
   BT=$(echo "${BT_JSON_LIST}" | jq ".[${i}]")
@@ -268,8 +268,18 @@ for i in $(seq 0 $((TOTAL - 1))); do
 
   log ""
   log "---------------------------------------------"
-  log "[${i}/${TOTAL}] Backup target: ${BT_NAME}  bucket: ${BUCKET}"
+  log "[${i}/${TOTAL}] Backup target: ${BT_NAME}  type: ${BT_TYPE}  bucket: ${BUCKET}"
   log "---------------------------------------------"
+
+  # ------------------------------------------------------------------
+  # NFS targets are listed but intentionally skipped here — T4O 6.2 does
+  # not move NFS backup target config into Barbican, only S3 credentials.
+  # ------------------------------------------------------------------
+  if [ "${BT_TYPE}" = "nfs" ]; then
+    log "  NFS backup target — no Barbican secret required. Skipping."
+    NFS_SKIPPED=$((NFS_SKIPPED + 1))
+    continue
+  fi
 
   # ------------------------------------------------------------------
   # Step 2.1: Find backup target ID in workloadmgr by S3 bucket name
@@ -529,10 +539,11 @@ done
 # Summary
 # -----------------------------------------------------------------------
 log_step "Migration Summary"
-log "  Succeeded : ${PASS}"
-log "  Failed    : ${FAIL}"
-log "  Skipped   : ${SKIP}  (not found in workloadmgr)"
-log "  Total     : ${TOTAL}"
+log "  Succeeded   : ${PASS}"
+log "  Failed      : ${FAIL}"
+log "  Skipped     : ${SKIP}  (no bucket configured, or not found in workloadmgr)"
+log "  NFS skipped : ${NFS_SKIPPED}  (no Barbican secret required)"
+log "  Total       : ${TOTAL}"
 
 if [ "${FAIL}" -gt 0 ]; then
   err "${FAIL} backup target(s) failed. Review the log above and re-run."
