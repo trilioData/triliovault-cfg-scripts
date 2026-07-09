@@ -63,8 +63,8 @@ host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk 
 
 POD_IP=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
 
-# With hostNetwork:true, hostname -s returns the short hostname. We use this for the WLM services table to avoid >64 char truncation.
-WLM_NODE_SHORT=$(hostname -s)
+# We use POD_NAME for the WLM services table to avoid >64 char truncation and prevent duplicate entry errors across replicas.
+WLM_NODE_SHORT=${POD_NAME}
 # hostname -f returns the actual host FQDN. This MUST match the DMS server's queue name for routing.
 WLM_NODE_FQDN=$(hostname -f)
 echo "[WLM init] Resolved node shortname: ${WLM_NODE_SHORT}, FQDN: ${WLM_NODE_FQDN} (k8s nodeName was: ${NODE_NAME})"

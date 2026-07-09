@@ -31,5 +31,5 @@ chmod 775 /var/lib/trilio/triliovault-mounts
 # Note: rabbitmq_url is handled statically via helm-toolkit in server.conf.
 tee > /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf << EOF
 [server]
-node_id = $(hostname -s)
+node_id = $(hostname -f)
 EOF
