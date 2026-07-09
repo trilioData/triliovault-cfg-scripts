@@ -161,9 +161,6 @@ spec:
           ssl_options.fail_if_no_peer_cert = false
           ssl_options.depth = 1
 
-          # Manual Change: default_queue_type parameter is removed starting RHOSO18 FR5 (18.0.17) release, since quorum queues become the default without it. Only uncomment on pre-FR5 releases (< 18.0.17) if you want to enable quorum queues.
-          #default_queue_type = quorum
-
           # Memory and disk management (adjusted for 2Gi memory)
           vm_memory_high_watermark.relative = 0.6
           vm_memory_high_watermark_paging_ratio = 0.75
