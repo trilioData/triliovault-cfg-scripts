@@ -144,11 +144,11 @@ def update_rabbit_params():
     quorum_enabled = get_openstack_rabbit_quorum_state()
     if quorum_enabled is None:
         return
-    if "spec" in yaml_data and "rabbitmq" in yaml_data["spec"] and "cluster" in yaml_data["spec"]["rabbitmq"]:
-        yaml_data["spec"]["rabbitmq"]["cluster"]["rabbit_quorum_queue"] = quorum_enabled
-        yaml_data["spec"]["rabbitmq"]["cluster"]["rabbit_transient_quorum_queue"] = quorum_enabled
-        yaml_data["spec"]["rabbitmq"]["cluster"]["amqp_durable_queues"] = quorum_enabled
-        print(f"- Updated rabbitmq.cluster.rabbit_quorum_queue, rabbit_transient_quorum_queue and amqp_durable_queues to: {quorum_enabled}")
+    if "spec" in yaml_data and "rabbitmq" in yaml_data["spec"] and "common" in yaml_data["spec"]["rabbitmq"]:
+        yaml_data["spec"]["rabbitmq"]["common"]["rabbit_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["common"]["rabbit_transient_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["common"]["amqp_durable_queues"] = quorum_enabled
+        print(f"- Updated rabbitmq.common.rabbit_quorum_queue, rabbit_transient_quorum_queue and amqp_durable_queues to: {quorum_enabled}")
 
 # Function to update keystone endpoints for trilio services
 def update_keystone_endpoints():
