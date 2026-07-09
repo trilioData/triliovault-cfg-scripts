@@ -68,5 +68,8 @@ rhosp18/
 4. `deploy_tvo_control_plane.sh` — deploy control plane via operator
 5. `dataplane-scripts/` Ansible roles — install datamover on compute nodes
 
+## Known Constraints
+- **`workloadmgr backup-target-list --format json` mixes target types**: the output includes a `Type` field (`"s3"` / `"nfs"`, compare case-insensitively) alongside `Backend Endpoint` and `ID`. Any script comparing an S3-only inventory against this list (e.g. `collect_backup_targets.sh`) must filter on `Type == "s3"` first, or NFS targets will produce false mismatches. Confirmed against the same CLI schema in `juju-charms/upgrade_backup_targets_62.sh`.
+
 ## T4O Installation Guide
 https://docs.trilio.io/openstack/deployment/installing-on-rhosp/trilio_installation_on_rhoso
