@@ -74,13 +74,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           command:
-            - /bin/sh
-            - -c
-            - |
-              mkdir -p /var/lib/trilio/triliovault-mounts
-              chown -R 42424:42424 /var/lib/trilio/triliovault-mounts
-              chmod 775 /var/lib/trilio/triliovault-mounts
-              /tmp/triliovault-dms-init.sh
+            - /tmp/triliovault-dms-init.sh
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

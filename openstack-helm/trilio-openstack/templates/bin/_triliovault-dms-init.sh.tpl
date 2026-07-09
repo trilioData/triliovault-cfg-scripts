@@ -23,6 +23,7 @@ chown -R 42424:42424 /run/dms
 mkdir -p /var/lib/trilio/triliovault-mounts
 mkdir -p /var/log/triliovault
 chown -R 42424:42424 /var/lib/trilio /var/log/triliovault
+chmod 775 /var/lib/trilio/triliovault-mounts
 
 # Create the dynamic config handoff file.
 # The NODE_NAME environment variable is injected via the Kubernetes Downward API, but WLM routes using FQDN.
