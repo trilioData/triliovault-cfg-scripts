@@ -460,10 +460,13 @@ try:
     # workloadmgr backup-target-list --format json returns the bucket/endpoint
     # in "Backend Endpoint".  Format is either a plain bucket name or
     # "host:port/bucket" — extract the last path component in both cases.
+    # Only S3 targets belong in this comparison — NFS targets are already
+    # excluded from the inventory in Step 1, so keep only Type == "s3" here
+    # to avoid a false mismatch against NFS backup targets in workloadmgr.
     wlm_buckets = sorted(
         (b.get("Backend Endpoint") or "").split("/")[-1]
         for b in wlm_bts
-        if b.get("Backend Endpoint")
+        if b.get("Backend Endpoint") and (b.get("Type") or "").lower() == "s3"
     )
 except Exception as exc:
     print(f"[WARN] Cannot parse workloadmgr output ({exc}). "
