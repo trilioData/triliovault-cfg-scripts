@@ -53,25 +53,11 @@
     state: absent
   when: triliovault_backup_target.backup_target_type == "nfs"
 
-- name: Stop triliovault-object-store container
-  containers.podman.podman_container:
-    name: triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}
-    state: stopped
-  ignore_errors: true
-  when: triliovault_backup_target.backup_target_type == "s3"
-
 - name: Remove triliovault-object-store container
   containers.podman.podman_container:
     name: triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}
     state: absent
   when: triliovault_backup_target.backup_target_type == "s3"
-
-- name: Stop triliovault-nfs-container container
-  containers.podman.podman_container:
-    name: triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}
-    state: stopped
-  ignore_errors: true
-  when: triliovault_backup_target.backup_target_type == "nfs"
 
 - name: Remove triliovault-nfs-container container
   containers.podman.podman_container:
