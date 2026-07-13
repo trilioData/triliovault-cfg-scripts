@@ -14,10 +14,10 @@ TrilioVault maps onto this cleanly:
 | WorkloadManager (wlm-api, wlm-workloads, wlm-cron, wlm-scheduler) | `openstack` (k8s) | `trilio-wlm-k8s` |
 | DataMover API (dmapi) | `openstack` (k8s) | `trilio-dm-api-k8s` |
 | Dynamic Mount Service — control plane | `openstack` (k8s) | `trilio-dms-k8s` |
-| DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover` |
+| DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover-sunbeam` |
 | Horizon Plugin | `openstack` (k8s) | OCI image attach to `horizon-k8s` |
 
-`trilio-data-mover` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
+`trilio-data-mover-sunbeam` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
 It installs both `tvault-contego` (DataMover) and `trilio-dms-server` (compute-side DMS) on every compute node.
 When a new compute node joins via `sunbeam cluster join`, Juju automatically deploys a DataMover unit on it — no manual operator action required.
 
@@ -105,7 +105,7 @@ Horizon reloads automatically — no restart required.
 | `trilio-wlm-k8s` | `charms/trilio-wlm-k8s/` | k8s, Pebble |
 | `trilio-dm-api-k8s` | `charms/trilio-dm-api-k8s/` | k8s, Pebble |
 | `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
-| `trilio-data-mover` | `charms/trilio-data-mover/` | machine subordinate, runs DataMover + compute DMS |
+| `trilio-data-mover-sunbeam` | `charms/trilio-data-mover/` | machine subordinate, runs DataMover + compute DMS |
 
 ## OCI Images
 
