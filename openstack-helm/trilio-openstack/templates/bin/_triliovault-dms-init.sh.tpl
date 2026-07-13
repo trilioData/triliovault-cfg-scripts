@@ -23,11 +23,16 @@ chown -R 42424:42424 /run/dms
 mkdir -p /var/lib/trilio/triliovault-mounts
 mkdir -p /var/log/triliovault
 chown -R 42424:42424 /var/lib/trilio /var/log/triliovault
+chmod 775 /var/lib/trilio/triliovault-mounts
 
 # Create the dynamic config handoff file.
-# The NODE_NAME environment variable is injected via the Kubernetes Downward API.
+# We explicitly use socket.gethostname() to perfectly mirror OpenStack Nova's default host logic.
+NODE_ID=$(python3 -c "import socket; print(socket.gethostname())")
+# Fallback to Downward API nodeName if hostname resolution somehow fails.
+NODE_ID=${NODE_ID:-${NODE_NAME}}
+
 # Note: rabbitmq_url is handled statically via helm-toolkit in server.conf.
 tee > /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf << EOF
 [server]
-node_id = ${NODE_NAME}
+node_id = ${NODE_ID}
 EOF

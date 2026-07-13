@@ -103,10 +103,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: DMS_NODE_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
+
           command:
             - /tmp/triliovault-wlm-cron.sh
             - start

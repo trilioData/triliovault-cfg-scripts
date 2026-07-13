@@ -83,7 +83,7 @@ multipathd_enabled: true
 ceph:
   enabled: true
   rbd_user: "nova"
-  keyring: null
+  keyring: ""
 
 pod:
   security_context:
