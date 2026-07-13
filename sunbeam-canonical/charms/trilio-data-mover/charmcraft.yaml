@@ -1,0 +1,60 @@
+name: trilio-data-mover
+type: charm
+title: TrilioVault DataMover (Sunbeam)
+summary: TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack
+description: |
+  Deploys TrilioVault DataMover (tvault-contego) as a Juju subordinate charm
+  co-located on every compute node running openstack-hypervisor.
+
+  This charm targets Sunbeam Canonical OpenStack specifically. It differs from
+  trilio-data-mover (which is subordinate to nova-compute on traditional
+  Canonical OpenStack) in these ways:
+    - Subordinate target: openstack-hypervisor (not nova-compute)
+    - Framework: ops (not charms.reactive)
+    - Credentials: keystone-credentials interface (cross-model SAAS from openstack model)
+
+  When a new compute node joins via "sunbeam cluster join", openstack-hypervisor
+  creates a new principal unit on that machine. Juju then automatically creates a
+  trilio-data-mover subordinate unit on the same machine — no operator
+  action is required from the Trilio side.
+
+subordinate: true
+
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
+  amqp:
+    interface: rabbitmq
+  identity-credentials:
+    interface: keystone-credentials
+
+provides:
+  data-mover:
+    interface: data-mover
+    scope: container
+
+config:
+  options:
+    triliovault-pkg-source:
+      type: string
+      default: "deb [trusted=yes] https://apt.trilio.io jammy main"
+      description: APT repository line for TrilioVault packages
+    trilio-version:
+      type: string
+      default: ""
+      description: |
+        Specific tvault-contego package version to install, e.g. "6.2.1".
+        Leave empty to install the latest available version from the repo.
+    debug:
+      type: boolean
+      default: false
+      description: Enable debug logging

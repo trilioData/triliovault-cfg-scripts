@@ -1,0 +1,78 @@
+name: trilio-wlm-k8s
+type: charm
+title: TrilioVault WorkloadManager (Kubernetes)
+summary: TrilioVault WorkloadManager K8s charm for Sunbeam Canonical OpenStack
+description: |
+  Deploys TrilioVault WorkloadManager on Sunbeam Canonical OpenStack as a
+  Kubernetes charm. Runs four microservices as Pebble-managed services inside
+  a single Kubernetes pod:
+    - wlm-api      (REST API, port 8781)
+    - wlm-workloads (background workload processor)
+    - wlm-scheduler (job scheduler)
+    - wlm-cron     (periodic cron jobs — leader unit only, singleton)
+
+  wlm-cron is intentionally started only on the leader unit to prevent duplicate
+  scheduled job execution across multiple replicas.
+
+assumes:
+  - k8s-api
+  - juju >= 3.1
+
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+
+containers:
+  trilio-wlm:
+    resource: trilio-wlm-image
+
+resources:
+  trilio-wlm-image:
+    type: oci-image
+    description: OCI image for TrilioVault WorkloadManager
+    upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+
+requires:
+  database:
+    interface: mysql_client
+    limit: 1
+  amqp:
+    interface: rabbitmq
+    limit: 1
+  identity-service:
+    interface: keystone
+    limit: 1
+  ingress-internal:
+    interface: ingress
+    optional: true
+    limit: 1
+  ingress-public:
+    interface: ingress
+    optional: true
+    limit: 1
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+
+provides:
+  wlm-service:
+    interface: wlm-service
+
+peers:
+  peers:
+    interface: trilio-wlm-peer
+
+config:
+  options:
+    api-workers:
+      type: int
+      default: 2
+      description: Number of wlm-api worker processes
+    debug:
+      type: boolean
+      default: false
+      description: Enable debug logging for all WLM services
