@@ -45,11 +45,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
+        self.framework.observe(self.on.wlm_service_relation_joined, self._on_wlm_service_joined)
 
     # --- event handlers ---
 
     def _on_pebble_ready(self, event):
         self._configure(event)
+
+    def _on_wlm_service_joined(self, event):
+        if self.unit.is_leader():
+            self._publish_wlm_service_data()
 
     def _configure(self, event):
         container = self.unit.get_container(CONTAINER)
@@ -248,16 +253,17 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 "startup": "enabled",
             },
         }
-        # wlm-cron must run as a single instance cluster-wide — restrict to leader unit.
+        # wlm-cron must run as a single instance cluster-wide.
         # Multiple wlm-cron instances cause duplicate scheduled job execution
         # and corrupt workload state in the database.
-        if self.unit.is_leader():
-            services["wlm-cron"] = {
-                "override": "replace",
-                "summary": "WLM Cron (leader-only singleton)",
-                "command": cmd_base.format("wlm-cron"),
-                "startup": "enabled",
-            }
+        # Always include the service definition so Pebble can disable it on non-leaders;
+        # omitting it entirely leaves a previously-enabled layer in force.
+        services["wlm-cron"] = {
+            "override": "replace",
+            "summary": "WLM Cron (leader-only singleton)",
+            "command": cmd_base.format("wlm-cron"),
+            "startup": "enabled" if self.unit.is_leader() else "disabled",
+        }
         return ops.pebble.Layer({"summary": "TrilioVault WLM services", "services": services})
 
     def _update_pebble_layer(self, container):

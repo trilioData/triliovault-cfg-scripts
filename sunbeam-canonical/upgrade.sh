@@ -41,20 +41,22 @@ fi
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
 # --- Step 1: Upgrade control plane charms ---
-log "Upgrading trilio-wlm-k8s to version $TRILIO_VERSION in model $CTLPLANE_MODEL"
+log "Upgrading control plane charms to version $TRILIO_VERSION in model $CTLPLANE_MODEL"
 juju switch "$CTLPLANE_MODEL"
-juju refresh trilio-wlm-k8s  --channel stable
-juju refresh trilio-dm-api-k8s --channel stable
+juju refresh trilio-wlm-k8s    --channel 2024.1/stable
+juju refresh trilio-dm-api-k8s --channel 2024.1/stable
+juju refresh trilio-dms-k8s    --channel 2024.1/stable
 
 log "Waiting for control plane to become active post-upgrade..."
-juju wait-for application trilio-wlm-k8s  --query='status=="active"' --timeout=10m
+juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
 juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
 
 # --- Step 2: Upgrade data plane ---
 log "Upgrading trilio-data-mover to version $TRILIO_VERSION in model $DATAPLANE_MODEL"
 juju switch "$DATAPLANE_MODEL"
 juju config trilio-data-mover trilio-version="$TRILIO_VERSION"
-juju refresh trilio-data-mover --channel stable
+juju refresh trilio-data-mover --channel 2024.1/stable
 
 log "Waiting for data plane to become active post-upgrade..."
 juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m

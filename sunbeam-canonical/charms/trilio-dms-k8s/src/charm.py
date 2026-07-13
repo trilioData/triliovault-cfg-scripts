@@ -98,9 +98,9 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dms')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/{amqp.get('vhost', 'dms')}"
         )
         auth_url = (
             f"{identity.get('service_protocol', 'http')}://"
