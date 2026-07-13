@@ -21,8 +21,8 @@ bundle: machine
 applications:
 
   trilio-data-mover:
-    charm: trilio-data-mover
-    channel: stable
+    charm: trilio-data-mover-sunbeam
+    channel: 2024.1/stable
     options:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.trilio.io jammy main"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"

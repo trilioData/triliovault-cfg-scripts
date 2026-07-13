@@ -1,4 +1,4 @@
-name: trilio-data-mover
+name: trilio-data-mover-sunbeam
 type: charm
 title: TrilioVault DataMover (Sunbeam)
 summary: TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack

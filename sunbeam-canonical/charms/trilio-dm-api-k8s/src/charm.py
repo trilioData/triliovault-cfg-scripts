@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 CONTAINER = "trilio-dm-api"
 CONFIG_PATH = "/etc/triliovault-datamover/dmapi.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
-S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault-datamover"
 DMAPI_PORT = 8784
 
