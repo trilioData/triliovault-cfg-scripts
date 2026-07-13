@@ -63,14 +63,13 @@ host_interface=$(ip -4 route list 0/0 | awk -F 'dev' '{ print $2; exit }' | awk 
 
 POD_IP=$(ip a s $host_interface | grep 'inet ' | awk '{print $2}' | awk -F "/" '{print $1}' | head -1)
 
-WLM_NODE_SHORT=$(hostname -s)
-# hostname -f returns the actual host FQDN. This MUST match the DMS server's queue name for routing.
-WLM_NODE_FQDN=$(hostname -f)
-echo "[WLM init] Resolved node shortname: ${WLM_NODE_SHORT}, FQDN: ${WLM_NODE_FQDN} (k8s nodeName was: ${NODE_NAME})"
+WLM_NODE_AUTO=$(python3 -c "import socket; print(socket.gethostname())")
+WLM_NODE_AUTO=${WLM_NODE_AUTO:-${NODE_NAME}}
+echo "[WLM init] Resolved node identity: ${WLM_NODE_AUTO} (k8s nodeName was: ${NODE_NAME})"
 
 tee > /tmp/pod-shared-${POD_NAME}/triliovault-wlm-ids.conf << EOF
 [DEFAULT]
-host = ${WLM_NODE_SHORT}
+host = ${WLM_NODE_AUTO}
 triliovault_hostnames = ${POD_IP}
 cloud_admin_user_id = $CLOUD_ADMIN_USER_ID
 cloud_admin_domain = $CLOUD_ADMIN_DOMAIN_ID
@@ -84,7 +83,7 @@ project_domain_id = $WLM_PROJECT_DOMAIN_ID
 user_domain_id = $WLM_USER_DOMAIN_ID
 
 [client]
-node_id = ${WLM_NODE_FQDN}
+node_id = ${WLM_NODE_AUTO}
 
 EOF
 
