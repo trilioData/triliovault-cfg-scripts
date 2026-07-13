@@ -208,31 +208,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "project_domain_name": "Default",
             "auth_type": "password",
         }
-        self._add_backup_target_config(cfg)
-
         buf = io.StringIO()
         cfg.write(buf)
         os.makedirs("/etc/tvault-contego", exist_ok=True)
         with open(DM_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DM_CONFIG_PATH)
-
-    def _add_backup_target_config(self, cfg):
-        target_type = self.config["backup-target-type"]
-        if target_type == "nfs":
-            cfg["nfs"] = {
-                "shares": self.config["nfs-shares"],
-                "options": self.config["nfs-options"],
-            }
-        elif target_type == "s3":
-            cfg["s3"] = {
-                "access_key": self.config["s3-access-key"],
-                "secret_key": self.config["s3-secret-key"],
-                "bucket": self.config["s3-bucket"],
-                "region_name": self.config["s3-region"],
-                "endpoint_url": self.config["s3-endpoint-url"],
-                "ssl_enabled": str(self.config["s3-ssl-enabled"]).lower(),
-            }
 
     # --- DMS config file rendering ---
 

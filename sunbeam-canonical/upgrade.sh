@@ -62,7 +62,7 @@ juju wait-for application trilio-data-mover --query='status=="active"' --timeout
 # --- Step 3: Upgrade Horizon plugin ---
 if [[ "$SKIP_HORIZON" != "true" ]]; then
   if [[ -z "$HORIZON_IMAGE" ]]; then
-    HORIZON_IMAGE="docker.io/trilio/trilio-horizon-canonical:${TRILIO_VERSION}"
+    HORIZON_IMAGE="docker.io/trilio/trilio-horizon-plugin-canonical:${TRILIO_VERSION}-2024.1"
   fi
   log "Attaching upgraded Horizon plugin image: $HORIZON_IMAGE"
   juju switch "$CTLPLANE_MODEL"

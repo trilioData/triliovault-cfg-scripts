@@ -58,39 +58,3 @@ config:
       type: boolean
       default: false
       description: Enable debug logging
-    backup-target-type:
-      type: string
-      default: "nfs"
-      description: Backup target type — nfs or s3
-    nfs-shares:
-      type: string
-      default: ""
-      description: "NFS share for backup target, e.g. 192.168.1.10:/backup"
-    nfs-options:
-      type: string
-      default: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
-      description: NFS mount options
-    s3-access-key:
-      type: string
-      default: ""
-      description: S3 access key ID
-    s3-secret-key:
-      type: string
-      default: ""
-      description: S3 secret access key
-    s3-bucket:
-      type: string
-      default: ""
-      description: S3 bucket name
-    s3-region:
-      type: string
-      default: ""
-      description: S3 region name
-    s3-endpoint-url:
-      type: string
-      default: ""
-      description: S3 endpoint URL (leave empty for AWS S3)
-    s3-ssl-enabled:
-      type: boolean
-      default: true
-      description: Enable SSL for S3 connections

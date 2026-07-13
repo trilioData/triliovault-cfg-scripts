@@ -22,9 +22,6 @@ applications:
     scale: 1
     trust: true
     options:
-      backup-target-type: nfs
-      nfs-shares: ""        # Set to your NFS share, e.g. 192.168.1.10:/backup
-      nfs-options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
       api-workers: 2
       debug: false
 

@@ -172,29 +172,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "api_workers": str(self.config["api-workers"]),
         }
 
-        self._add_backup_target_config(cfg)
-
         buf = io.StringIO()
         cfg.write(buf)
         container.push(CONFIG_PATH, buf.getvalue(), make_dirs=True)
         logger.info("Wrote %s", CONFIG_PATH)
-
-    def _add_backup_target_config(self, cfg):
-        target_type = self.config["backup-target-type"]
-        if target_type == "nfs":
-            cfg["nfs"] = {
-                "shares": self.config["nfs-shares"],
-                "options": self.config["nfs-options"],
-            }
-        elif target_type == "s3":
-            cfg["s3"] = {
-                "access_key": self.config["s3-access-key"],
-                "secret_key": self.config["s3-secret-key"],
-                "bucket": self.config["s3-bucket"],
-                "region_name": self.config["s3-region"],
-                "endpoint_url": self.config["s3-endpoint-url"],
-                "ssl_enabled": str(self.config["s3-ssl-enabled"]).lower(),
-            }
 
     # --- Pebble layer ---
 
