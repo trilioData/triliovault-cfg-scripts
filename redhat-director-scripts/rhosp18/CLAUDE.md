@@ -68,5 +68,9 @@ rhosp18/
 4. `deploy_tvo_control_plane.sh` — deploy control plane via operator
 5. `dataplane-scripts/` Ansible roles — install datamover on compute nodes
 
+## Known Constraints
+- **`containers.podman.podman_container` with `state: stopped` fails if the container doesn't exist**: it tries to *create* the container (requiring an `image` param) rather than no-op, erroring `Cannot create container when image is not specified!`. `state: absent` does not have this problem — it force-stops and removes the container in one step regardless of whether it's running or already gone. When a task list stops then removes the same container, the explicit stop task is redundant; drop it rather than adding `ignore_errors: true` band-aids (TVAULT-7487, `trilio-datamover/tasks/delete-backup-target.yml`).
+- **`delete-backup-target.yml` was dropped from `maint/6.2`**: `dataplane-scripts/ansible-roles/trilio-datamover/tasks/delete-backup-target.yml` exists on `maint/6.1` but not on `maint/6.2`, since 6.2 stopped managing backup targets via these devops scripts. Jiras reported against this file must be fixed on `maint/6.1` — don't assume the "6.2.1 Jiras go to maint/6.2" branching convention applies when the affected file doesn't exist there.
+
 ## T4O Installation Guide
 https://docs.trilio.io/openstack/deployment/installing-on-rhosp/trilio_installation_on_rhoso
