@@ -56,6 +56,8 @@ spec:
         fsGroup: 42424
       affinity:
 {{ tuple $envAll "triliovault" "wlm_api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         {{ .Values.labels.wlm_api.node_selector_key }}: {{ .Values.labels.wlm_api.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.wlm_api.timeout | default "30" }}
@@ -74,6 +76,10 @@ spec:
 {{- end }}
             - name: POD_NAME
               value: "triliovault-wlm-api"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           command:
             - /tmp/triliovault-wlm-api-init.sh
           terminationMessagePath: /var/log/termination-log
@@ -91,6 +97,12 @@ spec:
 {{ tuple $envAll "triliovault_wlm_api" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
 {{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_wlm_api" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
           command:
             - /tmp/triliovault-wlm-api.sh
             - start

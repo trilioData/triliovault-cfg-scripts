@@ -38,8 +38,14 @@ examples:
 
 {{- $ca := "" }}
 {{- with index $envAll.Values.endpoints $endpointName }}
-  {{- with .host_fqdn_override.public.tls.ca }}
-    {{- $ca = . | trim }}
+  {{- if .host_fqdn_override }}
+    {{- if .host_fqdn_override.public }}
+      {{- if .host_fqdn_override.public.tls }}
+        {{- if .host_fqdn_override.public.tls.ca }}
+          {{- $ca = .host_fqdn_override.public.tls.ca | trim }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}
 

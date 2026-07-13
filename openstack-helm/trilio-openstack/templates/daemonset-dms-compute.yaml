@@ -58,6 +58,30 @@ spec:
 {{ end }}
       initContainers:
 {{ tuple $envAll "dms" $envAll.Values.pod.mounts.triliovault_dms.init_container | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+        {{- if .Values.ceph.enabled }}
+        - name: ceph-keyring-placement-triliovault
+{{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ dict "envAll" $envAll "application" "triliovault" "container" "ceph_keyring_placement_triliovault" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          command:
+            - /tmp/ceph_keyring_placement_triliovault.sh
+          env:
+            - name: RBD_USER
+              value: {{ .Values.ceph.rbd_user | quote }}
+          terminationMessagePath: /var/log/termination-log
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: etcceph
+              mountPath: /etc/ceph
+            - name: triliovault-datamover-bin
+              mountPath: /tmp/ceph_keyring_placement_triliovault.sh
+              subPath: ceph_keyring_placement_triliovault.sh
+              readOnly: true
+            - name: ceph-keyring
+              mountPath: /tmp/client-keyring
+              subPath: keyring
+              readOnly: true
+        {{ end }}
         - name: dms-init
 {{ tuple $envAll "triliovault_dms_init" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ dict "envAll" $envAll "application" "triliovault" "container" "triliovault_dms_init" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
@@ -79,6 +103,10 @@ spec:
               mountPath: /run
             - name: pod-shared-triliovault-dms
               mountPath: /tmp/pod-shared-triliovault-dms
+            - name: varlibtrilio
+              mountPath: /var/lib/trilio
+            - name: varlogtriliovaultdms
+              mountPath: /var/log/triliovault
       containers:
         - name: triliovault-dms
 {{ tuple $envAll "triliovault_dms" | include "helm-toolkit.snippets.image" | indent 10 }}
@@ -121,6 +149,18 @@ spec:
               mountPath: /tmp/triliovault-dms.sh
               subPath: triliovault-dms.sh
               readOnly: true
+            {{- if .Values.ceph.enabled }}
+            - name: etcceph
+              mountPath: /etc/ceph
+            - name: triliovault-datamover-etc
+              mountPath: /etc/ceph/ceph.conf
+              subPath: ceph.conf
+              readOnly: true
+            - name: ceph-keyring
+              mountPath: /tmp/client-keyring
+              subPath: keyring
+              readOnly: true
+            {{- end }}
             - mountPath: /etc/nova/nova.conf.d
               name: nova-confd
             - name: varlibnova
@@ -263,6 +303,17 @@ spec:
         - name: etciscsi
           hostPath:
             path: /etc/iscsi
+        {{- if .Values.ceph.enabled }}
+        - name: etcceph
+          emptyDir: {}
+        - name: ceph-keyring
+          secret:
+            secretName: triliovault-ceph-keyring
+        {{ end }}
+        - name: triliovault-datamover-etc
+          secret:
+            secretName: triliovault-etc-datamover
+            defaultMode: 0444
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}

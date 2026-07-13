@@ -52,6 +52,10 @@ spec:
         fsGroup: 42424
       affinity:
 {{ tuple $envAll "triliovault" "dms" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         {{ .Values.labels.dms_controller.node_selector_key }}: {{ .Values.labels.dms_controller.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.dms.timeout | default "30" }}
