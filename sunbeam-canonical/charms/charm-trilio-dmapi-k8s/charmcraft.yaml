@@ -1,0 +1,69 @@
+name: trilio-dmapi-k8s
+type: charm
+title: TrilioVault DataMover API (Kubernetes)
+summary: TrilioVault DataMover API K8s charm for Sunbeam Canonical OpenStack
+description: |
+  Deploys TrilioVault DataMover API (dmapi) on Sunbeam Canonical OpenStack as a
+  Kubernetes charm. Runs the dmapi service as a Pebble-managed process inside
+  a Kubernetes pod, listening on port 8784.
+
+  Requires a relation to trilio-wlm-k8s (wlm-service interface) to configure
+  the WLM API endpoint that DataMover API communicates with.
+
+assumes:
+  - k8s-api
+  - juju >= 3.1
+
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+
+containers:
+  trilio-dmapi:
+    resource: trilio-dmapi-image
+
+resources:
+  trilio-dmapi-image:
+    type: oci-image
+    description: OCI image for TrilioVault DataMover API
+    upstream-source: docker.io/trilio/trilio-dmapi-canonical:6.2.1-2024.1
+
+requires:
+  database:
+    interface: mysql_client
+    limit: 1
+  amqp:
+    interface: rabbitmq
+    limit: 1
+  identity-service:
+    interface: keystone
+    limit: 1
+  wlm-service:
+    interface: wlm-service
+    limit: 1
+  ingress-internal:
+    interface: ingress
+    optional: true
+    limit: 1
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+
+peers:
+  peers:
+    interface: trilio-dmapi-peer
+
+config:
+  options:
+    api-workers:
+      type: int
+      default: 2
+      description: Number of dmapi worker processes
+    debug:
+      type: boolean
+      default: false
+      description: Enable debug logging

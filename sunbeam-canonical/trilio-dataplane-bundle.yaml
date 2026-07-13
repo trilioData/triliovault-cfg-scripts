@@ -1,0 +1,40 @@
+# TrilioVault Data Plane Bundle for Sunbeam Canonical OpenStack
+#
+# Deploys trilio-data-mover-sunbeam as a Juju subordinate charm into the
+# "openstack-machines" (machine) model.  The subordinate co-locates automatically
+# on every machine running openstack-hypervisor — including new nodes that join
+# the cluster later via "sunbeam cluster join".
+#
+# Usage:
+#   juju switch openstack-machines
+#   juju deploy ./trilio-dataplane-bundle.yaml
+#
+# Cross-model SAAS relations pull amqp and keystone-credentials from the
+# openstack model.  Offer those relations first if not already offered:
+#   juju switch openstack
+#   juju offer rabbitmq:amqp
+#   juju offer keystone:identity-credentials
+#   juju switch openstack-machines
+
+bundle: machine
+
+applications:
+
+  trilio-data-mover-sunbeam:
+    charm: trilio-data-mover-sunbeam
+    channel: stable
+    options:
+      triliovault-pkg-source: "deb [trusted=yes] https://apt.trilio.io jammy main"
+      trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
+      backup-target-type: nfs
+      nfs-shares: ""         # Set to your NFS share, e.g. 192.168.1.10:/backup
+      nfs-options: "nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
+      debug: false
+
+relations:
+  # Subordinate binding to the compute principal
+  - [trilio-data-mover-sunbeam:juju-info, openstack-hypervisor:juju-info]
+
+  # Cross-model SAAS relations — adjust offer URLs to match your controller/model names
+  - [trilio-data-mover-sunbeam:amqp, admin/openstack.rabbitmq:amqp]
+  - [trilio-data-mover-sunbeam:identity-credentials, admin/openstack.keystone:identity-credentials]
