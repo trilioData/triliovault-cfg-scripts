@@ -27,6 +27,7 @@ DATAMOVER_SERVICE = "tvault-contego"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/tvault-contego/tvault-contego.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
+S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
 TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
@@ -89,6 +90,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         try:
             self._write_datamover_config()
             self._write_dms_config()
+            self._write_s3vaultfuse_config()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -250,6 +252,49 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DMS_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DMS_CONFIG_PATH)
+
+    def _write_s3vaultfuse_config(self):
+        content = (
+            "[DEFAULT]\n"
+            "vault_storage_type = s3\n"
+            "\n"
+            "vault_s3_max_pool_connections = 50\n"
+            "vault_s3_read_timeout = 30\n"
+            "vault_s3_max_attempts = 3\n"
+            "vault_s3_auth_version = DEFAULT\n"
+            "vault_s3_signature_version = default\n"
+            "\n"
+            "vault_s3_ssl = True\n"
+            "vault_s3_ssl_verify = True\n"
+            "vault_s3_region_name = us-east-1\n"
+            "\n"
+            "vault_segment_size = 33554432\n"
+            "vault_cache_size = 16\n"
+            "queue_depth = 100\n"
+            "worker_pool_size = 10\n"
+            "vault_retry_count = 2\n"
+            "\n"
+            "vault_enable_threadpool = True\n"
+            "vault_threaded_filesystem = True\n"
+            "max_uploads_pending = 20\n"
+            "\n"
+            "vault_logging_level = error\n"
+            "log_file = /var/log/triliovault/triliovault-object-store.log\n"
+            "vault_cache_username = nova\n"
+            "\n"
+            "bucket_object_lock = False\n"
+            "use_manifest_suffix = False\n"
+            "azure_immutability_enabled = False\n"
+            "metadata_cache_max_items = 32\n"
+            "\n"
+            "[s3fuse_sys_admin]\n"
+            "helper_command = sudo /usr/bin/trilio-dms-rootwrap"
+            " /etc/triliovault-dms/rootwrap.conf privsep-helper\n"
+        )
+        os.makedirs("/etc/triliovault-dms", exist_ok=True)
+        with open(S3VAULTFUSE_CONF, "w") as f:
+            f.write(content)
+        logger.info("Wrote %s", S3VAULTFUSE_CONF)
 
     # --- service management ---
 

@@ -21,6 +21,7 @@ Relation interface notes (Sunbeam Caracal):
 import configparser
 import io
 import logging
+import socket
 
 import ops
 
@@ -28,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-dm-api"
 CONFIG_PATH = "/etc/triliovault-datamover/dmapi.conf"
+DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
+S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault-datamover"
 DMAPI_PORT = 8784
 
@@ -62,6 +65,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             return
 
         self._write_config(container)
+        self._write_dms_client_config(container)
         self._update_pebble_layer(container)
         self.unit.status = ops.ActiveStatus("DM-API ready")
 
@@ -187,6 +191,47 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         cfg.write(buf)
         container.push(CONFIG_PATH, buf.getvalue(), make_dirs=True)
         logger.info("Wrote %s", CONFIG_PATH)
+
+    def _write_dms_client_config(self, container):
+        """Write DMS client config consumed by the trilio-dms client library inside DMAPI.
+
+        Same structure as WLM's client.conf; vhost/username defaults are 'dmapi'.
+        """
+        db = self._db_data()
+        amqp = self._amqp_data()
+
+        endpoint = db["endpoints"].split(",")[0].strip()
+        db_host, _, db_port = endpoint.partition(":")
+        db_port = db_port or "3306"
+        db_url = (
+            f"mysql+pymysql://{db['username']}:{db['password']}"
+            f"@{db_host}:{db_port}/{db['database']}"
+        )
+        transport_url = (
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"@{amqp['host']}:{amqp.get('port', '5672')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
+        )
+
+        cfg = configparser.ConfigParser()
+        cfg["client"] = {
+            "rabbitmq_url": transport_url,
+            "db_url": db_url,
+            "node_id": socket.gethostname(),
+            "request_timeout": "60",
+            "log_level": "INFO",
+            "log_file": "/var/log/triliovault-datamover/trilio-dms-client.log",
+            "log_max_bytes": "26214400",
+            "log_backup_count": "5",
+            "db_pool_size": "20",
+            "db_max_overflow": "40",
+            "db_pool_recycle": "3600",
+        }
+
+        buf = io.StringIO()
+        cfg.write(buf)
+        container.push(DMS_CLIENT_CONF, buf.getvalue(), make_dirs=True)
+        logger.info("Wrote %s", DMS_CLIENT_CONF)
 
     # --- Pebble layer ---
 

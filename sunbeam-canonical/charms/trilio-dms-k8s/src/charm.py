@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-dms"
 SERVER_CONF = "/etc/triliovault-dms/server.conf"
+S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 
 
@@ -57,6 +58,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             return
 
         self._write_config(container)
+        self._write_s3vaultfuse_config(container)
         self._update_pebble_layer(container)
         self.unit.status = ops.ActiveStatus("DMS server running")
 
@@ -122,6 +124,47 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         cfg.write(buf)
         container.push(SERVER_CONF, buf.getvalue(), make_dirs=True)
         logger.info("Wrote %s", SERVER_CONF)
+
+    def _write_s3vaultfuse_config(self, container):
+        content = (
+            "[DEFAULT]\n"
+            "vault_storage_type = s3\n"
+            "\n"
+            "vault_s3_max_pool_connections = 50\n"
+            "vault_s3_read_timeout = 30\n"
+            "vault_s3_max_attempts = 3\n"
+            "vault_s3_auth_version = DEFAULT\n"
+            "vault_s3_signature_version = default\n"
+            "\n"
+            "vault_s3_ssl = True\n"
+            "vault_s3_ssl_verify = True\n"
+            "vault_s3_region_name = us-east-1\n"
+            "\n"
+            "vault_segment_size = 33554432\n"
+            "vault_cache_size = 16\n"
+            "queue_depth = 100\n"
+            "worker_pool_size = 10\n"
+            "vault_retry_count = 2\n"
+            "\n"
+            "vault_enable_threadpool = True\n"
+            "vault_threaded_filesystem = True\n"
+            "max_uploads_pending = 20\n"
+            "\n"
+            "vault_logging_level = error\n"
+            "log_file = /var/log/triliovault/triliovault-object-store.log\n"
+            "vault_cache_username = nova\n"
+            "\n"
+            "bucket_object_lock = False\n"
+            "use_manifest_suffix = False\n"
+            "azure_immutability_enabled = False\n"
+            "metadata_cache_max_items = 32\n"
+            "\n"
+            "[s3fuse_sys_admin]\n"
+            "helper_command = sudo /usr/bin/trilio-dms-rootwrap"
+            " /etc/triliovault-dms/rootwrap.conf privsep-helper\n"
+        )
+        container.push(S3VAULTFUSE_CONF, content, make_dirs=True)
+        logger.info("Wrote %s", S3VAULTFUSE_CONF)
 
     def _update_pebble_layer(self, container):
         layer = ops.pebble.Layer({
