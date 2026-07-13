@@ -1,6 +1,6 @@
 # TrilioVault Data Plane Bundle for Sunbeam Canonical OpenStack
 #
-# Deploys trilio-data-mover-sunbeam as a Juju subordinate charm into the
+# Deploys trilio-data-mover as a Juju subordinate charm into the
 # "openstack-machines" (machine) model.  The subordinate co-locates automatically
 # on every machine running openstack-hypervisor — including new nodes that join
 # the cluster later via "sunbeam cluster join".
@@ -20,8 +20,8 @@ bundle: machine
 
 applications:
 
-  trilio-data-mover-sunbeam:
-    charm: trilio-data-mover-sunbeam
+  trilio-data-mover:
+    charm: trilio-data-mover
     channel: stable
     options:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.trilio.io jammy main"
@@ -33,8 +33,8 @@ applications:
 
 relations:
   # Subordinate binding to the compute principal
-  - [trilio-data-mover-sunbeam:juju-info, openstack-hypervisor:juju-info]
+  - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
 
   # Cross-model SAAS relations — adjust offer URLs to match your controller/model names
-  - [trilio-data-mover-sunbeam:amqp, admin/openstack.rabbitmq:amqp]
-  - [trilio-data-mover-sunbeam:identity-credentials, admin/openstack.keystone:identity-credentials]
+  - [trilio-data-mover:amqp, admin/openstack.rabbitmq:amqp]
+  - [trilio-data-mover:identity-credentials, admin/openstack.keystone:identity-credentials]

@@ -1,4 +1,4 @@
-name: trilio-data-mover-sunbeam
+name: trilio-data-mover
 type: charm
 title: TrilioVault DataMover (Sunbeam)
 summary: TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack
@@ -7,7 +7,7 @@ description: |
   co-located on every compute node running openstack-hypervisor.
 
   This charm targets Sunbeam Canonical OpenStack specifically. It differs from
-  charm-trilio-data-mover (which is subordinate to nova-compute on traditional
+  trilio-data-mover (which is subordinate to nova-compute on traditional
   Canonical OpenStack) in these ways:
     - Subordinate target: openstack-hypervisor (not nova-compute)
     - Framework: ops (not charms.reactive)
@@ -15,7 +15,7 @@ description: |
 
   When a new compute node joins via "sunbeam cluster join", openstack-hypervisor
   creates a new principal unit on that machine. Juju then automatically creates a
-  trilio-data-mover-sunbeam subordinate unit on the same machine — no operator
+  trilio-data-mover subordinate unit on the same machine — no operator
   action is required from the Trilio side.
 
 subordinate: true

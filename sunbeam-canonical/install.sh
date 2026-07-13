@@ -67,7 +67,7 @@ juju deploy "$SCRIPT_DIR/trilio-ctlplane-bundle.yaml" $BUNDLE_ARGS
 
 log "Waiting for control plane applications to become active..."
 juju wait-for application trilio-wlm-k8s  --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dmapi-k8s --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
 
 # --- Step 3: Deploy data plane bundle ---
 log "Deploying TrilioVault data plane into model: $DATAPLANE_MODEL"
@@ -75,16 +75,16 @@ juju switch "$DATAPLANE_MODEL"
 
 DP_BUNDLE_ARGS=""
 if [[ -n "$TRILIO_VERSION" ]]; then
-  DP_BUNDLE_ARGS="$DP_BUNDLE_ARGS --config trilio-data-mover-sunbeam.trilio-version=$TRILIO_VERSION"
+  DP_BUNDLE_ARGS="$DP_BUNDLE_ARGS --config trilio-data-mover.trilio-version=$TRILIO_VERSION"
 fi
 if [[ -n "$NFS_SHARES" ]]; then
-  DP_BUNDLE_ARGS="$DP_BUNDLE_ARGS --config trilio-data-mover-sunbeam.nfs-shares=$NFS_SHARES"
+  DP_BUNDLE_ARGS="$DP_BUNDLE_ARGS --config trilio-data-mover.nfs-shares=$NFS_SHARES"
 fi
 # shellcheck disable=SC2086
 juju deploy "$SCRIPT_DIR/trilio-dataplane-bundle.yaml" $DP_BUNDLE_ARGS
 
 log "Waiting for data plane applications to become active..."
-juju wait-for application trilio-data-mover-sunbeam --query='status=="active"' --timeout=10m
+juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
 
 # --- Step 4: Attach Horizon plugin (optional) ---
 if [[ "$SKIP_HORIZON" != "true" ]]; then

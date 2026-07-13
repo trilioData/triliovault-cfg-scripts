@@ -14,10 +14,10 @@ TrilioVault maps onto this cleanly:
 | WorkloadManager (wlm-api, wlm-workloads, wlm-cron, wlm-scheduler) | `openstack` (k8s) | `trilio-wlm-k8s` |
 | DataMover API (dmapi) | `openstack` (k8s) | `trilio-dm-api-k8s` |
 | Dynamic Mount Service — control plane | `openstack` (k8s) | `trilio-dms-k8s` |
-| DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover-sunbeam` |
+| DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover` |
 | Horizon Plugin | `openstack` (k8s) | OCI image attach to `horizon-k8s` |
 
-`trilio-data-mover-sunbeam` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
+`trilio-data-mover` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
 It installs both `tvault-contego` (DataMover) and `trilio-dms-server` (compute-side DMS) on every compute node.
 When a new compute node joins via `sunbeam cluster join`, Juju automatically deploys a DataMover unit on it — no manual operator action required.
 
@@ -83,7 +83,7 @@ juju config trilio-wlm-k8s \
 ```bash
 juju switch openstack-machines
 juju deploy ./trilio-dataplane-bundle.yaml \
-  --config trilio-data-mover-sunbeam.nfs-shares=192.168.1.10:/backup
+  --config trilio-data-mover.nfs-shares=192.168.1.10:/backup
 ```
 
 ### 3. Horizon Plugin
@@ -102,10 +102,10 @@ Horizon reloads automatically — no restart required.
 
 | Charm | Location | Notes |
 |-------|----------|-------|
-| `trilio-wlm-k8s` | `charms/charm-trilio-wlm-k8s/` | k8s, Pebble |
-| `trilio-dm-api-k8s` | `charms/charm-trilio-dm-api-k8s/` | k8s, Pebble |
-| `trilio-dms-k8s` | `charms/charm-trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
-| `trilio-data-mover-sunbeam` | `charms/charm-trilio-data-mover-sunbeam/` | machine subordinate, runs DataMover + compute DMS |
+| `trilio-wlm-k8s` | `charms/trilio-wlm-k8s/` | k8s, Pebble |
+| `trilio-dm-api-k8s` | `charms/trilio-dm-api-k8s/` | k8s, Pebble |
+| `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
+| `trilio-data-mover` | `charms/trilio-data-mover/` | machine subordinate, runs DataMover + compute DMS |
 
 ## OCI Images
 

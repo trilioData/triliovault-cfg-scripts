@@ -7,7 +7,7 @@ openstack-hypervisor compute node.
 Automatically co-located via juju-info subordinate relation — no manual
 action needed when a new compute node joins the cluster via sunbeam cluster join.
 
-DMS note: A DMS server must run on both control plane (charm-trilio-dms-k8s)
+DMS note: A DMS server must run on both control plane (trilio-dms-k8s)
 and every compute node (this charm). The two instances communicate via RabbitMQ
 and handle NFS / S3 mount operations on their respective hosts.
 """
@@ -254,8 +254,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         cfg["server"] = {
             "rabbitmq_url": transport_url,
             "auth_url": auth_url,
-            # node_id must match the nova compute hostname so WLM can route
-            # mount requests to the correct compute node DMS instance.
             "node_id": socket.gethostname(),
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",

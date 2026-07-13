@@ -6,7 +6,7 @@ Runs the trilio-dms-server on the control plane as a Pebble-managed process.
 DMS is a mount-coordination daemon — it handles NFS and S3 mount/unmount
 operations on behalf of WLM and DMAPI. Communication is via RabbitMQ (no
 HTTP listener). A second DMS server instance runs on every compute node,
-managed by the trilio-data-mover-sunbeam machine subordinate charm.
+managed by the trilio-data-mover machine subordinate charm.
 
 Relation interface notes (Sunbeam Caracal):
   - amqp: rabbitmq interface — unit databag.

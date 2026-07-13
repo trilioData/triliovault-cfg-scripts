@@ -12,7 +12,7 @@ description: |
   no HTTP listener of its own.
 
   A DMS server instance must also run on every compute node. That is handled
-  by the trilio-data-mover-sunbeam charm (machine subordinate), which runs the
+  by the trilio-data-mover charm (machine subordinate), which runs the
   compute-side DMS server alongside tvault-contego on each openstack-hypervisor.
 
 assumes:

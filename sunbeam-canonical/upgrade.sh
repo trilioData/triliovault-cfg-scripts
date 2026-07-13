@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # upgrade.sh — Upgrade TrilioVault on Sunbeam Canonical OpenStack
 #
-# Upgrades the control plane k8s charms (trilio-wlm-k8s, trilio-dmapi-k8s),
-# the data plane subordinate (trilio-data-mover-sunbeam), and the Horizon plugin.
+# Upgrades the control plane k8s charms (trilio-wlm-k8s, trilio-dm-api-k8s),
+# the data plane subordinate (trilio-data-mover), and the Horizon plugin.
 #
 # Usage:
 #   bash upgrade.sh --trilio-version 6.3.1
@@ -44,20 +44,20 @@ log() { echo "[$(date '+%H:%M:%S')] $*"; }
 log "Upgrading trilio-wlm-k8s to version $TRILIO_VERSION in model $CTLPLANE_MODEL"
 juju switch "$CTLPLANE_MODEL"
 juju refresh trilio-wlm-k8s  --channel stable
-juju refresh trilio-dmapi-k8s --channel stable
+juju refresh trilio-dm-api-k8s --channel stable
 
 log "Waiting for control plane to become active post-upgrade..."
 juju wait-for application trilio-wlm-k8s  --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dmapi-k8s --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
 
 # --- Step 2: Upgrade data plane ---
-log "Upgrading trilio-data-mover-sunbeam to version $TRILIO_VERSION in model $DATAPLANE_MODEL"
+log "Upgrading trilio-data-mover to version $TRILIO_VERSION in model $DATAPLANE_MODEL"
 juju switch "$DATAPLANE_MODEL"
-juju config trilio-data-mover-sunbeam trilio-version="$TRILIO_VERSION"
-juju refresh trilio-data-mover-sunbeam --channel stable
+juju config trilio-data-mover trilio-version="$TRILIO_VERSION"
+juju refresh trilio-data-mover --channel stable
 
 log "Waiting for data plane to become active post-upgrade..."
-juju wait-for application trilio-data-mover-sunbeam --query='status=="active"' --timeout=10m
+juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
 
 # --- Step 3: Upgrade Horizon plugin ---
 if [[ "$SKIP_HORIZON" != "true" ]]; then
