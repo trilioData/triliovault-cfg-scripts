@@ -1,0 +1,60 @@
+name: trilio-dms-k8s
+type: charm
+title: TrilioVault Dynamic Mount Service (Kubernetes)
+summary: TrilioVault DMS k8s charm for Sunbeam Canonical OpenStack (control plane)
+description: |
+  Deploys the TrilioVault Dynamic Mount Service (DMS) server on the Sunbeam
+  control plane as a Kubernetes charm.
+
+  DMS is a mount-coordination daemon that handles NFS and S3 (via s3vaultfuse)
+  mount/unmount operations on behalf of WLM and DMAPI. Communication between
+  the DMS server and its clients (WLM, DMAPI) is done via RabbitMQ — DMS has
+  no HTTP listener of its own.
+
+  A DMS server instance must also run on every compute node. That is handled
+  by the trilio-data-mover-sunbeam charm (machine subordinate), which runs the
+  compute-side DMS server alongside tvault-contego on each openstack-hypervisor.
+
+assumes:
+  - k8s-api
+  - juju >= 3.1
+
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+
+containers:
+  trilio-dms:
+    resource: trilio-dms-image
+
+resources:
+  trilio-dms-image:
+    type: oci-image
+    description: OCI image for TrilioVault Dynamic Mount Service
+    upstream-source: docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1
+
+requires:
+  amqp:
+    interface: rabbitmq
+    limit: 1
+  identity-service:
+    interface: keystone
+    limit: 1
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+
+config:
+  options:
+    debug:
+      type: boolean
+      default: false
+      description: Enable debug logging
+    worker-threads:
+      type: int
+      default: 10
+      description: Number of worker threads for parallel mount request processing

@@ -1,4 +1,4 @@
-name: trilio-dmapi-k8s
+name: trilio-dm-api-k8s
 type: charm
 title: TrilioVault DataMover API (Kubernetes)
 summary: TrilioVault DataMover API K8s charm for Sunbeam Canonical OpenStack
@@ -23,14 +23,14 @@ bases:
         channel: "22.04"
 
 containers:
-  trilio-dmapi:
-    resource: trilio-dmapi-image
+  trilio-dm-api:
+    resource: trilio-dm-api-image
 
 resources:
-  trilio-dmapi-image:
+  trilio-dm-api-image:
     type: oci-image
     description: OCI image for TrilioVault DataMover API
-    upstream-source: docker.io/trilio/trilio-dmapi-canonical:6.2.1-2024.1
+    upstream-source: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
 
 requires:
   database:
@@ -55,7 +55,7 @@ requires:
 
 peers:
   peers:
-    interface: trilio-dmapi-peer
+    interface: trilio-dm-api-peer
 
 config:
   options:

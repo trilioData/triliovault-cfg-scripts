@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
 """TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack.
 
-Installs tvault-contego on every openstack-hypervisor compute node.
+Installs tvault-contego AND the compute-side trilio-dms-server on every
+openstack-hypervisor compute node.
+
 Automatically co-located via juju-info subordinate relation — no manual
-action needed when a new compute node joins the cluster.
+action needed when a new compute node joins the cluster via sunbeam cluster join.
+
+DMS note: A DMS server must run on both control plane (charm-trilio-dms-k8s)
+and every compute node (this charm). The two instances communicate via RabbitMQ
+and handle NFS / S3 mount operations on their respective hosts.
 """
 
 import configparser
 import io
 import logging
 import os
+import socket
 import subprocess
 
 import ops
 
 logger = logging.getLogger(__name__)
 
-SERVICE = "tvault-contego"
-CONFIG_PATH = "/etc/tvault-contego/tvault-contego.conf"
+DATAMOVER_SERVICE = "tvault-contego"
+DMS_SERVICE = "triliovault-dms"
+DM_CONFIG_PATH = "/etc/tvault-contego/tvault-contego.conf"
+DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
+DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
 TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
@@ -39,10 +49,11 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- event handlers ---
 
     def _on_install(self, event):
-        self.unit.status = ops.MaintenanceStatus("Installing tvault-contego")
+        self.unit.status = ops.MaintenanceStatus("Installing TrilioVault packages")
         try:
             self._setup_apt_repo()
-            self._install_package()
+            self._install_packages()
+            self._create_directories()
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
@@ -53,9 +64,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._configure(event)
 
     def _on_upgrade_charm(self, event):
-        self.unit.status = ops.MaintenanceStatus("Upgrading tvault-contego")
+        self.unit.status = ops.MaintenanceStatus("Upgrading TrilioVault packages")
         try:
-            self._install_package()
+            self._install_packages()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
@@ -65,7 +76,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._configure(event)
 
     def _on_juju_info_joined(self, event):
-        # Principal (openstack-hypervisor) unit attached — attempt configuration
         self._configure(event)
 
     # --- core configure logic ---
@@ -77,14 +87,15 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
 
         try:
-            self._write_config()
-            self._restart_service()
+            self._write_datamover_config()
+            self._write_dms_config()
+            self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Configuration error: {e}")
             return
 
-        self.unit.status = ops.ActiveStatus("DataMover running")
+        self.unit.status = ops.ActiveStatus("DataMover and DMS running")
 
     def _missing_relations(self):
         missing = []
@@ -97,16 +108,19 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- relation data helpers ---
 
     def _amqp_data(self):
+        """rabbitmq interface: unit databag. Accept hostname or host."""
         rel = self.model.get_relation("amqp")
         if not rel:
             return None
         for unit in rel.units:
             d = rel.data[unit]
-            if d.get("host") and d.get("password"):
-                return d
+            host = d.get("hostname") or d.get("host")
+            if host and d.get("password"):
+                return {**dict(d), "host": host}
         return None
 
     def _identity_data(self):
+        """keystone-credentials interface: unit databag."""
         rel = self.model.get_relation("identity-credentials")
         if not rel:
             return None
@@ -130,18 +144,42 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         subprocess.run(["apt-get", "update", "-qq"], check=True)
         logger.info("Trilio apt repo configured")
 
-    def _install_package(self):
+    def _install_packages(self):
         version = self.config["trilio-version"].strip()
-        pkg = f"{SERVICE}={version}*" if version else SERVICE
+
+        # tvault-contego: datamover service package
+        dm_pkg = f"{DATAMOVER_SERVICE}={version}*" if version else DATAMOVER_SERVICE
+        # python3-trilio-dms: DMS server package (compute-side instance)
+        dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
+
         subprocess.run(
-            ["apt-get", "install", "-y", "--no-install-recommends", pkg],
+            ["apt-get", "install", "-y", "--no-install-recommends",
+             "fuse", "libfuse2", "nfs-common", "python3-s3-fuse-plugin",
+             dm_pkg, dms_pkg],
             check=True,
         )
-        logger.info("Installed %s", pkg)
+        logger.info("Installed %s and python3-trilio-dms", dm_pkg)
 
-    # --- config file rendering ---
+    def _create_directories(self):
+        dirs = [
+            "/etc/tvault-contego",
+            "/etc/triliovault-dms",
+            "/var/log/triliovault",
+            "/var/lib/trilio/triliovault-mounts",
+            "/var/triliovault",
+            "/run/dms",
+            "/run/dms/s3",
+        ]
+        for d in dirs:
+            os.makedirs(d, exist_ok=True)
+        # Fuse requires user_allow_other for DMS FUSE mounts
+        with open("/etc/fuse.conf", "a") as f:
+            f.write("\nuser_allow_other\n")
+        logger.info("Directories created")
 
-    def _write_config(self):
+    # --- datamover config file rendering ---
+
+    def _write_datamover_config(self):
         amqp = self._amqp_data()
         identity = self._identity_data()
 
@@ -156,7 +194,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         )
 
         cfg = configparser.ConfigParser()
-
         cfg["DEFAULT"] = {
             "transport_url": transport_url,
             "auth_strategy": "keystone",
@@ -171,16 +208,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "project_domain_name": "Default",
             "auth_type": "password",
         }
-
         self._add_backup_target_config(cfg)
 
         buf = io.StringIO()
         cfg.write(buf)
-
         os.makedirs("/etc/tvault-contego", exist_ok=True)
-        with open(CONFIG_PATH, "w") as f:
+        with open(DM_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
-        logger.info("Wrote %s", CONFIG_PATH)
+        logger.info("Wrote %s", DM_CONFIG_PATH)
 
     def _add_backup_target_config(self, cfg):
         target_type = self.config["backup-target-type"]
@@ -199,13 +234,52 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 "ssl_enabled": str(self.config["s3-ssl-enabled"]).lower(),
             }
 
+    # --- DMS config file rendering ---
+
+    def _write_dms_config(self):
+        amqp = self._amqp_data()
+        identity = self._identity_data()
+
+        transport_url = (
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"@{amqp['host']}:{amqp.get('port', '5672')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
+        )
+        auth_url = (
+            f"{identity.get('credentials_protocol', 'http')}://"
+            f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+        )
+
+        cfg = configparser.ConfigParser()
+        cfg["server"] = {
+            "rabbitmq_url": transport_url,
+            "auth_url": auth_url,
+            # node_id must match the nova compute hostname so WLM can route
+            # mount requests to the correct compute node DMS instance.
+            "node_id": socket.gethostname(),
+            "log_file": DMS_LOG_FILE,
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "s3vaultfuse_bin": "/usr/bin/s3vaultfuse.py",
+            "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
+            "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
+            "worker_threads": "10",
+        }
+
+        buf = io.StringIO()
+        cfg.write(buf)
+        os.makedirs("/etc/triliovault-dms", exist_ok=True)
+        with open(DMS_CONFIG_PATH, "w") as f:
+            f.write(buf.getvalue())
+        logger.info("Wrote %s", DMS_CONFIG_PATH)
+
     # --- service management ---
 
-    def _restart_service(self):
+    def _restart_services(self):
         subprocess.run(["systemctl", "daemon-reload"], check=True)
-        subprocess.run(["systemctl", "enable", SERVICE], check=True)
-        subprocess.run(["systemctl", "restart", SERVICE], check=True)
-        logger.info("Restarted %s", SERVICE)
+        for svc in (DATAMOVER_SERVICE, DMS_SERVICE):
+            subprocess.run(["systemctl", "enable", svc], check=True)
+            subprocess.run(["systemctl", "restart", svc], check=True)
+            logger.info("Restarted %s", svc)
 
 
 if __name__ == "__main__":

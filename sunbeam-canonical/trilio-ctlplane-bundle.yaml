@@ -1,6 +1,7 @@
 # TrilioVault Control Plane Bundle for Sunbeam Canonical OpenStack
 #
-# Deploys trilio-wlm-k8s and trilio-dmapi-k8s into the "openstack" (k8s) model.
+# Deploys trilio-wlm-k8s, trilio-dm-api-k8s, and trilio-dms-k8s into the
+# "openstack" (k8s) model.
 # Run this bundle AFTER Sunbeam bootstrap completes and the openstack model is healthy.
 #
 # Usage:
@@ -27,14 +28,22 @@ applications:
       api-workers: 2
       debug: false
 
-  trilio-dmapi-k8s:
-    charm: trilio-dmapi-k8s
+  trilio-dm-api-k8s:
+    charm: trilio-dm-api-k8s
     channel: stable
     scale: 1
     trust: true
     options:
       debug: false
       api-workers: 2
+
+  trilio-dms-k8s:
+    charm: trilio-dms-k8s
+    channel: stable
+    scale: 1
+    trust: true
+    options:
+      debug: false
 
 relations:
   # WLM relations
@@ -45,8 +54,12 @@ relations:
   - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]
 
   # DM-API relations
-  - [trilio-dmapi-k8s:database, mysql:database]
-  - [trilio-dmapi-k8s:amqp, rabbitmq:amqp]
-  - [trilio-dmapi-k8s:identity-service, keystone:identity-service]
-  - [trilio-dmapi-k8s:ingress-internal, traefik:ingress]
-  - [trilio-dmapi-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
+  - [trilio-dm-api-k8s:database, mysql:database]
+  - [trilio-dm-api-k8s:amqp, rabbitmq:amqp]
+  - [trilio-dm-api-k8s:identity-service, keystone:identity-service]
+  - [trilio-dm-api-k8s:ingress-internal, traefik:ingress]
+  - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
+
+  # DMS (Dynamic Mount Service) relations — control plane instance
+  - [trilio-dms-k8s:amqp, rabbitmq:amqp]
+  - [trilio-dms-k8s:identity-service, keystone:identity-service]
