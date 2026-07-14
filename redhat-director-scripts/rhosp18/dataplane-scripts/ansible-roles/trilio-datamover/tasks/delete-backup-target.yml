@@ -53,13 +53,66 @@
     state: absent
   when: triliovault_backup_target.backup_target_type == "nfs"
 
+- name: Stop and disable triliovault-object-store systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: "edpm_triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.service"
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Remove triliovault-object-store systemd unit file
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/edpm_triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.service"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Remove triliovault-object-store systemd unit requires directory
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/edpm_triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}.service.requires"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "s3"
+
+- name: Stop and disable triliovault-nfs-container systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: "edpm_triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.service"
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Remove triliovault-nfs-container systemd unit file
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/edpm_triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.service"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Remove triliovault-nfs-container systemd unit requires directory
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/edpm_triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}.service.requires"
+    state: absent
+  when: triliovault_backup_target.backup_target_type == "nfs"
+
+- name: Reload systemd daemon after removing backup target unit files
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 - name: Remove triliovault-object-store container
+  become: true
   containers.podman.podman_container:
     name: triliovault-object-store-{{ triliovault_backup_target.backup_target_name }}
     state: absent
   when: triliovault_backup_target.backup_target_type == "s3"
 
 - name: Remove triliovault-nfs-container container
+  become: true
   containers.podman.podman_container:
     name: triliovault-nfs-container-{{ triliovault_backup_target.backup_target_name }}
     state: absent
