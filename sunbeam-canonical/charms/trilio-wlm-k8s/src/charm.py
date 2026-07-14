@@ -25,7 +25,7 @@ import ops
 logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-wlm"
-CONFIG_PATH = "/etc/workloadmgr/workloadmgr.conf"
+CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
@@ -163,18 +163,23 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "auth_strategy": "keystone",
             "log_dir": LOG_DIR,
             "debug": str(self.config["debug"]).lower(),
+            "vault_data_directory": "/var/triliovault-mounts",
+            "vault_data_directory_old": "/var/triliovault",
+            "state_path": "/var/lib/workloadmgr",
         }
         cfg["database"] = {
             "connection": db_url,
         }
         cfg["keystone_authtoken"] = {
             "auth_url": auth_url,
+            "www_authenticate_uri": auth_url,
             "username": identity.get("service_username", "wlm"),
             "password": identity["service_password"],
             "project_name": identity.get("service_tenant", "services"),
             "user_domain_name": "Default",
             "project_domain_name": "Default",
             "auth_type": "password",
+            "service_token_roles_required": "True",
         }
         cfg["wlm"] = {
             "api_workers": str(self.config["api-workers"]),
@@ -182,10 +187,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         cfg["barbican"] = {
             "encryption_support": "true",
         }
+        cfg["global_job_scheduler"] = {
+            "misfire_grace_time": "600",
+        }
         cfg["s3fuse_sys_admin"] = {
             "helper_command": (
-                "sudo /usr/bin/trilio-dms-rootwrap"
-                " /etc/triliovault-dms/rootwrap.conf privsep-helper"
+                "sudo /usr/bin/workloadmgr-rootwrap"
+                " /etc/triliovault-wlm/rootwrap.conf privsep-helper"
             ),
         }
 

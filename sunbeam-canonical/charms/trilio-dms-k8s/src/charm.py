@@ -120,6 +120,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
             "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
             "worker_threads": str(self.config["worker-threads"]),
+            "barbican_ssl_verify": "True",
         }
 
         buf = io.StringIO()

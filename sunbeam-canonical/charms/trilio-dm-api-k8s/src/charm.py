@@ -27,7 +27,7 @@ import ops
 logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-dm-api"
-CONFIG_PATH = "/etc/triliovault-datamover/dmapi.conf"
+CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover-api.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 LOG_DIR = "/var/log/triliovault-datamover"
 DMAPI_PORT = 8784
