@@ -44,6 +44,14 @@ ALL_CHARMS=(trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s trilio-data-mover-su
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
 
+check_charmcraft_login() {
+    command -v charmcraft > /dev/null 2>&1 \
+        || die "charmcraft not installed. Run: sudo snap install charmcraft --classic"
+    charmcraft whoami > /dev/null 2>&1 \
+        || die "Not logged in to Charmhub. Run: charmcraft login"
+    log "Charmhub login: OK ($(charmcraft whoami 2>/dev/null | awk '/^username:/{print $2}'))"
+}
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --channel)       CHANNEL="$2";            shift 2 ;;
@@ -84,6 +92,8 @@ if [[ "$PUBLISH_ONLY" != "true" ]]; then
 fi
 
 [[ "$BUILD_ONLY" == "true" ]] && { log "Build-only mode — done."; exit 0; }
+
+check_charmcraft_login
 
 # ---------------------------------------------------------------------------
 # Step 2 — Upload and release

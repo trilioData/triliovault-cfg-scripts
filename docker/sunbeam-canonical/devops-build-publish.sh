@@ -33,6 +33,44 @@
 
 set -e
 
+check_docker_login() {
+    local registry="https://index.docker.io/v1/"
+    local config="${HOME}/.docker/config.json"
+
+    if [ ! -f "$config" ]; then
+        echo "ERROR: Docker Hub not configured. Run: docker login docker.io" >&2
+        exit 1
+    fi
+
+    # Resolve credential backend: per-registry helper > global store > inline auth.
+    local helper
+    helper=$(python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+r = sys.argv[2]
+print(d.get('credHelpers', {}).get(r) or d.get('credsStore') or '')
+" "$config" "$registry" 2>/dev/null || true)
+
+    if [ -n "$helper" ]; then
+        if ! echo "$registry" | "docker-credential-${helper}" get > /dev/null 2>&1; then
+            echo "ERROR: Not logged in to Docker Hub. Run: docker login docker.io" >&2
+            exit 1
+        fi
+    else
+        if ! python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+auth = d.get('auths', {}).get(sys.argv[2], {}).get('auth', '')
+sys.exit(0 if auth else 1)
+" "$config" "$registry" 2>/dev/null; then
+            echo "ERROR: Not logged in to Docker Hub. Run: docker login docker.io" >&2
+            exit 1
+        fi
+    fi
+
+    echo "Docker Hub login: OK"
+}
+
 usage() {
     cat <<EOF
 Usage: $0 <tag> [container[,container,...]]
@@ -109,6 +147,8 @@ else
 echo " Container        : all"
 fi
 echo "=================================================="
+
+check_docker_login
 
 BUILD_DIR="$BASE_DIR/tmp_devops_${TAG}"
 rm -rf "$BUILD_DIR"
