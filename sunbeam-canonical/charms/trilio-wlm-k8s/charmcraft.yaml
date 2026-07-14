@@ -6,7 +6,7 @@ description: |
   Deploys TrilioVault WorkloadManager on Sunbeam Canonical OpenStack as a
   Kubernetes charm. Runs four microservices as Pebble-managed services inside
   a single Kubernetes pod:
-    - wlm-api      (REST API, port 8781)
+    - wlm-api      (REST API, port 8781 — Keystone service type: workloads)
     - wlm-workloads (background workload processor)
     - wlm-scheduler (job scheduler)
     - wlm-cron     (periodic cron jobs — leader unit only, singleton)

@@ -28,14 +28,14 @@ RUN echo "user_allow_other" > /etc/fuse.conf
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk nova
 
 RUN mkdir -p \
-    /var/lib/trilio/triliovault-mounts \
+    /var/triliovault-mounts \
     /var/triliovault \
     /etc/triliovault-dms/client.conf.d \
     /var/log/triliovault \
     /run/dms/s3 \
-    && chmod 777 /var/lib/trilio/triliovault-mounts \
+    && chmod 777 /var/triliovault-mounts \
     && chown -R nova:nova \
-        /var/lib/trilio/triliovault-mounts \
+        /var/triliovault-mounts \
         /var/log/triliovault \
         /run/dms \
         /etc/triliovault-dms

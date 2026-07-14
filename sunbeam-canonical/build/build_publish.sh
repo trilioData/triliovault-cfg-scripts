@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
-# build_publish.sh — Build and publish TrilioVault Sunbeam charms to Charmhub
+# build_publish.sh — Build and/or publish TrilioVault Sunbeam charms to Charmhub
 #
-# Packs each charm with charmcraft, uploads to Charmhub, and releases to the
-# specified channel. Requires charmcraft installed and logged in:
-#   sudo snap install charmcraft --classic
-#   charmcraft login
+# Packs charms with charmcraft and/or uploads and releases them to Charmhub.
+# Requires charmcraft installed: sudo snap install charmcraft --classic
 #
 # Usage (run from any directory):
-#   bash sunbeam-canonical/build/build_publish.sh [OPTIONS]
+#   bash sunbeam-canonical/build/build_publish.sh --charms <all|charm[,...]> --mode <MODE> [OPTIONS]
 #
 # Options:
-#   --channel <CHANNEL>   Charmhub channel to release to (default: 2024.1/edge)
-#   --build-only          Pack charms but skip upload and release
-#   --publish-only        Upload/release pre-built .charm files, skip pack
-#   --charm <NAME>        Target one charm only (repeatable); default: all four
-#   -h, --help            Show this help
+#   --charms   'all' or comma-separated charm names
+#   --mode     build-only        Pack charms; do not upload or release
+#              publish-only      Upload/release pre-built .charm files; skip pack
+#              build-and-publish Pack, upload, and release charms
+#   --channel  Charmhub channel to release to (default: 2024.1/edge)
 #
 # Charm names on Charmhub:
 #   trilio-wlm-k8s
 #   trilio-dm-api-k8s
 #   trilio-dms-k8s
 #   trilio-data-mover-sunbeam
+#
+# Examples:
+#   bash build_publish.sh --charms all --mode build-and-publish --channel 2024.1/stable
+#   bash build_publish.sh --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
+#   bash build_publish.sh --charms all --mode publish-only --channel 2024.1/stable
 
 set -euo pipefail
 
@@ -28,9 +31,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHARMS_DIR="$(dirname "$SCRIPT_DIR")/charms"
 
 CHANNEL="2024.1/edge"
-BUILD_ONLY=false
-PUBLISH_ONLY=false
-SELECTED_CHARMS=()
+MODE=""
+CHARMS_ARG=""
 
 # Charmhub name → source directory under charms/
 declare -A CHARM_DIR_MAP=(
@@ -44,35 +46,98 @@ ALL_CHARMS=(trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s trilio-data-mover-su
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+usage() {
+    cat <<EOF
+Usage: $0 --charms <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
+
+  --charms   'all' or comma-separated charm names
+  --mode     build-only        Pack charms; do not upload or release
+             publish-only      Upload/release pre-built .charm files; skip pack
+             build-and-publish Pack, upload, and release charms
+  --channel  Charmhub channel (default: 2024.1/edge)
+
+Charms:
+  trilio-wlm-k8s            WorkloadManager (k8s)
+  trilio-dm-api-k8s         DataMover API (k8s)
+  trilio-dms-k8s            Dynamic Mount Service (k8s)
+  trilio-data-mover-sunbeam DataMover on compute nodes (machine subordinate)
+
+Examples:
+  $0 --charms all --mode build-and-publish --channel 2024.1/stable
+  $0 --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
+  $0 --charms all --mode publish-only --channel 2024.1/stable
+
+Options:
+  -h, --help   Show this help and exit.
+EOF
+}
+
+check_charmcraft_login() {
+    command -v charmcraft > /dev/null 2>&1 \
+        || die "charmcraft not installed. Run: sudo snap install charmcraft --classic"
+    charmcraft whoami > /dev/null 2>&1 \
+        || die "Not logged in to Charmhub. Run: charmcraft login"
+    log "Charmhub login: OK ($(charmcraft whoami 2>/dev/null | awk '/^username:/{print $2}'))"
+}
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --channel)       CHANNEL="$2";            shift 2 ;;
-        --build-only)    BUILD_ONLY=true;          shift   ;;
-        --publish-only)  PUBLISH_ONLY=true;        shift   ;;
-        --charm)         SELECTED_CHARMS+=("$2");  shift 2 ;;
-        -h|--help)       grep '^#' "$0" | sed 's/^# \?//'; exit 0 ;;
-        *) die "Unknown option: $1" ;;
+        -h|--help) usage; exit 0 ;;
+        --charms)
+            [[ -n "${2:-}" ]] || die "--charms requires a value"
+            CHARMS_ARG="$2"; shift 2 ;;
+        --mode)
+            [[ -n "${2:-}" ]] || die "--mode requires a value"
+            MODE="$2"; shift 2 ;;
+        --channel)
+            [[ -n "${2:-}" ]] || die "--channel requires a value"
+            CHANNEL="$2"; shift 2 ;;
+        *)
+            die "Unknown option: $1" ;;
     esac
 done
 
-[[ "$BUILD_ONLY" == "true" && "$PUBLISH_ONLY" == "true" ]] && die "--build-only and --publish-only are mutually exclusive"
+[[ -n "$CHARMS_ARG" ]] || { usage >&2; die "--charms is required ('all' or comma-separated charm names)"; }
+[[ -n "$MODE" ]]       || { usage >&2; die "--mode is required (build-only | publish-only | build-and-publish)"; }
 
-[[ ${#SELECTED_CHARMS[@]} -eq 0 ]] && SELECTED_CHARMS=("${ALL_CHARMS[@]}")
+case "$MODE" in
+    build-only|publish-only|build-and-publish) ;;
+    *) die "Invalid --mode '$MODE'. Use: build-only | publish-only | build-and-publish" ;;
+esac
 
-for charm in "${SELECTED_CHARMS[@]}"; do
-    [[ -v CHARM_DIR_MAP[$charm] ]] || die "Unknown charm '$charm'. Valid: ${ALL_CHARMS[*]}"
-done
+# Expand 'all' or validate comma-separated names
+SELECTED_CHARMS=()
+if [[ "$CHARMS_ARG" == "all" ]]; then
+    SELECTED_CHARMS=("${ALL_CHARMS[@]}")
+else
+    IFS=',' read -ra SELECTED_CHARMS <<< "$CHARMS_ARG"
+    for charm in "${SELECTED_CHARMS[@]}"; do
+        [[ -v CHARM_DIR_MAP[$charm] ]] || die "Unknown charm '$charm'. Valid: ${ALL_CHARMS[*]}"
+    done
+fi
 
-log "Charms       : ${SELECTED_CHARMS[*]}"
-log "Channel      : $CHANNEL"
-log "Build-only   : $BUILD_ONLY"
-log "Publish-only : $PUBLISH_ONLY"
+# Pre-flight: Charmhub login only needed when uploading/releasing
+if [[ "$MODE" != "build-only" ]]; then
+    check_charmcraft_login
+fi
+
+log "Charms  : ${SELECTED_CHARMS[*]}"
+log "Channel : $CHANNEL"
+log "Mode    : $MODE"
 echo
 
 # ---------------------------------------------------------------------------
 # Step 1 — Pack
 # ---------------------------------------------------------------------------
-if [[ "$PUBLISH_ONLY" != "true" ]]; then
+if [[ "$MODE" != "publish-only" ]]; then
     for charm in "${SELECTED_CHARMS[@]}"; do
         charm_dir="$CHARMS_DIR/${CHARM_DIR_MAP[$charm]}"
         [[ -d "$charm_dir" ]] || die "Charm directory not found: $charm_dir"
@@ -83,7 +148,7 @@ if [[ "$PUBLISH_ONLY" != "true" ]]; then
     done
 fi
 
-[[ "$BUILD_ONLY" == "true" ]] && { log "Build-only mode — done."; exit 0; }
+[[ "$MODE" == "build-only" ]] && { log "Build-only mode — done."; exit 0; }
 
 # ---------------------------------------------------------------------------
 # Step 2 — Upload and release
@@ -91,10 +156,8 @@ fi
 for charm in "${SELECTED_CHARMS[@]}"; do
     charm_dir="$CHARMS_DIR/${CHARM_DIR_MAP[$charm]}"
 
-    # charmcraft pack writes the .charm file into the charm directory.
-    # Filename pattern: <charm-name>_ubuntu-22.04-amd64.charm
     charm_file=$(ls "$charm_dir"/${charm}_*.charm 2>/dev/null | sort -V | tail -1)
-    [[ -n "$charm_file" ]] || die "No .charm file found for '$charm' in $charm_dir. Run without --publish-only to build first."
+    [[ -n "$charm_file" ]] || die "No .charm file found for '$charm' in $charm_dir. Run with --mode build-only or build-and-publish first."
 
     log "[$charm] Uploading $charm_file ..."
     upload_out=$(charmcraft --format json upload "$charm_file")
@@ -107,4 +170,4 @@ for charm in "${SELECTED_CHARMS[@]}"; do
 done
 
 echo
-log "All charms published to channel: $CHANNEL"
+log "Done. Mode: $MODE | Channel: $CHANNEL"

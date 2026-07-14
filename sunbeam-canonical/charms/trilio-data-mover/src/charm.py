@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 DATAMOVER_SERVICE = "tvault-contego"
 DMS_SERVICE = "triliovault-dms"
-DM_CONFIG_PATH = "/etc/tvault-contego/tvault-contego.conf"
+DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
@@ -59,7 +59,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
             return
-        self.unit.status = ops.WaitingStatus("Waiting for amqp and identity-credentials")
+        self.unit.status = ops.WaitingStatus("Waiting for amqp and identity-credentials relations")
 
     def _on_config_changed(self, event):
         self._configure(event)
@@ -67,6 +67,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_upgrade_charm(self, event):
         self.unit.status = ops.MaintenanceStatus("Upgrading TrilioVault packages")
         try:
+            # Re-run apt repo setup on upgrade — the GPG key or repo URL may have
+            # changed between Trilio releases and must be refreshed before installing
+            # the new package version.
+            self._setup_apt_repo()
             self._install_packages()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
@@ -164,55 +168,72 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _create_directories(self):
         dirs = [
-            "/etc/tvault-contego",
+            "/etc/triliovault-datamover",
             "/etc/triliovault-dms",
             "/var/log/triliovault",
-            "/var/lib/trilio/triliovault-mounts",
+            "/var/triliovault-mounts",
             "/var/triliovault",
             "/run/dms",
             "/run/dms/s3",
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
-        # Fuse requires user_allow_other for DMS FUSE mounts
-        with open("/etc/fuse.conf", "a") as f:
-            f.write("\nuser_allow_other\n")
+        # Fuse requires user_allow_other for DMS FUSE mounts.
+        # Guard before appending — this method is called on install AND on
+        # config-changed, so naively appending would duplicate the line on every
+        # re-configuration, eventually corrupting the file.
+        fuse_conf = "/etc/fuse.conf"
+        with open(fuse_conf, "r") as f:
+            fuse_content = f.read()
+        if "user_allow_other" not in fuse_content:
+            with open(fuse_conf, "a") as f:
+                f.write("\nuser_allow_other\n")
         logger.info("Directories created")
 
     # --- datamover config file rendering ---
 
     def _write_datamover_config(self):
         amqp = self._amqp_data()
-        identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'datamover')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'datamover')}"
-        )
-        auth_url = (
-            f"{identity.get('credentials_protocol', 'http')}://"
-            f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
 
         cfg = configparser.ConfigParser()
         cfg["DEFAULT"] = {
-            "transport_url": transport_url,
-            "auth_strategy": "keystone",
+            "dmapi_transport_url": transport_url,
+            "vault_data_directory": "/var/triliovault-mounts",
+            "vault_data_directory_old": "/var/triliovault",
+            "qemu_agent_ping_timeout": "30",
+            "log_config_append": "/etc/triliovault-datamover/datamover_logging.conf",
+            "max_uploads_pending": "3",
+            "max_commit_pending": "3",
             "debug": str(self.config["debug"]).lower(),
         }
-        cfg["keystone_authtoken"] = {
-            "auth_url": auth_url,
-            "username": identity.get("credentials_username", "datamover"),
-            "password": identity["credentials_password"],
-            "project_name": identity.get("credentials_project", "services"),
-            "user_domain_name": "Default",
-            "project_domain_name": "Default",
-            "auth_type": "password",
+        cfg["contego_sys_admin"] = {
+            # Must use tvault-contego-rootwrap so privileged disk/mount operations
+            # are executed through the rootwrap filter. Bare privsep-helper without
+            # rootwrap bypasses the allow-list and causes permission errors.
+            "helper_command": (
+                "sudo /usr/bin/tvault-contego-rootwrap"
+                f" {DM_CONFIG_PATH} privsep-helper"
+            ),
+        }
+        cfg["conductor"] = {
+            "use_local": "True",
+        }
+        cfg["s3fuse_sys_admin"] = {
+            # DMS uses its own rootwrap binary for s3/fuse privilege escalation.
+            "helper_command": (
+                "sudo /usr/bin/trilio-dms-rootwrap"
+                " /etc/triliovault-dms/rootwrap.conf privsep-helper"
+            ),
         }
         buf = io.StringIO()
         cfg.write(buf)
-        os.makedirs("/etc/tvault-contego", exist_ok=True)
+        os.makedirs("/etc/triliovault-datamover", exist_ok=True)
         with open(DM_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DM_CONFIG_PATH)
@@ -224,9 +245,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dms')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dms')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
         auth_url = (
             f"{identity.get('credentials_protocol', 'http')}://"
@@ -240,10 +261,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "node_id": socket.gethostname(),
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_max_bytes": "26214400",
+            "log_backup_count": "5",
             "s3vaultfuse_bin": "/usr/bin/s3vaultfuse.py",
             "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
             "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
             "worker_threads": "10",
+            "barbican_ssl_verify": "True",
         }
 
         buf = io.StringIO()
@@ -280,6 +304,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "\n"
             "vault_logging_level = error\n"
             "log_file = /var/log/triliovault/triliovault-object-store.log\n"
+            "log_config_append = /etc/triliovault-object-store/object_store_logging.conf\n"
+            "trace_function_calls = False\n"
             "vault_cache_username = nova\n"
             "\n"
             "bucket_object_lock = False\n"
