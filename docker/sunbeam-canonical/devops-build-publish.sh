@@ -5,15 +5,14 @@
 # Ubuntu-only — no OS platform argument required.
 #
 # Usage:
-#   bash devops-build-publish.sh <tag> <all|container[,container,...]> --mode <MODE>
+#   bash devops-build-publish.sh --tag <TAG> --containers <all|container[,...]> --mode <MODE>
 #
-# Arguments:
-#   tag        Docker image tag, e.g. 6.2.1-2024.1
-#   targets    'all'  — build/publish every container
-#              comma-separated names — build/publish only those containers
-#   --mode     build-only        Build images locally; do not push to Docker Hub
-#              publish-only      Push locally-built images; skip build
-#              build-and-publish Build and push images
+# Options:
+#   --tag        Docker image tag, e.g. 6.2.1-2024.1
+#   --containers 'all' or comma-separated container names
+#   --mode       build-only        Build images locally; do not push to Docker Hub
+#                publish-only      Push locally-built images; skip build
+#                build-and-publish Build and push images
 #
 # Containers:
 #   trilio-datamover-api    Control plane DataMover API
@@ -30,9 +29,9 @@
 #   e.g. docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
 #
 # Examples:
-#   bash devops-build-publish.sh 6.2.1-2024.1 all --mode build-and-publish
-#   bash devops-build-publish.sh 6.2.1-2024.1 trilio-wlm,trilio-dms --mode build-only
-#   bash devops-build-publish.sh 6.2.1-2024.1 all --mode publish-only
+#   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers all --mode build-and-publish
+#   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers trilio-wlm,trilio-dms --mode build-only
+#   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers all --mode publish-only
 
 set -e
 
@@ -46,13 +45,13 @@ ALL_CONTAINERS=(trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms
 
 usage() {
     cat <<EOF
-Usage: $0 <tag> <all|container[,container,...]> --mode <MODE>
+Usage: $0 --tag <TAG> --containers <all|container[,...]> --mode <MODE>
 
-  tag        Docker image tag, e.g. 6.2.1-2024.1
-  targets    'all' or comma-separated container names
-  --mode     build-only        Build images locally; do not push
-             publish-only      Push locally-built images; skip build
-             build-and-publish Build and push images
+  --tag        Docker image tag, e.g. 6.2.1-2024.1
+  --containers 'all' or comma-separated container names
+  --mode       build-only        Build images locally; do not push
+               publish-only      Push locally-built images; skip build
+               build-and-publish Build and push images
 
 Containers:
   trilio-datamover-api    Control plane DataMover API
@@ -67,9 +66,9 @@ Published image format:
   docker.io/trilio/<container>-canonical:<tag>
 
 Examples:
-  $0 6.2.1-2024.1 all --mode build-and-publish
-  $0 6.2.1-2024.1 trilio-wlm,trilio-dms --mode build-only
-  $0 6.2.1-2024.1 all --mode publish-only
+  $0 --tag 6.2.1-2024.1 --containers all --mode build-and-publish
+  $0 --tag 6.2.1-2024.1 --containers trilio-wlm,trilio-dms --mode build-only
+  $0 --tag 6.2.1-2024.1 --containers all --mode publish-only
 
 Options:
   -h, --help   Show this help message and exit.
@@ -119,32 +118,29 @@ sys.exit(0 if auth else 1)
 # ---------------------------------------------------------------------------
 
 TAG=""
-TARGETS_ARG=""
+CONTAINERS_ARG=""
 MODE=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
+        --tag)
+            [ -n "${2:-}" ] || { echo "ERROR: --tag requires a value" >&2; exit 1; }
+            TAG="$2"; shift 2 ;;
+        --containers)
+            [ -n "${2:-}" ] || { echo "ERROR: --containers requires a value" >&2; exit 1; }
+            CONTAINERS_ARG="$2"; shift 2 ;;
         --mode)
             [ -n "${2:-}" ] || { echo "ERROR: --mode requires a value" >&2; exit 1; }
             MODE="$2"; shift 2 ;;
-        -*)
-            echo "ERROR: Unknown option: $1" >&2; usage >&2; exit 1 ;;
         *)
-            if [ -z "$TAG" ]; then
-                TAG="$1"
-            elif [ -z "$TARGETS_ARG" ]; then
-                TARGETS_ARG="$1"
-            else
-                echo "ERROR: Unexpected argument: $1" >&2; usage >&2; exit 1
-            fi
-            shift ;;
+            echo "ERROR: Unknown option: $1" >&2; usage >&2; exit 1 ;;
     esac
 done
 
-[ -n "$TAG" ]         || { echo "ERROR: <tag> is required" >&2; usage >&2; exit 1; }
-[ -n "$TARGETS_ARG" ] || { echo "ERROR: <targets> is required ('all' or comma-separated container names)" >&2; usage >&2; exit 1; }
-[ -n "$MODE" ]        || { echo "ERROR: --mode is required" >&2; usage >&2; exit 1; }
+[ -n "$TAG" ]            || { echo "ERROR: --tag is required" >&2; usage >&2; exit 1; }
+[ -n "$CONTAINERS_ARG" ] || { echo "ERROR: --containers is required ('all' or comma-separated container names)" >&2; usage >&2; exit 1; }
+[ -n "$MODE" ]           || { echo "ERROR: --mode is required" >&2; usage >&2; exit 1; }
 
 case "$MODE" in
     build-only|publish-only|build-and-publish) ;;
@@ -153,10 +149,10 @@ esac
 
 # Expand 'all' or validate comma-separated names
 SELECTED_CONTAINERS=()
-if [ "$TARGETS_ARG" = "all" ]; then
+if [ "$CONTAINERS_ARG" = "all" ]; then
     SELECTED_CONTAINERS=("${ALL_CONTAINERS[@]}")
 else
-    IFS=',' read -ra SELECTED_CONTAINERS <<< "$TARGETS_ARG"
+    IFS=',' read -ra SELECTED_CONTAINERS <<< "$CONTAINERS_ARG"
     for c in "${SELECTED_CONTAINERS[@]}"; do
         valid=0
         for a in "${ALL_CONTAINERS[@]}"; do

@@ -5,11 +5,10 @@
 # Requires charmcraft installed: sudo snap install charmcraft --classic
 #
 # Usage (run from any directory):
-#   bash sunbeam-canonical/build/build_publish.sh <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
+#   bash sunbeam-canonical/build/build_publish.sh --charms <all|charm[,...]> --mode <MODE> [OPTIONS]
 #
-# Arguments:
-#   targets    'all'  — build/publish every charm
-#              comma-separated names — build/publish only those charms
+# Options:
+#   --charms   'all' or comma-separated charm names
 #   --mode     build-only        Pack charms; do not upload or release
 #              publish-only      Upload/release pre-built .charm files; skip pack
 #              build-and-publish Pack, upload, and release charms
@@ -22,9 +21,9 @@
 #   trilio-data-mover-sunbeam
 #
 # Examples:
-#   bash build_publish.sh all --mode build-and-publish --channel 2024.1/stable
-#   bash build_publish.sh trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
-#   bash build_publish.sh all --mode publish-only --channel 2024.1/stable
+#   bash build_publish.sh --charms all --mode build-and-publish --channel 2024.1/stable
+#   bash build_publish.sh --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
+#   bash build_publish.sh --charms all --mode publish-only --channel 2024.1/stable
 
 set -euo pipefail
 
@@ -33,7 +32,7 @@ CHARMS_DIR="$(dirname "$SCRIPT_DIR")/charms"
 
 CHANNEL="2024.1/edge"
 MODE=""
-TARGETS_ARG=""
+CHARMS_ARG=""
 
 # Charmhub name → source directory under charms/
 declare -A CHARM_DIR_MAP=(
@@ -53,9 +52,9 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 usage() {
     cat <<EOF
-Usage: $0 <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
+Usage: $0 --charms <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
 
-  targets    'all' or comma-separated charm names
+  --charms   'all' or comma-separated charm names
   --mode     build-only        Pack charms; do not upload or release
              publish-only      Upload/release pre-built .charm files; skip pack
              build-and-publish Pack, upload, and release charms
@@ -68,9 +67,9 @@ Charms:
   trilio-data-mover-sunbeam DataMover on compute nodes (machine subordinate)
 
 Examples:
-  $0 all --mode build-and-publish --channel 2024.1/stable
-  $0 trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
-  $0 all --mode publish-only --channel 2024.1/stable
+  $0 --charms all --mode build-and-publish --channel 2024.1/stable
+  $0 --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
+  $0 --charms all --mode publish-only --channel 2024.1/stable
 
 Options:
   -h, --help   Show this help and exit.
@@ -92,22 +91,22 @@ check_charmcraft_login() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         -h|--help) usage; exit 0 ;;
+        --charms)
+            [[ -n "${2:-}" ]] || die "--charms requires a value"
+            CHARMS_ARG="$2"; shift 2 ;;
         --mode)
             [[ -n "${2:-}" ]] || die "--mode requires a value"
             MODE="$2"; shift 2 ;;
         --channel)
             [[ -n "${2:-}" ]] || die "--channel requires a value"
             CHANNEL="$2"; shift 2 ;;
-        -*)
-            die "Unknown option: $1" ;;
         *)
-            [[ -z "$TARGETS_ARG" ]] || die "Unexpected argument: $1"
-            TARGETS_ARG="$1"; shift ;;
+            die "Unknown option: $1" ;;
     esac
 done
 
-[[ -n "$TARGETS_ARG" ]] || { usage >&2; die "<targets> is required ('all' or comma-separated charm names)"; }
-[[ -n "$MODE" ]]        || { usage >&2; die "--mode is required (build-only | publish-only | build-and-publish)"; }
+[[ -n "$CHARMS_ARG" ]] || { usage >&2; die "--charms is required ('all' or comma-separated charm names)"; }
+[[ -n "$MODE" ]]       || { usage >&2; die "--mode is required (build-only | publish-only | build-and-publish)"; }
 
 case "$MODE" in
     build-only|publish-only|build-and-publish) ;;
@@ -116,10 +115,10 @@ esac
 
 # Expand 'all' or validate comma-separated names
 SELECTED_CHARMS=()
-if [[ "$TARGETS_ARG" == "all" ]]; then
+if [[ "$CHARMS_ARG" == "all" ]]; then
     SELECTED_CHARMS=("${ALL_CHARMS[@]}")
 else
-    IFS=',' read -ra SELECTED_CHARMS <<< "$TARGETS_ARG"
+    IFS=',' read -ra SELECTED_CHARMS <<< "$CHARMS_ARG"
     for charm in "${SELECTED_CHARMS[@]}"; do
         [[ -v CHARM_DIR_MAP[$charm] ]] || die "Unknown charm '$charm'. Valid: ${ALL_CHARMS[*]}"
     done
