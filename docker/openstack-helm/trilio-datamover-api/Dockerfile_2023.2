@@ -42,7 +42,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Etc/UTC
 RUN set -ex \
     && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
-       python3-dmapi \
+       python3-dmapi python3-trilio-dms python3-nova \
     && apt-get clean -y
 
 # Configure Apache for DMAPI
@@ -59,8 +59,8 @@ RUN apt-get -y upgrade --with-new-pkgs --only-upgrade
 # Clean up unnecessary files
 RUN rm -f /etc/apt/sources.list.d/trilio.list
 
-RUN mkdir -p /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses \
-    && chown -R dmapi.dmapi /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses
+RUN mkdir -p /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses /var/log/triliovault \
+    && chown -R dmapi.dmapi /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /licenses /var/log/triliovault
 
 # Copy license file
 COPY licensing.txt /licenses

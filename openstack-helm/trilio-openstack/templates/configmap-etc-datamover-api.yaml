@@ -114,7 +114,7 @@ limitations under the License.
 */}}
 
 {{- if empty .Values.conf.dms_client.client.db_url -}}
-{{- $_ := tuple "oslo_db_triliovault_datamover" "internal" "triliovault_datamover" "mysql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.dms_client.client "db_url" -}}
+{{- $_ := tuple "oslo_db_triliovault_wlm" "internal" "triliovault_wlm" "mysql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.dms_client.client "db_url" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.dms_client.client.rabbitmq_url -}}
