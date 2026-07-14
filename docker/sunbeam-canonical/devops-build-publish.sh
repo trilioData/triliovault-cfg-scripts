@@ -10,9 +10,12 @@
 # Arguments:
 #   tag          Docker image tag (any format), e.g. 6.2.1-2024.1
 #   container    (optional) Comma-separated list of containers to build.
-#                  trilio-datamover | trilio-datamover-api |
-#                  trilio-horizon-plugin | trilio-wlm | trilio-dms
-#                If omitted, all 5 containers are built.
+#                  trilio-datamover-api | trilio-horizon-plugin | trilio-wlm | trilio-dms
+#                If omitted, all 4 containers are built.
+#
+# Note: trilio-datamover is NOT included — the DataMover is installed via APT
+#       packages by the trilio-data-mover-sunbeam machine subordinate charm
+#       on compute nodes. No OCI image is needed.
 #
 # Examples:
 #   bash devops-build-publish.sh 6.2.1-2024.1
@@ -36,14 +39,16 @@ Usage: $0 <tag> [container[,container,...]]
 
   tag          Docker image tag (any format), e.g. 6.2.1-2024.1
   container    (optional) Comma-separated list of containers to build.
-               If omitted, all 5 containers are built.
+               If omitted, all 4 containers are built.
 
 Containers:
-  trilio-datamover        Compute node datamover (not used as a container in Sunbeam — included for image distribution)
   trilio-datamover-api    Control plane datamover API
   trilio-horizon-plugin   OpenStack Horizon UI plugin
   trilio-wlm              Workload Manager
   trilio-dms              Dynamic Mount Service (release-independent; uses plain Dockerfile)
+
+Note: trilio-datamover is NOT built here. The DataMover is installed directly
+via APT packages by the trilio-data-mover-sunbeam machine charm on compute nodes.
 
 Published image format:
   docker.io/trilio/<container>-canonical:<tag>
@@ -73,7 +78,7 @@ TAG="$1"
 OPENSTACK_RELEASE="2024.1"
 TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
 
-ALL_CONTAINERS=(trilio-datamover trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
+ALL_CONTAINERS=(trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
 
 # Parse comma-separated container list from second argument
 SELECTED_CONTAINERS=()
