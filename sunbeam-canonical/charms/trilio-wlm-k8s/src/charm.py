@@ -14,6 +14,8 @@ Relation interface notes (Sunbeam Caracal):
   - identity-service: keystone interface — unit databag.
     Keys: service_host, service_port, service_protocol, service_username,
           service_password, service_tenant.
+  - ingress-internal / ingress-public: traefik_k8s v2 ingress interface.
+    Requirer writes a JSON blob under "data" key in the app databag.
 """
 
 import configparser
@@ -29,7 +31,16 @@ CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
+# Port confirmed from `openstack endpoint list` on RHOSO18 (consistent across all
+# OpenStack distributions): triliovault-wlm-internal.svc:8781
+# Must be explicit via osapi_workloads_listen_port so the binary binds here.
 WLM_PORT = 8781
+# Service type/name confirmed from `openstack endpoint list` — same on all platforms:
+#   Service Name=TrilioVaultWLM  Service Type=workloads
+WLM_SERVICE_TYPE = "workloads"
+WLM_SERVICE_NAME = "TrilioVaultWLM"
+# Endpoint path template matching production WLM endpoint format.
+WLM_ENDPOINT_TEMPLATE = "{}/v1/$(tenant_id)s"
 
 
 class TrilioWlmK8sCharm(ops.CharmBase):
@@ -45,6 +56,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
         self.framework.observe(self.on.wlm_service_relation_joined, self._on_wlm_service_joined)
+        for rel in ("ingress_internal", "ingress_public"):
+            self.framework.observe(
+                getattr(self.on, f"{rel}_relation_joined"), self._on_ingress_relation_joined
+            )
 
     # --- event handlers ---
 
@@ -54,6 +69,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_wlm_service_joined(self, event):
         if self.unit.is_leader():
             self._publish_wlm_service_data()
+
+    def _on_ingress_relation_joined(self, event):
+        self._publish_ingress(event.relation)
 
     def _configure(self, event):
         container = self.unit.get_container(CONTAINER)
@@ -70,9 +88,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._update_pebble_layer(container)
+        # Expose WLM_PORT so Juju creates the k8s Service port entry.
+        # Without this, intra-cluster traffic to wlm-api cannot reach the pod.
+        self.unit.open_port("tcp", WLM_PORT)
 
         if self.unit.is_leader():
             self._publish_wlm_service_data()
+            self._register_keystone_service()
 
         self.unit.status = ops.ActiveStatus("WLM ready")
 
@@ -166,6 +188,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "vault_data_directory": "/var/triliovault-mounts",
             "vault_data_directory_old": "/var/triliovault",
             "state_path": "/var/lib/workloadmgr",
+            # Explicit port (8781) so the binary binds on the same port open_port()
+            # advertises and that is registered as the Keystone endpoint port.
+            "osapi_workloads_listen_port": str(WLM_PORT),
         }
         cfg["database"] = {
             "connection": db_url,
@@ -275,6 +300,46 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         rel = self.model.get_relation("wlm-service")
         if rel:
             rel.data[self.app]["wlm-api-url"] = f"http://{self.app.name}:{WLM_PORT}"
+
+    def _register_keystone_service(self):
+        """Write WLM endpoint registration data into the identity-service relation.
+
+        Sunbeam keystone-k8s reads these fields from the requirer app databag and
+        registers the service + endpoints in the Keystone service catalog. Without
+        this the service user is created but no endpoint appears in `openstack catalog
+        list`, so external clients cannot discover the WLM URL.
+        """
+        rel = self.model.get_relation("identity-service")
+        if not rel:
+            return
+        internal_url = WLM_ENDPOINT_TEMPLATE.format(f"http://{self.app.name}:{WLM_PORT}")
+        rel.data[self.app].update({
+            "service_name": WLM_SERVICE_NAME,
+            "service_type": WLM_SERVICE_TYPE,
+            "public_url": internal_url,
+            "internal_url": internal_url,
+            "admin_url": internal_url,
+            "region": "RegionOne",
+        })
+
+    def _publish_ingress(self, rel):
+        """Write traefik_k8s v2 ingress requirer data so traefik routes external
+        traffic to this application.
+
+        Uses individual databag keys matching the traefik-k8s ingress v2 interface
+        spec. Traefik reads model+name to build the routing rule and port to select
+        the backend service port.
+        """
+        if not self.unit.is_leader():
+            return
+        rel.data[self.app].update({
+            "model": self.model.name,
+            "name": self.app.name,
+            "port": str(WLM_PORT),
+            "scheme": "http",
+            "strip-prefix": "false",
+            "redirect-https": "false",
+        })
 
 
 if __name__ == "__main__":

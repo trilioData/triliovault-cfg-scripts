@@ -32,6 +32,9 @@ relations:
   # Subordinate binding to the compute principal
   - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
 
-  # Cross-model SAAS relations — adjust offer URLs to match your controller/model names
+  # Cross-model SAAS relations.
+  # IMPORTANT: Replace "admin" with your actual Juju controller name.
+  # Find it with: juju controllers --format=tabular | grep '*'
+  # Replace "openstack" if you used a different name for the k8s model.
   - [trilio-data-mover:amqp, admin/openstack.rabbitmq:amqp]
   - [trilio-data-mover:identity-credentials, admin/openstack.keystone:identity-credentials]

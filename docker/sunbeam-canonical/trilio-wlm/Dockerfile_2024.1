@@ -29,11 +29,11 @@ RUN set -ex \
 
 RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
 
-RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault
-RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
+RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault-mounts /var/triliovault /var/log/triliovault
+RUN chown -R nova:nova /var/log/triliovault /var/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
     && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store
 RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
-    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+    && chmod -R 777 /var/triliovault-mounts /var/triliovault
 
 RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 

@@ -72,8 +72,15 @@ juju wait-for application trilio-data-mover --query='status=="active"' --timeout
 # --- Step 4: Attach Horizon plugin (optional) ---
 if [[ "$SKIP_HORIZON" != "true" ]]; then
   if [[ -z "$HORIZON_IMAGE" ]]; then
-    TAG="${TRILIO_VERSION:+${TRILIO_VERSION}-}2024.1"
-    HORIZON_IMAGE="docker.io/trilio/trilio-horizon-plugin-canonical:${TAG}"
+    if [[ -z "$TRILIO_VERSION" ]]; then
+      log "WARNING: --trilio-version not set; cannot determine horizon image tag."
+      log "         Re-run with --trilio-version <VER> or --horizon-image <IMAGE>,"
+      log "         or use --skip-horizon to omit the plugin."
+      log "Skipping Horizon plugin attachment."
+      SKIP_HORIZON=true
+    else
+      HORIZON_IMAGE="docker.io/trilio/trilio-horizon-plugin-canonical:${TRILIO_VERSION}-2024.1"
+    fi
   fi
   log "Attaching Trilio Horizon plugin image: $HORIZON_IMAGE"
   juju switch "$CTLPLANE_MODEL"

@@ -67,6 +67,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_upgrade_charm(self, event):
         self.unit.status = ops.MaintenanceStatus("Upgrading TrilioVault packages")
         try:
+            # Re-run apt repo setup on upgrade — the GPG key or repo URL may have
+            # changed between Trilio releases and must be refreshed before installing
+            # the new package version.
+            self._setup_apt_repo()
             self._install_packages()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
@@ -174,9 +178,16 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
-        # Fuse requires user_allow_other for DMS FUSE mounts
-        with open("/etc/fuse.conf", "a") as f:
-            f.write("\nuser_allow_other\n")
+        # Fuse requires user_allow_other for DMS FUSE mounts.
+        # Guard before appending — this method is called on install AND on
+        # config-changed, so naively appending would duplicate the line on every
+        # re-configuration, eventually corrupting the file.
+        fuse_conf = "/etc/fuse.conf"
+        with open(fuse_conf, "r") as f:
+            fuse_content = f.read()
+        if "user_allow_other" not in fuse_content:
+            with open(fuse_conf, "a") as f:
+                f.write("\nuser_allow_other\n")
         logger.info("Directories created")
 
     # --- datamover config file rendering ---
@@ -202,13 +213,23 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "debug": str(self.config["debug"]).lower(),
         }
         cfg["contego_sys_admin"] = {
-            "helper_command": "sudo /usr/bin/privsep-helper",
+            # Must use tvault-contego-rootwrap so privileged disk/mount operations
+            # are executed through the rootwrap filter. Bare privsep-helper without
+            # rootwrap bypasses the allow-list and causes permission errors.
+            "helper_command": (
+                "sudo /usr/bin/tvault-contego-rootwrap"
+                f" {DM_CONFIG_PATH} privsep-helper"
+            ),
         }
         cfg["conductor"] = {
             "use_local": "True",
         }
         cfg["s3fuse_sys_admin"] = {
-            "helper_command": "sudo /usr/bin/privsep-helper",
+            # DMS uses its own rootwrap binary for s3/fuse privilege escalation.
+            "helper_command": (
+                "sudo /usr/bin/trilio-dms-rootwrap"
+                " /etc/triliovault-dms/rootwrap.conf privsep-helper"
+            ),
         }
         buf = io.StringIO()
         cfg.write(buf)

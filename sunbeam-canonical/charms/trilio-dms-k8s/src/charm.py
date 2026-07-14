@@ -18,7 +18,6 @@ Relation interface notes (Sunbeam Caracal):
 import configparser
 import io
 import logging
-import socket
 
 import ops
 
@@ -89,7 +88,10 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             return None
         for unit in rel.units:
             d = rel.data[unit]
-            if d.get("service_host"):
+            # Guard on both host AND password — host can arrive before password
+            # during relation setup, which would write a config with an empty
+            # password and cause auth failure at DMS server startup.
+            if d.get("service_host") and d.get("service_password"):
                 return d
         return None
 
@@ -111,7 +113,11 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         cfg["server"] = {
             "rabbitmq_url": transport_url,
             "auth_url": auth_url,
-            "node_id": socket.gethostname(),
+            # Use Juju unit name as stable node_id. socket.gethostname() returns the
+            # k8s pod name which changes on every reschedule/restart, causing DMS to
+            # register as a new cluster node each time. The Juju unit name (e.g.
+            # trilio-dms-k8s-0) is stable for the lifetime of the unit.
+            "node_id": self.unit.name.replace("/", "-"),
             "log_file": LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_max_bytes": "26214400",

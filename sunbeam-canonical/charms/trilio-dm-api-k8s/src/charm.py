@@ -31,6 +31,10 @@ CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover-api.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 LOG_DIR = "/var/log/triliovault-datamover"
 DMAPI_PORT = 8784
+# Service type/name confirmed from `openstack endpoint list` — same on all platforms:
+#   Service Name=dmapi  Service Type=datamover
+DMAPI_SERVICE_TYPE = "datamover"
+DMAPI_SERVICE_NAME = "dmapi"
 
 
 class TrilioDmApiK8sCharm(ops.CharmBase):
@@ -39,16 +43,23 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         super().__init__(*args)
         self.framework.observe(self.on.trilio_dm_api_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.config_changed, self._configure)
+        self.framework.observe(self.on.leader_elected, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._configure)
         for rel in ("database", "amqp", "identity_service", "wlm_service"):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
+        self.framework.observe(
+            self.on.ingress_internal_relation_joined, self._on_ingress_relation_joined
+        )
 
     # --- event handlers ---
 
     def _on_pebble_ready(self, event):
         self._configure(event)
+
+    def _on_ingress_relation_joined(self, event):
+        self._publish_ingress(event.relation)
 
     def _configure(self, event):
         container = self.unit.get_container(CONTAINER)
@@ -65,6 +76,11 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._update_pebble_layer(container)
+        self.unit.open_port("tcp", DMAPI_PORT)
+
+        if self.unit.is_leader():
+            self._register_keystone_service()
+
         self.unit.status = ops.ActiveStatus("DM-API ready")
 
     # --- relation data helpers ---
@@ -168,18 +184,25 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             "log_dir": LOG_DIR,
             "debug": str(self.config["debug"]).lower(),
             "wlm_endpoint": wlm["wlm-api-url"],
+            # Explicit port prevents the binary from binding on a compiled-in default.
+            "listen_port": str(DMAPI_PORT),
         }
         cfg["database"] = {
             "connection": db_url,
         }
         cfg["keystone_authtoken"] = {
             "auth_url": auth_url,
+            # www_authenticate_uri is required by keystonemiddleware for token validation.
+            # Without it the middleware cannot build the Keystone challenge URL and
+            # returns 401 on every authenticated request.
+            "www_authenticate_uri": auth_url,
             "username": identity.get("service_username", "dmapi"),
             "password": identity["service_password"],
             "project_name": identity.get("service_tenant", "services"),
             "user_domain_name": "Default",
             "project_domain_name": "Default",
             "auth_type": "password",
+            "service_token_roles_required": "True",
         }
         cfg["dmapi"] = {
             "api_workers": str(self.config["api-workers"]),
@@ -231,6 +254,43 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         container.add_layer(CONTAINER, layer, combine=True)
         container.replan()
         logger.info("Pebble layer applied for dmapi-api")
+
+    # --- endpoint / ingress publishing ---
+
+    def _register_keystone_service(self):
+        """Write DMAPI endpoint registration data into the identity-service relation.
+
+        Sunbeam keystone-k8s reads these from the requirer app databag and registers
+        the service + endpoints in the Keystone catalog so clients can discover the
+        DMAPI URL via the service catalog.
+        """
+        rel = self.model.get_relation("identity-service")
+        if not rel:
+            return
+        internal_url = f"http://{self.app.name}:{DMAPI_PORT}/v2"
+        rel.data[self.app].update({
+            "service_name": DMAPI_SERVICE_NAME,
+            "service_type": DMAPI_SERVICE_TYPE,
+            "public_url": internal_url,
+            "internal_url": internal_url,
+            "admin_url": internal_url,
+            "region": "RegionOne",
+        })
+
+    def _publish_ingress(self, rel):
+        """Write traefik_k8s v2 ingress requirer data so traefik routes external
+        traffic to the DMAPI service.
+        """
+        if not self.unit.is_leader():
+            return
+        rel.data[self.app].update({
+            "model": self.model.name,
+            "name": self.app.name,
+            "port": str(DMAPI_PORT),
+            "scheme": "http",
+            "strip-prefix": "false",
+            "redirect-https": "false",
+        })
 
 
 if __name__ == "__main__":

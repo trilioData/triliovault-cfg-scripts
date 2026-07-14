@@ -35,8 +35,11 @@
 
 set -e
 
-OPENSTACK_RELEASE="2024.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
+# OPENSTACK_RELEASE and TRILIO_PIP_INDEX_URL are derived from --tag after arg
+# parsing. Defining them here as empty to make shellcheck happy; they are set
+# in the post-parse block below.
+OPENSTACK_RELEASE=""
+TRILIO_PIP_INDEX_URL=""
 ALL_CONTAINERS=(trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
 
 # ---------------------------------------------------------------------------
@@ -142,6 +145,14 @@ done
 [ -n "$CONTAINERS_ARG" ] || { echo "ERROR: --containers is required ('all' or comma-separated container names)" >&2; usage >&2; exit 1; }
 [ -n "$MODE" ]           || { echo "ERROR: --mode is required" >&2; usage >&2; exit 1; }
 
+# Derive OPENSTACK_RELEASE and PyPI index from the tag (format: <version>-<os-release>).
+# Example: 6.2.1-2024.1 → OPENSTACK_RELEASE=2024.1, TRILIO_MAJOR_MINOR=6.2
+TRILIO_VERSION_FULL="${TAG%%-*}"                        # e.g. 6.2.1
+OPENSTACK_RELEASE="${TAG#*-}"                           # e.g. 2024.1
+TRILIO_MAJOR_MINOR="${TRILIO_VERSION_FULL%.*}"          # e.g. 6.2
+TRILIO_PIP_MAJOR_MINOR="${TRILIO_MAJOR_MINOR//./-}"    # e.g. 6-2
+TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-${TRILIO_PIP_MAJOR_MINOR}/"
+
 case "$MODE" in
     build-only|publish-only|build-and-publish) ;;
     *) echo "ERROR: Invalid --mode '$MODE'. Use: build-only | publish-only | build-and-publish" >&2; exit 1 ;;
@@ -222,12 +233,12 @@ for CONTAINER in "${SELECTED_CONTAINERS[@]}"; do
         fi
         rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
-        BUILD_ARGS=""
+        BUILD_ARGS=()
         if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
-            BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${TRILIO_PIP_INDEX_URL}"
+            BUILD_ARGS=(--build-arg "TRILIO_PIP_INDEX_URL=${TRILIO_PIP_INDEX_URL}")
         fi
 
-        docker build --no-cache --pull --network host $BUILD_ARGS -t "$IMAGE" "$CONT_BUILD_DIR"
+        docker build --no-cache --pull --network host "${BUILD_ARGS[@]}" -t "$IMAGE" "$CONT_BUILD_DIR"
         echo " Built    : $IMAGE"
     fi
 
