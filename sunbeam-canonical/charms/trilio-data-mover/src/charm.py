@@ -224,9 +224,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dms')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dms')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
         auth_url = (
             f"{identity.get('credentials_protocol', 'http')}://"
@@ -240,6 +240,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "node_id": socket.gethostname(),
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_max_bytes": "26214400",
+            "log_backup_count": "5",
             "s3vaultfuse_bin": "/usr/bin/s3vaultfuse.py",
             "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
             "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
@@ -280,6 +282,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "\n"
             "vault_logging_level = error\n"
             "log_file = /var/log/triliovault/triliovault-object-store.log\n"
+            "log_config_append = /etc/triliovault-object-store/object_store_logging.conf\n"
+            "trace_function_calls = False\n"
             "vault_cache_username = nova\n"
             "\n"
             "bucket_object_lock = False\n"

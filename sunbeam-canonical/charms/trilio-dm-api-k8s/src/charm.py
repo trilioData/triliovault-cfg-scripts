@@ -21,7 +21,6 @@ Relation interface notes (Sunbeam Caracal):
 import configparser
 import io
 import logging
-import socket
 
 import ops
 
@@ -192,31 +191,14 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", CONFIG_PATH)
 
     def _write_dms_client_config(self, container):
-        """Write DMS client config consumed by the trilio-dms client library inside DMAPI.
+        """Write DMS client config for the trilio-dms client library inside DMAPI.
 
-        Same structure as WLM's client.conf; vhost/username defaults are 'dmapi'.
+        Contains only static pool/logging tuning — matching RHOSO18. The DMS client
+        library inherits RabbitMQ and DB connections from dmapi.conf
+        (transport_url and database.connection), so those are not repeated here.
         """
-        db = self._db_data()
-        amqp = self._amqp_data()
-
-        endpoint = db["endpoints"].split(",")[0].strip()
-        db_host, _, db_port = endpoint.partition(":")
-        db_port = db_port or "3306"
-        db_url = (
-            f"mysql+pymysql://{db['username']}:{db['password']}"
-            f"@{db_host}:{db_port}/{db['database']}"
-        )
-        transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
-            f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
-        )
-
         cfg = configparser.ConfigParser()
         cfg["client"] = {
-            "rabbitmq_url": transport_url,
-            "db_url": db_url,
-            "node_id": socket.gethostname(),
             "request_timeout": "60",
             "log_level": "INFO",
             "log_file": "/var/log/triliovault-datamover/trilio-dms-client.log",

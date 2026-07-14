@@ -19,7 +19,6 @@ Relation interface notes (Sunbeam Caracal):
 import configparser
 import io
 import logging
-import socket
 
 import ops
 
@@ -180,6 +179,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         cfg["wlm"] = {
             "api_workers": str(self.config["api-workers"]),
         }
+        cfg["barbican"] = {
+            "encryption_support": "true",
+        }
+        cfg["s3fuse_sys_admin"] = {
+            "helper_command": (
+                "sudo /usr/bin/trilio-dms-rootwrap"
+                " /etc/triliovault-dms/rootwrap.conf privsep-helper"
+            ),
+        }
 
         buf = io.StringIO()
         cfg.write(buf)
@@ -187,33 +195,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", CONFIG_PATH)
 
     def _write_dms_client_config(self, container):
-        """Write DMS client config consumed by the trilio-dms client library inside WLM.
+        """Write DMS client config for the trilio-dms client library inside WLM.
 
-        Combines static pool/logging settings with dynamic credentials (rabbitmq_url,
-        db_url) so the DMS client library can reach the DMS server and track mount
-        state in MySQL.
+        Contains only static pool/logging tuning — matching RHOSO18. The DMS client
+        library inherits RabbitMQ and DB connections from workloadmgr.conf
+        (transport_url and database.connection), so those are not repeated here.
         """
-        db = self._db_data()
-        amqp = self._amqp_data()
-
-        endpoint = db["endpoints"].split(",")[0].strip()
-        db_host, _, db_port = endpoint.partition(":")
-        db_port = db_port or "3306"
-        db_url = (
-            f"mysql+pymysql://{db['username']}:{db['password']}"
-            f"@{db_host}:{db_port}/{db['database']}"
-        )
-        transport_url = (
-            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
-            f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'wlm')}"
-        )
-
         cfg = configparser.ConfigParser()
         cfg["client"] = {
-            "rabbitmq_url": transport_url,
-            "db_url": db_url,
-            "node_id": socket.gethostname(),
             "request_timeout": "60",
             "log_level": "INFO",
             "log_file": "/var/log/triliovault/trilio-dms-client.log",
