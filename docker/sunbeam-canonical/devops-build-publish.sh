@@ -43,7 +43,7 @@ Containers:
   trilio-datamover-api    Control plane datamover API
   trilio-horizon-plugin   OpenStack Horizon UI plugin
   trilio-wlm              Workload Manager
-  trilio-dms              Dynamic Mount Service
+  trilio-dms              Dynamic Mount Service (release-independent; uses plain Dockerfile)
 
 Published image format:
   docker.io/trilio/<container>-canonical:<tag>
@@ -120,11 +120,18 @@ for CONTAINER in "${ALL_CONTAINERS[@]}"; do
         [ $found -eq 0 ] && continue
     fi
 
-    SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}"
+    # Prefer release-specific Dockerfile; fall back to generic Dockerfile
+    # (trilio-dms is release-independent and ships a plain Dockerfile)
+    RELEASE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}"
+    GENERIC_DF="$BASE_DIR/$CONTAINER/Dockerfile"
 
-    if [ ! -f "$SOURCE_DF" ]; then
+    if [ -f "$RELEASE_DF" ]; then
+        SOURCE_DF="$RELEASE_DF"
+    elif [ -f "$GENERIC_DF" ]; then
+        SOURCE_DF="$GENERIC_DF"
+    else
         echo ""
-        echo "SKIP: $CONTAINER — $(basename "$SOURCE_DF") not found"
+        echo "SKIP: $CONTAINER — no Dockerfile found (tried Dockerfile_${OPENSTACK_RELEASE} and Dockerfile)"
         continue
     fi
 
@@ -137,7 +144,9 @@ for CONTAINER in "${ALL_CONTAINERS[@]}"; do
 
     CONT_BUILD_DIR="$BUILD_DIR/$CONTAINER"
     cp -R "$BASE_DIR/$CONTAINER" "$CONT_BUILD_DIR"
-    cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
+    if [ "$(basename "$SOURCE_DF")" != "Dockerfile" ]; then
+        cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
+    fi
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
     BUILD_ARGS=""
