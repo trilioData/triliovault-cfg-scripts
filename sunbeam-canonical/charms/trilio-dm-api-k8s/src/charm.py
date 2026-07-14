@@ -194,7 +194,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         """Write DMS client config for the trilio-dms client library inside DMAPI.
 
         Contains only static pool/logging tuning — matching RHOSO18. The DMS client
-        library inherits RabbitMQ and DB connections from dmapi.conf
+        library inherits RabbitMQ and DB connections from triliovault-datamover-api.conf
         (transport_url and database.connection), so those are not repeated here.
         """
         cfg = configparser.ConfigParser()
