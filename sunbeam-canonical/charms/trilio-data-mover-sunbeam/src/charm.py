@@ -78,6 +78,10 @@ StartLimitBurst=3
 User=nova
 Group=nova
 Type=simple
+# tvault-contego imports from nova (e.g. nova.exception). On Sunbeam compute nodes
+# nova runs inside the openstack-hypervisor snap; add the snap's dist-packages to
+# PYTHONPATH so tvault-contego can import nova and other OpenStack libraries.
+Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
   --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
   --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
