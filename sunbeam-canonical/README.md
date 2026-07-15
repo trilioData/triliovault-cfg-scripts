@@ -107,9 +107,34 @@ Horizon reloads automatically — no restart required.
 | `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
 | `trilio-data-mover-sunbeam` | `charms/trilio-data-mover-sunbeam/` | machine subordinate, runs DataMover + compute DMS |
 
+## Build Prerequisites
+
+To build OCI images or Juju charms, the build machine must have Docker and charmcraft installed.
+A setup script is provided to prepare any Ubuntu machine in one step:
+
+**Supported OS**: Ubuntu 22.04 LTS (Jammy) or later (24.04 LTS Noble also supported).
+
+```bash
+# Run from the repository root — idempotent, safe to re-run
+bash sunbeam-canonical/build/setup_build_machine.sh
+```
+
+What the script installs:
+- Docker CE (from the official Docker APT repository)
+- `charmcraft` snap (for building Juju charms)
+- Base dependencies: `git`, `curl`, `python3`, `snapd`
+
+After the script completes:
+1. Re-login or run `newgrp docker` so the `docker` group takes effect
+2. `docker login` with your Docker Hub credentials
+3. Export charmcraft credentials: `export CHARMCRAFT_AUTH=$(cat creds.txt)`
+   (generate `creds.txt` with `charmcraft login --export creds.txt` on a machine with a browser)
+
+---
+
 ## OCI Images
 
-Dockerfiles are in `../docker/sunbeam-canonical/`:
+Dockerfiles are in `docker/`:
 
 | Image | Dockerfile | Used by |
 |-------|-----------|---------|

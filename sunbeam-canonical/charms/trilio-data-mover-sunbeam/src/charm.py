@@ -340,14 +340,38 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         return None
 
     def _identity_data(self):
-        """keystone-credentials interface: provider app databag."""
+        """keystone-credentials interface: provider app databag.
+
+        The keystone-credentials interface returns auth-host, auth-port,
+        auth-protocol, and a Juju secret under 'credentials' that holds
+        the actual username/password. Returns a normalized dict with
+        credentials_host, credentials_password, etc. so callers don't
+        need to know the wire format.
+        """
         rel = self.model.get_relation("identity-credentials")
         if not rel:
             return None
         d = rel.data[rel.app]
-        if d.get("credentials_host") and d.get("credentials_password"):
-            return d
-        return None
+        host = d.get("auth-host")
+        secret_id = d.get("credentials")
+        if not host or not secret_id:
+            return None
+        try:
+            secret = self.model.get_secret(id=secret_id)
+            creds = secret.get_content()
+        except Exception:
+            return None
+        if not creds.get("password"):
+            return None
+        return {
+            "credentials_host": host,
+            "credentials_port": d.get("auth-port", "5000"),
+            "credentials_protocol": d.get("auth-protocol", "http"),
+            "credentials_username": creds.get("username", "datamover"),
+            "credentials_password": creds["password"],
+            "credentials_project": d.get("project-name", "services"),
+            "internal_endpoint": d.get("internal-endpoint", ""),
+        }
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -517,9 +541,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
+        # Use the HTTPS internal endpoint if keystone published one via traefik;
+        # fall back to plain-http k8s service address for fresh deploys.
         auth_url = (
-            f"{identity.get('credentials_protocol', 'http')}://"
-            f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+            identity.get("internal_endpoint")
+            or (
+                f"{identity.get('credentials_protocol', 'http')}://"
+                f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+            )
         )
 
         cfg = configparser.ConfigParser()
