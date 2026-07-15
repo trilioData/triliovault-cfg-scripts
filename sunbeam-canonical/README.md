@@ -105,7 +105,7 @@ Horizon reloads automatically — no restart required.
 | `trilio-wlm-k8s` | `charms/trilio-wlm-k8s/` | k8s, Pebble |
 | `trilio-dm-api-k8s` | `charms/trilio-dm-api-k8s/` | k8s, Pebble |
 | `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
-| `trilio-data-mover-sunbeam` | `charms/trilio-data-mover/` | machine subordinate, runs DataMover + compute DMS |
+| `trilio-data-mover-sunbeam` | `charms/trilio-data-mover-sunbeam/` | machine subordinate, runs DataMover + compute DMS |
 
 ## OCI Images
 

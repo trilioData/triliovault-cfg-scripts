@@ -32,7 +32,7 @@ sunbeam-canonical/
 │   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble)
 │   ├── trilio-dm-api-k8s/           # DMAPI k8s charm (ops + Pebble)
 │   ├── trilio-dms-k8s/              # DMS server k8s charm (ops + Pebble)
-│   └── trilio-data-mover/           # DataMover machine subordinate charm
+│   └── trilio-data-mover-sunbeam/   # DataMover machine subordinate charm
 ├── docker/
 │   ├── trilio-wlm/Dockerfile        # OCI image for WLM (wlm-api/workloads/scheduler/cron)
 │   ├── trilio-datamover-api/Dockerfile
@@ -150,7 +150,8 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | `identity-service` | `keystone` | keystone-k8s | Req writes `service-endpoints` (JSON), `region` to **app** databag (leader only); prov writes `service-host`, `service-credentials` (Juju secret) to prov **app** databag |
 | `receive-ca-cert` | `certificate_transfer` | vault-k8s / self-signed | Prov writes `ca` to unit databag |
 | `wlm-service` | custom | trilio-wlm-k8s | Provider writes `wlm-api-url` to app databag |
-| `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag |
+| `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag; prov writes `{"ingress": '{"url": "https://IP:443/model-app"}'}` to prov **app** databag |
+| `ingress-public` | `traefik_k8s` v2 | traefik-public | Same as ingress-internal but routed via traefik-public for external access |
 
 ---
 
@@ -162,8 +163,34 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | DMAPI | 8784 | `datamover` | `dmapi` |
 | DMS server | (no HTTP; RabbitMQ only) | — | — |
 
-WLM endpoint URL format: `http://<app>:8781/v1/$(tenant_id)s`
-DMAPI endpoint URL format: `http://<app>:8784/v2`
+WLM endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v1/$(tenant_id)s` (via Traefik when ingress is configured), falls back to `http://<app>:8781/v1/$(tenant_id)s`
+DMAPI endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v2` (via Traefik when ingress is configured), falls back to `http://<app>:8784/v2`
+Admin URL is always the plain k8s service address (Traefik does not route admin traffic).
+
+### Traefik ingress databag format (requirer side)
+Traefik v2 expects the **requirer** to write a single `data` key with a JSON-encoded dict — NOT individual top-level keys. Port must be an integer (not a string).
+```python
+rel.data[self.app]["data"] = json.dumps({
+    "model": self.model.name,
+    "name": self.app.name,
+    "port": PORT,           # integer
+    "scheme": "http",
+    "strip-prefix": False,  # boolean
+    "redirect-https": False,
+})
+```
+Writing individual keys (model="..", name="..", port="8781") causes Traefik to log "invalid databag contents: expecting json" and block.
+
+### Traefik ingress URL pattern (provider response)
+Traefik writes the routed URL into the ingress relation app databag as:
+```
+rel.data[rel.app]["ingress"] = '{"url": "https://IP:443/model-appname"}'
+```
+Read it with: `json.loads(rel.data[rel.app].get("ingress", "{}")).get("url")`.
+Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-register Keystone endpoints once Traefik has written this URL — Traefik writes the URL asynchronously after the requirer joins.
+
+### dispatch file permissions
+The `dispatch` file in machine subordinate charms MUST be stored with execute permission (`100755`) in git. Windows git clones silently drop the x-bit — always verify with `git ls-files -s dispatch` (should show `100755`). If it shows `100644`, run `git update-index --chmod=+x dispatch` and commit. Without the x-bit, Juju logs "exec: dispatch: permission denied" on every hook invocation.
 
 ---
 
