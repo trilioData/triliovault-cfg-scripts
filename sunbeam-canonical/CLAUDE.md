@@ -61,9 +61,9 @@ In Sunbeam, **the Juju operators handle resource provisioning automatically** â€
 
 | Resource | How it's provisioned |
 |---|---|
-| RabbitMQ user + vhost | Requirer writes `username` + `vhost` to **unit** databag on `amqp_relation_joined`; rabbitmq-k8s creates them |
+| RabbitMQ user + vhost | Requirer writes `username` + `vhost` to **app** databag (leader only) on `amqp_relation_joined`; rabbitmq-k8s creates them |
 | MySQL database + user | Requirer writes `{"database": "<name>"}` to **app** databag (leader only) on `database_relation_joined`; mysql-k8s creates them |
-| Keystone service user + endpoints | Requirer writes `service_name`, `service_type`, `public_url`, `internal_url`, `admin_url` to **app** databag; keystone-k8s creates them |
+| Keystone service user + endpoints | Requirer writes `service-endpoints` (JSON array) + `region` to **app** databag (leader only); keystone-k8s creates service user and endpoints, responds with `service-credentials` (Juju secret) |
 
 This is fundamentally different from Kolla (which runs `mysql_user` Ansible module and `openstack endpoint create`) or RHOSO18 (which runs init Jobs). In Sunbeam, writing to the relation databag IS the provisioning request.
 
@@ -137,8 +137,8 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | Relation | Interface | Provider | Requirer key fields |
 |---|---|---|---|
 | `database` | `mysql_client` | mysql-k8s | Req writes `database` to app databag; prov writes `endpoints`, `username`, `password` |
-| `amqp` | `rabbitmq` | rabbitmq-k8s | Req writes `username`, `vhost` to unit databag; prov writes `hostname`, `port`, `password` |
-| `identity-service` | `keystone` | keystone-k8s | Req writes service registration; prov writes `service_host`, `service_password`, `service_username` |
+| `amqp` | `rabbitmq` | rabbitmq-k8s | Req writes `username`, `vhost` to **app** databag (leader only); prov writes `hostname`, `password` to prov **app** databag |
+| `identity-service` | `keystone` | keystone-k8s | Req writes `service-endpoints` (JSON), `region` to **app** databag (leader only); prov writes `service-host`, `service-credentials` (Juju secret) to prov **app** databag |
 | `receive-ca-cert` | `certificate_transfer` | vault-k8s / self-signed | Prov writes `ca` to unit databag |
 | `wlm-service` | custom | trilio-wlm-k8s | Provider writes `wlm-api-url` to app databag |
 | `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag |

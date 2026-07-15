@@ -7,19 +7,21 @@ Manages four WLM microservices via Pebble inside a single k8s pod:
 Tested against Caracal (OpenStack 2024.1) on Sunbeam.
 
 Relation interface notes (Sunbeam Caracal):
-  - database: mysql_client interface — provider (mysql-k8s) writes data into
-    its *application* databag. Keys: endpoints, username, password, database.
-  - amqp: rabbitmq interface — provider (rabbitmq-k8s) writes into unit databag.
-    Keys: hostname (or host), port, password, vhost, username.
-  - identity-service: keystone interface — unit databag.
-    Keys: service_host, service_port, service_protocol, service_username,
-          service_password, service_tenant.
+  - database: mysql_client interface — provider writes into its *application* databag.
+    Keys: endpoints, username, password, database.
+  - amqp: rabbitmq interface — requirer writes username/vhost to its *app* databag
+    (leader only); provider responds with hostname/password in its *app* databag.
+  - identity-service: keystone interface — requirer writes service-endpoints (JSON)
+    and region to its *app* databag (leader only); provider responds with service-host,
+    service-port, service-protocol, service-credentials (Juju secret) in its *app*
+    databag.
   - ingress-internal / ingress-public: traefik_k8s v2 ingress interface.
     Requirer writes a JSON blob under "data" key in the app databag.
 """
 
 import configparser
 import io
+import json
 import logging
 
 import ops
@@ -154,6 +156,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
         self.framework.observe(self.on.database_relation_joined, self._on_database_relation_joined)
         self.framework.observe(
+            self.on.identity_service_relation_joined,
+            self._on_identity_service_relation_joined,
+        )
+        self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._configure
         )
 
@@ -171,15 +177,39 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
-        event.relation.data[self.unit]["username"] = "wlm"
-        event.relation.data[self.unit]["vhost"] = "wlm"
+        if self.unit.is_leader():
+            event.relation.data[self.app]["username"] = "wlm"
+            event.relation.data[self.app]["vhost"] = "wlm"
 
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
         if self.unit.is_leader():
             event.relation.data[self.app]["database"] = "workloadmgr"
 
+    def _on_identity_service_relation_joined(self, event):
+        """Write keystone service registration so keystone creates the service endpoints."""
+        self._register_keystone_service()
+
+    def _send_relation_requests(self):
+        """Write requirer data to all relations. Idempotent — safe to call on every configure.
+
+        Handles the case where relation-joined fired before the charm was working.
+        """
+        if not self.unit.is_leader():
+            return
+        amqp_rel = self.model.get_relation("amqp")
+        if amqp_rel and not amqp_rel.data[self.app].get("username"):
+            amqp_rel.data[self.app]["username"] = "wlm"
+            amqp_rel.data[self.app]["vhost"] = "wlm"
+        db_rel = self.model.get_relation("database")
+        if db_rel and not db_rel.data[self.app].get("database"):
+            db_rel.data[self.app]["database"] = "workloadmgr"
+        ks_rel = self.model.get_relation("identity-service")
+        if ks_rel and not ks_rel.data[self.app].get("service-endpoints"):
+            self._register_keystone_service()
+
     def _configure(self, event):
+        self._send_relation_requests()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -234,30 +264,41 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         return None
 
     def _amqp_data(self):
-        """rabbitmq interface: provider writes into unit databag.
-
-        rabbitmq-k8s uses 'hostname'; older rabbitmq uses 'host'. Accept both.
-        """
+        """rabbitmq-k8s: provider writes hostname and password into its application databag."""
         rel = self.model.get_relation("amqp")
-        if not rel:
+        if not rel or not rel.app:
             return None
-        for unit in rel.units:
-            d = rel.data[unit]
-            host = d.get("hostname") or d.get("host")
-            if host and d.get("password"):
-                return {**dict(d), "host": host}
+        d = rel.data[rel.app]
+        host = d.get("hostname") or d.get("host")
+        if host and d.get("password"):
+            return {**dict(d), "host": host}
         return None
 
     def _identity_data(self):
-        """keystone interface: unit databag keys service_host, service_password."""
+        """keystone-k8s: provider writes credentials via Juju secret in its app databag.
+
+        Returns a normalized dict with underscore-keyed fields matching _write_config usage.
+        """
         rel = self.model.get_relation("identity-service")
-        if not rel:
+        if not rel or not rel.app:
             return None
-        for unit in rel.units:
-            d = rel.data[unit]
-            if d.get("service_host") and d.get("service_password"):
-                return d
-        return None
+        d = rel.data[rel.app]
+        secret_id = d.get("service-credentials")
+        if not secret_id or not d.get("service-host"):
+            return None
+        try:
+            secret = self.model.get_secret(id=secret_id)
+            creds = secret.get_content()
+        except Exception:
+            return None
+        return {
+            "service_host": d.get("service-host"),
+            "service_port": d.get("service-port", "5000"),
+            "service_protocol": d.get("service-protocol", "http"),
+            "service_username": creds.get("username"),
+            "service_password": creds.get("password"),
+            "service_tenant": d.get("service-project-name", "services"),
+        }
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -537,22 +578,25 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _register_keystone_service(self):
         """Write WLM endpoint registration data into the identity-service relation.
 
-        Sunbeam keystone-k8s reads these fields from the requirer app databag and
-        registers the service + endpoints in the Keystone service catalog. Without
-        this the service user is created but no endpoint appears in `openstack catalog
-        list`, so external clients cannot discover the WLM URL.
+        Sunbeam keystone-k8s reads 'service-endpoints' (JSON) and 'region' from the
+        requirer app databag and registers the service + endpoints in the Keystone
+        service catalog.
         """
         rel = self.model.get_relation("identity-service")
-        if not rel:
+        if not rel or not self.unit.is_leader():
             return
         internal_url = WLM_ENDPOINT_TEMPLATE.format(f"http://{self.app.name}:{WLM_PORT}")
-        rel.data[self.app].update({
-            "service_name": WLM_SERVICE_NAME,
-            "service_type": WLM_SERVICE_TYPE,
-            "public_url": internal_url,
-            "internal_url": internal_url,
+        endpoints = [{
             "admin_url": internal_url,
-            "region": "RegionOne",
+            "description": "TrilioVault Backup and Recovery Service",
+            "internal_url": internal_url,
+            "public_url": internal_url,
+            "service_name": WLM_SERVICE_NAME,
+            "type": WLM_SERVICE_TYPE,
+        }]
+        rel.data[self.app].update({
+            "service-endpoints": json.dumps(endpoints),
+            "region": self.config.get("region", "RegionOne"),
         })
 
     def _publish_ingress(self, rel):
