@@ -150,7 +150,8 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | `identity-service` | `keystone` | keystone-k8s | Req writes `service-endpoints` (JSON), `region` to **app** databag (leader only); prov writes `service-host`, `service-credentials` (Juju secret) to prov **app** databag |
 | `receive-ca-cert` | `certificate_transfer` | vault-k8s / self-signed | Prov writes `ca` to unit databag |
 | `wlm-service` | custom | trilio-wlm-k8s | Provider writes `wlm-api-url` to app databag |
-| `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag |
+| `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag; prov writes `{"ingress": '{"url": "https://IP:443/model-app"}'}` to prov **app** databag |
+| `ingress-public` | `traefik_k8s` v2 | traefik-public | Same as ingress-internal but routed via traefik-public for external access |
 
 ---
 
@@ -162,8 +163,17 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | DMAPI | 8784 | `datamover` | `dmapi` |
 | DMS server | (no HTTP; RabbitMQ only) | — | — |
 
-WLM endpoint URL format: `http://<app>:8781/v1/$(tenant_id)s`
-DMAPI endpoint URL format: `http://<app>:8784/v2`
+WLM endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v1/$(tenant_id)s` (via Traefik when ingress is configured), falls back to `http://<app>:8781/v1/$(tenant_id)s`
+DMAPI endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v2` (via Traefik when ingress is configured), falls back to `http://<app>:8784/v2`
+Admin URL is always the plain k8s service address (Traefik does not route admin traffic).
+
+### Traefik ingress URL pattern
+Traefik writes the routed URL into the ingress relation app databag as:
+```
+rel.data[rel.app]["ingress"] = '{"url": "https://IP:443/model-appname"}'
+```
+Read it with: `json.loads(rel.data[rel.app].get("ingress", "{}")).get("url")`.
+Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-register Keystone endpoints once Traefik has written this URL — Traefik writes the URL asynchronously after the requirer joins.
 
 ---
 
