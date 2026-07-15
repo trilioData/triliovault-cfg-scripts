@@ -10,17 +10,24 @@ LABEL name="trilio-wlm-canonical" \
       summary="TrilioVault WorkloadManager for Canonical Sunbeam" \
       description="TrilioVault WLM (wlm-api, wlm-workloads, wlm-scheduler, wlm-cron) on Ubuntu Jammy for Sunbeam k8s"
 
+USER root
+
+ARG OPENSTACK_REPO=cloud-archive:caracal
+
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Etc/UTC
 
-USER root
-
-# System dependencies required by WLM
+# Base system packages
 RUN apt-get -y update && \
     apt-get -y install --no-install-recommends \
+        apt-utils \
+        software-properties-common \
         ca-certificates \
+        gnupg \
         sudo \
         nfs-common \
+        fuse \
+        libfuse2 \
         zlib1g-dev \
         libpython3-dev \
         libcurl4-openssl-dev \
@@ -32,12 +39,27 @@ RUN apt-get -y update && \
         libxslt-dev \
         libvirt-clients \
         python3-pip \
-        python3-neutronclient \
-        python3-glanceclient \
-        alembic \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Add Ubuntu Cloud Archive for OpenStack Caracal (2024.1)
+RUN apt-add-repository ${OPENSTACK_REPO} && apt-get update -y
+
+# Install nova-common to create nova user/group, and OpenStack Python packages
+# needed by WLM at runtime
+RUN apt-get install -y \
+        nova-common \
+        python3-nova \
+        python3-novaclient \
+        python3-neutronclient \
+        python3-glanceclient \
+    && apt-get clean -y
+
+# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
+COPY nova_userid.sh /opt/triliovault-wlm/nova_userid.sh
+RUN chmod +x /opt/triliovault-wlm/nova_userid.sh && /opt/triliovault-wlm/nova_userid.sh
+
+# pip packages not available in cloud-archive
 RUN pip3 --no-cache-dir install "SQLAlchemy==1.4.51" && \
     pip3 --no-cache-dir install --upgrade pyvmomi munch paramiko taskflow && \
     pip3 --no-cache-dir install azure-storage-blob==12.25.1 azure-core loguru
@@ -64,14 +86,16 @@ RUN mkdir -p \
     /var/trilio/triliovault-mounts \
     /var/triliovault \
     /var/log/triliovault \
-    /var/lib/workloadmgr/taskflow
+    /var/lib/workloadmgr/taskflow \
+    /opt/triliovault
 
-# Set ownership — workloadmgr package creates the nova user/group
+# All WLM services run as nova user
 RUN chown -R nova:nova \
         /var/log/triliovault \
         /var/trilio/triliovault-mounts \
         /var/triliovault \
-        /var/lib/workloadmgr && \
+        /var/lib/workloadmgr \
+        /opt/triliovault && \
     chown -R root:nova \
         /etc/triliovault-wlm \
         /etc/triliovault-object-store \
@@ -84,5 +108,9 @@ RUN chown -R nova:nova \
         /var/trilio/triliovault-mounts \
         /var/triliovault
 
+RUN usermod -aG disk nova
+
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 RUN chmod 440 /etc/sudoers.d/nova-sudoers
+
+USER nova

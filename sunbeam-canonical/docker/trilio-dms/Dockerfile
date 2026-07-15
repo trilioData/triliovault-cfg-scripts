@@ -10,14 +10,20 @@ LABEL name="trilio-dms-canonical" \
       summary="TrilioVault Dynamic Mount Service (k8s) for Canonical Sunbeam" \
       description="TrilioVault DMS server on Ubuntu Jammy for Sunbeam k8s control plane"
 
+USER root
+
+ARG OPENSTACK_REPO=cloud-archive:caracal
+
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Etc/UTC
 
-USER root
-
+# Base packages
 RUN apt-get -y update && \
     apt-get -y install --no-install-recommends \
+        apt-utils \
+        software-properties-common \
         ca-certificates \
+        gnupg \
         fuse \
         libfuse2 \
         nfs-common \
@@ -25,13 +31,24 @@ RUN apt-get -y update && \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Allow non-root FUSE mounts inside the container
+RUN echo "user_allow_other" > /etc/fuse.conf
+
+# Add Ubuntu Cloud Archive for OpenStack Caracal (2024.1)
+RUN apt-add-repository ${OPENSTACK_REPO} && apt-get update -y
+
+# Install nova-common to create nova user/group
+RUN apt-get install -y nova-common && apt-get clean -y
+
+# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
+COPY nova_userid.sh /opt/triliovault-dms/nova_userid.sh
+RUN chmod +x /opt/triliovault-dms/nova_userid.sh && /opt/triliovault-dms/nova_userid.sh
+
+# pip packages for cloud storage backends
 RUN pip3 --no-cache-dir install \
     azure-storage-blob==12.25.1 \
     azure-core \
     loguru
-
-# Allow non-root FUSE mounts inside the container
-RUN echo "user_allow_other" > /etc/fuse.conf
 
 # Install TrilioVault DMS packages from Trilio APT repo
 ADD trilio.list /etc/apt/sources.list.d/
@@ -44,7 +61,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /etc/apt/sources.list.d/trilio.list
 
-# Create required directories — python3-trilio-dms package creates the nova user/group
+# Create required directories — DMS runs as nova user
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
     /var/triliovault \
@@ -59,3 +76,5 @@ RUN chown -R nova:nova \
         /etc/triliovault-dms && \
     chmod 777 /var/lib/trilio/triliovault-mounts && \
     chmod -R 755 /etc/triliovault-dms /var/log/triliovault
+
+USER nova
