@@ -24,6 +24,11 @@ base: ubuntu@24.04
 platforms:
   amd64:
 
+parts:
+  charm:
+    plugin: charm
+    source: .
+
 requires:
   juju-info:
     interface: juju-info
