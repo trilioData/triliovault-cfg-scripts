@@ -21,6 +21,7 @@ and handle NFS / S3 mount operations on their respective hosts.
 
 import configparser
 import hashlib
+import re
 import io
 import logging
 import os
@@ -38,10 +39,15 @@ DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
-# nova.conf lives inside the openstack-hypervisor snap (root:root 640).
-# The charm copies it to a nova-readable location so tvault-contego can read it.
+# nova.conf lives inside the openstack-hypervisor snap (root:root 640, unreadable by
+# the nova user that tvault-contego runs as).  The charm copies it to NOVA_CONF_COPY
+# (root:nova 640) and rewrites the cafile= line to point to CA_BUNDLE_COPY instead
+# of the snap-internal path, which is also root-only.  The CA cert itself is obtained
+# from the receive-ca-cert Juju relation (not copied from the snap) and written to
+# CA_BUNDLE_COPY with root:nova 640 so the nova user can read it.
 SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
 NOVA_CONF_COPY = "/etc/triliovault-datamover/nova.conf"
+CA_BUNDLE_COPY = "/etc/triliovault-datamover/ca-bundle.pem"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
@@ -323,12 +329,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
 
         try:
+            self._write_ca_cert()
             self._sync_nova_conf()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
             self._write_s3vaultfuse_config()
-            self._write_ca_cert()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -405,16 +411,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         return "\n".join(certs) if certs else None
 
     def _write_ca_cert(self):
-        """Write CA bundle to the host system for tvault-contego Keystone TLS verification."""
+        """Write CA bundle from the receive-ca-cert relation to host trust store and to
+        a nova-readable path so tvault-contego can verify Keystone TLS.
+
+        CA content comes from the Juju relation — not copied from any snap path.
+        CA_BUNDLE_COPY (root:nova 640) is written first so _sync_nova_conf() can
+        reference it in the cafile= patch.
+        """
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
+        # Write to our managed path (root:nova 640) for direct use by tvault-contego
+        os.makedirs(os.path.dirname(CA_BUNDLE_COPY), exist_ok=True)
+        with open(CA_BUNDLE_COPY, "w") as f:
+            f.write(ca_cert)
+        shutil.chown(CA_BUNDLE_COPY, user="root", group="nova")
+        os.chmod(CA_BUNDLE_COPY, 0o640)
+        logger.info("CA cert written to %s (root:nova 640)", CA_BUNDLE_COPY)
+        # Also add to system trust store so other tools on this host trust the CA
         ca_path = "/usr/local/share/ca-certificates/trilio-ca.crt"
         os.makedirs(os.path.dirname(ca_path), exist_ok=True)
         with open(ca_path, "w") as f:
             f.write(ca_cert)
         subprocess.run(["update-ca-certificates"], check=True)
-        logger.info("CA cert written to %s", ca_path)
+        logger.info("CA cert added to system trust store via %s", ca_path)
 
     # --- apt repo and package installation ---
 
@@ -718,20 +738,40 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             f.write(OBJECT_STORE_LOGGING_CONF)
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
+    # Matches any cafile= line whose value starts with /var/snap/ — the snap-internal
+    # path is root-only; we replace it with CA_BUNDLE_COPY which is root:nova 640.
+    _SNAP_CAFILE_RE = re.compile(rb"(?m)^([ \t]*cafile[ \t]*=[ \t]*)/var/snap/[^\n]*")
+
     def _sync_nova_conf(self) -> bool:
         """Copy snap nova.conf to our location if content changed.
 
         The snap nova.conf is root:root 640 — unreadable by the nova user that
         tvault-contego runs as.  Charm hooks run as root, so we copy it to
-        NOVA_CONF_COPY (root:nova 640) and only write when content differs.
+        NOVA_CONF_COPY (root:nova 640).
+
+        The cafile= line in [keystone_authtoken] references a snap-internal path
+        (also root-only).  We rewrite it to CA_BUNDLE_COPY, which is written by
+        _write_ca_cert() from the receive-ca-cert relation (root:nova 640).
+        If no CA cert is available yet, the cafile= line is removed so
+        keystoneauth1 falls back to the system CA trust store.
+
         Returns True if the file was updated, False if nothing changed.
         """
         try:
             with open(SNAP_NOVA_CONF, "rb") as f:
-                new_content = f.read()
+                snap_content = f.read()
         except OSError as e:
             logger.warning("Cannot read snap nova.conf: %s", e)
             return False
+
+        # Patch cafile= to point to our nova-readable CA bundle (from relation).
+        if os.path.exists(CA_BUNDLE_COPY):
+            new_content = self._SNAP_CAFILE_RE.sub(
+                rb"\g<1>" + CA_BUNDLE_COPY.encode(), snap_content
+            )
+        else:
+            # CA not yet available — strip cafile so keystoneauth1 uses system store
+            new_content = self._SNAP_CAFILE_RE.sub(b"", snap_content)
 
         new_hash = hashlib.sha256(new_content).hexdigest()
 
@@ -749,7 +789,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             f.write(new_content)
         shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
         os.chmod(NOVA_CONF_COPY, 0o640)
-        logger.info("Synced nova.conf from snap to %s", NOVA_CONF_COPY)
+        logger.info("Synced nova.conf from snap to %s (cafile patched)", NOVA_CONF_COPY)
         return True
 
     def _on_update_status(self, event):
