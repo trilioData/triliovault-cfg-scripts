@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Ensure charm venv is on sys.path regardless of how the dispatch script is generated.
+import sys as _sys, pathlib as _pathlib
+_venv = _pathlib.Path(__file__).parent.parent / "venv"
+if str(_venv) not in _sys.path:
+    _sys.path.insert(0, str(_venv))
+del _sys, _pathlib
+
 """TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack.
 
 Installs tvault-contego AND the compute-side trilio-dms-server on every
@@ -16,6 +23,8 @@ import configparser
 import io
 import logging
 import os
+import pathlib
+import shutil
 import socket
 import subprocess
 
@@ -23,15 +32,179 @@ import ops
 
 logger = logging.getLogger(__name__)
 
-DATAMOVER_SERVICE = "tvault-contego"
+DATAMOVER_PACKAGE = "python3-tvault-contego"
+DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
+DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
+DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
-TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
-TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
+DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
+
+# Systemd unit for the DMS server on compute nodes.
+# python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
+DMS_SYSTEMD_UNIT = """\
+[Unit]
+Description=TrilioVault Dynamic Mount Service
+After=network.target
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+# Systemd unit for tvault-contego on Sunbeam compute nodes.
+# Nova config lives inside the openstack-hypervisor snap, not /etc/nova/nova.conf.
+DATAMOVER_SYSTEMD_UNIT = """\
+[Unit]
+Description=TrilioVault DataMover (tvault-contego)
+After=network.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
+  --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
+  --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+# Python logging config referenced by datamover (tvault-contego) via log_config_append.
+# Content matches the RHOSO18 / kolla-ansible reference. Without this file the
+# tvault-contego binary fails to start (oslo.log aborts on a missing log_config_append).
+DATAMOVER_LOGGING_CONF = """\
+[loggers]
+keys = root,contego
+
+[handlers]
+keys = datamover,stdout,stderr,null
+
+[formatters]
+keys = default,advanced,default-utc,advanced-utc
+
+[logger_root]
+level = INFO
+handlers = stdout
+
+[logger_contego]
+level = INFO
+handlers = datamover,stdout,stderr
+qualname = contego
+
+[handler_datamover]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_default-utc]
+class = contego.common.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = contego.common.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+"""
+
+# Python logging config referenced by s3vaultfuse via log_config_append.
+# Content matches the kolla-ansible reference.
+OBJECT_STORE_LOGGING_CONF = """\
+[loggers]
+keys = root
+
+[handlers]
+keys = s3fuse,stdout,stderr,null
+
+[formatters]
+keys = default,advanced,default-utc,advanced-utc
+
+[logger_root]
+level = INFO
+handlers = s3fuse,stdout
+
+[handler_s3fuse]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_default-utc]
+class = s3fuse.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = s3fuse.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+"""
 
 
 class TrilioDataMoverSunbeamCharm(ops.CharmBase):
@@ -46,6 +219,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self.on.identity_credentials_relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.juju_info_relation_joined, self._on_juju_info_joined)
+        self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
+        self.framework.observe(
+            self.on.receive_ca_cert_relation_changed, self._on_relation_changed
+        )
 
     # --- event handlers ---
 
@@ -55,6 +232,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._setup_apt_repo()
             self._install_packages()
             self._create_directories()
+            self._write_nova_sudoers()
+            self._install_rootwrap_filters()
+            self._write_systemd_services()
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
@@ -83,6 +263,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_juju_info_joined(self, event):
         self._configure(event)
 
+    def _on_amqp_relation_joined(self, event):
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
+
+        DataMover uses the same vhost as DMAPI for shared RabbitMQ communication.
+        """
+        event.relation.data[self.unit]["username"] = "datamover"
+        event.relation.data[self.unit]["vhost"] = "datamover"
+
     # --- core configure logic ---
 
     def _configure(self, event):
@@ -94,7 +282,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         try:
             self._write_datamover_config()
             self._write_dms_config()
+            self._write_dms_client_config()
             self._write_s3vaultfuse_config()
+            self._write_ca_cert()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -136,31 +326,75 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 return d
         return None
 
+    def _get_ca_cert(self):
+        """Return concatenated CA certs from receive-ca-cert relation, or None."""
+        rel = self.model.get_relation("receive-ca-cert")
+        if not rel:
+            return None
+        certs = [
+            rel.data[unit]["ca"].strip()
+            for unit in rel.units
+            if rel.data[unit].get("ca")
+        ]
+        return "\n".join(certs) if certs else None
+
+    def _write_ca_cert(self):
+        """Write CA bundle to the host system for tvault-contego Keystone TLS verification."""
+        ca_cert = self._get_ca_cert()
+        if not ca_cert:
+            return
+        ca_path = "/usr/local/share/ca-certificates/trilio-ca.crt"
+        os.makedirs(os.path.dirname(ca_path), exist_ok=True)
+        with open(ca_path, "w") as f:
+            f.write(ca_cert)
+        subprocess.run(["update-ca-certificates"], check=True)
+        logger.info("CA cert written to %s", ca_path)
+
     # --- apt repo and package installation ---
 
     def _setup_apt_repo(self):
         pkg_source = self.config["triliovault-pkg-source"]
-        subprocess.run(
-            ["bash", "-c",
-             f"curl -fsSL {TRILIO_GPG_URL} | gpg --dearmor -o {TRILIO_GPG_PATH}"],
-            check=True,
-        )
         with open(TRILIO_LIST_PATH, "w") as f:
             f.write(f"{pkg_source}\n")
         subprocess.run(["apt-get", "update", "-qq"], check=True)
         logger.info("Trilio apt repo configured")
 
+    def _ensure_nova_user(self):
+        """Create nova system user/group if absent, then add to disk and kvm groups.
+
+        python3-tvault-contego postinst runs usermod for nova. On Sunbeam compute
+        nodes nova-compute runs inside the openstack-hypervisor snap and no host-level
+        nova user is created by the snap, so the postinst fails without this.
+        nova needs disk+kvm group membership for libvirt/QEMU operations (mirrors
+        the kolla Dockerfile: usermod -aG disk,kvm nova).
+        """
+        try:
+            subprocess.run(["getent", "passwd", "nova"], check=True,
+                           capture_output=True)
+        except subprocess.CalledProcessError:
+            subprocess.run(["addgroup", "--system", "nova"], check=False)
+            subprocess.run(
+                ["adduser", "--system", "--no-create-home",
+                 "--ingroup", "nova", "nova"],
+                check=True,
+            )
+            logger.info("Created system user nova")
+        for grp in ("disk", "kvm"):
+            subprocess.run(["usermod", "-aG", grp, "nova"], check=False)
+
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
 
-        # tvault-contego: datamover service package
-        dm_pkg = f"{DATAMOVER_SERVICE}={version}*" if version else DATAMOVER_SERVICE
-        # python3-trilio-dms: DMS server package (compute-side instance)
+        dm_pkg = f"{DATAMOVER_PACKAGE}={version}*" if version else DATAMOVER_PACKAGE
         dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
 
+        self._ensure_nova_user()
         subprocess.run(
             ["apt-get", "install", "-y", "--no-install-recommends",
-             "fuse", "libfuse2", "nfs-common", "python3-s3-fuse-plugin",
+             "fuse", "libfuse2", "nfs-common",
+             "udev", "qemu-utils", "ceph-common",
+             "python3-novaclient", "python3-cinderclient",
+             "python3-libvirt", "python3-s3-fuse-plugin",
              dm_pkg, dms_pkg],
             check=True,
         )
@@ -170,14 +404,22 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         dirs = [
             "/etc/triliovault-datamover",
             "/etc/triliovault-dms",
+            "/etc/triliovault-object-store",
             "/var/log/triliovault",
             "/var/triliovault-mounts",
             "/var/triliovault",
+            "/opt/triliovault",
             "/run/dms",
             "/run/dms/s3",
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
+        # opt/triliovault owned by nova (mirrors kolla Dockerfile)
+        shutil.chown("/opt/triliovault", user="nova", group="nova")
+        shutil.chown("/var/triliovault-mounts", user="nova", group="nova")
+        shutil.chown("/var/triliovault", user="nova", group="nova")
+        os.chmod("/var/triliovault-mounts", 0o777)
+        os.chmod("/var/triliovault", 0o777)
         # Fuse requires user_allow_other for DMS FUSE mounts.
         # Guard before appending — this method is called on install AND on
         # config-changed, so naively appending would duplicate the line on every
@@ -237,6 +479,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DM_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DM_CONFIG_PATH)
+        with open(DM_LOGGING_CONF_PATH, "w") as f:
+            f.write(DATAMOVER_LOGGING_CONF)
+        logger.info("Wrote %s", DM_LOGGING_CONF_PATH)
 
     # --- DMS config file rendering ---
 
@@ -258,7 +503,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         cfg["server"] = {
             "rabbitmq_url": transport_url,
             "auth_url": auth_url,
-            "node_id": socket.gethostname(),
+            "node_id": socket.getfqdn(),
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_max_bytes": "26214400",
@@ -276,6 +521,82 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DMS_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DMS_CONFIG_PATH)
+
+    def _write_dms_client_config(self):
+        """Write /etc/triliovault-dms/client.conf for tvault-contego DMS client.
+
+        db_url must point to WLM database — set wlm-db-url charm config.
+        Skipped with a warning if wlm-db-url is not configured.
+        """
+        wlm_db_url = self.config.get("wlm-db-url", "").strip()
+        if not wlm_db_url:
+            logger.warning("wlm-db-url not set — skipping DMS client.conf")
+            return
+
+        amqp = self._amqp_data()
+        transport_url = (
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"@{amqp['host']}:{amqp.get('port', '5672')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
+        )
+
+        cfg = configparser.ConfigParser()
+        cfg["client"] = {
+            "rabbitmq_url": transport_url,
+            "db_url": wlm_db_url,
+            "node_id": socket.getfqdn(),
+            "request_timeout": "60",
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_file": DMS_CLIENT_LOG_FILE,
+            "log_max_bytes": "26214400",
+            "log_backup_count": "5",
+            "db_pool_size": "20",
+            "db_max_overflow": "40",
+            "db_pool_recycle": "3600",
+        }
+
+        buf = io.StringIO()
+        cfg.write(buf)
+        os.makedirs("/etc/triliovault-dms", exist_ok=True)
+        with open(DMS_CLIENT_CONF_PATH, "w") as f:
+            f.write(buf.getvalue())
+        logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
+
+    def _write_nova_sudoers(self):
+        """Write sudoers rule for nova privsep-helper (mirrors kolla nova-sudoers)."""
+        sudoers_path = "/etc/sudoers.d/nova-sudoers"
+        content = "nova ALL=(root) NOPASSWD: /usr/bin/privsep-helper *\n"
+        os.makedirs("/etc/sudoers.d", exist_ok=True)
+        with open(sudoers_path, "w") as f:
+            f.write(content)
+        os.chmod(sudoers_path, 0o440)
+        logger.info("Wrote %s", sudoers_path)
+
+    def _install_rootwrap_filters(self):
+        """Install trilio.filters for nova rootwrap (mirrors kolla ADD trilio.filters)."""
+        filters_dir = "/usr/share/nova/rootwrap"
+        filters_src = pathlib.Path(__file__).parent.parent / "files" / "trilio.filters"
+        if filters_src.exists():
+            os.makedirs(filters_dir, exist_ok=True)
+            shutil.copy2(str(filters_src), os.path.join(filters_dir, "trilio.filters"))
+            logger.info("Installed trilio.filters to %s", filters_dir)
+        else:
+            logger.warning("trilio.filters not found in charm files/, skipping rootwrap install")
+
+    def _write_systemd_services(self):
+        """Write systemd unit files for DMS server and tvault-contego.
+
+        Both units are not shipped by their packages (designed for kolla containers).
+        Written once at install time; daemon-reload is called before service start.
+        """
+        units = {
+            f"/lib/systemd/system/{DMS_SERVICE}.service": DMS_SYSTEMD_UNIT,
+            f"/lib/systemd/system/{DATAMOVER_SERVICE}.service": DATAMOVER_SYSTEMD_UNIT,
+        }
+        for path, content in units.items():
+            with open(path, "w") as f:
+                f.write(content)
+            logger.info("Wrote systemd unit %s", path)
 
     def _write_s3vaultfuse_config(self):
         content = (
@@ -321,6 +642,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(S3VAULTFUSE_CONF, "w") as f:
             f.write(content)
         logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        os.makedirs("/etc/triliovault-object-store", exist_ok=True)
+        with open(OBJECT_STORE_LOGGING_CONF_PATH, "w") as f:
+            f.write(OBJECT_STORE_LOGGING_CONF)
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     # --- service management ---
 

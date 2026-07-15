@@ -20,13 +20,14 @@ description: |
 
 subordinate: true
 
-bases:
-  - build-on:
-      - name: ubuntu
-        channel: "22.04"
-    run-on:
-      - name: ubuntu
-        channel: "22.04"
+base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    plugin: charm
+    source: .
 
 requires:
   juju-info:
@@ -36,6 +37,9 @@ requires:
     interface: rabbitmq
   identity-credentials:
     interface: keystone-credentials
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
 
 provides:
   data-mover:
@@ -58,3 +62,12 @@ config:
       type: boolean
       default: false
       description: Enable debug logging
+    wlm-db-url:
+      type: string
+      default: ""
+      description: |
+        WLM database URL for the DMS client conf (/etc/triliovault-dms/client.conf).
+        Format: mysql+pymysql://<user>:<pass>@<host>/<db>
+        Obtain from the WLM pod:
+          kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+            grep ^connection /etc/triliovault-wlm/triliovault-wlm.conf
