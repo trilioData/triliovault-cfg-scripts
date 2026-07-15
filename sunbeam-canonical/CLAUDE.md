@@ -105,8 +105,21 @@ Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this b
 
 ### DMS systemd units (data plane)
 Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit files (both were designed for kolla containers). The `trilio-data-mover` charm writes both units to `/lib/systemd/system/` during install:
-- `triliovault-dms.service` — runs `trilio-dms-server` as nova user
-- `tvault-contego.service` — runs tvault-contego with nova.conf from the openstack-hypervisor snap at `/var/snap/openstack-hypervisor/current/etc/nova/nova.conf`
+- `triliovault-dms.service` — runs `trilio-dms-server` as nova user, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
+- `triliovault-datamover.service` — runs tvault-contego as nova user with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
+
+### nova.conf and CA cert handling (data plane)
+The `openstack-hypervisor` snap's nova.conf is at `/var/snap/openstack-hypervisor/common/etc/nova/nova.conf` (root:root 640 — unreadable by the nova user). The charm copies it to `/etc/triliovault-datamover/nova.conf` (root:nova 640).
+
+**Only one line is patched in the copy**: the `cafile=` line in `[keystone_authtoken]` (and any other section) that references a snap-internal path (`/var/snap/openstack-hypervisor/.../receive-ca-bundle.pem`, also root:root 640). It is rewritten to `/etc/triliovault-datamover/ca-bundle.pem`.
+
+The CA cert at that path comes from the **`receive-ca-cert` Juju relation** — NOT copied from the snap. `_write_ca_cert()` reads the CA from the relation databag and writes it to:
+1. `/etc/triliovault-datamover/ca-bundle.pem` (root:nova 640) — for tvault-contego's direct use via `cafile=`
+2. `/usr/local/share/ca-certificates/trilio-ca.crt` + `update-ca-certificates` — system trust store for all other tools
+
+**Ordering in `_configure()`**: `_write_ca_cert()` must run before `_sync_nova_conf()` so the CA file exists before nova.conf references it.
+
+If the `receive-ca-cert` relation has no data yet, the `cafile=` line is stripped entirely so keystoneauth1 falls back to the world-readable system CA trust store.
 
 ### DMS client conf (data plane only)
 `/etc/triliovault-dms/client.conf` is written by the `trilio-data-mover` charm when `wlm-db-url` config is set. It contains WLM DB URL, same RabbitMQ credentials as DMS server, and `node_id = socket.getfqdn()`. Control plane charms (WLM, DMAPI) do not get a DMS client conf in the current implementation.
