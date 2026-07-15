@@ -255,6 +255,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # Trilio releases and must be refreshed before installing the new package.
             self._setup_apt_repo()
             self._install_packages()
+            # Re-write systemd units on upgrade: the unit files may not have been
+            # written by the original install if this was a pre-v14 deployment, or
+            # the unit content may have changed between Trilio releases.
+            self._create_directories()
+            self._write_nova_sudoers()
+            self._install_rootwrap_filters()
+            self._write_systemd_services()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return

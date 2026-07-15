@@ -112,7 +112,8 @@ Horizon reloads automatically — no restart required.
 To build OCI images or Juju charms, the build machine must have Docker and charmcraft installed.
 A setup script is provided to prepare any Ubuntu machine in one step:
 
-**Supported OS**: Ubuntu 22.04 LTS (Jammy) or later (24.04 LTS Noble also supported).
+**Supported OS**: Ubuntu 22.04 LTS (Jammy) or 24.04 LTS (Noble).
+Canonical's own sunbeam-charms CI targets Ubuntu 24.04 Noble; both versions work for Trilio builds.
 
 ```bash
 # Run from the repository root — idempotent, safe to re-run
@@ -120,8 +121,8 @@ bash sunbeam-canonical/build/setup_build_machine.sh
 ```
 
 What the script installs:
-- Docker CE (from the official Docker APT repository)
-- `charmcraft` snap (for building Juju charms)
+- Docker CE (from the official Docker APT repository) — required for OCI image builds
+- `charmcraft` snap (`latest/stable` channel) — required for Juju charm builds
 - Base dependencies: `git`, `curl`, `python3`, `snapd`
 
 After the script completes:
