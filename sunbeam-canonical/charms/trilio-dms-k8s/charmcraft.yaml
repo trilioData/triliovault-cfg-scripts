@@ -63,3 +63,12 @@ config:
       type: int
       default: 10
       description: Number of worker threads for parallel mount request processing
+    wlm-db-url:
+      type: string
+      default: ""
+      description: |
+        WLM database URL for the DMS client conf (/etc/triliovault-dms/client.conf).
+        Format: mysql+pymysql://<user>:<pass>@<host>/<db>
+        Obtain from the WLM pod:
+          kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+            grep ^connection /etc/triliovault-wlm/triliovault-wlm.conf

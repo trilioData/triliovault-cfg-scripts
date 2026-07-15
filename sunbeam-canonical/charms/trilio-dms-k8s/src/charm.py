@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-dms"
 SERVER_CONF = "/etc/triliovault-dms/server.conf"
+CLIENT_CONF = "/etc/triliovault-dms/client.conf"
+DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
@@ -150,6 +152,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             return
 
         self._write_config(container)
+        self._write_client_config(container)
         self._write_s3vaultfuse_config(container)
         self._write_ca_cert(container)
         self._update_pebble_layer(container)
@@ -244,13 +247,16 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         logger.info("CA bundle written to container")
 
     def _get_node_name(self, container):
-        """Get k8s node hostname via Downward API env var injected into the workload container."""
+        """Get k8s node hostname via Downward API K8S_NODE_NAME injected into workload container."""
         try:
             out, _ = container.exec(["printenv", "K8S_NODE_NAME"]).wait_output()
-            return out.strip()
-        except Exception:
-            logger.warning("K8S_NODE_NAME not available, falling back to unit name")
-            return self.unit.name.replace("/", "-")
+            node_name = out.strip()
+            if node_name:
+                return node_name
+        except Exception as e:
+            logger.warning("Failed to read K8S_NODE_NAME: %s", e)
+        logger.warning("K8S_NODE_NAME not available, falling back to unit name")
+        return self.unit.name.replace("/", "-")
 
     def _write_config(self, container):
         amqp = self._amqp_data()
@@ -286,6 +292,31 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         cfg.write(buf)
         container.push(SERVER_CONF, buf.getvalue(), make_dirs=True)
         logger.info("Wrote %s", SERVER_CONF)
+
+    def _write_client_config(self, container):
+        """Write /etc/triliovault-dms/client.conf (DMS client side — mirrors kolla client template)."""
+        amqp = self._amqp_data()
+        transport_url = (
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"@{amqp['host']}:{amqp.get('port', '5672')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
+        )
+
+        cfg = configparser.ConfigParser()
+        cfg["client"] = {
+            "rabbitmq_url": transport_url,
+            "node_id": self._get_node_name(container),
+            "log_file": DMS_CLIENT_LOG_FILE,
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+        }
+        wlm_db_url = self.config.get("wlm-db-url", "")
+        if wlm_db_url:
+            cfg["client"]["db_url"] = wlm_db_url
+
+        buf = io.StringIO()
+        cfg.write(buf)
+        container.push(CLIENT_CONF, buf.getvalue(), make_dirs=True)
+        logger.info("Wrote %s", CLIENT_CONF)
 
     def _write_s3vaultfuse_config(self, container):
         content = (
