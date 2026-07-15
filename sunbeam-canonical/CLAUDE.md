@@ -189,19 +189,42 @@ bash devops-build-publish.sh \
   --mode build-and-publish
 ```
 
-The tag must follow the `<trilio-version>-<openstack-release>` format (e.g. `6.2.1-2024.1`) so the script can derive:
-- `OPENSTACK_RELEASE=2024.1` — used to find the release-specific Dockerfile (e.g. `Dockerfile_2024.1`)
-- `TRILIO_PIP_INDEX_URL` — PyPI index for the horizon plugin pip packages
+The tag **must** follow the `<trilio-version>-<openstack-release>` format (e.g. `6.2.1-2024.1`) so the script can derive:
+- `OPENSTACK_RELEASE=2024.1` — selects the release-specific Dockerfile (`Dockerfile_2024.1`) or falls back to `Dockerfile`
+- `TRILIO_PIP_INDEX_URL` — PyPI index URL for the horizon plugin pip packages (derived as `https://pypi.fury.io/trilio-<major>-<minor>/`)
 
 Images:
-| Image | Dockerfile | Notes |
-|---|---|---|
-| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` | ubuntu:jammy + APT packages |
-| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-datamover-api/Dockerfile` | ubuntu:jammy + APT packages |
-| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` | ubuntu:jammy + APT packages |
-| `docker.io/trilio/trilio-horizon-plugin-canonical:<tag>` | `docker/trilio-horizon-plugin/Dockerfile_2024.1` | `ghcr.io/canonical/horizon:2024.1` + pip packages |
+| Image | Dockerfile | Base | Service user |
+|---|---|---|---|
+| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `nova` (UID 42436) |
+| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-datamover-api/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `dmapi` |
+| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `nova` (UID 42436) |
+| `docker.io/trilio/trilio-horizon-plugin-canonical:<tag>` | `docker/trilio-horizon-plugin/Dockerfile_2024.1` | `ghcr.io/canonical/horizon:2024.1` | default (root/www-data) |
 
-The horizon plugin Dockerfile uses pip (`tvault-horizon-plugin`, `workloadmgrclient`, `contegoclient`) from `TRILIO_PIP_INDEX_URL`, not the APT repo.
+#### OCI image design decisions (DO NOT CHANGE without reading this)
+
+**Base image**: `ubuntu:jammy` (Ubuntu 22.04) — NOT Kolla images (`quay.io/openstack.kolla/*`), NOT OpenStack Helm images (`openstackhelm/*`). Sunbeam uses Canonical's Ubuntu-based OpenStack. Kolla/OSH base images carry Kolla-specific entrypoints and venvs that conflict with Pebble's process management.
+
+**Ubuntu Cloud Archive (UCA)**: `cloud-archive:caracal` is added to get OpenStack Caracal (2024.1) packages (`nova-common`, `python3-nova`, `python3-novaclient`, `python3-neutronclient`, `python3-glanceclient`). Without UCA, Ubuntu 22.04's base repos only have OpenStack Yoga packages.
+
+**nova user UID = 42436**: Confirmed from the running Sunbeam cluster (`kubectl exec -n openstack nova-0 -c nova-api -- id nova`). All other distros also use 42436 (Kolla enforces it; UCA creates nova at a different UID by default).
+
+**`nova_userid.sh`**: Required because `nova-common` from UCA creates nova at a system-allocated UID (not 42436). The script deletes the existing nova user, recreates it at UID/GID 42436, and restores group memberships. Source: `docker/openstack-helm/trilio-wlm/nova_userid.sh`. Run this BEFORE installing Trilio packages.
+
+**Service user mapping** (matches Kolla reference pattern):
+| Service | User | Why |
+|---|---|---|
+| wlm-api, wlm-workloads, wlm-scheduler, wlm-cron | `nova` | WLM is a nova-adjacent service; file permissions on /var/lib/workloadmgr and mounts use nova |
+| DMS server (k8s) | `nova` | DMS manages NFS/S3 mounts on behalf of nova-compatible services |
+| DataMover API (dmapi) | `dmapi` | DMAPI is an independent control-plane service; dmapi user created by python3-dmapi package |
+
+**nova-sudoers** (`nova ALL = (root) NOPASSWD: /usr/bin/workloadmgr-rootwrap *`): Required for WLM to execute privileged rootwrap operations (NFS mount/unmount, libvirt interactions).
+
+**dmapi_sudoers** (`dmapi ALL=(ALL) NOPASSWD: ALL`): Full sudo for dmapi user, matching Kolla reference (`docker/kolla-ansible/trilio-datamover-api/dmapi_sudoers`).
+
+**Horizon plugin**: Uses `ghcr.io/canonical/horizon:2024.1` (the Canonical Sunbeam Horizon image confirmed from running cluster). Installs `tvault-horizon-plugin`, `workloadmgrclient`, `contegoclient` via pip with `TRILIO_PIP_INDEX_URL`. This is release-specific — the Dockerfile is named `Dockerfile_2024.1`.
+
+**`devops-build-publish.sh` for dev builds**: With a dev tag like `shyam-tv7404-10`, the script's tag parsing breaks (expects `<version>-<openstack>` format). For dev builds, run `docker build` directly with the correct Dockerfile and `--build-arg TRILIO_PIP_INDEX_URL=<url>` for horizon plugin.
 
 ### Charms (Charmhub)
 
