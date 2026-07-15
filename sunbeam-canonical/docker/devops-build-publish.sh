@@ -6,7 +6,7 @@
 #
 # Usage:
 #   bash devops-build-publish.sh --tag <TAG> --containers <all|container[,...]> --mode <MODE>
-#                                [--openstack-release <RELEASE>] [--apt-url <URL>]
+#                                [--openstack-release <RELEASE>] [--apt-url <URL>] [--pip-url <URL>]
 #
 # Options:
 #   --tag               Docker image tag, e.g. 6.2.1-2024.1
@@ -18,6 +18,8 @@
 #                       e.g. --openstack-release 2024.1
 #   --apt-url           Override the APT repo URL substituted into trilio.list (for dev tags)
 #                       e.g. --apt-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
+#   --pip-url           Override the PyPI index URL for horizon plugin pip packages (for dev tags)
+#                       e.g. --pip-url "https://pypi.fury.io/trilio-6-2/"
 #
 # Containers:
 #   trilio-datamover-api    Control plane DataMover API
@@ -42,6 +44,7 @@
 #   bash devops-build-publish.sh --tag shyam-tv7404-11 \
 #       --openstack-release 2024.1 \
 #       --apt-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /" \
+#       --pip-url "https://pypi.fury.io/trilio-6-2/" \
 #       --containers all --mode build-and-publish
 
 set -e
@@ -70,6 +73,7 @@ Usage: $0 --tag <TAG> --containers <all|container[,...]> --mode <MODE>
                       build-and-publish Build and push images
   --openstack-release Override OpenStack release derived from --tag (for dev tags)
   --apt-url           Override APT repo URL substituted into trilio.list (for dev tags)
+  --pip-url           Override PyPI index URL for horizon plugin pip packages (for dev tags)
 
 Containers:
   trilio-datamover-api    Control plane DataMover API
@@ -91,6 +95,7 @@ Dev build example (tag does not follow <version>-<os-release> format):
   $0 --tag shyam-tv7404-11 \\
       --openstack-release 2024.1 \\
       --apt-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /" \\
+      --pip-url "https://pypi.fury.io/trilio-6-2/" \\
       --containers all --mode build-and-publish
 
 Options:
@@ -145,6 +150,7 @@ CONTAINERS_ARG=""
 MODE=""
 OPENSTACK_RELEASE_OVERRIDE=""
 APT_URL_OVERRIDE=""
+PIP_URL_OVERRIDE=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -164,6 +170,9 @@ while [ $# -gt 0 ]; do
         --apt-url)
             [ -n "${2:-}" ] || { echo "ERROR: --apt-url requires a value" >&2; exit 1; }
             APT_URL_OVERRIDE="$2"; shift 2 ;;
+        --pip-url)
+            [ -n "${2:-}" ] || { echo "ERROR: --pip-url requires a value" >&2; exit 1; }
+            PIP_URL_OVERRIDE="$2"; shift 2 ;;
         *)
             echo "ERROR: Unknown option: $1" >&2; usage >&2; exit 1 ;;
     esac
@@ -184,6 +193,7 @@ TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-${TRILIO_PIP_MAJOR_MINOR}/"
 # Apply optional overrides (used for dev builds with non-standard tag formats)
 [ -n "$OPENSTACK_RELEASE_OVERRIDE" ] && OPENSTACK_RELEASE="$OPENSTACK_RELEASE_OVERRIDE"
 APT_REPO_URL="${APT_URL_OVERRIDE:-deb [trusted=yes] https://apt.fury.io/trilio-maint-${TRILIO_PIP_MAJOR_MINOR} /}"
+[ -n "$PIP_URL_OVERRIDE" ] && TRILIO_PIP_INDEX_URL="$PIP_URL_OVERRIDE"
 
 case "$MODE" in
     build-only|publish-only|build-and-publish) ;;
