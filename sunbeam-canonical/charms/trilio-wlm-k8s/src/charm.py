@@ -337,11 +337,22 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         WLM uses alembic (not wlm-manage db_sync). The [alembic] section written
         into triliovault-wlm.conf provides sqlalchemy.url and script_location so
         alembic can find the migration repo without a separate alembic.ini.
+
+        workloadmgr's alembic env.py exits 1 with "Database Already Exists" when
+        the schema is already at head — this is benign and treated as success here.
         """
-        container.exec(
-            ["alembic", "--config", CONFIG_PATH, "upgrade", "head"],
-        ).wait()
-        logger.info("alembic WLM upgrade head completed")
+        try:
+            out, err = container.exec(
+                ["alembic", "--config", CONFIG_PATH, "upgrade", "head"],
+            ).wait_output()
+            logger.info("alembic WLM upgrade head completed: %s", (out or "").strip())
+        except ops.pebble.ExecError as e:
+            output = (e.stdout or "") + (e.stderr or "")
+            if "Database Already Exists" in output:
+                logger.info("alembic: schema already at head — skipping")
+                return
+            logger.error("alembic failed (exit %s): %s", e.exit_code, output)
+            raise
 
     # --- config file rendering ---
 
