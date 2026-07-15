@@ -1,4 +1,7 @@
 #!/bin/sh
-dispatch_path="$(dirname $(realpath $0))"
-JUJU_DISPATCH_PATH="${JUJU_DISPATCH_PATH:-$0}" PYTHONPATH="${dispatch_path}/lib:${dispatch_path}/venv" \
+# CHARM_DIR is always set by Juju before running hooks.
+# Fall back to realpath-dirname only when running dispatch directly (e.g. for testing).
+dispatch_path="${CHARM_DIR:-$(dirname "$(realpath "$0")")}"
+JUJU_DISPATCH_PATH="${JUJU_DISPATCH_PATH:-$0}" \
+  PYTHONPATH="${dispatch_path}/lib:${dispatch_path}/venv" \
   exec python3 "${dispatch_path}/src/charm.py"
