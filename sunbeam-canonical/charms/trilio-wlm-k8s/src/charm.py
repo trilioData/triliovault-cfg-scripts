@@ -153,6 +153,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_joined"), self._on_ingress_relation_joined
             )
+            self.framework.observe(
+                getattr(self.on, f"{rel}_relation_changed"), self._on_ingress_relation_changed
+            )
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
         self.framework.observe(self.on.database_relation_joined, self._on_database_relation_joined)
         self.framework.observe(
@@ -174,6 +177,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _on_ingress_relation_joined(self, event):
         self._publish_ingress(event.relation)
+
+    def _on_ingress_relation_changed(self, event):
+        self._register_keystone_service()
 
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
@@ -577,22 +583,41 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         rel.data[self.app]["wlm-api-url"] = f"http://{self.app.name}:{WLM_PORT}"
         rel.data[self.app]["wlm-db-url"] = wlm_db_url
 
+    def _get_ingress_url(self, rel_name):
+        """Return the URL published by Traefik for the given ingress relation, or None."""
+        rel = self.model.get_relation(rel_name)
+        if not rel:
+            return None
+        try:
+            raw = rel.data[rel.app].get("ingress")
+            if raw:
+                return json.loads(raw)["url"]
+        except (KeyError, json.JSONDecodeError):
+            pass
+        return None
+
     def _register_keystone_service(self):
         """Write WLM endpoint registration data into the identity-service relation.
 
-        Sunbeam keystone-k8s reads 'service-endpoints' (JSON) and 'region' from the
-        requirer app databag and registers the service + endpoints in the Keystone
-        service catalog.
+        Uses Traefik-provided https:// URLs when available so Keystone catalog
+        entries match the actual reachable endpoints (TLS-terminated by Traefik).
+        Falls back to plain-http k8s service URL when ingress is not yet configured.
         """
         rel = self.model.get_relation("identity-service")
         if not rel or not self.unit.is_leader():
             return
-        internal_url = WLM_ENDPOINT_TEMPLATE.format(f"http://{self.app.name}:{WLM_PORT}")
+        fallback = f"http://{self.app.name}:{WLM_PORT}"
+        public_base = (
+            self._get_ingress_url("ingress-public")
+            or self._get_ingress_url("ingress-internal")
+            or fallback
+        )
+        internal_base = self._get_ingress_url("ingress-internal") or fallback
         endpoints = [{
-            "admin_url": internal_url,
+            "admin_url": WLM_ENDPOINT_TEMPLATE.format(fallback),
             "description": "TrilioVault Backup and Recovery Service",
-            "internal_url": internal_url,
-            "public_url": internal_url,
+            "internal_url": WLM_ENDPOINT_TEMPLATE.format(internal_base),
+            "public_url": WLM_ENDPOINT_TEMPLATE.format(public_base),
             "service_name": WLM_SERVICE_NAME,
             "type": WLM_SERVICE_TYPE,
         }]

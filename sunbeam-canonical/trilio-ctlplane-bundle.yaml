@@ -55,6 +55,7 @@ relations:
   - [trilio-dm-api-k8s:amqp, rabbitmq:amqp]
   - [trilio-dm-api-k8s:identity-service, keystone:identity-service]
   - [trilio-dm-api-k8s:ingress-internal, traefik:ingress]
+  - [trilio-dm-api-k8s:ingress-public, traefik-public:ingress]
   - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
 
   # DMS (Dynamic Mount Service) relations — control plane instance

@@ -268,8 +268,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         DataMover uses the same vhost as DMAPI for shared RabbitMQ communication.
         """
-        event.relation.data[self.unit]["username"] = "datamover"
-        event.relation.data[self.unit]["vhost"] = "datamover"
+        if self.unit.is_leader():
+            event.relation.data[self.app]["username"] = "datamover"
+            event.relation.data[self.app]["vhost"] = "datamover"
 
     # --- core configure logic ---
 
@@ -304,26 +305,24 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- relation data helpers ---
 
     def _amqp_data(self):
-        """rabbitmq interface: unit databag. Accept hostname or host."""
+        """rabbitmq interface: provider app databag. Accept hostname or host."""
         rel = self.model.get_relation("amqp")
         if not rel:
             return None
-        for unit in rel.units:
-            d = rel.data[unit]
-            host = d.get("hostname") or d.get("host")
-            if host and d.get("password"):
-                return {**dict(d), "host": host}
+        d = rel.data[rel.app]
+        host = d.get("hostname") or d.get("host")
+        if host and d.get("password"):
+            return {**dict(d), "host": host}
         return None
 
     def _identity_data(self):
-        """keystone-credentials interface: unit databag."""
+        """keystone-credentials interface: provider app databag."""
         rel = self.model.get_relation("identity-credentials")
         if not rel:
             return None
-        for unit in rel.units:
-            d = rel.data[unit]
-            if d.get("credentials_host") and d.get("credentials_password"):
-                return d
+        d = rel.data[rel.app]
+        if d.get("credentials_host") and d.get("credentials_password"):
+            return d
         return None
 
     def _get_ca_cert(self):
