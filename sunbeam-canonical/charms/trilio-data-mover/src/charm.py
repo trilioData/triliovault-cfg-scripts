@@ -33,8 +33,6 @@ S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
-TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
-TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
 
 # Systemd unit for the DMS server on compute nodes.
@@ -344,13 +342,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _setup_apt_repo(self):
         pkg_source = self.config["triliovault-pkg-source"]
-        # Skip GPG key import when repo is marked trusted=yes (e.g. apt.fury.io dev repos).
-        if "[trusted=yes]" not in pkg_source:
-            subprocess.run(
-                ["bash", "-c",
-                 f"curl -fsSL {TRILIO_GPG_URL} | gpg --dearmor -o {TRILIO_GPG_PATH}"],
-                check=True,
-            )
         with open(TRILIO_LIST_PATH, "w") as f:
             f.write(f"{pkg_source}\n")
         subprocess.run(["apt-get", "update", "-qq"], check=True)
