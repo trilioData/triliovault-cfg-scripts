@@ -12,22 +12,19 @@ LABEL name="trilio-dms-canonical" \
 
 USER root
 
-ARG OPENSTACK_REPO=cloud-archive:caracal
-
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Etc/UTC
 
-# Base packages
+# Base packages + ubuntu-cloud-keyring (provides UCA signing key without keyserver access)
 RUN apt-get -y update && \
     apt-get -y install --no-install-recommends \
-        apt-utils \
-        software-properties-common \
         ca-certificates \
         gnupg \
         fuse \
         libfuse2 \
         nfs-common \
         python3-pip \
+        ubuntu-cloud-keyring \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,7 +32,10 @@ RUN apt-get -y update && \
 RUN echo "user_allow_other" > /etc/fuse.conf
 
 # Add Ubuntu Cloud Archive for OpenStack Caracal (2024.1)
-RUN apt-add-repository ${OPENSTACK_REPO} && apt-get update -y
+# Write source entry directly — ubuntu-cloud-keyring already ships the signing key
+RUN echo "deb https://ubuntu-cloud.archive.canonical.com/ubuntu jammy-updates/caracal main" \
+        > /etc/apt/sources.list.d/cloudarchive-caracal.list && \
+    apt-get update -y
 
 # Install nova-common to create nova user/group
 RUN apt-get install -y nova-common && apt-get clean -y
