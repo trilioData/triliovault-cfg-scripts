@@ -140,7 +140,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
         if self.unit.is_leader():
-            event.relation.data[self.app]["database"] = "datamover"
+            event.relation.data[self.app]["database"] = "dmapi"
 
     def _on_identity_service_relation_joined(self, event):
         """Register DMAPI service endpoints with keystone on relation join."""
@@ -155,8 +155,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             amqp_rel.data[self.app]["username"] = "dmapi"
             amqp_rel.data[self.app]["vhost"] = "dmapi"
         db_rel = self.model.get_relation("database")
-        if db_rel and not db_rel.data[self.app].get("database"):
-            db_rel.data[self.app]["database"] = "datamover"
+        if db_rel:
+            db_rel.data[self.app]["database"] = "dmapi"
         ks_rel = self.model.get_relation("identity-service")
         if ks_rel and not ks_rel.data[self.app].get("service-endpoints"):
             self._register_keystone_service()

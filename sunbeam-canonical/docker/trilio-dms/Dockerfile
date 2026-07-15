@@ -56,6 +56,7 @@ RUN apt-get update -y && \
     apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
         python3-trilio-dms \
         python3-s3-fuse-plugin \
+        python3-kombu \
     --allow-unauthenticated && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
