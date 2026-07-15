@@ -221,6 +221,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self.framework.observe(self.on.juju_info_relation_joined, self._on_juju_info_joined)
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
         self.framework.observe(
+            self.on.identity_credentials_relation_joined,
+            self._on_identity_credentials_relation_joined,
+        )
+        self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._on_relation_changed
         )
 
@@ -247,14 +251,16 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_upgrade_charm(self, event):
         self.unit.status = ops.MaintenanceStatus("Upgrading TrilioVault packages")
         try:
-            # Re-run apt repo setup on upgrade — the GPG key or repo URL may have
-            # changed between Trilio releases and must be refreshed before installing
-            # the new package version.
+            # Re-run apt repo setup on upgrade — the repo URL may have changed between
+            # Trilio releases and must be refreshed before installing the new package.
             self._setup_apt_repo()
             self._install_packages()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
+        # Re-send relation requests in case the relations were joined before this charm
+        # version had the correct app-bag write logic. Idempotent.
+        self._send_relation_requests()
         self._configure(event)
 
     def _on_relation_changed(self, event):
@@ -264,13 +270,31 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._configure(event)
 
     def _on_amqp_relation_joined(self, event):
-        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
-
-        DataMover uses the same vhost as DMAPI for shared RabbitMQ communication.
-        """
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
         if self.unit.is_leader():
             event.relation.data[self.app]["username"] = "datamover"
             event.relation.data[self.app]["vhost"] = "datamover"
+
+    def _on_identity_credentials_relation_joined(self, event):
+        """Write keystone requirer username so keystone-k8s provisions datamover credentials."""
+        if self.unit.is_leader():
+            event.relation.data[self.app]["username"] = "datamover"
+
+    def _send_relation_requests(self):
+        """Idempotently write requirer bags for amqp and identity-credentials.
+
+        Called on upgrade-charm to handle the case where these relations were
+        already joined before the charm had this write logic in place.
+        """
+        if not self.unit.is_leader():
+            return
+        amqp_rel = self.model.get_relation("amqp")
+        if amqp_rel:
+            amqp_rel.data[self.app]["username"] = "datamover"
+            amqp_rel.data[self.app]["vhost"] = "datamover"
+        identity_rel = self.model.get_relation("identity-credentials")
+        if identity_rel:
+            identity_rel.data[self.app]["username"] = "datamover"
 
     # --- core configure logic ---
 

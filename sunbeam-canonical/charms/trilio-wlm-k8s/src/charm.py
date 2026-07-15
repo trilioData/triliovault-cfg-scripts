@@ -639,9 +639,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
         Traefik v2 expects a single 'data' key whose value is a JSON-encoded
         dict (not individual top-level keys). Port must be an integer.
+        Stale individual keys (model/name/port/scheme/strip-prefix/redirect-https)
+        from older charm versions are removed; their presence alongside 'data'
+        prevents Traefik from processing the relation.
         """
         if not self.unit.is_leader():
             return
+        for old_key in ("model", "name", "port", "scheme", "strip-prefix", "redirect-https"):
+            if old_key in rel.data[self.app]:
+                del rel.data[self.app][old_key]
         rel.data[self.app]["data"] = json.dumps({
             "model": self.model.name,
             "name": self.app.name,
