@@ -23,7 +23,8 @@ import ops
 
 logger = logging.getLogger(__name__)
 
-DATAMOVER_SERVICE = "tvault-contego"
+DATAMOVER_PACKAGE = "python3-tvault-contego"
+DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
@@ -347,14 +348,32 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         subprocess.run(["apt-get", "update", "-qq"], check=True)
         logger.info("Trilio apt repo configured")
 
+    def _ensure_nova_user(self):
+        """Create nova system user/group if absent.
+
+        python3-tvault-contego postinst runs usermod for nova. On Sunbeam compute
+        nodes nova-compute runs inside the openstack-hypervisor snap and no host-level
+        nova user is created by the snap, so the postinst fails without this.
+        """
+        try:
+            subprocess.run(["getent", "passwd", "nova"], check=True,
+                           capture_output=True)
+        except subprocess.CalledProcessError:
+            subprocess.run(["addgroup", "--system", "nova"], check=False)
+            subprocess.run(
+                ["adduser", "--system", "--no-create-home",
+                 "--ingroup", "nova", "nova"],
+                check=True,
+            )
+            logger.info("Created system user nova")
+
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
 
-        # tvault-contego: datamover service package
-        dm_pkg = f"{DATAMOVER_SERVICE}={version}*" if version else DATAMOVER_SERVICE
-        # python3-trilio-dms: DMS server package (compute-side instance)
+        dm_pkg = f"{DATAMOVER_PACKAGE}={version}*" if version else DATAMOVER_PACKAGE
         dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
 
+        self._ensure_nova_user()
         subprocess.run(
             ["apt-get", "install", "-y", "--no-install-recommends",
              "fuse", "libfuse2", "nfs-common", "python3-s3-fuse-plugin",
