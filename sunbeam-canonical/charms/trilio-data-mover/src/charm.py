@@ -344,11 +344,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _setup_apt_repo(self):
         pkg_source = self.config["triliovault-pkg-source"]
-        subprocess.run(
-            ["bash", "-c",
-             f"curl -fsSL {TRILIO_GPG_URL} | gpg --dearmor -o {TRILIO_GPG_PATH}"],
-            check=True,
-        )
+        # Skip GPG key import when repo is marked trusted=yes (e.g. apt.fury.io dev repos).
+        if "[trusted=yes]" not in pkg_source:
+            subprocess.run(
+                ["bash", "-c",
+                 f"curl -fsSL {TRILIO_GPG_URL} | gpg --dearmor -o {TRILIO_GPG_PATH}"],
+                check=True,
+            )
         with open(TRILIO_LIST_PATH, "w") as f:
             f.write(f"{pkg_source}\n")
         subprocess.run(["apt-get", "update", "-qq"], check=True)
