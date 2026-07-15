@@ -1,6 +1,6 @@
 name: trilio-dms-k8s
 type: charm
-title: TrilioVault Dynamic Mount Service (Kubernetes)
+title: TrilioVault Dynamic Mount Service k8s
 summary: TrilioVault DMS k8s charm for Sunbeam Canonical OpenStack (control plane)
 description: |
   Deploys the TrilioVault Dynamic Mount Service (DMS) server on the Sunbeam

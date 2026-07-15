@@ -152,3 +152,70 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 
 WLM endpoint URL format: `http://<app>:8781/v1/$(tenant_id)s`
 DMAPI endpoint URL format: `http://<app>:8784/v2`
+
+---
+
+## Building and Publishing
+
+### Build server
+
+| Field | Value |
+|---|---|
+| IP | 172.26.2.2 |
+| User | ubuntu (key-based SSH) |
+| OS | Ubuntu 24.04 LTS |
+| Tools | juju 3.6.25, kubectl 1.32.13, canonical k8s snap |
+| k8s cluster | 3-node HA (172.26.2.2, .3, .4); Juju controller: `sunbeam-controller` |
+| Machine model | Juju controller: `localhost-localhost` |
+
+### Trilio APT repository
+
+```
+deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /
+```
+
+### Docker images
+
+Built on the build server using `sunbeam-canonical/docker/build_images.sh`.
+
+```bash
+bash build_images.sh \
+  --repo-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /" \
+  --registry docker.io/trilio \
+  --version <tag> \
+  --push
+```
+
+Images:
+| Image | Dockerfile |
+|---|---|
+| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` |
+| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-dm-api/Dockerfile` |
+| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` |
+
+### Charms (Charmhub)
+
+All four charms are registered on Charmhub under the `triliodata` publisher:
+
+| Charm | Type | Charmhub name |
+|---|---|---|
+| WLM k8s | k8s | `trilio-wlm-k8s` |
+| DMAPI k8s | k8s | `trilio-dm-api-k8s` |
+| DMS k8s | k8s | `trilio-dms-k8s` |
+| DataMover machine | subordinate | `trilio-data-mover-sunbeam` |
+
+Publish channel: **`latest/candidate`**
+
+Build and publish workflow:
+```bash
+# On build server — pack each charm
+cd sunbeam-canonical/charms/<charm-dir>
+charmcraft pack
+
+# Upload and release
+charmcraft upload <charm>.charm --name <charm-name>
+# Note the revision number from upload output, then:
+charmcraft release <charm-name> --revision <N> --channel latest/candidate
+```
+
+> **Note:** `charmcraft login` requires a browser on first use. Run `charmcraft login --export creds.txt` locally, transfer `creds.txt` to the server, then `export CHARMCRAFT_AUTH=$(cat creds.txt)` before building.
