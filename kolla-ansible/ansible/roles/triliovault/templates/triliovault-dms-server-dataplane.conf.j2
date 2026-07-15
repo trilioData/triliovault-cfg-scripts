@@ -6,7 +6,7 @@ rabbitmq_queue_type = quorum
 {% endif %}
 
 # Node identifier — must match OS-EXT-SRV-ATTR:host from nova (the nova-compute host value)
-node_id = {{ inventory_hostname }}
+node_id = {{ ansible_fqdn }}
 
 # Keystone auth URL for Barbican token validation
 auth_url = {{ keystone_internal_url }}
