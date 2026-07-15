@@ -143,7 +143,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.trilio_wlm_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.leader_elected, self._configure)
-        self.framework.observe(self.on.upgrade_charm, self._configure)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
         for rel in ("database", "amqp", "identity_service"):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
@@ -180,6 +180,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _on_ingress_relation_changed(self, event):
         self._register_keystone_service()
+
+    def _on_upgrade_charm(self, event):
+        """Re-publish ingress data on charm upgrade so Traefik picks up any format changes."""
+        for rel_name in ("ingress-internal", "ingress-public"):
+            rel = self.model.get_relation(rel_name)
+            if rel:
+                self._publish_ingress(rel)
+        self._configure(event)
 
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
