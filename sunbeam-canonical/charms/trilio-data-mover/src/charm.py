@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Ensure charm venv is on sys.path regardless of how the dispatch script is generated.
+import sys as _sys, pathlib as _pathlib
+_venv = _pathlib.Path(__file__).parent.parent / "venv"
+if str(_venv) not in _sys.path:
+    _sys.path.insert(0, str(_venv))
+del _sys, _pathlib
+
 """TrilioVault DataMover subordinate charm for Sunbeam Canonical OpenStack.
 
 Installs tvault-contego AND the compute-side trilio-dms-server on every
@@ -16,6 +23,8 @@ import configparser
 import io
 import logging
 import os
+import pathlib
+import shutil
 import socket
 import subprocess
 
@@ -223,6 +232,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._setup_apt_repo()
             self._install_packages()
             self._create_directories()
+            self._write_nova_sudoers()
+            self._install_rootwrap_filters()
             self._write_systemd_services()
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
@@ -349,11 +360,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         logger.info("Trilio apt repo configured")
 
     def _ensure_nova_user(self):
-        """Create nova system user/group if absent.
+        """Create nova system user/group if absent, then add to disk and kvm groups.
 
         python3-tvault-contego postinst runs usermod for nova. On Sunbeam compute
         nodes nova-compute runs inside the openstack-hypervisor snap and no host-level
         nova user is created by the snap, so the postinst fails without this.
+        nova needs disk+kvm group membership for libvirt/QEMU operations (mirrors
+        the kolla Dockerfile: usermod -aG disk,kvm nova).
         """
         try:
             subprocess.run(["getent", "passwd", "nova"], check=True,
@@ -366,6 +379,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 check=True,
             )
             logger.info("Created system user nova")
+        for grp in ("disk", "kvm"):
+            subprocess.run(["usermod", "-aG", grp, "nova"], check=False)
 
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
@@ -376,7 +391,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._ensure_nova_user()
         subprocess.run(
             ["apt-get", "install", "-y", "--no-install-recommends",
-             "fuse", "libfuse2", "nfs-common", "python3-s3-fuse-plugin",
+             "fuse", "libfuse2", "nfs-common",
+             "udev", "qemu-utils", "ceph-common",
+             "python3-novaclient", "python3-cinderclient",
+             "python3-libvirt", "python3-s3-fuse-plugin",
              dm_pkg, dms_pkg],
             check=True,
         )
@@ -390,11 +408,18 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "/var/log/triliovault",
             "/var/triliovault-mounts",
             "/var/triliovault",
+            "/opt/triliovault",
             "/run/dms",
             "/run/dms/s3",
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
+        # opt/triliovault owned by nova (mirrors kolla Dockerfile)
+        shutil.chown("/opt/triliovault", user="nova", group="nova")
+        shutil.chown("/var/triliovault-mounts", user="nova", group="nova")
+        shutil.chown("/var/triliovault", user="nova", group="nova")
+        os.chmod("/var/triliovault-mounts", 0o777)
+        os.chmod("/var/triliovault", 0o777)
         # Fuse requires user_allow_other for DMS FUSE mounts.
         # Guard before appending — this method is called on install AND on
         # config-changed, so naively appending would duplicate the line on every
@@ -536,6 +561,27 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DMS_CLIENT_CONF_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
+
+    def _write_nova_sudoers(self):
+        """Write sudoers rule for nova privsep-helper (mirrors kolla nova-sudoers)."""
+        sudoers_path = "/etc/sudoers.d/nova-sudoers"
+        content = "nova ALL=(root) NOPASSWD: /usr/bin/privsep-helper *\n"
+        os.makedirs("/etc/sudoers.d", exist_ok=True)
+        with open(sudoers_path, "w") as f:
+            f.write(content)
+        os.chmod(sudoers_path, 0o440)
+        logger.info("Wrote %s", sudoers_path)
+
+    def _install_rootwrap_filters(self):
+        """Install trilio.filters for nova rootwrap (mirrors kolla ADD trilio.filters)."""
+        filters_dir = "/usr/share/nova/rootwrap"
+        filters_src = pathlib.Path(__file__).parent.parent / "files" / "trilio.filters"
+        if filters_src.exists():
+            os.makedirs(filters_dir, exist_ok=True)
+            shutil.copy2(str(filters_src), os.path.join(filters_dir, "trilio.filters"))
+            logger.info("Installed trilio.filters to %s", filters_dir)
+        else:
+            logger.warning("trilio.filters not found in charm files/, skipping rootwrap install")
 
     def _write_systemd_services(self):
         """Write systemd unit files for DMS server and tvault-contego.
