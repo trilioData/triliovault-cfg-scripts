@@ -20,6 +20,7 @@ and handle NFS / S3 mount operations on their respective hosts.
 """
 
 import configparser
+import hashlib
 import io
 import logging
 import os
@@ -37,6 +38,10 @@ DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
+# nova.conf lives inside the openstack-hypervisor snap (root:root 640).
+# The charm copies it to a nova-readable location so tvault-contego can read it.
+SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
+NOVA_CONF_COPY = "/etc/triliovault-datamover/nova.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
@@ -56,6 +61,7 @@ After=network.target
 User=nova
 Group=nova
 Type=simple
+Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf
 Restart=on-failure
 RestartSec=10
@@ -66,7 +72,10 @@ WantedBy=multi-user.target
 """
 
 # Systemd unit for tvault-contego on Sunbeam compute nodes.
-# Nova config lives inside the openstack-hypervisor snap, not /etc/nova/nova.conf.
+# nova.conf lives inside the openstack-hypervisor snap (root:root 640).
+# The charm copies it to NOVA_CONF_COPY (root:nova 640) so tvault-contego can
+# read it as the nova user.  PYTHONPATH is required because snap Python packages
+# (nova, kombu, etc.) are isolated from the host system path.
 DATAMOVER_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault DataMover (tvault-contego)
@@ -78,12 +87,9 @@ StartLimitBurst=3
 User=nova
 Group=nova
 Type=simple
-# tvault-contego imports from nova (e.g. nova.exception). On Sunbeam compute nodes
-# nova runs inside the openstack-hypervisor snap; add the snap's dist-packages to
-# PYTHONPATH so tvault-contego can import nova and other OpenStack libraries.
 Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
-  --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
+  --config-file=/etc/triliovault-datamover/nova.conf \
   --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
 TimeoutStopSec=20
 KillMode=process
@@ -231,6 +237,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._on_relation_changed
         )
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
     # --- event handlers ---
 
@@ -316,6 +323,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
 
         try:
+            self._sync_nova_conf()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
@@ -709,6 +717,52 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(OBJECT_STORE_LOGGING_CONF_PATH, "w") as f:
             f.write(OBJECT_STORE_LOGGING_CONF)
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
+
+    def _sync_nova_conf(self) -> bool:
+        """Copy snap nova.conf to our location if content changed.
+
+        The snap nova.conf is root:root 640 — unreadable by the nova user that
+        tvault-contego runs as.  Charm hooks run as root, so we copy it to
+        NOVA_CONF_COPY (root:nova 640) and only write when content differs.
+        Returns True if the file was updated, False if nothing changed.
+        """
+        try:
+            with open(SNAP_NOVA_CONF, "rb") as f:
+                new_content = f.read()
+        except OSError as e:
+            logger.warning("Cannot read snap nova.conf: %s", e)
+            return False
+
+        new_hash = hashlib.sha256(new_content).hexdigest()
+
+        try:
+            with open(NOVA_CONF_COPY, "rb") as f:
+                old_hash = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            old_hash = None
+
+        if new_hash == old_hash:
+            return False
+
+        os.makedirs(os.path.dirname(NOVA_CONF_COPY), exist_ok=True)
+        with open(NOVA_CONF_COPY, "wb") as f:
+            f.write(new_content)
+        shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
+        os.chmod(NOVA_CONF_COPY, 0o640)
+        logger.info("Synced nova.conf from snap to %s", NOVA_CONF_COPY)
+        return True
+
+    def _on_update_status(self, event):
+        """Detect snap nova.conf changes and restart services only when content changed."""
+        if self._sync_nova_conf():
+            logger.info("nova.conf changed — restarting DataMover and DMS")
+            try:
+                subprocess.run(
+                    ["systemctl", "restart", DATAMOVER_SERVICE, DMS_SERVICE],
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                self.unit.status = ops.BlockedStatus(f"Service restart failed: {e}")
 
     # --- service management ---
 
