@@ -226,14 +226,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         Keys: endpoints (host:port), username, password, database.
         """
         rel = self.model.get_relation("database")
-        if not rel:
+        if not rel or not rel.app:
             return None
-        for app in rel.apps:
-            if app is self.app:
-                continue
-            d = rel.data[app]
-            if d.get("endpoints") and d.get("password"):
-                return d
+        d = rel.data[rel.app]
+        if d.get("endpoints") and d.get("password"):
+            return d
         return None
 
     def _amqp_data(self):
