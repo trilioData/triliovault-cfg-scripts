@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # build_images.sh — Build TrilioVault OCI images for Sunbeam Canonical OpenStack
 #
-# Each Dockerfile uses a trilio.list file with a {DEB_REPO_URL} placeholder.
-# This script substitutes the real APT repo line before building.
+# WLM, DMAPI, DMS images: use a trilio.list APT repo substitution.
+# Horizon plugin image: uses pip with TRILIO_PIP_INDEX_URL build arg.
 #
 # Usage:
-#   bash build_images.sh --repo-url <APT_REPO_URL> [--version <tag>] [--registry <r>] [--push]
+#   bash build_images.sh --repo-url <APT_REPO_URL> [--pip-url <PIP_INDEX_URL>] \
+#                        [--version <tag>] [--registry <r>] [--push]
 #
 # Options:
-#   --repo-url   Full APT repo line, e.g.:
-#                  "deb [trusted=yes] http://repo.trilio.io/triliovault/6.2/ jammy/"
+#   --repo-url   Full APT repo line for trilio.list (required for WLM/DMAPI/DMS), e.g.:
+#                  "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
+#   --pip-url    PyPI extra index URL for horizon plugin pip packages, e.g.:
+#                  "https://pypi.fury.io/trilio/"
 #   --version    Image tag suffix (default: 6.2.1-2024.1)
 #   --registry   Registry prefix (default: docker.io/trilio)
 #   --push       Push built images to registry after building
@@ -18,12 +21,14 @@
 #   <registry>/trilio-wlm-canonical:<version>
 #   <registry>/trilio-datamover-api-canonical:<version>
 #   <registry>/trilio-dms-canonical:<version>
+#   <registry>/trilio-horizon-plugin-canonical:<version>
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 REPO_URL=""
+PIP_URL=""
 VERSION="6.2.1-2024.1"
 REGISTRY="docker.io/trilio"
 PUSH=false
@@ -58,7 +63,7 @@ done
 
 declare -A IMAGES=(
     [trilio-wlm-canonical]="$SCRIPT_DIR/trilio-wlm"
-    [trilio-datamover-api-canonical]="$SCRIPT_DIR/trilio-dm-api"
+    [trilio-datamover-api-canonical]="$SCRIPT_DIR/trilio-datamover-api"
     [trilio-dms-canonical]="$SCRIPT_DIR/trilio-dms"
 )
 

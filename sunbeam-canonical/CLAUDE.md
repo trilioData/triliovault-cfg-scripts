@@ -29,17 +29,20 @@ This directory contains the native Juju charm implementation for T4O on Sunbeam 
 ```
 sunbeam-canonical/
 ├── charms/
-│   ├── trilio-wlm-k8s/         # WLM k8s charm (ops + Pebble)
-│   ├── trilio-dm-api-k8s/      # DMAPI k8s charm (ops + Pebble)
-│   ├── trilio-dms-k8s/         # DMS server k8s charm (ops + Pebble)
-│   └── trilio-data-mover/      # DataMover machine subordinate charm
+│   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble)
+│   ├── trilio-dm-api-k8s/           # DMAPI k8s charm (ops + Pebble)
+│   ├── trilio-dms-k8s/              # DMS server k8s charm (ops + Pebble)
+│   └── trilio-data-mover/           # DataMover machine subordinate charm
 ├── docker/
-│   ├── trilio-wlm/Dockerfile   # OCI image for WLM (wlm-api/workloads/scheduler/cron)
-│   ├── trilio-dm-api/Dockerfile
-│   └── trilio-dms/Dockerfile   # OCI image for DMS server (k8s side)
-├── trilio-bundle.yaml          # Juju bundle for control plane (openstack model)
-├── trilio-dataplane-bundle.yaml# Juju bundle for data plane (openstack-machines model)
-└── CLAUDE.md                   # This file
+│   ├── trilio-wlm/Dockerfile        # OCI image for WLM (wlm-api/workloads/scheduler/cron)
+│   ├── trilio-datamover-api/Dockerfile
+│   ├── trilio-dms/Dockerfile        # OCI image for DMS server (k8s side)
+│   ├── trilio-horizon-plugin/Dockerfile_2024.1  # Trilio Horizon Plugin (extends ghcr.io/canonical/horizon)
+│   ├── devops-build-publish.sh      # Primary build+publish script (supports all 4 images)
+│   └── build_images.sh              # Legacy build script (APT-repo substitution, 3 images)
+├── trilio-bundle.yaml               # Juju bundle for control plane (openstack model)
+├── trilio-dataplane-bundle.yaml     # Juju bundle for data plane (openstack-machines model)
+└── CLAUDE.md                        # This file
 ```
 
 ---
@@ -176,22 +179,29 @@ deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /
 
 ### Docker images
 
-Built on the build server using `sunbeam-canonical/docker/build_images.sh`.
+All Dockerfiles live under `sunbeam-canonical/docker/<container-name>/`. The primary build script is `devops-build-publish.sh`.
 
 ```bash
-bash build_images.sh \
-  --repo-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /" \
-  --registry docker.io/trilio \
-  --version <tag> \
-  --push
+# Build and push all 4 images (run from sunbeam-canonical/docker/ on build server)
+bash devops-build-publish.sh \
+  --tag 6.2.1-2024.1 \
+  --containers all \
+  --mode build-and-publish
 ```
 
+The tag must follow the `<trilio-version>-<openstack-release>` format (e.g. `6.2.1-2024.1`) so the script can derive:
+- `OPENSTACK_RELEASE=2024.1` — used to find the release-specific Dockerfile (e.g. `Dockerfile_2024.1`)
+- `TRILIO_PIP_INDEX_URL` — PyPI index for the horizon plugin pip packages
+
 Images:
-| Image | Dockerfile |
-|---|---|
-| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` |
-| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-dm-api/Dockerfile` |
-| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` |
+| Image | Dockerfile | Notes |
+|---|---|---|
+| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` | ubuntu:jammy + APT packages |
+| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-datamover-api/Dockerfile` | ubuntu:jammy + APT packages |
+| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` | ubuntu:jammy + APT packages |
+| `docker.io/trilio/trilio-horizon-plugin-canonical:<tag>` | `docker/trilio-horizon-plugin/Dockerfile_2024.1` | `ghcr.io/canonical/horizon:2024.1` + pip packages |
+
+The horizon plugin Dockerfile uses pip (`tvault-horizon-plugin`, `workloadmgrclient`, `contegoclient`) from `TRILIO_PIP_INDEX_URL`, not the APT repo.
 
 ### Charms (Charmhub)
 

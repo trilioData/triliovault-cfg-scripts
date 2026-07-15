@@ -1,9 +1,0 @@
-/var/log/triliovault/workloadmgr-api.log {
-daily
-missingok
-notifempty
-copytruncate
-size=25M
-rotate 3
-compress
-}
