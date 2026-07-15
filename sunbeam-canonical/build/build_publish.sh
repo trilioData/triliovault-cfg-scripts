@@ -39,7 +39,7 @@ declare -A CHARM_DIR_MAP=(
     [trilio-wlm-k8s]="trilio-wlm-k8s"
     [trilio-dm-api-k8s]="trilio-dm-api-k8s"
     [trilio-dms-k8s]="trilio-dms-k8s"
-    [trilio-data-mover-sunbeam]="trilio-data-mover"
+    [trilio-data-mover-sunbeam]="trilio-data-mover-sunbeam"
 )
 ALL_CHARMS=(trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s trilio-data-mover-sunbeam)
 

@@ -32,7 +32,7 @@ sunbeam-canonical/
 │   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble)
 │   ├── trilio-dm-api-k8s/           # DMAPI k8s charm (ops + Pebble)
 │   ├── trilio-dms-k8s/              # DMS server k8s charm (ops + Pebble)
-│   └── trilio-data-mover/           # DataMover machine subordinate charm
+│   └── trilio-data-mover-sunbeam/   # DataMover machine subordinate charm
 ├── docker/
 │   ├── trilio-wlm/Dockerfile        # OCI image for WLM (wlm-api/workloads/scheduler/cron)
 │   ├── trilio-datamover-api/Dockerfile
