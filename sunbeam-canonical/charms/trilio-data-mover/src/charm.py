@@ -26,12 +26,130 @@ logger = logging.getLogger(__name__)
 DATAMOVER_SERVICE = "tvault-contego"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
+DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
 TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
+
+# Python logging config referenced by datamover (tvault-contego) via log_config_append.
+# Content matches the RHOSO18 / kolla-ansible reference. Without this file the
+# tvault-contego binary fails to start (oslo.log aborts on a missing log_config_append).
+DATAMOVER_LOGGING_CONF = """\
+[loggers]
+keys = root,contego
+
+[handlers]
+keys = datamover,stdout,stderr,null
+
+[formatters]
+keys = default,advanced,default-utc,advanced-utc
+
+[logger_root]
+level = INFO
+handlers = stdout
+
+[logger_contego]
+level = INFO
+handlers = datamover,stdout,stderr
+qualname = contego
+
+[handler_datamover]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_default-utc]
+class = contego.common.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = contego.common.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+"""
+
+# Python logging config referenced by s3vaultfuse via log_config_append.
+# Content matches the kolla-ansible reference.
+OBJECT_STORE_LOGGING_CONF = """\
+[loggers]
+keys = root
+
+[handlers]
+keys = s3fuse,stdout,stderr,null
+
+[formatters]
+keys = default,advanced,default-utc,advanced-utc
+
+[logger_root]
+level = INFO
+handlers = s3fuse,stdout
+
+[handler_s3fuse]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_default-utc]
+class = s3fuse.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = s3fuse.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+"""
 
 
 class TrilioDataMoverSunbeamCharm(ops.CharmBase):
@@ -46,6 +164,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self.on.identity_credentials_relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.juju_info_relation_joined, self._on_juju_info_joined)
+        self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
+        self.framework.observe(
+            self.on.receive_ca_cert_relation_changed, self._on_relation_changed
+        )
 
     # --- event handlers ---
 
@@ -83,6 +205,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_juju_info_joined(self, event):
         self._configure(event)
 
+    def _on_amqp_relation_joined(self, event):
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
+
+        DataMover uses the same vhost as DMAPI for shared RabbitMQ communication.
+        """
+        event.relation.data[self.unit]["username"] = "datamover"
+        event.relation.data[self.unit]["vhost"] = "datamover"
+
     # --- core configure logic ---
 
     def _configure(self, event):
@@ -95,6 +225,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._write_datamover_config()
             self._write_dms_config()
             self._write_s3vaultfuse_config()
+            self._write_ca_cert()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -136,6 +267,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 return d
         return None
 
+    def _get_ca_cert(self):
+        """Return concatenated CA certs from receive-ca-cert relation, or None."""
+        rel = self.model.get_relation("receive-ca-cert")
+        if not rel:
+            return None
+        certs = [
+            rel.data[unit]["ca"].strip()
+            for unit in rel.units
+            if rel.data[unit].get("ca")
+        ]
+        return "\n".join(certs) if certs else None
+
+    def _write_ca_cert(self):
+        """Write CA bundle to the host system for tvault-contego Keystone TLS verification."""
+        ca_cert = self._get_ca_cert()
+        if not ca_cert:
+            return
+        ca_path = "/usr/local/share/ca-certificates/trilio-ca.crt"
+        os.makedirs(os.path.dirname(ca_path), exist_ok=True)
+        with open(ca_path, "w") as f:
+            f.write(ca_cert)
+        subprocess.run(["update-ca-certificates"], check=True)
+        logger.info("CA cert written to %s", ca_path)
+
     # --- apt repo and package installation ---
 
     def _setup_apt_repo(self):
@@ -170,6 +325,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         dirs = [
             "/etc/triliovault-datamover",
             "/etc/triliovault-dms",
+            "/etc/triliovault-object-store",
             "/var/log/triliovault",
             "/var/triliovault-mounts",
             "/var/triliovault",
@@ -237,6 +393,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DM_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DM_CONFIG_PATH)
+        with open(DM_LOGGING_CONF_PATH, "w") as f:
+            f.write(DATAMOVER_LOGGING_CONF)
+        logger.info("Wrote %s", DM_LOGGING_CONF_PATH)
 
     # --- DMS config file rendering ---
 
@@ -321,6 +480,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(S3VAULTFUSE_CONF, "w") as f:
             f.write(content)
         logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        os.makedirs("/etc/triliovault-object-store", exist_ok=True)
+        with open(OBJECT_STORE_LOGGING_CONF_PATH, "w") as f:
+            f.write(OBJECT_STORE_LOGGING_CONF)
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     # --- service management ---
 

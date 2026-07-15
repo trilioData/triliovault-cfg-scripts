@@ -1,0 +1,154 @@
+# sunbeam-canonical — Trilio for OpenStack on Sunbeam Canonical OpenStack
+
+## Overview
+
+Sunbeam is Canonical's opinionated, single-command OpenStack distribution built on MicroK8s + Juju.
+This directory contains the native Juju charm implementation for T4O on Sunbeam (`tv7404-native` branch).
+
+**Reference repos cloned in `C:\vscode-workspace\`:**
+- `sunbeam-charms` — upstream Sunbeam Juju charms (https://opendev.org/openstack/sunbeam-charms)
+- `snap-openstack` — the `sunbeam` CLI snap (https://opendev.org/openstack/snap-openstack)
+
+---
+
+## Architecture
+
+### Sunbeam deployment model
+
+| Layer | Technology |
+|-------|-----------|
+| Container orchestration | MicroK8s (single-node or multi-node) |
+| Charm lifecycle | Juju (`openstack` k8s model + `openstack-machines` machine model) |
+| Service packaging | OCI images (one per Trilio service) |
+| Control plane charm framework | `ops` library + Pebble (NOT charms_openstack/reactive) |
+| Data plane (DataMover) | Machine subordinate charm, subordinate to `openstack-hypervisor` |
+| Deployment orchestration | `sunbeam` CLI → Terraform → Juju |
+
+### T4O Sunbeam charm layout
+
+```
+sunbeam-canonical/
+├── charms/
+│   ├── trilio-wlm-k8s/         # WLM k8s charm (ops + Pebble)
+│   ├── trilio-dm-api-k8s/      # DMAPI k8s charm (ops + Pebble)
+│   ├── trilio-dms-k8s/         # DMS server k8s charm (ops + Pebble)
+│   └── trilio-data-mover/      # DataMover machine subordinate charm
+├── docker/
+│   ├── trilio-wlm/Dockerfile   # OCI image for WLM (wlm-api/workloads/scheduler/cron)
+│   ├── trilio-dm-api/Dockerfile
+│   └── trilio-dms/Dockerfile   # OCI image for DMS server (k8s side)
+├── trilio-bundle.yaml          # Juju bundle for control plane (openstack model)
+├── trilio-dataplane-bundle.yaml# Juju bundle for data plane (openstack-machines model)
+└── CLAUDE.md                   # This file
+```
+
+---
+
+## Key Technical Concepts
+
+### ops + Pebble pattern (k8s charms)
+Unlike the existing `juju-charms/` which use `charms_openstack` (reactive), the Sunbeam k8s charms use:
+- `ops.CharmBase` directly — no reactive states, no charms_openstack
+- Pebble for service lifecycle inside the container (`container.add_layer()`, `container.replan()`)
+- `container.exec([...]).wait()` for running commands inside the pod (DB sync, CA cert update)
+- Events: `pebble_ready`, `config_changed`, `<rel>_relation_joined`, `<rel>_relation_changed`
+
+### Resource provisioning via Juju relation protocol
+In Sunbeam, **the Juju operators handle resource provisioning automatically** — no manual shell commands needed:
+
+| Resource | How it's provisioned |
+|---|---|
+| RabbitMQ user + vhost | Requirer writes `username` + `vhost` to **unit** databag on `amqp_relation_joined`; rabbitmq-k8s creates them |
+| MySQL database + user | Requirer writes `{"database": "<name>"}` to **app** databag (leader only) on `database_relation_joined`; mysql-k8s creates them |
+| Keystone service user + endpoints | Requirer writes `service_name`, `service_type`, `public_url`, `internal_url`, `admin_url` to **app** databag; keystone-k8s creates them |
+
+This is fundamentally different from Kolla (which runs `mysql_user` Ansible module and `openstack endpoint create`) or RHOSO18 (which runs init Jobs). In Sunbeam, writing to the relation databag IS the provisioning request.
+
+### DB synchronisation
+WLM and DMAPI require DB schema migration on first deploy and upgrades.
+
+| Service | Command | Notes |
+|---------|---------|-------|
+| WLM | `alembic --config /etc/triliovault-wlm/triliovault-wlm.conf upgrade head` | Requires `[alembic]` section in the conf with `sqlalchemy.url`, `script_location`, `version_locations` |
+| DMAPI | `/usr/bin/dmapi-dbsync --config-file /etc/triliovault-datamover/triliovault-datamover-api.conf` | Reads `[database].connection` from conf |
+
+**Do NOT use `wlm-manage db_sync` or `dmapi-manage db_sync`** — these are incorrect. WLM uses alembic, DMAPI uses `dmapi-dbsync`.
+
+Run only on the leader unit (idempotent — safe to re-run). Follows the `ops_sunbeam` pattern: `run_db_sync()` calls `container.exec(cmd).wait()`, leader-only, retries on timeout.
+
+### TLS / CA certificate handling (k8s charms)
+All three k8s charms support the `receive-ca-cert` relation (`certificate_transfer` interface):
+- Requirer reads `ca` key from each provider unit databag
+- Pushes concatenated CA bundle to `/usr/local/share/ca-certificates/ca-bundle.pem` inside the container
+- Runs `update-ca-certificates` in the container
+- Sets `REQUESTS_CA_BUNDLE` env var on all Pebble services so Python's `requests` library trusts the CA
+
+The DataMover machine charm writes the CA to the host (`/usr/local/share/ca-certificates/trilio-ca.crt`) and runs `update-ca-certificates` on the host.
+
+### Logging
+All services log to `/var/log/triliovault/` on the container/host. The logging conf is **pushed by the charm at configure time** — it is NOT baked into the Docker image. This allows updating log rotation and formatters without rebuilding images.
+
+Additionally:
+- `use_stderr = true` in oslo.log config — Pebble captures stderr, making `kubectl logs` work
+- `log_config_append = <path>` points to the per-service Python logging conf pushed by the charm
+- Log formatter classes: `workloadmgr.openstack.common.log.UTCFormatter`, `dmapi.common.log.UTCFormatter`, `contego.common.log.UTCFormatter`, `s3fuse.log.UTCFormatter`
+
+### wlm-cron singleton constraint
+Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
+
+### DMS node_id stability
+The DMS server `node_id` is set to `self.unit.name.replace("/", "-")` (e.g. `trilio-dms-k8s-0`). Using `socket.gethostname()` would return the k8s pod name, which changes on every reschedule and causes DMS to register as a new cluster node each restart.
+
+---
+
+## sunbeam CLI (snap-openstack)
+
+The `sunbeam` CLI snap (`C:\vscode-workspace\snap-openstack`) orchestrates the full OpenStack deployment:
+- Uses **Terraform** plans to manage Juju application deployments
+- Uses **manifest YAML files** to declare which charm channels to deploy (see `manifests/2024.1/stable.yml`)
+- Does NOT directly handle DB sync, RabbitMQ user creation, or Keystone endpoint registration — those are charm responsibilities
+- Provides `juju.exec(cmd, unit=name)` utility for running commands on units if needed externally
+
+Key directories in snap-openstack:
+- `sunbeam-python/sunbeam/core/` — core utilities (juju.py, terraform.py, steps.py, openstack.py)
+- `sunbeam-python/sunbeam/features/` — per-feature deployment modules
+- `manifests/` — per-release channel manifests declaring charm versions
+- `cloud/` — Terraform modules for Juju deployment
+
+---
+
+## ops_sunbeam Framework (sunbeam-charms)
+
+The upstream glance-k8s and other Sunbeam charms use `ops_sunbeam` (`C:\vscode-workspace\sunbeam-charms\ops-sunbeam\`), which provides:
+- `OSBaseOperatorCharmK8S` — base class with `run_db_sync()`, `configure_unit()`, `configure_containers()`
+- `db_sync_cmds` — list of commands to run for DB migration (retried up to 10x with exponential backoff, leader-only)
+- `_retry_db_sync(cmd)` — wraps `container.exec(cmd)` with tenacity retry
+- Relation handlers in `relation_handlers.py` for amqp, mysql_client, identity-service, certificate_transfer
+
+Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the framework dependency. The patterns are equivalent but implemented manually.
+
+---
+
+## Relation Interfaces
+
+| Relation | Interface | Provider | Requirer key fields |
+|---|---|---|---|
+| `database` | `mysql_client` | mysql-k8s | Req writes `database` to app databag; prov writes `endpoints`, `username`, `password` |
+| `amqp` | `rabbitmq` | rabbitmq-k8s | Req writes `username`, `vhost` to unit databag; prov writes `hostname`, `port`, `password` |
+| `identity-service` | `keystone` | keystone-k8s | Req writes service registration; prov writes `service_host`, `service_password`, `service_username` |
+| `receive-ca-cert` | `certificate_transfer` | vault-k8s / self-signed | Prov writes `ca` to unit databag |
+| `wlm-service` | custom | trilio-wlm-k8s | Provider writes `wlm-api-url` to app databag |
+| `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag |
+
+---
+
+## Service Ports
+
+| Service | Port | Keystone service type | Keystone service name |
+|---|---|---|---|
+| WLM API | 8781 | `workloads` | `TrilioVaultWLM` |
+| DMAPI | 8784 | `datamover` | `dmapi` |
+| DMS server | (no HTTP; RabbitMQ only) | — | — |
+
+WLM endpoint URL format: `http://<app>:8781/v1/$(tenant_id)s`
+DMAPI endpoint URL format: `http://<app>:8784/v2`

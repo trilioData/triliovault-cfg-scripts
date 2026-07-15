@@ -36,6 +36,9 @@ requires:
     interface: rabbitmq
   identity-credentials:
     interface: keystone-credentials
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
 
 provides:
   data-mover:

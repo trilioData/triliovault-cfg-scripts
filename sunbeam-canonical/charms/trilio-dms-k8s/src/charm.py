@@ -26,7 +26,64 @@ logger = logging.getLogger(__name__)
 CONTAINER = "trilio-dms"
 SERVER_CONF = "/etc/triliovault-dms/server.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
+
+# Python logging config referenced by s3vaultfuse via log_config_append.
+# Pushed into the container by the charm — not baked into the Docker image.
+# Content matches the kolla-ansible reference.
+OBJECT_STORE_LOGGING_CONF = """\
+[loggers]
+keys = root
+
+[handlers]
+keys = s3fuse,stdout,stderr,null
+
+[formatters]
+keys = default,advanced,default-utc,advanced-utc
+
+[logger_root]
+level = INFO
+handlers = s3fuse,stdout
+
+[handler_s3fuse]
+class = logging.handlers.RotatingFileHandler
+args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
+formatter = advanced-utc
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = default
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = advanced
+
+[handler_null]
+class = NullHandler
+formatter = default
+args = ()
+
+[formatter_default-utc]
+class = s3fuse.log.UTCFormatter
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced-utc]
+class = s3fuse.log.UTCFormatter
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_default]
+format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+
+[formatter_advanced]
+format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
+datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+"""
 
 
 class TrilioDmsK8sCharm(ops.CharmBase):
@@ -40,9 +97,21 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
+        self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
+        self.framework.observe(
+            self.on.receive_ca_cert_relation_changed, self._configure
+        )
 
     def _on_pebble_ready(self, event):
         self._configure(event)
+
+    def _on_amqp_relation_joined(self, event):
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
+
+        DMS uses the same vhost as DMAPI since they communicate via shared RabbitMQ queues.
+        """
+        event.relation.data[self.unit]["username"] = "dmapi"
+        event.relation.data[self.unit]["vhost"] = "dmapi"
 
     def _configure(self, event):
         container = self.unit.get_container(CONTAINER)
@@ -58,6 +127,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
 
         self._write_config(container)
         self._write_s3vaultfuse_config(container)
+        self._write_ca_cert(container)
         self._update_pebble_layer(container)
         self.unit.status = ops.ActiveStatus("DMS server running")
 
@@ -94,6 +164,34 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             if d.get("service_host") and d.get("service_password"):
                 return d
         return None
+
+    def _get_ca_cert(self):
+        """Return concatenated CA certs from receive-ca-cert relation, or None."""
+        rel = self.model.get_relation("receive-ca-cert")
+        if not rel:
+            return None
+        certs = [
+            rel.data[unit]["ca"].strip()
+            for unit in rel.units
+            if rel.data[unit].get("ca")
+        ]
+        return "\n".join(certs) if certs else None
+
+    def _get_ca_bundle_env(self):
+        """Return env dict with REQUESTS_CA_BUNDLE if a CA cert is configured."""
+        if self._get_ca_cert():
+            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.pem"}
+        return {}
+
+    def _write_ca_cert(self, container):
+        """Write CA bundle to container and run update-ca-certificates."""
+        ca_cert = self._get_ca_cert()
+        if not ca_cert:
+            return
+        ca_path = "/usr/local/share/ca-certificates/ca-bundle.pem"
+        container.push(ca_path, ca_cert, make_dirs=True)
+        container.exec(["update-ca-certificates"]).wait()
+        logger.info("CA bundle written to container")
 
     def _write_config(self, container):
         amqp = self._amqp_data()
@@ -176,6 +274,8 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         )
         container.push(S3VAULTFUSE_CONF, content, make_dirs=True)
         logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        container.push(OBJECT_STORE_LOGGING_CONF_PATH, OBJECT_STORE_LOGGING_CONF, make_dirs=True)
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _update_pebble_layer(self, container):
         layer = ops.pebble.Layer({
@@ -189,6 +289,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
                         f" --config-file {SERVER_CONF}"
                     ),
                     "startup": "enabled",
+                    "environment": self._get_ca_bundle_env(),
                 }
             },
         })
