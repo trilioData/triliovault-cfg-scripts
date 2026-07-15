@@ -30,6 +30,11 @@ bases:
 containers:
   trilio-dms:
     resource: trilio-dms-image
+    envConfig:
+      K8S_NODE_NAME:
+        field:
+          path: spec.nodeName
+          api-version: v1
 
 resources:
   trilio-dms-image:

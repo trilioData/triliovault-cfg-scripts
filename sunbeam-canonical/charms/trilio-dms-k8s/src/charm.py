@@ -243,6 +243,15 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         container.exec(["update-ca-certificates"]).wait()
         logger.info("CA bundle written to container")
 
+    def _get_node_name(self, container):
+        """Get k8s node hostname via Downward API env var injected into the workload container."""
+        try:
+            out, _ = container.exec(["printenv", "K8S_NODE_NAME"]).wait_output()
+            return out.strip()
+        except Exception:
+            logger.warning("K8S_NODE_NAME not available, falling back to unit name")
+            return self.unit.name.replace("/", "-")
+
     def _write_config(self, container):
         amqp = self._amqp_data()
         identity = self._identity_data()
@@ -261,11 +270,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         cfg["server"] = {
             "rabbitmq_url": transport_url,
             "auth_url": auth_url,
-            # Use Juju unit name as stable node_id. socket.gethostname() returns the
-            # k8s pod name which changes on every reschedule/restart, causing DMS to
-            # register as a new cluster node each time. The Juju unit name (e.g.
-            # trilio-dms-k8s-0) is stable for the lifetime of the unit.
-            "node_id": self.unit.name.replace("/", "-"),
+            "node_id": self._get_node_name(container),
             "log_file": LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_max_bytes": "26214400",

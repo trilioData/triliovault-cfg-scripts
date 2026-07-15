@@ -28,12 +28,59 @@ DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
+DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
+DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_GPG_URL = "https://apt.trilio.io/key.gpg"
 TRILIO_GPG_PATH = "/etc/apt/trusted.gpg.d/trilio.gpg"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
+
+# Systemd unit for the DMS server on compute nodes.
+# python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
+DMS_SYSTEMD_UNIT = """\
+[Unit]
+Description=TrilioVault Dynamic Mount Service
+After=network.target
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+# Systemd unit for tvault-contego on Sunbeam compute nodes.
+# Nova config lives inside the openstack-hypervisor snap, not /etc/nova/nova.conf.
+DATAMOVER_SYSTEMD_UNIT = """\
+[Unit]
+Description=TrilioVault DataMover (tvault-contego)
+After=network.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
+  --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
+  --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+"""
 
 # Python logging config referenced by datamover (tvault-contego) via log_config_append.
 # Content matches the RHOSO18 / kolla-ansible reference. Without this file the
@@ -177,6 +224,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._setup_apt_repo()
             self._install_packages()
             self._create_directories()
+            self._write_systemd_services()
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
@@ -224,6 +272,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         try:
             self._write_datamover_config()
             self._write_dms_config()
+            self._write_dms_client_config()
             self._write_s3vaultfuse_config()
             self._write_ca_cert()
             self._restart_services()
@@ -417,7 +466,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         cfg["server"] = {
             "rabbitmq_url": transport_url,
             "auth_url": auth_url,
-            "node_id": socket.gethostname(),
+            "node_id": socket.getfqdn(),
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_max_bytes": "26214400",
@@ -435,6 +484,61 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(DMS_CONFIG_PATH, "w") as f:
             f.write(buf.getvalue())
         logger.info("Wrote %s", DMS_CONFIG_PATH)
+
+    def _write_dms_client_config(self):
+        """Write /etc/triliovault-dms/client.conf for tvault-contego DMS client.
+
+        db_url must point to WLM database — set wlm-db-url charm config.
+        Skipped with a warning if wlm-db-url is not configured.
+        """
+        wlm_db_url = self.config.get("wlm-db-url", "").strip()
+        if not wlm_db_url:
+            logger.warning("wlm-db-url not set — skipping DMS client.conf")
+            return
+
+        amqp = self._amqp_data()
+        transport_url = (
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"@{amqp['host']}:{amqp.get('port', '5672')}"
+            f"/{amqp.get('vhost', 'dmapi')}"
+        )
+
+        cfg = configparser.ConfigParser()
+        cfg["client"] = {
+            "rabbitmq_url": transport_url,
+            "db_url": wlm_db_url,
+            "node_id": socket.getfqdn(),
+            "request_timeout": "60",
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_file": DMS_CLIENT_LOG_FILE,
+            "log_max_bytes": "26214400",
+            "log_backup_count": "5",
+            "db_pool_size": "20",
+            "db_max_overflow": "40",
+            "db_pool_recycle": "3600",
+        }
+
+        buf = io.StringIO()
+        cfg.write(buf)
+        os.makedirs("/etc/triliovault-dms", exist_ok=True)
+        with open(DMS_CLIENT_CONF_PATH, "w") as f:
+            f.write(buf.getvalue())
+        logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
+
+    def _write_systemd_services(self):
+        """Write systemd unit files for DMS server and tvault-contego.
+
+        Both units are not shipped by their packages (designed for kolla containers).
+        Written once at install time; daemon-reload is called before service start.
+        """
+        units = {
+            f"/lib/systemd/system/{DMS_SERVICE}.service": DMS_SYSTEMD_UNIT,
+            f"/lib/systemd/system/{DATAMOVER_SERVICE}.service": DATAMOVER_SYSTEMD_UNIT,
+        }
+        for path, content in units.items():
+            with open(path, "w") as f:
+                f.write(content)
+            logger.info("Wrote systemd unit %s", path)
 
     def _write_s3vaultfuse_config(self):
         content = (

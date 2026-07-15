@@ -99,8 +99,17 @@ Additionally:
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
-### DMS node_id stability
-The DMS server `node_id` is set to `self.unit.name.replace("/", "-")` (e.g. `trilio-dms-k8s-0`). Using `socket.gethostname()` would return the k8s pod name, which changes on every reschedule and causes DMS to register as a new cluster node each restart.
+### DMS node_id
+- **Control plane (trilio-dms-k8s)**: `node_id` is the k8s node hostname, injected via the Kubernetes Downward API as `K8S_NODE_NAME` env var in the workload container (`charmcraft.yaml` `envConfig`). The charm reads it via `container.exec(["printenv", "K8S_NODE_NAME"])`. Do NOT use `socket.gethostname()` (returns pod name) or `self.unit.name` (returns Juju unit name).
+- **Data plane (trilio-data-mover)**: `node_id` is `socket.getfqdn()`, matching what `openstack-hypervisor` charm sets as `node.fqdn` in snap config for nova-compute. Must match `OS-EXT-SRV-ATTR:host` from nova.
+
+### DMS systemd units (data plane)
+Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit files (both were designed for kolla containers). The `trilio-data-mover` charm writes both units to `/lib/systemd/system/` during install:
+- `triliovault-dms.service` — runs `trilio-dms-server` as nova user
+- `tvault-contego.service` — runs tvault-contego with nova.conf from the openstack-hypervisor snap at `/var/snap/openstack-hypervisor/current/etc/nova/nova.conf`
+
+### DMS client conf (data plane only)
+`/etc/triliovault-dms/client.conf` is written by the `trilio-data-mover` charm when `wlm-db-url` config is set. It contains WLM DB URL, same RabbitMQ credentials as DMS server, and `node_id = socket.getfqdn()`. Control plane charms (WLM, DMAPI) do not get a DMS client conf in the current implementation.
 
 ---
 
