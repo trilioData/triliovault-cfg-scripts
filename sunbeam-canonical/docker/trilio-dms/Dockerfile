@@ -44,11 +44,12 @@ RUN apt-get install -y nova-common && apt-get clean -y
 COPY nova_userid.sh /opt/triliovault-dms/nova_userid.sh
 RUN chmod +x /opt/triliovault-dms/nova_userid.sh && /opt/triliovault-dms/nova_userid.sh
 
-# pip packages for cloud storage backends
+# pip packages: cloud storage backends + kombu (RabbitMQ client, not in ubuntu:jammy universe)
 RUN pip3 --no-cache-dir install \
     azure-storage-blob==12.25.1 \
     azure-core \
-    loguru
+    loguru \
+    kombu
 
 # Install TrilioVault DMS packages from Trilio APT repo
 ADD trilio.list /etc/apt/sources.list.d/
@@ -56,7 +57,6 @@ RUN apt-get update -y && \
     apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
         python3-trilio-dms \
         python3-s3-fuse-plugin \
-        python3-kombu \
     --allow-unauthenticated && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
