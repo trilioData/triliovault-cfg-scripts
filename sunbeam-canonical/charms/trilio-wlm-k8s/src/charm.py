@@ -337,22 +337,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         WLM uses alembic (not wlm-manage db_sync). The [alembic] section written
         into triliovault-wlm.conf provides sqlalchemy.url and script_location so
         alembic can find the migration repo without a separate alembic.ini.
-
-        workloadmgr's alembic env.py exits 1 with "Database Already Exists" when
-        the schema is already at head — this is benign and treated as success here.
         """
-        try:
-            out, err = container.exec(
-                ["alembic", "--config", CONFIG_PATH, "upgrade", "head"],
-            ).wait_output()
-            logger.info("alembic WLM upgrade head completed: %s", (out or "").strip())
-        except ops.pebble.ExecError as e:
-            output = (e.stdout or "") + (e.stderr or "")
-            if "Database Already Exists" in output:
-                logger.info("alembic: schema already at head — skipping")
-                return
-            logger.error("alembic failed (exit %s): %s", e.exit_code, output)
-            raise
+        container.exec(
+            ["alembic", "--config", CONFIG_PATH, "upgrade", "head"],
+        ).wait()
+        logger.info("alembic WLM upgrade head completed")
 
     # --- config file rendering ---
 
@@ -522,27 +511,29 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     # --- Pebble layer ---
 
     def _build_pebble_layer(self):
+        # Binaries are named workloadmgr-* (confirmed from the installed package).
+        # The Pebble service names (keys) are kept as wlm-* for readability.
         cmd_base = f"/usr/bin/{{}} --config-file {CONFIG_PATH}"
         env = self._get_ca_bundle_env()
         services = {
             "wlm-api": {
                 "override": "replace",
                 "summary": "WLM API",
-                "command": cmd_base.format("wlm-api"),
+                "command": cmd_base.format("workloadmgr-api"),
                 "startup": "enabled",
                 "environment": env,
             },
             "wlm-workloads": {
                 "override": "replace",
                 "summary": "WLM Workloads",
-                "command": cmd_base.format("wlm-workloads"),
+                "command": cmd_base.format("workloadmgr-workloads"),
                 "startup": "enabled",
                 "environment": env,
             },
             "wlm-scheduler": {
                 "override": "replace",
                 "summary": "WLM Scheduler",
-                "command": cmd_base.format("wlm-scheduler"),
+                "command": cmd_base.format("workloadmgr-scheduler"),
                 "startup": "enabled",
                 "environment": env,
             },
@@ -555,7 +546,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         services["wlm-cron"] = {
             "override": "replace",
             "summary": "WLM Cron (leader-only singleton)",
-            "command": cmd_base.format("wlm-cron"),
+            "command": cmd_base.format("workloadmgr-cron"),
             "startup": "enabled" if self.unit.is_leader() else "disabled",
             "environment": env,
         }
