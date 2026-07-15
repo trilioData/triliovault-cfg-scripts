@@ -627,22 +627,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         })
 
     def _publish_ingress(self, rel):
-        """Write traefik_k8s v2 ingress requirer data so traefik routes external
-        traffic to this application.
+        """Write traefik_k8s v2 ingress requirer data.
 
-        Uses individual databag keys matching the traefik-k8s ingress v2 interface
-        spec. Traefik reads model+name to build the routing rule and port to select
-        the backend service port.
+        Traefik v2 expects a single 'data' key whose value is a JSON-encoded
+        dict (not individual top-level keys). Port must be an integer.
         """
         if not self.unit.is_leader():
             return
-        rel.data[self.app].update({
+        rel.data[self.app]["data"] = json.dumps({
             "model": self.model.name,
             "name": self.app.name,
-            "port": str(WLM_PORT),
+            "port": WLM_PORT,
             "scheme": "http",
-            "strip-prefix": "false",
-            "redirect-https": "false",
+            "strip-prefix": False,
+            "redirect-https": False,
         })
 
 

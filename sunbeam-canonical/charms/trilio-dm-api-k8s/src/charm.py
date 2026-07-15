@@ -496,18 +496,20 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         })
 
     def _publish_ingress(self, rel):
-        """Write traefik_k8s v2 ingress requirer data so traefik routes external
-        traffic to the DMAPI service.
+        """Write traefik_k8s v2 ingress requirer data.
+
+        Traefik v2 expects a single 'data' key whose value is a JSON-encoded
+        dict (not individual top-level keys). Port must be an integer.
         """
         if not self.unit.is_leader():
             return
-        rel.data[self.app].update({
+        rel.data[self.app]["data"] = json.dumps({
             "model": self.model.name,
             "name": self.app.name,
-            "port": str(DMAPI_PORT),
+            "port": DMAPI_PORT,
             "scheme": "http",
-            "strip-prefix": "false",
-            "redirect-https": "false",
+            "strip-prefix": False,
+            "redirect-https": False,
         })
 
 

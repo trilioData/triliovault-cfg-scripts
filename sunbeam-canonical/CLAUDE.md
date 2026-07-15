@@ -167,13 +167,30 @@ WLM endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v1/$(te
 DMAPI endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v2` (via Traefik when ingress is configured), falls back to `http://<app>:8784/v2`
 Admin URL is always the plain k8s service address (Traefik does not route admin traffic).
 
-### Traefik ingress URL pattern
+### Traefik ingress databag format (requirer side)
+Traefik v2 expects the **requirer** to write a single `data` key with a JSON-encoded dict — NOT individual top-level keys. Port must be an integer (not a string).
+```python
+rel.data[self.app]["data"] = json.dumps({
+    "model": self.model.name,
+    "name": self.app.name,
+    "port": PORT,           # integer
+    "scheme": "http",
+    "strip-prefix": False,  # boolean
+    "redirect-https": False,
+})
+```
+Writing individual keys (model="..", name="..", port="8781") causes Traefik to log "invalid databag contents: expecting json" and block.
+
+### Traefik ingress URL pattern (provider response)
 Traefik writes the routed URL into the ingress relation app databag as:
 ```
 rel.data[rel.app]["ingress"] = '{"url": "https://IP:443/model-appname"}'
 ```
 Read it with: `json.loads(rel.data[rel.app].get("ingress", "{}")).get("url")`.
 Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-register Keystone endpoints once Traefik has written this URL — Traefik writes the URL asynchronously after the requirer joins.
+
+### dispatch file permissions
+The `dispatch` file in machine subordinate charms MUST be stored with execute permission (`100755`) in git. Windows git clones silently drop the x-bit — always verify with `git ls-files -s dispatch` (should show `100755`). If it shows `100644`, run `git update-index --chmod=+x dispatch` and commit. Without the x-bit, Juju logs "exec: dispatch: permission denied" on every hook invocation.
 
 ---
 
