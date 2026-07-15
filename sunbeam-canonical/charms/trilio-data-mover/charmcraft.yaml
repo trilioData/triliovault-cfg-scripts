@@ -27,6 +27,12 @@ bases:
     run-on:
       - name: ubuntu
         channel: "22.04"
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "24.04"
 
 requires:
   juju-info:
