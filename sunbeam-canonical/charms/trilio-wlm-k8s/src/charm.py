@@ -247,8 +247,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "workloadmgr"
-            event.relation.data[self.app]["vhost"] = "workloadmgr"
+            event.relation.data[self.app]["username"] = "wlm"
+            event.relation.data[self.app]["vhost"] = "wlm"
 
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
@@ -377,8 +377,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             return
         amqp_rel = self.model.get_relation("amqp")
         if amqp_rel:
-            amqp_rel.data[self.app]["username"] = "workloadmgr"
-            amqp_rel.data[self.app]["vhost"] = "workloadmgr"
+            amqp_rel.data[self.app]["username"] = "wlm"
+            amqp_rel.data[self.app]["vhost"] = "wlm"
         db_rel = self.model.get_relation("database")
         if db_rel and not db_rel.data[self.app].get("database"):
             db_rel.data[self.app]["database"] = "workloadmgr"
@@ -539,9 +539,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         )
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'workloadmgr')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'workloadmgr')}"
+            f"/{amqp.get('vhost', 'wlm')}"
         )
         auth_url = (
             f"{identity.get('service_protocol', 'http')}://"
@@ -590,7 +590,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "cinder_production_endpoint_template": self.config["cinder-endpoint"],
             "taskflow_path": "/var/lib/workloadmgr/taskflow",
             "taskflow_max_cache_size": "1024",
-            "rabbit_virtual_host": amqp.get("vhost", "workloadmgr"),
+            "rabbit_virtual_host": amqp.get("vhost", "wlm"),
             "compute_driver": "libvirt.LibvirtDriver",
             "max_wait_for_upload": "48",
             "vault_storage_das_device": "none",
@@ -665,9 +665,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         rabbitmq_url = (
-            f"rabbit://{amqp.get('username', 'workloadmgr')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'workloadmgr')}"
+            f"/{amqp.get('vhost', 'wlm')}"
         )
 
         cfg = configparser.ConfigParser()

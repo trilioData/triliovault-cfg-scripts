@@ -103,6 +103,15 @@ Fix: prefix the command with `setsid` — e.g. `["setsid", "workloadmgr", ...]`.
 
 This issue does NOT appear with `kubectl exec -- bash -c '...'` because that path starts processes without a controlling terminal in the container, whereas Pebble (as container PID 1) inherits one from the kubelet.
 
+### api-paste.ini — charm must overwrite package file
+The `api-paste.ini` shipped by the `workloadmgr` deb package contains legacy `%SERVICE_TENANT_NAME%`, `%SERVICE_USER%`, `%SERVICE_PASSWORD%` placeholders. Python's `configparser` raises `InterpolationSyntaxError` on `%` that aren't valid `%(var)s` interpolation, crashing wlm-api on startup. Fix: the WLM charm writes a clean `WLM_API_PASTE` constant directly to `/etc/triliovault-wlm/api-paste.ini` in `_write_config()`, overwriting the package-shipped file. The removed `[filter:authtoken]` password fields are NOT needed — keystonemiddleware reads auth from `[keystone_authtoken]` in the main conf.
+
+### sql_connection in [DEFAULT] — not [database]
+WLM reads the DB URL from `sql_connection` in the `[DEFAULT]` section, **not** from `connection` in `[database]`. All other deployment methods (RHOSP17, RHOSO18, Kolla) all use `sql_connection` in `[DEFAULT]`. The `[database]` section with `connection` key is a newer Oslo convention that WLM does not use. Both must be present: `[DEFAULT].sql_connection` for WLM's own DB access, and `[alembic].sqlalchemy.url` for alembic migrations.
+
+### RabbitMQ user/vhost for WLM: `wlm` (not `workloadmgr`)
+The RabbitMQ user and vhost for WLM are named `wlm`/`wlm` — created by the previous Juju charm version (charm-trilio-wlm from juju-charms/). The Sunbeam charm must request `username=wlm`, `vhost=wlm` in the amqp relation databag. Using `workloadmgr` for username/vhost causes `(403) ACCESS_REFUSED` from RabbitMQ because that user was never created. The database name (MySQL) and binary name remain `workloadmgr`.
+
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
