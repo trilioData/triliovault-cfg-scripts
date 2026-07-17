@@ -8,18 +8,17 @@ operations on behalf of WLM and DMAPI. Communication is via RabbitMQ (no
 HTTP listener). A second DMS server instance runs on every compute node,
 managed by the trilio-data-mover machine subordinate charm.
 
+DMS does not register with Keystone and has no Keystone service user.
+The Keystone auth_url (used in server.conf for Barbican token validation)
+is supplied via the keystone-endpoint config option.
+
 Relation interface notes (Sunbeam Caracal):
   - amqp: rabbitmq interface — requirer writes username/vhost to its *app* databag
     (leader only); provider responds with hostname/password in its *app* databag.
-  - identity-service: keystone interface — requirer writes service-endpoints (JSON)
-    and region to its *app* databag (leader only); provider responds with service-host,
-    service-port, service-protocol in its *app* databag.
-    DMS only uses the auth URL (not service-credentials) for auth_url in server.conf.
 """
 
 import configparser
 import io
-import json
 import logging
 
 import ops
@@ -98,14 +97,8 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.trilio_dms_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._configure)
-        for rel in ("amqp", "identity_service"):
-            self.framework.observe(
-                getattr(self.on, f"{rel}_relation_changed"), self._configure
-            )
+        self.framework.observe(self.on.amqp_relation_changed, self._configure)
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
-        self.framework.observe(
-            self.on.identity_service_relation_joined, self._on_identity_service_relation_joined
-        )
         self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._configure
         )
@@ -122,10 +115,6 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             event.relation.data[self.app]["username"] = "dmapi"
             event.relation.data[self.app]["vhost"] = "dmapi"
 
-    def _on_identity_service_relation_joined(self, event):
-        """Register DMS with keystone so keystone writes its endpoint data back."""
-        self._register_keystone_service()
-
     def _send_relation_requests(self):
         """Idempotently write relation requests in case joined events were missed."""
         if not self.unit.is_leader():
@@ -134,9 +123,6 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         if amqp_rel and not amqp_rel.data[self.app].get("username"):
             amqp_rel.data[self.app]["username"] = "dmapi"
             amqp_rel.data[self.app]["vhost"] = "dmapi"
-        ks_rel = self.model.get_relation("identity-service")
-        if ks_rel and not ks_rel.data[self.app].get("service-endpoints"):
-            self._register_keystone_service()
 
     def _configure(self, event):
         self._send_relation_requests()
@@ -162,8 +148,6 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         missing = []
         if not self._amqp_data():
             missing.append("amqp")
-        if not self._identity_data():
-            missing.append("identity-service")
         return missing
 
     def _amqp_data(self):
@@ -176,47 +160,6 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         if host and d.get("password"):
             return {**dict(d), "host": host}
         return None
-
-    def _identity_data(self):
-        """keystone interface: provider writes endpoint data into its app databag.
-
-        DMS only uses the keystone auth URL (no service-credentials needed).
-        service-host is written by keystone after DMS sends service-endpoints.
-        """
-        rel = self.model.get_relation("identity-service")
-        if not rel or not rel.app:
-            return None
-        d = rel.data[rel.app]
-        if not d.get("service-host"):
-            return None
-        return {
-            "service_host": d.get("service-host"),
-            "service_port": d.get("service-port", "5000"),
-            "service_protocol": d.get("service-protocol", "http"),
-        }
-
-    def _register_keystone_service(self):
-        """Write DMS service-endpoints to trigger keystone to respond with its endpoint data.
-
-        DMS has no HTTP listener but must register with keystone so keystone writes
-        service-host/service-port/service-protocol back to this relation's app databag.
-        """
-        rel = self.model.get_relation("identity-service")
-        if not rel or not self.unit.is_leader():
-            return
-        internal_url = f"http://{self.app.name}:8785"
-        endpoints = [{
-            "admin_url": internal_url,
-            "description": "TrilioVault Dynamic Mount Service",
-            "internal_url": internal_url,
-            "public_url": internal_url,
-            "service_name": "trilio-dms-k8s",
-            "type": "dms",
-        }]
-        rel.data[self.app].update({
-            "service-endpoints": json.dumps(endpoints, sort_keys=True),
-            "region": self.config.get("region", "RegionOne"),
-        })
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -260,17 +203,13 @@ class TrilioDmsK8sCharm(ops.CharmBase):
 
     def _write_config(self, container):
         amqp = self._amqp_data()
-        identity = self._identity_data()
 
         transport_url = (
             f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
-        auth_url = (
-            f"{identity.get('service_protocol', 'http')}://"
-            f"{identity['service_host']}:{identity.get('service_port', '5000')}/v3"
-        )
+        auth_url = self.config["keystone-endpoint"]
 
         cfg = configparser.ConfigParser()
         cfg["server"] = {
