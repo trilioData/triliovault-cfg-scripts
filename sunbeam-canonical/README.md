@@ -98,6 +98,33 @@ juju attach-resource horizon-k8s \
 
 Horizon reloads automatically — no restart required.
 
+### 4. Cloud Admin Trust
+
+TrilioVault needs a trust relationship between the WLM service user and the Cloud Admin
+so it can impersonate tenants during backup and restore operations.
+Run this once after the WLM charm reaches active status:
+
+```bash
+juju switch openstack
+juju run trilio-wlm-k8s/leader create-cloud-admin-trust \
+  password=<cloud-admin-password>
+```
+
+Optional params (defaults work for standard Sunbeam deployments):
+- `user-domain-name` (default: `admin_domain`)
+- `project-name` (default: `admin`)
+- `project-domain-name` (default: `admin_domain`)
+
+### 5. Apply License
+
+Attach the TrilioVault license file and apply it:
+
+```bash
+juju switch openstack
+juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+juju run trilio-wlm-k8s/leader create-license
+```
+
 ## Charm Source Code
 
 | Charm | Location | Notes |

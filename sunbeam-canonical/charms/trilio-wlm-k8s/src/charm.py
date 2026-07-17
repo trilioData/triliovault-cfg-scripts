@@ -170,6 +170,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._configure
         )
+        self.framework.observe(
+            self.on.create_cloud_admin_trust_action, self._on_create_trust_action
+        )
+        self.framework.observe(self.on.create_license_action, self._on_create_license_action)
 
     # --- event handlers ---
 
@@ -208,6 +212,108 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_identity_service_relation_joined(self, event):
         """Write keystone service registration so keystone creates the service endpoints."""
         self._register_keystone_service()
+
+    def _on_create_trust_action(self, event):
+        """Action: create trust between WLM service user and Cloud Admin.
+
+        Must be run once after deployment before TrilioVault can perform backups.
+        Runs 'workloadmgr trust-create' inside the workload container using the
+        admin credentials supplied as action params.
+        """
+        if not self.unit.is_leader():
+            event.fail("Run this action on the leader unit only")
+            return
+        identity = self._identity_data()
+        if not identity:
+            event.fail("identity-service relation not ready — wait for charm to reach active status")
+            return
+        container = self.unit.get_container(CONTAINER)
+        if not container.can_connect():
+            event.fail("Workload container not ready")
+            return
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        cmd = [
+            "workloadmgr",
+            "--os-username", "admin",
+            "--os-password", event.params["password"],
+            "--os-auth-url", auth_url,
+            "--os-user-domain-name", event.params.get("user-domain-name", "admin_domain"),
+            "--os-project-name", event.params.get("project-name", "admin"),
+            "--os-project-domain-name", event.params.get("project-domain-name", "admin_domain"),
+            "--os-region-name", self.config.get("region", "RegionOne"),
+            "trust-create", "--is_cloud_trust", "True", "Admin",
+        ]
+        try:
+            out, err = container.exec(cmd).wait_output()
+            logger.info("trust-create output: %s", out)
+            event.set_results({"result": "Cloud admin trust created successfully"})
+        except Exception as e:
+            event.fail(f"trust-create failed: {e}")
+
+    def _on_create_license_action(self, event):
+        """Action: apply TrilioVault license.
+
+        The license file must be attached as a Juju resource first:
+          juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+
+        Runs 'workloadmgr license-create' inside the workload container using the
+        WLM service credentials from the identity-service relation.
+        """
+        if not self.unit.is_leader():
+            event.fail("Run this action on the leader unit only")
+            return
+        identity = self._identity_data()
+        if not identity:
+            event.fail("identity-service relation not ready — wait for charm to reach active status")
+            return
+        container = self.unit.get_container(CONTAINER)
+        if not container.can_connect():
+            event.fail("Workload container not ready")
+            return
+        try:
+            license_path = self.model.resources.fetch("license")
+        except Exception:
+            event.fail(
+                "License resource not attached. Run: "
+                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
+            )
+            return
+        if not license_path.stat().st_size:
+            event.fail(
+                "License resource is empty. Attach the license file first: "
+                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
+            )
+            return
+        container_license_path = "/tmp/trilio-license.dat"
+        container.push(container_license_path, license_path.read_bytes(), make_dirs=True)
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        cmd = [
+            "workloadmgr",
+            "--os-username", identity["service_username"],
+            "--os-password", identity["service_password"],
+            "--os-auth-url", auth_url,
+            "--os-user-domain-name", "service_domain",
+            "--os-project-name", identity["service_tenant"],
+            "--os-region-name", self.config.get("region", "RegionOne"),
+            "license-create", container_license_path,
+        ]
+        try:
+            out, err = container.exec(cmd).wait_output()
+            logger.info("license-create output: %s", out)
+            event.set_results({"result": "License applied successfully"})
+        except Exception as e:
+            event.fail(f"license-create failed: {e}")
+        finally:
+            try:
+                container.exec(["rm", "-f", container_license_path]).wait()
+            except Exception:
+                pass
 
     def _send_relation_requests(self):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
