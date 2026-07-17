@@ -235,7 +235,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
         )
+        # setsid detaches the process from Pebble's controlling terminal so that
+        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
         cmd = [
+            "setsid",
             "workloadmgr",
             "--os-username", "admin",
             "--os-password", event.params["password"],
@@ -293,7 +296,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
         )
+        # setsid detaches the process from Pebble's controlling terminal so that
+        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
         cmd = [
+            "setsid",
             "workloadmgr",
             "--os-username", identity["service_username"],
             "--os-password", identity["service_password"],
