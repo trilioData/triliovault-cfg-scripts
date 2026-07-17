@@ -1,0 +1,57 @@
+###############################################
+# TrilioData, Inc TrilioVault  Data mover API #
+###############################################
+
+[composite:dmapi]
+use = call:dmapi.api.openstack.urlmap:urlmap_factory
+/: dmversions
+/v2: dmapi_v2
+{% if traefik_prefix %}
+{{ traefik_prefix }}: dmversions
+{{ traefik_prefix }}/v2: dmapi_v2
+{% endif %}
+
+[composite:dmapi_v2]
+use = call:dmapi.api.auth:pipeline_factory_v2
+keystone = cors http_proxy_to_wsgi dm_req_id faultwrap request_log sizelimit osprofiler authtoken keystonecontext dmapi_app_v2
+
+[filter:request_log]
+paste.filter_factory = dmapi.api.openstack.requestlog:RequestLog.factory
+
+[filter:dm_req_id]
+paste.filter_factory = dmapi.api.dm_req_id:DmapiReqIdMiddleware.factory
+
+[filter:faultwrap]
+paste.filter_factory = dmapi.api.openstack:FaultWrapper.factory
+
+[filter:osprofiler]
+paste.filter_factory = dmapi.profiler:WsgiMiddleware.factory
+
+[filter:sizelimit]
+paste.filter_factory = oslo_middleware:RequestBodySizeLimiter.factory
+
+[filter:http_proxy_to_wsgi]
+paste.filter_factory = oslo_middleware.http_proxy_to_wsgi:HTTPProxyToWSGI.factory
+
+[app:dmapi_app_v2]
+paste.app_factory = dmapi.api.openstack.dm:APIRouterV2.factory
+
+[pipeline:dmversions]
+pipeline = cors faultwrap request_log http_proxy_to_wsgi dmversionapp
+
+[app:dmversionapp]
+paste.app_factory = dmapi.api.openstack.dm.versions:Versions.factory
+
+##########
+# Shared #
+##########
+
+[filter:cors]
+paste.filter_factory = oslo_middleware.cors:filter_factory
+oslo_config_project = dmapi
+
+[filter:keystonecontext]
+paste.filter_factory = dmapi.api.auth:DmapiKeystoneContext.factory
+
+[filter:authtoken]
+paste.filter_factory = keystonemiddleware.auth_token:filter_factory
