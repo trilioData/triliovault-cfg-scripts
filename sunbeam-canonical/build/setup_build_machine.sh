@@ -3,7 +3,8 @@
 #                          Sunbeam Docker images and Juju charms.
 #
 # Idempotent: safe to re-run; already-installed tools are skipped.
-# Tested on Ubuntu 22.04 and 24.04.
+# Supported OS: Ubuntu 22.04 LTS (Jammy) or 24.04 LTS (Noble).
+# Canonical sunbeam-charms CI targets Ubuntu 24.04; both versions work.
 #
 # What this installs:
 #   - Docker CE            (for building OCI images with devops-build-publish.sh)
@@ -84,7 +85,7 @@ if snap list charmcraft &>/dev/null 2>&1; then
     skip "charmcraft already installed (version $CURRENT)"
 else
     log "Installing charmcraft snap ..."
-    sudo snap install charmcraft --classic
+    sudo snap install charmcraft --classic --channel latest/stable
     log "charmcraft installed: $(charmcraft --version)"
 fi
 

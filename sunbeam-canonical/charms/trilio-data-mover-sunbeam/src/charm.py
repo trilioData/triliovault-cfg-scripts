@@ -20,7 +20,10 @@ and handle NFS / S3 mount operations on their respective hosts.
 """
 
 import configparser
+import hashlib
 import io
+import json
+import re
 import logging
 import os
 import pathlib
@@ -37,6 +40,15 @@ DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
+# nova.conf lives inside the openstack-hypervisor snap (root:root 640, unreadable by
+# the nova user that tvault-contego runs as).  The charm copies it to NOVA_CONF_COPY
+# (root:nova 640) and rewrites the cafile= line to point to CA_BUNDLE_COPY instead
+# of the snap-internal path, which is also root-only.  The CA cert itself is obtained
+# from the receive-ca-cert Juju relation (not copied from the snap) and written to
+# CA_BUNDLE_COPY with root:nova 640 so the nova user can read it.
+SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
+NOVA_CONF_COPY = "/etc/triliovault-datamover/nova.conf"
+CA_BUNDLE_COPY = "/etc/triliovault-datamover/ca-bundle.pem"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
@@ -56,6 +68,7 @@ After=network.target
 User=nova
 Group=nova
 Type=simple
+Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf
 Restart=on-failure
 RestartSec=10
@@ -66,7 +79,10 @@ WantedBy=multi-user.target
 """
 
 # Systemd unit for tvault-contego on Sunbeam compute nodes.
-# Nova config lives inside the openstack-hypervisor snap, not /etc/nova/nova.conf.
+# nova.conf lives inside the openstack-hypervisor snap (root:root 640).
+# The charm copies it to NOVA_CONF_COPY (root:nova 640) so tvault-contego can
+# read it as the nova user.  PYTHONPATH is required because snap Python packages
+# (nova, kombu, etc.) are isolated from the host system path.
 DATAMOVER_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault DataMover (tvault-contego)
@@ -78,8 +94,9 @@ StartLimitBurst=3
 User=nova
 Group=nova
 Type=simple
+Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
-  --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
+  --config-file=/etc/triliovault-datamover/nova.conf \
   --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
 TimeoutStopSec=20
 KillMode=process
@@ -227,6 +244,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._on_relation_changed
         )
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
     # --- event handlers ---
 
@@ -255,6 +273,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # Trilio releases and must be refreshed before installing the new package.
             self._setup_apt_repo()
             self._install_packages()
+            # Re-write systemd units on upgrade: the unit files may not have been
+            # written by the original install if this was a pre-v14 deployment, or
+            # the unit content may have changed between Trilio releases.
+            self._create_directories()
+            self._write_nova_sudoers()
+            self._install_rootwrap_filters()
+            self._write_systemd_services()
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
@@ -270,10 +295,16 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._configure(event)
 
     def _on_amqp_relation_joined(self, event):
-        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
+
+        external_connectivity=true tells rabbitmq-k8s to return the loadbalancer IP
+        (e.g. 172.26.x.x) instead of the k8s-internal DNS name, which is not
+        resolvable from compute nodes outside the k8s cluster.
+        """
         if self.unit.is_leader():
             event.relation.data[self.app]["username"] = "datamover"
             event.relation.data[self.app]["vhost"] = "datamover"
+            event.relation.data[self.app]["external_connectivity"] = json.dumps(True)
 
     def _on_identity_credentials_relation_joined(self, event):
         """Write keystone requirer username so keystone-k8s provisions datamover credentials."""
@@ -292,6 +323,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         if amqp_rel:
             amqp_rel.data[self.app]["username"] = "datamover"
             amqp_rel.data[self.app]["vhost"] = "datamover"
+            amqp_rel.data[self.app]["external_connectivity"] = json.dumps(True)
         identity_rel = self.model.get_relation("identity-credentials")
         if identity_rel:
             identity_rel.data[self.app]["username"] = "datamover"
@@ -305,11 +337,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
 
         try:
+            self._write_ca_cert()
+            self._sync_nova_conf()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
             self._write_s3vaultfuse_config()
-            self._write_ca_cert()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -340,14 +373,38 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         return None
 
     def _identity_data(self):
-        """keystone-credentials interface: provider app databag."""
+        """keystone-credentials interface: provider app databag.
+
+        The keystone-credentials interface returns auth-host, auth-port,
+        auth-protocol, and a Juju secret under 'credentials' that holds
+        the actual username/password. Returns a normalized dict with
+        credentials_host, credentials_password, etc. so callers don't
+        need to know the wire format.
+        """
         rel = self.model.get_relation("identity-credentials")
         if not rel:
             return None
         d = rel.data[rel.app]
-        if d.get("credentials_host") and d.get("credentials_password"):
-            return d
-        return None
+        host = d.get("auth-host")
+        secret_id = d.get("credentials")
+        if not host or not secret_id:
+            return None
+        try:
+            secret = self.model.get_secret(id=secret_id)
+            creds = secret.get_content()
+        except Exception:
+            return None
+        if not creds.get("password"):
+            return None
+        return {
+            "credentials_host": host,
+            "credentials_port": d.get("auth-port", "5000"),
+            "credentials_protocol": d.get("auth-protocol", "http"),
+            "credentials_username": creds.get("username", "datamover"),
+            "credentials_password": creds["password"],
+            "credentials_project": d.get("project-name", "services"),
+            "internal_endpoint": d.get("internal-endpoint", ""),
+        }
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -362,16 +419,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         return "\n".join(certs) if certs else None
 
     def _write_ca_cert(self):
-        """Write CA bundle to the host system for tvault-contego Keystone TLS verification."""
+        """Write CA bundle from the receive-ca-cert relation to host trust store and to
+        a nova-readable path so tvault-contego can verify Keystone TLS.
+
+        CA content comes from the Juju relation — not copied from any snap path.
+        CA_BUNDLE_COPY (root:nova 640) is written first so _sync_nova_conf() can
+        reference it in the cafile= patch.
+        """
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
+        # Write to our managed path (root:nova 640) for direct use by tvault-contego
+        os.makedirs(os.path.dirname(CA_BUNDLE_COPY), exist_ok=True)
+        with open(CA_BUNDLE_COPY, "w") as f:
+            f.write(ca_cert)
+        shutil.chown(CA_BUNDLE_COPY, user="root", group="nova")
+        os.chmod(CA_BUNDLE_COPY, 0o640)
+        logger.info("CA cert written to %s (root:nova 640)", CA_BUNDLE_COPY)
+        # Also add to system trust store so other tools on this host trust the CA
         ca_path = "/usr/local/share/ca-certificates/trilio-ca.crt"
         os.makedirs(os.path.dirname(ca_path), exist_ok=True)
         with open(ca_path, "w") as f:
             f.write(ca_cert)
         subprocess.run(["update-ca-certificates"], check=True)
-        logger.info("CA cert written to %s", ca_path)
+        logger.info("CA cert added to system trust store via %s", ca_path)
 
     # --- apt repo and package installation ---
 
@@ -461,9 +532,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         amqp = self._amqp_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
 
         cfg = configparser.ConfigParser()
@@ -513,13 +584,18 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
+        # Use the HTTPS internal endpoint if keystone published one via traefik;
+        # fall back to plain-http k8s service address for fresh deploys.
         auth_url = (
-            f"{identity.get('credentials_protocol', 'http')}://"
-            f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+            identity.get("internal_endpoint")
+            or (
+                f"{identity.get('credentials_protocol', 'http')}://"
+                f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
+            )
         )
 
         cfg = configparser.ConfigParser()
@@ -558,9 +634,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
 
         cfg = configparser.ConfigParser()
@@ -669,6 +745,72 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(OBJECT_STORE_LOGGING_CONF_PATH, "w") as f:
             f.write(OBJECT_STORE_LOGGING_CONF)
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
+
+    # Matches any cafile= line whose value starts with /var/snap/ — the snap-internal
+    # path is root-only; we replace it with CA_BUNDLE_COPY which is root:nova 640.
+    _SNAP_CAFILE_RE = re.compile(rb"(?m)^([ \t]*cafile[ \t]*=[ \t]*)/var/snap/[^\n]*")
+
+    def _sync_nova_conf(self) -> bool:
+        """Copy snap nova.conf to our location if content changed.
+
+        The snap nova.conf is root:root 640 — unreadable by the nova user that
+        tvault-contego runs as.  Charm hooks run as root, so we copy it to
+        NOVA_CONF_COPY (root:nova 640).
+
+        The cafile= line in [keystone_authtoken] references a snap-internal path
+        (also root-only).  We rewrite it to CA_BUNDLE_COPY, which is written by
+        _write_ca_cert() from the receive-ca-cert relation (root:nova 640).
+        If no CA cert is available yet, the cafile= line is removed so
+        keystoneauth1 falls back to the system CA trust store.
+
+        Returns True if the file was updated, False if nothing changed.
+        """
+        try:
+            with open(SNAP_NOVA_CONF, "rb") as f:
+                snap_content = f.read()
+        except OSError as e:
+            logger.warning("Cannot read snap nova.conf: %s", e)
+            return False
+
+        # Patch cafile= to point to our nova-readable CA bundle (from relation).
+        if os.path.exists(CA_BUNDLE_COPY):
+            new_content = self._SNAP_CAFILE_RE.sub(
+                rb"\g<1>" + CA_BUNDLE_COPY.encode(), snap_content
+            )
+        else:
+            # CA not yet available — strip cafile so keystoneauth1 uses system store
+            new_content = self._SNAP_CAFILE_RE.sub(b"", snap_content)
+
+        new_hash = hashlib.sha256(new_content).hexdigest()
+
+        try:
+            with open(NOVA_CONF_COPY, "rb") as f:
+                old_hash = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            old_hash = None
+
+        if new_hash == old_hash:
+            return False
+
+        os.makedirs(os.path.dirname(NOVA_CONF_COPY), exist_ok=True)
+        with open(NOVA_CONF_COPY, "wb") as f:
+            f.write(new_content)
+        shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
+        os.chmod(NOVA_CONF_COPY, 0o640)
+        logger.info("Synced nova.conf from snap to %s (cafile patched)", NOVA_CONF_COPY)
+        return True
+
+    def _on_update_status(self, event):
+        """Detect snap nova.conf changes and restart services only when content changed."""
+        if self._sync_nova_conf():
+            logger.info("nova.conf changed — restarting DataMover and DMS")
+            try:
+                subprocess.run(
+                    ["systemctl", "restart", DATAMOVER_SERVICE, DMS_SERVICE],
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                self.unit.status = ops.BlockedStatus(f"Service restart failed: {e}")
 
     # --- service management ---
 

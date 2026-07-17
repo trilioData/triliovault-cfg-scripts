@@ -35,6 +35,10 @@ resources:
     type: oci-image
     description: OCI image for TrilioVault WorkloadManager
     upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+  license:
+    type: file
+    filename: license
+    description: TrilioVault license file. Attach with juju attach-resource trilio-wlm-k8s license=<path>
 
 requires:
   database:

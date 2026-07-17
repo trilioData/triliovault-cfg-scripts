@@ -46,9 +46,6 @@ requires:
   amqp:
     interface: rabbitmq
     limit: 1
-  identity-service:
-    interface: keystone
-    limit: 1
   receive-ca-cert:
     interface: certificate_transfer
     optional: true
@@ -63,6 +60,14 @@ config:
       type: int
       default: 10
       description: Number of worker threads for parallel mount request processing
+    keystone-endpoint:
+      type: string
+      default: "http://keystone-k8s.openstack.svc.cluster.local:5000/v3"
+      description: |
+        Keystone identity service internal URL used as auth_url in server.conf
+        for Barbican token validation. Defaults to the k8s-internal Keystone
+        service DNS name (standard for Sunbeam). Override only if your cluster
+        uses a different Keystone endpoint.
     wlm-db-url:
       type: string
       default: ""

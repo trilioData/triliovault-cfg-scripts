@@ -98,6 +98,33 @@ juju attach-resource horizon-k8s \
 
 Horizon reloads automatically — no restart required.
 
+### 4. Cloud Admin Trust
+
+TrilioVault needs a trust relationship between the WLM service user and the Cloud Admin
+so it can impersonate tenants during backup and restore operations.
+Run this once after the WLM charm reaches active status:
+
+```bash
+juju switch openstack
+juju run trilio-wlm-k8s/leader create-cloud-admin-trust \
+  password=<cloud-admin-password>
+```
+
+Optional params (defaults work for standard Sunbeam deployments):
+- `user-domain-name` (default: `admin_domain`)
+- `project-name` (default: `admin`)
+- `project-domain-name` (default: `admin_domain`)
+
+### 5. Apply License
+
+Attach the TrilioVault license file and apply it:
+
+```bash
+juju switch openstack
+juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+juju run trilio-wlm-k8s/leader create-license
+```
+
 ## Charm Source Code
 
 | Charm | Location | Notes |
@@ -107,9 +134,35 @@ Horizon reloads automatically — no restart required.
 | `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
 | `trilio-data-mover-sunbeam` | `charms/trilio-data-mover-sunbeam/` | machine subordinate, runs DataMover + compute DMS |
 
+## Build Prerequisites
+
+To build OCI images or Juju charms, the build machine must have Docker and charmcraft installed.
+A setup script is provided to prepare any Ubuntu machine in one step:
+
+**Supported OS**: Ubuntu 22.04 LTS (Jammy) or 24.04 LTS (Noble).
+Canonical's own sunbeam-charms CI targets Ubuntu 24.04 Noble; both versions work for Trilio builds.
+
+```bash
+# Run from the repository root — idempotent, safe to re-run
+bash sunbeam-canonical/build/setup_build_machine.sh
+```
+
+What the script installs:
+- Docker CE (from the official Docker APT repository) — required for OCI image builds
+- `charmcraft` snap (`latest/stable` channel) — required for Juju charm builds
+- Base dependencies: `git`, `curl`, `python3`, `snapd`
+
+After the script completes:
+1. Re-login or run `newgrp docker` so the `docker` group takes effect
+2. `docker login` with your Docker Hub credentials
+3. Export charmcraft credentials: `export CHARMCRAFT_AUTH=$(cat creds.txt)`
+   (generate `creds.txt` with `charmcraft login --export creds.txt` on a machine with a browser)
+
+---
+
 ## OCI Images
 
-Dockerfiles are in `../docker/sunbeam-canonical/`:
+Dockerfiles are in `docker/`:
 
 | Image | Dockerfile | Used by |
 |-------|-----------|---------|

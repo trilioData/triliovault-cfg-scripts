@@ -23,6 +23,7 @@ import configparser
 import io
 import json
 import logging
+import socket
 
 import ops
 
@@ -30,10 +31,56 @@ logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-wlm"
 CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
+API_PASTE_PATH = "/etc/triliovault-wlm/api-paste.ini"
 WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
+
+# The api-paste.ini shipped by the WLM deb package contains legacy
+# %SERVICE_TENANT_NAME% / %SERVICE_USER% / %SERVICE_PASSWORD% placeholders.
+# Python's configparser treats % as an interpolation prefix and raises
+# InterpolationSyntaxError when it sees %S (not %(key)s format), crashing
+# wlm-api on startup. The charm overwrites the file with this clean version
+# that removes the deprecated auth fields (keystonemiddleware reads credentials
+# from [keystone_authtoken] in the main config anyway).
+WLM_API_PASTE = """\
+[composite:osapi_workloads]
+use = call:workloadmgr.api:root_app_factory
+/: apiversions
+/v1: openstack_workloads_api_v1
+
+[composite:openstack_workloads_api_v1]
+use = call:workloadmgr.api.middleware.auth:pipeline_factory
+noauth = faultwrap sizelimit noauth apiv1
+keystone = faultwrap sizelimit authtoken keystonecontext apiv1
+keystone_nolimit = faultwrap sizelimit authtoken keystonecontext apiv1
+
+[filter:faultwrap]
+paste.filter_factory = workloadmgr.api.middleware.fault:FaultWrapper.factory
+
+[filter:noauth]
+paste.filter_factory = workloadmgr.api.middleware.auth:NoAuthMiddleware.factory
+
+[filter:sizelimit]
+paste.filter_factory = oslo_middleware.sizelimit:RequestBodySizeLimiter.factory
+
+[app:apiv1]
+paste.app_factory = workloadmgr.api.v1.router:APIRouter.factory
+
+[pipeline:apiversions]
+pipeline = faultwrap osworkloadsversionapp
+
+[app:osworkloadsversionapp]
+paste.app_factory = workloadmgr.api.versions:Versions.factory
+
+[filter:keystonecontext]
+paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContext.factory
+
+[filter:authtoken]
+paste.filter_factory = keystonemiddleware.auth_token:filter_factory
+signing_dir = /var/cache/workloadmgr
+"""
 
 # Python logging config pushed into the container by the charm (not baked into the image).
 # Matches the RHOSO18 _wlm_logging_conf.tpl reference.
@@ -134,6 +181,10 @@ WLM_SERVICE_TYPE = "workloads"
 WLM_SERVICE_NAME = "TrilioVaultWLM"
 # Endpoint path template matching production WLM endpoint format.
 WLM_ENDPOINT_TEMPLATE = "{}/v1/$(tenant_id)s"
+# Traefik ingress model+name — Traefik constructs the path as /{model}-{name}.
+# Setting model="trilio" and name="wlm" gives path /trilio-wlm (no openstack- prefix).
+WLM_INGRESS_MODEL = "trilio"
+WLM_INGRESS_NAME = "wlm"
 
 
 class TrilioWlmK8sCharm(ops.CharmBase):
@@ -165,6 +216,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(
             self.on.receive_ca_cert_relation_changed, self._configure
         )
+        self.framework.observe(
+            self.on.create_cloud_admin_trust_action, self._on_create_trust_action
+        )
+        self.framework.observe(self.on.create_license_action, self._on_create_license_action)
 
     # --- event handlers ---
 
@@ -192,8 +247,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "workloadmgr"
-            event.relation.data[self.app]["vhost"] = "workloadmgr"
+            event.relation.data[self.app]["username"] = "wlm"
+            event.relation.data[self.app]["vhost"] = "wlm"
 
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
@@ -204,6 +259,115 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         """Write keystone service registration so keystone creates the service endpoints."""
         self._register_keystone_service()
 
+    def _on_create_trust_action(self, event):
+        """Action: create trust between WLM service user and Cloud Admin.
+
+        Must be run once after deployment before TrilioVault can perform backups.
+        Runs 'workloadmgr trust-create' inside the workload container using the
+        admin credentials supplied as action params.
+        """
+        if not self.unit.is_leader():
+            event.fail("Run this action on the leader unit only")
+            return
+        identity = self._identity_data()
+        if not identity:
+            event.fail("identity-service relation not ready — wait for charm to reach active status")
+            return
+        container = self.unit.get_container(CONTAINER)
+        if not container.can_connect():
+            event.fail("Workload container not ready")
+            return
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        # setsid detaches the process from Pebble's controlling terminal so that
+        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
+        cmd = [
+            "setsid",
+            "workloadmgr",
+            "--os-username", "admin",
+            "--os-password", event.params["password"],
+            "--os-auth-url", auth_url,
+            "--os-user-domain-name", event.params.get("user-domain-name", "admin_domain"),
+            "--os-project-name", event.params.get("project-name", "admin"),
+            "--os-project-domain-name", event.params.get("project-domain-name", "admin_domain"),
+            "--os-region-name", self.config.get("region", "RegionOne"),
+            "trust-create", "--is_cloud_trust", "True", "Admin",
+        ]
+        try:
+            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
+            logger.info("trust-create output: %s", out)
+            event.set_results({"result": "Cloud admin trust created successfully"})
+        except Exception as e:
+            event.fail(f"trust-create failed: {e}")
+
+    def _on_create_license_action(self, event):
+        """Action: apply TrilioVault license.
+
+        The license file must be attached as a Juju resource first:
+          juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+
+        Runs 'workloadmgr license-create' inside the workload container using the
+        WLM service credentials from the identity-service relation.
+        """
+        if not self.unit.is_leader():
+            event.fail("Run this action on the leader unit only")
+            return
+        identity = self._identity_data()
+        if not identity:
+            event.fail("identity-service relation not ready — wait for charm to reach active status")
+            return
+        container = self.unit.get_container(CONTAINER)
+        if not container.can_connect():
+            event.fail("Workload container not ready")
+            return
+        try:
+            license_path = self.model.resources.fetch("license")
+        except Exception:
+            event.fail(
+                "License resource not attached. Run: "
+                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
+            )
+            return
+        if not license_path.stat().st_size:
+            event.fail(
+                "License resource is empty. Attach the license file first: "
+                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
+            )
+            return
+        container_license_path = "/tmp/trilio-license.dat"
+        container.push(container_license_path, license_path.read_bytes(), make_dirs=True)
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        # setsid detaches the process from Pebble's controlling terminal so that
+        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
+        cmd = [
+            "setsid",
+            "workloadmgr",
+            "--os-username", identity["service_username"],
+            "--os-password", identity["service_password"],
+            "--os-auth-url", auth_url,
+            "--os-user-domain-name", "service_domain",
+            "--os-project-domain-name", "service_domain",
+            "--os-project-name", identity["service_tenant"],
+            "--os-region-name", self.config.get("region", "RegionOne"),
+            "license-create", container_license_path,
+        ]
+        try:
+            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
+            logger.info("license-create output: %s", out)
+            event.set_results({"result": "License applied successfully"})
+        except Exception as e:
+            event.fail(f"license-create failed: {e}")
+        finally:
+            try:
+                container.exec(["rm", "-f", container_license_path]).wait()
+            except Exception:
+                pass
+
     def _send_relation_requests(self):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
 
@@ -213,8 +377,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             return
         amqp_rel = self.model.get_relation("amqp")
         if amqp_rel:
-            amqp_rel.data[self.app]["username"] = "workloadmgr"
-            amqp_rel.data[self.app]["vhost"] = "workloadmgr"
+            amqp_rel.data[self.app]["username"] = "wlm"
+            amqp_rel.data[self.app]["vhost"] = "wlm"
         db_rel = self.model.get_relation("database")
         if db_rel and not db_rel.data[self.app].get("database"):
             db_rel.data[self.app]["database"] = "workloadmgr"
@@ -329,7 +493,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _get_ca_bundle_env(self):
         """Return env dict with REQUESTS_CA_BUNDLE when a CA cert is configured."""
         if self._get_ca_cert():
-            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.pem"}
+            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.crt"}
         return {}
 
     def _write_ca_cert(self, container):
@@ -337,8 +501,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
+        # update-ca-certificates only processes *.crt files — must use .crt extension
         container.push(
-            "/usr/local/share/ca-certificates/ca-bundle.pem",
+            "/usr/local/share/ca-certificates/ca-bundle.crt",
             ca_cert,
             make_dirs=True,
         )
@@ -374,9 +539,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         )
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'workloadmgr')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'workloadmgr')}"
+            f"/{amqp.get('vhost', 'wlm')}"
         )
         auth_url = (
             f"{identity.get('service_protocol', 'http')}://"
@@ -387,6 +552,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
         cfg["DEFAULT"] = {
             "transport_url": transport_url,
+            "sql_connection": db_url,
             "auth_strategy": "keystone",
             "log_dir": LOG_DIR,
             # Write to stderr in addition to the log file so Pebble captures output
@@ -424,7 +590,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "cinder_production_endpoint_template": self.config["cinder-endpoint"],
             "taskflow_path": "/var/lib/workloadmgr/taskflow",
             "taskflow_max_cache_size": "1024",
-            "rabbit_virtual_host": amqp.get("vhost", "workloadmgr"),
+            "rabbit_virtual_host": amqp.get("vhost", "wlm"),
             "compute_driver": "libvirt.LibvirtDriver",
             "max_wait_for_upload": "48",
             "vault_storage_das_device": "none",
@@ -483,6 +649,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", CONFIG_PATH)
         container.push(WLM_LOGGING_CONF_PATH, WLM_LOGGING_CONF, make_dirs=True)
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
+        container.push(API_PASTE_PATH, WLM_API_PASTE, make_dirs=True)
+        logger.info("Wrote %s", API_PASTE_PATH)
 
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM."""
@@ -497,9 +665,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         rabbitmq_url = (
-            f"rabbit://{amqp.get('username', 'workloadmgr')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'workloadmgr')}"
+            f"/{amqp.get('vhost', 'wlm')}"
         )
 
         cfg = configparser.ConfigParser()
@@ -635,27 +803,31 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         })
 
     def _publish_ingress(self, rel):
-        """Write traefik_k8s v2 ingress requirer data.
+        """Write traefik_k8s ingress requirer data.
 
-        Traefik v2 expects a single 'data' key whose value is a JSON-encoded
-        dict (not individual top-level keys). Port must be an integer.
-        Stale individual keys (model/name/port/scheme/strip-prefix/redirect-https)
-        from older charm versions are removed; their presence alongside 'data'
-        prevents Traefik from processing the relation.
+        Matches IngressPerAppRequirer from charms.traefik_k8s.v2.ingress:
+        - Leader writes app databag: model, name, port (individual JSON-encoded keys).
+        - Every unit writes its own unit databag: host, ip (required by Traefik's
+          is_ready validation before it will publish the ingress URL back).
         """
-        if not self.unit.is_leader():
-            return
-        for old_key in ("model", "name", "port", "scheme", "strip-prefix", "redirect-https"):
-            if old_key in rel.data[self.app]:
-                del rel.data[self.app][old_key]
-        rel.data[self.app]["data"] = json.dumps({
-            "model": self.model.name,
-            "name": self.app.name,
-            "port": WLM_PORT,
-            "scheme": "http",
-            "strip-prefix": False,
-            "redirect-https": False,
-        })
+        # App databag — leader only.
+        if self.unit.is_leader():
+            if "data" in rel.data[self.app]:
+                del rel.data[self.app]["data"]
+            rel.data[self.app]["model"] = json.dumps(WLM_INGRESS_MODEL)
+            rel.data[self.app]["name"] = json.dumps(WLM_INGRESS_NAME)
+            rel.data[self.app]["port"] = json.dumps(WLM_PORT)
+        # Unit databag — every unit. Traefik validates host/ip for each unit
+        # before it considers the requirer ready and publishes the ingress URL.
+        binding = self.model.get_binding(rel)
+        ip = (
+            str(binding.network.bind_address)
+            if binding and binding.network.bind_address
+            else None
+        )
+        rel.data[self.unit]["host"] = json.dumps(socket.getfqdn())
+        if ip:
+            rel.data[self.unit]["ip"] = json.dumps(ip)
 
 
 if __name__ == "__main__":

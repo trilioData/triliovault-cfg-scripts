@@ -96,6 +96,22 @@ Additionally:
 - `log_config_append = <path>` points to the per-service Python logging conf pushed by the charm
 - Log formatter classes: `workloadmgr.openstack.common.log.UTCFormatter`, `dmapi.common.log.UTCFormatter`, `contego.common.log.UTCFormatter`, `s3fuse.log.UTCFormatter`
 
+### workloadmgr CLI in Pebble exec — setsid required
+When the WLM charm runs `workloadmgr` via `container.exec()` (Pebble), the process inherits Pebble's controlling terminal (the container's `/dev/console`). `workloadmgr`'s cliff/cmd2 layer opens `/dev/tty` and calls `curses.cbreak()`, which fails on the container console with "cbreak() returned ERR".
+
+Fix: prefix the command with `setsid` — e.g. `["setsid", "workloadmgr", ...]`. `setsid` creates a new session with no controlling terminal, so `/dev/tty` open fails with ENXIO and cmd2 skips curses init gracefully.
+
+This issue does NOT appear with `kubectl exec -- bash -c '...'` because that path starts processes without a controlling terminal in the container, whereas Pebble (as container PID 1) inherits one from the kubelet.
+
+### api-paste.ini — charm must overwrite package file
+The `api-paste.ini` shipped by the `workloadmgr` deb package contains legacy `%SERVICE_TENANT_NAME%`, `%SERVICE_USER%`, `%SERVICE_PASSWORD%` placeholders. Python's `configparser` raises `InterpolationSyntaxError` on `%` that aren't valid `%(var)s` interpolation, crashing wlm-api on startup. Fix: the WLM charm writes a clean `WLM_API_PASTE` constant directly to `/etc/triliovault-wlm/api-paste.ini` in `_write_config()`, overwriting the package-shipped file. The removed `[filter:authtoken]` password fields are NOT needed — keystonemiddleware reads auth from `[keystone_authtoken]` in the main conf.
+
+### sql_connection in [DEFAULT] — not [database]
+WLM reads the DB URL from `sql_connection` in the `[DEFAULT]` section, **not** from `connection` in `[database]`. All other deployment methods (RHOSP17, RHOSO18, Kolla) all use `sql_connection` in `[DEFAULT]`. The `[database]` section with `connection` key is a newer Oslo convention that WLM does not use. Both must be present: `[DEFAULT].sql_connection` for WLM's own DB access, and `[alembic].sqlalchemy.url` for alembic migrations.
+
+### RabbitMQ user/vhost for WLM: `wlm` (not `workloadmgr`)
+The RabbitMQ user and vhost for WLM are named `wlm`/`wlm` — created by the previous Juju charm version (charm-trilio-wlm from juju-charms/). The Sunbeam charm must request `username=wlm`, `vhost=wlm` in the amqp relation databag. Using `workloadmgr` for username/vhost causes `(403) ACCESS_REFUSED` from RabbitMQ because that user was never created. The database name (MySQL) and binary name remain `workloadmgr`.
+
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
@@ -105,8 +121,21 @@ Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this b
 
 ### DMS systemd units (data plane)
 Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit files (both were designed for kolla containers). The `trilio-data-mover` charm writes both units to `/lib/systemd/system/` during install:
-- `triliovault-dms.service` — runs `trilio-dms-server` as nova user
-- `tvault-contego.service` — runs tvault-contego with nova.conf from the openstack-hypervisor snap at `/var/snap/openstack-hypervisor/current/etc/nova/nova.conf`
+- `triliovault-dms.service` — runs `trilio-dms-server` as nova user, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
+- `triliovault-datamover.service` — runs tvault-contego as nova user with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
+
+### nova.conf and CA cert handling (data plane)
+The `openstack-hypervisor` snap's nova.conf is at `/var/snap/openstack-hypervisor/common/etc/nova/nova.conf` (root:root 640 — unreadable by the nova user). The charm copies it to `/etc/triliovault-datamover/nova.conf` (root:nova 640).
+
+**Only one line is patched in the copy**: the `cafile=` line in `[keystone_authtoken]` (and any other section) that references a snap-internal path (`/var/snap/openstack-hypervisor/.../receive-ca-bundle.pem`, also root:root 640). It is rewritten to `/etc/triliovault-datamover/ca-bundle.pem`.
+
+The CA cert at that path comes from the **`receive-ca-cert` Juju relation** — NOT copied from the snap. `_write_ca_cert()` reads the CA from the relation databag and writes it to:
+1. `/etc/triliovault-datamover/ca-bundle.pem` (root:nova 640) — for tvault-contego's direct use via `cafile=`
+2. `/usr/local/share/ca-certificates/trilio-ca.crt` + `update-ca-certificates` — system trust store for all other tools
+
+**Ordering in `_configure()`**: `_write_ca_cert()` must run before `_sync_nova_conf()` so the CA file exists before nova.conf references it.
+
+If the `receive-ca-cert` relation has no data yet, the `cafile=` line is stripped entirely so keystoneauth1 falls back to the world-readable system CA trust store.
 
 ### DMS client conf (data plane only)
 `/etc/triliovault-dms/client.conf` is written by the `trilio-data-mover` charm when `wlm-db-url` config is set. It contains WLM DB URL, same RabbitMQ credentials as DMS server, and `node_id = socket.getfqdn()`. Control plane charms (WLM, DMAPI) do not get a DMS client conf in the current implementation.
@@ -163,28 +192,36 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | DMAPI | 8784 | `datamover` | `dmapi` |
 | DMS server | (no HTTP; RabbitMQ only) | — | — |
 
-WLM endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v1/$(tenant_id)s` (via Traefik when ingress is configured), falls back to `http://<app>:8781/v1/$(tenant_id)s`
-DMAPI endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v2` (via Traefik when ingress is configured), falls back to `http://<app>:8784/v2`
+WLM endpoint URL format (public/internal): `https://IP/openstack-trilio-wlm/v1/$(tenant_id)s` (via Traefik), falls back to `http://trilio-wlm-k8s:8781/v1/$(tenant_id)s`
+DMAPI endpoint URL format (public/internal): `https://IP/openstack-trilio-dm-api/v2` (via Traefik), falls back to `http://trilio-dm-api-k8s:8784/v2`
 Admin URL is always the plain k8s service address (Traefik does not route admin traffic).
 
+The ingress `name` sent to Traefik is a **fixed constant** (`trilio-wlm`, `trilio-dm-api`) — NOT `self.app.name`. This drops the `-k8s` suffix to match OpenStack's endpoint naming convention (nova, glance, etc. all omit the `-k8s` charm suffix). The Traefik path becomes `/openstack-<name>`.
+
 ### Traefik ingress databag format (requirer side)
-Traefik v2 expects the **requirer** to write a single `data` key with a JSON-encoded dict — NOT individual top-level keys. Port must be an integer (not a string).
+Traefik v2 `IngressPerAppRequirer` expects **individual top-level keys** — NOT a single nested `data` JSON blob. Port must be a JSON-encoded integer. Additionally, **every unit** must write `host` and `ip` to its own unit databag or Traefik's `is_ready` check returns False and it wipes the ingress.
+
 ```python
-rel.data[self.app]["data"] = json.dumps({
-    "model": self.model.name,
-    "name": self.app.name,
-    "port": PORT,           # integer
-    "scheme": "http",
-    "strip-prefix": False,  # boolean
-    "redirect-https": False,
-})
+# App databag — leader only
+if self.unit.is_leader():
+    rel.data[self.app]["model"] = json.dumps(self.model.name)   # e.g. '"openstack"'
+    rel.data[self.app]["name"]  = json.dumps(WLM_INGRESS_NAME)  # '"trilio-wlm"'
+    rel.data[self.app]["port"]  = json.dumps(WLM_PORT)          # '8781'
+
+# Unit databag — every unit (not just leader)
+binding = self.model.get_binding(rel)
+ip = str(binding.network.bind_address) if binding and binding.network.bind_address else None
+rel.data[self.unit]["host"] = json.dumps(socket.getfqdn())
+if ip:
+    rel.data[self.unit]["ip"] = json.dumps(ip)
 ```
-Writing individual keys (model="..", name="..", port="8781") causes Traefik to log "invalid databag contents: expecting json" and block.
+
+Writing a nested `data` key (e.g. `rel.data[self.app]["data"] = json.dumps({...})`) causes Traefik to silently ignore the requirer as not ready and wipe its own ingress response.
 
 ### Traefik ingress URL pattern (provider response)
 Traefik writes the routed URL into the ingress relation app databag as:
 ```
-rel.data[rel.app]["ingress"] = '{"url": "https://IP:443/model-appname"}'
+rel.data[rel.app]["ingress"] = '{"url": "https://IP/openstack-trilio-wlm"}'
 ```
 Read it with: `json.loads(rel.data[rel.app].get("ingress", "{}")).get("url")`.
 Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-register Keystone endpoints once Traefik has written this URL — Traefik writes the URL asynchronously after the requirer joins.
