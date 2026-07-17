@@ -19,6 +19,7 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: latest/candidate
+    revision: 3
     scale: 1
     trust: true
     options:
@@ -28,6 +29,7 @@ applications:
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: latest/candidate
+    revision: 3
     scale: 1
     trust: true
     options:
@@ -37,6 +39,7 @@ applications:
   trilio-dms-k8s:
     charm: trilio-dms-k8s
     channel: latest/candidate
+    revision: 2
     scale: 1
     trust: true
     options:
@@ -57,6 +60,12 @@ relations:
   - [trilio-dm-api-k8s:ingress-internal, traefik:ingress]
   - [trilio-dm-api-k8s:ingress-public, traefik-public:ingress]
   - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
+
+  # CA certificate distribution (required for Sunbeam TLS — Keystone HTTPS endpoint)
+  # Without these, keystonemiddleware fails TLS verification → 503 on every API request
+  - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
+  - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
+  - [trilio-dms-k8s:receive-ca-cert, keystone:send-ca-cert]
 
   # DMS (Dynamic Mount Service) relations — control plane instance
   # DMS communicates via RabbitMQ only; it has no HTTP listener and does not register with Keystone.
