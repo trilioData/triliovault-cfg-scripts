@@ -98,7 +98,18 @@ juju attach-resource horizon-k8s \
 
 Horizon reloads automatically — no restart required.
 
-### 4. Cloud Admin Trust
+### 4. CA Certificate (TLS)
+
+If your Sunbeam deployment uses TLS (self-signed or Vault), relate the WLM charm to Keystone's CA cert distributor so Python's `requests` library trusts internal endpoints:
+
+```bash
+juju switch openstack
+juju relate trilio-wlm-k8s:receive-ca-cert keystone:send-ca-cert
+```
+
+This is required for WLM to reach Keystone over HTTPS. Skip if your cluster runs plain HTTP.
+
+### 5. Cloud Admin Trust
 
 TrilioVault needs a trust relationship between the WLM service user and the Cloud Admin
 so it can impersonate tenants during backup and restore operations.
@@ -115,7 +126,7 @@ Optional params (defaults work for standard Sunbeam deployments):
 - `project-name` (default: `admin`)
 - `project-domain-name` (default: `admin_domain`)
 
-### 5. Apply License
+### 6. Apply License
 
 Attach the TrilioVault license file and apply it:
 
@@ -166,14 +177,17 @@ Dockerfiles are in `docker/`:
 
 | Image | Dockerfile | Used by |
 |-------|-----------|---------|
-| `docker.io/trilio/trilio-wlm-canonical` | `docker/sunbeam-canonical/trilio-wlm/Dockerfile_2024.1` | `trilio-wlm-k8s` |
-| `docker.io/trilio/trilio-datamover-api-canonical` | `docker/sunbeam-canonical/trilio-datamover-api/Dockerfile_2024.1` | `trilio-dm-api-k8s` |
-| `docker.io/trilio/trilio-dms-canonical` | `docker/sunbeam-canonical/trilio-dms/Dockerfile_2024.1` | `trilio-dms-k8s` |
-| `docker.io/trilio/trilio-horizon-plugin-canonical` | `docker/sunbeam-canonical/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon-k8s` attach-resource |
+| `docker.io/trilio/trilio-wlm-canonical` | `sunbeam-canonical/docker/trilio-wlm/Dockerfile_2024.1` | `trilio-wlm-k8s` |
+| `docker.io/trilio/trilio-datamover-api-canonical` | `sunbeam-canonical/docker/trilio-datamover-api/Dockerfile_2024.1` | `trilio-dm-api-k8s` |
+| `docker.io/trilio/trilio-dms-canonical` | `sunbeam-canonical/docker/trilio-dms/Dockerfile` | `trilio-dms-k8s` |
+| `docker.io/trilio/trilio-horizon-plugin-canonical` | `sunbeam-canonical/docker/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon-k8s` attach-resource |
 
 Build and publish all images:
 
 ```bash
-cd docker/sunbeam-canonical
-bash devops-build-publish.sh 6.2.1-2024.1
+cd sunbeam-canonical/docker
+bash devops-build-publish.sh \
+  --tag 6.2.1-2024.1 \
+  --containers all \
+  --mode build-and-publish
 ```

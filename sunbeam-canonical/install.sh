@@ -55,6 +55,13 @@ juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout
 juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
 juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
 
+# --- Step 2b: CA certificate relation (TLS) ---
+# Relates WLM to Keystone's CA cert distributor so Python's requests library
+# trusts internal HTTPS endpoints. Safe to run even if cluster uses plain HTTP
+# (the relation will simply carry no data).
+log "Relating trilio-wlm-k8s to keystone CA cert distributor..."
+juju relate trilio-wlm-k8s:receive-ca-cert keystone:send-ca-cert || true
+
 # --- Step 3: Deploy data plane bundle ---
 log "Deploying TrilioVault data plane into model: $DATAPLANE_MODEL"
 juju switch "$DATAPLANE_MODEL"
