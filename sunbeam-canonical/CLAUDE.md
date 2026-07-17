@@ -176,28 +176,36 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 | DMAPI | 8784 | `datamover` | `dmapi` |
 | DMS server | (no HTTP; RabbitMQ only) | — | — |
 
-WLM endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v1/$(tenant_id)s` (via Traefik when ingress is configured), falls back to `http://<app>:8781/v1/$(tenant_id)s`
-DMAPI endpoint URL format (public/internal): `https://IP:443/<model>-<app>/v2` (via Traefik when ingress is configured), falls back to `http://<app>:8784/v2`
+WLM endpoint URL format (public/internal): `https://IP/openstack-trilio-wlm/v1/$(tenant_id)s` (via Traefik), falls back to `http://trilio-wlm-k8s:8781/v1/$(tenant_id)s`
+DMAPI endpoint URL format (public/internal): `https://IP/openstack-trilio-dm-api/v2` (via Traefik), falls back to `http://trilio-dm-api-k8s:8784/v2`
 Admin URL is always the plain k8s service address (Traefik does not route admin traffic).
 
+The ingress `name` sent to Traefik is a **fixed constant** (`trilio-wlm`, `trilio-dm-api`) — NOT `self.app.name`. This drops the `-k8s` suffix to match OpenStack's endpoint naming convention (nova, glance, etc. all omit the `-k8s` charm suffix). The Traefik path becomes `/openstack-<name>`.
+
 ### Traefik ingress databag format (requirer side)
-Traefik v2 expects the **requirer** to write a single `data` key with a JSON-encoded dict — NOT individual top-level keys. Port must be an integer (not a string).
+Traefik v2 `IngressPerAppRequirer` expects **individual top-level keys** — NOT a single nested `data` JSON blob. Port must be a JSON-encoded integer. Additionally, **every unit** must write `host` and `ip` to its own unit databag or Traefik's `is_ready` check returns False and it wipes the ingress.
+
 ```python
-rel.data[self.app]["data"] = json.dumps({
-    "model": self.model.name,
-    "name": self.app.name,
-    "port": PORT,           # integer
-    "scheme": "http",
-    "strip-prefix": False,  # boolean
-    "redirect-https": False,
-})
+# App databag — leader only
+if self.unit.is_leader():
+    rel.data[self.app]["model"] = json.dumps(self.model.name)   # e.g. '"openstack"'
+    rel.data[self.app]["name"]  = json.dumps(WLM_INGRESS_NAME)  # '"trilio-wlm"'
+    rel.data[self.app]["port"]  = json.dumps(WLM_PORT)          # '8781'
+
+# Unit databag — every unit (not just leader)
+binding = self.model.get_binding(rel)
+ip = str(binding.network.bind_address) if binding and binding.network.bind_address else None
+rel.data[self.unit]["host"] = json.dumps(socket.getfqdn())
+if ip:
+    rel.data[self.unit]["ip"] = json.dumps(ip)
 ```
-Writing individual keys (model="..", name="..", port="8781") causes Traefik to log "invalid databag contents: expecting json" and block.
+
+Writing a nested `data` key (e.g. `rel.data[self.app]["data"] = json.dumps({...})`) causes Traefik to silently ignore the requirer as not ready and wipe its own ingress response.
 
 ### Traefik ingress URL pattern (provider response)
 Traefik writes the routed URL into the ingress relation app databag as:
 ```
-rel.data[rel.app]["ingress"] = '{"url": "https://IP:443/model-appname"}'
+rel.data[rel.app]["ingress"] = '{"url": "https://IP/openstack-trilio-wlm"}'
 ```
 Read it with: `json.loads(rel.data[rel.app].get("ingress", "{}")).get("url")`.
 Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-register Keystone endpoints once Traefik has written this URL — Traefik writes the URL asynchronously after the requirer joins.

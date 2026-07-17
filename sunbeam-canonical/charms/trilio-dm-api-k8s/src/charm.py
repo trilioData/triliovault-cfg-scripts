@@ -22,6 +22,7 @@ import configparser
 import io
 import json
 import logging
+import socket
 
 import ops
 
@@ -97,6 +98,9 @@ DMAPI_PORT = 8784
 #   Service Name=dmapi  Service Type=datamover
 DMAPI_SERVICE_TYPE = "datamover"
 DMAPI_SERVICE_NAME = "dmapi"
+# Traefik ingress name — determines the URL path prefix (/openstack-trilio-dm-api).
+# Use a fixed name without the -k8s suffix to match OpenStack service naming convention.
+DMAPI_INGRESS_NAME = "trilio-dm-api"
 
 
 class TrilioDmApiK8sCharm(ops.CharmBase):
@@ -504,27 +508,31 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         })
 
     def _publish_ingress(self, rel):
-        """Write traefik_k8s v2 ingress requirer data.
+        """Write traefik_k8s ingress requirer data.
 
-        Traefik v2 expects a single 'data' key whose value is a JSON-encoded
-        dict (not individual top-level keys). Port must be an integer.
-        Stale individual keys (model/name/port/scheme/strip-prefix/redirect-https)
-        from older charm versions are removed; their presence alongside 'data'
-        prevents Traefik from processing the relation.
+        Matches IngressPerAppRequirer from charms.traefik_k8s.v2.ingress:
+        - Leader writes app databag: model, name, port (individual JSON-encoded keys).
+        - Every unit writes its own unit databag: host, ip (required by Traefik's
+          is_ready validation before it will publish the ingress URL back).
         """
-        if not self.unit.is_leader():
-            return
-        for old_key in ("model", "name", "port", "scheme", "strip-prefix", "redirect-https"):
-            if old_key in rel.data[self.app]:
-                del rel.data[self.app][old_key]
-        rel.data[self.app]["data"] = json.dumps({
-            "model": self.model.name,
-            "name": self.app.name,
-            "port": DMAPI_PORT,
-            "scheme": "http",
-            "strip-prefix": False,
-            "redirect-https": False,
-        })
+        # App databag — leader only.
+        if self.unit.is_leader():
+            if "data" in rel.data[self.app]:
+                del rel.data[self.app]["data"]
+            rel.data[self.app]["model"] = json.dumps(self.model.name)
+            rel.data[self.app]["name"] = json.dumps(DMAPI_INGRESS_NAME)
+            rel.data[self.app]["port"] = json.dumps(DMAPI_PORT)
+        # Unit databag — every unit. Traefik validates host/ip for each unit
+        # before it considers the requirer ready and publishes the ingress URL.
+        binding = self.model.get_binding(rel)
+        ip = (
+            str(binding.network.bind_address)
+            if binding and binding.network.bind_address
+            else None
+        )
+        rel.data[self.unit]["host"] = json.dumps(socket.getfqdn())
+        if ip:
+            rel.data[self.unit]["ip"] = json.dumps(ip)
 
 
 if __name__ == "__main__":
