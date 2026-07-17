@@ -10,12 +10,12 @@ metadata:
     dnsmasq.network.openstack.org/hostname: trilio-galera-lb.{{ .Release.Namespace }}.svc
   labels:
     app.kubernetes.io/component: database
-    app.kubernetes.io/name: trilio-db-cluster
+    app.kubernetes.io/name: trilio-galera-cluster
     app.kubernetes.io/part-of: trilio-vault
 spec:
   type: LoadBalancer
   selector:
-    app.kubernetes.io/name: trilio-db-cluster-galera
+    app.kubernetes.io/name: trilio-galera-cluster-galera
   ports:
   - name: mysql
     port: 3306
