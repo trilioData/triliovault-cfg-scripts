@@ -15,10 +15,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    # RHOSO's mariadb-operator labels Galera pods with "service: <CR-name>-galera"
-    # (internal/mariadb/utils.go StatefulSetLabels/StatefulSetName) — it never sets
-    # app.kubernetes.io/name, so that key would never match any pod.
-    service: trilio-db-cluster-galera
+    app.kubernetes.io/name: trilio-db-cluster-galera
   ports:
   - name: mysql
     port: 3306
