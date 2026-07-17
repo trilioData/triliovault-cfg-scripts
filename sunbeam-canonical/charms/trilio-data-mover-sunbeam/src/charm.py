@@ -532,9 +532,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         amqp = self._amqp_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
 
         cfg = configparser.ConfigParser()
@@ -584,9 +584,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
         # Use the HTTPS internal endpoint if keystone published one via traefik;
         # fall back to plain-http k8s service address for fresh deploys.
@@ -634,9 +634,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'dmapi')}"
+            f"/datamover"
         )
 
         cfg = configparser.ConfigParser()
