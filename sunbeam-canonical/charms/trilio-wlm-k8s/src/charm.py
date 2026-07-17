@@ -247,7 +247,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "trust-create", "--is_cloud_trust", "True", "Admin",
         ]
         try:
-            out, err = container.exec(cmd).wait_output()
+            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
             logger.info("trust-create output: %s", out)
             event.set_results({"result": "Cloud admin trust created successfully"})
         except Exception as e:
@@ -299,12 +299,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-password", identity["service_password"],
             "--os-auth-url", auth_url,
             "--os-user-domain-name", "service_domain",
+            "--os-project-domain-name", "service_domain",
             "--os-project-name", identity["service_tenant"],
             "--os-region-name", self.config.get("region", "RegionOne"),
             "license-create", container_license_path,
         ]
         try:
-            out, err = container.exec(cmd).wait_output()
+            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
             logger.info("license-create output: %s", out)
             event.set_results({"result": "License applied successfully"})
         except Exception as e:
