@@ -510,7 +510,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", API_PASTE_PATH)
 
     def _write_dms_client_config(self, container):
-        """Write DMS client config for the trilio-dms client library inside WLM."""
+        """Write DMS client config for the trilio-dms client library inside WLM.
+
+        The DMS client inside WLM connects to WLM's own database (not DMAPI's).
+        Uses WLM's own RabbitMQ user/vhost (wlm/wlm).
+        Written once — all four WLM services (wlm-api, wlm-workloads, wlm-cron,
+        wlm-scheduler) share the same container filesystem and read this file.
+        """
         amqp = self._amqp_data()
         db = self._db_data()
 
@@ -526,25 +532,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'wlm')}"
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["client"] = {
-            "request_timeout": "60",
-            "log_level": "INFO",
-            "log_file": "/var/log/triliovault/trilio-dms-client.log",
-            "log_max_bytes": "26214400",
-            "log_backup_count": "5",
-            "db_pool_size": "20",
-            "db_max_overflow": "40",
-            "db_pool_recycle": "3600",
+        context = {
             "rabbitmq_url": rabbitmq_url,
             "db_url": db_url,
             "node_id": self.unit.name.replace("/", "-"),
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_file": "/var/log/triliovault/trilio-dms-client.log",
         }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(DMS_CLIENT_CONF, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-dms-client.conf.j2", context)
+        container.push(DMS_CLIENT_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", DMS_CLIENT_CONF)
 
     # --- Pebble layer ---
