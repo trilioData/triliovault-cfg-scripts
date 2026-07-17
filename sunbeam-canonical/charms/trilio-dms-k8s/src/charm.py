@@ -17,14 +17,15 @@ Relation interface notes (Sunbeam Caracal):
     (leader only); provider responds with hostname/password in its *app* databag.
 """
 
-import configparser
-import io
 import logging
+import os
 
+import jinja2
 import ops
 
 logger = logging.getLogger(__name__)
 
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 CONTAINER = "trilio-dms"
 SERVER_CONF = "/etc/triliovault-dms/server.conf"
 CLIENT_CONF = "/etc/triliovault-dms/client.conf"
@@ -33,61 +34,6 @@ S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 
-# Python logging config referenced by s3vaultfuse via log_config_append.
-# Pushed into the container by the charm — not baked into the Docker image.
-# Content matches the kolla-ansible reference.
-OBJECT_STORE_LOGGING_CONF = """\
-[loggers]
-keys = root
-
-[handlers]
-keys = s3fuse,stdout,stderr,null
-
-[formatters]
-keys = default,advanced,default-utc,advanced-utc
-
-[logger_root]
-level = INFO
-handlers = s3fuse,stdout
-
-[handler_s3fuse]
-class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
-formatter = advanced-utc
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = default
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = advanced
-
-[handler_null]
-class = NullHandler
-formatter = default
-args = ()
-
-[formatter_default-utc]
-class = s3fuse.log.UTCFormatter
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced-utc]
-class = s3fuse.log.UTCFormatter
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_default]
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced]
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-"""
 
 
 class TrilioDmsK8sCharm(ops.CharmBase):
@@ -201,35 +147,32 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         logger.warning("K8S_NODE_NAME not available, falling back to unit name")
         return self.unit.name.replace("/", "-")
 
+    def _render_template(self, template_name: str, context: dict) -> str:
+        """Render a Jinja2 template from src/templates/."""
+        loader = jinja2.FileSystemLoader(TEMPLATE_DIR)
+        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+        return env.get_template(template_name).render(**context)
+
     def _write_config(self, container):
         amqp = self._amqp_data()
-
         transport_url = (
             f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
-        auth_url = self.config["keystone-endpoint"]
-
-        cfg = configparser.ConfigParser()
-        cfg["server"] = {
+        cafile = "/usr/local/share/ca-certificates/ca-bundle.pem" if self._get_ca_cert() else ""
+        context = {
             "rabbitmq_url": transport_url,
-            "auth_url": auth_url,
             "node_id": self._get_node_name(container),
+            "auth_url": self.config["keystone-endpoint"],
+            "barbican_ssl_verify": "False" if not self._get_ca_cert() else "True",
+            "cafile": cafile,
             "log_file": LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
-            "log_max_bytes": "26214400",
-            "log_backup_count": "5",
-            "s3vaultfuse_bin": "/usr/bin/s3vaultfuse.py",
-            "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
-            "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
-            "worker_threads": str(self.config["worker-threads"]),
-            "barbican_ssl_verify": "True",
+            "worker_threads": self.config["worker-threads"],
         }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(SERVER_CONF, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-dms-server.conf.j2", context)
+        container.push(SERVER_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", SERVER_CONF)
 
     def _write_client_config(self, container):
@@ -240,66 +183,29 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["client"] = {
+        context = {
             "rabbitmq_url": transport_url,
             "node_id": self._get_node_name(container),
-            "log_file": DMS_CLIENT_LOG_FILE,
+            "db_url": self.config.get("wlm-db-url", ""),
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_file": DMS_CLIENT_LOG_FILE,
         }
-        wlm_db_url = self.config.get("wlm-db-url", "")
-        if wlm_db_url:
-            cfg["client"]["db_url"] = wlm_db_url
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(CLIENT_CONF, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-dms-client.conf.j2", context)
+        container.push(CLIENT_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", CLIENT_CONF)
 
     def _write_s3vaultfuse_config(self, container):
-        content = (
-            "[DEFAULT]\n"
-            "vault_storage_type = s3\n"
-            "\n"
-            "vault_s3_max_pool_connections = 50\n"
-            "vault_s3_read_timeout = 30\n"
-            "vault_s3_max_attempts = 3\n"
-            "vault_s3_auth_version = DEFAULT\n"
-            "vault_s3_signature_version = default\n"
-            "\n"
-            "vault_s3_ssl = True\n"
-            "vault_s3_ssl_verify = True\n"
-            "vault_s3_region_name = us-east-1\n"
-            "\n"
-            "vault_segment_size = 33554432\n"
-            "vault_cache_size = 16\n"
-            "queue_depth = 100\n"
-            "worker_pool_size = 10\n"
-            "vault_retry_count = 2\n"
-            "\n"
-            "vault_enable_threadpool = True\n"
-            "vault_threaded_filesystem = True\n"
-            "max_uploads_pending = 20\n"
-            "\n"
-            "vault_logging_level = error\n"
-            "log_file = /var/log/triliovault/triliovault-object-store.log\n"
-            "log_config_append = /etc/triliovault-object-store/object_store_logging.conf\n"
-            "trace_function_calls = False\n"
-            "vault_cache_username = nova\n"
-            "\n"
-            "bucket_object_lock = False\n"
-            "use_manifest_suffix = False\n"
-            "azure_immutability_enabled = False\n"
-            "metadata_cache_max_items = 32\n"
-            "\n"
-            "[s3fuse_sys_admin]\n"
-            "helper_command = sudo /usr/bin/trilio-dms-rootwrap"
-            " /etc/triliovault-dms/rootwrap.conf privsep-helper\n"
+        container.push(
+            S3VAULTFUSE_CONF,
+            self._render_template("s3vaultfuse-global.conf.j2", {}),
+            make_dirs=True,
         )
-        container.push(S3VAULTFUSE_CONF, content, make_dirs=True)
         logger.info("Wrote %s", S3VAULTFUSE_CONF)
-        container.push(OBJECT_STORE_LOGGING_CONF_PATH, OBJECT_STORE_LOGGING_CONF, make_dirs=True)
+        container.push(
+            OBJECT_STORE_LOGGING_CONF_PATH,
+            self._render_template("object_store_logging.conf.j2", {}),
+            make_dirs=True,
+        )
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _update_pebble_layer(self, container):

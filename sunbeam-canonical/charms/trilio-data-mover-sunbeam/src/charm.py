@@ -19,10 +19,9 @@ and every compute node (this charm). The two instances communicate via RabbitMQ
 and handle NFS / S3 mount operations on their respective hosts.
 """
 
-import configparser
 import hashlib
-import io
 import json
+import jinja2
 import re
 import logging
 import os
@@ -56,6 +55,7 @@ OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_log
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
+TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 
 # Systemd unit for the DMS server on compute nodes.
 # python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
@@ -107,121 +107,6 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 """
 
-# Python logging config referenced by datamover (tvault-contego) via log_config_append.
-# Content matches the RHOSO18 / kolla-ansible reference. Without this file the
-# tvault-contego binary fails to start (oslo.log aborts on a missing log_config_append).
-DATAMOVER_LOGGING_CONF = """\
-[loggers]
-keys = root,contego
-
-[handlers]
-keys = datamover,stdout,stderr,null
-
-[formatters]
-keys = default,advanced,default-utc,advanced-utc
-
-[logger_root]
-level = INFO
-handlers = stdout
-
-[logger_contego]
-level = INFO
-handlers = datamover,stdout,stderr
-qualname = contego
-
-[handler_datamover]
-class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-datamover.log','a',25000000,20)
-formatter = advanced-utc
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = default
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = advanced
-
-[handler_null]
-class = NullHandler
-formatter = default
-args = ()
-
-[formatter_default-utc]
-class = contego.common.log.UTCFormatter
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced-utc]
-class = contego.common.log.UTCFormatter
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_default]
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced]
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-"""
-
-# Python logging config referenced by s3vaultfuse via log_config_append.
-# Content matches the kolla-ansible reference.
-OBJECT_STORE_LOGGING_CONF = """\
-[loggers]
-keys = root
-
-[handlers]
-keys = s3fuse,stdout,stderr,null
-
-[formatters]
-keys = default,advanced,default-utc,advanced-utc
-
-[logger_root]
-level = INFO
-handlers = s3fuse,stdout
-
-[handler_s3fuse]
-class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-object-store.log','a',25000000,20)
-formatter = advanced-utc
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = default
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = advanced
-
-[handler_null]
-class = NullHandler
-formatter = default
-args = ()
-
-[formatter_default-utc]
-class = s3fuse.log.UTCFormatter
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced-utc]
-class = s3fuse.log.UTCFormatter
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_default]
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced]
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-"""
 
 
 class TrilioDataMoverSunbeamCharm(ops.CharmBase):
@@ -526,55 +411,37 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 f.write("\nuser_allow_other\n")
         logger.info("Directories created")
 
+    def _render_template(self, template_name: str, context: dict) -> str:
+        """Render a Jinja2 template from src/templates/."""
+        loader = jinja2.FileSystemLoader(str(TEMPLATE_DIR))
+        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+        return env.get_template(template_name).render(**context)
+
+    def _write_file(self, path: str, content: str, mode: int = 0o644):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(content)
+        os.chmod(path, mode)
+
     # --- datamover config file rendering ---
 
     def _write_datamover_config(self):
         amqp = self._amqp_data()
-
         transport_url = (
             f"rabbit://datamover:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/datamover"
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["DEFAULT"] = {
-            "dmapi_transport_url": transport_url,
-            "vault_data_directory": "/var/triliovault-mounts",
-            "vault_data_directory_old": "/var/triliovault",
-            "qemu_agent_ping_timeout": "30",
-            "log_config_append": "/etc/triliovault-datamover/datamover_logging.conf",
-            "max_uploads_pending": "3",
-            "max_commit_pending": "3",
+        cafile = CA_BUNDLE_COPY if os.path.exists(CA_BUNDLE_COPY) else ""
+        context = {
+            "transport_url": transport_url,
+            "dm_config_path": DM_CONFIG_PATH,
             "debug": str(self.config["debug"]).lower(),
+            "cafile": cafile,
         }
-        cfg["contego_sys_admin"] = {
-            # Must use tvault-contego-rootwrap so privileged disk/mount operations
-            # are executed through the rootwrap filter. Bare privsep-helper without
-            # rootwrap bypasses the allow-list and causes permission errors.
-            "helper_command": (
-                "sudo /usr/bin/tvault-contego-rootwrap"
-                f" {DM_CONFIG_PATH} privsep-helper"
-            ),
-        }
-        cfg["conductor"] = {
-            "use_local": "True",
-        }
-        cfg["s3fuse_sys_admin"] = {
-            # DMS uses its own rootwrap binary for s3/fuse privilege escalation.
-            "helper_command": (
-                "sudo /usr/bin/trilio-dms-rootwrap"
-                " /etc/triliovault-dms/rootwrap.conf privsep-helper"
-            ),
-        }
-        buf = io.StringIO()
-        cfg.write(buf)
-        os.makedirs("/etc/triliovault-datamover", exist_ok=True)
-        with open(DM_CONFIG_PATH, "w") as f:
-            f.write(buf.getvalue())
+        self._write_file(DM_CONFIG_PATH, self._render_template("triliovault-datamover.conf.j2", context))
         logger.info("Wrote %s", DM_CONFIG_PATH)
-        with open(DM_LOGGING_CONF_PATH, "w") as f:
-            f.write(DATAMOVER_LOGGING_CONF)
+        self._write_file(DM_LOGGING_CONF_PATH, self._render_template("datamover_logging.conf.j2", {}))
         logger.info("Wrote %s", DM_LOGGING_CONF_PATH)
 
     # --- DMS config file rendering ---
@@ -597,28 +464,16 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                 f"{identity['credentials_host']}:{identity.get('credentials_port', '5000')}/v3"
             )
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["server"] = {
+        cafile = CA_BUNDLE_COPY if os.path.exists(CA_BUNDLE_COPY) else ""
+        context = {
             "rabbitmq_url": transport_url,
-            "auth_url": auth_url,
             "node_id": socket.getfqdn(),
+            "auth_url": auth_url,
+            "cafile": cafile,
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
-            "log_max_bytes": "26214400",
-            "log_backup_count": "5",
-            "s3vaultfuse_bin": "/usr/bin/s3vaultfuse.py",
-            "rootwrap_bin": "/usr/bin/trilio-dms-rootwrap",
-            "rootwrap_conf": "/etc/triliovault-dms/rootwrap.conf",
-            "worker_threads": "10",
-            "barbican_ssl_verify": "True",
         }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        os.makedirs("/etc/triliovault-dms", exist_ok=True)
-        with open(DMS_CONFIG_PATH, "w") as f:
-            f.write(buf.getvalue())
+        self._write_file(DMS_CONFIG_PATH, self._render_template("triliovault-dms-server.conf.j2", context))
         logger.info("Wrote %s", DMS_CONFIG_PATH)
 
     def _write_dms_client_config(self):
@@ -638,27 +493,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/datamover"
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["client"] = {
+        context = {
             "rabbitmq_url": transport_url,
             "db_url": wlm_db_url,
             "node_id": socket.getfqdn(),
-            "request_timeout": "60",
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_file": DMS_CLIENT_LOG_FILE,
-            "log_max_bytes": "26214400",
-            "log_backup_count": "5",
-            "db_pool_size": "20",
-            "db_max_overflow": "40",
-            "db_pool_recycle": "3600",
         }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        os.makedirs("/etc/triliovault-dms", exist_ok=True)
-        with open(DMS_CLIENT_CONF_PATH, "w") as f:
-            f.write(buf.getvalue())
+        self._write_file(DMS_CLIENT_CONF_PATH, self._render_template("triliovault-dms-client.conf.j2", context))
         logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
 
     def _write_nova_sudoers(self):
@@ -698,52 +540,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             logger.info("Wrote systemd unit %s", path)
 
     def _write_s3vaultfuse_config(self):
-        content = (
-            "[DEFAULT]\n"
-            "vault_storage_type = s3\n"
-            "\n"
-            "vault_s3_max_pool_connections = 50\n"
-            "vault_s3_read_timeout = 30\n"
-            "vault_s3_max_attempts = 3\n"
-            "vault_s3_auth_version = DEFAULT\n"
-            "vault_s3_signature_version = default\n"
-            "\n"
-            "vault_s3_ssl = True\n"
-            "vault_s3_ssl_verify = True\n"
-            "vault_s3_region_name = us-east-1\n"
-            "\n"
-            "vault_segment_size = 33554432\n"
-            "vault_cache_size = 16\n"
-            "queue_depth = 100\n"
-            "worker_pool_size = 10\n"
-            "vault_retry_count = 2\n"
-            "\n"
-            "vault_enable_threadpool = True\n"
-            "vault_threaded_filesystem = True\n"
-            "max_uploads_pending = 20\n"
-            "\n"
-            "vault_logging_level = error\n"
-            "log_file = /var/log/triliovault/triliovault-object-store.log\n"
-            "log_config_append = /etc/triliovault-object-store/object_store_logging.conf\n"
-            "trace_function_calls = False\n"
-            "vault_cache_username = nova\n"
-            "\n"
-            "bucket_object_lock = False\n"
-            "use_manifest_suffix = False\n"
-            "azure_immutability_enabled = False\n"
-            "metadata_cache_max_items = 32\n"
-            "\n"
-            "[s3fuse_sys_admin]\n"
-            "helper_command = sudo /usr/bin/trilio-dms-rootwrap"
-            " /etc/triliovault-dms/rootwrap.conf privsep-helper\n"
-        )
-        os.makedirs("/etc/triliovault-dms", exist_ok=True)
-        with open(S3VAULTFUSE_CONF, "w") as f:
-            f.write(content)
+        self._write_file(S3VAULTFUSE_CONF, self._render_template("s3vaultfuse-global.conf.j2", {}))
         logger.info("Wrote %s", S3VAULTFUSE_CONF)
-        os.makedirs("/etc/triliovault-object-store", exist_ok=True)
-        with open(OBJECT_STORE_LOGGING_CONF_PATH, "w") as f:
-            f.write(OBJECT_STORE_LOGGING_CONF)
+        self._write_file(
+            OBJECT_STORE_LOGGING_CONF_PATH,
+            self._render_template("object_store_logging.conf.j2", {}),
+        )
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     # Matches any cafile= line whose value starts with /var/snap/ — the snap-internal

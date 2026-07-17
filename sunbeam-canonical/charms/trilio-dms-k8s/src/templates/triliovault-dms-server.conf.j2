@@ -1,0 +1,29 @@
+[server]
+rabbitmq_url = {{ rabbitmq_url }}
+
+# Node identifier — must match OS-EXT-SRV-ATTR:host from nova (the nova-compute host value)
+node_id = {{ node_id }}
+
+# Keystone auth URL for Barbican token validation
+auth_url = {{ auth_url }}
+
+# Barbican SSL verification
+barbican_ssl_verify = {{ barbican_ssl_verify }}
+{% if cafile %}barbican_ca_bundle = {{ cafile }}
+{% endif %}
+
+# s3vaultfuse binary path
+s3vaultfuse_bin = /usr/bin/s3vaultfuse.py
+
+# rootwrap paths
+rootwrap_bin = /usr/bin/trilio-dms-rootwrap
+rootwrap_conf = /etc/triliovault-dms/rootwrap.conf
+
+# Logging
+log_file = {{ log_file }}
+log_level = {{ log_level }}
+log_max_bytes = 26214400
+log_backup_count = 5
+
+# Parallel worker threads for different (host, backup_target_id) pairs
+worker_threads = {{ worker_threads }}

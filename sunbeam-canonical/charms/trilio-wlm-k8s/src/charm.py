@@ -19,12 +19,12 @@ Relation interface notes (Sunbeam Caracal):
     Requirer writes a JSON blob under "data" key in the app databag.
 """
 
-import configparser
-import io
 import json
 import logging
+import os
 import socket
 
+import jinja2
 import ops
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,8 @@ WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
+CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 # The api-paste.ini shipped by the WLM deb package contains legacy
 # %SERVICE_TENANT_NAME% / %SERVICE_USER% / %SERVICE_PASSWORD% placeholders.
@@ -82,95 +84,6 @@ paste.filter_factory = keystonemiddleware.auth_token:filter_factory
 signing_dir = /var/cache/workloadmgr
 """
 
-# Python logging config pushed into the container by the charm (not baked into the image).
-# Matches the RHOSO18 _wlm_logging_conf.tpl reference.
-WLM_LOGGING_CONF = """\
-[loggers]
-keys = root, workloadmgr-api, workloadmgr-workloads, workloadmgr-cron, workloadmgr-scheduler
-
-[handlers]
-keys = stdout,stderr,null, workloadmgr-api, workloadmgr-workloads, workloadmgr-scheduler, workloadmgr-cron
-
-[formatters]
-keys = default,advanced,default-utc,advanced-utc
-
-[logger_root]
-level = INFO
-handlers = null
-
-[logger_workloadmgr-cron]
-level = INFO
-handlers = workloadmgr-cron,stdout,stderr
-qualname = workloadmgr-cron
-
-[logger_workloadmgr-scheduler]
-level = INFO
-handlers = workloadmgr-scheduler,stdout,stderr
-qualname = workloadmgr-scheduler
-
-[logger_workloadmgr-workloads]
-level = INFO
-handlers = workloadmgr-workloads,stdout,stderr
-qualname = workloadmgr-workloads
-
-[logger_workloadmgr-api]
-level = INFO
-handlers = workloadmgr-api,stdout,stderr
-qualname = workloadmgr-api
-
-[handler_workloadmgr-api]
-class = workloadmgr.concurrent_log_handler.ConcurrentRotatingFileHandler
-args = ('/var/log/triliovault/triliovault-wlm-api.log','a', 25000000,20)
-formatter = advanced-utc
-
-[handler_workloadmgr-cron]
-class = workloadmgr.concurrent_log_handler.ConcurrentRotatingFileHandler
-args = ('/var/log/triliovault/triliovault-wlm-cron.log','a', 25000000,20)
-formatter = advanced-utc
-
-[handler_workloadmgr-scheduler]
-class = workloadmgr.concurrent_log_handler.ConcurrentRotatingFileHandler
-args = ('/var/log/triliovault/triliovault-wlm-scheduler.log','a', 25000000,20)
-formatter = advanced-utc
-
-[handler_workloadmgr-workloads]
-class = workloadmgr.concurrent_log_handler.ConcurrentRotatingFileHandler
-args = ('/var/log/triliovault/triliovault-wlm-workloads.log','a', 25000000,20)
-formatter = advanced-utc
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = default
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = advanced
-
-[handler_null]
-class = NullHandler
-formatter = default
-args = ()
-
-[formatter_default-utc]
-class = workloadmgr.openstack.common.log.UTCFormatter
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced-utc]
-class = workloadmgr.openstack.common.log.UTCFormatter
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_default]
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced]
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-"""
 # Port confirmed from `openstack endpoint list` on RHOSO18 (consistent across all
 # OpenStack distributions): triliovault-wlm-internal.svc:8781
 # Must be explicit via osapi_workloads_listen_port so the binary binds here.
@@ -524,6 +437,12 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     # --- config file rendering ---
 
+    def _render_template(self, template_name: str, context: dict) -> str:
+        """Render a Jinja2 template from src/templates/."""
+        loader = jinja2.FileSystemLoader(TEMPLATE_DIR)
+        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+        return env.get_template(template_name).render(**context)
+
     def _write_config(self, container):
         db = self._db_data()
         amqp = self._amqp_data()
@@ -537,7 +456,6 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"mysql+pymysql://{db['username']}:{db['password']}"
             f"@{db_host}:{db_port}/{db['database']}"
         )
-
         transport_url = (
             f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
@@ -547,107 +465,46 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"{identity.get('service_protocol', 'http')}://"
             f"{identity['service_host']}:{identity.get('service_port', '5000')}/v3"
         )
+        # Provide cafile path only when the CA cert has been pushed to the container.
+        cafile = CA_BUNDLE_PATH if self._get_ca_cert() else ""
 
-        cfg = configparser.ConfigParser()
-
-        cfg["DEFAULT"] = {
-            "transport_url": transport_url,
-            "sql_connection": db_url,
-            "auth_strategy": "keystone",
-            "log_dir": LOG_DIR,
-            # Write to stderr in addition to the log file so Pebble captures output
-            # and `kubectl logs` works without exec-ing into the container.
-            "use_stderr": "true",
-            "log_config_append": WLM_LOGGING_CONF_PATH,
-            "debug": str(self.config["debug"]).lower(),
-            "vault_data_directory": "/var/triliovault-mounts",
-            "vault_data_directory_old": "/var/triliovault",
-            "state_path": "/var/lib/workloadmgr",
-            # Explicit port (8781) so the binary binds on the same port open_port()
-            # advertises and that is registered as the Keystone endpoint port.
-            "osapi_workloads_listen_port": str(WLM_PORT),
-            # k8s: bind on all pod interfaces; service DNS handles intra-cluster routing
+        context = {
+            "wlm_logging_conf_path": WLM_LOGGING_CONF_PATH,
             "my_ip": "0.0.0.0",
-            "osapi_workloads_listen": "0.0.0.0",
-            "triliovault_hostnames": "0.0.0.0",
-            "config_status": "configured",
-            "rootwrap_config": "/etc/triliovault-wlm/rootwrap.conf",
-            "wlm_rootwrap": "/usr/bin/workloadmgr-rootwrap",
-            "api_paste_config": "/etc/triliovault-wlm/api-paste.ini",
-            "triliovault_user_domain_id": "default",
+            "state_path": "/var/lib/workloadmgr",
+            "sql_connection": db_url,
+            "osapi_workloads_listen_port": WLM_PORT,
+            "cloud_admin_user_id": self.config.get("cloud-admin-user-id", ""),
+            "cloud_admin_project_id": self.config.get("cloud-admin-project-id", ""),
+            "cloud_admin_domain": self.config.get("cloud-admin-domain", "admin_domain"),
+            "cloud_admin_role": self.config.get("cloud-admin-role", "admin"),
+            "trustee_role": self.config.get("trustee-role", "member, creator"),
+            "cloud_unique_id": self.config.get("cloud-unique-id", ""),
             "region_name_for_services": self.config["region"],
-            "global_job_scheduler_override": "False",
-            "api_workers": str(self.config["api-workers"]),
-            "workloads_workers": str(self.config["workloads-workers"]),
+            "transport_url": transport_url,
+            "api_workers": self.config["api-workers"],
+            "workloads_workers": self.config["workloads-workers"],
             "glance_production_api_servers": self.config["glance-endpoint"],
-            "glance_api_version": "2",
-            "keystone_endpoint_url": auth_url,
-            "keystone_auth_version": "3",
-            "nova_admin_auth_url": auth_url,
-            "nova_production_endpoint_template": self.config["nova-endpoint"],
-            "neutron_admin_auth_url": auth_url,
-            "neutron_production_url": self.config["neutron-endpoint"],
-            "cinder_production_endpoint_template": self.config["cinder-endpoint"],
-            "taskflow_path": "/var/lib/workloadmgr/taskflow",
-            "taskflow_max_cache_size": "1024",
-            "rabbit_virtual_host": amqp.get("vhost", "wlm"),
-            "compute_driver": "libvirt.LibvirtDriver",
-            "max_wait_for_upload": "48",
-            "vault_storage_das_device": "none",
-            "vault_enable_threadpool": "True",
-            "vault_s3_support_empty_dir": "False",
-            "neutron_api_insecure": "False",
-        }
-        cfg["database"] = {
-            "connection": db_url,
-        }
-        cfg["keystone_authtoken"] = {
             "auth_url": auth_url,
-            "www_authenticate_uri": auth_url,
-            "username": identity.get("service_username", "wlm"),
-            "password": identity["service_password"],
-            "project_name": identity.get("service_tenant", "services"),
-            "user_domain_name": "Default",
-            "project_domain_name": "Default",
-            "auth_type": "password",
-            "service_token_roles_required": "True",
+            "cinder_production_endpoint_template": self.config["cinder-endpoint"],
+            "nova_production_endpoint_template": self.config["nova-endpoint"],
+            "neutron_production_url": self.config["neutron-endpoint"],
+            "rabbit_virtual_host": amqp.get("vhost", "wlm"),
+            "log_dir": LOG_DIR,
+            "debug": str(self.config["debug"]).lower(),
+            "keystone_project_name": identity.get("service_tenant", "services"),
+            "keystone_username": identity.get("service_username", "wlm"),
+            "keystone_password": identity["service_password"],
+            "cafile": cafile,
         }
-        cfg["wlm"] = {}
-        # alembic reads sqlalchemy.url from this section for `alembic upgrade head`.
-        # script_location points to the WLM migration repo baked into the package.
-        cfg["alembic"] = {
-            "script_location": "/usr/share/workloadmgr/migrate_repo",
-            "version_locations": "/usr/share/workloadmgr/migrate_repo/versions",
-            "sqlalchemy.url": db_url,
-        }
-        cfg["barbican"] = {
-            "encryption_support": "true",
-        }
-        cfg["global_job_scheduler"] = {
-            "misfire_grace_time": "600",
-        }
-        cfg["s3fuse_sys_admin"] = {
-            "helper_command": (
-                "sudo /usr/bin/workloadmgr-rootwrap"
-                " /etc/triliovault-wlm/rootwrap.conf privsep-helper"
-            ),
-        }
-        cfg["clients"] = {
-            "client_retry_limit": "3",
-            "endpoint_type": "internal",
-        }
-        cfg["oslo_messaging_rabbit"] = {
-            "heartbeat_in_pthread": "False",
-        }
-        cfg["filesearch"] = {
-            "process_timeout": "300",
-        }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(CONFIG_PATH, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-wlm.conf.j2", context)
+        container.push(CONFIG_PATH, rendered, make_dirs=True)
         logger.info("Wrote %s", CONFIG_PATH)
-        container.push(WLM_LOGGING_CONF_PATH, WLM_LOGGING_CONF, make_dirs=True)
+        container.push(
+            WLM_LOGGING_CONF_PATH,
+            self._render_template("wlm_logging.conf.j2", {}),
+            make_dirs=True,
+        )
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
         container.push(API_PASTE_PATH, WLM_API_PASTE, make_dirs=True)
         logger.info("Wrote %s", API_PASTE_PATH)
