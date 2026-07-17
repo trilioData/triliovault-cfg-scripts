@@ -135,9 +135,10 @@ WLM_SERVICE_TYPE = "workloads"
 WLM_SERVICE_NAME = "TrilioVaultWLM"
 # Endpoint path template matching production WLM endpoint format.
 WLM_ENDPOINT_TEMPLATE = "{}/v1/$(tenant_id)s"
-# Traefik ingress name — determines the URL path prefix (/openstack-trilio-wlm).
-# Use a fixed name without the -k8s suffix to match OpenStack service naming convention.
-WLM_INGRESS_NAME = "trilio-wlm"
+# Traefik ingress model+name — Traefik constructs the path as /{model}-{name}.
+# Setting model="trilio" and name="wlm" gives path /trilio-wlm (no openstack- prefix).
+WLM_INGRESS_MODEL = "trilio"
+WLM_INGRESS_NAME = "wlm"
 
 
 class TrilioWlmK8sCharm(ops.CharmBase):
@@ -650,7 +651,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             if "data" in rel.data[self.app]:
                 del rel.data[self.app]["data"]
-            rel.data[self.app]["model"] = json.dumps(self.model.name)
+            rel.data[self.app]["model"] = json.dumps(WLM_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(WLM_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(WLM_PORT)
         # Unit databag — every unit. Traefik validates host/ip for each unit

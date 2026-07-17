@@ -98,9 +98,10 @@ DMAPI_PORT = 8784
 #   Service Name=dmapi  Service Type=datamover
 DMAPI_SERVICE_TYPE = "datamover"
 DMAPI_SERVICE_NAME = "dmapi"
-# Traefik ingress name — determines the URL path prefix (/openstack-trilio-dm-api).
-# Use a fixed name without the -k8s suffix to match OpenStack service naming convention.
-DMAPI_INGRESS_NAME = "trilio-dm-api"
+# Traefik ingress model+name — Traefik constructs the path as /{model}-{name}.
+# Setting model="trilio" and name="dm-api" gives path /trilio-dm-api (no openstack- prefix).
+DMAPI_INGRESS_MODEL = "trilio"
+DMAPI_INGRESS_NAME = "dm-api"
 
 
 class TrilioDmApiK8sCharm(ops.CharmBase):
@@ -519,7 +520,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             if "data" in rel.data[self.app]:
                 del rel.data[self.app]["data"]
-            rel.data[self.app]["model"] = json.dumps(self.model.name)
+            rel.data[self.app]["model"] = json.dumps(DMAPI_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(DMAPI_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(DMAPI_PORT)
         # Unit databag — every unit. Traefik validates host/ip for each unit
