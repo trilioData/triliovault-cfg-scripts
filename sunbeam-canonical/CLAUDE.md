@@ -82,9 +82,11 @@ Run only on the leader unit (idempotent — safe to re-run). Follows the `ops_su
 ### TLS / CA certificate handling (k8s charms)
 All three k8s charms support the `receive-ca-cert` relation (`certificate_transfer` interface):
 - Requirer reads `ca` key from each provider unit databag
-- Pushes concatenated CA bundle to `/usr/local/share/ca-certificates/ca-bundle.pem` inside the container
+- Pushes concatenated CA bundle to `/usr/local/share/ca-certificates/ca-bundle.crt` inside the container (must be `.crt`, not `.pem` — `update-ca-certificates` only processes `*.crt` files)
 - Runs `update-ca-certificates` in the container
 - Sets `REQUESTS_CA_BUNDLE` env var on all Pebble services so Python's `requests` library trusts the CA
+
+**`receive-ca-cert` is required for all Sunbeam Trilio k8s charms** — without it, keystonemiddleware fails TLS verification when calling the Keystone HTTPS public endpoint, returning 503 "Keystone service temporarily unavailable" on every API request. Add `juju relate trilio-wlm-k8s:receive-ca-cert keystone:send-ca-cert` (and same for dmapi/dms) on fresh deployments.
 
 The DataMover machine charm writes the CA to the host (`/usr/local/share/ca-certificates/trilio-ca.crt`) and runs `update-ca-certificates` on the host.
 
@@ -105,6 +107,9 @@ This issue does NOT appear with `kubectl exec -- bash -c '...'` because that pat
 
 ### api-paste.ini — charm must overwrite package file
 The `api-paste.ini` shipped by the `workloadmgr` deb package contains legacy `%SERVICE_TENANT_NAME%`, `%SERVICE_USER%`, `%SERVICE_PASSWORD%` placeholders. Python's `configparser` raises `InterpolationSyntaxError` on `%` that aren't valid `%(var)s` interpolation, crashing wlm-api on startup. Fix: the WLM charm writes a clean `WLM_API_PASTE` constant directly to `/etc/triliovault-wlm/api-paste.ini` in `_write_config()`, overwriting the package-shipped file. The removed `[filter:authtoken]` password fields are NOT needed — keystonemiddleware reads auth from `[keystone_authtoken]` in the main conf.
+
+### keystone_authtoken domain — read from identity-service relation, not hardcoded
+WLM and DMAPI use `[keystone_authtoken]` with `user_domain_name` and `project_domain_name`. On Sunbeam, keystone-k8s creates service users in `service_domain`, **not** `Default`. The charms read `service-domain-name` from the identity-service relation app databag and pass it as `service_domain_name` to the config template. **Do NOT hardcode `Default`** — this causes keystonemiddleware 401 on the service-user auth call → 503 "Keystone service temporarily unavailable" on every API request.
 
 ### sql_connection in [DEFAULT] — not [database]
 WLM reads the DB URL from `sql_connection` in the `[DEFAULT]` section, **not** from `connection` in `[database]`. All other deployment methods (RHOSP17, RHOSO18, Kolla) all use `sql_connection` in `[DEFAULT]`. The `[database]` section with `connection` key is a newer Oslo convention that WLM does not use. Both must be present: `[DEFAULT].sql_connection` for WLM's own DB access, and `[alembic].sqlalchemy.url` for alembic migrations.
@@ -176,7 +181,7 @@ Our Trilio k8s charms use **plain `ops`** (not `ops_sunbeam`) to avoid the frame
 |---|---|---|---|
 | `database` | `mysql_client` | mysql-k8s | Req writes `database` to app databag; prov writes `endpoints`, `username`, `password` |
 | `amqp` | `rabbitmq` | rabbitmq-k8s | Req writes `username`, `vhost` to **app** databag (leader only); prov writes `hostname`, `password` to prov **app** databag |
-| `identity-service` | `keystone` | keystone-k8s | Req writes `service-endpoints` (JSON), `region` to **app** databag (leader only); prov writes `service-host`, `service-credentials` (Juju secret) to prov **app** databag |
+| `identity-service` | `keystone` | keystone-k8s | Req writes `service-endpoints` (JSON), `region` to **app** databag (leader only); prov writes `service-host`, `service-port`, `service-protocol`, `service-project-name`, `service-domain-name`, `service-credentials` (Juju secret) to prov **app** databag |
 | `receive-ca-cert` | `certificate_transfer` | vault-k8s / self-signed | Prov writes `ca` to unit databag |
 | `wlm-service` | custom | trilio-wlm-k8s | Provider writes `wlm-api-url` to app databag |
 | `ingress-internal` | `traefik_k8s` v2 | traefik-k8s | Req writes `model`, `name`, `port`, `scheme` to app databag; prov writes `{"ingress": '{"url": "https://IP:443/model-app"}'}` to prov **app** databag |
