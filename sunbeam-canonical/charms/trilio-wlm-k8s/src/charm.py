@@ -31,10 +31,56 @@ logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-wlm"
 CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
+API_PASTE_PATH = "/etc/triliovault-wlm/api-paste.ini"
 WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
+
+# The api-paste.ini shipped by the WLM deb package contains legacy
+# %SERVICE_TENANT_NAME% / %SERVICE_USER% / %SERVICE_PASSWORD% placeholders.
+# Python's configparser treats % as an interpolation prefix and raises
+# InterpolationSyntaxError when it sees %S (not %(key)s format), crashing
+# wlm-api on startup. The charm overwrites the file with this clean version
+# that removes the deprecated auth fields (keystonemiddleware reads credentials
+# from [keystone_authtoken] in the main config anyway).
+WLM_API_PASTE = """\
+[composite:osapi_workloads]
+use = call:workloadmgr.api:root_app_factory
+/: apiversions
+/v1: openstack_workloads_api_v1
+
+[composite:openstack_workloads_api_v1]
+use = call:workloadmgr.api.middleware.auth:pipeline_factory
+noauth = faultwrap sizelimit noauth apiv1
+keystone = faultwrap sizelimit authtoken keystonecontext apiv1
+keystone_nolimit = faultwrap sizelimit authtoken keystonecontext apiv1
+
+[filter:faultwrap]
+paste.filter_factory = workloadmgr.api.middleware.fault:FaultWrapper.factory
+
+[filter:noauth]
+paste.filter_factory = workloadmgr.api.middleware.auth:NoAuthMiddleware.factory
+
+[filter:sizelimit]
+paste.filter_factory = oslo_middleware.sizelimit:RequestBodySizeLimiter.factory
+
+[app:apiv1]
+paste.app_factory = workloadmgr.api.v1.router:APIRouter.factory
+
+[pipeline:apiversions]
+pipeline = faultwrap osworkloadsversionapp
+
+[app:osworkloadsversionapp]
+paste.app_factory = workloadmgr.api.versions:Versions.factory
+
+[filter:keystonecontext]
+paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContext.factory
+
+[filter:authtoken]
+paste.filter_factory = keystonemiddleware.auth_token:filter_factory
+signing_dir = /var/cache/workloadmgr
+"""
 
 # Python logging config pushed into the container by the charm (not baked into the image).
 # Matches the RHOSO18 _wlm_logging_conf.tpl reference.
@@ -447,7 +493,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _get_ca_bundle_env(self):
         """Return env dict with REQUESTS_CA_BUNDLE when a CA cert is configured."""
         if self._get_ca_cert():
-            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.pem"}
+            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.crt"}
         return {}
 
     def _write_ca_cert(self, container):
@@ -455,8 +501,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
+        # update-ca-certificates only processes *.crt files — must use .crt extension
         container.push(
-            "/usr/local/share/ca-certificates/ca-bundle.pem",
+            "/usr/local/share/ca-certificates/ca-bundle.crt",
             ca_cert,
             make_dirs=True,
         )
@@ -601,6 +648,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", CONFIG_PATH)
         container.push(WLM_LOGGING_CONF_PATH, WLM_LOGGING_CONF, make_dirs=True)
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
+        container.push(API_PASTE_PATH, WLM_API_PASTE, make_dirs=True)
+        logger.info("Wrote %s", API_PASTE_PATH)
 
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM."""
