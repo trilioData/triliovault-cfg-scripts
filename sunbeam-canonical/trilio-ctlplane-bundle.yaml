@@ -58,6 +58,12 @@ relations:
   - [trilio-dm-api-k8s:ingress-public, traefik-public:ingress]
   - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
 
+  # CA certificate distribution (required for Sunbeam TLS — Keystone HTTPS endpoint)
+  # Without these, keystonemiddleware fails TLS verification → 503 on every API request
+  - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
+  - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
+  - [trilio-dms-k8s:receive-ca-cert, keystone:send-ca-cert]
+
   # DMS (Dynamic Mount Service) relations — control plane instance
   # DMS communicates via RabbitMQ only; it has no HTTP listener and does not register with Keystone.
   - [trilio-dms-k8s:amqp, rabbitmq:amqp]
