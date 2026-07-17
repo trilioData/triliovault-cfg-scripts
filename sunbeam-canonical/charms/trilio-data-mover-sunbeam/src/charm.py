@@ -21,8 +21,9 @@ and handle NFS / S3 mount operations on their respective hosts.
 
 import configparser
 import hashlib
-import re
 import io
+import json
+import re
 import logging
 import os
 import pathlib
@@ -294,10 +295,16 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._configure(event)
 
     def _on_amqp_relation_joined(self, event):
-        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
+        """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost.
+
+        external_connectivity=true tells rabbitmq-k8s to return the loadbalancer IP
+        (e.g. 172.26.x.x) instead of the k8s-internal DNS name, which is not
+        resolvable from compute nodes outside the k8s cluster.
+        """
         if self.unit.is_leader():
             event.relation.data[self.app]["username"] = "datamover"
             event.relation.data[self.app]["vhost"] = "datamover"
+            event.relation.data[self.app]["external_connectivity"] = json.dumps(True)
 
     def _on_identity_credentials_relation_joined(self, event):
         """Write keystone requirer username so keystone-k8s provisions datamover credentials."""
@@ -316,6 +323,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         if amqp_rel:
             amqp_rel.data[self.app]["username"] = "datamover"
             amqp_rel.data[self.app]["vhost"] = "datamover"
+            amqp_rel.data[self.app]["external_connectivity"] = json.dumps(True)
         identity_rel = self.model.get_relation("identity-credentials")
         if identity_rel:
             identity_rel.data[self.app]["username"] = "datamover"
