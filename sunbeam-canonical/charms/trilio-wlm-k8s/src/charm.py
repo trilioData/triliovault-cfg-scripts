@@ -46,43 +46,6 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templat
 # wlm-api on startup. The charm overwrites the file with this clean version
 # that removes the deprecated auth fields (keystonemiddleware reads credentials
 # from [keystone_authtoken] in the main config anyway).
-WLM_API_PASTE = """\
-[composite:osapi_workloads]
-use = call:workloadmgr.api:root_app_factory
-/: apiversions
-/v1: openstack_workloads_api_v1
-
-[composite:openstack_workloads_api_v1]
-use = call:workloadmgr.api.middleware.auth:pipeline_factory
-noauth = faultwrap sizelimit noauth apiv1
-keystone = faultwrap sizelimit authtoken keystonecontext apiv1
-keystone_nolimit = faultwrap sizelimit authtoken keystonecontext apiv1
-
-[filter:faultwrap]
-paste.filter_factory = workloadmgr.api.middleware.fault:FaultWrapper.factory
-
-[filter:noauth]
-paste.filter_factory = workloadmgr.api.middleware.auth:NoAuthMiddleware.factory
-
-[filter:sizelimit]
-paste.filter_factory = oslo_middleware.sizelimit:RequestBodySizeLimiter.factory
-
-[app:apiv1]
-paste.app_factory = workloadmgr.api.v1.router:APIRouter.factory
-
-[pipeline:apiversions]
-pipeline = faultwrap osworkloadsversionapp
-
-[app:osworkloadsversionapp]
-paste.app_factory = workloadmgr.api.versions:Versions.factory
-
-[filter:keystonecontext]
-paste.filter_factory = workloadmgr.api.middleware.auth:WorkloadMgrKeystoneContext.factory
-
-[filter:authtoken]
-paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-signing_dir = /var/cache/workloadmgr
-"""
 
 # Port confirmed from `openstack endpoint list` on RHOSO18 (consistent across all
 # OpenStack distributions): triliovault-wlm-internal.svc:8781
@@ -196,6 +159,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         )
         # setsid detaches the process from Pebble's controlling terminal so that
         # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
+        # --endpoint-type admin uses the admin endpoint URL (http://trilio-wlm-k8s:8781/v1/...)
+        # which routes directly to WLM API without the Traefik path prefix issue.
         cmd = [
             "setsid",
             "workloadmgr",
@@ -206,6 +171,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-name", event.params.get("project-name", "admin"),
             "--os-project-domain-name", event.params.get("project-domain-name", "admin_domain"),
             "--os-region-name", self.config.get("region", "RegionOne"),
+            "--endpoint-type", "admin",
             "trust-create", "--is_cloud_trust", "True", "Admin",
         ]
         try:
@@ -506,7 +472,12 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
-        container.push(API_PASTE_PATH, WLM_API_PASTE, make_dirs=True)
+        traefik_prefix = f"/{WLM_INGRESS_MODEL}-{WLM_INGRESS_NAME}"
+        container.push(
+            API_PASTE_PATH,
+            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            make_dirs=True,
+        )
         logger.info("Wrote %s", API_PASTE_PATH)
 
     def _write_dms_client_config(self, container):

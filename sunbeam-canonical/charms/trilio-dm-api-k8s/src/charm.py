@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 CONTAINER = "trilio-dm-api"
 CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover-api.conf"
 DMAPI_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_api_logging.conf"
+DMAPI_API_PASTE_PATH = "/etc/triliovault-datamover/api-paste.ini"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 LOG_DIR = "/var/log/triliovault"
 
@@ -45,6 +46,7 @@ DMAPI_INGRESS_MODEL = "trilio"
 DMAPI_INGRESS_NAME = "dm-api"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+
 
 
 class TrilioDmApiK8sCharm(ops.CharmBase):
@@ -325,6 +327,13 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", DMAPI_LOGGING_CONF_PATH)
+        traefik_prefix = f"/{DMAPI_INGRESS_MODEL}-{DMAPI_INGRESS_NAME}"
+        container.push(
+            DMAPI_API_PASTE_PATH,
+            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            make_dirs=True,
+        )
+        logger.info("Wrote %s", DMAPI_API_PASTE_PATH)
 
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside DMAPI.
