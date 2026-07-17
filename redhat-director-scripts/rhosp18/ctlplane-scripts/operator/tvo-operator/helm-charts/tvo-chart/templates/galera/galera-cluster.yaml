@@ -3,14 +3,7 @@
 apiVersion: mariadb.openstack.org/v1beta1
 kind: Galera
 metadata:
-  # NOTE: must never contain the substring "-galera-" — RHOSO's mariadb-operator
-  # (report_local_galera_state.py) derives the CR name from the pod hostname via
-  # an unanchored `re.sub(r'-galera-[0-9]*', '', pod_name)`, which strips every
-  # occurrence of "-galera-", not just the trailing ordinal suffix. A CR name
-  # like "trilio-galera-cluster" gets mangled to "triliocluster", the operator
-  # 404s trying to read/write that CR's status, and Galera pods never get a
-  # gcomm URI (TVAULT-7493).
-  name: trilio-db-cluster
+  name: trilio-galera-cluster
   namespace: {{ .Release.Namespace }}
   labels:
     app: galera
