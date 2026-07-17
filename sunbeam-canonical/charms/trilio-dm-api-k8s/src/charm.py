@@ -18,12 +18,12 @@ Relation interface notes (Sunbeam Caracal):
   - wlm-service: custom interface — remote app databag. Keys: wlm-api-url, wlm-db-url.
 """
 
-import configparser
-import io
 import json
 import logging
+import os
 import socket
 
+import jinja2
 import ops
 
 logger = logging.getLogger(__name__)
@@ -34,65 +34,6 @@ DMAPI_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_api_logging.conf
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 LOG_DIR = "/var/log/triliovault"
 
-# Python logging config pushed into the container by the charm (not baked into the image).
-# Matches the RHOSO18 _datamover_api_logging_conf.tpl reference.
-DMAPI_LOGGING_CONF = """\
-[loggers]
-keys = root,dmapi
-
-[handlers]
-keys = dmapi,stdout,stderr,null
-
-[formatters]
-keys = default,advanced,default-utc,advanced-utc
-
-[logger_root]
-level = INFO
-handlers = null
-
-[logger_dmapi]
-level = INFO
-handlers = dmapi,stdout,stderr
-qualname = dmapi
-
-[handler_dmapi]
-class = logging.handlers.RotatingFileHandler
-args = ('/var/log/triliovault/triliovault-datamover-api.log','a',25000000,20)
-formatter = advanced-utc
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = default
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = advanced
-
-[handler_null]
-class = NullHandler
-formatter = default
-args = ()
-
-[formatter_default-utc]
-class = dmapi.common.log.UTCFormatter
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced-utc]
-class = dmapi.common.log.UTCFormatter
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_default]
-format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-
-[formatter_advanced]
-format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
-"""
 DMAPI_PORT = 8784
 # Service type/name confirmed from `openstack endpoint list` — same on all platforms:
 #   Service Name=dmapi  Service Type=datamover
@@ -102,6 +43,8 @@ DMAPI_SERVICE_NAME = "dmapi"
 # Setting model="trilio" and name="dm-api" gives path /trilio-dm-api (no openstack- prefix).
 DMAPI_INGRESS_MODEL = "trilio"
 DMAPI_INGRESS_NAME = "dm-api"
+CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 
 class TrilioDmApiK8sCharm(ops.CharmBase):
@@ -325,6 +268,12 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
 
     # --- config file rendering ---
 
+    def _render_template(self, template_name: str, context: dict) -> str:
+        """Render a Jinja2 template from src/templates/."""
+        loader = jinja2.FileSystemLoader(TEMPLATE_DIR)
+        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+        return env.get_template(template_name).render(**context)
+
     def _write_config(self, container):
         db = self._db_data()
         amqp = self._amqp_data()
@@ -339,7 +288,6 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             f"mysql+pymysql://{db['username']}:{db['password']}"
             f"@{db_host}:{db_port}/{db['database']}"
         )
-
         transport_url = (
             f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
@@ -349,63 +297,33 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             f"{identity.get('service_protocol', 'http')}://"
             f"{identity['service_host']}:{identity.get('service_port', '5000')}/v3"
         )
+        cafile = CA_BUNDLE_PATH if self._get_ca_cert() else ""
 
-        cfg = configparser.ConfigParser()
-
-        cfg["DEFAULT"] = {
+        context = {
+            "dmapi_workers": self.config["api-workers"],
             "transport_url": transport_url,
-            "auth_strategy": "keystone",
-            "log_dir": LOG_DIR,
-            # Write to stderr in addition to the log file so Pebble captures output
-            # and `kubectl logs` works without exec-ing into the container.
-            "use_stderr": "true",
-            "log_config_append": DMAPI_LOGGING_CONF_PATH,
-            "debug": str(self.config["debug"]).lower(),
-            "wlm_endpoint": wlm["wlm-api-url"],
-            # k8s: bind on all pod interfaces; service DNS handles intra-cluster routing
+            "app_name": self.app.name,
+            "dmapi_port": DMAPI_PORT,
             "my_ip": "0.0.0.0",
-            "dmapi_listen": "0.0.0.0",
-            "dmapi_listen_port": str(DMAPI_PORT),
-            "dmapi_link_prefix": f"http://{self.app.name}:{DMAPI_PORT}",
-            "dmapi_enabled_ssl_apis": "",
-            "dmapi_enabled_apis": "dmapi",
-            "bindir": "/usr/bin",
-            "dmapi_workers": str(self.config["api-workers"]),
-        }
-        cfg["database"] = {
-            "connection": db_url,
-        }
-        cfg["keystone_authtoken"] = {
+            "debug": str(self.config["debug"]).lower(),
+            "dmapi_logging_conf_path": DMAPI_LOGGING_CONF_PATH,
+            "wlm_endpoint": wlm["wlm-api-url"],
+            "log_dir": LOG_DIR,
+            "db_url": db_url,
             "auth_url": auth_url,
-            # www_authenticate_uri is required by keystonemiddleware for token validation.
-            # Without it the middleware cannot build the Keystone challenge URL and
-            # returns 401 on every authenticated request.
-            "www_authenticate_uri": auth_url,
-            "username": identity.get("service_username", "dmapi"),
-            "password": identity["service_password"],
-            "project_name": identity.get("service_tenant", "services"),
-            "user_domain_name": "Default",
-            "project_domain_name": "Default",
-            "auth_type": "password",
-            "service_token_roles_required": "True",
+            "keystone_project_name": identity.get("service_tenant", "services"),
+            "keystone_username": identity.get("service_username", "dmapi"),
+            "keystone_password": identity["service_password"],
+            "cafile": cafile,
         }
-        cfg["dmapi"] = {}
-        cfg["oslo_messaging_notifications"] = {
-            "driver": "noop",
-            "transport_url": transport_url,
-        }
-        cfg["oslo_messaging_rabbit"] = {
-            "heartbeat_in_pthread": "False",
-        }
-        cfg["oslo_middleware"] = {
-            "enable_proxy_headers_parsing": "True",
-        }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(CONFIG_PATH, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-datamover-api.conf.j2", context)
+        container.push(CONFIG_PATH, rendered, make_dirs=True)
         logger.info("Wrote %s", CONFIG_PATH)
-        container.push(DMAPI_LOGGING_CONF_PATH, DMAPI_LOGGING_CONF, make_dirs=True)
+        container.push(
+            DMAPI_LOGGING_CONF_PATH,
+            self._render_template("datamover_api_logging.conf.j2", {}),
+            make_dirs=True,
+        )
         logger.info("Wrote %s", DMAPI_LOGGING_CONF_PATH)
 
     def _write_dms_client_config(self, container):
@@ -423,25 +341,15 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
-
-        cfg = configparser.ConfigParser()
-        cfg["client"] = {
-            "request_timeout": "60",
-            "log_level": "INFO",
-            "log_file": "/var/log/triliovault/trilio-dms-client.log",
-            "log_max_bytes": "26214400",
-            "log_backup_count": "5",
-            "db_pool_size": "20",
-            "db_max_overflow": "40",
-            "db_pool_recycle": "3600",
+        context = {
             "rabbitmq_url": rabbitmq_url,
             "db_url": wlm.get("wlm-db-url", ""),
             "node_id": self.unit.name.replace("/", "-"),
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "log_file": "/var/log/triliovault/trilio-dms-client.log",
         }
-
-        buf = io.StringIO()
-        cfg.write(buf)
-        container.push(DMS_CLIENT_CONF, buf.getvalue(), make_dirs=True)
+        rendered = self._render_template("triliovault-dms-client.conf.j2", context)
+        container.push(DMS_CLIENT_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", DMS_CLIENT_CONF)
 
     # --- Pebble layer ---

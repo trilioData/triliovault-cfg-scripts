@@ -1,0 +1,58 @@
+[DEFAULT]
+dmapi_workers = {{ dmapi_workers }}
+transport_url = {{ transport_url }}
+dmapi_link_prefix = http://{{ app_name }}:{{ dmapi_port }}
+dmapi_enabled_ssl_apis =
+dmapi_listen_port = {{ dmapi_port }}
+dmapi_enabled_apis = dmapi
+bindir = /usr/bin
+instance_name_template = instance-%08x
+dmapi_listen = {{ my_ip }}
+my_ip = {{ my_ip }}
+debug = {{ debug }}
+log_config_append = {{ dmapi_logging_conf_path }}
+
+wlm_endpoint = {{ wlm_endpoint }}
+
+auth_strategy = keystone
+log_dir = {{ log_dir }}
+use_stderr = true
+
+
+[wsgi]
+ssl_cert_file =
+ssl_key_file =
+api_paste_config = /etc/triliovault-datamover/api-paste.ini
+
+[database]
+connection = {{ db_url }}
+connection_recycle_time = 600
+max_pool_size = 10
+max_retries = -1
+
+[keystone_authtoken]
+www_authenticate_uri = {{ auth_url }}
+auth_url = {{ auth_url }}
+auth_type = password
+project_name = {{ keystone_project_name }}
+username = {{ keystone_username }}
+password = {{ keystone_password }}
+{% if cafile %}cafile = {{ cafile }}
+{% else %}insecure = True
+{% endif %}
+signing_dir = /var/cache/dmapi
+project_domain_name = Default
+user_domain_name = Default
+service_token_roles_required = True
+
+[oslo_messaging_notifications]
+transport_url = {{ transport_url }}
+driver = noop
+
+[oslo_messaging_rabbit]
+heartbeat_in_pthread = False
+
+[oslo_middleware]
+enable_proxy_headers_parsing = True
+
+[dmapi]

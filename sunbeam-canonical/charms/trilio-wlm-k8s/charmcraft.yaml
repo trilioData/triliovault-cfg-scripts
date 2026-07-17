@@ -104,3 +104,41 @@ config:
       type: string
       default: "RegionOne"
       description: OpenStack region name
+    trustee-role:
+      type: string
+      default: "member, creator"
+      description: |
+        Keystone role(s) that WLM delegates via trusts during backup and restore.
+        Comma-separated. Must match the role(s) assigned to tenant users in Keystone.
+        For Caracal (2024.1) use "member, creator"; for older releases use "creator".
+    cloud-admin-role:
+      type: string
+      default: "admin"
+      description: Keystone role name of the cloud administrator.
+    cloud-admin-domain:
+      type: string
+      default: "admin_domain"
+      description: |
+        Keystone domain name (or ID) of the cloud administrator.
+        Sunbeam default is "admin_domain".
+    cloud-admin-user-id:
+      type: string
+      default: ""
+      description: |
+        Keystone UUID of the cloud admin user. Populate after deployment:
+          openstack user show admin -f value -c id
+        Leave empty if using trust-create action (WLM reads from DB after trust creation).
+    cloud-admin-project-id:
+      type: string
+      default: ""
+      description: |
+        Keystone UUID of the cloud admin project. Populate after deployment:
+          openstack project show admin -f value -c id
+        Leave empty if using trust-create action.
+    cloud-unique-id:
+      type: string
+      default: ""
+      description: |
+        Keystone UUID of the WLM service user. Uniquely identifies this WLM
+        deployment to other TrilioVault components. Populate after deployment:
+          openstack user show <wlm-service-username> -f value -c id
