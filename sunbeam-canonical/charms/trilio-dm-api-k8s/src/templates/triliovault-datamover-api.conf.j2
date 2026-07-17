@@ -41,8 +41,8 @@ password = {{ keystone_password }}
 {% else %}insecure = True
 {% endif %}
 signing_dir = /var/cache/dmapi
-project_domain_name = Default
-user_domain_name = Default
+project_domain_name = {{ service_domain_name }}
+user_domain_name = {{ service_domain_name }}
 service_token_roles_required = True
 
 [oslo_messaging_notifications]

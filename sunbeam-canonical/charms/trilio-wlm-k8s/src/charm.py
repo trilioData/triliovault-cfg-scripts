@@ -355,6 +355,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service_username": creds.get("username"),
             "service_password": creds.get("password"),
             "service_tenant": d.get("service-project-name", "services"),
+            "service_domain_name": d.get("service-domain-name", "Default"),
         }
 
     def _get_ca_cert(self):
@@ -461,6 +462,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "keystone_project_name": identity.get("service_tenant", "services"),
             "keystone_username": identity.get("service_username", "wlm"),
             "keystone_password": identity["service_password"],
+            "service_domain_name": identity.get("service_domain_name", "Default"),
             "cafile": cafile,
         }
         rendered = self._render_template("triliovault-wlm.conf.j2", context)

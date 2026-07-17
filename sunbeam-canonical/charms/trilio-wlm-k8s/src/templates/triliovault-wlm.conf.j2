@@ -99,8 +99,8 @@ auth_type = password
 username = {{ keystone_username }}
 password = {{ keystone_password }}
 
-user_domain_name = Default
-project_domain_name = Default
+user_domain_name = {{ service_domain_name }}
+project_domain_name = {{ service_domain_name }}
 
 insecure = False
 service_token_roles_required = True
