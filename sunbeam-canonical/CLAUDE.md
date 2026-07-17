@@ -96,6 +96,13 @@ Additionally:
 - `log_config_append = <path>` points to the per-service Python logging conf pushed by the charm
 - Log formatter classes: `workloadmgr.openstack.common.log.UTCFormatter`, `dmapi.common.log.UTCFormatter`, `contego.common.log.UTCFormatter`, `s3fuse.log.UTCFormatter`
 
+### workloadmgr CLI in Pebble exec — setsid required
+When the WLM charm runs `workloadmgr` via `container.exec()` (Pebble), the process inherits Pebble's controlling terminal (the container's `/dev/console`). `workloadmgr`'s cliff/cmd2 layer opens `/dev/tty` and calls `curses.cbreak()`, which fails on the container console with "cbreak() returned ERR".
+
+Fix: prefix the command with `setsid` — e.g. `["setsid", "workloadmgr", ...]`. `setsid` creates a new session with no controlling terminal, so `/dev/tty` open fails with ENXIO and cmd2 skips curses init gracefully.
+
+This issue does NOT appear with `kubectl exec -- bash -c '...'` because that path starts processes without a controlling terminal in the container, whereas Pebble (as container PID 1) inherits one from the kubelet.
+
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
