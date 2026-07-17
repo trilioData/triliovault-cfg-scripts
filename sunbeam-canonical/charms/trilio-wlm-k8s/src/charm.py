@@ -552,6 +552,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
         cfg["DEFAULT"] = {
             "transport_url": transport_url,
+            "sql_connection": db_url,
             "auth_strategy": "keystone",
             "log_dir": LOG_DIR,
             # Write to stderr in addition to the log file so Pebble captures output
