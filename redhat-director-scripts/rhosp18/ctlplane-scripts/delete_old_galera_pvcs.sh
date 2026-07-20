@@ -60,6 +60,11 @@ for i in $(seq 0 $((REPLICAS - 1))); do
   PVC="mysql-db-${OLD_CR}-galera-${i}"
   if oc get pvc "$PVC" -n "$APP_NAMESPACE" >/dev/null 2>&1; then
     oc delete pvc "$PVC" -n "$APP_NAMESPACE"
+    if oc get pvc "$PVC" -n "$APP_NAMESPACE" >/dev/null 2>&1; then
+      echo "ERROR: PVC $PVC still exists after delete (stuck terminating?). Aborting." >&2
+      exit 1
+    fi
+    echo "    OK: $PVC confirmed deleted."
   else
     echo "    WARNING: PVC $PVC already gone, skipping." >&2
   fi
