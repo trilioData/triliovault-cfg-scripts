@@ -81,5 +81,13 @@ if [ "$FAILED" -ne 0 ]; then
 fi
 
 echo ""
+echo "==> Galera PVCs in $APP_NAMESPACE (old + new):"
+oc get pvc -n "$APP_NAMESPACE" -l app=galera
+
+echo ""
+echo "==> Galera PVs:"
+oc get pv | grep -E "$(oc get pvc -n "$APP_NAMESPACE" -l app=galera -o jsonpath='{.items[*].spec.volumeName}' | tr ' ' '|')"
+
+echo ""
 echo "==> Done. Operator is paused (0 replicas) and old-cluster PVs are protected (Retain)."
 echo "==> New-cluster (trilio-db-cluster) PVCs/PVs were NOT touched."
