@@ -19,6 +19,9 @@ for i in $(seq 1 30); do
   PODCOUNT=$(oc get pods -n "$OPERATOR_NAMESPACE" -l control-plane=controller-manager --no-headers 2>/dev/null | wc -l)
   if [ -z "$READY" ] && [ "$PODCOUNT" -eq 0 ]; then
     echo "    Operator is fully scaled down (0 pods running)."
+    echo ""
+    echo "==> oc get pods -n $OPERATOR_NAMESPACE:"
+    oc get pods -n "$OPERATOR_NAMESPACE"
     break
   fi
   echo "    Still waiting... (readyReplicas=${READY:-0}, pods running=$PODCOUNT)"
@@ -28,11 +31,6 @@ for i in $(seq 1 30); do
     exit 1
   fi
 done
-
-echo ""
-echo "==> Verifying deployment state:"
-oc get deployment "$OPERATOR_DEPLOYMENT" -n "$OPERATOR_NAMESPACE"
-oc get pods -n "$OPERATOR_NAMESPACE"
 
 echo ""
 echo "==> Setting reclaim policy to Retain on the OLD ($OLD_CR) PVs only..."
