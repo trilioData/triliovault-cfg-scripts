@@ -1,7 +1,8 @@
 #!/bin/bash
-# TVAULT-7493 migration: delete the three OLD (trilio-galera-cluster) Galera
-# PVCs, after confirming their PVs are set to Retain. Does NOT touch the new
-# (trilio-db-cluster) PVCs/PVs.
+# TVAULT-7493 migration: delete the old (trilio-galera-cluster) Galera CR,
+# wait for its pods to terminate, then delete its three PVCs after confirming
+# their PVs are set to Retain. Does NOT touch the new (trilio-db-cluster)
+# CR/PVCs/PVs.
 #
 # Prerequisite: run pause_operator_and_retain_old_pvs.sh first so the operator
 # is paused and these PVs are already set to Retain.
@@ -13,10 +14,23 @@ REPLICAS=3
 
 echo "==> Checking whether the old Galera CR ($OLD_CR) still exists..."
 if oc get galera "$OLD_CR" -n "$APP_NAMESPACE" >/dev/null 2>&1; then
-  echo "    WARNING: CR $OLD_CR still exists. Delete it (and let its StatefulSet/pods terminate)" >&2
-  echo "    before deleting these PVCs, otherwise deletion may hang waiting for pods to release the volume." >&2
-  echo "    oc delete galera $OLD_CR -n $APP_NAMESPACE"
-  exit 1
+  echo "    Deleting CR $OLD_CR..."
+  oc delete galera "$OLD_CR" -n "$APP_NAMESPACE"
+
+  echo "    Waiting for its pods to terminate..."
+  for i in $(seq 1 30); do
+    PODCOUNT=$(oc get pods -n "$APP_NAMESPACE" -l "cr=galera-${OLD_CR}" --no-headers 2>/dev/null | wc -l)
+    if [ "$PODCOUNT" -eq 0 ]; then
+      echo "    OK: all $OLD_CR pods are gone."
+      break
+    fi
+    echo "    Still waiting... ($PODCOUNT pod(s) remaining)"
+    sleep 5
+    if [ "$i" -eq 30 ]; then
+      echo "ERROR: pods for $OLD_CR did not terminate within 150s. Aborting before touching PVCs." >&2
+      exit 1
+    fi
+  done
 else
   echo "    OK: CR $OLD_CR not found (already deleted or never existed here)."
 fi
