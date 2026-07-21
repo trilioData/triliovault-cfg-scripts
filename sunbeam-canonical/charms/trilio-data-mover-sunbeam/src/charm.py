@@ -31,6 +31,7 @@ import pathlib
 import shutil
 import socket
 import subprocess
+import time
 
 import ops
 
@@ -439,6 +440,11 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # UID while the user has running processes (tvault-contego, trilio-dms-server).
             for svc in (DATAMOVER_SERVICE, DMS_SERVICE):
                 subprocess.run(["systemctl", "stop", svc], check=False)
+            # Kill any nova processes that outlived the services (e.g. s3vaultfuse
+            # spawned as a child of trilio-dms that stays running after systemctl stop).
+            subprocess.run(["pkill", "--signal", "TERM", "-u", "nova"], check=False)
+            time.sleep(3)
+            subprocess.run(["pkill", "--signal", "KILL", "-u", "nova"], check=False)
             # Update nova user UID
             subprocess.run(
                 ["usermod", "--uid", str(NOVA_TARGET_UID),
