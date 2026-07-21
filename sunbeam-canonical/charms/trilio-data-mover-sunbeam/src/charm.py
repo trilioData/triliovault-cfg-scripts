@@ -19,9 +19,11 @@ and every compute node (this charm). The two instances communicate via RabbitMQ
 and handle NFS / S3 mount operations on their respective hosts.
 """
 
+import grp as _grp
 import hashlib
 import json
 import jinja2
+import pwd
 import re
 import logging
 import os
@@ -56,6 +58,7 @@ DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
 TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
+NOVA_TARGET_UID = 42436  # Standard OpenStack nova UID (Kolla, UCA, WLM container all use this)
 
 # Systemd unit for the DMS server on compute nodes.
 # python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
@@ -142,6 +145,11 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._write_nova_sudoers()
             self._install_rootwrap_filters()
             self._write_systemd_services()
+        except RuntimeError as e:
+            # Nova UID conflict — operator must set change-nova-user-id=true or fix manually
+            logger.error("Nova user UID conflict: %s", e)
+            self.unit.status = ops.BlockedStatus(str(e))
+            return
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
@@ -165,6 +173,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._write_nova_sudoers()
             self._install_rootwrap_filters()
             self._write_systemd_services()
+        except RuntimeError as e:
+            logger.error("Nova user UID conflict: %s", e)
+            self.unit.status = ops.BlockedStatus(str(e))
+            return
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
@@ -339,27 +351,109 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         logger.info("Trilio apt repo configured")
 
     def _ensure_nova_user(self):
-        """Create nova system user/group if absent, then add to disk and kvm groups.
+        """Create or normalize nova user to UID 42436.
 
-        python3-tvault-contego postinst runs usermod for nova. On Sunbeam compute
-        nodes nova-compute runs inside the openstack-hypervisor snap and no host-level
-        nova user is created by the snap, so the postinst fails without this.
-        nova needs disk+kvm group membership for libvirt/QEMU operations (mirrors
-        the kolla Dockerfile: usermod -aG disk,kvm nova).
+        Sunbeam compute nodes run nova-compute inside the openstack-hypervisor snap,
+        so no host-level nova user exists. If a legacy nova user exists (e.g. from
+        a nova-common deb install) with a different UID, the charm blocks by default
+        to avoid unintended system changes.  Set change-nova-user-id=true to allow
+        the UID update.  Both WLM containers and DataMover must use the same nova UID
+        (42436) to read/write the same NFS backup target.
+
+        Three cases:
+          1. nova user does not exist  → create fresh at UID 42436
+          2. nova user exists at 42436 → nothing to do
+          3. nova user exists at other UID:
+               change-nova-user-id=false → raise RuntimeError (blocks install)
+               change-nova-user-id=true  → update UID/GID, re-own nova-owned files
         """
         try:
-            subprocess.run(["getent", "passwd", "nova"], check=True,
-                           capture_output=True)
-        except subprocess.CalledProcessError:
-            subprocess.run(["addgroup", "--system", "nova"], check=False)
+            pw = pwd.getpwnam("nova")
+            current_uid = pw.pw_uid
+        except KeyError:
+            current_uid = None
+
+        if current_uid is None:
+            # Case 1: nova does not exist — create fresh at the correct UID
+            try:
+                _grp.getgrnam("nova")
+            except KeyError:
+                subprocess.run(
+                    ["groupadd", "--system", "--gid", str(NOVA_TARGET_UID), "nova"],
+                    check=False,  # ignore if GID is taken; fallback to system-assigned GID
+                )
             subprocess.run(
-                ["adduser", "--system", "--no-create-home",
-                 "--ingroup", "nova", "nova"],
+                ["useradd", "--system", "--no-create-home",
+                 "--uid", str(NOVA_TARGET_UID), "--gid", "nova",
+                 "--shell", "/usr/sbin/nologin", "nova"],
                 check=True,
             )
-            logger.info("Created system user nova")
-        for grp in ("disk", "kvm"):
-            subprocess.run(["usermod", "-aG", grp, "nova"], check=False)
+            logger.info("Created nova user at UID %d", NOVA_TARGET_UID)
+
+        elif current_uid == NOVA_TARGET_UID:
+            # Case 2: already correct
+            logger.info("nova user already at UID %d — no change needed", NOVA_TARGET_UID)
+
+        else:
+            # Case 3: nova exists but has a different UID
+            if not self.config.get("change-nova-user-id"):
+                raise RuntimeError(
+                    f"nova user exists with UID {current_uid} but UID {NOVA_TARGET_UID} is "
+                    f"required (WLM containers use {NOVA_TARGET_UID} for NFS access). "
+                    f"Set change-nova-user-id=true to allow automatic UID update, "
+                    f"or recreate nova at UID {NOVA_TARGET_UID} manually before deploying."
+                )
+            logger.info(
+                "change-nova-user-id=true: updating nova from UID %d to %d",
+                current_uid, NOVA_TARGET_UID,
+            )
+            # Update nova group GID first (usermod -g requires the group to exist at new GID)
+            try:
+                nova_grp = _grp.getgrnam("nova")
+                old_gid = nova_grp.gr_gid
+                if old_gid != NOVA_TARGET_UID:
+                    subprocess.run(
+                        ["groupmod", "--gid", str(NOVA_TARGET_UID), "nova"],
+                        check=True,
+                    )
+            except KeyError:
+                subprocess.run(
+                    ["groupadd", "--system", "--gid", str(NOVA_TARGET_UID), "nova"],
+                    check=True,
+                )
+                old_gid = None
+            # Update nova user UID
+            subprocess.run(
+                ["usermod", "--uid", str(NOVA_TARGET_UID),
+                 "--gid", str(NOVA_TARGET_UID), "nova"],
+                check=True,
+            )
+            # Re-own files in Trilio directories that were previously owned by old UID/GID.
+            # We scope to known Trilio directories rather than running find / (too expensive).
+            re_own_dirs = [
+                "/etc/triliovault-datamover", "/etc/triliovault-dms",
+                "/etc/triliovault-object-store",
+                "/var/log/triliovault", "/var/triliovault-mounts",
+                "/var/triliovault", "/opt/triliovault",
+            ]
+            for d in re_own_dirs:
+                if os.path.exists(d):
+                    subprocess.run(
+                        ["find", d, "-user", str(current_uid),
+                         "-exec", "chown", "nova:nova", "{}", "+"],
+                        check=False,
+                    )
+                    if old_gid is not None:
+                        subprocess.run(
+                            ["find", d, "-group", str(old_gid),
+                             "-exec", "chgrp", "nova", "{}", "+"],
+                            check=False,
+                        )
+            logger.info("Updated nova to UID %d and re-owned Trilio directories", NOVA_TARGET_UID)
+
+        # Always ensure disk and kvm group membership (needed for QEMU/libvirt operations)
+        for grp_name in ("disk", "kvm"):
+            subprocess.run(["usermod", "-aG", grp_name, "nova"], check=False)
 
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
