@@ -15,7 +15,7 @@ TrilioVault maps onto this cleanly:
 | DataMover API (dmapi) | `openstack` (k8s) | `trilio-dm-api-k8s` |
 | Dynamic Mount Service — control plane | `openstack` (k8s) | `trilio-dms-k8s` |
 | DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover-sunbeam` |
-| Horizon Plugin | `openstack` (k8s) | OCI image attach to `horizon-k8s` |
+| Horizon Plugin | `openstack` (k8s) | OCI image attach to `horizon` |
 
 `trilio-data-mover-sunbeam` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
 It installs both `tvault-contego` (DataMover) and `trilio-dms-server` (compute-side DMS) on every compute node.
@@ -27,113 +27,136 @@ When a new compute node joins via `sunbeam cluster join`, Juju automatically dep
 - `juju` CLI installed and logged in to the Sunbeam controller
 - NFS share or S3 bucket available for TrilioVault backup storage
 
-## Quick Start — Install
+## Install
+
+### Step 1 — Verify cross-model offers
+
+Sunbeam creates RabbitMQ and Keystone offers by default. Verify they exist:
 
 ```bash
-# Clone or download this repo
+juju find-offers --format=tabular | grep -E 'rabbitmq|keystone-credentials'
+```
+
+If missing, create them:
+
+```bash
+juju switch openstack
+juju offer rabbitmq:amqp
+juju offer keystone:identity-credentials
+```
+
+### Step 2 — Deploy control plane (k8s model)
+
+```bash
 git clone https://github.com/trilioData/triliovault-cfg-scripts.git
 cd triliovault-cfg-scripts/sunbeam-canonical
 
-# Install with NFS backup target
-bash install.sh --nfs-shares 192.168.1.10:/backup --trilio-version 6.2.1
-```
-
-See `bash install.sh --help` for all options including S3 backup target.
-
-## Quick Start — Upgrade
-
-```bash
-bash upgrade.sh --trilio-version 6.3.1
-```
-
-This upgrades all control plane k8s charms, the data plane subordinate, and the Horizon plugin OCI image.
-
-## Manual Deployment
-
-### 1. Control Plane (k8s model)
-
-```bash
 juju switch openstack
-
-# Offer cross-model relations for data plane
-juju offer rabbitmq:amqp
-juju offer keystone:identity-credentials
-
-# Deploy
 juju deploy ./trilio-ctlplane-bundle.yaml
 ```
 
-Configure NFS or S3 after deploy:
+All relations — including CA certificate distribution for Keystone TLS — are included in the bundle.
+
+**Verify:**
 
 ```bash
-# NFS
-juju config trilio-wlm-k8s backup-target-type=nfs nfs-shares=192.168.1.10:/backup
-
-# S3
-juju config trilio-wlm-k8s \
-  backup-target-type=s3 \
-  s3-access-key=<KEY> \
-  s3-secret-key=<SECRET> \
-  s3-bucket=<BUCKET> \
-  s3-region=<REGION>
+juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
+juju status trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s
+kubectl get pods -n openstack | grep trilio
 ```
 
-### 2. Data Plane (machine model)
+### Step 3 — Deploy data plane (machine model)
 
 ```bash
 juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml \
-  --config trilio-data-mover.nfs-shares=192.168.1.10:/backup
+juju deploy ./trilio-dataplane-bundle.yaml
 ```
 
-### 3. Horizon Plugin
+Cross-model RabbitMQ and Keystone relations are declared in the bundle's `saas:` section.
 
-Attach the Trilio Horizon OCI image to the `horizon-k8s` charm:
+**Verify:**
 
 ```bash
-juju attach-resource horizon-k8s \
-  horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:6.2.1-2024.1 \
+juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
+juju status trilio-data-mover
+```
+
+### Step 4 — Attach Horizon Plugin
+
+```bash
+juju attach-resource horizon \
+  horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:shyam-tv7404-12 \
   -m openstack
 ```
 
-Horizon reloads automatically — no restart required.
-
-### 4. CA Certificate (TLS)
-
-If your Sunbeam deployment uses TLS (self-signed or Vault), relate the WLM charm to Keystone's CA cert distributor so Python's `requests` library trusts internal endpoints:
+**Verify:**
 
 ```bash
-juju switch openstack
-juju relate trilio-wlm-k8s:receive-ca-cert keystone:send-ca-cert
+kubectl exec -n openstack horizon-0 -c horizon -- \
+  python3 -c 'import trilio_dashboard; print(trilio_dashboard.__file__)'
 ```
 
-This is required for WLM to reach Keystone over HTTPS. Skip if your cluster runs plain HTTP.
-
-### 5. Cloud Admin Trust
-
-TrilioVault needs a trust relationship between the WLM service user and the Cloud Admin
-so it can impersonate tenants during backup and restore operations.
-Run this once after the WLM charm reaches active status:
+### Step 5 — Post-install: Cloud Admin Trust and License
 
 ```bash
 juju switch openstack
 juju run trilio-wlm-k8s/leader create-cloud-admin-trust \
   password=<cloud-admin-password>
+
+juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+juju run trilio-wlm-k8s/leader create-license
 ```
 
-Optional params (defaults work for standard Sunbeam deployments):
-- `user-domain-name` (default: `admin_domain`)
-- `project-name` (default: `admin`)
-- `project-domain-name` (default: `admin_domain`)
+## Upgrade
 
-### 6. Apply License
-
-Attach the TrilioVault license file and apply it:
+### Step 1 — Upgrade control plane
 
 ```bash
 juju switch openstack
-juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
-juju run trilio-wlm-k8s/leader create-license
+juju refresh trilio-wlm-k8s    --channel latest/candidate
+juju refresh trilio-dm-api-k8s --channel latest/candidate
+juju refresh trilio-dms-k8s    --channel latest/candidate
+```
+
+**Verify:**
+
+```bash
+juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
+juju status trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s
+```
+
+### Step 2 — Upgrade data plane
+
+```bash
+juju switch openstack-machines
+juju config trilio-data-mover trilio-version=<new-version>
+juju refresh trilio-data-mover --channel latest/candidate
+```
+
+**Verify:**
+
+```bash
+juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
+juju status trilio-data-mover
+```
+
+### Step 3 — Upgrade Horizon plugin
+
+```bash
+juju attach-resource horizon \
+  horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:<new-tag> \
+  -m openstack
+```
+
+**Verify:**
+
+```bash
+kubectl exec -n openstack horizon-0 -c horizon -- \
+  python3 -c 'import trilio_dashboard; print(trilio_dashboard.__file__)'
 ```
 
 ## Charm Source Code
@@ -151,7 +174,6 @@ To build OCI images or Juju charms, the build machine must have Docker and charm
 A setup script is provided to prepare any Ubuntu machine in one step:
 
 **Supported OS**: Ubuntu 22.04 LTS (Jammy) or 24.04 LTS (Noble).
-Canonical's own sunbeam-charms CI targets Ubuntu 24.04 Noble; both versions work for Trilio builds.
 
 ```bash
 # Run from the repository root — idempotent, safe to re-run
@@ -180,7 +202,7 @@ Dockerfiles are in `docker/`:
 | `docker.io/trilio/trilio-wlm-canonical` | `sunbeam-canonical/docker/trilio-wlm/Dockerfile_2024.1` | `trilio-wlm-k8s` |
 | `docker.io/trilio/trilio-datamover-api-canonical` | `sunbeam-canonical/docker/trilio-datamover-api/Dockerfile_2024.1` | `trilio-dm-api-k8s` |
 | `docker.io/trilio/trilio-dms-canonical` | `sunbeam-canonical/docker/trilio-dms/Dockerfile` | `trilio-dms-k8s` |
-| `docker.io/trilio/trilio-horizon-plugin-canonical` | `sunbeam-canonical/docker/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon-k8s` attach-resource |
+| `docker.io/trilio/trilio-horizon-plugin-canonical` | `sunbeam-canonical/docker/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon` attach-resource |
 
 Build and publish all images:
 
