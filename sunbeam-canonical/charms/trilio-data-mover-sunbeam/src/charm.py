@@ -434,6 +434,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                     check=True,
                 )
                 old_gid = None
+            # Stop Trilio services before usermod — usermod refuses to change
+            # UID while the user has running processes (tvault-contego, trilio-dms-server).
+            for svc in (DATAMOVER_SERVICE, DMS_SERVICE):
+                subprocess.run(["systemctl", "stop", svc], check=False)
             # Update nova user UID
             subprocess.run(
                 ["usermod", "--uid", str(NOVA_TARGET_UID),
