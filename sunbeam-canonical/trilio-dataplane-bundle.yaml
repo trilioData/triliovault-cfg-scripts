@@ -22,6 +22,12 @@ saas:
 
 applications:
 
+  # Reference entry for the existing principal — not redeployed by this bundle.
+  # Juju requires all relation endpoints to be declared even for pre-existing apps.
+  openstack-hypervisor:
+    charm: openstack-hypervisor
+    channel: 2024.1/stable
+
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
     channel: latest/candidate
