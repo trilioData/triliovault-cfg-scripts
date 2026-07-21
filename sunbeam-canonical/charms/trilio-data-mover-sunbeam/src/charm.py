@@ -708,6 +708,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             old_hash = None
 
         if new_hash == old_hash:
+            # Content unchanged — still fix ownership in case nova GID changed
+            if os.path.exists(NOVA_CONF_COPY):
+                shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
+                os.chmod(NOVA_CONF_COPY, 0o640)
             return False
 
         os.makedirs(os.path.dirname(NOVA_CONF_COPY), exist_ok=True)
