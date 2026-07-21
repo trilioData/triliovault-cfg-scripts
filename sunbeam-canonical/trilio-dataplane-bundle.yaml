@@ -28,6 +28,7 @@ applications:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.trilio.io jammy main"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
+      change-nova-user-id: false  # Set true only if compute nodes have a legacy nova user at wrong UID
 
 relations:
   # Subordinate binding to the compute principal
