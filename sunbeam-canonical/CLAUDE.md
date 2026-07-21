@@ -129,6 +129,19 @@ Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit fil
 - `triliovault-dms.service` — runs `trilio-dms-server` as nova user, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
 - `triliovault-datamover.service` — runs tvault-contego as nova user with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
 
+### Nova user UID normalisation (data plane)
+WLM containers (trilio-wlm-k8s, trilio-dms-k8s) run as `nova` UID 42436. DataMover on compute nodes also runs as `nova` and writes to the same NFS backup target, so both sides must use the same UID.
+
+Sunbeam compute nodes run nova-compute inside the `openstack-hypervisor` snap as **root** — no host-level `nova` user exists. The charm creates one at UID 42436. If a legacy `nova` user exists (e.g. from a `nova-common` deb install at UID 116), the charm:
+- `change-nova-user-id=false` (default): sets `BlockedStatus` with an error message
+- `change-nova-user-id=true`: runs `groupmod`/`usermod` to move nova to UID/GID 42436 and re-owns Trilio directories
+
+**Before `usermod`**: stop Trilio services and then run `systemctl kill --kill-who=all --signal=SIGKILL <service>` for both `triliovault-datamover` and `triliovault-dms`. The `kill --kill-who=all` is required because `s3vaultfuse` (spawned by trilio-dms-server as a child process) can outlive `systemctl stop` and block `usermod` with "user is currently used by process".
+
+The `_ensure_nova_user()` check runs at the **top of `_configure()`** (not only in `_on_install()`). This means every event path — install, config-changed, relation-changed — enforces the check. Setting `change-nova-user-id=true` via `juju config` fires a `config-changed` event which triggers the UID update automatically.
+
+**`nova.conf` re-chown on stale ownership**: `_sync_nova_conf()` normally returns early (no file write) when nova.conf content has not changed. After a nova GID change, this leaves `/etc/triliovault-datamover/nova.conf` with the old GID — unreadable by the `nova` user. Fix: always call `shutil.chown(NOVA_CONF_COPY, user="root", group="nova")` even on the early-return path so ownership is corrected after every `_configure()` call.
+
 ### nova.conf and CA cert handling (data plane)
 The `openstack-hypervisor` snap's nova.conf is at `/var/snap/openstack-hypervisor/common/etc/nova/nova.conf` (root:root 640 — unreadable by the nova user). The charm copies it to `/etc/triliovault-datamover/nova.conf` (root:nova 640).
 

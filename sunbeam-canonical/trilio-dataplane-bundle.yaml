@@ -9,33 +9,38 @@
 #   juju switch openstack-machines
 #   juju deploy ./trilio-dataplane-bundle.yaml
 #
-# Cross-model SAAS relations pull amqp and keystone-credentials from the
-# openstack model.  Offer those relations first if not already offered:
-#   juju switch openstack
-#   juju offer rabbitmq:amqp
-#   juju offer keystone:identity-credentials
-#   juju switch openstack-machines
+# Cross-model SAAS offers are declared in the saas: section below.
+# Find the correct offer URLs for your deployment with:
+#   juju find-offers --format=tabular
+# Update the saas: urls to match your controller name (default: sunbeam-controller).
 
-bundle: machine
+saas:
+  rabbitmq:
+    url: sunbeam-controller:controller0/openstack.rabbitmq
+  keystone-credentials:
+    url: sunbeam-controller:controller0/openstack.keystone-credentials
 
 applications:
+
+  # Reference entry for the existing principal — not redeployed by this bundle.
+  # Juju requires all relation endpoints to be declared even for pre-existing apps.
+  openstack-hypervisor:
+    charm: openstack-hypervisor
+    channel: 2024.1/stable
 
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
     channel: latest/candidate
-    revision: 2
+    revision: 7
     options:
-      triliovault-pkg-source: "deb [trusted=yes] https://apt.trilio.io jammy main"
+      triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
+      change-nova-user-id: false  # Set true only if compute nodes have a legacy nova user at wrong UID
 
 relations:
   # Subordinate binding to the compute principal
   - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
-
-  # Cross-model SAAS relations.
-  # IMPORTANT: Replace "admin" with your actual Juju controller name.
-  # Find it with: juju controllers --format=tabular | grep '*'
-  # Replace "openstack" if you used a different name for the k8s model.
-  - [trilio-data-mover:amqp, admin/openstack.rabbitmq:amqp]
-  - [trilio-data-mover:identity-credentials, admin/openstack.keystone:identity-credentials]
+  # Cross-model relations via saas: aliases above
+  - [trilio-data-mover:amqp, rabbitmq:amqp]
+  - [trilio-data-mover:identity-credentials, keystone-credentials:identity-credentials]
