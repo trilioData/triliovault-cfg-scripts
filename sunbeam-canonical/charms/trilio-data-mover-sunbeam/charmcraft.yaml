@@ -50,7 +50,7 @@ config:
   options:
     triliovault-pkg-source:
       type: string
-      default: "deb [trusted=yes] https://apt.trilio.io jammy main"
+      default: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
       description: APT repository line for TrilioVault packages
     trilio-version:
       type: string
