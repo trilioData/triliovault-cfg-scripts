@@ -157,18 +157,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self.unit.status = ops.WaitingStatus("Waiting for amqp and identity-credentials relations")
 
     def _on_config_changed(self, event):
-        # Re-run nova UID check on every config change so that flipping
-        # change-nova-user-id=true immediately triggers the UID update without
-        # needing a separate upgrade-charm.
-        try:
-            self._ensure_nova_user()
-        except RuntimeError as e:
-            logger.error("Nova user UID conflict: %s", e)
-            self.unit.status = ops.BlockedStatus(str(e))
-            return
-        except subprocess.CalledProcessError as e:
-            self.unit.status = ops.BlockedStatus(f"Nova user setup failed: {e}")
-            return
         self._configure(event)
 
     def _on_upgrade_charm(self, event):
@@ -240,6 +228,19 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- core configure logic ---
 
     def _configure(self, event):
+        # Nova UID check runs on every configure path (install, relation-changed,
+        # config-changed) so no event can override a BlockedStatus set by install.
+        # _ensure_nova_user() is a fast no-op when nova is already at 42436.
+        try:
+            self._ensure_nova_user()
+        except RuntimeError as e:
+            logger.error("Nova user UID conflict: %s", e)
+            self.unit.status = ops.BlockedStatus(str(e))
+            return
+        except subprocess.CalledProcessError as e:
+            self.unit.status = ops.BlockedStatus(f"Nova user setup failed: {e}")
+            return
+
         missing = self._missing_relations()
         if missing:
             self.unit.status = ops.WaitingStatus(f"Waiting for: {', '.join(missing)}")
