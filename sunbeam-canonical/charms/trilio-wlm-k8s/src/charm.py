@@ -26,6 +26,9 @@ import socket
 
 import jinja2
 import ops
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.types import PatchType
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +37,14 @@ CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
 API_PASTE_PATH = "/etc/triliovault-wlm/api-paste.ini"
 WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
+# trilio_dms.client.DMSClient defaults a mount/unmount request's target `host`
+# to the *client's own* node_id when the request doesn't specify one — so this
+# must identify the control-plane DMS server, not WLM itself. trilio-dms-k8s
+# is deployed as a scale:1 singleton (like wlm-cron), so its pod name is
+# deterministic: "<app-name>-0". Falls back to this same value itself when its
+# own K8S_NODE_NAME downward-api lookup is unavailable (see its charm.py
+# _get_node_name()), so the two sides stay consistent.
+DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 LOG_DIR = "/var/log/triliovault"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
@@ -71,7 +82,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.leader_elected, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
-        for rel in ("database", "amqp", "identity_service"):
+        for rel in ("database", "amqp", "amqp_dms", "identity_service"):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
@@ -84,6 +95,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 getattr(self.on, f"{rel}_relation_changed"), self._on_ingress_relation_changed
             )
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
+        self.framework.observe(self.on.amqp_dms_relation_joined, self._on_amqp_dms_relation_joined)
         self.framework.observe(self.on.database_relation_joined, self._on_database_relation_joined)
         self.framework.observe(
             self.on.identity_service_relation_joined,
@@ -125,6 +137,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             event.relation.data[self.app]["username"] = "wlm"
             event.relation.data[self.app]["vhost"] = "wlm"
+
+    def _on_amqp_dms_relation_joined(self, event):
+        """Second amqp relation requesting the *dmapi* vhost (not WLM's own `wlm` vhost).
+
+        The trilio_dms client library talks to the DMS server's `trilio_dms`
+        exchange, which lives in the `dmapi` vhost (trilio-dms-k8s's own amqp
+        relation requests the same username/vhost "since they communicate via
+        shared RabbitMQ queues" — see trilio-dms-k8s/src/charm.py). Requesting
+        the same existing username/vhost here is idempotent — rabbitmq-k8s
+        returns the same already-provisioned user/password.
+        """
+        if self.unit.is_leader():
+            event.relation.data[self.app]["username"] = "dmapi"
+            event.relation.data[self.app]["vhost"] = "dmapi"
 
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
@@ -267,6 +293,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
+        self._patch_fuse_device()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -303,6 +330,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             missing.append("database")
         if not self._amqp_data():
             missing.append("amqp")
+        if not self._amqp_dms_data():
+            missing.append("amqp-dms")
         if not self._identity_data():
             missing.append("identity-service")
         return missing
@@ -323,6 +352,17 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _amqp_data(self):
         """rabbitmq-k8s: provider writes hostname and password into its application databag."""
         rel = self.model.get_relation("amqp")
+        if not rel or not rel.app:
+            return None
+        d = rel.data[rel.app]
+        host = d.get("hostname") or d.get("host")
+        if host and d.get("password"):
+            return {**dict(d), "host": host}
+        return None
+
+    def _amqp_dms_data(self):
+        """rabbitmq-k8s: dmapi-vhost credentials for the DMS RPC channel (see amqp-dms relation)."""
+        rel = self.model.get_relation("amqp-dms")
         if not rel or not rel.app:
             return None
         d = rel.data[rel.app]
@@ -356,7 +396,75 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service_password": creds.get("password"),
             "service_tenant": d.get("service-project-name", "services"),
             "service_domain_name": d.get("service-domain-name", "Default"),
+            "service_domain_id": d.get("service-domain-id", "default"),
         }
+
+    def _patch_fuse_device(self):
+        """Grant the workload container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
+
+        Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
+        securityContext/host-device access, so this patches the underlying
+        StatefulSet directly via the Kubernetes API. Requires `juju trust`
+        (already set on this app in trilio-ctlplane-bundle.yaml) — without it
+        the API call fails with a 403 and the unit falls back to WaitingStatus.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = (
+            target.securityContext and target.securityContext.privileged
+            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "securityContext": {"privileged": True},
+                                "volumeMounts": [
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "dev-fuse",
+                                "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with FUSE device access", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -463,6 +571,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "keystone_username": identity.get("service_username", "wlm"),
             "keystone_password": identity["service_password"],
             "service_domain_name": identity.get("service_domain_name", "Default"),
+            "service_domain_id": identity.get("service_domain_id", "default"),
             "cafile": cafile,
         }
         rendered = self._render_template("triliovault-wlm.conf.j2", context)
@@ -485,12 +594,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM.
 
-        The DMS client inside WLM connects to WLM's own database (not DMAPI's).
-        Uses WLM's own RabbitMQ user/vhost (wlm/wlm).
+        Db url is WLM's own database (not DMAPI's). RabbitMQ must use the
+        *dmapi* vhost (amqp-dms relation) — the DMS server's `trilio_dms`
+        exchange lives there, not in WLM's own `wlm` vhost (see amqp-dms
+        relation docstring and DMS_SERVER_NODE_ID above for why).
         Written once — all four WLM services (wlm-api, wlm-workloads, wlm-cron,
         wlm-scheduler) share the same container filesystem and read this file.
         """
-        amqp = self._amqp_data()
+        amqp_dms = self._amqp_dms_data()
         db = self._db_data()
 
         endpoint = db["endpoints"].split(",")[0].strip()
@@ -501,14 +612,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         rabbitmq_url = (
-            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
-            f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'wlm')}"
+            f"rabbit://{amqp_dms.get('username', 'dmapi')}:{amqp_dms['password']}"
+            f"@{amqp_dms['host']}:{amqp_dms.get('port', '5672')}"
+            f"/{amqp_dms.get('vhost', 'dmapi')}"
         )
         context = {
             "rabbitmq_url": rabbitmq_url,
             "db_url": db_url,
-            "node_id": self.unit.name.replace("/", "-"),
+            "node_id": DMS_SERVER_NODE_ID,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_file": "/var/log/triliovault/trilio-dms-client.log",
         }

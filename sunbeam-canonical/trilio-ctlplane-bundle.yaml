@@ -19,7 +19,7 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: latest/candidate
-    revision: 3
+    revision: 5
     scale: 1
     trust: true
     options:
@@ -39,7 +39,7 @@ applications:
   trilio-dms-k8s:
     charm: trilio-dms-k8s
     channel: latest/candidate
-    revision: 2
+    revision: 4
     scale: 1
     trust: true
     options:
@@ -49,6 +49,9 @@ relations:
   # WLM relations
   - [trilio-wlm-k8s:database, mysql:database]
   - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
+  # WLM's DMS RPC channel needs the *dmapi* vhost, not its own `wlm` vhost —
+  # trilio-dms-k8s's own amqp relation requests this same username/vhost.
+  - [trilio-wlm-k8s:amqp-dms, rabbitmq:amqp]
   - [trilio-wlm-k8s:identity-service, keystone:identity-service]
   - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
   - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]

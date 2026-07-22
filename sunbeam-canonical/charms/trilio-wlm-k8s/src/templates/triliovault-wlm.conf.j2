@@ -99,8 +99,16 @@ auth_type = password
 username = {{ keystone_username }}
 password = {{ keystone_password }}
 
+# Trilio needs the deprecated keystonemiddleware v2 admin_* aliases too —
+# workloadmgr's trust-create path (context.trusts_auth_plugin) builds its
+# Keystone auth plugin from admin_user/admin_password, not username/password.
+admin_user = {{ keystone_username }}
+admin_password = {{ keystone_password }}
+admin_tenant_name = {{ keystone_project_name }}
+
 user_domain_name = {{ service_domain_name }}
 project_domain_name = {{ service_domain_name }}
+user_domain_id = {{ service_domain_id }}
 
 insecure = False
 service_token_roles_required = True

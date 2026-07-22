@@ -47,6 +47,9 @@ requires:
   amqp:
     interface: rabbitmq
     limit: 1
+  amqp-dms:
+    interface: rabbitmq
+    limit: 1
   identity-service:
     interface: keystone
     limit: 1

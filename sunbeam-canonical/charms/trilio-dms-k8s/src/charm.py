@@ -22,6 +22,9 @@ import os
 
 import jinja2
 import ops
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.types import PatchType
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +75,7 @@ class TrilioDmsK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
+        self._patch_fuse_device()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -106,6 +110,73 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         if host and d.get("password"):
             return {**dict(d), "host": host}
         return None
+
+    def _patch_fuse_device(self):
+        """Grant the workload container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
+
+        Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
+        securityContext/host-device access, so this patches the underlying
+        StatefulSet directly via the Kubernetes API. Requires `juju trust`
+        (already set on this app in trilio-ctlplane-bundle.yaml) — without it
+        the API call fails with a 403 and the unit falls back to WaitingStatus.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = (
+            target.securityContext and target.securityContext.privileged
+            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "securityContext": {"privileged": True},
+                                "volumeMounts": [
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "dev-fuse",
+                                "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with FUSE device access", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
