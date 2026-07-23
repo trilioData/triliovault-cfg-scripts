@@ -136,6 +136,13 @@ encryption_support = True
 
 [oslo_messaging_rabbit]
 heartbeat_in_pthread = False
+# Must match nova.conf's rabbit_quorum_queue on the compute nodes — contego
+# (which loads nova.conf alongside its own config) declares its RPC queues as
+# quorum queues there. A mismatch means whichever side declares a shared-name
+# queue second gets a 406 PRECONDITION_FAILED from RabbitMQ for the
+# conflicting durability flag (quorum queues are always durable).
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+amqp_durable_queues = {{ amqp_durable_queues }}
 
 [wlm]
 

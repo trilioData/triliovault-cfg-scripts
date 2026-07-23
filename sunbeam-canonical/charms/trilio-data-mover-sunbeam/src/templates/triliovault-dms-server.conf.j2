@@ -27,3 +27,9 @@ log_backup_count = 5
 
 # Parallel worker threads for different (host, backup_target_id) pairs
 worker_threads = 10
+
+# Must match nova.conf's rabbit_quorum_queue — a mismatched durability flag
+# on a shared-name queue gets a 406 PRECONDITION_FAILED from RabbitMQ
+# (quorum/stream queues are always durable).
+rabbitmq_queue_type = {{ rabbitmq_queue_type }}
+rabbitmq_queue_durable = {{ rabbitmq_queue_durable }}

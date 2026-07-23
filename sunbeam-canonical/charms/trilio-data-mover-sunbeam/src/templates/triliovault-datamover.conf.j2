@@ -25,6 +25,13 @@ use_local = True
 
 [oslo_messaging_rabbit]
 ssl = false
+# nova.conf (loaded alongside this file) already sets rabbit_quorum_queue,
+# but state it explicitly here too so it can't silently drift from
+# dm-api/DMS/WLM's own value — a mismatched durability flag on a shared-name
+# queue gets a 406 PRECONDITION_FAILED from RabbitMQ (quorum queues are
+# always durable).
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+amqp_durable_queues = {{ amqp_durable_queues }}
 
 [barbican]
 barbican_endpoint_type = internal

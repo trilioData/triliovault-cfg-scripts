@@ -62,6 +62,26 @@ config:
       type: boolean
       default: false
       description: Enable debug logging
+    rabbit-quorum-queue:
+      type: boolean
+      default: true
+      description: |
+        Must match nova.conf's rabbit_quorum_queue on this compute node.
+        Applied to both contego's oslo_messaging_rabbit section and this
+        charm's own compute-side DMS server (mapped to trilio_dms's
+        rabbitmq_queue_type: quorum when true, classic when false). A
+        mismatched durability flag on a shared-name queue gets a 406
+        PRECONDITION_FAILED from RabbitMQ.
+    amqp-durable-queues:
+      type: boolean
+      default: true
+      description: |
+        Standard oslo.messaging amqp_durable_queues setting, applied to
+        contego's oslo_messaging_rabbit section. Also maps to trilio_dms's
+        rabbitmq_queue_durable for this charm's own compute-side DMS server
+        (quorum/stream queue types there are always durable regardless of
+        this setting — only affects behavior when rabbit-quorum-queue is
+        false / classic queue type).
     wlm-db-url:
       type: string
       default: ""

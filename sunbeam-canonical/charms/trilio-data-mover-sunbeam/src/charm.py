@@ -561,6 +561,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "dm_config_path": DM_CONFIG_PATH,
             "debug": str(self.config["debug"]).lower(),
             "cafile": cafile,
+            "rabbit_quorum_queue": str(self.config.get("rabbit-quorum-queue", True)).lower(),
+            "amqp_durable_queues": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         self._write_file(DM_CONFIG_PATH, self._render_template("triliovault-datamover.conf.j2", context))
         logger.info("Wrote %s", DM_CONFIG_PATH)
@@ -596,6 +598,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "cafile": cafile,
             "log_file": DMS_LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "rabbitmq_queue_type": "quorum" if self.config.get("rabbit-quorum-queue", True) else "classic",
+            "rabbitmq_queue_durable": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         self._write_file(DMS_CONFIG_PATH, self._render_template("triliovault-dms-server.conf.j2", context))
         logger.info("Wrote %s", DMS_CONFIG_PATH)

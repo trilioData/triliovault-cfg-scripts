@@ -327,6 +327,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             "keystone_password": identity["service_password"],
             "service_domain_name": identity.get("service_domain_name", "Default"),
             "cafile": cafile,
+            "rabbit_quorum_queue": str(self.config.get("rabbit-quorum-queue", True)).lower(),
+            "amqp_durable_queues": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         rendered = self._render_template("triliovault-datamover-api.conf.j2", context)
         container.push(CONFIG_PATH, rendered, make_dirs=True)

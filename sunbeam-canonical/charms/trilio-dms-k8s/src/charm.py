@@ -325,6 +325,8 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             "log_file": LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "worker_threads": self.config["worker-threads"],
+            "rabbitmq_queue_type": "quorum" if self.config.get("rabbit-quorum-queue", True) else "classic",
+            "rabbitmq_queue_durable": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         rendered = self._render_template("triliovault-dms-server.conf.j2", context)
         container.push(SERVER_CONF, rendered, make_dirs=True)
