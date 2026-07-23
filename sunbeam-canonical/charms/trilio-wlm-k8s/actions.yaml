@@ -26,8 +26,18 @@ create-cloud-admin-trust:
 
 create-license:
   description: |
-    Apply the TrilioVault license file.
-    Attach the license file as a Juju resource first, then run this action:
+    Apply the TrilioVault license file. The file must already exist inside the
+    trilio-wlm workload container (e.g. via
+    `kubectl cp <license-file> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm`),
+    then run:
 
-      juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
-      juju run trilio-wlm-k8s/leader create-license
+      juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+
+    OpenStack credentials are read automatically from the identity-service
+    relation (the WLM service account) — no password parameter needed.
+  params:
+    license-file-path:
+      type: string
+      description: Path to the license file inside the trilio-wlm workload container
+  required:
+    - license-file-path

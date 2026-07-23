@@ -210,11 +210,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_create_license_action(self, event):
         """Action: apply TrilioVault license.
 
-        The license file must be attached as a Juju resource first:
-          juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+        The license file must already exist inside the trilio-wlm workload
+        container (copy it there first, e.g.
+        `kubectl cp <file> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm`),
+        then pass its in-container path as license-file-path.
 
-        Runs 'workloadmgr license-create' inside the workload container using the
-        WLM service credentials from the identity-service relation.
+        Auth uses the WLM service account from the identity-service relation
+        (the same credentials the old charm-trilio-wlm's create_license()
+        action used) — no password parameter needed.
+
+        'workloadmgr license-create' shows the EULA text via curses and
+        blocks on a real keypress ('y' to accept) before it ever calls the
+        API — this is NOT the same controlling-terminal issue trust-create
+        works around with setsid; it's an actual interactive prompt. Feeding
+        "y\\n" via exec()'s stdin answers that prompt non-interactively.
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -227,28 +236,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Workload container not ready")
             return
-        try:
-            license_path = self.model.resources.fetch("license")
-        except Exception:
-            event.fail(
-                "License resource not attached. Run: "
-                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
-            )
-            return
-        if not license_path.stat().st_size:
-            event.fail(
-                "License resource is empty. Attach the license file first: "
-                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
-            )
-            return
-        container_license_path = "/tmp/trilio-license.dat"
-        container.push(container_license_path, license_path.read_bytes(), make_dirs=True)
+        license_file_path = event.params["license-file-path"]
         auth_url = (
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
         )
-        # setsid detaches the process from Pebble's controlling terminal so that
-        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
         cmd = [
             "setsid",
             "workloadmgr",
@@ -259,19 +251,17 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", "service_domain",
             "--os-project-name", identity["service_tenant"],
             "--os-region-name", self.config.get("region", "RegionOne"),
-            "license-create", container_license_path,
+            "license-create", license_file_path, "-f", "json",
         ]
         try:
-            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
+            process = container.exec(
+                cmd, environment={"TERM": "xterm"}, stdin="y\n",
+            )
+            out, err = process.wait_output()
             logger.info("license-create output: %s", out)
-            event.set_results({"result": "License applied successfully"})
+            event.set_results({"result": "License applied successfully", "output": out})
         except Exception as e:
             event.fail(f"license-create failed: {e}")
-        finally:
-            try:
-                container.exec(["rm", "-f", container_license_path]).wait()
-            except Exception:
-                pass
 
     def _send_relation_requests(self):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
