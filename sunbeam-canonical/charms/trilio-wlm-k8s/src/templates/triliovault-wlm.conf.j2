@@ -32,7 +32,7 @@ domain_name = {{ cloud_admin_domain }}
 
 {% if cloud_unique_id %}cloud_unique_id = {{ cloud_unique_id }}
 {% endif %}
-triliovault_user_domain_id = default
+triliovault_user_domain_id = {{ service_domain_id }}
 region_name_for_services = {{ region_name_for_services }}
 global_job_scheduler_override = False
 

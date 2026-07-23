@@ -19,6 +19,8 @@ saas:
     url: sunbeam-controller:controller0/openstack.rabbitmq
   keystone-credentials:
     url: sunbeam-controller:controller0/openstack.keystone-credentials
+  cert-distributor:
+    url: sunbeam-controller:controller0/openstack.cert-distributor
 
 applications:
 
@@ -44,3 +46,8 @@ relations:
   # Cross-model relations via saas: aliases above
   - [trilio-data-mover:amqp, rabbitmq:amqp]
   - [trilio-data-mover:identity-credentials, keystone-credentials:identity-credentials]
+  # Without this, tvault-contego's ca-bundle.pem never gets written by
+  # _write_ca_cert() (it early-returns when no cert is available), leaving a
+  # stale/incorrectly-owned file in place — SSL verification against Keystone
+  # then fails with a permission error when contego runs as the nova user.
+  - [trilio-data-mover:receive-ca-cert, cert-distributor:send-ca-cert]

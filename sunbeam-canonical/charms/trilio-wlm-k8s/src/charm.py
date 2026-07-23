@@ -46,6 +46,13 @@ DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 # _get_node_name()), so the two sides stay consistent.
 DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+# DMS mounts NFS/S3 backup targets only inside its own pod's mount namespace —
+# invisible to WLM's separate pod. Both containers hostPath-mount this SAME
+# host directory (see _patch_shared_vault_mount) with propagation so DMS's
+# mount becomes visible here too. Requires WLM's pod to land on the same node
+# as trilio-dms-k8s-0 (enforced via podAffinity in the patch below).
+VAULT_MOUNTS_PATH = "/var/triliovault-mounts"
+VAULT_MOUNTS_HOSTPATH = "/var/lib/trilio/vault-mounts"
 LOG_DIR = "/var/log/triliovault"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -167,6 +174,21 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         Must be run once after deployment before TrilioVault can perform backups.
         Runs 'workloadmgr trust-create' inside the workload container using the
         admin credentials supplied as action params.
+
+        Two prerequisites this action does NOT set up for you, both needed
+        before backup-target-create/workload-create will actually work:
+          - The admin user must hold the "admin" role at *system* scope, not
+            just on its own project/domain — a fresh Sunbeam admin user only
+            has domain-scoped admin, which isn't enough to act as a true
+            cross-domain cloud admin:
+              openstack role add --user admin --user-domain admin_domain \\
+                --system all admin
+          - cloud-admin-user-id / cloud-admin-project-id charm config options
+            must be set to this same admin user/project's Keystone IDs —
+            backup-target-create looks the trust up by those config values,
+            not dynamically from the trust record itself:
+              juju config trilio-wlm-k8s \\
+                cloud-admin-user-id=<id> cloud-admin-project-id=<id>
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -198,7 +220,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", event.params.get("project-domain-name", "admin_domain"),
             "--os-region-name", self.config.get("region", "RegionOne"),
             "--endpoint-type", "admin",
-            "trust-create", "--is_cloud_trust", "True", "Admin",
+            # Role name is case-sensitive and must match the actual Keystone
+            # role exactly ("admin", lowercase) — "Admin" silently fails with
+            # "Invalid roles ['Admin']" since Keystone has no such role.
+            "trust-create", "--is_cloud_trust", "True", "admin",
         ]
         try:
             out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
@@ -284,6 +309,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _configure(self, event):
         self._send_relation_requests()
         self._patch_fuse_device()
+        self._patch_shared_vault_mount()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -455,6 +481,99 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             logger.info("Patched StatefulSet %s with FUSE device access", name)
         except Exception as e:
             logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
+
+    def _patch_shared_vault_mount(self):
+        """hostPath-mount VAULT_MOUNTS_PATH so DMS's NFS/S3 mounts become visible here.
+
+        DMS performs the actual `mount` syscall inside its own pod — normally
+        invisible to WLM's separate pod. Both containers hostPath-mount the SAME
+        host directory; DMS's side uses `mountPropagation: Bidirectional` (push
+        its mounts up to the host), this side uses `HostToContainer` (receive
+        mounts made on the host). hostPath is node-local, so this also pins WLM's
+        pod to the same node as trilio-dms-k8s-0 via podAffinity — without it the
+        two pods can land on different nodes (observed happening by default on
+        this 3-node cluster) and no propagation is possible.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = any(
+            vm.name == "vault-mounts" for vm in (target.volumeMounts or [])
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "affinity": {
+                            "podAffinity": {
+                                "requiredDuringSchedulingIgnoredDuringExecution": [
+                                    {
+                                        "labelSelector": {
+                                            "matchExpressions": [
+                                                {
+                                                    "key": "app.kubernetes.io/name",
+                                                    "operator": "In",
+                                                    "values": ["trilio-dms-k8s"],
+                                                }
+                                            ]
+                                        },
+                                        "topologyKey": "kubernetes.io/hostname",
+                                    }
+                                ]
+                            }
+                        },
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "volumeMounts": [
+                                    {
+                                        "name": "vault-mounts",
+                                        "mountPath": VAULT_MOUNTS_PATH,
+                                        "mountPropagation": "HostToContainer",
+                                    }
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "vault-mounts",
+                                "hostPath": {
+                                    "path": VAULT_MOUNTS_HOSTPATH,
+                                    "type": "DirectoryOrCreate",
+                                },
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with shared vault mount", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for shared vault mount: %s", name, e)
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""

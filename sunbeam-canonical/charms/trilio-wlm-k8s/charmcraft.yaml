@@ -89,19 +89,21 @@ config:
       description: Enable debug logging for all WLM services
     nova-endpoint:
       type: string
-      default: "http://nova-k8s.openstack.svc.cluster.local:8774/v2.1"
+      # Sunbeam's nova-k8s charm's own k8s Service is named "nova" (not
+      # "nova-k8s" — that's the *application*/charm name, a different thing).
+      default: "http://nova.openstack.svc.cluster.local:8774/v2.1"
       description: Nova internal endpoint URL for WLM to call
     neutron-endpoint:
       type: string
-      default: "http://neutron-k8s.openstack.svc.cluster.local:9696"
+      default: "http://neutron.openstack.svc.cluster.local:9696"
       description: Neutron internal endpoint URL for WLM to call
     cinder-endpoint:
       type: string
-      default: "http://cinder-k8s.openstack.svc.cluster.local:8776/v3/%(tenant_id)s"
+      default: "http://cinder.openstack.svc.cluster.local:8776/v3/%(tenant_id)s"
       description: Cinder internal endpoint URL for WLM to call
     glance-endpoint:
       type: string
-      default: "http://glance-k8s.openstack.svc.cluster.local:9292"
+      default: "http://glance.openstack.svc.cluster.local:9292"
       description: Glance internal endpoint URL for WLM to call
     region:
       type: string

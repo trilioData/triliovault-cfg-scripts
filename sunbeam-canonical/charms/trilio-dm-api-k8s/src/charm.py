@@ -242,16 +242,24 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     def _get_ca_bundle_env(self):
         """Return env dict with REQUESTS_CA_BUNDLE when a CA cert is configured."""
         if self._get_ca_cert():
-            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.pem"}
+            return {"REQUESTS_CA_BUNDLE": CA_BUNDLE_PATH}
         return {}
 
     def _write_ca_cert(self, container):
-        """Write CA bundle into the container and refresh the system trust store."""
+        """Write CA bundle into the container and refresh the system trust store.
+
+        Must match CA_BUNDLE_PATH (.crt) — _write_config()'s cafile= setting
+        (line ~303) points there, and dmapi's own outbound requests (e.g. the
+        contego_vast_instance relay) read this exact path directly. Writing a
+        differently-named file here left cafile= pointing at a file that never
+        existed, causing "Could not find a suitable TLS CA certificate bundle"
+        on every outbound HTTPS call once a CA cert was actually configured.
+        """
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
         container.push(
-            "/usr/local/share/ca-certificates/ca-bundle.pem",
+            CA_BUNDLE_PATH,
             ca_cert,
             make_dirs=True,
         )
