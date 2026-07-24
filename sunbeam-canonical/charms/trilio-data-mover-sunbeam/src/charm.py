@@ -479,8 +479,17 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                         )
             logger.info("Updated nova to UID %d and re-owned Trilio directories", NOVA_TARGET_UID)
 
-        # Always ensure disk and kvm group membership (needed for QEMU/libvirt operations)
-        for grp_name in ("disk", "kvm"):
+        # Always ensure disk and kvm group membership (needed for QEMU/libvirt operations).
+        # root: openstack-hypervisor's libvirtd runs inside a snap whose confinement
+        # blocks chowning its control socket to any other group (unix_sock_group in
+        # libvirtd.conf fails with "Operation not permitted" for e.g. group "kvm"), so
+        # the socket stays root:root 0770. Membership in root grants contego group-level
+        # access without needing the socket's own permissions loosened to all users, and
+        # persists automatically across every libvirtd restart (the socket itself is
+        # recreated fresh each time, so anything applied to the file directly — a chmod,
+        # a POSIX ACL — would need to be reapplied after every restart; group membership
+        # doesn't have that problem since it's a property of the user, not the socket).
+        for grp_name in ("disk", "kvm", "root"):
             subprocess.run(["usermod", "-aG", grp_name, "nova"], check=False)
 
     def _install_packages(self):

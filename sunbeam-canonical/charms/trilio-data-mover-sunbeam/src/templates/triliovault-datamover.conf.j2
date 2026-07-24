@@ -38,3 +38,11 @@ barbican_endpoint_type = internal
 verify_ssl = {{ 'true' if cafile else 'false' }}
 {% if cafile %}verify_ssl_path = {{ cafile }}
 {% endif %}
+
+[libvirt]
+# openstack-hypervisor's own embedded libvirtd listens on a snap-confined socket
+# path, not the standard system path (/var/run/libvirt/libvirt-sock) contego's
+# libvirt-python bindings default to — without this, every contego libvirt call
+# (freeze/thaw, disk snapshot, etc) fails with "Failed to connect socket ...:
+# No such file or directory".
+connection_uri = qemu+unix:///system?socket=/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock
