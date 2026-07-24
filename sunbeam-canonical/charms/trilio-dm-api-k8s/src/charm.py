@@ -376,6 +376,15 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     # --- Pebble layer ---
 
     def _update_pebble_layer(self, container):
+        # Pin to the dmapi user (created by python3-dmapi's own postinst,
+        # normalized to uid/gid 42436 by nova_userid.sh in the Dockerfile —
+        # see that Dockerfile's chown -R dmapi:dmapi on its data directories).
+        # Juju's k8s sidecar packaging otherwise runs Pebble services as root
+        # by default, overriding the image's own "USER dmapi" directive.
+        # dm-api is out of scope for the WLM/DMS/datamover root-vs-nova
+        # experiment (see nova-user-known-good-state.md) — it doesn't touch
+        # the shared NFS backup-target filesystem, so it always runs as its
+        # own dmapi user regardless of how that experiment concludes.
         layer = ops.pebble.Layer({
             "summary": "TrilioVault DM-API",
             "services": {
@@ -385,6 +394,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
                     "command": f"/usr/bin/dmapi-api --config-file {CONFIG_PATH}",
                     "startup": "enabled",
                     "environment": self._get_ca_bundle_env(),
+                    "user": "dmapi",
+                    "group": "dmapi",
                 }
             },
         })

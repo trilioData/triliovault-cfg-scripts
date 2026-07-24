@@ -366,14 +366,10 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _update_pebble_layer(self, container):
-        # Pin the service to the nova user (uid/gid 42436, already created and
-        # chowned to in the image — see nova_userid.sh in the Dockerfile).
-        # Juju's k8s sidecar packaging otherwise runs Pebble services as root
-        # by default, silently overriding the image's own "USER nova"
-        # directive — which is why directories this service creates on the
-        # shared backup-target NFS mount end up root:root instead of
-        # nova:nova, blocking contego (running as nova on the compute node)
-        # from writing into them afterward.
+        # TVAULT-7404 root-user experiment: previously pinned this service to
+        # user/group nova (uid/gid 42436) to match contego's identity on the
+        # compute side — see nova-user-known-good-state.md for that approach
+        # and how to roll back to it. Trying root here instead.
         layer = ops.pebble.Layer({
             "summary": "TrilioVault DMS server",
             "services": {
@@ -386,8 +382,6 @@ class TrilioDmsK8sCharm(ops.CharmBase):
                     ),
                     "startup": "enabled",
                     "environment": self._get_ca_bundle_env(),
-                    "user": "nova",
-                    "group": "nova",
                 }
             },
         })

@@ -96,8 +96,10 @@ Description=TrilioVault Dynamic Mount Service
 After=network.target
 
 [Service]
-User=nova
-Group=nova
+# TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
+# rollback). Was User=nova/Group=nova.
+User=root
+Group=root
 Type=simple
 Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/trilio-dms-server --config-file /etc/triliovault-dms/server.conf
@@ -122,8 +124,10 @@ StartLimitIntervalSec=120
 StartLimitBurst=3
 
 [Service]
-User=nova
-Group=nova
+# TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
+# rollback). Was User=nova/Group=nova.
+User=root
+Group=root
 Type=simple
 Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
@@ -197,7 +201,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._install_packages()
             self._create_directories()
             self._write_nova_sudoers()
-            self._write_libvirt_connect_wrapper()
             self._install_rootwrap_filters()
             self._write_systemd_services()
         except RuntimeError as e:
@@ -226,7 +229,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # the unit content may have changed between Trilio releases.
             self._create_directories()
             self._write_nova_sudoers()
-            self._write_libvirt_connect_wrapper()
             self._install_rootwrap_filters()
             self._write_systemd_services()
         except RuntimeError as e:
@@ -535,18 +537,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                         )
             logger.info("Updated nova to UID %d and re-owned Trilio directories", NOVA_TARGET_UID)
 
-        # Always ensure disk and kvm group membership (needed for QEMU/libvirt operations).
-        # root: openstack-hypervisor's libvirtd runs inside a snap whose confinement
-        # blocks chowning its control socket to any other group (unix_sock_group in
-        # libvirtd.conf fails with "Operation not permitted" for e.g. group "kvm"), so
-        # the socket stays root:root 0770. Membership in root grants contego group-level
-        # access without needing the socket's own permissions loosened to all users, and
-        # persists automatically across every libvirtd restart (the socket itself is
-        # recreated fresh each time, so anything applied to the file directly — a chmod,
-        # a POSIX ACL — would need to be reapplied after every restart; group membership
-        # doesn't have that problem since it's a property of the user, not the socket).
-        for grp_name in ("disk", "kvm", "root"):
-            subprocess.run(["usermod", "-aG", grp_name, "nova"], check=False)
+        # TVAULT-7404 root-user experiment: contego/DMS now run as root (see
+        # DATAMOVER_SYSTEMD_UNIT/DMS_SYSTEMD_UNIT), so the disk/kvm/root group
+        # memberships previously granted here for socket/device access are no
+        # longer needed — root already has full access to those regardless of
+        # group. See nova-user-known-good-state.md for the nova-user approach
+        # this replaces and how to roll back to it.
 
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
@@ -597,27 +593,13 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             with open(fuse_conf, "a") as f:
                 f.write("\nuser_allow_other\n")
 
-        # contego creates external-snapshot working files here during backup.
-        # /var/snap/openstack-hypervisor/.../instances/ itself is root:root 755
-        # (nova-compute runs as root inside the hypervisor snap) — nova has no
-        # write access to it and can't create the subdirectory itself. Charm
-        # hooks run as root, so create it once. Left root:root (matching the
-        # hypervisor snap's own ownership of everything else under instances/)
-        # with group-write added — nova already belongs to the root group (see
-        # _ensure_nova_user), same access pattern as the libvirt socket fix.
-        os.makedirs(NOVA_INSTANCES_SNAPSHOTS_DIR, exist_ok=True)
-        os.chown(NOVA_INSTANCES_SNAPSHOTS_DIR, 0, 0)
-        os.chmod(NOVA_INSTANCES_SNAPSHOTS_DIR, 0o770)
-
-        # contego's own staging tempfiles (Backend._get_temp_file_path) default
-        # to CONF.instances_path itself, not the snapshots/ subdirectory above.
-        # kolla and RHOSO18 never configure a staging-dir override for this —
-        # they don't need to, since nova-compute runs AS the nova user there,
-        # so instances/ is already nova:nova. Sunbeam's is root:root (nova runs
-        # as root in the snap), so we grant the same group-write access here
-        # instead of diverging into a separate Trilio-owned staging path,
-        # keeping contego's actual behaviour consistent with the other platforms.
-        os.chmod(NOVA_INSTANCES_DIR, 0o770)
+        # TVAULT-7404 root-user experiment: contego now runs as root, so it
+        # already has full access to instances/ and can create its own
+        # snapshots/ subdirectory and staging tempfiles there without any
+        # permission grant — the group-write chmods previously applied here
+        # (for when contego ran as nova) are no longer needed. See
+        # nova-user-known-good-state.md for that approach and how to roll
+        # back to it.
 
         logger.info("Directories created")
 
@@ -723,45 +705,29 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._write_file(DMS_CLIENT_CONF_PATH, self._render_template("triliovault-dms-client.conf.j2", context))
         logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
 
-    # openstack-hypervisor's embedded libvirtd resolves the connecting peer's uid
-    # via its own snap-confined /etc/passwd, which is a point-in-time bind-mount
-    # snapshot taken when the snap's daemons last started — it predates the host's
-    # nova user and libvirtd rejects the connection with "Failed to find user
-    # record for uid '42436'". Routing the connection through a root-owned peer
-    # (uid 0, always present in any /etc/passwd) sidesteps the lookup entirely;
-    # see LIBVIRT_CONNECT_WRAPPER_PATH / connection_uri in triliovault-datamover.conf.j2.
-    # TVAULT-7404: may be reverted in favour of a different fix later.
-    LIBVIRT_CONNECT_WRAPPER_PATH = "/usr/local/bin/contego-libvirt-connect"
+    # TVAULT-7404 root-user experiment: contego now runs as root (see
+    # DATAMOVER_SYSTEMD_UNIT), so root always resolves in libvirtd's own
+    # snap-confined passwd view and the qemu+ext:// sudo-wrapped-nc relay
+    # (previously needed to make the socket-connecting peer look like root
+    # while contego itself ran as nova) is no longer needed — connection_uri
+    # in triliovault-datamover.conf.j2 goes back to a plain qemu+unix:// path.
+    # See nova-user-known-good-state.md for that approach and how to roll
+    # back to it.
     LIBVIRT_SOCKET_PATH = "/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock"
 
     def _write_nova_sudoers(self):
-        """Write sudoers rules for nova privsep-helper and the libvirt-connect wrapper."""
+        """Write sudoers rule for nova privsep-helper (mirrors kolla nova-sudoers).
+
+        Pre-existing (predates the qemu+nc libvirt fix removed above) — kept
+        as-is; unrelated to the root-user experiment.
+        """
         sudoers_path = "/etc/sudoers.d/nova-sudoers"
-        content = (
-            "nova ALL=(root) NOPASSWD: /usr/bin/privsep-helper *\n"
-            f"nova ALL=(root) NOPASSWD: /usr/bin/nc -U {self.LIBVIRT_SOCKET_PATH}\n"
-        )
+        content = "nova ALL=(root) NOPASSWD: /usr/bin/privsep-helper *\n"
         os.makedirs("/etc/sudoers.d", exist_ok=True)
         with open(sudoers_path, "w") as f:
             f.write(content)
         os.chmod(sudoers_path, 0o440)
         logger.info("Wrote %s", sudoers_path)
-
-    def _write_libvirt_connect_wrapper(self):
-        """Write the qemu+ext:// helper contego's connection_uri shells out to.
-
-        libvirtd's confined passwd view has no entry for the host's nova uid (see
-        comment above LIBVIRT_CONNECT_WRAPPER_PATH). Making the socket-connecting
-        peer root (uid 0) instead of nova avoids the lookup — root always resolves.
-        """
-        content = (
-            "#!/bin/sh\n"
-            f"exec sudo -n /usr/bin/nc -U {self.LIBVIRT_SOCKET_PATH}\n"
-        )
-        with open(self.LIBVIRT_CONNECT_WRAPPER_PATH, "w") as f:
-            f.write(content)
-        os.chmod(self.LIBVIRT_CONNECT_WRAPPER_PATH, 0o755)
-        logger.info("Wrote %s", self.LIBVIRT_CONNECT_WRAPPER_PATH)
 
     # --- ceph-client relation: fetch contego's own Ceph credentials ---
 

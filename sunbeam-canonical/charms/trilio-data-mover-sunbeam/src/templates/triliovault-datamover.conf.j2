@@ -40,15 +40,17 @@ verify_ssl = {{ 'true' if cafile else 'false' }}
 {% endif %}
 
 [libvirt]
-# openstack-hypervisor's embedded libvirtd resolves the connecting peer's uid via
-# its own snap-confined /etc/passwd — a point-in-time bind-mount snapshot taken
-# when the snap's daemons last started, which predates the host's nova user. A
-# direct qemu+unix:// connection (as nova, uid 42436) fails with "Failed to find
-# user record for uid '42436'" once past the socket-permission stage. Routing the
-# connection through contego-libvirt-connect (sudo-wrapped nc, connects as root)
-# makes the peer uid 0, which always resolves — sidestepping the lookup entirely.
-# TVAULT-7404: may be reverted to qemu+unix:// if a different fix is adopted.
-connection_uri = qemu+ext:///system?command=/usr/local/bin/contego-libvirt-connect
+# openstack-hypervisor's embedded libvirtd listens on a snap-confined socket
+# path, not the standard system path (/var/run/libvirt/libvirt-sock) contego's
+# libvirt-python bindings default to — without this, every contego libvirt call
+# (freeze/thaw, disk snapshot, etc) fails with "Failed to connect socket ...:
+# No such file or directory".
+# TVAULT-7404 root-user experiment: contego now runs as root, so the earlier
+# qemu+ext:// sudo-wrapped-nc relay (needed to make the peer look like root
+# while contego ran as nova) is unnecessary — plain qemu+unix:// works since
+# root always resolves in libvirtd's own confined passwd. See
+# nova-user-known-good-state.md for that approach and how to roll back to it.
+connection_uri = qemu+unix:///system?socket=/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock
 {% if ceph_backend_enabled %}
 # Matches kolla-ansible's own datamover conf (rendered when cinder_backend_ceph
 # is true) and RHOSO18's libvirt_images_rbd_ceph_conf default — feeds Nova's own
