@@ -30,6 +30,13 @@ applications:
     charm: openstack-hypervisor
     channel: 2024.1/stable
 
+  # Reference entry for the existing microceph application (same model as
+  # trilio-data-mover — no saas: cross-model entry needed, unlike rabbitmq/
+  # keystone-credentials/cert-distributor above which live in a different model).
+  microceph:
+    charm: microceph
+    channel: squid/stable
+
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
     channel: latest/candidate
@@ -51,3 +58,8 @@ relations:
   # stale/incorrectly-owned file in place — SSL verification against Keystone
   # then fails with a permission error when contego runs as the nova user.
   - [trilio-data-mover:receive-ca-cert, cert-distributor:send-ca-cert]
+  # contego's own Ceph client credentials for rbd commands against Ceph-backed
+  # Cinder volumes attached to instances — see ceph-client relation handling
+  # in charm.py. Not needed for Nova's own attach flow (that's dynamic, via
+  # Cinder's connection_info), only for contego's direct rbd CLI use.
+  - [trilio-data-mover:ceph, microceph:ceph]
