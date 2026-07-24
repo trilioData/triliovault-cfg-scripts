@@ -743,6 +743,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _build_pebble_layer(self):
         # Binaries are named workloadmgr-* (confirmed from the installed package).
         # The Pebble service names (keys) are kept as wlm-* for readability.
+        #
+        # Juju's k8s sidecar charm packaging runs Pebble (and, by default, every
+        # service it launches) as root, silently overriding the image's own
+        # "USER nova" directive. That mismatch is exactly why directories these
+        # services create on the shared backup-target NFS mount end up
+        # root:root instead of nova:nova — contego (running as nova on the
+        # compute node) then can't write into them. "user"/"group" here pin
+        # each service back to the identity the image was actually built for
+        # (nova already exists at UID/GID 42436 — see nova_userid.sh in the
+        # Dockerfile — and the relevant directories are already chowned to it).
         cmd_base = f"/usr/bin/{{}} --config-file {CONFIG_PATH}"
         env = self._get_ca_bundle_env()
         services = {
@@ -752,6 +762,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 "command": cmd_base.format("workloadmgr-api"),
                 "startup": "enabled",
                 "environment": env,
+                "user": "nova",
+                "group": "nova",
             },
             "wlm-workloads": {
                 "override": "replace",
@@ -759,6 +771,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 "command": cmd_base.format("workloadmgr-workloads"),
                 "startup": "enabled",
                 "environment": env,
+                "user": "nova",
+                "group": "nova",
             },
             "wlm-scheduler": {
                 "override": "replace",
@@ -766,6 +780,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 "command": cmd_base.format("workloadmgr-scheduler"),
                 "startup": "enabled",
                 "environment": env,
+                "user": "nova",
+                "group": "nova",
             },
         }
         # wlm-cron must run as a single instance cluster-wide.
@@ -779,6 +795,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "command": cmd_base.format("workloadmgr-cron"),
             "startup": "enabled" if self.unit.is_leader() else "disabled",
             "environment": env,
+            "user": "nova",
+            "group": "nova",
         }
         return ops.pebble.Layer({"summary": "TrilioVault WLM services", "services": services})
 
