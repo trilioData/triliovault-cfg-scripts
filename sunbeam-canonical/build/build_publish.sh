@@ -12,25 +12,41 @@
 #   --mode     build-only        Pack charms; do not upload or release
 #              publish-only      Upload/release pre-built .charm files; skip pack
 #              build-and-publish Pack, upload, and release charms
-#   --channel  Charmhub channel to release to (default: 2024.1/edge)
+#   --channel  Charmhub channel to release to (required — no default; always
+#              use the full track/risk form, e.g. 6.2/candidate)
 #
 # Charm names on Charmhub:
-#   trilio-wlm-k8s
+#   trilio-wlm-k8s            (also carries the embedded DMS sidecar image as
+#                              an additional resource — trilio-dms-image, see
+#                              note below)
 #   trilio-dm-api-k8s
-#   trilio-dms-k8s
 #   trilio-data-mover-sunbeam
 #
+# Note: there is no separate trilio-dms-k8s charm as of 2026-07-25 — the
+# Dynamic Mount Service control-plane instance is now a second container
+# embedded directly in trilio-wlm-k8s's own pod (1:1 with each WLM replica).
+#
+# OCI image resources are NOT uploaded by this script — it only re-releases
+# whatever resource revisions are already on Charmhub. If you've rebuilt any
+# image (via devops-build-publish.sh), upload it as a fresh resource first:
+#   charmcraft upload-resource trilio-wlm-k8s trilio-wlm-image --image=docker.io/trilio/trilio-wlm-canonical:<tag>
+#   charmcraft upload-resource trilio-wlm-k8s trilio-dms-image --image=docker.io/trilio/trilio-dms-canonical:<tag>
+#   charmcraft upload-resource trilio-dm-api-k8s trilio-dm-api-image --image=docker.io/trilio/trilio-datamover-api-canonical:<tag>
+# then note the new resource revision number(s) and pass them via
+# `charmcraft release ... --resource=<name>:<rev>` yourself — this script
+# does not currently automate that step.
+#
 # Examples:
-#   bash build_publish.sh --charms all --mode build-and-publish --channel 2024.1/stable
+#   bash build_publish.sh --charms all --mode build-and-publish --channel 6.2/candidate
 #   bash build_publish.sh --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
-#   bash build_publish.sh --charms all --mode publish-only --channel 2024.1/stable
+#   bash build_publish.sh --charms all --mode publish-only --channel 6.2/candidate
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHARMS_DIR="$(dirname "$SCRIPT_DIR")/charms"
 
-CHANNEL="2024.1/edge"
+CHANNEL=""
 MODE=""
 CHARMS_ARG=""
 
@@ -38,10 +54,9 @@ CHARMS_ARG=""
 declare -A CHARM_DIR_MAP=(
     [trilio-wlm-k8s]="trilio-wlm-k8s"
     [trilio-dm-api-k8s]="trilio-dm-api-k8s"
-    [trilio-dms-k8s]="trilio-dms-k8s"
     [trilio-data-mover-sunbeam]="trilio-data-mover-sunbeam"
 )
-ALL_CHARMS=(trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s trilio-data-mover-sunbeam)
+ALL_CHARMS=(trilio-wlm-k8s trilio-dm-api-k8s trilio-data-mover-sunbeam)
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -58,18 +73,26 @@ Usage: $0 --charms <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
   --mode     build-only        Pack charms; do not upload or release
              publish-only      Upload/release pre-built .charm files; skip pack
              build-and-publish Pack, upload, and release charms
-  --channel  Charmhub channel (default: 2024.1/edge)
+  --channel  Charmhub channel — required for publish-only/build-and-publish.
+             Always use the full track/risk form, e.g. 6.2/candidate.
 
 Charms:
-  trilio-wlm-k8s            WorkloadManager (k8s)
+  trilio-wlm-k8s            WorkloadManager (k8s) — also carries the embedded
+                             DMS sidecar image as resource trilio-dms-image
   trilio-dm-api-k8s         DataMover API (k8s)
-  trilio-dms-k8s            Dynamic Mount Service (k8s)
   trilio-data-mover-sunbeam DataMover on compute nodes (machine subordinate)
 
+Note: there is no separate trilio-dms-k8s charm as of 2026-07-25 — DMS is
+now a second container embedded in trilio-wlm-k8s's own pod. This script
+does NOT upload OCI image resources — if you rebuilt any image, upload it
+yourself first with 'charmcraft upload-resource' and pass the resulting
+revision to 'charmcraft release --resource=name:rev' (see comments at the
+top of this script for the exact commands).
+
 Examples:
-  $0 --charms all --mode build-and-publish --channel 2024.1/stable
+  $0 --charms all --mode build-and-publish --channel 6.2/candidate
   $0 --charms trilio-wlm-k8s,trilio-dm-api-k8s --mode build-only
-  $0 --charms all --mode publish-only --channel 2024.1/stable
+  $0 --charms all --mode publish-only --channel 6.2/candidate
 
 Options:
   -h, --help   Show this help and exit.
@@ -112,6 +135,10 @@ case "$MODE" in
     build-only|publish-only|build-and-publish) ;;
     *) die "Invalid --mode '$MODE'. Use: build-only | publish-only | build-and-publish" ;;
 esac
+
+if [[ "$MODE" != "build-only" ]]; then
+    [[ -n "$CHANNEL" ]] || die "--channel is required for mode '$MODE' (e.g. 6.2/candidate)"
+fi
 
 # Expand 'all' or validate comma-separated names
 SELECTED_CHARMS=()
@@ -165,6 +192,9 @@ for charm in "${SELECTED_CHARMS[@]}"; do
     log "[$charm] Uploaded as revision $revision"
 
     log "[$charm] Releasing revision $revision to $CHANNEL ..."
+    log "[$charm] NOTE: this keeps whichever resource revisions were last released for this charm/channel."
+    log "[$charm]       If you rebuilt an OCI image, upload it first (charmcraft upload-resource ...) and"
+    log "[$charm]       re-run with an explicit 'charmcraft release ... --resource=name:rev' yourself instead."
     charmcraft release "$charm" --revision "$revision" --channel "$CHANNEL"
     log "[$charm] Released to $CHANNEL"
 done
