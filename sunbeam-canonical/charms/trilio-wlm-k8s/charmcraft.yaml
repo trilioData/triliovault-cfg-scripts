@@ -124,14 +124,22 @@ config:
       description: OpenStack region name
     trustee-role:
       type: string
-      default: "member, creator, admin"
+      default: "member, creator"
       description: |
-        Keystone role(s) that WLM delegates via trusts during backup and restore.
-        Comma-separated. Must match the role(s) assigned to tenant users in Keystone.
-        "admin" is required on Caracal (2024.1) and later — Nova's Secure RBAC
-        policy restricts the OS-EXT-SRV-ATTR:host field (dm-api needs it to
-        route contego RPCs to the right compute host) to the admin role;
-        without it, contego calls fail with a KeyError on that field.
+        Keystone role(s) delegated via the *per-tenant* workload trust that
+        workloadmgr's own runtime code creates automatically for each project
+        (not the separate cloud-admin trust — that one is unrelated to this
+        option and always requests "admin" directly, hardcoded in the
+        create-cloud-admin-trust action, matching the older charm-trilio-wlm
+        reactive charm's own behavior). Comma-separated. Must match the
+        role(s) assigned to tenant users in Keystone. Matches the value used
+        by known-working charm-trilio-wlm reference deployments on the same
+        OpenStack release (Caracal/2024.1) — "admin" is not required here;
+        it was previously included by mistake, conflating this per-tenant
+        trust with the cloud-admin trust's own, separate, legitimate need
+        for admin (Nova's Secure RBAC gates the OS-EXT-SRV-ATTR:host field,
+        which dm-api needs to route contego RPCs, behind admin context —
+        but only the cloud-admin trust actually needs to satisfy that check).
     rabbit-quorum-queue:
       type: boolean
       default: true
