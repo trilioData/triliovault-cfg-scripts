@@ -50,7 +50,7 @@ applications:
 
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
-    channel: latest/candidate
+    channel: 6.2/candidate
     revision: 9
     options:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
