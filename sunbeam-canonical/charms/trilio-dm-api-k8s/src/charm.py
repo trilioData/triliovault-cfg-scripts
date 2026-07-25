@@ -142,6 +142,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._write_ca_cert(container)
+        self._ensure_log_permissions(container)
         if self.unit.is_leader():
             self._db_sync(container)
         self._update_pebble_layer(container)
@@ -242,21 +243,44 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     def _get_ca_bundle_env(self):
         """Return env dict with REQUESTS_CA_BUNDLE when a CA cert is configured."""
         if self._get_ca_cert():
-            return {"REQUESTS_CA_BUNDLE": "/usr/local/share/ca-certificates/ca-bundle.pem"}
+            return {"REQUESTS_CA_BUNDLE": CA_BUNDLE_PATH}
         return {}
 
     def _write_ca_cert(self, container):
-        """Write CA bundle into the container and refresh the system trust store."""
+        """Write CA bundle into the container and refresh the system trust store.
+
+        Must match CA_BUNDLE_PATH (.crt) — _write_config()'s cafile= setting
+        (line ~303) points there, and dmapi's own outbound requests (e.g. the
+        contego_vast_instance relay) read this exact path directly. Writing a
+        differently-named file here left cafile= pointing at a file that never
+        existed, causing "Could not find a suitable TLS CA certificate bundle"
+        on every outbound HTTPS call once a CA cert was actually configured.
+        """
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
         container.push(
-            "/usr/local/share/ca-certificates/ca-bundle.pem",
+            CA_BUNDLE_PATH,
             ca_cert,
             make_dirs=True,
         )
         container.exec(["update-ca-certificates"]).wait()
         logger.info("CA bundle written to container")
+
+    def _ensure_log_permissions(self, container):
+        """Force LOG_DIR (and its contents) back to dmapi:dmapi ownership.
+
+        The Dockerfile chowns this directory at build time, but the pebble
+        service always runs as user=dmapi/group=dmapi (_update_pebble_layer),
+        so any log file that ends up root-owned at runtime (e.g. left behind
+        from a period where the container ran as root) makes oslo_log's
+        FileHandler fail with PermissionError on every startup. dmapi-api then
+        exits immediately, pebble restarts it, and it fails again in a ~30s
+        crash loop — silently, since the process never gets far enough to log
+        anywhere but stdout. Re-chown on every _configure() run so this
+        self-heals regardless of how the file got into a bad state.
+        """
+        container.exec(["chown", "-R", "dmapi:dmapi", LOG_DIR]).wait()
 
     def _db_sync(self, container):
         """Run DMAPI database migrations (idempotent; leader only).
@@ -319,6 +343,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             "keystone_password": identity["service_password"],
             "service_domain_name": identity.get("service_domain_name", "Default"),
             "cafile": cafile,
+            "rabbit_quorum_queue": str(self.config.get("rabbit-quorum-queue", True)).lower(),
+            "amqp_durable_queues": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         rendered = self._render_template("triliovault-datamover-api.conf.j2", context)
         container.push(CONFIG_PATH, rendered, make_dirs=True)
@@ -366,6 +392,15 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     # --- Pebble layer ---
 
     def _update_pebble_layer(self, container):
+        # Pin to the dmapi user (created by python3-dmapi's own postinst,
+        # normalized to uid/gid 42436 by nova_userid.sh in the Dockerfile —
+        # see that Dockerfile's chown -R dmapi:dmapi on its data directories).
+        # Juju's k8s sidecar packaging otherwise runs Pebble services as root
+        # by default, overriding the image's own "USER dmapi" directive.
+        # dm-api is out of scope for the WLM/DMS/datamover root-vs-nova
+        # experiment (see nova-user-known-good-state.md) — it doesn't touch
+        # the shared NFS backup-target filesystem, so it always runs as its
+        # own dmapi user regardless of how that experiment concludes.
         layer = ops.pebble.Layer({
             "summary": "TrilioVault DM-API",
             "services": {
@@ -375,6 +410,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
                     "command": f"/usr/bin/dmapi-api --config-file {CONFIG_PATH}",
                     "startup": "enabled",
                     "environment": self._get_ca_bundle_env(),
+                    "user": "dmapi",
+                    "group": "dmapi",
                 }
             },
         })

@@ -22,6 +22,9 @@ import os
 
 import jinja2
 import ops
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.types import PatchType
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +36,16 @@ DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
+# DMS performs the actual `mount` syscall for NFS/S3 backup targets inside its
+# own pod — normally invisible to WLM's/DMAPI's separate pods. All three
+# hostPath-mount this SAME host directory (see _patch_shared_vault_mount);
+# this side uses `mountPropagation: Bidirectional` to push mounts made here up
+# to the host's mount namespace, where WLM/DMAPI's `HostToContainer` mounts of
+# the same hostPath pick them up. hostPath is node-local, so WLM/DMAPI use
+# podAffinity to pin themselves to this pod's node — this side needs none,
+# it's the affinity anchor.
+VAULT_MOUNTS_PATH = "/var/triliovault-mounts"
+VAULT_MOUNTS_HOSTPATH = "/var/lib/trilio/vault-mounts"
 
 
 
@@ -72,6 +85,8 @@ class TrilioDmsK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
+        self._patch_fuse_device()
+        self._patch_shared_vault_mount()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -106,6 +121,146 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         if host and d.get("password"):
             return {**dict(d), "host": host}
         return None
+
+    def _patch_fuse_device(self):
+        """Grant the workload container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
+
+        Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
+        securityContext/host-device access, so this patches the underlying
+        StatefulSet directly via the Kubernetes API. Requires `juju trust`
+        (already set on this app in trilio-ctlplane-bundle.yaml) — without it
+        the API call fails with a 403 and the unit falls back to WaitingStatus.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = (
+            target.securityContext and target.securityContext.privileged
+            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "securityContext": {"privileged": True},
+                                "volumeMounts": [
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "dev-fuse",
+                                "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with FUSE device access", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
+
+    def _patch_shared_vault_mount(self):
+        """hostPath-mount VAULT_MOUNTS_PATH with Bidirectional propagation.
+
+        This is the anchor side of the shared vault mount (see module docstring
+        constant comment and trilio-wlm-k8s's charm.py _patch_shared_vault_mount
+        for the receiving side). Mounts DMS performs under VAULT_MOUNTS_PATH
+        propagate up to the host here, becoming visible to WLM's/DMAPI's own
+        hostPath mounts of the same host directory (once their pods are
+        scheduled onto this same node via their podAffinity rules).
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = any(
+            vm.name == "vault-mounts" for vm in (target.volumeMounts or [])
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "volumeMounts": [
+                                    {
+                                        "name": "vault-mounts",
+                                        "mountPath": VAULT_MOUNTS_PATH,
+                                        "mountPropagation": "Bidirectional",
+                                    }
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "vault-mounts",
+                                "hostPath": {
+                                    "path": VAULT_MOUNTS_HOSTPATH,
+                                    "type": "DirectoryOrCreate",
+                                },
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with shared vault mount", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for shared vault mount: %s", name, e)
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -170,6 +325,8 @@ class TrilioDmsK8sCharm(ops.CharmBase):
             "log_file": LOG_FILE,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "worker_threads": self.config["worker-threads"],
+            "rabbitmq_queue_type": "quorum" if self.config.get("rabbit-quorum-queue", True) else "classic",
+            "rabbitmq_queue_durable": str(self.config.get("amqp-durable-queues", True)).lower(),
         }
         rendered = self._render_template("triliovault-dms-server.conf.j2", context)
         container.push(SERVER_CONF, rendered, make_dirs=True)
@@ -209,6 +366,10 @@ class TrilioDmsK8sCharm(ops.CharmBase):
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _update_pebble_layer(self, container):
+        # TVAULT-7404 root-user experiment: previously pinned this service to
+        # user/group nova (uid/gid 42436) to match contego's identity on the
+        # compute side — see nova-user-known-good-state.md for that approach
+        # and how to roll back to it. Trying root here instead.
         layer = ops.pebble.Layer({
             "summary": "TrilioVault DMS server",
             "services": {

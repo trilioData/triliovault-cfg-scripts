@@ -26,6 +26,9 @@ import socket
 
 import jinja2
 import ops
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.types import PatchType
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,22 @@ CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
 API_PASTE_PATH = "/etc/triliovault-wlm/api-paste.ini"
 WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
+# trilio_dms.client.DMSClient defaults a mount/unmount request's target `host`
+# to the *client's own* node_id when the request doesn't specify one — so this
+# must identify the control-plane DMS server, not WLM itself. trilio-dms-k8s
+# is deployed as a scale:1 singleton (like wlm-cron), so its pod name is
+# deterministic: "<app-name>-0". Falls back to this same value itself when its
+# own K8S_NODE_NAME downward-api lookup is unavailable (see its charm.py
+# _get_node_name()), so the two sides stay consistent.
+DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+# DMS mounts NFS/S3 backup targets only inside its own pod's mount namespace —
+# invisible to WLM's separate pod. Both containers hostPath-mount this SAME
+# host directory (see _patch_shared_vault_mount) with propagation so DMS's
+# mount becomes visible here too. Requires WLM's pod to land on the same node
+# as trilio-dms-k8s-0 (enforced via podAffinity in the patch below).
+VAULT_MOUNTS_PATH = "/var/triliovault-mounts"
+VAULT_MOUNTS_HOSTPATH = "/var/lib/trilio/vault-mounts"
 LOG_DIR = "/var/log/triliovault"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -71,7 +89,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.leader_elected, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
-        for rel in ("database", "amqp", "identity_service"):
+        for rel in ("database", "amqp", "amqp_dms", "identity_service"):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
             )
@@ -84,6 +102,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 getattr(self.on, f"{rel}_relation_changed"), self._on_ingress_relation_changed
             )
         self.framework.observe(self.on.amqp_relation_joined, self._on_amqp_relation_joined)
+        self.framework.observe(self.on.amqp_dms_relation_joined, self._on_amqp_dms_relation_joined)
         self.framework.observe(self.on.database_relation_joined, self._on_database_relation_joined)
         self.framework.observe(
             self.on.identity_service_relation_joined,
@@ -126,6 +145,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             event.relation.data[self.app]["username"] = "wlm"
             event.relation.data[self.app]["vhost"] = "wlm"
 
+    def _on_amqp_dms_relation_joined(self, event):
+        """Second amqp relation requesting the *dmapi* vhost (not WLM's own `wlm` vhost).
+
+        The trilio_dms client library talks to the DMS server's `trilio_dms`
+        exchange, which lives in the `dmapi` vhost (trilio-dms-k8s's own amqp
+        relation requests the same username/vhost "since they communicate via
+        shared RabbitMQ queues" — see trilio-dms-k8s/src/charm.py). Requesting
+        the same existing username/vhost here is idempotent — rabbitmq-k8s
+        returns the same already-provisioned user/password.
+        """
+        if self.unit.is_leader():
+            event.relation.data[self.app]["username"] = "dmapi"
+            event.relation.data[self.app]["vhost"] = "dmapi"
+
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
         if self.unit.is_leader():
@@ -141,6 +174,22 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         Must be run once after deployment before TrilioVault can perform backups.
         Runs 'workloadmgr trust-create' inside the workload container using the
         admin credentials supplied as action params.
+
+        cloud-admin-user-id/cloud-admin-project-id (needed for
+        backup-target-create/workload-create to find this trust — see
+        _write_config) are populated automatically from the identity-service
+        relation's admin-user-id/admin-project-id fields (matching how the
+        older charm-trilio-wlm reactive charm read identity_service.get(
+        'admin_user_id')/'admin_project_id') — no manual `juju config` step
+        needed. Charm config still overrides this if explicitly set (e.g. for
+        a differently-scoped cloud-admin identity).
+
+        One prerequisite this action does NOT set up for you: the admin user
+        must hold the "admin" role at *system* scope, not just on its own
+        project/domain — a fresh Sunbeam admin user only has domain-scoped
+        admin, which isn't enough to act as a true cross-domain cloud admin:
+          openstack role add --user admin --user-domain admin_domain \\
+            --system all admin
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -172,7 +221,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", event.params.get("project-domain-name", "admin_domain"),
             "--os-region-name", self.config.get("region", "RegionOne"),
             "--endpoint-type", "admin",
-            "trust-create", "--is_cloud_trust", "True", "Admin",
+            # Role name is case-sensitive and must match the actual Keystone
+            # role exactly ("admin", lowercase) — "Admin" silently fails with
+            # "Invalid roles ['Admin']" since Keystone has no such role.
+            "trust-create", "--is_cloud_trust", "True", "admin",
         ]
         try:
             out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
@@ -184,11 +236,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_create_license_action(self, event):
         """Action: apply TrilioVault license.
 
-        The license file must be attached as a Juju resource first:
-          juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+        The license file must already exist inside the trilio-wlm workload
+        container (copy it there first, e.g.
+        `kubectl cp <file> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm`),
+        then pass its in-container path as license-file-path.
 
-        Runs 'workloadmgr license-create' inside the workload container using the
-        WLM service credentials from the identity-service relation.
+        Auth uses the WLM service account from the identity-service relation
+        (the same credentials the old charm-trilio-wlm's create_license()
+        action used) — no password parameter needed.
+
+        'workloadmgr license-create' shows the EULA text via curses and
+        blocks on a real keypress ('y' to accept) before it ever calls the
+        API — this is NOT the same controlling-terminal issue trust-create
+        works around with setsid; it's an actual interactive prompt. Feeding
+        "y\\n" via exec()'s stdin answers that prompt non-interactively.
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -201,28 +262,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Workload container not ready")
             return
-        try:
-            license_path = self.model.resources.fetch("license")
-        except Exception:
-            event.fail(
-                "License resource not attached. Run: "
-                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
-            )
-            return
-        if not license_path.stat().st_size:
-            event.fail(
-                "License resource is empty. Attach the license file first: "
-                "juju attach-resource trilio-wlm-k8s license=<path-to-license-file>"
-            )
-            return
-        container_license_path = "/tmp/trilio-license.dat"
-        container.push(container_license_path, license_path.read_bytes(), make_dirs=True)
+        license_file_path = event.params["license-file-path"]
         auth_url = (
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
         )
-        # setsid detaches the process from Pebble's controlling terminal so that
-        # workloadmgr's cliff/cmd2 cannot open /dev/tty and skips curses init.
         cmd = [
             "setsid",
             "workloadmgr",
@@ -233,19 +277,17 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", "service_domain",
             "--os-project-name", identity["service_tenant"],
             "--os-region-name", self.config.get("region", "RegionOne"),
-            "license-create", container_license_path,
+            "license-create", license_file_path, "-f", "json",
         ]
         try:
-            out, err = container.exec(cmd, environment={"TERM": "xterm"}).wait_output()
+            process = container.exec(
+                cmd, environment={"TERM": "xterm"}, stdin="y\n",
+            )
+            out, err = process.wait_output()
             logger.info("license-create output: %s", out)
-            event.set_results({"result": "License applied successfully"})
+            event.set_results({"result": "License applied successfully", "output": out})
         except Exception as e:
             event.fail(f"license-create failed: {e}")
-        finally:
-            try:
-                container.exec(["rm", "-f", container_license_path]).wait()
-            except Exception:
-                pass
 
     def _send_relation_requests(self):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
@@ -267,6 +309,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
+        self._patch_fuse_device()
+        self._patch_shared_vault_mount()
         container = self.unit.get_container(CONTAINER)
         if not container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
@@ -292,6 +336,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             self._publish_wlm_service_data()
             self._register_keystone_service()
+            identity = self._identity_data()
+            if identity:
+                self._ensure_service_user_default_project(container, identity)
 
         self.unit.status = ops.ActiveStatus("WLM ready")
 
@@ -303,6 +350,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             missing.append("database")
         if not self._amqp_data():
             missing.append("amqp")
+        if not self._amqp_dms_data():
+            missing.append("amqp-dms")
         if not self._identity_data():
             missing.append("identity-service")
         return missing
@@ -323,6 +372,17 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _amqp_data(self):
         """rabbitmq-k8s: provider writes hostname and password into its application databag."""
         rel = self.model.get_relation("amqp")
+        if not rel or not rel.app:
+            return None
+        d = rel.data[rel.app]
+        host = d.get("hostname") or d.get("host")
+        if host and d.get("password"):
+            return {**dict(d), "host": host}
+        return None
+
+    def _amqp_dms_data(self):
+        """rabbitmq-k8s: dmapi-vhost credentials for the DMS RPC channel (see amqp-dms relation)."""
+        rel = self.model.get_relation("amqp-dms")
         if not rel or not rel.app:
             return None
         d = rel.data[rel.app]
@@ -356,7 +416,178 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service_password": creds.get("password"),
             "service_tenant": d.get("service-project-name", "services"),
             "service_domain_name": d.get("service-domain-name", "Default"),
+            "service_domain_id": d.get("service-domain-id", "default"),
+            # keystone-k8s also publishes the human "admin" identity's own
+            # IDs on this same relation (matching the older charm-trilio-wlm
+            # reactive charm's identity_service.get('admin_user_id') /
+            # 'admin_project_id') — used as the default source for
+            # cloud_admin_user_id/cloud_admin_project_id in _write_config,
+            # since workloadmgr's own cloud-admin trust lookup needs the
+            # *human* admin's Keystone UUIDs, not WLM's own service account.
+            "admin_user_id": d.get("admin-user-id", ""),
+            "admin_project_id": d.get("admin-project-id", ""),
+            "admin_domain_id": d.get("admin-domain-id", ""),
         }
+
+    def _patch_fuse_device(self):
+        """Grant the workload container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
+
+        Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
+        securityContext/host-device access, so this patches the underlying
+        StatefulSet directly via the Kubernetes API. Requires `juju trust`
+        (already set on this app in trilio-ctlplane-bundle.yaml) — without it
+        the API call fails with a 403 and the unit falls back to WaitingStatus.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = (
+            target.securityContext and target.securityContext.privileged
+            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "securityContext": {"privileged": True},
+                                "volumeMounts": [
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "dev-fuse",
+                                "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with FUSE device access", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
+
+    def _patch_shared_vault_mount(self):
+        """hostPath-mount VAULT_MOUNTS_PATH so DMS's NFS/S3 mounts become visible here.
+
+        DMS performs the actual `mount` syscall inside its own pod — normally
+        invisible to WLM's separate pod. Both containers hostPath-mount the SAME
+        host directory; DMS's side uses `mountPropagation: Bidirectional` (push
+        its mounts up to the host), this side uses `HostToContainer` (receive
+        mounts made on the host). hostPath is node-local, so this also pins WLM's
+        pod to the same node as trilio-dms-k8s-0 via podAffinity — without it the
+        two pods can land on different nodes (observed happening by default on
+        this 3-node cluster) and no propagation is possible.
+        Idempotent: skips the patch (and the pod restart it would trigger) once
+        the container already has it.
+        """
+        namespace = self.model.name
+        name = self.app.name
+        client = Client()
+        try:
+            sts = client.get(StatefulSet, name=name, namespace=namespace)
+        except Exception as e:
+            logger.warning("Could not read StatefulSet %s: %s", name, e)
+            return
+
+        target = next(
+            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            None,
+        )
+        if target is None:
+            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            return
+
+        already_patched = any(
+            vm.name == "vault-mounts" for vm in (target.volumeMounts or [])
+        )
+        if already_patched:
+            return
+
+        patch = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "affinity": {
+                            "podAffinity": {
+                                "requiredDuringSchedulingIgnoredDuringExecution": [
+                                    {
+                                        "labelSelector": {
+                                            "matchExpressions": [
+                                                {
+                                                    "key": "app.kubernetes.io/name",
+                                                    "operator": "In",
+                                                    "values": ["trilio-dms-k8s"],
+                                                }
+                                            ]
+                                        },
+                                        "topologyKey": "kubernetes.io/hostname",
+                                    }
+                                ]
+                            }
+                        },
+                        "containers": [
+                            {
+                                "name": CONTAINER,
+                                "volumeMounts": [
+                                    {
+                                        "name": "vault-mounts",
+                                        "mountPath": VAULT_MOUNTS_PATH,
+                                        "mountPropagation": "HostToContainer",
+                                    }
+                                ],
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "vault-mounts",
+                                "hostPath": {
+                                    "path": VAULT_MOUNTS_HOSTPATH,
+                                    "type": "DirectoryOrCreate",
+                                },
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        try:
+            client.patch(
+                StatefulSet, name=name, namespace=namespace,
+                obj=patch, patch_type=PatchType.STRATEGIC,
+            )
+            logger.info("Patched StatefulSet %s with shared vault mount", name)
+        except Exception as e:
+            logger.error("Failed to patch StatefulSet %s for shared vault mount: %s", name, e)
 
     def _get_ca_cert(self):
         """Return concatenated CA certs from receive-ca-cert relation, or None."""
@@ -441,11 +672,27 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "state_path": "/var/lib/workloadmgr",
             "sql_connection": db_url,
             "osapi_workloads_listen_port": WLM_PORT,
-            "cloud_admin_user_id": self.config.get("cloud-admin-user-id", ""),
-            "cloud_admin_project_id": self.config.get("cloud-admin-project-id", ""),
+            # Explicit charm config always wins; otherwise default to the human
+            # "admin" identity's own IDs, which keystone-k8s already publishes
+            # on the identity-service relation (see _identity_data) — matching
+            # how the older charm-trilio-wlm reactive charm sourced these same
+            # two fields from identity_service.get('admin_user_id')/
+            # 'admin_project_id'. Without this, workloadmgr's own cloud-admin
+            # trust lookup (workloadmgr/compute/nova.py's
+            # _get_trusts('cloud_admin', CONF.cloud_admin_project_id)) can
+            # never match a real trust record, since that option otherwise
+            # defaults to the literal string "admin" in workloadmgr's own code.
+            "cloud_admin_user_id": (
+                self.config.get("cloud-admin-user-id") or identity.get("admin_user_id", "")
+            ),
+            "cloud_admin_project_id": (
+                self.config.get("cloud-admin-project-id") or identity.get("admin_project_id", "")
+            ),
             "cloud_admin_domain": self.config.get("cloud-admin-domain", "admin_domain"),
             "cloud_admin_role": self.config.get("cloud-admin-role", "admin"),
-            "trustee_role": self.config.get("trustee-role", "member, creator"),
+            "trustee_role": self.config.get("trustee-role", "member, creator, admin"),
+            "rabbit_quorum_queue": str(self.config.get("rabbit-quorum-queue", True)).lower(),
+            "amqp_durable_queues": str(self.config.get("amqp-durable-queues", True)).lower(),
             "cloud_unique_id": self.config.get("cloud-unique-id", ""),
             "region_name_for_services": self.config["region"],
             "transport_url": transport_url,
@@ -463,6 +710,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "keystone_username": identity.get("service_username", "wlm"),
             "keystone_password": identity["service_password"],
             "service_domain_name": identity.get("service_domain_name", "Default"),
+            "service_domain_id": identity.get("service_domain_id", "default"),
             "cafile": cafile,
         }
         rendered = self._render_template("triliovault-wlm.conf.j2", context)
@@ -485,12 +733,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM.
 
-        The DMS client inside WLM connects to WLM's own database (not DMAPI's).
-        Uses WLM's own RabbitMQ user/vhost (wlm/wlm).
+        Db url is WLM's own database (not DMAPI's). RabbitMQ must use the
+        *dmapi* vhost (amqp-dms relation) — the DMS server's `trilio_dms`
+        exchange lives there, not in WLM's own `wlm` vhost (see amqp-dms
+        relation docstring and DMS_SERVER_NODE_ID above for why).
         Written once — all four WLM services (wlm-api, wlm-workloads, wlm-cron,
         wlm-scheduler) share the same container filesystem and read this file.
         """
-        amqp = self._amqp_data()
+        amqp_dms = self._amqp_dms_data()
         db = self._db_data()
 
         endpoint = db["endpoints"].split(",")[0].strip()
@@ -501,14 +751,14 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         rabbitmq_url = (
-            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
-            f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'wlm')}"
+            f"rabbit://{amqp_dms.get('username', 'dmapi')}:{amqp_dms['password']}"
+            f"@{amqp_dms['host']}:{amqp_dms.get('port', '5672')}"
+            f"/{amqp_dms.get('vhost', 'dmapi')}"
         )
         context = {
             "rabbitmq_url": rabbitmq_url,
             "db_url": db_url,
-            "node_id": self.unit.name.replace("/", "-"),
+            "node_id": DMS_SERVER_NODE_ID,
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_file": "/var/log/triliovault/trilio-dms-client.log",
         }
@@ -521,6 +771,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _build_pebble_layer(self):
         # Binaries are named workloadmgr-* (confirmed from the installed package).
         # The Pebble service names (keys) are kept as wlm-* for readability.
+        #
+        # TVAULT-7404 root-user experiment: Juju's k8s sidecar charm packaging
+        # runs Pebble (and, by default, every service it launches) as root,
+        # overriding the image's own "USER nova" directive. We previously
+        # pinned "user"/"group": "nova" on each service below to match
+        # contego's own identity on the compute side (see
+        # nova-user-known-good-state.md for that approach and how to roll
+        # back to it) — trying root here instead to see if that resolves the
+        # NFS/permission issues more simply than matching UIDs everywhere.
         cmd_base = f"/usr/bin/{{}} --config-file {CONFIG_PATH}"
         env = self._get_ca_bundle_env()
         services = {
@@ -627,6 +886,57 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service-endpoints": json.dumps(endpoints),
             "region": self.config.get("region", "RegionOne"),
         })
+
+    def _ensure_service_user_default_project(self, container, identity):
+        """Set this service account's own Keystone default_project_id.
+
+        workloadmgr's own client-session code (workloadmgr/compute/nova.py,
+        novaclient/nova_micro_client) never passes an explicit project scope
+        when authenticating — it relies entirely on Keystone auto-scoping to
+        the authenticating user's own default_project_id when none is given.
+        keystone-k8s's identity-service interface has no field for requesting
+        this at account-creation time, so it's left null, producing an
+        UNSCOPED (empty service catalog) token on every workloadmgr
+        nova/cinder/glance call and breaking all workload/snapshot creation
+        with "The service catalog is empty." — confirmed by direct comparison
+        against a working charm-trilio-wlm (reactive charm) deployment, whose
+        equivalent service account DOES have default_project_id set (to its
+        own "services" project). Idempotent — skips the update API call once
+        already set correctly.
+        """
+        script = (
+            "import json, sys\n"
+            "from keystoneauth1.identity import v3\n"
+            "from keystoneauth1 import session\n"
+            "from keystoneclient.v3 import client as keystone_client\n"
+            "auth = v3.Password(auth_url=sys.argv[1], username=sys.argv[2],\n"
+            "    password=sys.argv[3], user_domain_name=sys.argv[4],\n"
+            "    project_name=sys.argv[5], project_domain_name=sys.argv[4])\n"
+            "sess = session.Session(auth=auth)\n"
+            "kc = keystone_client.Client(session=sess)\n"
+            "user_id = sess.get_user_id()\n"
+            "project_id = sess.get_project_id()\n"
+            "user = kc.users.get(user_id)\n"
+            "if getattr(user, 'default_project_id', None) == project_id:\n"
+            "    print(json.dumps({'changed': False, 'project_id': project_id}))\n"
+            "else:\n"
+            "    kc.users.update(user, default_project=project_id)\n"
+            "    print(json.dumps({'changed': True, 'project_id': project_id}))\n"
+        )
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        try:
+            process = container.exec(
+                ["python3", "-c", script, auth_url, identity["service_username"],
+                 identity["service_password"], identity["service_domain_name"],
+                 identity["service_tenant"]],
+            )
+            out, _ = process.wait_output()
+            logger.info("Service account default-project check: %s", out.strip())
+        except Exception as e:
+            logger.warning("Could not set service account default_project_id: %s", e)
 
     def _publish_ingress(self, rel):
         """Write traefik_k8s ingress requirer data.

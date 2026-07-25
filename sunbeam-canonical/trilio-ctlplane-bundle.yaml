@@ -16,10 +16,50 @@ bundle: kubernetes
 
 applications:
 
+  # Reference entries for existing Sunbeam core applications — not redeployed
+  # by this bundle. Juju requires all relation endpoints to be declared even
+  # for pre-existing apps.
+  #
+  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale here
+  # once caused Juju to interpret these as a desired-state change and force
+  # these apps toward "scale to 0 + upgrade to whatever the channel resolves
+  # to today", cascading into a near-total control-plane outage. Always keep
+  # revision: and scale: pinned to the CURRENTLY DEPLOYED values (check with
+  # `juju status` before touching this file) — never leave them implicit.
+  mysql:
+    charm: mysql-k8s
+    channel: 8.0/stable
+    revision: 423
+    scale: 3
+
+  rabbitmq:
+    charm: rabbitmq-k8s
+    channel: 3.12/stable
+    revision: 71
+    scale: 3
+
+  keystone:
+    charm: keystone-k8s
+    channel: 2024.1/stable
+    revision: 424
+    scale: 3
+
+  traefik:
+    charm: traefik-k8s
+    channel: latest/stable
+    revision: 377
+    scale: 3
+
+  traefik-public:
+    charm: traefik-k8s
+    channel: latest/stable
+    revision: 377
+    scale: 3
+
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: latest/candidate
-    revision: 3
+    revision: 10
     scale: 1
     trust: true
     options:
@@ -29,7 +69,7 @@ applications:
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: latest/candidate
-    revision: 3
+    revision: 4
     scale: 1
     trust: true
     options:
@@ -39,7 +79,7 @@ applications:
   trilio-dms-k8s:
     charm: trilio-dms-k8s
     channel: latest/candidate
-    revision: 2
+    revision: 5
     scale: 1
     trust: true
     options:
@@ -49,6 +89,9 @@ relations:
   # WLM relations
   - [trilio-wlm-k8s:database, mysql:database]
   - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
+  # WLM's DMS RPC channel needs the *dmapi* vhost, not its own `wlm` vhost —
+  # trilio-dms-k8s's own amqp relation requests this same username/vhost.
+  - [trilio-wlm-k8s:amqp-dms, rabbitmq:amqp]
   - [trilio-wlm-k8s:identity-service, keystone:identity-service]
   - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
   - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]

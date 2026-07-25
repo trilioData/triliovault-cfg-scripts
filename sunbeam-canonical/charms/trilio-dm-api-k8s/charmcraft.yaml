@@ -71,3 +71,19 @@ config:
       type: boolean
       default: false
       description: Enable debug logging
+    rabbit-quorum-queue:
+      type: boolean
+      default: true
+      description: |
+        Must match nova.conf's rabbit_quorum_queue on the compute nodes —
+        contego shares RPC queue names with dm-api/DMS, and declaring the
+        same queue with a different durability flag on each side gets a 406
+        PRECONDITION_FAILED from RabbitMQ. Sunbeam/Caracal defaults to true;
+        override only if your deployment's nova.conf sets this to false.
+    amqp-durable-queues:
+      type: boolean
+      default: true
+      description: |
+        Standard oslo.messaging amqp_durable_queues setting. Must match
+        nova.conf's convention on the compute nodes for the same reason as
+        rabbit-quorum-queue.

@@ -51,6 +51,13 @@ driver = noop
 
 [oslo_messaging_rabbit]
 heartbeat_in_pthread = False
+# Must match nova.conf's rabbit_quorum_queue on the compute nodes — contego
+# (which loads nova.conf alongside its own config) declares its RPC queue as
+# a quorum queue there. A mismatch here means dm-api's client declares the
+# same-named queue non-durable, and whichever side declares second gets
+# PRECONDITION_FAILED (406) from RabbitMQ for the conflicting durability flag.
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+amqp_durable_queues = {{ amqp_durable_queues }}
 
 [oslo_middleware]
 enable_proxy_headers_parsing = True

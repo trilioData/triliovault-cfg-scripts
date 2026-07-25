@@ -62,6 +62,14 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /etc/apt/sources.list.d/trilio.list
 
+# python3-s3-fuse-plugin declares boto3==1.35.12/botocore==1.35.12 (see its
+# dist-info requires) but apt/pip leaves much older versions installed
+# (boto3 1.20.34/botocore 1.23.34), which crash s3vaultfuse at import time:
+# "ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'"
+# — that botocore predates urllib3 2.x. Pin explicitly to what the package
+# itself requires.
+RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
+
 # Create required directories — DMS runs as nova user
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \

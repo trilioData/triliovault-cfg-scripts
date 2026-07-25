@@ -47,6 +47,9 @@ requires:
   amqp:
     interface: rabbitmq
     limit: 1
+  amqp-dms:
+    interface: rabbitmq
+    limit: 1
   identity-service:
     interface: keystone
     limit: 1
@@ -86,19 +89,21 @@ config:
       description: Enable debug logging for all WLM services
     nova-endpoint:
       type: string
-      default: "http://nova-k8s.openstack.svc.cluster.local:8774/v2.1"
+      # Sunbeam's nova-k8s charm's own k8s Service is named "nova" (not
+      # "nova-k8s" — that's the *application*/charm name, a different thing).
+      default: "http://nova.openstack.svc.cluster.local:8774/v2.1"
       description: Nova internal endpoint URL for WLM to call
     neutron-endpoint:
       type: string
-      default: "http://neutron-k8s.openstack.svc.cluster.local:9696"
+      default: "http://neutron.openstack.svc.cluster.local:9696"
       description: Neutron internal endpoint URL for WLM to call
     cinder-endpoint:
       type: string
-      default: "http://cinder-k8s.openstack.svc.cluster.local:8776/v3/%(tenant_id)s"
+      default: "http://cinder.openstack.svc.cluster.local:8776/v3/%(tenant_id)s"
       description: Cinder internal endpoint URL for WLM to call
     glance-endpoint:
       type: string
-      default: "http://glance-k8s.openstack.svc.cluster.local:9292"
+      default: "http://glance.openstack.svc.cluster.local:9292"
       description: Glance internal endpoint URL for WLM to call
     region:
       type: string
@@ -106,11 +111,30 @@ config:
       description: OpenStack region name
     trustee-role:
       type: string
-      default: "member, creator"
+      default: "member, creator, admin"
       description: |
         Keystone role(s) that WLM delegates via trusts during backup and restore.
         Comma-separated. Must match the role(s) assigned to tenant users in Keystone.
-        For Caracal (2024.1) use "member, creator"; for older releases use "creator".
+        "admin" is required on Caracal (2024.1) and later — Nova's Secure RBAC
+        policy restricts the OS-EXT-SRV-ATTR:host field (dm-api needs it to
+        route contego RPCs to the right compute host) to the admin role;
+        without it, contego calls fail with a KeyError on that field.
+    rabbit-quorum-queue:
+      type: boolean
+      default: true
+      description: |
+        Must match nova.conf's rabbit_quorum_queue on the compute nodes —
+        contego shares RPC queue names with dm-api/DMS, and declaring the
+        same queue with a different durability flag on each side gets a 406
+        PRECONDITION_FAILED from RabbitMQ. Sunbeam/Caracal defaults to true;
+        override only if your deployment's nova.conf sets this to false.
+    amqp-durable-queues:
+      type: boolean
+      default: true
+      description: |
+        Standard oslo.messaging amqp_durable_queues setting. Must match
+        nova.conf's convention on the compute nodes for the same reason as
+        rabbit-quorum-queue.
     cloud-admin-role:
       type: string
       default: "admin"
@@ -125,16 +149,24 @@ config:
       type: string
       default: ""
       description: |
-        Keystone UUID of the cloud admin user. Populate after deployment:
-          openstack user show admin -f value -c id
-        Leave empty if using trust-create action (WLM reads from DB after trust creation).
+        Keystone UUID of the cloud admin user, needed for workloadmgr's own
+        cloud-admin trust lookup (workloadmgr/compute/nova.py's
+        _get_trusts('cloud_admin', CONF.cloud_admin_project_id)) to find the
+        trust created by the create-cloud-admin-trust action.
+        Leave empty (default) to auto-populate from the identity-service
+        relation's admin-user-id field, which keystone-k8s already publishes —
+        no manual lookup needed in the normal case. Set explicitly only if the
+        cloud-admin identity differs from the relation's own admin user
+        (e.g. openstack user show <user> -f value -c id).
     cloud-admin-project-id:
       type: string
       default: ""
       description: |
-        Keystone UUID of the cloud admin project. Populate after deployment:
-          openstack project show admin -f value -c id
-        Leave empty if using trust-create action.
+        Keystone UUID of the cloud admin project — same purpose and same
+        auto-population behavior as cloud-admin-user-id above (sourced from
+        the identity-service relation's admin-project-id field when left
+        empty). Set explicitly only if it differs from the relation's own
+        admin project (e.g. openstack project show <project> -f value -c id).
     cloud-unique-id:
       type: string
       default: ""
