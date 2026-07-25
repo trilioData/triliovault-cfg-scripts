@@ -158,11 +158,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         """Second amqp relation requesting the *dmapi* vhost (not WLM's own `wlm` vhost).
 
         The trilio_dms client library talks to the DMS server's `trilio_dms`
-        exchange, which lives in the `dmapi` vhost (trilio-dms-k8s's own amqp
-        relation requests the same username/vhost "since they communicate via
-        shared RabbitMQ queues" — see trilio-dms-k8s/src/charm.py). Requesting
-        the same existing username/vhost here is idempotent — rabbitmq-k8s
-        returns the same already-provisioned user/password.
+        exchange, which lives in the `dmapi` vhost — same vhost/username the
+        compute-node DMS instances (trilio-data-mover-sunbeam) request, since
+        they all communicate via shared RabbitMQ queues. Requesting the same
+        existing username/vhost here is idempotent — rabbitmq-k8s returns the
+        same already-provisioned user/password.
         """
         if self.unit.is_leader():
             event.relation.data[self.app]["username"] = "dmapi"

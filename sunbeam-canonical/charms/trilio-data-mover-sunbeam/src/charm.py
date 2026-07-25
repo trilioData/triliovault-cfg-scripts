@@ -14,9 +14,10 @@ openstack-hypervisor compute node.
 Automatically co-located via juju-info subordinate relation — no manual
 action needed when a new compute node joins the cluster via sunbeam cluster join.
 
-DMS note: A DMS server must run on both control plane (trilio-dms-k8s)
-and every compute node (this charm). The two instances communicate via RabbitMQ
-and handle NFS / S3 mount operations on their respective hosts.
+DMS note: A DMS server must run on both the control plane (embedded as the
+trilio-dms sidecar container inside trilio-wlm-k8s's own pod) and every
+compute node (this charm). The instances communicate via RabbitMQ and handle
+NFS / S3 mount operations on their respective hosts.
 """
 
 import configparser
