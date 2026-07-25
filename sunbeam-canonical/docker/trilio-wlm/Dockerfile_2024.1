@@ -78,6 +78,16 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /etc/apt/sources.list.d/trilio.list
 
+# python3-s3-fuse-plugin declares boto3==1.35.12/botocore==1.35.12 (see its
+# dist-info requires) but apt/pip leaves much older versions installed
+# (boto3 1.20.34/botocore 1.23.34), which crash s3vaultfuse at import time:
+# "ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'"
+# — that botocore predates urllib3 2.x. Pin explicitly to what the package
+# itself requires. Same fix as docker/trilio-dms/Dockerfile; s3vaultfuse also
+# runs inside the WLM pod (WLM mounts S3 backup targets directly too), so it
+# hits the identical bug here.
+RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
+
 # workloadmgr/api/common.py's remove_version_from_href() assumes the API
 # version ("v1") is always the first URL path segment (e.g. "/v1/<tenant>"),
 # which holds for kolla/RHOSP (WLM exposed directly on its own port, no path
