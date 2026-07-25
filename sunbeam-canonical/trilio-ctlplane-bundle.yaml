@@ -1,7 +1,9 @@
 # TrilioVault Control Plane Bundle for Sunbeam Canonical OpenStack
 #
-# Deploys trilio-wlm-k8s, trilio-dm-api-k8s, and trilio-dms-k8s into the
-# "openstack" (k8s) model.
+# Deploys trilio-wlm-k8s and trilio-dm-api-k8s into the "openstack" (k8s)
+# model. trilio-wlm-k8s embeds its own co-located DMS (Dynamic Mount Service)
+# server as a second container in the same pod (one DMS instance per WLM
+# replica, 1:1) — there is no separate trilio-dms-k8s application anymore.
 # Run this bundle AFTER Sunbeam bootstrap completes and the openstack model is healthy.
 #
 # Usage:
@@ -58,9 +60,9 @@ applications:
 
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
-    channel: latest/candidate
-    revision: 10
-    scale: 1
+    channel: 6.2/candidate
+    revision: 12
+    scale: 3
     trust: true
     options:
       api-workers: 2
@@ -68,29 +70,20 @@ applications:
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
-    channel: latest/candidate
+    channel: 6.2/candidate
     revision: 5
-    scale: 1
+    scale: 3
     trust: true
     options:
       debug: false
       api-workers: 2
 
-  trilio-dms-k8s:
-    charm: trilio-dms-k8s
-    channel: latest/candidate
-    revision: 5
-    scale: 1
-    trust: true
-    options:
-      debug: false
-
 relations:
   # WLM relations
   - [trilio-wlm-k8s:database, mysql:database]
   - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
-  # WLM's DMS RPC channel needs the *dmapi* vhost, not its own `wlm` vhost —
-  # trilio-dms-k8s's own amqp relation requests this same username/vhost.
+  # WLM's embedded DMS server needs the *dmapi* vhost, not WLM's own `wlm`
+  # vhost — see trilio-wlm-k8s/src/charm.py _write_dms_server_config.
   - [trilio-wlm-k8s:amqp-dms, rabbitmq:amqp]
   - [trilio-wlm-k8s:identity-service, keystone:identity-service]
   - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
@@ -108,8 +101,3 @@ relations:
   # Without these, keystonemiddleware fails TLS verification → 503 on every API request
   - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
   - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
-  - [trilio-dms-k8s:receive-ca-cert, keystone:send-ca-cert]
-
-  # DMS (Dynamic Mount Service) relations — control plane instance
-  # DMS communicates via RabbitMQ only; it has no HTTP listener and does not register with Keystone.
-  - [trilio-dms-k8s:amqp, rabbitmq:amqp]

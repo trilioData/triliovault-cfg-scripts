@@ -11,11 +11,12 @@ TrilioVault maps onto this cleanly:
 
 | T4O Component | Sunbeam Model | Charm |
 |---------------|--------------|-------|
-| WorkloadManager (wlm-api, wlm-workloads, wlm-cron, wlm-scheduler) | `openstack` (k8s) | `trilio-wlm-k8s` |
+| WorkloadManager (wlm-api, wlm-workloads, wlm-cron, wlm-scheduler) + embedded DMS sidecar | `openstack` (k8s) | `trilio-wlm-k8s` |
 | DataMover API (dmapi) | `openstack` (k8s) | `trilio-dm-api-k8s` |
-| Dynamic Mount Service — control plane | `openstack` (k8s) | `trilio-dms-k8s` |
 | DataMover + DMS (compute side) | `openstack-machines` (machine) | `trilio-data-mover-sunbeam` |
 | Horizon Plugin | `openstack` (k8s) | OCI image attach to `horizon` |
+
+Dynamic Mount Service (DMS) is not a separate charm/application. The control-plane DMS instance runs as a second container (`trilio-dms`) co-located inside every `trilio-wlm-k8s` pod, one DMS instance per WLM replica.
 
 `trilio-data-mover-sunbeam` is a **Juju subordinate charm** targeting `openstack-hypervisor`.
 It installs both `tvault-contego` (DataMover) and `trilio-dms-server` (compute-side DMS) on every compute node.
@@ -62,8 +63,7 @@ All relations — including CA certificate distribution for Keystone TLS — are
 ```bash
 juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
 juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
-juju status trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s
+juju status trilio-wlm-k8s trilio-dm-api-k8s
 kubectl get pods -n openstack | grep trilio
 ```
 
@@ -117,7 +117,6 @@ juju run trilio-wlm-k8s/leader create-license
 juju switch openstack
 juju refresh trilio-wlm-k8s    --channel latest/candidate
 juju refresh trilio-dm-api-k8s --channel latest/candidate
-juju refresh trilio-dms-k8s    --channel latest/candidate
 ```
 
 **Verify:**
@@ -125,8 +124,7 @@ juju refresh trilio-dms-k8s    --channel latest/candidate
 ```bash
 juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
 juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dms-k8s    --query='status=="active"' --timeout=10m
-juju status trilio-wlm-k8s trilio-dm-api-k8s trilio-dms-k8s
+juju status trilio-wlm-k8s trilio-dm-api-k8s
 ```
 
 ### Step 2 — Upgrade data plane
@@ -163,9 +161,8 @@ kubectl exec -n openstack horizon-0 -c horizon -- \
 
 | Charm | Location | Notes |
 |-------|----------|-------|
-| `trilio-wlm-k8s` | `charms/trilio-wlm-k8s/` | k8s, Pebble |
+| `trilio-wlm-k8s` | `charms/trilio-wlm-k8s/` | k8s, Pebble — includes embedded `trilio-dms` sidecar container (control plane DMS server) |
 | `trilio-dm-api-k8s` | `charms/trilio-dm-api-k8s/` | k8s, Pebble |
-| `trilio-dms-k8s` | `charms/trilio-dms-k8s/` | k8s, Pebble — control plane DMS server |
 | `trilio-data-mover-sunbeam` | `charms/trilio-data-mover-sunbeam/` | machine subordinate, runs DataMover + compute DMS |
 
 ## Build Prerequisites
@@ -201,7 +198,7 @@ Dockerfiles are in `docker/`:
 |-------|-----------|---------|
 | `docker.io/trilio/trilio-wlm-canonical` | `sunbeam-canonical/docker/trilio-wlm/Dockerfile_2024.1` | `trilio-wlm-k8s` |
 | `docker.io/trilio/trilio-datamover-api-canonical` | `sunbeam-canonical/docker/trilio-datamover-api/Dockerfile_2024.1` | `trilio-dm-api-k8s` |
-| `docker.io/trilio/trilio-dms-canonical` | `sunbeam-canonical/docker/trilio-dms/Dockerfile` | `trilio-dms-k8s` |
+| `docker.io/trilio/trilio-dms-canonical` | `sunbeam-canonical/docker/trilio-dms/Dockerfile` | `trilio-wlm-k8s` (embedded `trilio-dms` sidecar resource) |
 | `docker.io/trilio/trilio-horizon-plugin-canonical` | `sunbeam-canonical/docker/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon` attach-resource |
 
 Build and publish all images:
