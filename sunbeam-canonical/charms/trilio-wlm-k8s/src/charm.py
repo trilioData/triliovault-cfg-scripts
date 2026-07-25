@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 """TrilioVault WorkloadManager Kubernetes charm for Sunbeam Canonical OpenStack.
 
-Manages four WLM microservices via Pebble inside a single k8s pod:
+Manages four WLM microservices via Pebble inside the trilio-wlm container:
   wlm-api, wlm-workloads, wlm-scheduler, wlm-cron (leader-only singleton).
+
+Also embeds a co-located Dynamic Mount Service (DMS) server as a second
+container (trilio-dms) in the same pod — one DMS instance per WLM replica,
+1:1, rather than a single cluster-wide trilio-dms-k8s app. This removes the
+old cross-pod hostPath+podAffinity mount-sharing mechanism entirely: since
+both containers are guaranteed co-located in the same pod, they can share
+an ordinary emptyDir volume instead, with no node pinning required — WLM
+can scale to N replicas and each one carries its own DMS. A second,
+independent DMS instance also runs on every compute node, managed by the
+trilio-data-mover-sunbeam machine charm (unrelated to this control-plane one).
 
 Tested against Caracal (OpenStack 2024.1) on Sunbeam.
 
@@ -33,26 +43,24 @@ from lightkube.types import PatchType
 logger = logging.getLogger(__name__)
 
 CONTAINER = "trilio-wlm"
+DMS_CONTAINER = "trilio-dms"
 CONFIG_PATH = "/etc/triliovault-wlm/triliovault-wlm.conf"
 API_PASTE_PATH = "/etc/triliovault-wlm/api-paste.ini"
 WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
-# trilio_dms.client.DMSClient defaults a mount/unmount request's target `host`
-# to the *client's own* node_id when the request doesn't specify one — so this
-# must identify the control-plane DMS server, not WLM itself. trilio-dms-k8s
-# is deployed as a scale:1 singleton (like wlm-cron), so its pod name is
-# deterministic: "<app-name>-0". Falls back to this same value itself when its
-# own K8S_NODE_NAME downward-api lookup is unavailable (see its charm.py
-# _get_node_name()), so the two sides stay consistent.
-DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"
+DMS_SERVER_CONF = "/etc/triliovault-dms/server.conf"
+DMS_SERVER_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
-# DMS mounts NFS/S3 backup targets only inside its own pod's mount namespace —
-# invisible to WLM's separate pod. Both containers hostPath-mount this SAME
-# host directory (see _patch_shared_vault_mount) with propagation so DMS's
-# mount becomes visible here too. Requires WLM's pod to land on the same node
-# as trilio-dms-k8s-0 (enforced via podAffinity in the patch below).
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
+# DMS performs the actual `mount` syscall for NFS/S3 backup targets inside its
+# own container. Sharing a volume across containers isn't sufficient on its
+# own for one container's mount() calls to become visible in a sibling's mount
+# namespace — Kubernetes still requires explicit mountPropagation regardless of
+# volume type. Since trilio-dms is co-located with trilio-wlm in the same pod
+# (guaranteed, not just scheduled that way), an ordinary emptyDir volume works
+# here — no hostPath, no podAffinity, no node pinning (see
+# _patch_shared_vault_mount).
 VAULT_MOUNTS_PATH = "/var/triliovault-mounts"
-VAULT_MOUNTS_HOSTPATH = "/var/lib/trilio/vault-mounts"
 LOG_DIR = "/var/log/triliovault"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -86,6 +94,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.framework.observe(self.on.trilio_wlm_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.on.trilio_dms_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.leader_elected, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
@@ -312,7 +321,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self._patch_fuse_device()
         self._patch_shared_vault_mount()
         container = self.unit.get_container(CONTAINER)
-        if not container.can_connect():
+        dms_container = self.unit.get_container(DMS_CONTAINER)
+        if not container.can_connect() or not dms_container.can_connect():
             self.unit.status = ops.WaitingStatus("Waiting for Pebble in workload container")
             event.defer()
             return
@@ -329,6 +339,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             self._db_sync(container)
         self._update_pebble_layer(container)
+
+        # Embedded DMS server, co-located 1:1 with this WLM pod (see module docstring).
+        self._write_dms_server_config(dms_container)
+        self._write_dms_s3vaultfuse_config(dms_container)
+        self._write_ca_cert(dms_container)
+        self._update_dms_pebble_layer(dms_container)
+
         # Expose WLM_PORT so Juju creates the k8s Service port entry.
         # Without this, intra-cluster traffic to wlm-api cannot reach the pod.
         self.unit.open_port("tcp", WLM_PORT)
@@ -430,8 +447,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         }
 
     def _patch_fuse_device(self):
-        """Grant the workload container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
+        """Grant the trilio-dms container /dev/fuse + SYS_ADMIN so s3vaultfuse can mount.
 
+        s3vaultfuse runs in the embedded DMS container (trilio-dms), not the
+        WLM container itself — trilio-wlm never mounts anything directly.
         Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
         securityContext/host-device access, so this patches the underlying
         StatefulSet directly via the Kubernetes API. Requires `juju trust`
@@ -450,11 +469,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             return
 
         target = next(
-            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
+            (c for c in sts.spec.template.spec.containers if c.name == DMS_CONTAINER),
             None,
         )
         if target is None:
-            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
+            logger.warning("Container %s not found in StatefulSet %s", DMS_CONTAINER, name)
             return
 
         already_patched = (
@@ -470,7 +489,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                     "spec": {
                         "containers": [
                             {
-                                "name": CONTAINER,
+                                "name": DMS_CONTAINER,
                                 "securityContext": {"privileged": True},
                                 "volumeMounts": [
                                     {"name": "dev-fuse", "mountPath": "/dev/fuse"}
@@ -497,18 +516,26 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
 
     def _patch_shared_vault_mount(self):
-        """hostPath-mount VAULT_MOUNTS_PATH so DMS's NFS/S3 mounts become visible here.
+        """Share VAULT_MOUNTS_PATH between trilio-wlm and the embedded trilio-dms container.
 
-        DMS performs the actual `mount` syscall inside its own pod — normally
-        invisible to WLM's separate pod. Both containers hostPath-mount the SAME
-        host directory; DMS's side uses `mountPropagation: Bidirectional` (push
-        its mounts up to the host), this side uses `HostToContainer` (receive
-        mounts made on the host). hostPath is node-local, so this also pins WLM's
-        pod to the same node as trilio-dms-k8s-0 via podAffinity — without it the
-        two pods can land on different nodes (observed happening by default on
-        this 3-node cluster) and no propagation is possible.
+        DMS performs the actual `mount` syscall for NFS/S3 backup targets inside
+        its own container. Even within the same pod, one container's mount()
+        calls aren't automatically visible in a sibling's mount namespace —
+        Kubernetes still requires explicit mountPropagation for that, volume
+        type aside. trilio-dms's side uses `Bidirectional` (push its mounts up),
+        trilio-wlm's side uses `HostToContainer` (receive them). Because the two
+        containers are guaranteed co-located (same pod, not just scheduled that
+        way), an ordinary emptyDir volume works here — no hostPath, no
+        podAffinity, no node pinning needed at all (unlike the old cross-pod
+        design against a separate trilio-dms-k8s app).
         Idempotent: skips the patch (and the pod restart it would trigger) once
-        the container already has it.
+        the vault-mounts volume is already emptyDir-typed. Checks the volume's
+        actual *type*, not just its name — a charm upgrade from the old
+        cross-pod hostPath+podAffinity design left a same-named "vault-mounts"
+        volume in place, which a presence-only check would wrongly treat as
+        already patched, permanently breaking scheduling (the stale podAffinity
+        rule requires co-location with a trilio-dms-k8s app that no longer
+        exists once DMS is embedded).
         """
         namespace = self.model.name
         name = self.app.name
@@ -519,17 +546,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             logger.warning("Could not read StatefulSet %s: %s", name, e)
             return
 
-        target = next(
-            (c for c in sts.spec.template.spec.containers if c.name == CONTAINER),
-            None,
-        )
-        if target is None:
-            logger.warning("Container %s not found in StatefulSet %s", CONTAINER, name)
-            return
-
-        already_patched = any(
-            vm.name == "vault-mounts" for vm in (target.volumeMounts or [])
-        )
+        volumes = sts.spec.template.spec.volumes or []
+        vault_volume = next((v for v in volumes if v.name == "vault-mounts"), None)
+        already_patched = vault_volume is not None and vault_volume.emptyDir is not None
         if already_patched:
             return
 
@@ -537,24 +556,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "spec": {
                 "template": {
                     "spec": {
-                        "affinity": {
-                            "podAffinity": {
-                                "requiredDuringSchedulingIgnoredDuringExecution": [
-                                    {
-                                        "labelSelector": {
-                                            "matchExpressions": [
-                                                {
-                                                    "key": "app.kubernetes.io/name",
-                                                    "operator": "In",
-                                                    "values": ["trilio-dms-k8s"],
-                                                }
-                                            ]
-                                        },
-                                        "topologyKey": "kubernetes.io/hostname",
-                                    }
-                                ]
-                            }
-                        },
+                        # Explicit null clears the old podAffinity rule entirely —
+                        # a strategic merge patch only ever merges/adds fields by
+                        # default, so a stale affinity block would otherwise survive
+                        # even after this charm stops setting one.
+                        "affinity": None,
                         "containers": [
                             {
                                 "name": CONTAINER,
@@ -565,15 +571,25 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                                         "mountPropagation": "HostToContainer",
                                     }
                                 ],
-                            }
+                            },
+                            {
+                                "name": DMS_CONTAINER,
+                                "volumeMounts": [
+                                    {
+                                        "name": "vault-mounts",
+                                        "mountPath": VAULT_MOUNTS_PATH,
+                                        "mountPropagation": "Bidirectional",
+                                    }
+                                ],
+                            },
                         ],
                         "volumes": [
                             {
                                 "name": "vault-mounts",
-                                "hostPath": {
-                                    "path": VAULT_MOUNTS_HOSTPATH,
-                                    "type": "DirectoryOrCreate",
-                                },
+                                "emptyDir": {},
+                                # Explicit null clears the old hostPath source so the
+                                # volume ends up purely emptyDir-typed, not both at once.
+                                "hostPath": None,
                             }
                         ],
                     }
@@ -585,7 +601,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 StatefulSet, name=name, namespace=namespace,
                 obj=patch, patch_type=PatchType.STRATEGIC,
             )
-            logger.info("Patched StatefulSet %s with shared vault mount", name)
+            logger.info("Patched StatefulSet %s with shared in-pod vault mount", name)
         except Exception as e:
             logger.error("Failed to patch StatefulSet %s for shared vault mount: %s", name, e)
 
@@ -730,13 +746,26 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         )
         logger.info("Wrote %s", API_PASTE_PATH)
 
+    def _dms_node_id(self):
+        """Identifier for this unit's own embedded DMS server (see module docstring).
+
+        Each WLM pod embeds its own DMS server 1:1 — this just needs to be
+        deterministic and unique per unit, not tied to a nova-compute host
+        identity (that's the *data-plane* DMS instance's job, on
+        trilio-data-mover-sunbeam, unrelated to this one). WLM's own DMS
+        client config (below) uses this same value to talk to its own
+        co-located server, never anyone else's.
+        """
+        return self.unit.name.replace("/", "-")
+
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM.
 
         Db url is WLM's own database (not DMAPI's). RabbitMQ must use the
         *dmapi* vhost (amqp-dms relation) — the DMS server's `trilio_dms`
         exchange lives there, not in WLM's own `wlm` vhost (see amqp-dms
-        relation docstring and DMS_SERVER_NODE_ID above for why).
+        relation docstring). node_id targets this unit's own embedded DMS
+        server (see _dms_node_id) — never another unit's.
         Written once — all four WLM services (wlm-api, wlm-workloads, wlm-cron,
         wlm-scheduler) share the same container filesystem and read this file.
         """
@@ -758,13 +787,86 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         context = {
             "rabbitmq_url": rabbitmq_url,
             "db_url": db_url,
-            "node_id": DMS_SERVER_NODE_ID,
+            "node_id": self._dms_node_id(),
             "log_level": "DEBUG" if self.config["debug"] else "INFO",
             "log_file": "/var/log/triliovault/trilio-dms-client.log",
         }
         rendered = self._render_template("triliovault-dms-client.conf.j2", context)
         container.push(DMS_CLIENT_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", DMS_CLIENT_CONF)
+
+    def _write_dms_server_config(self, container):
+        """Write server.conf for the embedded DMS server in the trilio-dms container.
+
+        Reuses WLM's own already-computed Keystone auth_url and CA cert
+        (this unit's own identity-service/receive-ca-cert relation data)
+        rather than a separate config option — the embedded server only ever
+        serves this one co-located WLM unit, so there's nothing to configure
+        independently.
+        """
+        amqp_dms = self._amqp_dms_data()
+        identity = self._identity_data()
+        rabbitmq_url = (
+            f"rabbit://{amqp_dms.get('username', 'dmapi')}:{amqp_dms['password']}"
+            f"@{amqp_dms['host']}:{amqp_dms.get('port', '5672')}"
+            f"/{amqp_dms.get('vhost', 'dmapi')}"
+        )
+        auth_url = (
+            f"{identity.get('service_protocol', 'http')}://"
+            f"{identity['service_host']}:{identity.get('service_port', '5000')}/v3"
+        )
+        has_ca = bool(self._get_ca_cert())
+        context = {
+            "rabbitmq_url": rabbitmq_url,
+            "node_id": self._dms_node_id(),
+            "auth_url": auth_url,
+            "barbican_ssl_verify": "True" if has_ca else "False",
+            "cafile": CA_BUNDLE_PATH if has_ca else "",
+            "log_file": DMS_SERVER_LOG_FILE,
+            "log_level": "DEBUG" if self.config["debug"] else "INFO",
+            "worker_threads": self.config["dms-worker-threads"],
+            "rabbitmq_queue_type": (
+                "quorum" if self.config.get("rabbit-quorum-queue", True) else "classic"
+            ),
+            "rabbitmq_queue_durable": str(self.config.get("amqp-durable-queues", True)).lower(),
+        }
+        rendered = self._render_template("triliovault-dms-server.conf.j2", context)
+        container.push(DMS_SERVER_CONF, rendered, make_dirs=True)
+        logger.info("Wrote %s", DMS_SERVER_CONF)
+
+    def _write_dms_s3vaultfuse_config(self, container):
+        container.push(
+            S3VAULTFUSE_CONF,
+            self._render_template("s3vaultfuse-global.conf.j2", {}),
+            make_dirs=True,
+        )
+        logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        container.push(
+            OBJECT_STORE_LOGGING_CONF_PATH,
+            self._render_template("object_store_logging.conf.j2", {}),
+            make_dirs=True,
+        )
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
+
+    def _update_dms_pebble_layer(self, container):
+        layer = ops.pebble.Layer({
+            "summary": "TrilioVault DMS server (embedded)",
+            "services": {
+                "trilio-dms-server": {
+                    "override": "replace",
+                    "summary": "DMS server",
+                    "command": (
+                        f"/usr/bin/python3 /usr/bin/trilio-dms-server"
+                        f" --config-file {DMS_SERVER_CONF}"
+                    ),
+                    "startup": "enabled",
+                    "environment": self._get_ca_bundle_env(),
+                }
+            },
+        })
+        container.add_layer(DMS_CONTAINER, layer, combine=True)
+        container.replan()
+        logger.info("Pebble layer applied for embedded trilio-dms-server")
 
     # --- Pebble layer ---
 

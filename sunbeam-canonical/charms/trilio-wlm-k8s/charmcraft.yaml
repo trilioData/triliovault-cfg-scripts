@@ -5,7 +5,7 @@ summary: TrilioVault WorkloadManager K8s charm for Sunbeam Canonical OpenStack
 description: |
   Deploys TrilioVault WorkloadManager on Sunbeam Canonical OpenStack as a
   Kubernetes charm. Runs four microservices as Pebble-managed services inside
-  a single Kubernetes pod:
+  the trilio-wlm container:
     - wlm-api      (REST API, port 8781 — Keystone service type: workloads)
     - wlm-workloads (background workload processor)
     - wlm-scheduler (job scheduler)
@@ -13,6 +13,11 @@ description: |
 
   wlm-cron is intentionally started only on the leader unit to prevent duplicate
   scheduled job execution across multiple replicas.
+
+  Also runs a co-located Dynamic Mount Service (DMS) server as a second
+  container (trilio-dms) in the same pod — one DMS instance per WLM replica.
+  This is the control-plane DMS; a separate, independent instance also runs
+  on every compute node via trilio-data-mover-sunbeam.
 
 assumes:
   - k8s-api
@@ -29,12 +34,20 @@ bases:
 containers:
   trilio-wlm:
     resource: trilio-wlm-image
+  trilio-dms:
+    resource: trilio-dms-image
 
 resources:
   trilio-wlm-image:
     type: oci-image
     description: OCI image for TrilioVault WorkloadManager
     upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+  trilio-dms-image:
+    type: oci-image
+    description: >
+      OCI image for the embedded TrilioVault Dynamic Mount Service, co-located
+      1:1 with this WLM pod (see charm docstring)
+    upstream-source: docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1
   license:
     type: file
     filename: license
@@ -174,3 +187,9 @@ config:
         Keystone UUID of the WLM service user. Uniquely identifies this WLM
         deployment to other TrilioVault components. Populate after deployment:
           openstack user show <wlm-service-username> -f value -c id
+    dms-worker-threads:
+      type: int
+      default: 10
+      description: |
+        Number of worker threads for the embedded DMS server's parallel mount
+        request processing (see trilio-dms container in this charm's docstring).
