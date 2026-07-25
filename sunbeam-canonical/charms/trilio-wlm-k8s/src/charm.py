@@ -336,6 +336,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if self.unit.is_leader():
             self._publish_wlm_service_data()
             self._register_keystone_service()
+            identity = self._identity_data()
+            if identity:
+                self._ensure_service_user_default_project(container, identity)
 
         self.unit.status = ops.ActiveStatus("WLM ready")
 
@@ -883,6 +886,57 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service-endpoints": json.dumps(endpoints),
             "region": self.config.get("region", "RegionOne"),
         })
+
+    def _ensure_service_user_default_project(self, container, identity):
+        """Set this service account's own Keystone default_project_id.
+
+        workloadmgr's own client-session code (workloadmgr/compute/nova.py,
+        novaclient/nova_micro_client) never passes an explicit project scope
+        when authenticating — it relies entirely on Keystone auto-scoping to
+        the authenticating user's own default_project_id when none is given.
+        keystone-k8s's identity-service interface has no field for requesting
+        this at account-creation time, so it's left null, producing an
+        UNSCOPED (empty service catalog) token on every workloadmgr
+        nova/cinder/glance call and breaking all workload/snapshot creation
+        with "The service catalog is empty." — confirmed by direct comparison
+        against a working charm-trilio-wlm (reactive charm) deployment, whose
+        equivalent service account DOES have default_project_id set (to its
+        own "services" project). Idempotent — skips the update API call once
+        already set correctly.
+        """
+        script = (
+            "import json, sys\n"
+            "from keystoneauth1.identity import v3\n"
+            "from keystoneauth1 import session\n"
+            "from keystoneclient.v3 import client as keystone_client\n"
+            "auth = v3.Password(auth_url=sys.argv[1], username=sys.argv[2],\n"
+            "    password=sys.argv[3], user_domain_name=sys.argv[4],\n"
+            "    project_name=sys.argv[5], project_domain_name=sys.argv[4])\n"
+            "sess = session.Session(auth=auth)\n"
+            "kc = keystone_client.Client(session=sess)\n"
+            "user_id = sess.get_user_id()\n"
+            "project_id = sess.get_project_id()\n"
+            "user = kc.users.get(user_id)\n"
+            "if getattr(user, 'default_project_id', None) == project_id:\n"
+            "    print(json.dumps({'changed': False, 'project_id': project_id}))\n"
+            "else:\n"
+            "    kc.users.update(user, default_project=project_id)\n"
+            "    print(json.dumps({'changed': True, 'project_id': project_id}))\n"
+        )
+        auth_url = (
+            f"{identity['service_protocol']}://"
+            f"{identity['service_host']}:{identity['service_port']}/v3"
+        )
+        try:
+            process = container.exec(
+                ["python3", "-c", script, auth_url, identity["service_username"],
+                 identity["service_password"], identity["service_domain_name"],
+                 identity["service_tenant"]],
+            )
+            out, _ = process.wait_output()
+            logger.info("Service account default-project check: %s", out.strip())
+        except Exception as e:
+            logger.warning("Could not set service account default_project_id: %s", e)
 
     def _publish_ingress(self, rel):
         """Write traefik_k8s ingress requirer data.
