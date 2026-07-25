@@ -142,6 +142,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._write_ca_cert(container)
+        self._ensure_log_permissions(container)
         if self.unit.is_leader():
             self._db_sync(container)
         self._update_pebble_layer(container)
@@ -265,6 +266,21 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         )
         container.exec(["update-ca-certificates"]).wait()
         logger.info("CA bundle written to container")
+
+    def _ensure_log_permissions(self, container):
+        """Force LOG_DIR (and its contents) back to dmapi:dmapi ownership.
+
+        The Dockerfile chowns this directory at build time, but the pebble
+        service always runs as user=dmapi/group=dmapi (_update_pebble_layer),
+        so any log file that ends up root-owned at runtime (e.g. left behind
+        from a period where the container ran as root) makes oslo_log's
+        FileHandler fail with PermissionError on every startup. dmapi-api then
+        exits immediately, pebble restarts it, and it fails again in a ~30s
+        crash loop — silently, since the process never gets far enough to log
+        anywhere but stdout. Re-chown on every _configure() run so this
+        self-heals regardless of how the file got into a bad state.
+        """
+        container.exec(["chown", "-R", "dmapi:dmapi", LOG_DIR]).wait()
 
     def _db_sync(self, container):
         """Run DMAPI database migrations (idempotent; leader only).
