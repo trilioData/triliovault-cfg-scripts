@@ -175,20 +175,21 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         Runs 'workloadmgr trust-create' inside the workload container using the
         admin credentials supplied as action params.
 
-        Two prerequisites this action does NOT set up for you, both needed
-        before backup-target-create/workload-create will actually work:
-          - The admin user must hold the "admin" role at *system* scope, not
-            just on its own project/domain — a fresh Sunbeam admin user only
-            has domain-scoped admin, which isn't enough to act as a true
-            cross-domain cloud admin:
-              openstack role add --user admin --user-domain admin_domain \\
-                --system all admin
-          - cloud-admin-user-id / cloud-admin-project-id charm config options
-            must be set to this same admin user/project's Keystone IDs —
-            backup-target-create looks the trust up by those config values,
-            not dynamically from the trust record itself:
-              juju config trilio-wlm-k8s \\
-                cloud-admin-user-id=<id> cloud-admin-project-id=<id>
+        cloud-admin-user-id/cloud-admin-project-id (needed for
+        backup-target-create/workload-create to find this trust — see
+        _write_config) are populated automatically from the identity-service
+        relation's admin-user-id/admin-project-id fields (matching how the
+        older charm-trilio-wlm reactive charm read identity_service.get(
+        'admin_user_id')/'admin_project_id') — no manual `juju config` step
+        needed. Charm config still overrides this if explicitly set (e.g. for
+        a differently-scoped cloud-admin identity).
+
+        One prerequisite this action does NOT set up for you: the admin user
+        must hold the "admin" role at *system* scope, not just on its own
+        project/domain — a fresh Sunbeam admin user only has domain-scoped
+        admin, which isn't enough to act as a true cross-domain cloud admin:
+          openstack role add --user admin --user-domain admin_domain \\
+            --system all admin
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -413,6 +414,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "service_tenant": d.get("service-project-name", "services"),
             "service_domain_name": d.get("service-domain-name", "Default"),
             "service_domain_id": d.get("service-domain-id", "default"),
+            # keystone-k8s also publishes the human "admin" identity's own
+            # IDs on this same relation (matching the older charm-trilio-wlm
+            # reactive charm's identity_service.get('admin_user_id') /
+            # 'admin_project_id') — used as the default source for
+            # cloud_admin_user_id/cloud_admin_project_id in _write_config,
+            # since workloadmgr's own cloud-admin trust lookup needs the
+            # *human* admin's Keystone UUIDs, not WLM's own service account.
+            "admin_user_id": d.get("admin-user-id", ""),
+            "admin_project_id": d.get("admin-project-id", ""),
+            "admin_domain_id": d.get("admin-domain-id", ""),
         }
 
     def _patch_fuse_device(self):
@@ -658,8 +669,22 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "state_path": "/var/lib/workloadmgr",
             "sql_connection": db_url,
             "osapi_workloads_listen_port": WLM_PORT,
-            "cloud_admin_user_id": self.config.get("cloud-admin-user-id", ""),
-            "cloud_admin_project_id": self.config.get("cloud-admin-project-id", ""),
+            # Explicit charm config always wins; otherwise default to the human
+            # "admin" identity's own IDs, which keystone-k8s already publishes
+            # on the identity-service relation (see _identity_data) — matching
+            # how the older charm-trilio-wlm reactive charm sourced these same
+            # two fields from identity_service.get('admin_user_id')/
+            # 'admin_project_id'. Without this, workloadmgr's own cloud-admin
+            # trust lookup (workloadmgr/compute/nova.py's
+            # _get_trusts('cloud_admin', CONF.cloud_admin_project_id)) can
+            # never match a real trust record, since that option otherwise
+            # defaults to the literal string "admin" in workloadmgr's own code.
+            "cloud_admin_user_id": (
+                self.config.get("cloud-admin-user-id") or identity.get("admin_user_id", "")
+            ),
+            "cloud_admin_project_id": (
+                self.config.get("cloud-admin-project-id") or identity.get("admin_project_id", "")
+            ),
             "cloud_admin_domain": self.config.get("cloud-admin-domain", "admin_domain"),
             "cloud_admin_role": self.config.get("cloud-admin-role", "admin"),
             "trustee_role": self.config.get("trustee-role", "member, creator, admin"),

@@ -149,16 +149,24 @@ config:
       type: string
       default: ""
       description: |
-        Keystone UUID of the cloud admin user. Populate after deployment:
-          openstack user show admin -f value -c id
-        Leave empty if using trust-create action (WLM reads from DB after trust creation).
+        Keystone UUID of the cloud admin user, needed for workloadmgr's own
+        cloud-admin trust lookup (workloadmgr/compute/nova.py's
+        _get_trusts('cloud_admin', CONF.cloud_admin_project_id)) to find the
+        trust created by the create-cloud-admin-trust action.
+        Leave empty (default) to auto-populate from the identity-service
+        relation's admin-user-id field, which keystone-k8s already publishes —
+        no manual lookup needed in the normal case. Set explicitly only if the
+        cloud-admin identity differs from the relation's own admin user
+        (e.g. openstack user show <user> -f value -c id).
     cloud-admin-project-id:
       type: string
       default: ""
       description: |
-        Keystone UUID of the cloud admin project. Populate after deployment:
-          openstack project show admin -f value -c id
-        Leave empty if using trust-create action.
+        Keystone UUID of the cloud admin project — same purpose and same
+        auto-population behavior as cloud-admin-user-id above (sourced from
+        the identity-service relation's admin-project-id field when left
+        empty). Set explicitly only if it differs from the relation's own
+        admin project (e.g. openstack project show <project> -f value -c id).
     cloud-unique-id:
       type: string
       default: ""
