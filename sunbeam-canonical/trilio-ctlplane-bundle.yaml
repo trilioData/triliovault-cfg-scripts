@@ -59,7 +59,7 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: latest/candidate
-    revision: 9
+    revision: 10
     scale: 1
     trust: true
     options:
