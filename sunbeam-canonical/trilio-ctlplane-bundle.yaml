@@ -69,7 +69,7 @@ applications:
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: latest/candidate
-    revision: 4
+    revision: 5
     scale: 1
     trust: true
     options:
