@@ -117,6 +117,12 @@ charmcraft release trilio-charmers-trilio-wlm --revision <N> --channel latest/st
 
 Run the same commands from each charm's subdirectory independently.
 
+## Known Constraints
+
+- **`update-trilio` action is required after every charm refresh that doesn't change package-source config**: All four charms (`trilio-wlm`, `trilio-dm-api`, `trilio-data-mover`, `trilio-horizon-plugin`) define an `update-trilio` action ("Update the trilio packages and run post-update steps such as rerender configuration files and run any upgrade tasks such as database migrations"). Package reinstall/DB-sync is only auto-triggered reactively when the `triliovault-pkg-source` or `openstack-origin` config value actually *changes* (see `install_source_changed()` in `charm-trilio-wlm/src/reactive/trilio_wlm_handlers.py`). A point-release upgrade (e.g. 6.2 → 6.2.1) that keeps the same apt source and only bumps the charm revision will NOT trigger package/DB reinstall on its own — operators must run `juju run <app>/* update-trilio` on all four charms after `juju refresh`/`juju upgrade-charm`, or the new .deb packages and any pending alembic migrations never actually get applied.
+- **DB migration failures surface as `create-cloud-admin-trust` errors, not migration errors**: If alembic migrations weren't actually applied (stale DB, skipped `update-trilio`, or a fresh install where `db_sync()` silently reported success without applying the expected DDL — see TVAULT-7502), the first symptom is usually a `create-cloud-admin-trust` failure with a MySQL `OperationalError` like `Unknown column 'created_at' in 'field list'` on the `job` table INSERT — because that's the first DB write after the trust/job flow starts. When troubleshooting trust-creation failures, check DB schema/migration state before assuming the trust logic itself is broken.
+- **`db_sync()` has no built-in verification**: `trilio_wlm_handlers.py`'s `init_db()` handler calls `charm_class.db_sync()` (inherited from the upstream `charms_openstack` framework, not vendored in this repo) with no try/except, return-code check, or post-sync schema verification. A silently-incomplete migration won't be caught by the charm — only by whatever `charms_openstack.charm.OpenStackCharm.db_sync()` does internally (framework behavior, not ours to change here).
+
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
 
