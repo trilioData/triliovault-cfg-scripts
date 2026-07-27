@@ -12,8 +12,11 @@ metadata:
   name: wait-job-role
   namespace: trilio-openstack
 rules:
-  - apiGroups: ["rabbitmq.openstack.org"]
-    resources: ["rabbitmqs"]
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["subscriptions", "installplans", "clusterserviceversions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rabbitmq.com"]
+    resources: ["rabbitmqclusters", "users"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -1,0 +1,259 @@
+apiVersion: tvo.trilio.io/v1
+kind: TVOControlPlane
+metadata:
+  name: tvocontrolplane-v61
+spec:
+  crdType: "TVOControlPlane"
+  labels:
+    wlm_api:
+      node_selector_key: trilio-control-plane
+      node_selector_value: enabled
+    wlm_cron:
+      node_selector_key: trilio-control-plane
+      node_selector_value: enabled
+    wlm_scheduler:
+      node_selector_key: trilio-control-plane
+      node_selector_value: enabled
+    wlm_workloads:
+      node_selector_key: trilio-control-plane
+      node_selector_value: enabled
+    datamover_api:
+      node_selector_key: trilio-control-plane
+      node_selector_value: enabled
+  images:
+    triliovault_wlm: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhoso18
+    triliovault_wlm_api: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_wlm_scheduler: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_wlm_cron: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_wlm_workloads: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_object_store: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_datamover_api: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
+    triliovault_datamover_db_sync: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:stable-6.0-rhosp18
+    triliovault_wlm_db_sync: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
+    triliovault_dms: registry.connect.redhat.com/trilio/trilio-dms-rhoso:stable-6.2-rhosp18
+    openshift_cli: registry.redhat.io/openshift4/ose-cli:v4.15
+    galera: registry.redhat.io/rhoso/openstack-mariadb-rhel9:18.0
+  common:
+    nova_user_id: "42436"
+    nova_group_id: "42436"
+    trustee_role: "creator,member"
+    dmapi_workers: "16"
+    memcached_servers: "memcached-0.memcached.openstack.svc:11212"
+    oslo_enable_proxy_headers_parsing: false
+    metallb_address_pool: "internalapi"
+  openstack:
+    namespace: "openstack"
+    osp_secret_name: "osp-secret"
+  keystone:
+    keystone_interface: "internal"
+    common:
+      service_project_name: "service"
+      service_project_domain_name: "Default"
+      admin_role_name: "admin"
+      cloud_admin_user_name: "admin"
+      cloud_admin_project_name: "admin"
+      cloud_admin_domain_name: "Default"
+      region_name: "regionOne"
+      auth_url: "https://keystone-internal.openstack.svc:5000"
+      auth_uri: "https://keystone-internal.openstack.svc:5000/v3"
+      keystone_auth_protocol: "https"
+      keystone_auth_host: "keystone-internal.openstack.svc"
+      keystone_auth_port: "5000"
+      is_self_signed_ssl_cert: True
+      ssl_verify: True
+    datamover_api:
+      user: "dmapi"
+      service_name: "dmapi"
+      service_type: "datamover"
+      service_desc: "TrilioVault Datamover Api Service"
+      internal_endpoint: "https://triliovault-datamover-internal.trilio-openstack.svc:8784/v2"
+      public_endpoint: "https://triliovault-datamover-public-trilio-openstack.apps.trilio.trilio.bos2/v2"
+      public_auth_host: "triliovault-datamover-public-trilio-openstack.apps.trilio.trilio.bos2"
+    wlm_api:
+      user: "triliovault"
+      service_name: "TrilioVaultWLM"
+      service_type: "workloads"
+      service_desc: "TrilioVault Workloadmgr Api Service"
+      internal_endpoint: "https://triliovault-wlm-internal.trilio-openstack.svc:8781/v1/$(tenant_id)s"
+      public_endpoint: "https://triliovault-wlm-public-trilio-openstack.apps.trilio.trilio.bos2/v1/$(tenant_id)s"
+      public_auth_host: "triliovault-wlm-public-trilio-openstack.apps.trilio.trilio.bos2"
+  database:
+    common:
+      use_trilio_galera: true
+      root_user_name: "root"
+      host: "trilio-galera-cluster.trilio-openstack.svc"
+      port: 3306
+    datamover_api:
+      user: "dmapi"
+      database: "dmapi"
+    wlm_api:
+      user: "workloadmgr"
+      database: "workloadmgr"
+    galera:
+      replicas: 3
+
+      # Storage configuration - matching OpenStack Galera
+      storageClass: ocs-storagecluster-ceph-rbd
+      storageRequest: 10G
+
+      # Secret containing passwords
+      secret: trilio-openstack-secret
+
+      # Disable disk logging like OpenStack Galera
+      logToDisk: false
+
+      # Resource limits and requests for production workloads
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+        limits:
+          cpu: "4"
+          memory: 8Gi
+
+      # TLS configuration - using CA bundle approach like OpenStack
+      tls:
+        caBundleSecretName: combined-ca-bundle
+        secretName: cert-trilio-galera-cluster
+
+      # Node selector for dedicated database nodes (optional)
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+  rabbitmq:
+    common:
+      host: "trilio-rabbitmq-cluster.trilio-openstack.svc"
+      port: "15671"
+      driver: "messagingv2"
+      ssl: true
+      namespace: "trilio-openstack"
+      rabbit_quorum_queue: true
+      rabbit_transient_quorum_queue: true
+      amqp_durable_queues: true
+    cluster:
+      replicas: 3
+      resources:
+        requests:
+          cpu: "1"
+          memory: 2Gi
+        limits:
+          cpu: "2"
+          memory: 2Gi
+      persistence:
+        storage_class_name: "ocs-storagecluster-ceph-rbd"
+        storage: 10Gi
+      termination_grace_period_seconds: 604800
+    datamover_api:
+      user: "dmapi"
+      vhost: "dmapi"
+    wlm_api:
+      user: "workloadmgr"
+      vhost: "workloadmgr"
+  helm3_hook: true
+  pod:
+    triliovault_wlm_api:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_scheduler:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_cron:
+      networks: ""
+      debug_mode: false
+    triliovault_wlm_workloads:
+      networks: ""
+      debug_mode: false
+    triliovault_datamover_api:
+      networks: ""
+      debug_mode: false
+    triliovault_dms:
+      networks: ""
+      debug_mode: false
+    security_context:
+      triliovault:
+        container:
+          triliovault_datamover_api:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            runAsUser: 63630
+            runAsGroup: 0
+          triliovault_wlm_api:
+            readOnlyRootFilesystem: false
+            privileged: true
+            runAsUser: 42436
+          triliovault_wlm_scheduler:
+            readOnlyRootFilesystem: false
+            privileged: true
+            runAsUser: 42436
+          triliovault_wlm_cron:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            runAsUser: 42436
+          triliovault_wlm_workloads:
+            readOnlyRootFilesystem: false
+            privileged: true
+            runAsUser: 42436
+          triliovault_wlm_init:
+            readOnlyRootFilesystem: false
+            runAsUser: 0
+            runAsGroup: 42436
+          triliovault_datamover_api_init:
+            readOnlyRootFilesystem: false
+            runAsUser: 0
+            runAsGroup: 63630
+    replicas:
+      triliovault_wlm_api: 3
+      triliovault_datamover_api: 3
+      triliovault_wlm_workloads: 3
+      triliovault_wlm_cron: 1
+      triliovault_wlm_scheduler: 3
+  dms:
+    # s3vaultfuse-global.conf -- configures how DMS spawns s3vaultfuse processes.
+    # Parameters are written to /etc/triliovault-dms/s3vaultfuse-global.conf inside the DMS container.
+    s3vaultfuse:
+      default:
+        vault_storage_type: "s3"
+        vault_s3_max_pool_connections: 50
+        vault_s3_read_timeout: 30
+        vault_s3_max_attempts: 3
+        vault_s3_auth_version: "DEFAULT"
+        vault_s3_signature_version: "default"
+        # SSL settings -- DMS overrides these via env vars; set here only to change the site-wide default
+        vault_s3_ssl: "True"
+        vault_s3_ssl_verify: "True"
+        vault_s3_region_name: "us-east-1"
+        # FUSE / caching
+        vault_segment_size: 33554432
+        vault_cache_size: 16
+        queue_depth: 100
+        worker_pool_size: 10
+        vault_retry_count: 2
+        # Thread pool
+        vault_enable_threadpool: "True"
+        vault_threaded_filesystem: "True"
+        max_uploads_pending: 20
+        # Logging
+        vault_logging_level: "error"
+        log_file: "/var/log/triliovault/triliovault-object-store.log"
+        log_config_append: "/etc/triliovault-object-store/object_store_logging.conf"
+        trace_function_calls: "False"
+        # S3 bucket features
+        bucket_object_lock: "False"
+        use_manifest_suffix: "False"
+        azure_immutability_enabled: "False"
+        # Metadata cache
+        metadata_cache_max_items: 32
+        vault_cache_username: "nova"
+      s3fuse_sys_admin:
+        helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
+  workloadmgr:
+    policyOverrides:
+      # Refer file policy-example.yaml for examples of overriding default policy rules. Uncomment and modify the below lines to override specific rules.
+      # workload:workload_delete: rule:admin_api
+      # snapshot:snapshot_delete: rule:admin_api
+      workload:backup_target_create: rule:admin_api
+      workload:backup_target_delete: rule:admin_api
+      workload:backup_target_set_default: rule:admin_api
+      workload:backup_target_type_create: rule:admin_api
+      workload:backup_target_type_delete: rule:admin_api
+      workload:backup_target_type_update: rule:admin_api
+      workload:backup_target_update: rule:admin_api
