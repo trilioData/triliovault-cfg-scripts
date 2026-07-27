@@ -11,14 +11,43 @@ import re
 import base64
 
 
-# Define the input YAML file
-yaml_file = "tvo-operator-inputs.yaml"
+# RHOSO switched RabbitMQ from the upstream community RabbitMQ Cluster Operator to its
+# own native operator starting with FR6 (18.0.21) - the community operator is no longer
+# deployed by RHOSO from that version on (TVAULT-7511). Pick the input template matching
+# the target cluster's RHOSO version, then resolve it into the canonical output file so
+# other scripts (uninstall_tvo_control_plane.sh, collect_backup_targets.sh, etc.) that
+# expect tvo-operator-inputs.yaml keep working unchanged.
+def get_input_template():
+    try:
+        result = subprocess.run(
+            ["oc", "get", "openstackversion", "openstack-controlplane", "-n", "openstack",
+             "-o", "jsonpath={.status.deployedVersion}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        deployed_version = result.stdout.strip()
+        match = re.match(r"^(\d+\.\d+\.\d+)", deployed_version)
+        base_version = match.group(1) if match else ""
+        patch = int(base_version.split(".")[2]) if base_version.count(".") == 2 else None
+        if patch is not None and patch >= 21:
+            print(f"Detected OpenStack version: {deployed_version} (>=18.0.21, FR6 onwards)")
+            return "tvo-operator-inputs-fr6-onwards.yaml"
+        print(f"Detected OpenStack version: {deployed_version or 'unknown'} (<18.0.21, till FR5)")
+        return "tvo-operator-inputs-till-fr5.yaml"
+    except subprocess.CalledProcessError:
+        print("Failed to detect OpenStack version. Defaulting to tvo-operator-inputs-till-fr5.yaml.")
+        return "tvo-operator-inputs-till-fr5.yaml"
+
+
+input_template = get_input_template()
+output_file = "tvo-operator-inputs.yaml"
 
 yaml_parser = YAML()
 yaml_parser.preserve_quotes = True
 yaml_parser.width = 4096
 
-with open(yaml_file, "r") as file:
+with open(input_template, "r") as file:
     yaml_data = yaml_parser.load(file)
 
 
@@ -204,7 +233,7 @@ if keystone_url:
 
 update_keystone_endpoints()
 print("Calling rabbit params method")
-with open(yaml_file, "w") as file:
+with open(output_file, "w") as file:
     yaml_parser.dump(yaml_data, file)
 
-print("YAML file tvo-operator-inputs.yaml is updated successfully.")
+print(f"YAML file {output_file} is updated successfully.")

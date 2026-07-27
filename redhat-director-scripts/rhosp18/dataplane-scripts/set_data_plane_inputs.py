@@ -14,7 +14,7 @@ with open(SECRET_FILE) as f:
 # Extract data
 rabbit_host = data["spec"]["rabbitmq"]["common"].get("host", "")
 rabbit_ssl = data["spec"]["rabbitmq"]["common"].get("ssl", True)
-rabbit_quorum_queue = data["spec"]["rabbitmq"]["cluster"].get("rabbit_quorum_queue", False)
+rabbit_quorum_queue = data["spec"]["rabbitmq"]["cluster"].get("rabbit_quorum_queue", True)
 database_host = data["spec"]["database"]["common"].get("host", "")
 database_port = data["spec"]["database"]["common"].get("port", "3306")
 backup_targets = data.get("spec", {}).get("triliovault_backup_targets", [])
