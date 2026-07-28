@@ -1,5 +1,7 @@
 #!/usr/bin/python3
+import re
 import shutil
+import subprocess
 import sys
 from ruamel.yaml import YAML
 
@@ -8,13 +10,15 @@ from ruamel.yaml import YAML
 # Operator to its own native operator starting with FR6 (18.0.21). The native operator's
 # RabbitMq CRD doesn't use several fields the old community-operator template relied on
 # (they're either irrelevant to the native CRD or handled by the platform itself), so this
-# fix's tvo-operator-inputs-fr6-onwards.yaml drops them.
+# fix's tvo-operator-inputs-fr6-onwards.yaml drops them. On a cluster still on FR5 or
+# earlier, the old community operator is still in use and still needs those fields, so
+# this script only strips them when the target cluster is actually on FR6+.
 #
-# This script patches an existing tvo-operator-inputs.yaml (e.g. a customer's real
-# 6.1.9 GA file, already populated with their own values) by removing exactly those
-# obsolete fields - it does NOT change the value of any parameter that survives the fix,
-# including rabbit_quorum_queue. Run it once as part of upgrading to the TVAULT-7511 fix,
-# after the RabbitMQ CR/PVC cleanup (if applicable) and the tvo-operator image upgrade.
+# This script patches an existing tvo-operator-inputs.yaml (a customer's real file from
+# before this fix, already populated with their own values) by removing exactly those
+# obsolete fields - it does NOT change the value of any parameter that survives the fix.
+# Run it once as part of upgrading to the TVAULT-7511 fix, after the RabbitMQ CR/PVC
+# cleanup (if applicable) and the tvo-operator image upgrade.
 
 FIELDS_TO_REMOVE = [
     ("spec", "images", "rabbitmq"),
@@ -24,6 +28,31 @@ FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "service"),
     ("spec", "rabbitmq", "cluster", "affinity"),
 ]
+
+
+def is_fr6_onwards():
+    try:
+        result = subprocess.run(
+            ["oc", "get", "openstackversion", "openstack-controlplane", "-n", "openstack",
+             "-o", "jsonpath={.status.deployedVersion}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        deployed_version = result.stdout.strip()
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", deployed_version)
+        if not match:
+            print(f"Could not parse OpenStack version from '{deployed_version}'. Assuming till-FR5, no changes made.")
+            return False
+        patch = int(match.group(3))
+        if patch >= 21:
+            print(f"Detected OpenStack version: {deployed_version} (>=18.0.21, FR6 onwards)")
+            return True
+        print(f"Detected OpenStack version: {deployed_version} (<18.0.21, till FR5) - no changes needed")
+        return False
+    except subprocess.CalledProcessError:
+        print("Failed to detect OpenStack version. Assuming till-FR5, no changes made.")
+        return False
 
 
 def remove_field(yaml_data, path):
@@ -47,6 +76,11 @@ def main():
 
     input_file = sys.argv[1]
     output_file = sys.argv[2] if len(sys.argv) == 3 else input_file
+
+    if not is_fr6_onwards():
+        print("Target cluster is on till-FR5 - the old community-operator fields are still "
+              "required, so the file is left unchanged.")
+        sys.exit(0)
 
     backup_file = f"{input_file}.bak"
     shutil.copy2(input_file, backup_file)
