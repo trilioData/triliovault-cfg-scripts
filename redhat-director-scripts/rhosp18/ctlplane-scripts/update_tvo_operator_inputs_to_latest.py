@@ -3,7 +3,6 @@ import re
 import shutil
 import subprocess
 import sys
-from ruamel.yaml import YAML
 
 
 # TVAULT-7511: RHOSO switched RabbitMQ from the upstream community RabbitMQ Cluster
@@ -16,9 +15,12 @@ from ruamel.yaml import YAML
 #
 # This script patches an existing tvo-operator-inputs.yaml (a customer's real file from
 # before this fix, already populated with their own values) by removing exactly those
-# obsolete fields - it does NOT change the value of any parameter that survives the fix.
-# Run it once as part of upgrading to the TVAULT-7511 fix, after the RabbitMQ CR/PVC
-# cleanup (if applicable) and the tvo-operator image upgrade.
+# obsolete fields - it does NOT change the value of any parameter that survives the fix,
+# and it does not reformat/reserialize the rest of the file: removal is done line-by-line
+# on the original text (tracking indentation to find each field and its nested block, if
+# any), so every other line - including comments, quote style, and boolean literal casing -
+# is left byte-for-byte unchanged. Run it once as part of upgrading to the TVAULT-7511 fix,
+# after the RabbitMQ CR/PVC cleanup (if applicable) and the tvo-operator image upgrade.
 
 FIELDS_TO_REMOVE = [
     ("spec", "images", "rabbitmq"),
@@ -28,6 +30,8 @@ FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "service"),
     ("spec", "rabbitmq", "cluster", "affinity"),
 ]
+
+KEY_LINE_RE = re.compile(r"^( *)(?:- )?([A-Za-z0-9_.-]+):(?:\s|$)")
 
 
 def is_fr6_onwards():
@@ -55,17 +59,51 @@ def is_fr6_onwards():
         return False
 
 
-def remove_field(yaml_data, path):
-    node = yaml_data
-    for key in path[:-1]:
-        if not isinstance(node, dict) or key not in node:
-            return False
-        node = node[key]
-    last_key = path[-1]
-    if isinstance(node, dict) and last_key in node:
-        del node[last_key]
-        return True
-    return False
+def line_indent(line):
+    match = KEY_LINE_RE.match(line)
+    if not match:
+        return None
+    indent = len(match.group(1))
+    if "- " in line[:indent + 2]:
+        indent += 2
+    return indent
+
+
+def strip_fields(lines, fields_to_remove):
+    remaining = {path: True for path in fields_to_remove}
+    output = []
+    stack = []  # list of (indent, key)
+    removing_below_indent = None
+
+    for line in lines:
+        match = KEY_LINE_RE.match(line)
+        indent = line_indent(line)
+
+        if removing_below_indent is not None:
+            if indent is not None and indent <= removing_below_indent:
+                removing_below_indent = None
+            else:
+                continue
+
+        if indent is None:
+            output.append(line)
+            continue
+
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+
+        key = match.group(2)
+        current_path = tuple(k for _, k in stack) + (key,)
+        stack.append((indent, key))
+
+        if current_path in remaining:
+            remaining[current_path] = False
+            removing_below_indent = indent
+            continue
+
+        output.append(line)
+
+    return output, [path for path, still_present in remaining.items() if not still_present]
 
 
 def main():
@@ -86,21 +124,17 @@ def main():
     shutil.copy2(input_file, backup_file)
     print(f"- Backed up original file to {backup_file}")
 
-    yaml_parser = YAML()
-    yaml_parser.preserve_quotes = True
-    yaml_parser.width = 4096
-    yaml_parser.indent(mapping=2, sequence=4, offset=2)
+    with open(input_file, "r", newline="") as file:
+        lines = file.readlines()
 
-    with open(input_file, "r") as file:
-        yaml_data = yaml_parser.load(file)
+    output_lines, removed_paths = strip_fields(lines, FIELDS_TO_REMOVE)
 
     for path in FIELDS_TO_REMOVE:
-        removed = remove_field(yaml_data, path)
         dotted = ".".join(path)
-        print(f"- Removed {dotted}" if removed else f"- {dotted} not present, skipping")
+        print(f"- Removed {dotted}" if path in removed_paths else f"- {dotted} not present, skipping")
 
-    with open(output_file, "w") as file:
-        yaml_parser.dump(yaml_data, file)
+    with open(output_file, "w", newline="") as file:
+        file.writelines(output_lines)
 
     print(f"YAML file {output_file} is updated successfully.")
 
