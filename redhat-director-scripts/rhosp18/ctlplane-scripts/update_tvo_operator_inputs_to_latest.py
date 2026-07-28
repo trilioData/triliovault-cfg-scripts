@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+import shutil
+import sys
+from ruamel.yaml import YAML
+
+
+# TVAULT-7511: RHOSO switched RabbitMQ from the upstream community RabbitMQ Cluster
+# Operator to its own native operator starting with FR6 (18.0.21). The native operator's
+# RabbitMq CRD doesn't use several fields the old community-operator template relied on
+# (they're either irrelevant to the native CRD or handled by the platform itself), so this
+# fix's tvo-operator-inputs-fr6-onwards.yaml drops them.
+#
+# This script patches an existing tvo-operator-inputs.yaml (e.g. a customer's real
+# 6.1.9 GA file, already populated with their own values) by removing exactly those
+# obsolete fields - it does NOT change the value of any parameter that survives the fix,
+# including rabbit_quorum_queue. Run it once as part of upgrading to the TVAULT-7511 fix,
+# after the RabbitMQ CR/PVC cleanup (if applicable) and the tvo-operator image upgrade.
+
+FIELDS_TO_REMOVE = [
+    ("spec", "images", "rabbitmq"),
+    ("spec", "rabbitmq", "cluster", "api_version"),
+    ("spec", "rabbitmq", "cluster", "tls"),
+    ("spec", "rabbitmq", "cluster", "rabbitmq"),
+    ("spec", "rabbitmq", "cluster", "service"),
+    ("spec", "rabbitmq", "cluster", "affinity"),
+]
+
+
+def remove_field(yaml_data, path):
+    node = yaml_data
+    for key in path[:-1]:
+        if not isinstance(node, dict) or key not in node:
+            return False
+        node = node[key]
+    last_key = path[-1]
+    if isinstance(node, dict) and last_key in node:
+        del node[last_key]
+        return True
+    return False
+
+
+def main():
+    if len(sys.argv) not in (2, 3):
+        print("Usage: ./update_tvo_operator_inputs_to_latest.py <input-file> [output-file]")
+        print("       If output-file is omitted, input-file is updated in place.")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2] if len(sys.argv) == 3 else input_file
+
+    backup_file = f"{input_file}.bak"
+    shutil.copy2(input_file, backup_file)
+    print(f"- Backed up original file to {backup_file}")
+
+    yaml_parser = YAML()
+    yaml_parser.preserve_quotes = True
+    yaml_parser.width = 4096
+    yaml_parser.indent(mapping=2, sequence=4, offset=2)
+
+    with open(input_file, "r") as file:
+        yaml_data = yaml_parser.load(file)
+
+    for path in FIELDS_TO_REMOVE:
+        removed = remove_field(yaml_data, path)
+        dotted = ".".join(path)
+        print(f"- Removed {dotted}" if removed else f"- {dotted} not present, skipping")
+
+    with open(output_file, "w") as file:
+        yaml_parser.dump(yaml_data, file)
+
+    print(f"YAML file {output_file} is updated successfully.")
+
+
+if __name__ == "__main__":
+    main()
