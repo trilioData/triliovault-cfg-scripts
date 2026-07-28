@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rabbitmq-exporter
+  namespace: trilio-monitoring
+  labels:
+    release: prometheus-user-workload
+spec:
+  # Matches any Service with app=rabbitmq-exporter, regardless of the
+  # rabbitmq-exporter-instance label value — so a single ServiceMonitor
+  # covers every exporter deployment (controller, compute-0, compute-1, …).
+  selector:
+    matchLabels:
+      app: rabbitmq-exporter
+  namespaceSelector:
+    matchNames:
+      - trilio-monitoring
+  endpoints:
+    - port: metrics
+      interval: 30s
+      # Relabel the scraped instance to the human-readable name set on
+      # the Service via the rabbitmq-exporter-instance label.  Falls back
+      # to the default host:port if the label is absent.
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_label_rabbitmq_exporter_instance]
+          targetLabel: instance
+          regex: (.+)
+          replacement: $1
+          action: replace

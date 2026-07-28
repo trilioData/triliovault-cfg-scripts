@@ -1,0 +1,295 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.1.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red",   "index": 0, "text": "Offline" },
+                "1": { "color": "green", "index": 1, "text": "Online"  }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 0.01,
+                "to": 0.99,
+                "result": { "color": "orange", "index": 2, "text": "Degraded" }
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "orange", "value": 0.01 },
+              { "color": "green",  "value": 1    }
+            ]
+          },
+          "unit": "none",
+          "noValue": "Offline"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\", deployment=\"triliovault-wlm-api\"} / kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=\"triliovault-wlm-api\"}",
+          "instant": true,
+          "legendFormat": "WLM API",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\", deployment=\"triliovault-wlm-workloads\"} / kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=\"triliovault-wlm-workloads\"}",
+          "instant": true,
+          "legendFormat": "WLM Workloads",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\", deployment=\"triliovault-wlm-cron\"} / kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=\"triliovault-wlm-cron\"}",
+          "instant": true,
+          "legendFormat": "WLM Cron",
+          "refId": "C"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\", deployment=\"triliovault-wlm-scheduler\"} / kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=\"triliovault-wlm-scheduler\"}",
+          "instant": true,
+          "legendFormat": "WLM Scheduler",
+          "refId": "D"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\", deployment=\"triliovault-datamover-api\"} / kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=\"triliovault-datamover-api\"}",
+          "instant": true,
+          "legendFormat": "Datamover API",
+          "refId": "E"
+        }
+      ],
+      "title": "Trilio Services Status",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "color-background" },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "CrashLoopBackOff": { "color": "red",    "index": 0, "text": "CrashLoopBackOff" },
+                "OOMKilled":        { "color": "red",    "index": 1, "text": "OOMKilled"        },
+                "Error":            { "color": "red",    "index": 2, "text": "Error"            },
+                "ImagePullBackOff": { "color": "orange", "index": 3, "text": "ImagePullBackOff" },
+                "ErrImagePull":     { "color": "orange", "index": 4, "text": "ErrImagePull"     }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "red", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "pod" },
+            "properties": [
+              { "id": "displayName", "value": "Pod" },
+              { "id": "custom.cellOptions", "value": { "type": "auto" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "container" },
+            "properties": [
+              { "id": "displayName", "value": "Service" },
+              { "id": "custom.cellOptions", "value": { "type": "auto" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "reason" },
+            "properties": [{ "id": "displayName", "value": "Error Reason" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "Count" },
+              { "id": "custom.cellOptions", "value": { "type": "auto" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "kube_pod_container_status_waiting_reason{namespace=\"$namespace\", container=~\"triliovault-wlm-api|triliovault-wlm-workloads|triliovault-wlm-cron|triliovault-wlm-scheduler|triliovault-datamover-api\"} > 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "A"
+        }
+      ],
+      "title": "Error / CrashLoopBackOff (shows only when issues exist)",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": { "names": ["pod", "container", "reason", "Value"] }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": { "container": 0, "pod": 1, "reason": 2, "Value": 3 },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["trilio", "kubernetes", "service-health"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": { "selected": false, "text": "trilio-openstack", "value": "trilio-openstack" },
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kube_pod_info, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(kube_pod_info, namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-3h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Trilio Service Health",
+  "uid": "trilio-service-health",
+  "version": 1,
+  "weekStart": ""
+}
