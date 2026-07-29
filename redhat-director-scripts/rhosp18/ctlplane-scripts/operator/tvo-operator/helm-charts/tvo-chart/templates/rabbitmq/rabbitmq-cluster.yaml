@@ -4,9 +4,6 @@ kind: RabbitMq
 metadata:
   name: trilio-rabbitmq-cluster
   namespace: {{ .Values.rabbitmq.common.namespace }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-18"
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   delayStartSeconds: 30
