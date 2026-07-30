@@ -47,28 +47,9 @@ export OS_USER_DOMAIN_NAME="admin_domain"
 export OS_PROJECT_DOMAIN_NAME="admin_domain"
 export OS_IDENTITY_API_VERSION="3"
 
-# ---------------------------------------------------------------------------
-# S3 backup target credentials — must be provided as environment variables.
-# Export these before sourcing env.sh, or pass inline:
-#   BT1_S3_ACCESS_KEY=... BT2_S3_ACCESS_KEY=... source env.sh
-# ---------------------------------------------------------------------------
-export BT1_S3_ACCESS_KEY="${BT1_S3_ACCESS_KEY:-}"
-export BT1_S3_SECRET_KEY="${BT1_S3_SECRET_KEY:-}"
-export BT2_S3_ACCESS_KEY="${BT2_S3_ACCESS_KEY:-}"
-export BT2_S3_SECRET_KEY="${BT2_S3_SECRET_KEY:-}"
-
-# ---------------------------------------------------------------------------
-# NFS backup target
-# ---------------------------------------------------------------------------
-export NFS_TARGET_NAME="BT_NFS"
-export NFS_SERVER_EXPORT="${NFS_SERVER_EXPORT:-192.168.1.100:/backup}"
-export NFS_MOUNT_OPTS="nolock,soft,timeo=600,intr,lookupcache=none,nfsvers=3,retrans=10"
-
-# ---------------------------------------------------------------------------
-# Secret-server (Barbican replacement for Sunbeam)
-# ---------------------------------------------------------------------------
-export SECRET_SERVER_PORT="8765"
-export SECRET_SERVER_SVC="trilio-secret-server"
+# Backup target config (endpoints, buckets, credentials, NFS path) is loaded
+# from <workspace-root>/env/backup_targets.yaml by 01_create_backup_targets.sh.
+# DMS secret payloads are stored in Barbican (deployed by Sunbeam).
 
 # ---------------------------------------------------------------------------
 # Test VM settings
