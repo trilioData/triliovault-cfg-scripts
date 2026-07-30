@@ -365,8 +365,6 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             missing.append("database")
         if not self._amqp_data():
             missing.append("amqp")
-        if not self._amqp_dms_data():
-            missing.append("amqp-dms")
         if not self._identity_data():
             missing.append("identity-service")
         return missing
@@ -759,13 +757,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM.
 
-        Db url is WLM's own database (not DMAPI's). RabbitMQ uses the
-        *workloadmgr* vhost (amqp-dms relation) — same as WLM's own transport,
-        matching RHOSO18 pattern where WLM-side DMS uses the workloadmgr vhost.
+        Db url is WLM's own database (not DMAPI's). RabbitMQ uses the main
+        *amqp* relation credentials (same workloadmgr user/vhost as WLM's
+        oslo.messaging transport_url). Using the same relation avoids a
+        password conflict that occurs when two relations request the same
+        RabbitMQ username — rabbitmq-k8s generates independent passwords per
+        relation, but a single RabbitMQ user can only have one active password.
         node_id targets this unit's own embedded DMS server (see _dms_node_id).
         Written once — all four WLM services share the same container filesystem.
         """
-        amqp_dms = self._amqp_dms_data()
+        amqp_dms = self._amqp_data()
         db = self._db_data()
 
         endpoint = db["endpoints"].split(",")[0].strip()
@@ -794,13 +795,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _write_dms_server_config(self, container):
         """Write server.conf for the embedded DMS server in the trilio-dms container.
 
-        Reuses WLM's own already-computed Keystone auth_url and CA cert
+        Uses the main *amqp* relation credentials (same workloadmgr user/vhost
+        as WLM's oslo.messaging transport_url). Two relations requesting the same
+        RabbitMQ username get different passwords from rabbitmq-k8s, causing an
+        auth failure for whichever relation's password was overwritten last. Using
+        the same single amqp relation for both transport_url and DMS configs
+        avoids this conflict entirely.
+
+        Also reuses WLM's own already-computed Keystone auth_url and CA cert
         (this unit's own identity-service/receive-ca-cert relation data)
         rather than a separate config option — the embedded server only ever
         serves this one co-located WLM unit, so there's nothing to configure
         independently.
         """
-        amqp_dms = self._amqp_dms_data()
+        amqp_dms = self._amqp_data()
         identity = self._identity_data()
         rabbitmq_url = (
             f"rabbit://{amqp_dms.get('username', 'workloadmgr')}:{amqp_dms['password']}"
