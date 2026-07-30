@@ -201,6 +201,15 @@ After validating the nova-user approach (sections above), an experiment ran WLM,
 - **Ceph client name is NOT whatever you request**: ceph-mon/microceph's broker auto-provisions a client key named after the consuming application's Juju **application name**, regardless of what `client=` string the charm's own broker request specifies. `_ceph_client_name` must be a property that returns `self.app.name` dynamically (not a hardcoded string) to stay consistent with whatever key the broker actually created.
 - If a configured Cinder/Nova Ceph pool doesn't actually exist, skip it rather than erroring — don't assume all conventionally-named pools are present.
 
+### Barbican (Key Manager) for DMS secret storage
+Sunbeam deploys Barbican as part of its core control plane — it is always available, no extra steps needed. Use it for storing DMS secret payloads (`backup-target-create --secret-ref`). The earlier approach of deploying a custom `secret-server` k8s pod as a Barbican substitute was wrong and has been removed.
+
+Key gotchas:
+- **Barbican `payload_content_type` must be `text/plain`** — Barbican rejects `application/json`. The DMS payload is JSON text stored as an opaque text secret; this is correct and DMS reads it fine.
+- **Barbican endpoint is not reachable via k8s ClusterIP from compute nodes** — Compute nodes (172.26.2.5, .6) cannot reach MicroK8s ClusterIPs. Always use the public endpoint from the Keystone service catalog (`key-manager` service, `public` interface), which routes via the floating IP/ingress and IS reachable from compute nodes.
+- **Build server may lack the barbicanclient openstack CLI plugin** — create secrets via the Barbican REST API from inside the WLM pod instead (see `sunbeam-canonical/test/01_create_backup_targets.sh`).
+- **Sunbeam admin user is in `admin_domain` domain** (not `Default`) — Keystone auth must use `user_domain_name=admin_domain`, `project_domain_name=admin_domain`.
+
 ### DMS mounts on-demand (event-driven), not proactively at startup
 The DMS server does not mount all registered backup targets when it starts — it waits for a job over its RabbitMQ RPC queue (`dms.<node-id>`) to trigger a mount. Restarting the `trilio-dms-server` Pebble service does **not** by itself remount anything; it only appears to "fix" a stale mount if a mount request happens to arrive shortly after. Corollary: WLM's `workload-create`/`workload-snapshot` flows themselves are what trigger the on-demand mount via DMS RPC — if the mount is genuinely absent or stale, the first request after a restart is what actually re-establishes it, not the restart alone.
 
