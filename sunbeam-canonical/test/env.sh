@@ -47,13 +47,9 @@ export OS_USER_DOMAIN_NAME="admin_domain"
 export OS_PROJECT_DOMAIN_NAME="admin_domain"
 export OS_IDENTITY_API_VERSION="3"
 
-# ---------------------------------------------------------------------------
-# Secret-server (Barbican replacement for Sunbeam)
 # Backup target config (endpoints, buckets, credentials, NFS path) is loaded
-# from <workspace-root>/env/backup_targets.yaml by 01_create_backup_targets.sh
-# ---------------------------------------------------------------------------
-export SECRET_SERVER_PORT="8765"
-export SECRET_SERVER_SVC="trilio-secret-server"
+# from <workspace-root>/env/backup_targets.yaml by 01_create_backup_targets.sh.
+# DMS secret payloads are stored in Barbican (deployed by Sunbeam).
 
 # ---------------------------------------------------------------------------
 # Test VM settings

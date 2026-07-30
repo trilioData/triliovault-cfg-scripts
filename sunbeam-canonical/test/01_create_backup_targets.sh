@@ -10,9 +10,9 @@
 #
 # Override the env directory with: export TRILIO_ENV_DIR=/path/to/env
 #
-# Adapted from kolla-ansible/ansible/create_backup_target_62.yml
-# Sunbeam difference: no Barbican — a minimal K8s secret-server pod serves
-# the DMS secret payload JSON over HTTP on a stable ClusterIP.
+# DMS secret payloads are stored in Barbican (OpenStack Key Manager), which is
+# deployed by Sunbeam. Secrets are created via the Barbican REST API from inside
+# the WLM pod (the build server's openstack CLI may lack the barbicanclient plugin).
 #
 # Usage:
 #   bash 01_create_backup_targets.sh
@@ -189,110 +189,112 @@ kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
     --ssl-verify \
     -o /tmp/bt2_s3_secret.json
 
-# Copy payloads out of pod
-BT1_PAYLOAD=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- cat /tmp/bt1_s3_secret.json)
-BT2_PAYLOAD=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- cat /tmp/bt2_s3_secret.json)
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  rm -f /tmp/bt1_s3_secret.json /tmp/bt2_s3_secret.json
-
 echo "  Payloads generated."
 
 # ---------------------------------------------------------------------------
-# Step 2: Deploy minimal secret-server in Kubernetes
+# Step 2: Store DMS secret payloads in Barbican (OpenStack Key Manager)
 #
-# Barbican is not deployed in Sunbeam by default. The secret-server is a
-# lightweight Python HTTP pod that serves the DMS secret payloads over HTTP
-# on a ClusterIP. MicroK8s ClusterIPs are reachable from the host machine
-# (DataMover compute side) via the bridge network.
+# Barbican is deployed by Sunbeam as part of the core control plane.
+# The build server's openstack CLI may lack the barbicanclient plugin, so
+# secret creation is performed via the Barbican REST API from inside the WLM
+# pod (which has python3-requests available).
+#
+# Payload content type must be 'text/plain' (Barbican does not accept
+# 'application/json'). The DMS payload is valid JSON stored as opaque text.
+#
+# The Barbican endpoint is discovered from the Keystone service catalog
+# (key-manager service, public interface) — no hardcoded URLs.
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "=== Step 2: Deploying secret-server (Barbican replacement) ==="
+echo "=== Step 2: Storing DMS secret payloads in Barbican ==="
 
-kubectl create configmap trilio-secret-payloads \
-  -n "$K8S_NAMESPACE" \
-  --from-literal="BT1_S3.json=$BT1_PAYLOAD" \
-  --from-literal="BT2_S3.json=$BT2_PAYLOAD" \
-  --dry-run=client -o yaml | kubectl apply -f -
+_BARBICAN_SCRIPT=$(mktemp /tmp/trilio-barbican-create-XXXXXX.py)
+trap "rm -f $_ENV_TMPFILE $_BARBICAN_SCRIPT" EXIT
 
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Service
-metadata:
-  name: ${SECRET_SERVER_SVC}
-  namespace: ${K8S_NAMESPACE}
-spec:
-  selector:
-    app: ${SECRET_SERVER_SVC}
-  ports:
-  - port: ${SECRET_SERVER_PORT}
-    targetPort: ${SECRET_SERVER_PORT}
-  type: ClusterIP
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ${SECRET_SERVER_SVC}
-  namespace: ${K8S_NAMESPACE}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ${SECRET_SERVER_SVC}
-  template:
-    metadata:
-      labels:
-        app: ${SECRET_SERVER_SVC}
-    spec:
-      containers:
-      - name: server
-        image: python:3.11-slim
-        command: ["python3", "-c"]
-        args:
-        - |
-          import os, sys
-          from http.server import HTTPServer, BaseHTTPRequestHandler
-          class H(BaseHTTPRequestHandler):
-              def do_GET(self):
-                  name = self.path.lstrip('/')
-                  path = f'/secrets/{name}'
-                  if os.path.exists(path):
-                      data = open(path, 'rb').read()
-                      self.send_response(200)
-                      self.send_header('Content-Type', 'application/octet-stream')
-                      self.send_header('Content-Length', str(len(data)))
-                      self.end_headers()
-                      self.wfile.write(data)
-                  else:
-                      self.send_response(404)
-                      self.end_headers()
-              def log_message(self, fmt, *args):
-                  sys.stderr.write('%s %s\n' % (self.address_string(), fmt % args))
-          HTTPServer(('', ${SECRET_SERVER_PORT}), H).serve_forever()
-        ports:
-        - containerPort: ${SECRET_SERVER_PORT}
-        volumeMounts:
-        - name: secrets
-          mountPath: /secrets
-      volumes:
-      - name: secrets
-        configMap:
-          name: trilio-secret-payloads
-EOF
+cat > "$_BARBICAN_SCRIPT" << 'PYEOF'
+import os, requests, json, sys, warnings
+warnings.filterwarnings('ignore')
 
-echo "  Waiting for secret-server pod to be ready..."
-kubectl rollout status deployment/"$SECRET_SERVER_SVC" -n "$K8S_NAMESPACE" --timeout=120s
+auth_url  = os.environ['OS_AUTH_URL']
+username  = os.environ['OS_USERNAME']
+password  = os.environ['OS_PASSWORD']
+project   = os.environ['OS_PROJECT_NAME']
+user_dom  = os.environ['OS_USER_DOMAIN_NAME']
+proj_dom  = os.environ['OS_PROJECT_DOMAIN_NAME']
 
-SECRET_SERVER_IP=$(kubectl get svc "$SECRET_SERVER_SVC" -n "$K8S_NAMESPACE" -o jsonpath='{.spec.clusterIP}')
-echo "  Secret-server ClusterIP: $SECRET_SERVER_IP:$SECRET_SERVER_PORT"
+# Authenticate to Keystone
+auth_resp = requests.post(auth_url + '/auth/tokens', verify=False, json={
+    'auth': {
+        'identity': {'methods': ['password'], 'password': {
+            'user': {'name': username, 'domain': {'name': user_dom}, 'password': password}
+        }},
+        'scope': {'project': {'name': project, 'domain': {'name': proj_dom}}}
+    }
+})
+auth_resp.raise_for_status()
+token = auth_resp.headers['X-Subject-Token']
 
-BT1_SECRET_REF="http://${SECRET_SERVER_IP}:${SECRET_SERVER_PORT}/BT1_S3.json"
-BT2_SECRET_REF="http://${SECRET_SERVER_IP}:${SECRET_SERVER_PORT}/BT2_S3.json"
+# Discover Barbican endpoint from service catalog
+barbican_base = None
+for svc in auth_resp.json()['token']['catalog']:
+    if svc['type'] == 'key-manager':
+        for ep in svc['endpoints']:
+            if ep['interface'] == 'public':
+                barbican_base = ep['url'].rstrip('/')
+                break
+if not barbican_base:
+    sys.exit('ERROR: Barbican (key-manager) endpoint not found in service catalog')
+print(f'Barbican: {barbican_base}')
 
-echo "  Verifying secret-server is reachable from WLM pod..."
-wlm_exec curl -sf "$BT1_SECRET_REF" -o /dev/null && echo "  BT1_S3.json: reachable" \
-  || { echo "ERROR: secret-server not reachable from WLM pod at $BT1_SECRET_REF" >&2; exit 1; }
-wlm_exec curl -sf "$BT2_SECRET_REF" -o /dev/null && echo "  BT2_S3.json: reachable"
+secrets_url = barbican_base + '/v1/secrets'
+headers = {'X-Auth-Token': token}
+
+for name, payload_file, ref_file in [
+    ('trilio-bt1-s3', '/tmp/bt1_s3_secret.json', '/tmp/trilio-bt1-s3_ref.txt'),
+    ('trilio-bt2-s3', '/tmp/bt2_s3_secret.json', '/tmp/trilio-bt2-s3_ref.txt'),
+]:
+    payload = open(payload_file).read().strip()
+
+    # Delete any existing secret with the same name
+    existing = requests.get(secrets_url, headers=headers,
+                            params={'name': name}, verify=False)
+    for s in existing.json().get('secrets', []):
+        requests.delete(s['secret_ref'], headers=headers, verify=False)
+        print(f'  Deleted existing {name}: {s["secret_ref"]}')
+
+    # Create new secret — payload_content_type must be text/plain (Barbican
+    # does not accept application/json; DMS payload is JSON stored as text)
+    resp = requests.post(secrets_url,
+        headers={**headers, 'Content-Type': 'application/json'},
+        json={'name': name, 'payload': payload,
+              'payload_content_type': 'text/plain', 'secret_type': 'opaque'},
+        verify=False)
+    resp.raise_for_status()
+    ref = resp.json()['secret_ref']
+    print(f'  {name}: {ref}')
+    open(ref_file, 'w').write(ref)
+
+print('Barbican secrets created.')
+PYEOF
+
+kubectl cp "$_BARBICAN_SCRIPT" \
+  "$K8S_NAMESPACE/$WLM_POD:/tmp/barbican_create_secrets.py" -c "$WLM_CONTAINER"
+
+wlm_exec python3 /tmp/barbican_create_secrets.py
+
+BT1_SECRET_REF=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" \
+  -- cat /tmp/trilio-bt1-s3_ref.txt)
+BT2_SECRET_REF=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" \
+  -- cat /tmp/trilio-bt2-s3_ref.txt)
+
+kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
+  rm -f /tmp/barbican_create_secrets.py \
+        /tmp/trilio-bt1-s3_ref.txt /tmp/trilio-bt2-s3_ref.txt \
+        /tmp/bt1_s3_secret.json /tmp/bt2_s3_secret.json
+
+echo "  BT1_SECRET_REF: $BT1_SECRET_REF"
+echo "  BT2_SECRET_REF: $BT2_SECRET_REF"
 
 # ---------------------------------------------------------------------------
 # Step 3: Create S3 backup targets
