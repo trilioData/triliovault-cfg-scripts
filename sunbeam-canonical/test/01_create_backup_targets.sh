@@ -3,17 +3,18 @@
 # Creates T4O backup targets on Sunbeam Canonical OpenStack:
 #   - BT1_S3: Ceph RGW with self-signed SSL cert (default target)
 #   - BT2_S3: Wasabi S3
-#   - BT_NFS:  NFS target
+#   - BT_NFS: NFS target
+#
+# All endpoint URLs, bucket names, credentials, and NFS paths are loaded from:
+#   <workspace-root>/env/backup_targets.yaml
+#
+# Override the env directory with: export TRILIO_ENV_DIR=/path/to/env
 #
 # Adapted from kolla-ansible/ansible/create_backup_target_62.yml
 # Sunbeam difference: no Barbican — a minimal K8s secret-server pod serves
-# the DMS secret payload JSON over HTTP on a stable ClusterIP, accessible to
-# both the WLM pod and the DataMover on the compute host.
+# the DMS secret payload JSON over HTTP on a stable ClusterIP.
 #
 # Usage:
-#   export BT1_S3_ACCESS_KEY=<ceph-key>  BT1_S3_SECRET_KEY=<ceph-secret>
-#   export BT2_S3_ACCESS_KEY=<wasabi-key> BT2_S3_SECRET_KEY=<wasabi-secret>
-#   export NFS_SERVER_EXPORT=<ip>:<path>   # optional, overrides env.sh default
 #   bash 01_create_backup_targets.sh
 #
 # Verify:
@@ -26,16 +27,101 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./env.sh
 source "$SCRIPT_DIR/env.sh"
 
-# Validate S3 credentials are provided
-for var in BT1_S3_ACCESS_KEY BT1_S3_SECRET_KEY BT2_S3_ACCESS_KEY BT2_S3_SECRET_KEY; do
+# ---------------------------------------------------------------------------
+# Load backup target config from env/backup_targets.yaml
+# ---------------------------------------------------------------------------
+
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+BACKUP_TARGETS_FILE="${TRILIO_ENV_DIR:-${WORKSPACE_ROOT}/env}/backup_targets.yaml"
+
+if [[ ! -f "$BACKUP_TARGETS_FILE" ]]; then
+  echo "ERROR: $BACKUP_TARGETS_FILE not found." >&2
+  echo "  Set TRILIO_ENV_DIR to point to your local env directory." >&2
+  exit 1
+fi
+
+echo "Loading backup target config from: $BACKUP_TARGETS_FILE"
+
+_ENV_TMPFILE=$(mktemp /tmp/trilio-bt-env-XXXXXX.sh)
+trap "rm -f $_ENV_TMPFILE" EXIT
+
+python3 - "$BACKUP_TARGETS_FILE" > "$_ENV_TMPFILE" << 'PYEOF'
+import sys
+try:
+    import yaml
+except ImportError:
+    sys.exit('ERROR: python3-yaml not installed. Run: pip3 install pyyaml')
+
+with open(sys.argv[1]) as f:
+    cfg = yaml.safe_load(f)
+
+targets = {t['backup_target_name']: t for t in cfg.get('triliovault_backup_targets', [])}
+
+bt1 = targets.get('BT1_S3', {})
+bt2 = targets.get('BT2_S3', {})
+nfs = targets.get('BT_NFS', {})
+
+# Write BT1 CA cert to a temp file on the local machine
+ca_cert = bt1.get('s3_ssl_ca_cert', '').strip()
+ca_file = '/tmp/trilio-bt1-ca.pem'
+if ca_cert:
+    with open(ca_file, 'w') as fh:
+        fh.write(ca_cert + '\n')
+
+def sh(name, val):
+    val = str(val).replace("'", "'\\''")
+    print(f"{name}='{val}'")
+
+sh('BT1_NAME',         bt1.get('backup_target_name', 'BT1_S3'))
+sh('BT1_ENDPOINT',     bt1.get('s3_endpoint_url', ''))
+sh('BT1_BUCKET',       bt1.get('s3_bucket', ''))
+sh('BT1_REGION',       bt1.get('s3_region_name', 'us-east-1'))
+sh('BT1_AUTH_VERSION', bt1.get('s3_auth_version', 'DEFAULT'))
+sh('BT1_SIG_VERSION',  bt1.get('s3_signature_version', 'default'))
+sh('BT1_SSL',          'true' if bt1.get('s3_ssl_enabled', True) else 'false')
+sh('BT1_SSL_VERIFY',   'true' if bt1.get('s3_ssl_verify', True) else 'false')
+sh('BT1_CA_CERT_FILE', ca_file if ca_cert else '')
+sh('BT1_ACCESS_KEY',   bt1.get('s3_access_key', ''))
+sh('BT1_SECRET_KEY',   bt1.get('s3_secret_key', ''))
+sh('BT1_DEFAULT',      'true' if bt1.get('is_default', False) else 'false')
+
+sh('BT2_NAME',         bt2.get('backup_target_name', 'BT2_S3'))
+sh('BT2_ENDPOINT',     bt2.get('s3_endpoint_url', ''))
+sh('BT2_BUCKET',       bt2.get('s3_bucket', ''))
+sh('BT2_REGION',       bt2.get('s3_region_name', 'us-east-1'))
+sh('BT2_AUTH_VERSION', bt2.get('s3_auth_version', 'DEFAULT'))
+sh('BT2_SIG_VERSION',  bt2.get('s3_signature_version', 'default'))
+sh('BT2_SSL',          'true' if bt2.get('s3_ssl_enabled', True) else 'false')
+sh('BT2_ACCESS_KEY',   bt2.get('s3_access_key', ''))
+sh('BT2_SECRET_KEY',   bt2.get('s3_secret_key', ''))
+
+sh('NFS_TARGET_NAME',    nfs.get('backup_target_name', 'BT_NFS'))
+sh('NFS_SERVER_EXPORT',  nfs.get('nfs_server_export', ''))
+sh('NFS_MOUNT_OPTS',     nfs.get('nfs_mount_opts', ''))
+PYEOF
+
+# shellcheck source=/dev/null
+source "$_ENV_TMPFILE"
+
+# Validate mandatory fields were loaded
+for var in BT1_ENDPOINT BT1_BUCKET BT1_ACCESS_KEY BT1_SECRET_KEY \
+           BT2_ENDPOINT BT2_BUCKET BT2_ACCESS_KEY BT2_SECRET_KEY \
+           NFS_SERVER_EXPORT; do
   if [[ -z "${!var:-}" ]]; then
-    echo "ERROR: $var is not set. Export it before running this script." >&2
+    echo "ERROR: $var is empty after loading $BACKUP_TARGETS_FILE" >&2
     exit 1
   fi
 done
 
+# Derive filesystem_export from endpoint hostname + bucket (strip https://)
+BT1_FS_EXPORT="${BT1_ENDPOINT#https://}/${BT1_BUCKET}"
+BT2_FS_EXPORT="${BT2_ENDPOINT#https://}/${BT2_BUCKET}"
+
 echo "OS_AUTH_URL: $OS_AUTH_URL"
 echo "OS_USERNAME: $OS_USERNAME / project: $OS_PROJECT_NAME"
+echo "BT1_S3:  $BT1_ENDPOINT  bucket=$BT1_BUCKET  default=$BT1_DEFAULT"
+echo "BT2_S3:  $BT2_ENDPOINT  bucket=$BT2_BUCKET"
+echo "BT_NFS:  $NFS_SERVER_EXPORT"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -54,118 +140,51 @@ wlm_exec() {
 }
 
 # ---------------------------------------------------------------------------
-# CA cert for BT1_S3 (Ceph with self-signed cert)
-# ---------------------------------------------------------------------------
-
-BT1_CA_CERT="-----BEGIN CERTIFICATE-----
-MIIF9TCCA92gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwgZAxCzAJBgNVBAYTAklO
-MQswCQYDVQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQsw
-CQYDVQQLDAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG
-9w0BCQEWHHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wHhcNMTkwNjEzMDkx
-NDE5WhcNMjkwNjEwMDkxNDE5WjCBgTELMAkGA1UEBhMCSU4xCzAJBgNVBAgMAk1I
-MQ8wDQYDVQQKDAZUUklMSU8xCzAJBgNVBAsMAklUMRowGAYDVQQDDBEqLnRyaWxp
-b2RhdGEuZGVtbzErMCkGCSqGSIb3DQEJARYccHJhc2hhbnQuc2FraGFya2FyQHRy
-aWxpby5pbzCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK0NE9RKKcaI
-Ky/2vI5AaKXITNU/UvSI9bQtwpNM2Pg0k3k0osM3FajJpjpNhQBh4ulheYWRdTPU
-EtMwOyALXOew9dq60k48fBRhnowal6Aan/afuJjaNEhRleiL0H9j0/io/fAnDl5N
-B7oYC/W8LGoqUjmoUe5fZIIADNOHbuD7K2YsR9Z3hQogDTp5u4azrla9/zQZAL4J
-s2xbDdjpz5fhdCs14nVH/EJAA1Yu9CI41L5C2VDrT2ieOCkt/FrN+FN1Edjm1KHZ
-qm70TCcQLEljrioKBMRnjNsnOfw+xuqr4CD0UBfGlpEQPt3+gagEIkJkzPQZppsz
-60MMX0cidVhLToz2dpVXwuqTJyvXpN0uMtPo5QoAtH/kVQwdNO48V57MWQgllrfQ
-ISKn2nZ3uLSq4R7EyzEQIlAUlFaJw5UJDNFpI6R3faShUG+kJXdXibjey2JjpdN3
-1/CHJ3C2yVQR4zoBMPR7r5tlexdGUa228e+/gadFl/aY4ESAbXiJpG4jZGc7lAmd
-1Y4JHhjayiJhtKj8cgO0KDuna+Pxh+RkWAyO7nOUMfRqY7QuDMapM6d/dMetZbz4
-yMTPZWQi317HZ1racD0omr/siCS0JCbjjedpyz85yYnqKLE08gW9uB3p6gzdVtxN
-n8BaVyPtjbuezFUNFfkGS5MRuVYc6B9LAgMBAAGjZjBkMB0GA1UdDgQWBBS9u6Ea
-2J0Z3PKsZ6CLETBxMQV8jjAfBgNVHSMEGDAWgBTMI6hSlcDMBNJZH9huHeUWWU2s
-9jASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjANBgkqhkiG9w0B
-AQsFAAOCAgEAjb0+EdZFnNHKvo0LhFHGqncCzv+O0X8uWtgHAx0p304sMWyOV2qe
-tHFiZtJ47M8Ru3jE82kL6Wxieich7N9s+CrdXJXR2Eh6loJDtNBP8nQIUTTIGSqe
-Wnf4sqn2bw2puIA6C0D0PKPvq4BFt7Br/pxfRJ4fN3ksr9LtBqhy0qcfMmhC6qsb
-jhWCROZwBnTXHcd65d1Np9mRnFTXemARX8x5EX7uNVq3wT93emfi37OkxZMRq9xK
-CMzZKuKZ2TGAprfAftba9upZmEN9rlWXT4mgEA29qebt2/Vn+QAA06BLY4dyPIgn
-rrRx5ogdRRsw3uStksc0ef1Nk/nGQEI+NcG/ZTV0fltf6c4SIMysQ/qDIshCUe5P
-tfypBO/kzNcseiZA6jGyVSGrKmSwjoyRdH7aT2PnymOMZ5Joce8jxD2TjrnieG0W
-63/p02qR48w2qkd3We+W1S4o2cZaS//o4xr4mxG6+/p9f8ubIDzfctS53hprQpmu
-EFxzSP2PPURazefDXy9nmxjHv3QjrBDc9qqI6KhnegGETB+Aio+EEKA/0npLDtF1
-SPHgaFG27p1UqRJNS+H7S9C0jXCEjZPNIfn4P42JGiCl8tFAXRBcHI5+7FiRGaGz
-rwg2KJfv9Rg3Z32y7lrIdgbqEsyYove0d6TpQACp2VRRXjn+H0l1yc8=
------END CERTIFICATE-----
------BEGIN CERTIFICATE-----
-MIIGCDCCA/CgAwIBAgIJAIKsMAZuH8qDMA0GCSqGSIb3DQEBCwUAMIGQMQswCQYD
-VQQGEwJJTjELMAkGA1UECAwCTUgxDTALBgNVBAcMBFBVTkUxDzANBgNVBAoMBlRS
-SUxJTzELMAkGA1UECwwCSVQxGjAYBgNVBAMMESoudHJpbGlvZGF0YS5kZW1vMSsw
-KQYJKoZIhvcNAQkBFhxwcmFzaGFudC5zYWtoYXJrYXJAdHJpbGlvLmlvMB4XDTE5
-MDYxMzA4NTQyOFoXDTM5MDYwODA4NTQyOFowgZAxCzAJBgNVBAYTAklOMQswCQYD
-VQQIDAJNSDENMAsGA1UEBwwEUFVORTEPMA0GA1UECgwGVFJJTElPMQswCQYDVQQL
-DAJJVDEaMBgGA1UEAwwRKi50cmlsaW9kYXRhLmRlbW8xKzApBgkqhkiG9w0BCQEW
-HHByYXNoYW50LnNha2hhcmthckB0cmlsaW8uaW8wggIiMA0GCSqGSIb3DQEBAQUA
-A4ICDwAwggIKAoICAQDUQzq9ki4L5/QhgJtyUQXTli/WyYlXF6TqYbVUkl/N4AE0
-QkfwAPFz+wWW3WDY1xAUIuQMkmf8V4SnCA+zD9cQvTCsB4ScBejknvQiV275o9TH
-DCyUxRuuVDTQ9q0tLQUOLa4RH/ytbVwdQ9+G1jU3elqQfGCpQwO9ZCHSXwypmVJW
-plgRqrq1FGx2fjgchTawSIrE0E2Wtd4rUaYG+jx6gD3TnrzDuapsTSaBjyc9bJRm
-eEJvkde/q8G94qaxuAk+UQelYoR+Pk1JSS8OILloG6R5TQJQf5o4DEmvZbv/kaCi
-AA7e6kyYhZ8dT1gi8ux965c1fIDZH1e4Qm30KCbJ6pGYfaQq9UlzZLggH+EFbXQM
-rGZwWomckCIIKumWNFFtJ9BpirMjm4TjhNZnS9EmjUQC41eBX/3bvj5QnG1PnnPA
-87CnKJEXlTEWVtdz3G+XuH4qvbeW/pmV4hpQ/lmkidVMNIfYtnTcW0Qd7HG4oczb
-BETjCibFyMJndyIhJDTmvhrEEfLmJbm4P2OZ6Yjb+yd+eqJJhcCvfS31J6Ex2kMb
-xJD9MOygDrtdjLUSlpVdJTA6eSEHgbGUDoBv5wPe/bxot8ccdGyWj5Ch5EGUxJRQ
-3ZvsmNq2e8y0rIa/MDh4MICNSNM+lVoEYeaeuqLN+Ml18yZQLy/mf44C2A5OxQID
-AQABo2MwYTAdBgNVHQ4EFgQUzCOoUpXAzATSWR/Ybh3lFllNrPYwHwYDVR0jBBgw
-FoAUzCOoUpXAzATSWR/Ybh3lFllNrPYwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8B
-Af8EBAMCAYYwDQYJKoZIhvcNAQELBQADggIBAMX4TVDmrT9NzkmKh6Pnn6jX7lft
-lpU+WewMMs97Vdwd8lnAn9lpBP9q0xyAVtJpmcPVHc6NlQBazf5nqhx2u9/LUPNP
-zdYRz7X/xu71ePzX7UCh+s4kftf/Hokwi4jF/QtnmRvFRp7Y8+OIEf0sz6jkW552
-hj43UTFDLpYWdfCNeBH+j9RjzWJHKdvRwEPzpmYp/KbgBagerp8BSQqEBc7sQMXw
-r0Wyip3FaKEon+NMMavrFnNcQALMG68IZf4CnF9X2MSUMTfZj86KiPcpwbbfSRwU
-RFL7Ia7uX9+UxewAJdcjNVpERhTHu0ucFA5Ea56sLK/nd5kg5Or1d5noeTODhAFu
-SAcT3yblzxoXoV1+pvm7PslMVWd+P/zxwucaLb4ll5BZWml7xZAgc/KIwnkyU+Yg
-yX//RN8REGUAPYsi0LkrOAJubmI1Tbr8cgmsxG2kCPMyoyKpM3AociW7mHneu6EX
-PIiLWm87o+dbeoPNibTkNBqN6uGpHGxspEma/r87fUiMsjj75NxvGw8D+NpynOIf
-D6tmcLSXaJrZ+PXkX2iqss+iM4Y5FHWHlTVcqZ4kcrqNcOtO0SUtpZKCk7uZVJpa
-mQiHr3IX9CMfGAgHOZUchA9gzz5vihg5ASrCLShdwifWrFqqSWMHEFVU+A+84Yg4
-+BWLC6oxhDE+OEjS
------END CERTIFICATE-----"
-
-# ---------------------------------------------------------------------------
 # Step 1: Generate S3 secret payloads via trilio-dms-cli inside the WLM pod
 # ---------------------------------------------------------------------------
 
+echo ""
 echo "=== Step 1: Generating S3 secret payloads ==="
 
-echo "  Writing BT1 CA cert to pod..."
-printf '%s' "$BT1_CA_CERT" | kubectl exec -i -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  bash -c "cat > /tmp/bt1-ca.pem"
+if [[ -n "$BT1_CA_CERT_FILE" && -f "$BT1_CA_CERT_FILE" ]]; then
+  echo "  Copying BT1 CA cert to pod..."
+  kubectl cp "$BT1_CA_CERT_FILE" \
+    "$K8S_NAMESPACE/$WLM_POD:/tmp/bt1-ca.pem" -c "$WLM_CONTAINER"
+  BT1_SSL_CERT_ARG="--ssl-cert /tmp/bt1-ca.pem"
+else
+  BT1_SSL_CERT_ARG=""
+fi
 
-echo "  Generating BT1_S3 payload (Ceph RGW, CA cert)..."
+echo "  Generating BT1_S3 payload ($BT1_NAME, CA cert)..."
 kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  env VAULT_S3_ACCESS_KEY_ID="$BT1_S3_ACCESS_KEY" \
-      VAULT_S3_SECRET_ACCESS_KEY="$BT1_S3_SECRET_KEY" \
+  env VAULT_S3_ACCESS_KEY_ID="$BT1_ACCESS_KEY" \
+      VAULT_S3_SECRET_ACCESS_KEY="$BT1_SECRET_KEY" \
   trilio-dms-cli secret-payload create \
-    --bucket        "trilio-automation" \
-    --endpoint-url  "https://cephquincy.triliodata.demo" \
-    --filesystem-export "cephquincy.triliodata.demo/trilio-automation" \
-    --region            "us-east-1" \
-    --auth-version      "DEFAULT" \
-    --signature-version "default" \
+    --bucket            "$BT1_BUCKET" \
+    --endpoint-url      "$BT1_ENDPOINT" \
+    --filesystem-export "$BT1_FS_EXPORT" \
+    --region            "$BT1_REGION" \
+    --auth-version      "$BT1_AUTH_VERSION" \
+    --signature-version "$BT1_SIG_VERSION" \
     --ssl \
     --ssl-verify \
-    --ssl-cert /tmp/bt1-ca.pem \
+    $BT1_SSL_CERT_ARG \
     -o /tmp/bt1_s3_secret.json
 
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- rm -f /tmp/bt1-ca.pem
+[[ -n "$BT1_CA_CERT_FILE" ]] && \
+  kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- rm -f /tmp/bt1-ca.pem
 
-echo "  Generating BT2_S3 payload (Wasabi)..."
+echo "  Generating BT2_S3 payload ($BT2_NAME)..."
 kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  env VAULT_S3_ACCESS_KEY_ID="$BT2_S3_ACCESS_KEY" \
-      VAULT_S3_SECRET_ACCESS_KEY="$BT2_S3_SECRET_KEY" \
+  env VAULT_S3_ACCESS_KEY_ID="$BT2_ACCESS_KEY" \
+      VAULT_S3_SECRET_ACCESS_KEY="$BT2_SECRET_KEY" \
   trilio-dms-cli secret-payload create \
-    --bucket        "qa-sachin" \
-    --endpoint-url  "https://s3.wasabisys.com" \
-    --filesystem-export "s3.wasabisys.com/qa-sachin" \
-    --region            "us-east-1" \
-    --auth-version      "DEFAULT" \
-    --signature-version "default" \
+    --bucket            "$BT2_BUCKET" \
+    --endpoint-url      "$BT2_ENDPOINT" \
+    --filesystem-export "$BT2_FS_EXPORT" \
+    --region            "$BT2_REGION" \
+    --auth-version      "$BT2_AUTH_VERSION" \
+    --signature-version "$BT2_SIG_VERSION" \
     --ssl \
     --ssl-verify \
     -o /tmp/bt2_s3_secret.json
@@ -173,7 +192,8 @@ kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
 # Copy payloads out of pod
 BT1_PAYLOAD=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- cat /tmp/bt1_s3_secret.json)
 BT2_PAYLOAD=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- cat /tmp/bt2_s3_secret.json)
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- rm -f /tmp/bt1_s3_secret.json /tmp/bt2_s3_secret.json
+kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
+  rm -f /tmp/bt1_s3_secret.json /tmp/bt2_s3_secret.json
 
 echo "  Payloads generated."
 
@@ -183,8 +203,7 @@ echo "  Payloads generated."
 # Barbican is not deployed in Sunbeam by default. The secret-server is a
 # lightweight Python HTTP pod that serves the DMS secret payloads over HTTP
 # on a ClusterIP. MicroK8s ClusterIPs are reachable from the host machine
-# (DataMover compute side) via the bridge network — the same route used by
-# workloadmgr's own Keystone auth_url.
+# (DataMover compute side) via the bridge network.
 # ---------------------------------------------------------------------------
 
 echo ""
@@ -282,24 +301,27 @@ wlm_exec curl -sf "$BT2_SECRET_REF" -o /dev/null && echo "  BT2_S3.json: reachab
 echo ""
 echo "=== Step 3: Creating S3 backup targets ==="
 
-echo "  Creating BT1_S3 (Ceph, default)..."
+DEFAULT_FLAG=""
+[[ "$BT1_DEFAULT" == "true" ]] && DEFAULT_FLAG="--default"
+
+echo "  Creating $BT1_NAME (Ceph)..."
 wlm_exec workloadmgr backup-target-create \
-  --btt-name "BT1_S3" \
+  --btt-name        "$BT1_NAME" \
   --type s3 \
-  --s3-endpoint-url "https://cephquincy.triliodata.demo" \
-  --s3-bucket "trilio-automation" \
-  --secret-ref "$BT1_SECRET_REF" \
-  --default \
+  --s3-endpoint-url "$BT1_ENDPOINT" \
+  --s3-bucket       "$BT1_BUCKET" \
+  --secret-ref      "$BT1_SECRET_REF" \
+  $DEFAULT_FLAG \
   -f json
 
 echo ""
-echo "  Creating BT2_S3 (Wasabi)..."
+echo "  Creating $BT2_NAME (Wasabi)..."
 wlm_exec workloadmgr backup-target-create \
-  --btt-name "BT2_S3" \
+  --btt-name        "$BT2_NAME" \
   --type s3 \
-  --s3-endpoint-url "https://s3.wasabisys.com" \
-  --s3-bucket "qa-sachin" \
-  --secret-ref "$BT2_SECRET_REF" \
+  --s3-endpoint-url "$BT2_ENDPOINT" \
+  --s3-bucket       "$BT2_BUCKET" \
+  --secret-ref      "$BT2_SECRET_REF" \
   -f json
 
 # ---------------------------------------------------------------------------
@@ -311,10 +333,10 @@ echo "=== Step 4: Creating NFS backup target ==="
 echo "  NFS export: $NFS_SERVER_EXPORT"
 
 wlm_exec workloadmgr backup-target-create \
-  --btt-name "$NFS_TARGET_NAME" \
+  --btt-name        "$NFS_TARGET_NAME" \
   --type nfs \
   --filesystem-export "$NFS_SERVER_EXPORT" \
-  --nfs-mount-opts "$NFS_MOUNT_OPTS" \
+  --nfs-mount-opts    "$NFS_MOUNT_OPTS" \
   -f json
 
 # ---------------------------------------------------------------------------

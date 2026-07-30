@@ -95,6 +95,19 @@ https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift
 
 ---
 
+## Local Workspace Environment (`C:\vscode-workspace\env\`)
+
+A sibling directory `env/` at the workspace root holds local credentials and test-environment config that must NOT be committed to any repo. Test scripts reference it via `TRILIO_ENV_DIR` env var (default: three levels up from `sunbeam-canonical/test/`).
+
+| File | Purpose |
+|------|---------|
+| `backup_targets.yaml` | Backup target definitions for automated tests. Contains S3 endpoints, bucket names, access/secret keys, CA certs, and NFS export paths. Keyed under `triliovault_backup_targets:` list. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh`. |
+| `setups.yaml` | SSH access details for all lab/test environments (RHOSO18, Canonical, Sunbeam build server). Always check here before asking for server access. |
+| `license_trilio.txt` | TrilioVault license file used during test installs (`juju attach-resource trilio-wlm-k8s license=...`). |
+| `package_repo_urls.yaml.txt` | APT/PyPI repo URL reference (currently empty). |
+
+---
+
 ## Steps to Fix a Jira for Juju Charms
 
 Charm source code lives in `juju-charms/` — fixes go here AND in the standalone upstream charm repos.
