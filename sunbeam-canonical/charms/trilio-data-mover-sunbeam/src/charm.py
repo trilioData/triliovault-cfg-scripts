@@ -258,12 +258,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         resolvable from compute nodes outside the k8s cluster.
         """
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "datamover"
-            # Must match dm-api's own vhost ("dmapi", not "datamover") — contego's
-            # vast_prepare/vast_instance RPC replies are published by dmapi onto
-            # the "dmapi" vhost; a mismatched vhost here means contego listens on
-            # a queue dmapi never publishes to, and every RPC call silently times
-            # out after 30s with no error on either side.
+            event.relation.data[self.app]["username"] = "dmapi"
             event.relation.data[self.app]["vhost"] = "dmapi"
             event.relation.data[self.app]["external_connectivity"] = json.dumps(True)
 
@@ -282,8 +277,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
         amqp_rel = self.model.get_relation("amqp")
         if amqp_rel:
-            amqp_rel.data[self.app]["username"] = "datamover"
-            # Must match dm-api's own vhost ("dmapi") — see _on_amqp_relation_joined.
+            amqp_rel.data[self.app]["username"] = "dmapi"
             amqp_rel.data[self.app]["vhost"] = "dmapi"
             amqp_rel.data[self.app]["external_connectivity"] = json.dumps(True)
         identity_rel = self.model.get_relation("identity-credentials")
@@ -621,10 +615,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _write_datamover_config(self):
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://datamover:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            # Must match dm-api's own vhost ("dmapi") — see _on_amqp_relation_joined.
-            f"/dmapi"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
         cafile = CA_BUNDLE_COPY if os.path.exists(CA_BUNDLE_COPY) else ""
         context = {
@@ -650,10 +643,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://datamover:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            # Must match dm-api's own vhost ("dmapi") — see _on_amqp_relation_joined.
-            f"/dmapi"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
         # Use the HTTPS internal endpoint if keystone published one via traefik;
         # fall back to plain-http k8s service address for fresh deploys.
@@ -691,10 +683,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://datamover:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            # Must match dm-api's own vhost ("dmapi") — see _on_amqp_relation_joined.
-            f"/dmapi"
+            f"/{amqp.get('vhost', 'dmapi')}"
         )
         context = {
             "rabbitmq_url": transport_url,

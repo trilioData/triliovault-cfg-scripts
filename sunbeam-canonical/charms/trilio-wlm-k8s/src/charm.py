@@ -151,22 +151,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_amqp_relation_joined(self, event):
         """Write rabbitmq requirer credentials so rabbitmq-k8s provisions the user/vhost."""
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "wlm"
-            event.relation.data[self.app]["vhost"] = "wlm"
+            event.relation.data[self.app]["username"] = "workloadmgr"
+            event.relation.data[self.app]["vhost"] = "workloadmgr"
 
     def _on_amqp_dms_relation_joined(self, event):
-        """Second amqp relation requesting the *dmapi* vhost (not WLM's own `wlm` vhost).
+        """Second amqp relation for the WLM-side DMS client and embedded DMS server.
 
-        The trilio_dms client library talks to the DMS server's `trilio_dms`
-        exchange, which lives in the `dmapi` vhost — same vhost/username the
-        compute-node DMS instances (trilio-data-mover-sunbeam) request, since
-        they all communicate via shared RabbitMQ queues. Requesting the same
-        existing username/vhost here is idempotent — rabbitmq-k8s returns the
-        same already-provisioned user/password.
+        Both WLM oslo.messaging and WLM DMS use the same `workloadmgr` vhost —
+        matching the RHOSO18 pattern where WLM_RABBIT_VHOST=workloadmgr. Requesting
+        the same username/vhost here is idempotent — rabbitmq-k8s returns the same
+        already-provisioned user/password.
         """
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "dmapi"
-            event.relation.data[self.app]["vhost"] = "dmapi"
+            event.relation.data[self.app]["username"] = "workloadmgr"
+            event.relation.data[self.app]["vhost"] = "workloadmgr"
 
     def _on_database_relation_joined(self, event):
         """Write mysql requirer database name so mysql-k8s provisions the database."""
@@ -671,9 +669,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         transport_url = (
-            f"rabbit://{amqp.get('username', 'wlm')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'workloadmgr')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
-            f"/{amqp.get('vhost', 'wlm')}"
+            f"/{amqp.get('vhost', 'workloadmgr')}"
         )
         auth_url = (
             f"{identity.get('service_protocol', 'http')}://"
@@ -761,13 +759,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _write_dms_client_config(self, container):
         """Write DMS client config for the trilio-dms client library inside WLM.
 
-        Db url is WLM's own database (not DMAPI's). RabbitMQ must use the
-        *dmapi* vhost (amqp-dms relation) — the DMS server's `trilio_dms`
-        exchange lives there, not in WLM's own `wlm` vhost (see amqp-dms
-        relation docstring). node_id targets this unit's own embedded DMS
-        server (see _dms_node_id) — never another unit's.
-        Written once — all four WLM services (wlm-api, wlm-workloads, wlm-cron,
-        wlm-scheduler) share the same container filesystem and read this file.
+        Db url is WLM's own database (not DMAPI's). RabbitMQ uses the
+        *workloadmgr* vhost (amqp-dms relation) — same as WLM's own transport,
+        matching RHOSO18 pattern where WLM-side DMS uses the workloadmgr vhost.
+        node_id targets this unit's own embedded DMS server (see _dms_node_id).
+        Written once — all four WLM services share the same container filesystem.
         """
         amqp_dms = self._amqp_dms_data()
         db = self._db_data()
@@ -780,9 +776,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{db_host}:{db_port}/{db['database']}"
         )
         rabbitmq_url = (
-            f"rabbit://{amqp_dms.get('username', 'dmapi')}:{amqp_dms['password']}"
+            f"rabbit://{amqp_dms.get('username', 'workloadmgr')}:{amqp_dms['password']}"
             f"@{amqp_dms['host']}:{amqp_dms.get('port', '5672')}"
-            f"/{amqp_dms.get('vhost', 'dmapi')}"
+            f"/{amqp_dms.get('vhost', 'workloadmgr')}"
         )
         context = {
             "rabbitmq_url": rabbitmq_url,
@@ -807,9 +803,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         amqp_dms = self._amqp_dms_data()
         identity = self._identity_data()
         rabbitmq_url = (
-            f"rabbit://{amqp_dms.get('username', 'dmapi')}:{amqp_dms['password']}"
+            f"rabbit://{amqp_dms.get('username', 'workloadmgr')}:{amqp_dms['password']}"
             f"@{amqp_dms['host']}:{amqp_dms.get('port', '5672')}"
-            f"/{amqp_dms.get('vhost', 'dmapi')}"
+            f"/{amqp_dms.get('vhost', 'workloadmgr')}"
         )
         auth_url = (
             f"{identity.get('service_protocol', 'http')}://"
