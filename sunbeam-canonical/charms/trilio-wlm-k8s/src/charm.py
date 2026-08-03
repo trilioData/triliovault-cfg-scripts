@@ -29,6 +29,7 @@ Relation interface notes (Sunbeam Caracal):
     Requirer writes a JSON blob under "data" key in the app databag.
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -888,6 +889,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         # NFS/permission issues more simply than matching UIDs everywhere.
         cmd_base = f"/usr/bin/{{}} --config-file {CONFIG_PATH}"
         env = self._get_ca_bundle_env()
+        # Include a fingerprint of the AMQP password in every service's environment.
+        # Pebble only restarts a service when its layer plan (command + environment)
+        # changes — a config-file-only update is invisible to replan(). By stamping
+        # the password hash here, any AMQP credential rotation automatically causes
+        # replan() to restart all WLM services and pick up the new transport_url.
+        amqp = self._amqp_data()
+        if amqp:
+            env["WLM_CONFIG_FINGERPRINT"] = hashlib.sha256(
+                amqp.get("password", "").encode()
+            ).hexdigest()[:12]
         services = {
             "wlm-api": {
                 "override": "replace",
