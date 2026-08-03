@@ -147,13 +147,6 @@ These charms' `charmcraft.yaml` use the legacy `bases: build-on/run-on` schema. 
 ### Gotcha: build host must have LXD actually initialized, and must not be an OpenStack networking node
 `charmcraft pack` needs a working LXD (or Multipass) backend. Don't assume any given Ubuntu box has this ready — check `lxc network list` shows a `MANAGED`/`CREATED` bridge before starting a build. Avoid building on a box that also runs live OpenStack networking (Neutron/OVN, e.g. a `nova-compute`/`ovn-chassis` unit) — `lxd init --auto` can fail there with a `dnsmasq: ... Address already in use` error regardless of which subnet LXD picks, because a system dnsmasq (Neutron DHCP) is likely already bound. Don't try to work around this by touching the box's networking — use a dedicated build host instead (see `env/setups.yaml` for known-good build boxes, e.g. the Sunbeam build server).
 
-### Charmhub authentication for uploads/releases
-`juju-charms/devops-build-publish.sh` (defaults to `CHANNEL=6.2/candidate`) automates build+upload+release for all four charms and looks for a non-interactive credential at `~/.charmhub-creds` on the build host (a `charmcraft login --export` macaroon), falling back to the `CHARMCRAFT_AUTH` env var. On the Sunbeam build server (172.26.2.2), a working credential is available at `~/creds.txt` — copy it into place before running the script:
-```bash
-cp ~/creds.txt ~/.charmhub-creds && chmod 600 ~/.charmhub-creds
-```
-Never commit the credential content itself anywhere (including here) — only this location pointer. If `~/creds.txt` is ever rotated/removed, a human with Trilio's Charmhub publisher access needs to re-export one: `charmcraft login --export ~/.charmhub-creds --ttl 31536000`.
-
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
 
