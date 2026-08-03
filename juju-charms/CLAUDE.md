@@ -147,6 +147,41 @@ These charms' `charmcraft.yaml` use the legacy `bases: build-on/run-on` schema. 
 ### Gotcha: build host must have LXD actually initialized, and must not be an OpenStack networking node
 `charmcraft pack` needs a working LXD (or Multipass) backend. Don't assume any given Ubuntu box has this ready — check `lxc network list` shows a `MANAGED`/`CREATED` bridge before starting a build. Avoid building on a box that also runs live OpenStack networking (Neutron/OVN, e.g. a `nova-compute`/`ovn-chassis` unit) — `lxd init --auto` can fail there with a `dnsmasq: ... Address already in use` error regardless of which subnet LXD picks, because a system dnsmasq (Neutron DHCP) is likely already bound. Don't try to work around this by touching the box's networking — use a dedicated build host instead (see `env/setups.yaml` for known-good build boxes, e.g. the Sunbeam build server).
 
+## Uninstall (for Upgrade/Fresh-Install Testing)
+
+To tear down a Trilio deployment (e.g. before redeploying an older release to test an upgrade path, or before a clean fresh-install test), remove all four principal charms **and their mysql-router subordinates explicitly** in one command — don't rely on subordinates being auto-removed, they can be left behind as orphaned applications:
+
+```bash
+juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
+  trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router
+```
+
+Units commonly go into `error` state during removal (see gotcha below) — once they do, re-run the same command with `--force`:
+
+```bash
+juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
+  trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router --force
+```
+
+### Gotcha: removal commonly errors on unrelated interface-library bugs — safe to force through
+Removing these charms frequently triggers hook failures unrelated to Trilio's own code, in shared/vendored interface libraries:
+- `identity-service-relation-departed` can fail with `IndexError: list index out of range` in `hooks/relations/keystone/requires.py` (`self.relations[0]` accessed without checking the list is non-empty once the other side has already departed).
+- On the `mysql-innodb-cluster` side, `db-router-relation-broken` can fail with `network-get --primary-address cluster` returning a non-zero exit — this can affect **all** `mysql-innodb-cluster` units, not just the one related to Trilio.
+
+Both are teardown-only hook-script bugs, not data-loss or live-service issues — verify with `systemctl is-active mysql` on a `mysql-innodb-cluster` unit and check that unrelated apps sharing the same DB backend (e.g. `keystone`, `cinder`, `glance`) are still `active` before proceeding. Once confirmed, `juju resolved --no-retry <unit>` on each affected unit is safe.
+
+### Gotcha: removing the Juju application does NOT clean the database
+`juju remove-application` never drops the actual database in `mysql-innodb-cluster` — the schema and all data persist independently. If you're tearing down specifically to test an older release's fresh-install-then-upgrade path, this matters a lot: redeploying against a database that's already at the newer schema means `db_sync()`/alembic migration during the later upgrade step is a no-op, silently defeating the entire point of the test. Before redeploying, connect to a `mysql-innodb-cluster` unit (root credentials are in `leader-get` — look for the plain `mysql.passwd` key, and the per-service `mysql-<service>.passwd` keys) and explicitly drop the relevant databases and DB users:
+
+```sql
+DROP DATABASE IF EXISTS workloadmgr;
+DROP DATABASE IF EXISTS dmapi;
+DROP USER IF EXISTS 'workloadmgr'@'<unit-ip>';
+DROP USER IF EXISTS 'dmapi'@'<unit-ip>';
+```
+
+Do this **before** the redeployed charms' `shared-db` relation completes (check `juju status` shows `'shared-db' incomplete`) — once it completes, the charm will just reconnect to whatever database already exists under that name instead of provisioning fresh.
+
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
 
