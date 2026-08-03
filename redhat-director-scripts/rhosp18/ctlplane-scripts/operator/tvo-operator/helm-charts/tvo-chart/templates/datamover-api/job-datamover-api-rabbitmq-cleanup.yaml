@@ -45,13 +45,11 @@ spec:
           command:
             - /bin/bash
             - -c
-            - /tmp/triliovault-datamover-api-rabbitmq-cleanup.sh
+            - |
+              {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-cleanup.sh.tpl") . | nindent 14 }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
-            - name: triliovault-datamover-api-bin
-              mountPath: /tmp/triliovault-datamover-api-rabbitmq-cleanup.sh
-              subPath: triliovault-datamover-api-rabbitmq-cleanup.sh
             - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
               name: combined-ca-bundle
               readOnly: true
@@ -59,10 +57,6 @@ spec:
       volumes:
         - name: pod-tmp
           emptyDir: {}
-        - name: triliovault-datamover-api-bin
-          configMap:
-            name: triliovault-datamover-api-bin
-            defaultMode: 0555
         - name: combined-ca-bundle
           secret:
             defaultMode: 292
