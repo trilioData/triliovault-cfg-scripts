@@ -121,6 +121,10 @@ Required when the charm target nodes have no internet access.
 
 ## Build and Publish Workflow
 
+**Never install a locally-built `.charm` via `juju refresh --path=`/`juju deploy --path=` for verification.** Always `charmcraft upload` + `charmcraft release` to Charmhub first, then install/upgrade from the channel like a real deployment would. Local path installs skip the actual distribution path and can hide packaging issues.
+
+**Release convention: always release to the `<TRACK>/candidate` channel** (e.g. `6.2/candidate`), never `edge` or straight to `stable`, even for a fix build being verified mid-session. `candidate` is the channel QA actively tests against, so releasing there is the expected way to get a fix in front of them — don't route around it into a side channel.
+
 ```bash
 # From within the charm subdirectory:
 cd juju-charms/charm-trilio-wlm
@@ -131,11 +135,17 @@ charmcraft pack
 # Upload to Charmhub (produces a revision number)
 charmcraft upload trilio-charmers-trilio-wlm_ubuntu-22.04-amd64.charm
 
-# Release to a channel
-charmcraft release trilio-charmers-trilio-wlm --revision <N> --channel latest/stable
+# Release to the candidate channel for the target track
+charmcraft release trilio-charmers-trilio-wlm --revision <N> --channel 6.2/candidate
 ```
 
 Run the same commands from each charm's subdirectory independently.
+
+### Gotcha: charmcraft snap channel must match this repo's `charmcraft.yaml` bases format
+These charms' `charmcraft.yaml` use the legacy `bases: build-on/run-on` schema. The `latest/stable` charmcraft snap channel (4.x) requires the newer `platforms:` schema instead and fails immediately with a `BasesCharm` validation error. Use the `2.x/stable` channel (`sudo snap refresh charmcraft --channel=2.x/stable --classic`) to build these charms until/unless `charmcraft.yaml` is migrated to the new schema.
+
+### Gotcha: build host must have LXD actually initialized, and must not be an OpenStack networking node
+`charmcraft pack` needs a working LXD (or Multipass) backend. Don't assume any given Ubuntu box has this ready — check `lxc network list` shows a `MANAGED`/`CREATED` bridge before starting a build. Avoid building on a box that also runs live OpenStack networking (Neutron/OVN, e.g. a `nova-compute`/`ovn-chassis` unit) — `lxd init --auto` can fail there with a `dnsmasq: ... Address already in use` error regardless of which subnet LXD picks, because a system dnsmasq (Neutron DHCP) is likely already bound. Don't try to work around this by touching the box's networking — use a dedicated build host instead (see `env/setups.yaml` for known-good build boxes, e.g. the Sunbeam build server).
 
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
