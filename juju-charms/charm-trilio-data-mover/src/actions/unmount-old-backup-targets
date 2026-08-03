@@ -17,8 +17,9 @@ import os
 import subprocess
 import sys
 
-# Load modules from $CHARM_DIR/lib
+# Load modules from $CHARM_DIR/lib and $CHARM_DIR/reactive
 sys.path.append("lib")
+sys.path.append("reactive")
 
 from charms.layer import basic
 
@@ -33,6 +34,13 @@ import charms_openstack.charm
 
 # import the trilio_wlm module to get the charm definitions created.
 import charm.openstack.trilio_dm  # noqa
+
+# import the reactive handlers module so the update-trilio action can
+# explicitly re-render the DMS server config — actions never go through the
+# reactive hook-dispatch loop, so render_dms_config() would otherwise not run
+# (and its data_changed() cache would skip it even if it did) as part of an
+# upgrade (TVAULT-7521).
+import data_mover_handlers  # noqa
 
 
 def unmount_old_backup_targets(*args):
@@ -60,7 +68,23 @@ def unmount_old_backup_targets(*args):
         subprocess.run(['systemctl', 'stop', svc], capture_output=True)
         subprocess.run(['systemctl', 'disable', svc], capture_output=True)
         results.append('stopped and disabled: {}'.format(svc))
-    if not ots_units:
+
+        # Remove the per-backup-target unit file too, not just stop+disable,
+        # so a future mount of the same target starts from a clean slate
+        # instead of racing a leftover unit definition (TVAULT-7523).
+        show = subprocess.run(
+            ['systemctl', 'show', svc, '-p', 'FragmentPath', '--value'],
+            capture_output=True, text=True)
+        unit_path = show.stdout.strip()
+        if unit_path and os.path.exists(unit_path):
+            try:
+                os.remove(unit_path)
+                results.append('removed unit file: {}'.format(unit_path))
+            except OSError as e:
+                errors.append('failed to remove unit file {}: {}'.format(unit_path, e))
+    if ots_units:
+        subprocess.run(['systemctl', 'daemon-reload'], capture_output=True)
+    else:
         results.append('tvault-object-store: no units found')
 
     # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
@@ -127,6 +151,14 @@ def update_trilio(*args):
         if ceph:
             endpoints.append(ceph)
         trilio_charm.run_trilio_upgrade(endpoints)
+
+        # This action never goes through the reactive hook-dispatch loop, so
+        # the DMS server config render (normally triggered by
+        # render_dms_config() on a later hook) must be run explicitly here,
+        # with the correct rabbitmq_url, before trilio-dms-server settles
+        # (TVAULT-7521).
+        data_mover_handlers.render_dms_config_now()
+
         trilio_charm._assess_status()
 
 

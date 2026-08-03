@@ -50,6 +50,23 @@ def render_config(*args):
     with charm.provide_charm_instance() as charm_class:
         charm_class.upgrade_if_available(args)
 
+    with charm.provide_charm_instance() as charm_class:
+        charm_class.render_with_interfaces(args)
+        charm_class.assess_status()
+
+    render_dmapi_and_dms_configs()
+
+    reactive.set_flag("config.rendered")
+
+
+def render_dmapi_and_dms_configs():
+    """Render the dmapi log file setup and the bootstrap DMS client.conf.
+
+    Extracted from render_config() so it can also be called directly from
+    the update-trilio action (charms.reactive actions never go through the
+    reactive hook-dispatch loop, so this would otherwise not re-run until
+    some later hook fires — TVAULT-7521).
+    """
     # Pre-create log file with dmapi ownership so the service can write to it.
     # /var/log/triliovault/ is nova:nova 755 — dmapi user cannot create files there.
     log_dir = '/var/log/triliovault'
@@ -60,10 +77,6 @@ def render_config(*args):
     if not os.path.exists(log_file):
         open(log_file, 'w').close()
     os.chown(log_file, dmapi_uid, dmapi_gid)
-
-    with charm.provide_charm_instance() as charm_class:
-        charm_class.render_with_interfaces(args)
-        charm_class.assess_status()
 
     # DMS server must not run on DMAPI nodes — only the client library is needed here.
     # python3-trilio-dms installs the systemd unit; explicitly stop and disable it.
@@ -94,8 +107,6 @@ def render_config(*args):
     )
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, dmapi_gid)
-
-    reactive.set_flag("config.rendered")
 
 
 @reactive.when("config.rendered")

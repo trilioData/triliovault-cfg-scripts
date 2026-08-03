@@ -154,9 +154,27 @@ def render_config(*args):
             if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
                 host.service('stop', 'tvault-object-store')
                 host.service('disable', 'tvault-object-store')
+            # Run the DB migration now, before render_with_interfaces() below
+            # can restart wlm-api/workloads/scheduler/cron via restart_map.
+            # Otherwise those services come back up on the just-installed
+            # package against a schema that hasn't been migrated yet
+            # (TVAULT-7522).
+            charm_class.db_sync()
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
 
+    render_wlm_and_dms_configs(*args)
+    set_flag("config.rendered")
+
+
+def render_wlm_and_dms_configs(*args):
+    """Render triliovault-wlm.conf and the DMS server/client configs.
+
+    Extracted from render_config() so it can also be called directly from
+    the update-trilio action (charms.reactive actions never go through the
+    reactive hook-dispatch loop, so this handler would otherwise not run
+    again until some later hook fires — TVAULT-7521).
+    """
     # Load configurations
     charm_config = config()
 

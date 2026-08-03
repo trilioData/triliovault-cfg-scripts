@@ -133,12 +133,14 @@ def request_keystone_notification(identity_service):
         instance.assess_status()
 
 
-@reactive.when_not('is-update-status-hook')
-@reactive.when("amqp.available")
-@reactive.when("identity-service.connected")
-def render_dms_config(*args):
-    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
+def _build_dms_server_context():
+    """Gather rabbitmq_url/keystone auth data for DMS server.conf.
+
+    Returns None if the amqp/identity-service relation data isn't ready yet.
+    """
     amqp = reactive.RelationBase.from_state('amqp.available')
+    if not amqp:
+        return None
     transport_url = f"rabbit://{amqp.username()}:{amqp.password()}@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
 
     identity_service = {}
@@ -153,7 +155,7 @@ def render_dms_config(*args):
 
     if not identity_service.get('auth_host'):
         hookenv.log("Keystone auth_host not yet available, skipping DMS config", level=hookenv.WARNING)
-        return
+        return None
 
     keystone_auth_url = "{}://{}:{}/v3".format(
         identity_service.get('auth_protocol', 'http'),
@@ -161,16 +163,15 @@ def render_dms_config(*args):
         identity_service.get('auth_port', '5000'),
     )
 
-    dms_server_context = {
+    return {
         'rabbitmq_url': transport_url,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
 
-    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
-        return
 
+def _write_dms_server_config(dms_server_context):
     root_uid = pwd.getpwnam('root').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid
 
@@ -195,6 +196,40 @@ def render_dms_config(*args):
         host.service('restart', 'trilio-dms-server')
     else:
         host.service('start', 'trilio-dms-server')
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("amqp.available")
+@reactive.when("identity-service.connected")
+def render_dms_config(*args):
+    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
+    dms_server_context = _build_dms_server_context()
+    if dms_server_context is None:
+        return
+
+    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
+        return
+
+    _write_dms_server_config(dms_server_context)
+
+
+def render_dms_config_now():
+    """Render DMS server.conf unconditionally, bypassing the data_changed cache.
+
+    Called from the update-trilio action: charms.reactive actions never go
+    through the reactive hook-dispatch loop, so render_dms_config() would
+    otherwise not re-run — and even if it did, its data_changed() guard would
+    skip the render whenever the computed context is unchanged from the last
+    known value, even though the package upgrade just reset server.conf back
+    to its blank on-disk default (TVAULT-7521).
+    """
+    dms_server_context = _build_dms_server_context()
+    if dms_server_context is None:
+        hookenv.log(
+            "identity-service/amqp relation data not ready, skipping DMS config render",
+            level=hookenv.WARNING)
+        return
+    _write_dms_server_config(dms_server_context)
 
 
 @reactive.when_not('is-update-status-hook')
