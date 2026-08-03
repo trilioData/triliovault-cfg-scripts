@@ -43,7 +43,24 @@ import charm.openstack.trilio_wlm  # noqa
 # TVAULT-7522).
 import trilio_wlm_handlers  # noqa
 
-WLM_SERVICES = ['wlm-api', 'wlm-workloads', 'wlm-scheduler', 'wlm-cron']
+WLM_CORE_SERVICES = ['wlm-api', 'wlm-workloads', 'wlm-scheduler']
+
+
+def _wlm_services():
+    """wlm-* services to stop/start around the package upgrade.
+
+    wlm-cron is excluded when ha.available is set: in an HA deployment it
+    runs as a corosync/pacemaker clone resource on a single unit (see
+    TrilioWLMBaseCharm.services in lib/charm/openstack/trilio_wlm.py), not
+    as a plain systemd service on every unit. update-trilio runs against
+    every unit (juju run trilio-wlm/* update-trilio), so unconditionally
+    starting wlm-cron here would run it cluster-wide instead of leaving it
+    to the cluster resource manager — duplicate scheduled job execution.
+    """
+    services = list(WLM_CORE_SERVICES)
+    if not reactive.flags.is_flag_set('ha.available'):
+        services.append('wlm-cron')
+    return services
 
 
 def unmount_old_backup_targets(*args):
@@ -177,10 +194,12 @@ def update_trilio(*args):
         # reactive.RelationBase and needs a different method to instantiate it.
         endpoints.append(reactive.endpoint_from_name("identity-service"))
 
+        wlm_services = _wlm_services()
+
         # Stop wlm-* services before the package upgrade so nothing restarts
         # against a stale DB schema while run_trilio_upgrade() is installing
         # the new packages (TVAULT-7522).
-        for svc in WLM_SERVICES:
+        for svc in wlm_services:
             host.service('stop', svc)
 
         trilio_wlm_charm.run_trilio_upgrade(endpoints)
@@ -195,7 +214,7 @@ def update_trilio(*args):
         trilio_wlm_charm.db_sync()
         trilio_wlm_handlers.render_wlm_and_dms_configs()
 
-        for svc in WLM_SERVICES:
+        for svc in wlm_services:
             host.service('start', svc)
 
         trilio_wlm_charm._assess_status()
