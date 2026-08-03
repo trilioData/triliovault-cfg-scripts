@@ -16,5 +16,7 @@ data:
     {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-db-init.sh.tpl") . | nindent 4 }}
   triliovault-datamover-api-rabbitmq-init.sh: |-
     {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-init.sh.tpl") . | nindent 4 }}
+  triliovault-datamover-api-rabbitmq-cleanup.sh: |-
+    {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-cleanup.sh.tpl") . | nindent 4 }}
 
 {{- end }}

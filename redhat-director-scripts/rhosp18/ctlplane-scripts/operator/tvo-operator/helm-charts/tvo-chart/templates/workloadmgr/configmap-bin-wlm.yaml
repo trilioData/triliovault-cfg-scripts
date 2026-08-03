@@ -24,6 +24,8 @@ data:
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-db-init.sh.tpl") . | indent 4 }}
   triliovault-wlm-rabbitmq-init.sh: |-
 {{ tpl (.Files.Get "scripts/_triliovault-wlm-rabbitmq-init.sh.tpl") . | indent 4 }}
+  triliovault-wlm-rabbitmq-cleanup.sh: |-
+{{ tpl (.Files.Get "scripts/_triliovault-wlm-rabbitmq-cleanup.sh.tpl") . | indent 4 }}
   workloadmgr-policy.yaml: |
 {{- $default := fromYaml (include "trilio.workloadmgr.defaultPolicy" .) }}
 {{- $overrides := .Values.workloadmgr.policyOverrides | default dict }}
