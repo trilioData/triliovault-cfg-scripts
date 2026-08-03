@@ -226,6 +226,7 @@ class TestTrilioWLMCharmStein41LicenseActions(Helper):
                 "TestRegionA",
                 "license-create",
                 "/var/lib/charm/license.lic",
+                "--accept-eula",
             ]
         )
 

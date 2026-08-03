@@ -252,11 +252,13 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         (the same credentials the old charm-trilio-wlm's create_license()
         action used) — no password parameter needed.
 
-        'workloadmgr license-create' shows the EULA text via curses and
-        blocks on a real keypress ('y' to accept) before it ever calls the
-        API — this is NOT the same controlling-terminal issue trust-create
-        works around with setsid; it's an actual interactive prompt. Feeding
-        "y\\n" via exec()'s stdin answers that prompt non-interactively.
+        'workloadmgr license-create' normally shows the EULA text via curses
+        and blocks on a real keypress ('y' to accept) before it ever calls
+        the API. The '--accept-eula' flag (added in workloadmgrclient for
+        TVAULT-7518) agrees to the EULA up front and skips that curses block
+        entirely. 'setsid' is still required — that guards against a
+        separate, always-present issue where cmd2 itself opens /dev/tty at
+        startup and fails with "cbreak() returned ERR" under Pebble exec.
         """
         if not self.unit.is_leader():
             event.fail("Run this action on the leader unit only")
@@ -284,12 +286,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", "service_domain",
             "--os-project-name", identity["service_tenant"],
             "--os-region-name", self.config.get("region", "RegionOne"),
-            "license-create", license_file_path, "-f", "json",
+            "license-create", license_file_path, "-f", "json", "--accept-eula",
         ]
         try:
-            process = container.exec(
-                cmd, environment={"TERM": "xterm"}, stdin="y\n",
-            )
+            process = container.exec(cmd)
             out, err = process.wait_output()
             logger.info("license-create output: %s", out)
             event.set_results({"result": "License applied successfully", "output": out})
