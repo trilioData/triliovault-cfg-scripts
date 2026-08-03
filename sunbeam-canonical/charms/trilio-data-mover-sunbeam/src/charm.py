@@ -95,6 +95,7 @@ DMS_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault Dynamic Mount Service
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 # TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
@@ -121,8 +122,7 @@ DATAMOVER_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault DataMover (tvault-contego)
 After=network.target
-StartLimitIntervalSec=120
-StartLimitBurst=3
+StartLimitIntervalSec=0
 
 [Service]
 # TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
