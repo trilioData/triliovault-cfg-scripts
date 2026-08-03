@@ -28,6 +28,8 @@ parts:
   charm:
     plugin: charm
     source: .
+    build-packages:
+      - git
 
 requires:
   juju-info:

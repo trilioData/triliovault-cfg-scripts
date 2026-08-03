@@ -95,6 +95,7 @@ DMS_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault Dynamic Mount Service
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 # TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
@@ -121,8 +122,7 @@ DATAMOVER_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault DataMover (tvault-contego)
 After=network.target
-StartLimitIntervalSec=120
-StartLimitBurst=3
+StartLimitIntervalSec=0
 
 [Service]
 # TVAULT-7404 root-user experiment (see nova-user-known-good-state.md for
@@ -258,7 +258,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         resolvable from compute nodes outside the k8s cluster.
         """
         if self.unit.is_leader():
-            event.relation.data[self.app]["username"] = "dmapi"
+            # Use username "contego" (not "dmapi") to avoid a password conflict.
+            # Both DMAPI and this DataMover need the dmapi vhost, but
+            # rabbitmq-k8s generates an independent password per relation —
+            # two relations requesting the same username cause each other's
+            # password to be overwritten in RabbitMQ, leaving one service
+            # with stale credentials. Using a distinct username per consumer
+            # means each has its own stable password while sharing the vhost.
+            event.relation.data[self.app]["username"] = "contego"
             event.relation.data[self.app]["vhost"] = "dmapi"
             event.relation.data[self.app]["external_connectivity"] = json.dumps(True)
 
@@ -277,7 +284,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
         amqp_rel = self.model.get_relation("amqp")
         if amqp_rel:
-            amqp_rel.data[self.app]["username"] = "dmapi"
+            amqp_rel.data[self.app]["username"] = "contego"
             amqp_rel.data[self.app]["vhost"] = "dmapi"
             amqp_rel.data[self.app]["external_connectivity"] = json.dumps(True)
         identity_rel = self.model.get_relation("identity-credentials")
@@ -615,7 +622,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _write_datamover_config(self):
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'contego')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
@@ -643,7 +650,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         identity = self._identity_data()
 
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'contego')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )
@@ -683,7 +690,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         amqp = self._amqp_data()
         transport_url = (
-            f"rabbit://{amqp.get('username', 'dmapi')}:{amqp['password']}"
+            f"rabbit://{amqp.get('username', 'contego')}:{amqp['password']}"
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'dmapi')}"
         )

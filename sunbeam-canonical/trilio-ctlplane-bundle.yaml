@@ -61,7 +61,7 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 12
+    revision: 15
     scale: 3
     trust: true
     options:
@@ -82,9 +82,10 @@ relations:
   # WLM relations
   - [trilio-wlm-k8s:database, mysql:database]
   - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
-  # WLM's embedded DMS server needs the *dmapi* vhost, not WLM's own `wlm`
-  # vhost — see trilio-wlm-k8s/src/charm.py _write_dms_server_config.
-  - [trilio-wlm-k8s:amqp-dms, rabbitmq:amqp]
+  # NOTE: amqp-dms relation is intentionally absent. WLM's DMS client and embedded
+  # DMS server both use the main amqp relation credentials (workloadmgr/workloadmgr).
+  # Two separate relations requesting the same RabbitMQ username would get different
+  # passwords from rabbitmq-k8s, causing an auth failure for one of them.
   - [trilio-wlm-k8s:identity-service, keystone:identity-service]
   - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
   - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]

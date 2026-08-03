@@ -98,6 +98,19 @@ Additionally:
 - `log_config_append = <path>` points to the per-service Python logging conf pushed by the charm
 - Log formatter classes: `workloadmgr.openstack.common.log.UTCFormatter`, `dmapi.common.log.UTCFormatter`, `contego.common.log.UTCFormatter`, `s3fuse.log.UTCFormatter`
 
+### workloadmgr CLI for testing — run from inside the WLM pod
+When running `workloadmgr` commands for testing (e.g. `workload-create`, `workload-list`, `snapshot-create`, `snapshot-list`, `snapshot-show`), run them from **inside** the `trilio-wlm` container of any WLM pod, not from external nodes or from the build server. The external nodes lack the `workloadmgrclient` openstack plugin. The `openstack workload ...` CLI extension is only available inside the pod.
+
+```bash
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr --os-auth-url http://10.152.183.175:5000/v3 \
+    --os-username svc_trilio_wlm_k8s-... --os-password ... \
+    --os-project-name services --os-user-domain-name service_domain \
+    --os-project-domain-name service_domain snapshot-list
+```
+
+Or export the auth env vars inside the pod first and then run `workloadmgr <subcommand>`. The `setsid` prefix is required (see note below).
+
 ### workloadmgr CLI in Pebble exec — setsid required
 When the WLM charm runs `workloadmgr` via `container.exec()` (Pebble), the process inherits Pebble's controlling terminal (the container's `/dev/console`). `workloadmgr`'s cliff/cmd2 layer opens `/dev/tty` and calls `curses.cbreak()`, which fails on the container console with "cbreak() returned ERR".
 
@@ -126,8 +139,10 @@ Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this b
 
 ### DMS systemd units (data plane)
 Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit files (both were designed for kolla containers). The `trilio-data-mover` charm writes both units to `/lib/systemd/system/` during install:
-- `triliovault-dms.service` — runs `trilio-dms-server` as nova user, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
-- `triliovault-datamover.service` — runs tvault-contego as nova user with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
+- `triliovault-dms.service` — runs `trilio-dms-server` as root, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
+- `triliovault-datamover.service` — runs tvault-contego as root with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
+
+**`StartLimitIntervalSec=0` is required in both unit `[Unit]` sections.** The systemd default allows only 5 starts in 10 seconds; an earlier version had an explicit `StartLimitIntervalSec=120 / StartLimitBurst=3` limit. When the DataMover crashes quickly due to transient issues (e.g. RabbitMQ `ACCESS_REFUSED` errors during credential rotation), the rapid restart cycle exhausts the limit and the unit enters `start-limit-hit` state (`systemctl status triliovault-datamover.service` shows `Result: start-limit-hit`). Once in that state, `systemctl start` immediately returns an error — the charm's own restart calls silently do nothing, leaving the DataMover permanently down even after the underlying issue is resolved. Setting `StartLimitIntervalSec=0` disables the limit entirely so the service always retries. If a compute node gets stuck in `start-limit-hit` on an older charm revision, recover with: `sudo systemctl reset-failed triliovault-datamover.service && sudo systemctl reset-failed triliovault-dms.service`, then trigger a charm hook re-run.
 
 ### Nova user UID normalisation (data plane)
 WLM containers (trilio-wlm-k8s, trilio-dms-k8s) run as `nova` UID 42436. DataMover on compute nodes also runs as `nova` and writes to the same NFS backup target, so both sides must use the same UID.
@@ -396,7 +411,7 @@ All four charms are registered on Charmhub under the `triliodata` publisher:
 | DMS k8s | k8s | `trilio-dms-k8s` |
 | DataMover machine | subordinate | `trilio-data-mover-sunbeam` |
 
-Publish channel: **`latest/candidate`**
+Publish channel: **`6.2/candidate`**
 
 Build and publish workflow:
 ```bash
@@ -407,7 +422,108 @@ charmcraft pack
 # Upload and release
 charmcraft upload <charm>.charm --name <charm-name>
 # Note the revision number from upload output, then:
-charmcraft release <charm-name> --revision <N> --channel latest/candidate
+charmcraft release <charm-name> --revision <N> --channel 6.2/candidate
 ```
 
 > **Note:** `charmcraft login` requires a browser on first use. Run `charmcraft login --export creds.txt` locally, transfer `creds.txt` to the server, then `export CHARMCRAFT_AUTH=$(cat creds.txt)` before building.
+
+#### `build-packages: [git]` required in charmcraft.yaml
+charmcraft's LXD build container does not include `git` by default. Any charm whose `requirements.txt` has a `git+https://` dependency will fail during `charmcraft pack` with:
+```
+ERROR: Error [Errno 2] No such file or directory: 'git' while executing command git version
+```
+Fix: add `build-packages: [git]` under the `parts.charm` section of `charmcraft.yaml`. This is already in `trilio-data-mover-sunbeam/charmcraft.yaml` — every charm with git-URL pip deps needs it.
+
+#### LXD zombie container blocks subsequent `charmcraft pack`
+If a previous `charmcraft pack` invocation was killed or backgrounded and left behind a stopped LXD container, the next pack attempt fails with:
+```
+Error: The device already exists
+```
+Check for stopped containers: `lxc list | grep charmcraft`. If the container is `STOPPED` (not `RUNNING`), wait a moment and retry — charmcraft will reuse or clean it up. If it is `RUNNING` from a background job, wait for it to finish before starting a new pack.
+
+#### Deploying bundles — use `./` path and `--trust`
+`juju deploy` does NOT accept an absolute path outside the current directory for bundle YAML files:
+- **Wrong**: `juju deploy /tmp/trilio-ctlplane-bundle.yaml` → "no charm was found"
+- **Correct**: copy the bundle to the working directory and deploy with `./`: `juju deploy ./trilio-ctlplane-bundle.yaml`
+
+Both control-plane bundles require `--trust` because the WLM and DMAPI charms patch their own StatefulSets at runtime via the Kubernetes API (FUSE device access, shared vault-mounts volume):
+```bash
+juju switch openstack
+juju deploy ./trilio-ctlplane-bundle.yaml --trust
+
+juju switch openstack-machines
+juju deploy ./trilio-dataplane-bundle.yaml
+# (data plane bundle does NOT need --trust)
+```
+
+Also strip CRLF from bundle files copied from the Windows working tree before deploying — see the "Windows-checkout file sync" note above.
+
+---
+
+## Testing
+
+### Fresh reinstall procedure (clean slate)
+When a fresh reinstall is needed (e.g. to pick up new charm revisions or reset corrupt state), follow this order:
+
+```bash
+# 1. Remove control plane applications (--destroy-storage drops MySQL databases too)
+juju switch openstack
+juju remove-application trilio-wlm-k8s trilio-dm-api-k8s --destroy-storage
+
+# Wait until pods are fully terminated
+kubectl get pods -n openstack | grep trilio   # expect: no output
+
+# 2. Remove data plane
+juju switch openstack-machines
+juju remove-application trilio-data-mover
+
+# Wait until subordinate units are gone
+juju status trilio-data-mover   # expect: "not found"
+
+# 3. Verify MySQL databases are gone (--destroy-storage above should handle this,
+#    but verify if re-deploy gets a "database already exists" error)
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p$(kubectl get secret -n openstack mysql-k8s-app -o jsonpath='{.data.root-password}' | base64 -d) \
+  -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
+# If databases still exist, drop them:
+# DROP DATABASE workloadmgr; DROP DATABASE dmapi;
+
+# 4. Deploy fresh
+juju switch openstack
+juju deploy ./trilio-ctlplane-bundle.yaml --trust
+
+juju switch openstack-machines
+juju deploy ./trilio-dataplane-bundle.yaml
+
+# 5. Wait for active, then attach license and create trust
+juju switch openstack
+juju wait-for application trilio-wlm-k8s --query='status=="active"' --timeout=15m
+juju attach-resource trilio-wlm-k8s license=<path-to-license>
+juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+```
+
+### workloadmgr test scope — admin credentials required
+`workloadmgr workload-list` and `snapshot-list` are scoped to the authenticated user's project. If workloads were created using admin credentials (project=`admin`), the service account credentials (project=`services`) will return an empty list. Always use the same credentials (project scope) that were used to create the workload:
+
+```bash
+# Inside the WLM pod — use admin project scope, not service account
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr \
+    --os-auth-url http://<keystone-clusterip>:5000/v3 \
+    --os-username admin \
+    --os-password <admin-password> \
+    --os-project-name admin \
+    --os-user-domain-name admin_domain \
+    --os-project-domain-name admin_domain \
+    workload-list
+```
+
+The `setsid` prefix is required — see the "workloadmgr CLI in Pebble exec" section above.
+
+### Snapshot verification test flow
+After fresh install and license/trust setup:
+1. Create backup target (NFS or S3) via the test script: `sunbeam-canonical/test/01_create_backup_targets.sh`
+2. Create a test workload (one VM): run `workloadmgr workload-create` from inside the WLM pod
+3. Trigger a snapshot: `workloadmgr snapshot-create <workload-id>`
+4. Poll status: `workloadmgr snapshot-show <snapshot-id>` until `available` (success) or `error`
+5. On error: check WLM logs (`kubectl logs -n openstack trilio-wlm-k8s-0 -c trilio-wlm`) and DataMover logs on compute nodes (`journalctl -u triliovault-datamover`)
