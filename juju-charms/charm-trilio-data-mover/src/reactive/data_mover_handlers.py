@@ -198,6 +198,26 @@ def _write_dms_server_config(dms_server_context):
         host.service('start', 'trilio-dms-server')
 
 
+def _dms_server_conf_is_stale(dms_server_context):
+    """True if server.conf doesn't already hold the expected rabbitmq_url.
+
+    data_changed() only tracks the logical relation inputs, not the file's
+    actual on-disk content — a package (re)install can silently reset
+    server.conf to its blank default without the amqp/identity-service
+    relation data changing at all, which data_changed() alone can't detect
+    (TVAULT-7521). Falling back to this check lets render_dms_config() keep
+    skipping genuinely-unchanged no-op hook fires (avoiding an unnecessary
+    trilio-dms-server restart on every hook) while still self-healing if the
+    file on disk doesn't match what we'd write.
+    """
+    dms_server_conf_path = '/etc/triliovault-dms/server.conf'
+    if not os.path.exists(dms_server_conf_path):
+        return True
+    expected = "rabbitmq_url = {}".format(dms_server_context['rabbitmq_url'])
+    with open(dms_server_conf_path) as f:
+        return expected not in f.read()
+
+
 @reactive.when_not('is-update-status-hook')
 @reactive.when("amqp.available")
 @reactive.when("identity-service.connected")
@@ -207,7 +227,9 @@ def render_dms_config(*args):
     if dms_server_context is None:
         return
 
-    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
+    inputs_unchanged = not reactive.helpers.data_changed(
+        'trilio-dms-server-config', dms_server_context)
+    if inputs_unchanged and not _dms_server_conf_is_stale(dms_server_context):
         return
 
     _write_dms_server_config(dms_server_context)

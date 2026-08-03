@@ -202,22 +202,29 @@ def update_trilio(*args):
         for svc in wlm_services:
             host.service('stop', svc)
 
-        trilio_wlm_charm.run_trilio_upgrade(endpoints)
+        # Everything from here on must leave the previously-stopped services
+        # running again even on failure — otherwise a mid-upgrade exception
+        # (package install, migration, or render) leaves a working
+        # deployment down, which is worse than before this action touched
+        # anything. finally always attempts the restart and a fresh status
+        # assessment; the exception (if any) still propagates so the action
+        # is correctly reported as failed.
+        try:
+            trilio_wlm_charm.run_trilio_upgrade(endpoints)
 
-        # This action never goes through the reactive hook-dispatch loop, so
-        # db_sync() and the WLM/DMS config render (normally triggered by
-        # render_config()/init_db() on a later hook) must be run explicitly
-        # here, in the correct order: migration before any service starts
-        # (TVAULT-7522), and configs re-rendered with the correct
-        # rabbitmq_url before trilio-dms-server/wlm-* come back up
-        # (TVAULT-7521).
-        trilio_wlm_charm.db_sync()
-        trilio_wlm_handlers.render_wlm_and_dms_configs()
-
-        for svc in wlm_services:
-            host.service('start', svc)
-
-        trilio_wlm_charm._assess_status()
+            # This action never goes through the reactive hook-dispatch
+            # loop, so db_sync() and the WLM/DMS config render (normally
+            # triggered by render_config()/init_db() on a later hook) must
+            # be run explicitly here, in the correct order: migration
+            # before any service starts (TVAULT-7522), and configs
+            # re-rendered with the correct rabbitmq_url before
+            # trilio-dms-server/wlm-* come back up (TVAULT-7521).
+            trilio_wlm_charm.db_sync()
+            trilio_wlm_handlers.render_wlm_and_dms_configs()
+        finally:
+            for svc in wlm_services:
+                host.service('start', svc)
+            trilio_wlm_charm._assess_status()
 
 
 # Actions to function mapping, to allow for illegal python action names that

@@ -13,79 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Thin dispatch stub — the real implementation lives in actions.py.
+#
+# Juju invokes this file directly by its action name; actions.py's main()
+# determines which action to run from os.path.basename(sys.argv[0]), so
+# this file never needs to change when actions.py changes. This replaces
+# the previous convention of hand-copying the whole of actions.py into
+# every action-name file, which had already caused real drift between
+# them (see juju-charms/CLAUDE.md).
+
 import os
 import sys
 
-# Load modules from $CHARM_DIR/lib and $CHARM_DIR/reactive
-sys.path.append("lib")
-sys.path.append("reactive")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from charms.layer import basic
-
-basic.bootstrap_charm_deps()
-basic.init_config_states()
-
-import charmhelpers.core.hookenv as hookenv
-
-import charms.reactive as reactive
-
-import charms_openstack.charm
-
-# import the trilio module to get the charm definitions created.
-import charm.openstack.dmapi  # noqa
-
-# import the reactive handlers module so the update-trilio action can
-# explicitly re-render the DMS client config — actions never go through the
-# reactive hook-dispatch loop, so render_config() would otherwise not run as
-# part of an upgrade (TVAULT-7521).
-import dmapi_handlers  # noqa
-
-
-def update_trilio(*args):
-    """Run setup after Trilio upgrade.
-    """
-    with charms_openstack.charm.provide_charm_instance() as trilio_charm:
-        interfaces = ["shared-db", "amqp"]
-        endpoints = [
-            reactive.relations.endpoint_from_flag("{}.available".format(i))
-            for i in interfaces]
-        # identity-service is of type reactive.Endpoint rather than
-        # reactive.RelationBase and needs a different method to instantiate it.
-        endpoints.append(reactive.endpoint_from_name("identity-service"))
-        trilio_charm.run_trilio_upgrade(endpoints)
-
-        # This action never goes through the reactive hook-dispatch loop, so
-        # the DMS client config render (normally triggered by render_config()
-        # on a later hook) must be run explicitly here, with the correct
-        # rabbitmq_url, before trilio-dms-server settles (TVAULT-7521).
-        dmapi_handlers.render_dmapi_and_dms_configs()
-        if reactive.flags.is_flag_set('wlm-db.connected'):
-            dmapi_handlers.render_dms_client_config()
-
-        trilio_charm._assess_status()
-
-
-# Actions to function mapping, to allow for illegal python action names that
-# can map to a python function.
-ACTIONS = {
-    "update-trilio": update_trilio,
-}
-
-
-def main(args):
-    hookenv._run_atstart()
-    action_name = os.path.basename(args[0])
-    try:
-        action = ACTIONS[action_name]
-    except KeyError:
-        return "Action %s undefined" % action_name
-    else:
-        try:
-            action(args)
-        except Exception as e:
-            hookenv.function_fail(str(e))
-    hookenv._run_atexit()
-
+from actions import main  # noqa
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

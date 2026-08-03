@@ -93,10 +93,18 @@ Code flow: operator sets config → reactive states change → handler functions
 ### Adding a New Action
 1. Declare it in `src/actions.yaml`
 2. Implement in `src/actions/actions.py`
-3. Copy `src/actions/actions.py` over `src/actions/<action-name>` (see gotcha below — these are **not** symlinks in this repo)
+3. Add a dispatch stub at `src/actions/<action-name>` (see convention below — do **not** hand-copy `actions.py`)
 
-### Gotcha: action entrypoint files are full copies, not symlinks
-Juju executes `src/actions/<action-name>` directly (dispatch is by `os.path.basename(sys.argv[0])` inside each file's own `main()`). In this repo those per-action-name files are **real, standalone copies of `actions.py`** (git mode `100755`, not a `120000` symlink) — charmcraft's `reactive` plugin ships `src/actions/` as-is with no build-time generation step. Whenever `actions.py` changes, every `src/actions/<action-name>` file that should reflect that change must be manually re-copied, or Juju will keep executing stale code. This has already caused a real bug: `charm-trilio-wlm/src/actions/unmount-old-backup-targets` was missing an entire fix (the `tvault-object-store-*.service` stop/disable logic from commit `9c135ce27`) that had been merged into `actions.py` weeks earlier (found while fixing TVAULT-7523). Always diff the named file against `actions.py` after editing either one.
+### Convention: action entrypoint files are thin dispatch stubs, not copies
+Juju executes `src/actions/<action-name>` directly, and `actions.py`'s `main()` decides which action to run from `os.path.basename(sys.argv[0])` — i.e. from the *name of the invoked file*, not from which file the code physically lives in. Each `src/actions/<action-name>` file (across `charm-trilio-wlm`, `charm-trilio-dm-api`, `charm-trilio-data-mover`) is therefore a tiny stub:
+```python
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from actions import main
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+This never needs to change when `actions.py` changes — it just delegates. **This replaced an earlier convention** (hand-copying the entire contents of `actions.py` into every action-name file) that had already caused a real bug: `charm-trilio-wlm/src/actions/unmount-old-backup-targets` was missing an entire fix (the `tvault-object-store-*.service` stop/disable logic from commit `9c135ce27`) that had been merged into `actions.py` weeks earlier, because nobody re-copied it (found while fixing TVAULT-7523, corrected while fixing TVAULT-7521/7522/7523). Symlinks were considered instead but avoided for Windows-checkout portability (this repo is also worked on from Windows dev machines) — the stub achieves the same "single source of truth" property without needing filesystem symlink support.
 
 ### Gotcha: `update-trilio` (and any action) never fires reactive hooks
 Juju actions in `charms.reactive`-based charms are plain Python entrypoints — they do **not** go through the reactive hook-dispatch loop (`charms.reactive.main()`). So calling `run_trilio_upgrade()` from an action only performs the package upgrade; hook-gated handlers like `render_config()` (re-renders `rabbitmq_url` etc. into config) and `init_db()` (`db_sync()`, the alembic migration) do **not** run as a side effect, even though they normally follow a package change on a real hook. Any action that upgrades packages must explicitly call the equivalent render/migration functions itself afterward (see `render_wlm_and_dms_configs()` in `charm-trilio-wlm`, `render_dmapi_and_dms_configs()`/`render_dms_client_config()` in `charm-trilio-dm-api`, `render_dms_config_now()` in `charm-trilio-data-mover` — all added for TVAULT-7521/TVAULT-7522) rather than assuming a later hook will clean it up. `db_sync()` must run, and dependent services (wlm-api/workloads/scheduler/cron) must be stopped/restarted, in that order — restarting before migration completes crashes services on "Unknown column" errors (TVAULT-7522).
