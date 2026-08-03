@@ -93,7 +93,19 @@ Code flow: operator sets config → reactive states change → handler functions
 ### Adding a New Action
 1. Declare it in `src/actions.yaml`
 2. Implement in `src/actions/actions.py`
-3. Create a symlink: `src/actions/<action-name>` → `actions.py`
+3. Copy `src/actions/actions.py` over `src/actions/<action-name>` (see gotcha below — these are **not** symlinks in this repo)
+
+### Gotcha: action entrypoint files are full copies, not symlinks
+Juju executes `src/actions/<action-name>` directly (dispatch is by `os.path.basename(sys.argv[0])` inside each file's own `main()`). In this repo those per-action-name files are **real, standalone copies of `actions.py`** (git mode `100755`, not a `120000` symlink) — charmcraft's `reactive` plugin ships `src/actions/` as-is with no build-time generation step. Whenever `actions.py` changes, every `src/actions/<action-name>` file that should reflect that change must be manually re-copied, or Juju will keep executing stale code. This has already caused a real bug: `charm-trilio-wlm/src/actions/unmount-old-backup-targets` was missing an entire fix (the `tvault-object-store-*.service` stop/disable logic from commit `9c135ce27`) that had been merged into `actions.py` weeks earlier (found while fixing TVAULT-7523). Always diff the named file against `actions.py` after editing either one.
+
+### Gotcha: `update-trilio` (and any action) never fires reactive hooks
+Juju actions in `charms.reactive`-based charms are plain Python entrypoints — they do **not** go through the reactive hook-dispatch loop (`charms.reactive.main()`). So calling `run_trilio_upgrade()` from an action only performs the package upgrade; hook-gated handlers like `render_config()` (re-renders `rabbitmq_url` etc. into config) and `init_db()` (`db_sync()`, the alembic migration) do **not** run as a side effect, even though they normally follow a package change on a real hook. Any action that upgrades packages must explicitly call the equivalent render/migration functions itself afterward (see `render_wlm_and_dms_configs()` in `charm-trilio-wlm`, `render_dmapi_and_dms_configs()`/`render_dms_client_config()` in `charm-trilio-dm-api`, `render_dms_config_now()` in `charm-trilio-data-mover` — all added for TVAULT-7521/TVAULT-7522) rather than assuming a later hook will clean it up. `db_sync()` must run, and dependent services (wlm-api/workloads/scheduler/cron) must be stopped/restarted, in that order — restarting before migration completes crashes services on "Unknown column" errors (TVAULT-7522).
+
+### Object-store service cleanup (6.1 → 6.2 upgrade)
+6.2 removes static/`tvault-object-store.service`-based backup targets in favor of dynamic per-target mounts managed by `trilio-dms-server`. Leftover per-target systemd units follow the pattern `tvault-object-store-<BT_NAME>.service` (created dynamically by the DMS/s3vaultfuse runtime, not templated anywhere in this repo) and will auto-remount a target's FUSE/NFS mount if left running — `unmount_old_backup_targets()` must stop, disable, **and remove** the unit file (not just unmount), or the mount comes right back. See `unmount-old-backup-targets` action in `charm-trilio-wlm` and `charm-trilio-data-mover`.
+
+### Canonical upgrade procedure reference
+The authoritative 6.1→6.2.1 upgrade steps (including the required-but-easy-to-miss `juju add-relation trilio-data-mover:identity-service keystone:identity-service` step, new in 6.2) live in Confluence: "6.2.1 Install and Upgrade Step Changes for Canonical" (page 5051482119, space TVO). Check it before debugging any Canonical upgrade Jira — QA repro steps pasted into a Jira sometimes omit a step from this doc.
 
 ### Wheelhouse / Offline Dependencies
 `src/wheelhouse.txt` lists pip packages to bundle. Pre-downloaded `.whl` files go in `src/wheelhouse/`.
