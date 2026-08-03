@@ -38,6 +38,13 @@ done
 # stale exchange here, before any pod of the new release starts, means every pod's first
 # declare attempt hits a vhost with either no exchange (fresh create, durable=true) or one
 # already durable=true - no race, no PRECONDITION_FAILED.
+#
+# Scoped narrowly on purpose: only a *_fanout exchange that is both type=fanout and
+# durable=False gets deleted - every other exchange (already durable=true, not a *_fanout
+# name, or not type fanout) is left untouched, and this whole script is a no-op unless
+# rabbit_transient_quorum_queue is enabled. Queues are intentionally NOT touched here, even
+# though the same bug leaks orphaned per-consumer queues under concurrent pod startup -
+# that cleanup is out of scope for this fix.
 if [ "{{- .Values.rabbitmq.common.ssl -}}" == "true" ]; then
   RABBITMQADMIN_EXTRA_ARGS="--ssl"
 else
