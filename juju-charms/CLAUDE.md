@@ -112,8 +112,11 @@ Juju actions in `charms.reactive`-based charms are plain Python entrypoints — 
 ### Object-store service cleanup (6.1 → 6.2 upgrade)
 6.2 removes static/`tvault-object-store.service`-based backup targets in favor of dynamic per-target mounts managed by `trilio-dms-server`. Leftover per-target systemd units follow the pattern `tvault-object-store-<BT_NAME>.service` (created dynamically by the DMS/s3vaultfuse runtime, not templated anywhere in this repo) and will auto-remount a target's FUSE/NFS mount if left running — `unmount_old_backup_targets()` must stop, disable, **and remove** the unit file (not just unmount), or the mount comes right back. See `unmount-old-backup-targets` action in `charm-trilio-wlm` and `charm-trilio-data-mover`.
 
-### Canonical upgrade procedure reference
-The authoritative 6.1→6.2.1 upgrade steps (including the required-but-easy-to-miss `juju add-relation trilio-data-mover:identity-service keystone:identity-service` step, new in 6.2) live in Confluence: "6.2.1 Install and Upgrade Step Changes for Canonical" (page 5051482119, space TVO). Check it before debugging any Canonical upgrade Jira — QA repro steps pasted into a Jira sometimes omit a step from this doc.
+### Canonical install/upgrade procedure references
+- **6.1.x fresh install**: follow the official published guide, https://docs.trilio.io/openstack/deployment/installing-on-canonical — this is the baseline procedure (bundle prep, deploy, trust/license, backup targets) for 6.1 and earlier releases on Canonical OpenStack.
+- **6.2+ install/upgrade changes**: the Confluence page "6.2.1 Install and Upgrade Step Changes for Canonical" (page 5051482119, space TVO) documents what's *different* from the 6.1.x baseline above — new relations (e.g. the required-but-easy-to-miss `juju add-relation trilio-data-mover:identity-service keystone:identity-service`), removed static backup-target config, the `update-trilio` action requirement, etc. Read it as a diff against the 6.1.x guide, not a standalone doc.
+
+Check both before debugging any Canonical upgrade Jira — QA repro steps pasted into a Jira sometimes omit a step from one or the other.
 
 ### Wheelhouse / Offline Dependencies
 `src/wheelhouse.txt` lists pip packages to bundle. Pre-downloaded `.whl` files go in `src/wheelhouse/`.
