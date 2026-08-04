@@ -17,8 +17,9 @@ import os
 import subprocess
 import sys
 
-# Load modules from $CHARM_DIR/lib
+# Load modules from $CHARM_DIR/lib and $CHARM_DIR/reactive
 sys.path.append("lib")
+sys.path.append("reactive")
 
 from charms.layer import basic
 
@@ -26,6 +27,7 @@ basic.bootstrap_charm_deps()
 basic.init_config_states()
 
 import charmhelpers.core.hookenv as hookenv
+from charmhelpers.core import host
 
 import charms.reactive as reactive
 
@@ -33,6 +35,32 @@ import charms_openstack.charm
 
 # import the trilio_wlm module to get the charm definitions created.
 import charm.openstack.trilio_wlm  # noqa
+
+# import the reactive handlers module so the update-trilio action can
+# explicitly re-run the WLM/DMS config render and DB migration — actions
+# never go through the reactive hook-dispatch loop, so render_config()/
+# init_db() would otherwise not run as part of an upgrade (TVAULT-7521,
+# TVAULT-7522).
+import trilio_wlm_handlers  # noqa
+
+WLM_CORE_SERVICES = ['wlm-api', 'wlm-workloads', 'wlm-scheduler']
+
+
+def _wlm_services():
+    """wlm-* services to stop/start around the package upgrade.
+
+    wlm-cron is excluded when ha.available is set: in an HA deployment it
+    runs as a corosync/pacemaker clone resource on a single unit (see
+    TrilioWLMBaseCharm.services in lib/charm/openstack/trilio_wlm.py), not
+    as a plain systemd service on every unit. update-trilio runs against
+    every unit (juju run trilio-wlm/* update-trilio), so unconditionally
+    starting wlm-cron here would run it cluster-wide instead of leaving it
+    to the cluster resource manager — duplicate scheduled job execution.
+    """
+    services = list(WLM_CORE_SERVICES)
+    if not reactive.flags.is_flag_set('ha.available'):
+        services.append('wlm-cron')
+    return services
 
 
 def unmount_old_backup_targets(*args):
@@ -59,7 +87,23 @@ def unmount_old_backup_targets(*args):
         subprocess.run(['systemctl', 'stop', svc], capture_output=True)
         subprocess.run(['systemctl', 'disable', svc], capture_output=True)
         results.append('stopped and disabled: {}'.format(svc))
-    if not ots_units:
+
+        # Remove the per-backup-target unit file too, not just stop+disable,
+        # so a future mount of the same target starts from a clean slate
+        # instead of racing a leftover unit definition (TVAULT-7523).
+        show = subprocess.run(
+            ['systemctl', 'show', svc, '-p', 'FragmentPath', '--value'],
+            capture_output=True, text=True)
+        unit_path = show.stdout.strip()
+        if unit_path and os.path.exists(unit_path):
+            try:
+                os.remove(unit_path)
+                results.append('removed unit file: {}'.format(unit_path))
+            except OSError as e:
+                errors.append('failed to remove unit file {}: {}'.format(unit_path, e))
+    if ots_units:
+        subprocess.run(['systemctl', 'daemon-reload'], capture_output=True)
+    else:
         results.append('tvault-object-store: no units found')
 
     # Kill any s3vaultfuse processes left over from 6.1 (FUSE mounts)
@@ -149,8 +193,38 @@ def update_trilio(*args):
         # identity-service is of type reactive.Endpoint rather than
         # reactive.RelationBase and needs a different method to instantiate it.
         endpoints.append(reactive.endpoint_from_name("identity-service"))
-        trilio_wlm_charm.run_trilio_upgrade(endpoints)
-        trilio_wlm_charm._assess_status()
+
+        wlm_services = _wlm_services()
+
+        # Stop wlm-* services before the package upgrade so nothing restarts
+        # against a stale DB schema while run_trilio_upgrade() is installing
+        # the new packages (TVAULT-7522).
+        for svc in wlm_services:
+            host.service('stop', svc)
+
+        # Everything from here on must leave the previously-stopped services
+        # running again even on failure — otherwise a mid-upgrade exception
+        # (package install, migration, or render) leaves a working
+        # deployment down, which is worse than before this action touched
+        # anything. finally always attempts the restart and a fresh status
+        # assessment; the exception (if any) still propagates so the action
+        # is correctly reported as failed.
+        try:
+            trilio_wlm_charm.run_trilio_upgrade(endpoints)
+
+            # This action never goes through the reactive hook-dispatch
+            # loop, so db_sync() and the WLM/DMS config render (normally
+            # triggered by render_config()/init_db() on a later hook) must
+            # be run explicitly here, in the correct order: migration
+            # before any service starts (TVAULT-7522), and configs
+            # re-rendered with the correct rabbitmq_url before
+            # trilio-dms-server/wlm-* come back up (TVAULT-7521).
+            trilio_wlm_charm.db_sync()
+            trilio_wlm_handlers.render_wlm_and_dms_configs()
+        finally:
+            for svc in wlm_services:
+                host.service('start', svc)
+            trilio_wlm_charm._assess_status()
 
 
 # Actions to function mapping, to allow for illegal python action names that

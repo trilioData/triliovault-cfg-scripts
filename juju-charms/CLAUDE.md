@@ -93,13 +93,40 @@ Code flow: operator sets config → reactive states change → handler functions
 ### Adding a New Action
 1. Declare it in `src/actions.yaml`
 2. Implement in `src/actions/actions.py`
-3. Create a symlink: `src/actions/<action-name>` → `actions.py`
+3. Add a dispatch stub at `src/actions/<action-name>` (see convention below — do **not** hand-copy `actions.py`)
+
+### Convention: action entrypoint files are thin dispatch stubs, not copies
+Juju executes `src/actions/<action-name>` directly, and `actions.py`'s `main()` decides which action to run from `os.path.basename(sys.argv[0])` — i.e. from the *name of the invoked file*, not from which file the code physically lives in. Each `src/actions/<action-name>` file (across `charm-trilio-wlm`, `charm-trilio-dm-api`, `charm-trilio-data-mover`) is therefore a tiny stub:
+```python
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from actions import main
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+This never needs to change when `actions.py` changes — it just delegates. **This replaced an earlier convention** (hand-copying the entire contents of `actions.py` into every action-name file) that had already caused a real bug: `charm-trilio-wlm/src/actions/unmount-old-backup-targets` was missing an entire fix (the `tvault-object-store-*.service` stop/disable logic from commit `9c135ce27`) that had been merged into `actions.py` weeks earlier, because nobody re-copied it (found while fixing TVAULT-7523, corrected while fixing TVAULT-7521/7522/7523). Symlinks were considered instead but avoided for Windows-checkout portability (this repo is also worked on from Windows dev machines) — the stub achieves the same "single source of truth" property without needing filesystem symlink support.
+
+### Gotcha: `update-trilio` (and any action) never fires reactive hooks
+Juju actions in `charms.reactive`-based charms are plain Python entrypoints — they do **not** go through the reactive hook-dispatch loop (`charms.reactive.main()`). So calling `run_trilio_upgrade()` from an action only performs the package upgrade; hook-gated handlers like `render_config()` (re-renders `rabbitmq_url` etc. into config) and `init_db()` (`db_sync()`, the alembic migration) do **not** run as a side effect, even though they normally follow a package change on a real hook. Any action that upgrades packages must explicitly call the equivalent render/migration functions itself afterward (see `render_wlm_and_dms_configs()` in `charm-trilio-wlm`, `render_dmapi_and_dms_configs()`/`render_dms_client_config()` in `charm-trilio-dm-api`, `render_dms_config_now()` in `charm-trilio-data-mover` — all added for TVAULT-7521/TVAULT-7522) rather than assuming a later hook will clean it up. `db_sync()` must run, and dependent services (wlm-api/workloads/scheduler/cron) must be stopped/restarted, in that order — restarting before migration completes crashes services on "Unknown column" errors (TVAULT-7522).
+
+### Object-store service cleanup (6.1 → 6.2 upgrade)
+6.2 removes static/`tvault-object-store.service`-based backup targets in favor of dynamic per-target mounts managed by `trilio-dms-server`. Leftover per-target systemd units follow the pattern `tvault-object-store-<BT_NAME>.service` (created dynamically by the DMS/s3vaultfuse runtime, not templated anywhere in this repo) and will auto-remount a target's FUSE/NFS mount if left running — `unmount_old_backup_targets()` must stop, disable, **and remove** the unit file (not just unmount), or the mount comes right back. See `unmount-old-backup-targets` action in `charm-trilio-wlm` and `charm-trilio-data-mover`.
+
+### Canonical install/upgrade procedure references
+- **6.1.x fresh install**: follow the official published guide, https://docs.trilio.io/openstack/deployment/installing-on-canonical — this is the baseline procedure (bundle prep, deploy, trust/license, backup targets) for 6.1 and earlier releases on Canonical OpenStack.
+- **6.2+ install/upgrade changes**: the Confluence page "6.2.1 Install and Upgrade Step Changes for Canonical" (page 5051482119, space TVO) documents what's *different* from the 6.1.x baseline above — new relations (e.g. the required-but-easy-to-miss `juju add-relation trilio-data-mover:identity-service keystone:identity-service`), removed static backup-target config, the `update-trilio` action requirement, etc. Read it as a diff against the 6.1.x guide, not a standalone doc.
+
+Check both before debugging any Canonical upgrade Jira — QA repro steps pasted into a Jira sometimes omit a step from one or the other.
 
 ### Wheelhouse / Offline Dependencies
 `src/wheelhouse.txt` lists pip packages to bundle. Pre-downloaded `.whl` files go in `src/wheelhouse/`.
 Required when the charm target nodes have no internet access.
 
 ## Build and Publish Workflow
+
+**Never install a locally-built `.charm` via `juju refresh --path=`/`juju deploy --path=` for verification.** Always `charmcraft upload` + `charmcraft release` to Charmhub first, then install/upgrade from the channel like a real deployment would. Local path installs skip the actual distribution path and can hide packaging issues.
+
+**Release convention: always release to the `<TRACK>/candidate` channel** (e.g. `6.2/candidate`), never `edge` or straight to `stable`, even for a fix build being verified mid-session. `candidate` is the channel QA actively tests against, so releasing there is the expected way to get a fix in front of them — don't route around it into a side channel.
 
 ```bash
 # From within the charm subdirectory:
@@ -111,11 +138,110 @@ charmcraft pack
 # Upload to Charmhub (produces a revision number)
 charmcraft upload trilio-charmers-trilio-wlm_ubuntu-22.04-amd64.charm
 
-# Release to a channel
-charmcraft release trilio-charmers-trilio-wlm --revision <N> --channel latest/stable
+# Release to the candidate channel for the target track
+charmcraft release trilio-charmers-trilio-wlm --revision <N> --channel 6.2/candidate
 ```
 
 Run the same commands from each charm's subdirectory independently.
+
+### Gotcha: charmcraft snap channel must match this repo's `charmcraft.yaml` bases format
+These charms' `charmcraft.yaml` use the legacy `bases: build-on/run-on` schema. The `latest/stable` charmcraft snap channel (4.x) requires the newer `platforms:` schema instead and fails immediately with a `BasesCharm` validation error. Use the `2.x/stable` channel (`sudo snap refresh charmcraft --channel=2.x/stable --classic`) to build these charms until/unless `charmcraft.yaml` is migrated to the new schema.
+
+### Gotcha: build host must have LXD actually initialized, and must not be an OpenStack networking node
+`charmcraft pack` needs a working LXD (or Multipass) backend. Don't assume any given Ubuntu box has this ready — check `lxc network list` shows a `MANAGED`/`CREATED` bridge before starting a build. Avoid building on a box that also runs live OpenStack networking (Neutron/OVN, e.g. a `nova-compute`/`ovn-chassis` unit) — `lxd init --auto` can fail there with a `dnsmasq: ... Address already in use` error regardless of which subnet LXD picks, because a system dnsmasq (Neutron DHCP) is likely already bound. Don't try to work around this by touching the box's networking — use a dedicated build host instead (see `env/setups.yaml` for known-good build boxes, e.g. the Sunbeam build server).
+
+## Uninstall (for Upgrade/Fresh-Install Testing)
+
+Uninstall is a **single discrete step, run to full completion before starting any new deploy** — not something to interleave with a redeploy, and not something to partially do mid-test. Doing it out of order (e.g. dropping the database while a fresh deploy's `shared-db` relation is still negotiating) creates a race: the relation can finish provisioning a fresh database *after* you've dropped it, leaving the charm's rendered config pointing at credentials that no longer have a matching grant. Always: (1) remove the Juju applications and wait for removal to fully finish, (2) only then clean Keystone/RabbitMQ/MySQL, (3) only then start the next deploy.
+
+### Step 1 — Remove the Juju applications
+Remove all four principal charms **and their mysql-router subordinates explicitly** in one command — don't rely on subordinates being auto-removed, they can be left behind as orphaned applications:
+
+```bash
+juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
+  trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router
+```
+
+Units commonly go into `error` state during removal (see gotcha below) — once they do, re-run the same command with `--force` (add `--no-wait` too if it still doesn't progress):
+
+```bash
+juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
+  trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router --force
+```
+
+Confirm full removal before proceeding — `juju status <app-names>` should return "Nothing matched specified filters" for every one of them.
+
+### Gotcha: removal commonly errors on unrelated interface-library bugs — safe to force through
+Removing these charms (or redeploying shortly after, causing relation churn on `mysql-innodb-cluster`) frequently triggers hook failures unrelated to Trilio's own code, in shared/vendored interface libraries:
+- `identity-service-relation-departed` can fail with `IndexError: list index out of range` in `hooks/relations/keystone/requires.py` (`self.relations[0]` accessed without checking the list is non-empty once the other side has already departed).
+- On the `mysql-innodb-cluster` side, `db-router-relation-broken` can fail with `network-get --primary-address cluster` returning a non-zero exit — this can affect **all** `mysql-innodb-cluster` units, not just the one related to Trilio.
+- Also on `mysql-innodb-cluster`, the periodic `update-status` hook can fail with `relation-get ... returned non-zero exit status 1` / `settings not found`, referencing a stale relation ID left over from a torn-down relation — this isn't limited to the moment of removal, it can resurface on any later `update-status` tick and will itself **block new `db-router` requests** (a freshly redeployed charm's `mysql-router` subordinate will sit at "MySQL Router not yet bootstrapped" indefinitely until this is resolved).
+
+All three are pre-existing hook-script bugs (not data-loss or live-service issues) — verify with `systemctl is-active mysql` on a `mysql-innodb-cluster` unit and check that unrelated apps sharing the same DB backend (e.g. `keystone`, `cinder`, `glance`) are still `active` before proceeding. Once confirmed, `juju resolved --no-retry <unit>` on each affected unit is safe. If a fresh deploy's `mysql-router` subordinate is stuck bootstrapping, check `juju status mysql-innodb-cluster` for this exact symptom before assuming the new deploy itself is broken.
+
+### Step 2 — Clean Keystone (only after Step 1 is fully complete)
+Trilio registers `dmapi` and `workloadmgr` as Keystone services, each with 3 endpoints (admin/public/internal), and a service-account user for each — commonly duplicated across more than one domain (e.g. a Juju-created `service_domain` in addition to `default`), so check both:
+
+```bash
+source <openrc file>
+openstack --insecure endpoint list | grep -iE 'dmapi|workload'   # note IDs, then:
+openstack --insecure endpoint delete <id>                        # for each endpoint
+
+openstack --insecure service list | grep -iE 'dmapi|workload'    # note IDs, then:
+openstack --insecure service delete <id>                         # for each service
+
+openstack --insecure domain list                                  # check every domain, not just default
+openstack --insecure user list --domain <domain-id> | grep -iE 'dmapi|workload'
+openstack --insecure user delete <id>                             # for each user, in every domain it appears
+```
+
+### Step 3 — Clean RabbitMQ (only after Step 1 is fully complete)
+Trilio creates a vhost (commonly named after the wlm service, e.g. `triliowlm`) and per-service users (`dmapi`, `datamover`, and the wlm vhost-named user):
+
+```bash
+sudo rabbitmqctl list_vhosts   # identify the trilio vhost
+sudo rabbitmqctl list_users    # identify trilio users
+sudo rabbitmqctl delete_vhost <vhost>
+sudo rabbitmqctl delete_user <user>   # for each trilio-related user
+```
+
+### Step 4 — Clean MySQL (only after Step 1 is fully complete)
+`juju remove-application` never drops the actual database in `mysql-innodb-cluster` — the schema and all data persist independently, cached under `mysql-innodb-cluster`'s own leader-settings (keyed by service name, e.g. `dmapi`/`workloadmgr`, not by unit). If you're tearing down specifically to test an older release's fresh-install-then-upgrade path, this matters a lot: redeploying against a database that's already at the newer schema means `db_sync()`/alembic migration during the later upgrade step is a no-op, silently defeating the entire point of the test. Root credentials are in `leader-get` on a `mysql-innodb-cluster` unit — look for the plain `mysql.passwd` key, and the per-service `mysql-<service>.passwd` keys:
+
+```sql
+DROP DATABASE IF EXISTS workloadmgr;
+DROP DATABASE IF EXISTS dmapi;
+-- then find and drop every matching grant, not just one IP:
+SELECT user, host FROM mysql.user WHERE user IN ('dmapi', 'workloadmgr');
+DROP USER IF EXISTS '<user>'@'<host>';   -- repeat per row above
+```
+
+Only start the next deploy once Steps 2–4 are all confirmed clean — never drop these while a deploy's `shared-db`/`identity-service`/`amqp` relations are still negotiating (`juju status` showing `incomplete`/`waiting`).
+
+### Step 5 — Clean leftover host-level services (6.1.x and older only)
+6.1.x and earlier use the static/`tvault-object-store.service`-per-backup-target architecture that 6.2 removed entirely (see "What Changed in 6.2" above). These run as raw systemd services on the underlying host/container, **outside the charm's own install/remove hook lifecycle** — `juju remove-application` does not stop or clean them up, so they can keep running (or crash-looping) for days across multiple teardown/redeploy cycles, on both `trilio-data-mover` **and** `trilio-wlm` nodes:
+
+- `trilio-dms-server.service` — only found running on `trilio-data-mover` nodes in a 6.1.x deployment (it's a 6.2+-introduced component elsewhere, but can be left over from a prior 6.2 test on the same nodes).
+- `tvault-object-store-<BT_NAME>.service` (e.g. `tvault-object-store-S3_BT1.service`) — one per configured backup target, on **both** `trilio-data-mover` and `trilio-wlm` nodes. If stale ones are left running from a previous test, a fresh charm can report `blocked`/`Services not running that should be: ...` even though the *real* problem is that old, orphaned units are still active (or crash-looping) under the same name and the fresh charm's own service was never actually (re)created.
+
+Check and clean on every `trilio-data-mover` and `trilio-wlm` unit:
+
+```bash
+sudo systemctl status trilio-dms-server --no-pager   # data-mover nodes
+sudo systemctl list-units --all --plain --no-legend 'tvault-object-store-*.service'
+
+# for each leftover service found:
+sudo systemctl stop <service>
+sudo systemctl disable <service>
+sudo rm -f "$(systemctl show <service> -p FragmentPath --value)"
+sudo systemctl daemon-reload
+
+# also verify no stale mounts/processes remain:
+findmnt -rn -o TARGET,FSTYPE | grep triliovault-mounts
+ps aux | grep -i s3vaultfuse
+```
+
+Do this as part of Step 1 (alongside or right after the Juju application removal), before Steps 2–4 and before any fresh redeploy — a leftover crash-looping object-store service can otherwise make a perfectly fine fresh 6.1.x deploy look broken.
 
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):

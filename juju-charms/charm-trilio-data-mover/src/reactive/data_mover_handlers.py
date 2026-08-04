@@ -133,12 +133,14 @@ def request_keystone_notification(identity_service):
         instance.assess_status()
 
 
-@reactive.when_not('is-update-status-hook')
-@reactive.when("amqp.available")
-@reactive.when("identity-service.connected")
-def render_dms_config(*args):
-    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
+def _build_dms_server_context():
+    """Gather rabbitmq_url/keystone auth data for DMS server.conf.
+
+    Returns None if the amqp/identity-service relation data isn't ready yet.
+    """
     amqp = reactive.RelationBase.from_state('amqp.available')
+    if not amqp:
+        return None
     transport_url = f"rabbit://{amqp.username()}:{amqp.password()}@{amqp.private_address()}:{amqp.ssl_port() or 5672}/{amqp.vhost()}"
 
     identity_service = {}
@@ -153,7 +155,7 @@ def render_dms_config(*args):
 
     if not identity_service.get('auth_host'):
         hookenv.log("Keystone auth_host not yet available, skipping DMS config", level=hookenv.WARNING)
-        return
+        return None
 
     keystone_auth_url = "{}://{}:{}/v3".format(
         identity_service.get('auth_protocol', 'http'),
@@ -161,16 +163,15 @@ def render_dms_config(*args):
         identity_service.get('auth_port', '5000'),
     )
 
-    dms_server_context = {
+    return {
         'rabbitmq_url': transport_url,
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
     }
 
-    if not reactive.helpers.data_changed('trilio-dms-server-config', dms_server_context):
-        return
 
+def _write_dms_server_config(dms_server_context):
     root_uid = pwd.getpwnam('root').pw_uid
     nova_gid = grp.getgrnam('nova').gr_gid
 
@@ -195,6 +196,62 @@ def render_dms_config(*args):
         host.service('restart', 'trilio-dms-server')
     else:
         host.service('start', 'trilio-dms-server')
+
+
+def _dms_server_conf_is_stale(dms_server_context):
+    """True if server.conf doesn't already hold the expected rabbitmq_url.
+
+    data_changed() only tracks the logical relation inputs, not the file's
+    actual on-disk content — a package (re)install can silently reset
+    server.conf to its blank default without the amqp/identity-service
+    relation data changing at all, which data_changed() alone can't detect
+    (TVAULT-7521). Falling back to this check lets render_dms_config() keep
+    skipping genuinely-unchanged no-op hook fires (avoiding an unnecessary
+    trilio-dms-server restart on every hook) while still self-healing if the
+    file on disk doesn't match what we'd write.
+    """
+    dms_server_conf_path = '/etc/triliovault-dms/server.conf'
+    if not os.path.exists(dms_server_conf_path):
+        return True
+    expected = "rabbitmq_url = {}".format(dms_server_context['rabbitmq_url'])
+    with open(dms_server_conf_path) as f:
+        return expected not in f.read()
+
+
+@reactive.when_not('is-update-status-hook')
+@reactive.when("amqp.available")
+@reactive.when("identity-service.connected")
+def render_dms_config(*args):
+    """Render /etc/triliovault-dms/server.conf once Keystone auth data is available."""
+    dms_server_context = _build_dms_server_context()
+    if dms_server_context is None:
+        return
+
+    inputs_unchanged = not reactive.helpers.data_changed(
+        'trilio-dms-server-config', dms_server_context)
+    if inputs_unchanged and not _dms_server_conf_is_stale(dms_server_context):
+        return
+
+    _write_dms_server_config(dms_server_context)
+
+
+def render_dms_config_now():
+    """Render DMS server.conf unconditionally, bypassing the data_changed cache.
+
+    Called from the update-trilio action: charms.reactive actions never go
+    through the reactive hook-dispatch loop, so render_dms_config() would
+    otherwise not re-run — and even if it did, its data_changed() guard would
+    skip the render whenever the computed context is unchanged from the last
+    known value, even though the package upgrade just reset server.conf back
+    to its blank on-disk default (TVAULT-7521).
+    """
+    dms_server_context = _build_dms_server_context()
+    if dms_server_context is None:
+        hookenv.log(
+            "identity-service/amqp relation data not ready, skipping DMS config render",
+            level=hookenv.WARNING)
+        return
+    _write_dms_server_config(dms_server_context)
 
 
 @reactive.when_not('is-update-status-hook')

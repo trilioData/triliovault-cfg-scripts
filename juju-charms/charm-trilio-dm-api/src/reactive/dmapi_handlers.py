@@ -50,8 +50,29 @@ def render_config(*args):
     with charm.provide_charm_instance() as charm_class:
         charm_class.upgrade_if_available(args)
 
-    # Pre-create log file with dmapi ownership so the service can write to it.
-    # /var/log/triliovault/ is nova:nova 755 — dmapi user cannot create files there.
+    # Must run before render_with_interfaces() below: /var/log/triliovault/
+    # is nova:nova 755, so the dmapi user can't create a new log file there
+    # itself. If render_with_interfaces() restarts tvault-datamover-api
+    # (e.g. on fresh install, or any restart_map-tracked template content
+    # change) before this file exists with dmapi ownership, the service
+    # fails trying to open its own log file.
+    _ensure_dmapi_log_file()
+
+    with charm.provide_charm_instance() as charm_class:
+        charm_class.render_with_interfaces(args)
+        charm_class.assess_status()
+
+    render_dms_client_bootstrap_config()
+
+    reactive.set_flag("config.rendered")
+
+
+def _ensure_dmapi_log_file():
+    """Pre-create the dmapi log file with correct ownership so the service can write to it.
+
+    /var/log/triliovault/ is nova:nova 755 — the dmapi user cannot create a
+    new file there itself.
+    """
     log_dir = '/var/log/triliovault'
     os.makedirs(log_dir, exist_ok=True)
     dmapi_uid = pwd.getpwnam('dmapi').pw_uid
@@ -61,18 +82,21 @@ def render_config(*args):
         open(log_file, 'w').close()
     os.chown(log_file, dmapi_uid, dmapi_gid)
 
-    with charm.provide_charm_instance() as charm_class:
-        charm_class.render_with_interfaces(args)
-        charm_class.assess_status()
+
+def render_dms_client_bootstrap_config():
+    """Stop the (unused, on dmapi nodes) DMS server and render the bootstrap DMS client.conf.
+
+    Render DMS client config with rabbitmq_url and node_id from the amqp
+    relation. db_url is left empty here and filled in by
+    render_dms_client_config() when the wlm-db relation becomes available.
+    """
+    dmapi_gid = grp.getgrnam('dmapi').gr_gid
 
     # DMS server must not run on DMAPI nodes — only the client library is needed here.
     # python3-trilio-dms installs the systemd unit; explicitly stop and disable it.
     host.service('disable', 'trilio-dms-server')
     host.service('stop', 'trilio-dms-server')
 
-    # Render DMS client config with rabbitmq_url and node_id from amqp relation.
-    # db_url is left empty here and filled in by render_dms_client_config() when
-    # the wlm-db relation becomes available.
     amqp = reactive.endpoint_from_flag('amqp.available')
     transport_url = (
         f"rabbit://{amqp.username()}:{amqp.password()}"
@@ -95,7 +119,16 @@ def render_config(*args):
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, dmapi_gid)
 
-    reactive.set_flag("config.rendered")
+
+def render_dmapi_and_dms_configs():
+    """Re-run the log file setup and bootstrap DMS client.conf render.
+
+    Called from the update-trilio action: charms.reactive actions never go
+    through the reactive hook-dispatch loop, so render_config() would
+    otherwise not re-run until some later hook fires (TVAULT-7521).
+    """
+    _ensure_dmapi_log_file()
+    render_dms_client_bootstrap_config()
 
 
 @reactive.when("config.rendered")

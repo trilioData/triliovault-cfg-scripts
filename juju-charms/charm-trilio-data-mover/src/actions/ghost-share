@@ -13,74 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Thin dispatch stub — the real implementation lives in actions.py.
+#
+# Juju invokes this file directly by its action name; actions.py's main()
+# determines which action to run from os.path.basename(sys.argv[0]), so
+# this file never needs to change when actions.py changes. This replaces
+# the previous convention of hand-copying the whole of actions.py into
+# every action-name file, which had already caused real drift between
+# them (see juju-charms/CLAUDE.md).
+
 import os
 import sys
 
-# Load modules from $CHARM_DIR/lib
-sys.path.append("lib")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from charms.layer import basic
-
-basic.bootstrap_charm_deps()
-basic.init_config_states()
-
-import charmhelpers.core.hookenv as hookenv
-
-import charms.reactive as reactive
-
-import charms_openstack.charm
-
-# import the trilio_wlm module to get the charm definitions created.
-import charm.openstack.trilio_dm  # noqa
-
-
-def ghost_share(*args):
-    """Ghost mount secondard TV deployment nfs-share
-    """
-    secondary_nfs_share = hookenv.action_get("nfs-shares")
-    with charms_openstack.charm.provide_charm_instance() as trilio_dm_charm:
-        trilio_dm_charm.ghost_nfs_share(secondary_nfs_share)
-
-
-def update_trilio(*args):
-    """Run setup after Trilio upgrade.
-    """
-    with charms_openstack.charm.provide_charm_instance() as trilio_charm:
-        interfaces = ["shared-db", "amqp"]
-        endpoints = [
-            reactive.relations.endpoint_from_flag("{}.available".format(i))
-            for i in interfaces]
-        ceph = reactive.endpoint_from_flag("ceph.available")
-        if ceph:
-            endpoints.append(ceph)
-        trilio_charm.run_trilio_upgrade(endpoints)
-        trilio_charm._assess_status()
-
-
-# Actions to function mapping, to allow for illegal python action names that
-# can map to a python function.
-ACTIONS = {
-    "ghost-share": ghost_share,
-    "update-trilio": update_trilio
-}
-
-
-def main(args):
-    # Manually trigger any register atstart events to ensure all endpoints
-    # are correctly setup.
-    hookenv._run_atstart()
-    action_name = os.path.basename(args[0])
-    try:
-        action = ACTIONS[action_name]
-    except KeyError:
-        return "Action %s undefined" % action_name
-    else:
-        try:
-            action(args)
-        except Exception as e:
-            hookenv.function_fail(str(e))
-    hookenv._run_atexit()
-
+from actions import main  # noqa
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
