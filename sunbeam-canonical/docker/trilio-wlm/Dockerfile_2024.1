@@ -102,6 +102,15 @@ COPY patch_remove_version_from_href.py /tmp/patch_remove_version_from_href.py
 RUN python3 /tmp/patch_remove_version_from_href.py && \
     rm -f /tmp/patch_remove_version_from_href.py
 
+# Migration 030: add WorkloadsBase audit columns (created_at, updated_at,
+# deleted_at, deleted, version) and progress to the job table.
+# The job table was created in migration 001 with only jobid/status/action,
+# and parent_jobid was added in 029. These columns were added to the Job model
+# (via WorkloadsBase) but the migration was never included, causing INSERT
+# failures in job_service.py on fresh installs.
+COPY 030_add_job_audit_columns.py \
+    /usr/lib/python3/dist-packages/workloadmgr/db/sqlalchemy/migrate_repo/versions/030_add_job_audit_columns.py
+
 # Create required directories
 RUN mkdir -p \
     /etc/triliovault-wlm \
