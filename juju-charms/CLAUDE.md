@@ -149,19 +149,24 @@ These charms' `charmcraft.yaml` use the legacy `bases: build-on/run-on` schema. 
 
 ## Uninstall (for Upgrade/Fresh-Install Testing)
 
-To tear down a Trilio deployment (e.g. before redeploying an older release to test an upgrade path, or before a clean fresh-install test), remove all four principal charms **and their mysql-router subordinates explicitly** in one command — don't rely on subordinates being auto-removed, they can be left behind as orphaned applications:
+Uninstall is a **single discrete step, run to full completion before starting any new deploy** — not something to interleave with a redeploy, and not something to partially do mid-test. Doing it out of order (e.g. dropping the database while a fresh deploy's `shared-db` relation is still negotiating) creates a race: the relation can finish provisioning a fresh database *after* you've dropped it, leaving the charm's rendered config pointing at credentials that no longer have a matching grant. Always: (1) remove the Juju applications and wait for removal to fully finish, (2) only then clean Keystone/RabbitMQ/MySQL, (3) only then start the next deploy.
+
+### Step 1 — Remove the Juju applications
+Remove all four principal charms **and their mysql-router subordinates explicitly** in one command — don't rely on subordinates being auto-removed, they can be left behind as orphaned applications:
 
 ```bash
 juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
   trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router
 ```
 
-Units commonly go into `error` state during removal (see gotcha below) — once they do, re-run the same command with `--force`:
+Units commonly go into `error` state during removal (see gotcha below) — once they do, re-run the same command with `--force` (add `--no-wait` too if it still doesn't progress):
 
 ```bash
 juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizon-plugin \
   trilio-dm-api-mysql-router trilio-wlm-mysql-router trilio-data-mover-mysql-router --force
 ```
+
+Confirm full removal before proceeding — `juju status <app-names>` should return "Nothing matched specified filters" for every one of them.
 
 ### Gotcha: removal commonly errors on unrelated interface-library bugs — safe to force through
 Removing these charms frequently triggers hook failures unrelated to Trilio's own code, in shared/vendored interface libraries:
@@ -170,17 +175,44 @@ Removing these charms frequently triggers hook failures unrelated to Trilio's ow
 
 Both are teardown-only hook-script bugs, not data-loss or live-service issues — verify with `systemctl is-active mysql` on a `mysql-innodb-cluster` unit and check that unrelated apps sharing the same DB backend (e.g. `keystone`, `cinder`, `glance`) are still `active` before proceeding. Once confirmed, `juju resolved --no-retry <unit>` on each affected unit is safe.
 
-### Gotcha: removing the Juju application does NOT clean the database
-`juju remove-application` never drops the actual database in `mysql-innodb-cluster` — the schema and all data persist independently. If you're tearing down specifically to test an older release's fresh-install-then-upgrade path, this matters a lot: redeploying against a database that's already at the newer schema means `db_sync()`/alembic migration during the later upgrade step is a no-op, silently defeating the entire point of the test. Before redeploying, connect to a `mysql-innodb-cluster` unit (root credentials are in `leader-get` — look for the plain `mysql.passwd` key, and the per-service `mysql-<service>.passwd` keys) and explicitly drop the relevant databases and DB users:
+### Step 2 — Clean Keystone (only after Step 1 is fully complete)
+Trilio registers `dmapi` and `workloadmgr` as Keystone services, each with 3 endpoints (admin/public/internal), and a service-account user for each — commonly duplicated across more than one domain (e.g. a Juju-created `service_domain` in addition to `default`), so check both:
+
+```bash
+source <openrc file>
+openstack --insecure endpoint list | grep -iE 'dmapi|workload'   # note IDs, then:
+openstack --insecure endpoint delete <id>                        # for each endpoint
+
+openstack --insecure service list | grep -iE 'dmapi|workload'    # note IDs, then:
+openstack --insecure service delete <id>                         # for each service
+
+openstack --insecure domain list                                  # check every domain, not just default
+openstack --insecure user list --domain <domain-id> | grep -iE 'dmapi|workload'
+openstack --insecure user delete <id>                             # for each user, in every domain it appears
+```
+
+### Step 3 — Clean RabbitMQ (only after Step 1 is fully complete)
+Trilio creates a vhost (commonly named after the wlm service, e.g. `triliowlm`) and per-service users (`dmapi`, `datamover`, and the wlm vhost-named user):
+
+```bash
+sudo rabbitmqctl list_vhosts   # identify the trilio vhost
+sudo rabbitmqctl list_users    # identify trilio users
+sudo rabbitmqctl delete_vhost <vhost>
+sudo rabbitmqctl delete_user <user>   # for each trilio-related user
+```
+
+### Step 4 — Clean MySQL (only after Step 1 is fully complete)
+`juju remove-application` never drops the actual database in `mysql-innodb-cluster` — the schema and all data persist independently, cached under `mysql-innodb-cluster`'s own leader-settings (keyed by service name, e.g. `dmapi`/`workloadmgr`, not by unit). If you're tearing down specifically to test an older release's fresh-install-then-upgrade path, this matters a lot: redeploying against a database that's already at the newer schema means `db_sync()`/alembic migration during the later upgrade step is a no-op, silently defeating the entire point of the test. Root credentials are in `leader-get` on a `mysql-innodb-cluster` unit — look for the plain `mysql.passwd` key, and the per-service `mysql-<service>.passwd` keys:
 
 ```sql
 DROP DATABASE IF EXISTS workloadmgr;
 DROP DATABASE IF EXISTS dmapi;
-DROP USER IF EXISTS 'workloadmgr'@'<unit-ip>';
-DROP USER IF EXISTS 'dmapi'@'<unit-ip>';
+-- then find and drop every matching grant, not just one IP:
+SELECT user, host FROM mysql.user WHERE user IN ('dmapi', 'workloadmgr');
+DROP USER IF EXISTS '<user>'@'<host>';   -- repeat per row above
 ```
 
-Do this **before** the redeployed charms' `shared-db` relation completes (check `juju status` shows `'shared-db' incomplete`) — once it completes, the charm will just reconnect to whatever database already exists under that name instead of provisioning fresh.
+Only start the next deploy once Steps 2–4 are all confirmed clean — never drop these while a deploy's `shared-db`/`identity-service`/`amqp` relations are still negotiating (`juju status` showing `incomplete`/`waiting`).
 
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
