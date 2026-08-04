@@ -437,9 +437,16 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     def _register_keystone_service(self):
         """Write DMAPI endpoint registration data into the identity-service relation.
 
-        Uses Traefik-provided https:// URLs when available so Keystone catalog
-        entries match the actual reachable endpoints (TLS-terminated by Traefik).
-        Falls back to plain-http k8s service URL when ingress is not yet configured.
+        admin and internal endpoints use the direct k8s service URL so that
+        cluster-internal callers (e.g. WLM) reach dm-api via ClusterIP rather
+        than through the Traefik MetalLB IP, which is not reliably reachable
+        from inside the cluster and carries a Traefik path prefix that complicates
+        URL construction in the contego client.
+
+        RHOSO18 pattern (reference): internal_endpoint = PROTOCOL://HOST:8784/v2
+        — direct service DNS with no path prefix.
+
+        public endpoint uses the Traefik-provided https:// URL for external access.
         """
         rel = self.model.get_relation("identity-service")
         if not rel or not self.unit.is_leader():
@@ -450,7 +457,9 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             or self._get_ingress_url("ingress-internal")
             or fallback
         )
-        internal_base = self._get_ingress_url("ingress-internal") or fallback
+        # Internal callers (WLM) use the direct k8s service URL — no Traefik.
+        # This matches RHOSO18's endpoint pattern and avoids MetalLB hairpin issues.
+        internal_base = fallback
         endpoints = [{
             "admin_url": f"{fallback}/v2",
             "description": "TrilioVault DataMover API",
