@@ -172,11 +172,12 @@ juju remove-application trilio-wlm trilio-dm-api trilio-data-mover trilio-horizo
 Confirm full removal before proceeding — `juju status <app-names>` should return "Nothing matched specified filters" for every one of them.
 
 ### Gotcha: removal commonly errors on unrelated interface-library bugs — safe to force through
-Removing these charms frequently triggers hook failures unrelated to Trilio's own code, in shared/vendored interface libraries:
+Removing these charms (or redeploying shortly after, causing relation churn on `mysql-innodb-cluster`) frequently triggers hook failures unrelated to Trilio's own code, in shared/vendored interface libraries:
 - `identity-service-relation-departed` can fail with `IndexError: list index out of range` in `hooks/relations/keystone/requires.py` (`self.relations[0]` accessed without checking the list is non-empty once the other side has already departed).
 - On the `mysql-innodb-cluster` side, `db-router-relation-broken` can fail with `network-get --primary-address cluster` returning a non-zero exit — this can affect **all** `mysql-innodb-cluster` units, not just the one related to Trilio.
+- Also on `mysql-innodb-cluster`, the periodic `update-status` hook can fail with `relation-get ... returned non-zero exit status 1` / `settings not found`, referencing a stale relation ID left over from a torn-down relation — this isn't limited to the moment of removal, it can resurface on any later `update-status` tick and will itself **block new `db-router` requests** (a freshly redeployed charm's `mysql-router` subordinate will sit at "MySQL Router not yet bootstrapped" indefinitely until this is resolved).
 
-Both are teardown-only hook-script bugs, not data-loss or live-service issues — verify with `systemctl is-active mysql` on a `mysql-innodb-cluster` unit and check that unrelated apps sharing the same DB backend (e.g. `keystone`, `cinder`, `glance`) are still `active` before proceeding. Once confirmed, `juju resolved --no-retry <unit>` on each affected unit is safe.
+All three are pre-existing hook-script bugs (not data-loss or live-service issues) — verify with `systemctl is-active mysql` on a `mysql-innodb-cluster` unit and check that unrelated apps sharing the same DB backend (e.g. `keystone`, `cinder`, `glance`) are still `active` before proceeding. Once confirmed, `juju resolved --no-retry <unit>` on each affected unit is safe. If a fresh deploy's `mysql-router` subordinate is stuck bootstrapping, check `juju status mysql-innodb-cluster` for this exact symptom before assuming the new deploy itself is broken.
 
 ### Step 2 — Clean Keystone (only after Step 1 is fully complete)
 Trilio registers `dmapi` and `workloadmgr` as Keystone services, each with 3 endpoints (admin/public/internal), and a service-account user for each — commonly duplicated across more than one domain (e.g. a Juju-created `service_domain` in addition to `default`), so check both:
