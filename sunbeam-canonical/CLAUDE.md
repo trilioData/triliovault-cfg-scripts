@@ -433,8 +433,8 @@ Build and publish workflow:
 cd sunbeam-canonical/charms/<charm-dir>
 charmcraft pack
 
-# Upload and release
-charmcraft upload <charm>.charm --name <charm-name>
+# Upload and release — always use CHARMCRAFT_AUTH from ~/creds.txt on the build server
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft upload <charm>.charm --name <charm-name>
 # Note the revision number from upload output, then:
 charmcraft release <charm-name> --revision <N> --channel 6.2/candidate
 ```
