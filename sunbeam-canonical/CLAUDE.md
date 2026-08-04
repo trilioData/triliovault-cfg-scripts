@@ -47,6 +47,18 @@ sunbeam-canonical/
 
 ---
 
+## Mandatory Code Review Before Any Change
+
+**Before making ANY change to a Sunbeam charm, review ALL charm files (`trilio-wlm-k8s`, `trilio-dm-api-k8s`, `trilio-data-mover-sunbeam`) for:**
+
+1. **RabbitMQ username/vhost consistency** — every place that writes username/vhost to relation data must use the same value as every other place for that service. For WLM (main amqp): `workloadmgr`/`workloadmgr`. For WLM embedded DMS (amqp-dms): `dmapi`/`dmapi`. For DMAPI: `dmapi`/`dmapi`. For DataMover: `contego`/`dmapi`.
+2. **Database name consistency** — every place writing the DB name must be consistent (`workloadmgr` for WLM, `dmapi` for DMAPI).
+3. **`_send_relation_requests()` guard** — must have `if not rel.data[self.app].get("username"):` guard to avoid overwriting an already-provisioned relation. An unconditional overwrite rotates the RabbitMQ password and causes `(403) ACCESS_REFUSED` on every service that uses it.
+4. **No hardcoded stale defaults** — check all `amqp.get('username', '<default>')` calls to ensure defaults match what was actually provisioned.
+5. **Cross-check relation join handler vs `_send_relation_requests()`** — both must request the same username/vhost/database. Mismatches between them are the most common source of auth failures.
+
+---
+
 ## Key Technical Concepts
 
 ### ops + Pebble pattern (k8s charms)
@@ -78,6 +90,27 @@ WLM and DMAPI require DB schema migration on first deploy and upgrades.
 **Do NOT use `wlm-manage db_sync` or `dmapi-manage db_sync`** — these are incorrect. WLM uses alembic, DMAPI uses `dmapi-dbsync`.
 
 Run only on the leader unit (idempotent — safe to re-run). Follows the `ops_sunbeam` pattern: `run_db_sync()` calls `container.exec(cmd).wait()`, leader-only, retries on timeout.
+
+### `job` table missing audit columns — migration 030
+The WLM `job` table was created in migration 001 with only `jobid`/`status`/`action`. `parent_jobid` was added in migration 029. The `WorkloadsBase` audit columns (`created_at`, `updated_at`, `deleted_at`, `deleted`, `version`) and the `progress` column defined in the `Job` model were **never added via migration** — a gap in the migration history. On a fresh Sunbeam install with an empty DB, any API call that creates a job entry (`trust-create`, `backup-target-create`, `workload-create`, etc.) fails immediately with:
+```
+(pymysql.err.OperationalError) (1054, "Unknown column 'created_at' in 'field list'")
+```
+The WLM service itself still reports `active`/`WLM ready` — the missing columns do not prevent startup, only job-creating operations.
+
+**Permanent fix**: migration `030_add_job_audit_columns.py` is included in `sunbeam-canonical/docker/trilio-wlm/` and copied into the image by `Dockerfile_2024.1`. Any image built from this Dockerfile will include migration 030, so alembic runs it on first deploy and the columns exist before any API call.
+
+**Emergency workaround on a deployed instance** (if migration 030 wasn't in the image): run directly on the primary MySQL pod:
+```sql
+ALTER TABLE job
+  ADD COLUMN created_at DATETIME,
+  ADD COLUMN updated_at DATETIME,
+  ADD COLUMN deleted_at DATETIME,
+  ADD COLUMN deleted TINYINT(1) DEFAULT 0,
+  ADD COLUMN version VARCHAR(255),
+  ADD COLUMN progress INTEGER;
+```
+Note: this only fixes the current DB — a DB teardown/recreate will hit the same error again if the image doesn't include migration 030.
 
 ### TLS / CA certificate handling (k8s charms)
 All three k8s charms support the `receive-ca-cert` relation (`certificate_transfer` interface):
@@ -127,8 +160,10 @@ WLM and DMAPI use `[keystone_authtoken]` with `user_domain_name` and `project_do
 ### sql_connection in [DEFAULT] — not [database]
 WLM reads the DB URL from `sql_connection` in the `[DEFAULT]` section, **not** from `connection` in `[database]`. All other deployment methods (RHOSP17, RHOSO18, Kolla) all use `sql_connection` in `[DEFAULT]`. The `[database]` section with `connection` key is a newer Oslo convention that WLM does not use. Both must be present: `[DEFAULT].sql_connection` for WLM's own DB access, and `[alembic].sqlalchemy.url` for alembic migrations.
 
-### RabbitMQ user/vhost for WLM: `wlm` (not `workloadmgr`)
-The RabbitMQ user and vhost for WLM are named `wlm`/`wlm` — created by the previous Juju charm version (charm-trilio-wlm from juju-charms/). The Sunbeam charm must request `username=wlm`, `vhost=wlm` in the amqp relation databag. Using `workloadmgr` for username/vhost causes `(403) ACCESS_REFUSED` from RabbitMQ because that user was never created. The database name (MySQL) and binary name remain `workloadmgr`.
+### RabbitMQ user/vhost for WLM: `workloadmgr` (not `wlm`)
+The RabbitMQ user and vhost for WLM are `workloadmgr`/`workloadmgr`. The charm requests `username=workloadmgr`, `vhost=workloadmgr` in the `amqp` relation databag (set in `_on_amqp_relation_joined()` and consistently in `_send_relation_requests()`). The embedded DMS uses a separate `amqp-dms` relation requesting `username=dmapi`, `vhost=dmapi`. The database name (MySQL) and binary name are also `workloadmgr`.
+
+**Critical — `_send_relation_requests()` must NOT unconditionally overwrite amqp relation data**: rabbitmq-k8s generates a fresh password whenever the requirer's `username` field changes. If `_send_relation_requests()` writes a different username from what `_on_amqp_relation_joined()` set, rabbitmq-k8s creates a new user with a new password while the charm config uses the old password → permanent `(403) ACCESS_REFUSED`. Guard the write with `if not amqp_rel.data[self.app].get("username"):` so it only writes on first use, never overwrites.
 
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
@@ -190,6 +225,20 @@ Required once after WLM reaches `active` (`juju run trilio-wlm-k8s/leader create
 **Root-caused and fixed as of 2026-07-25 — WLM service account needs its own Keystone `default_project_id` set, or every Nova/Cinder/Glance call gets an empty service catalog.** `workload-snapshot` used to fail immediately with `Failed creating workload snapshot: The service catalog is empty.` This was initially misdiagnosed as Keystone rejecting trust-scoped-token reuse in `nova_micro_client()` (that rejection IS real Keystone behavior, confirmed independently, but turned out not to be the code path actually hit — the password-auth branch is what runs). The **actual** cause, found by direct comparison against a working charm-trilio-wlm reference deployment: `nova_micro_client()`/`_get_tenant_context()` in `workloadmgr/compute/nova.py` never pass an explicit project scope (`project_id`/`project_name`/`tenant_id`) on ANY client session they build — they rely entirely on Keystone auto-scoping to the authenticating user's own `default_project_id` when none is given, and an unscoped token has zero catalog entries by Keystone's own spec. keystone-k8s creates the WLM service account via the identity-service relation but never sets `default_project_id` on it, unlike the working reference deployment's equivalent account (which has it set to its own "services" project). **Fix (now in charm code, self-healing):** the charm sets its own service account's `default_project_id` (to its own "services" project, which it already holds a role on) as part of every `_configure()` run — see `_ensure_service_user_default_project` in `charm.py`, called right after `_register_keystone_service`. Verified: a real full snapshot progressed past workflow initialization into actual execution for the first time after this fix (previously always failed within seconds). The underlying WLM code gap (never setting explicit project scope) is still worth a product-level fix and would recur on any other deployment whose WLM service account happens to lack a usable default project — this charm-side fix is a robust workaround, not a fix to WLM itself.
 
 **Next blocker after both of the above are fixed — TVAULT-7515 (open, unresolved as of 2026-07-25):** snapshot execution now reaches the freeze/snapshot step, then fails with `novaclient.exceptions.ClientException: Unknown Error (HTTP 502)` from contego's `vast_instance` Nova server-action call — fatal to the whole snapshot. The same 502 also occurs on contego's `vast_thaw` action from the identical `contego_python_novaclient_ext` code path, but that failure is swallowed by the calling workflow code and doesn't itself abort the snapshot — meaning the bug isn't specific to one action, it affects every call this client extension makes. **novaclient-version-mismatch theory tested live and disproven**: `contego_python_novaclient_ext` builds requests using legacy `HTTPClient` attributes (`management_url`, `service_catalog`, `get_service_url()`, `auth_token`, `projectid`) that don't exist on novaclient's modern `SessionClient`; Sunbeam runs a newer novaclient than the working reference deployment, so a version mismatch looked plausible. Rebuilt the WLM image pinned to the reference env's exact novaclient version (`pip3 install python-novaclient==17.6.0` — apt-level pinning fails because `python3-openstackclient` hard-requires `>=2:18.1.0`), deployed it live, retested — **identical 502 still occurred**. Confirmed `SessionClient` lacks those legacy attributes in both versions at the source level, and `novaclient.client._construct_http_client()` always builds `SessionClient` regardless of version/auth method — the version difference was a red herring. Also confirmed via simultaneous log capture across wlm-api/wlm-workloads/dm-api that **dm-api is never contacted during a failed attempt** — contego's calls go directly WLM→Nova-API, never through dm-api. And confirmed nova-api itself and the ingress path are NOT the problem: reproducing the same action call directly (bypassing `contego_python_novaclient_ext`) gets clean 404/400 responses, not a 502. `python3-tvault-contego` and the WLM-side client extension are confirmed byte-for-byte identical between Sunbeam and the reference deployment. Genuinely not yet root-caused — the actual differentiator is unknown. This is the current active blocker for finishing NFS/S3 backup validation.
+
+### `workloadmgr trust-create` CLI exits 0 even on API failure — never trust the action return value alone
+The `workloadmgr trust-create` binary (cliff/cmd2 based) exits with code 0 regardless of what the API returns — a 500 Internal Server Error from wlm-api still results in exit code 0, so the charm action (`create-cloud-admin-trust`) cannot detect the failure and reports "Cloud admin trust created successfully" even when nothing was stored. Always verify by running `workloadmgr trust-list` after `trust-create` and confirming at least one row appears (or check the wlm-api logs for `job_service.py` errors). The root cause is the job table migration gap (see `job table missing audit columns` above) — once migration 030 is in the image, trust-create works correctly. This CLI behavior is inherent and will not be fixed upstream, so charm callers must do an explicit verify step.
+
+### Secret-server (Barbican replacement for Sunbeam) — must handle `/payload` URL suffix
+WLM treats every `secret_ref` stored in a backup-target's credentials as a **Barbican URL** and appends `/payload` to it when fetching the actual credential value (`workloadmgr/vault/secret_resolver.py` pattern). The Sunbeam `secret-server` is a lightweight Python HTTP server (`sunbeam-canonical/test/01_create_backup_targets.sh`) serving credentials out of ConfigMap entries — not a real Barbican instance. Its `do_GET` handler must strip the `/payload` suffix before looking up the secret name, otherwise every credential fetch returns 404 and the backup-target goes offline:
+```python
+def do_GET(self):
+    name = self.path.lstrip('/')
+    if name.endswith('/payload'):
+        name = name[:-len('/payload')]
+    path = f'/secrets/{name}'
+```
+The `secret_ref` stored in the backup-target is `http://<ClusterIP>:8765/<secret-name>` (no `/payload`); WLM appends `/payload` at fetch time. Both the secret-server and the backup-target creation call must be consistent — store the base URL without `/payload`, strip it on the server side.
 
 ### FUSE device access for s3vaultfuse (control plane k8s charms only)
 `s3vaultfuse` (S3 backup targets) needs `/dev/fuse` + a privileged security context. Data-plane machine charms (`trilio-data-mover-sunbeam`, and the legacy `charm-trilio-data-mover`) get this for free — they install `fuse`/`libfuse2` on a real host, which already has `/dev/fuse`. The k8s control-plane charms (`trilio-wlm-k8s`, `trilio-dms-k8s`) do **not** — and worse, **sidecar k8s charms have no `charmcraft.yaml` field for `securityContext`/host-device access at all** (only `resource` and `mounts` under `containers:`). Both charms self-patch their own StatefulSet at runtime via `lightkube` (`_patch_fuse_device()`, using a strategic-merge patch adding `securityContext.privileged: true` + a `dev-fuse` hostPath volume/mount) — this requires `trust: true` on the application (already set in `trilio-ctlplane-bundle.yaml`, which grants the operator service account a namespace-scoped `apiGroups: ["*"], resources: ["*"], verbs: ["*"]` Role — no extra RBAC needed). The patch triggers one StatefulSet-driven pod restart to take effect; `_configure()` calls it idempotently (checks for the existing `securityContext.privileged` + `dev-fuse` volumeMount before patching) so it's a no-op on every subsequent hook run.
@@ -419,8 +468,8 @@ Build and publish workflow:
 cd sunbeam-canonical/charms/<charm-dir>
 charmcraft pack
 
-# Upload and release
-charmcraft upload <charm>.charm --name <charm-name>
+# Upload and release — always use CHARMCRAFT_AUTH from ~/creds.txt on the build server
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft upload <charm>.charm --name <charm-name>
 # Note the revision number from upload output, then:
 charmcraft release <charm-name> --revision <N> --channel 6.2/candidate
 ```
@@ -527,3 +576,28 @@ After fresh install and license/trust setup:
 3. Trigger a snapshot: `workloadmgr snapshot-create <workload-id>`
 4. Poll status: `workloadmgr snapshot-show <snapshot-id>` until `available` (success) or `error`
 5. On error: check WLM logs (`kubectl logs -n openstack trilio-wlm-k8s-0 -c trilio-wlm`) and DataMover logs on compute nodes (`journalctl -u triliovault-datamover`)
+
+---
+
+## Testing Scripts (`sunbeam-canonical/test/`)
+
+### `env.sh` — shared environment setup
+Sources OpenStack credentials automatically from two places:
+- `OS_AUTH_URL`: read from `/etc/triliovault-wlm/triliovault-wlm.conf` inside the WLM pod (always reflects the current Keystone ClusterIP set by the charm)
+- `OS_PASSWORD`: fetched via Juju action `juju run keystone/leader get-admin-account -m controller0/openstack` — output field `password:`. **Not** `get-admin-password` (that action does not exist on keystone-k8s).
+
+### `01_create_backup_targets.sh` — backup-target creation test
+Reads S3 and NFS credentials from `backup_targets.yaml` via an embedded Python block — no credentials should be hardcoded or exported as env vars beforehand. The expected file path is `${TRILIO_ENV_DIR}/backup_targets.yaml`; `TRILIO_ENV_DIR` defaults to `<repo-root>/env/`.
+
+**Build-server path override required**: on the build server the repo is cloned at `~/sunbeam-canonical/` (a flat clone), not `~/triliovault-cfg-scripts/sunbeam-canonical/`. The default path resolution walks up three parent directories to find the repo root, landing at `/home/`, which doesn't contain an `env/` subdirectory. Always set `TRILIO_ENV_DIR=/home/ubuntu/env` when running these scripts on the build server:
+```bash
+TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+```
+
+### `create-license` Juju action — requires `kubectl cp` first
+The `create-license` charm action requires `license-file-path` to be a path **inside the WLM container**, not the host. The license file must be copied into the container before calling the action:
+```bash
+kubectl cp /home/ubuntu/license openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm
+juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+```
+The license file must have **no extension** when uploading via `juju attach-resource` (the resource type is `file`, not `string`, and Juju validates extension against the resource definition — which expects empty extension). Copy it as `license` (no `.txt`).

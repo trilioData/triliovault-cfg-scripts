@@ -33,11 +33,11 @@ if [[ -z "$OS_AUTH_URL" ]]; then
 fi
 
 export OS_PASSWORD
-OS_PASSWORD=$(juju run keystone/leader get-admin-password 2>/dev/null \
+OS_PASSWORD=$(juju run keystone/leader get-admin-account -m controller0/openstack 2>/dev/null \
   | grep '^password:' | awk '{print $2}')
 
 if [[ -z "$OS_PASSWORD" ]]; then
-  echo "ERROR: Could not fetch admin password via 'juju run keystone/leader get-admin-password'." >&2
+  echo "ERROR: Could not fetch admin password via 'juju run keystone/leader get-admin-account -m controller0/openstack'." >&2
   exit 1
 fi
 
