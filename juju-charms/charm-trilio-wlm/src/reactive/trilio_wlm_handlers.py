@@ -141,8 +141,6 @@ def run_trilio_install_upgrade_packages(packages):
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
 
-    haproxy_port = 8780
-    api_port = determine_api_port(haproxy_port, singlenode_mode=True)
     with charm.provide_charm_instance() as charm_class:
         packages_to_install = TrilioWLMBaseCharm().base_packages
         hookenv.log(f"Trilio Wlm Charm Packages: {packages_to_install}")
@@ -175,6 +173,9 @@ def render_wlm_and_dms_configs(*args):
     reactive hook-dispatch loop, so this handler would otherwise not run
     again until some later hook fires — TVAULT-7521).
     """
+    haproxy_port = 8780
+    api_port = determine_api_port(haproxy_port, singlenode_mode=True)
+
     # Load configurations
     charm_config = config()
 
