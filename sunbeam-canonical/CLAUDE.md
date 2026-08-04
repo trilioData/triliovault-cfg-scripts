@@ -47,6 +47,18 @@ sunbeam-canonical/
 
 ---
 
+## Mandatory Code Review Before Any Change
+
+**Before making ANY change to a Sunbeam charm, review ALL charm files (`trilio-wlm-k8s`, `trilio-dm-api-k8s`, `trilio-data-mover-sunbeam`) for:**
+
+1. **RabbitMQ username/vhost consistency** — every place that writes username/vhost to relation data must use the same value as every other place for that service. For WLM (main amqp): `workloadmgr`/`workloadmgr`. For WLM embedded DMS (amqp-dms): `dmapi`/`dmapi`. For DMAPI: `dmapi`/`dmapi`. For DataMover: `contego`/`dmapi`.
+2. **Database name consistency** — every place writing the DB name must be consistent (`workloadmgr` for WLM, `dmapi` for DMAPI).
+3. **`_send_relation_requests()` guard** — must have `if not rel.data[self.app].get("username"):` guard to avoid overwriting an already-provisioned relation. An unconditional overwrite rotates the RabbitMQ password and causes `(403) ACCESS_REFUSED` on every service that uses it.
+4. **No hardcoded stale defaults** — check all `amqp.get('username', '<default>')` calls to ensure defaults match what was actually provisioned.
+5. **Cross-check relation join handler vs `_send_relation_requests()`** — both must request the same username/vhost/database. Mismatches between them are the most common source of auth failures.
+
+---
+
 ## Key Technical Concepts
 
 ### ops + Pebble pattern (k8s charms)
@@ -127,8 +139,10 @@ WLM and DMAPI use `[keystone_authtoken]` with `user_domain_name` and `project_do
 ### sql_connection in [DEFAULT] — not [database]
 WLM reads the DB URL from `sql_connection` in the `[DEFAULT]` section, **not** from `connection` in `[database]`. All other deployment methods (RHOSP17, RHOSO18, Kolla) all use `sql_connection` in `[DEFAULT]`. The `[database]` section with `connection` key is a newer Oslo convention that WLM does not use. Both must be present: `[DEFAULT].sql_connection` for WLM's own DB access, and `[alembic].sqlalchemy.url` for alembic migrations.
 
-### RabbitMQ user/vhost for WLM: `wlm` (not `workloadmgr`)
-The RabbitMQ user and vhost for WLM are named `wlm`/`wlm` — created by the previous Juju charm version (charm-trilio-wlm from juju-charms/). The Sunbeam charm must request `username=wlm`, `vhost=wlm` in the amqp relation databag. Using `workloadmgr` for username/vhost causes `(403) ACCESS_REFUSED` from RabbitMQ because that user was never created. The database name (MySQL) and binary name remain `workloadmgr`.
+### RabbitMQ user/vhost for WLM: `workloadmgr` (not `wlm`)
+The RabbitMQ user and vhost for WLM are `workloadmgr`/`workloadmgr`. The charm requests `username=workloadmgr`, `vhost=workloadmgr` in the `amqp` relation databag (set in `_on_amqp_relation_joined()` and consistently in `_send_relation_requests()`). The embedded DMS uses a separate `amqp-dms` relation requesting `username=dmapi`, `vhost=dmapi`. The database name (MySQL) and binary name are also `workloadmgr`.
+
+**Critical — `_send_relation_requests()` must NOT unconditionally overwrite amqp relation data**: rabbitmq-k8s generates a fresh password whenever the requirer's `username` field changes. If `_send_relation_requests()` writes a different username from what `_on_amqp_relation_joined()` set, rabbitmq-k8s creates a new user with a new password while the charm config uses the old password → permanent `(403) ACCESS_REFUSED`. Guard the write with `if not amqp_rel.data[self.app].get("username"):` so it only writes on first use, never overwrites.
 
 ### wlm-cron singleton constraint
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.

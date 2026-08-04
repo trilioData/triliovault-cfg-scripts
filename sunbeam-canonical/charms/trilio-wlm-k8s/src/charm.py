@@ -301,13 +301,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
 
         Handles the case where relation-joined fired before the charm was working.
+        Only writes if not already set — avoids overwriting a live password that
+        rabbitmq-k8s has already provisioned (writing a new username triggers a
+        new password generation, causing an auth mismatch with the existing config).
         """
         if not self.unit.is_leader():
             return
         amqp_rel = self.model.get_relation("amqp")
-        if amqp_rel:
-            amqp_rel.data[self.app]["username"] = "wlm"
-            amqp_rel.data[self.app]["vhost"] = "wlm"
+        if amqp_rel and not amqp_rel.data[self.app].get("username"):
+            amqp_rel.data[self.app]["username"] = "workloadmgr"
+            amqp_rel.data[self.app]["vhost"] = "workloadmgr"
+        amqp_dms_rel = self.model.get_relation("amqp-dms")
+        if amqp_dms_rel and not amqp_dms_rel.data[self.app].get("username"):
+            amqp_dms_rel.data[self.app]["username"] = "dmapi"
+            amqp_dms_rel.data[self.app]["vhost"] = "dmapi"
         db_rel = self.model.get_relation("database")
         if db_rel and not db_rel.data[self.app].get("database"):
             db_rel.data[self.app]["database"] = "workloadmgr"
@@ -716,7 +723,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "cinder_production_endpoint_template": self.config["cinder-endpoint"],
             "nova_production_endpoint_template": self.config["nova-endpoint"],
             "neutron_production_url": self.config["neutron-endpoint"],
-            "rabbit_virtual_host": amqp.get("vhost", "wlm"),
+            "rabbit_virtual_host": amqp.get("vhost", "workloadmgr"),
             "log_dir": LOG_DIR,
             "debug": str(self.config["debug"]).lower(),
             "keystone_project_name": identity.get("service_tenant", "services"),
