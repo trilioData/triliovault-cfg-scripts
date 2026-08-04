@@ -218,6 +218,31 @@ DROP USER IF EXISTS '<user>'@'<host>';   -- repeat per row above
 
 Only start the next deploy once Steps 2–4 are all confirmed clean — never drop these while a deploy's `shared-db`/`identity-service`/`amqp` relations are still negotiating (`juju status` showing `incomplete`/`waiting`).
 
+### Step 5 — Clean leftover host-level services (6.1.x and older only)
+6.1.x and earlier use the static/`tvault-object-store.service`-per-backup-target architecture that 6.2 removed entirely (see "What Changed in 6.2" above). These run as raw systemd services on the underlying host/container, **outside the charm's own install/remove hook lifecycle** — `juju remove-application` does not stop or clean them up, so they can keep running (or crash-looping) for days across multiple teardown/redeploy cycles, on both `trilio-data-mover` **and** `trilio-wlm` nodes:
+
+- `trilio-dms-server.service` — only found running on `trilio-data-mover` nodes in a 6.1.x deployment (it's a 6.2+-introduced component elsewhere, but can be left over from a prior 6.2 test on the same nodes).
+- `tvault-object-store-<BT_NAME>.service` (e.g. `tvault-object-store-S3_BT1.service`) — one per configured backup target, on **both** `trilio-data-mover` and `trilio-wlm` nodes. If stale ones are left running from a previous test, a fresh charm can report `blocked`/`Services not running that should be: ...` even though the *real* problem is that old, orphaned units are still active (or crash-looping) under the same name and the fresh charm's own service was never actually (re)created.
+
+Check and clean on every `trilio-data-mover` and `trilio-wlm` unit:
+
+```bash
+sudo systemctl status trilio-dms-server --no-pager   # data-mover nodes
+sudo systemctl list-units --all --plain --no-legend 'tvault-object-store-*.service'
+
+# for each leftover service found:
+sudo systemctl stop <service>
+sudo systemctl disable <service>
+sudo rm -f "$(systemctl show <service> -p FragmentPath --value)"
+sudo systemctl daemon-reload
+
+# also verify no stale mounts/processes remain:
+findmnt -rn -o TARGET,FSTYPE | grep triliovault-mounts
+ps aux | grep -i s3vaultfuse
+```
+
+Do this as part of Step 1 (alongside or right after the Juju application removal), before Steps 2–4 and before any fresh redeploy — a leftover crash-looping object-store service can otherwise make a perfectly fine fresh 6.1.x deploy look broken.
+
 ## Syncing with Upstream
 When upstream charm repos are updated, re-sync by running from the individual charm repos (in the workspace root):
 
