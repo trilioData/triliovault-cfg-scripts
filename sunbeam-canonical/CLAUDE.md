@@ -506,7 +506,7 @@ Also strip CRLF from bundle files copied from the Windows working tree before de
 ## Testing
 
 ### Fresh reinstall procedure (clean slate)
-When a fresh reinstall is needed (e.g. to pick up new charm revisions or reset corrupt state), follow this order:
+When a fresh reinstall is needed (e.g. to pick up new charm revisions or reset corrupt state), follow this order. **Always run all cleanup steps (RabbitMQ, MySQL, Keystone) — do not skip even if the previous removal looked clean.** Juju relation-broken hooks may not fire correctly when charms are in a broken/errored state, leaving stale users, vhosts, databases, and Keystone services that cause "already exists" failures on the next deploy.
 
 ```bash
 # 1. Remove control plane applications (--destroy-storage drops MySQL databases too)
@@ -523,22 +523,97 @@ juju remove-application trilio-data-mover
 # Wait until subordinate units are gone
 juju status trilio-data-mover   # expect: "not found"
 
-# 3. Verify MySQL databases are gone (--destroy-storage above should handle this,
-#    but verify if re-deploy gets a "database already exists" error)
-kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
-  mysql -u root -p$(kubectl get secret -n openstack mysql-k8s-app -o jsonpath='{.data.root-password}' | base64 -d) \
-  -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
-# If databases still exist, drop them:
-# DROP DATABASE workloadmgr; DROP DATABASE dmapi;
+# 3. Clean up RabbitMQ users and vhosts
+#    rabbitmq-k8s should do this automatically via relation-broken, but always
+#    verify and clean manually — stale users cause password-mismatch failures on redeploy
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
+# Delete WLM user and vhost (both named workloadmgr):
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_vhost workloadmgr
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_user workloadmgr
+# Delete DMAPI user and vhost (both named dmapi):
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_vhost dmapi
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_user dmapi
+# Verify — workloadmgr and dmapi should no longer appear:
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
 
-# 4. Deploy fresh
+# 4. Clean up MySQL databases and managed users
+#    --destroy-storage above drops the mysql-router PVCs but the databases themselves
+#    may still exist on the mysql-k8s primary — always verify and drop explicitly
+MYSQL_ROOT_PW=$(kubectl get secret -n openstack mysql-k8s-app \
+  -o jsonpath='{.data.root-password}' | base64 -d)
+# Check which Trilio databases still exist:
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
+# Drop them if present (run on the PRIMARY mysql pod — check `juju status mysql` for leader):
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "
+    DROP DATABASE IF EXISTS workloadmgr;
+    DROP DATABASE IF EXISTS dmapi;
+    DROP USER IF EXISTS 'charmed_dba_workloadmgr_00'@'%';
+    DROP USER IF EXISTS 'charmed_dba_workloadmgr_01'@'%';
+    DROP USER IF EXISTS 'charmed_dba_dmapi_00'@'%';
+    DROP USER IF EXISTS 'charmed_dba_dmapi_01'@'%';
+  "
+# Verify — neither database should appear:
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
+
+# 5. Clean up Keystone services and endpoints
+#    keystone-k8s should handle this via relation-broken, but stale endpoints
+#    cause "service already exists" conflicts on redeploy — always clean explicitly
+# Get admin credentials:
+juju run keystone/leader get-admin-account -m controller0/openstack
+# Then source admin creds and delete Trilio service/endpoints:
+export OS_AUTH_URL=<keystone-public-url>
+export OS_USERNAME=admin OS_PASSWORD=<admin-password>
+export OS_PROJECT_DOMAIN_NAME=admin_domain OS_USER_DOMAIN_NAME=admin_domain
+export OS_PROJECT_NAME=admin OS_IDENTITY_API_VERSION=3
+# Delete all WLM endpoints, then the service:
+openstack --insecure endpoint list --service workloads -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing TrilioVaultWLM
+# Delete all DMAPI endpoints, then the service:
+openstack --insecure endpoint list --service datamover -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing dmapi
+# If an old standalone DMS charm was deployed (trilio-dms-k8s), also clean its service:
+openstack --insecure endpoint list --service dms -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing trilio-dms-k8s 2>/dev/null || true
+# Verify — neither service should appear:
+openstack --insecure service list | grep -E 'workloads|datamover|trilio'
+
+# 6. Clean up orphaned k8s resources
+#    Older bundle versions deployed standalone trilio-mysql and trilio-rabbitmq
+#    applications (separate from the main Sunbeam mysql/rabbitmq). These leave
+#    orphaned StatefulSets, Services, PVCs, Secrets, ConfigMaps, ServiceAccounts,
+#    Roles, and RoleBindings after juju remove-application — always clean explicitly.
+kubectl delete statefulset -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete svc -n openstack trilio-mysql trilio-mysql-endpoints \
+  trilio-rabbitmq trilio-rabbitmq-endpoints 2>/dev/null || true
+kubectl get pvc -n openstack | grep -iE 'trilio' | awk '{print $1}' | \
+  xargs -r kubectl delete pvc -n openstack 2>/dev/null || true
+kubectl delete secret -n openstack \
+  trilio-mysql-application-config trilio-mysql-mysql-secret \
+  trilio-rabbitmq-application-config trilio-rabbitmq-rabbitmq-secret 2>/dev/null || true
+kubectl delete configmap -n openstack trilio-secret-payloads 2>/dev/null || true
+kubectl delete serviceaccount -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete role -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete rolebinding -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+# Verify — no Trilio k8s resources should remain:
+kubectl get all,secrets,configmaps,pvc,serviceaccounts,roles,rolebindings \
+  -n openstack 2>/dev/null | grep -iE 'trilio|wlm|dmapi' || echo 'Clean'
+
+# 8. Deploy fresh
 juju switch openstack
 juju deploy ./trilio-ctlplane-bundle.yaml --trust
 
 juju switch openstack-machines
 juju deploy ./trilio-dataplane-bundle.yaml
 
-# 5. Wait for active, then attach license and create trust
+# 9. Wait for active, then attach license and create trust
 juju switch openstack
 juju wait-for application trilio-wlm-k8s --query='status=="active"' --timeout=15m
 juju attach-resource trilio-wlm-k8s license=<path-to-license>
