@@ -96,20 +96,3 @@ config:
         Obtain from the WLM pod:
           kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
             grep ^connection /etc/triliovault-wlm/triliovault-wlm.conf
-    change-nova-user-id:
-      type: boolean
-      default: false
-      description: |
-        Controls behaviour when a nova user already exists on the compute node with
-        a UID other than 42436 (the standard OpenStack nova UID used by WLM containers
-        and all other OpenStack distributions).
-
-        false (default): Block charm installation with an error message. The operator
-          must either pre-create nova at UID 42436 or set this option to true.
-
-        true: Automatically update the nova user UID/GID to 42436 using usermod/groupmod
-          and re-own Trilio-managed directories. Use this when compute nodes have a
-          legacy nova user created by the nova-common deb package (typically UID 116).
-
-        If nova user does not exist at all, it is always created at UID 42436 regardless
-        of this setting.

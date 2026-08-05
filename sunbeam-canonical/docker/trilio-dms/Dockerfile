@@ -37,13 +37,6 @@ RUN echo "deb https://ubuntu-cloud.archive.canonical.com/ubuntu jammy-updates/ca
         > /etc/apt/sources.list.d/cloudarchive-caracal.list && \
     apt-get update -y
 
-# Install nova-common to create nova user/group
-RUN apt-get install -y nova-common && apt-get clean -y
-
-# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
-COPY nova_userid.sh /opt/triliovault-dms/nova_userid.sh
-RUN chmod +x /opt/triliovault-dms/nova_userid.sh && /opt/triliovault-dms/nova_userid.sh
-
 # pip packages: cloud storage backends + kombu (RabbitMQ client, not in ubuntu:jammy universe)
 RUN pip3 --no-cache-dir install \
     azure-storage-blob==12.25.1 \
@@ -70,20 +63,14 @@ RUN apt-get update -y && \
 # itself requires.
 RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
 
-# Create required directories — DMS runs as nova user
+# Create required directories — DMS runs as root
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
     /var/triliovault \
     /etc/triliovault-dms \
     /var/log/triliovault \
-    /run/dms/s3
-
-RUN chown -R nova:nova \
-        /var/lib/trilio/triliovault-mounts \
-        /var/log/triliovault \
-        /run/dms \
-        /etc/triliovault-dms && \
+    /run/dms/s3 && \
     chmod 777 /var/lib/trilio/triliovault-mounts && \
     chmod -R 755 /etc/triliovault-dms /var/log/triliovault
 
-USER nova
+USER root

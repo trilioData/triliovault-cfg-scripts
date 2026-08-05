@@ -46,8 +46,7 @@ RUN echo "deb https://ubuntu-cloud.archive.canonical.com/ubuntu jammy-updates/ca
         > /etc/apt/sources.list.d/cloudarchive-caracal.list && \
     apt-get update -y
 
-# Install nova-common to create nova user/group, and OpenStack Python packages
-# needed by WLM at runtime
+# OpenStack Python packages needed by WLM at runtime
 RUN apt-get install -y \
         nova-common \
         python3-nova \
@@ -55,10 +54,6 @@ RUN apt-get install -y \
         python3-neutronclient \
         python3-glanceclient \
     && apt-get clean -y
-
-# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
-COPY nova_userid.sh /opt/triliovault-wlm/nova_userid.sh
-RUN chmod +x /opt/triliovault-wlm/nova_userid.sh && /opt/triliovault-wlm/nova_userid.sh
 
 # pip packages not available in cloud-archive
 RUN pip3 --no-cache-dir install "SQLAlchemy==1.4.51" && \
@@ -122,18 +117,8 @@ RUN mkdir -p \
     /var/lib/workloadmgr/taskflow \
     /opt/triliovault
 
-# All WLM services run as nova user
-RUN chown -R nova:nova \
-        /var/log/triliovault \
-        /var/trilio/triliovault-mounts \
-        /var/triliovault \
-        /var/lib/workloadmgr \
-        /opt/triliovault && \
-    chown -R root:nova \
-        /etc/triliovault-wlm \
-        /etc/triliovault-object-store \
-        /etc/triliovault-dms && \
-    chmod -R 755 \
+# All WLM services run as root
+RUN chmod -R 755 \
         /var/log/triliovault \
         /etc/triliovault-wlm \
         /etc/triliovault-object-store && \
@@ -141,9 +126,4 @@ RUN chown -R nova:nova \
         /var/trilio/triliovault-mounts \
         /var/triliovault
 
-RUN usermod -aG disk nova
-
-ADD nova-sudoers /etc/sudoers.d/nova-sudoers
-RUN chmod 440 /etc/sudoers.d/nova-sudoers
-
-USER nova
+USER root

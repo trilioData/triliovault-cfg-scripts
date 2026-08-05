@@ -21,12 +21,8 @@ NFS / S3 mount operations on their respective hosts.
 """
 
 import configparser
-import grp as _grp
-import hashlib
 import json
 import jinja2
-import pwd
-import re
 import logging
 import os
 import pathlib
@@ -44,14 +40,7 @@ DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
-# nova.conf lives inside the openstack-hypervisor snap (root:root 640, unreadable by
-# the nova user that tvault-contego runs as).  The charm copies it to NOVA_CONF_COPY
-# (root:nova 640) and rewrites the cafile= line to point to CA_BUNDLE_COPY instead
-# of the snap-internal path, which is also root-only.  The CA cert itself is obtained
-# from the receive-ca-cert Juju relation (not copied from the snap) and written to
-# CA_BUNDLE_COPY with root:nova 640 so the nova user can read it.
 SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
-NOVA_CONF_COPY = "/etc/triliovault-datamover/nova.conf"
 CA_BUNDLE_COPY = "/etc/triliovault-datamover/ca-bundle.pem"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
@@ -61,9 +50,6 @@ DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
 TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
-NOVA_TARGET_UID = 42436  # Standard OpenStack nova UID (Kolla, UCA, WLM container all use this)
-NOVA_INSTANCES_DIR = "/var/snap/openstack-hypervisor/common/lib/nova/instances"
-NOVA_INSTANCES_SNAPSHOTS_DIR = f"{NOVA_INSTANCES_DIR}/snapshots"
 
 # contego needs its own Ceph client credentials to run rbd commands directly
 # (backend probing, snapshot info) against any Ceph-backed Cinder volume attached
@@ -114,10 +100,9 @@ WantedBy=multi-user.target
 """
 
 # Systemd unit for tvault-contego on Sunbeam compute nodes.
-# nova.conf lives inside the openstack-hypervisor snap (root:root 640).
-# The charm copies it to NOVA_CONF_COPY (root:nova 640) so tvault-contego can
-# read it as the nova user.  PYTHONPATH is required because snap Python packages
-# (nova, kombu, etc.) are isolated from the host system path.
+# PYTHONPATH is required because snap Python packages (nova, kombu, etc.) are
+# isolated from the host system path. Service runs as root so it can read
+# nova.conf directly from the snap path (root:root 640).
 DATAMOVER_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault DataMover (tvault-contego)
@@ -132,7 +117,7 @@ Group=root
 Type=simple
 Environment="PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 /usr/bin/tvault-contego \
-  --config-file=/etc/triliovault-datamover/nova.conf \
+  --config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf \
   --config-file=/etc/triliovault-datamover/triliovault-datamover.conf
 TimeoutStopSec=20
 KillMode=process
@@ -201,14 +186,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._setup_apt_repo()
             self._install_packages()
             self._create_directories()
-            self._write_nova_sudoers()
             self._install_rootwrap_filters()
             self._write_systemd_services()
-        except RuntimeError as e:
-            # Nova UID conflict — operator must set change-nova-user-id=true or fix manually
-            logger.error("Nova user UID conflict: %s", e)
-            self.unit.status = ops.BlockedStatus(str(e))
-            return
         except subprocess.CalledProcessError as e:
             logger.error("Package install failed: %s", e)
             self.unit.status = ops.BlockedStatus(f"Package install failed: {e}")
@@ -229,13 +208,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # written by the original install if this was a pre-v14 deployment, or
             # the unit content may have changed between Trilio releases.
             self._create_directories()
-            self._write_nova_sudoers()
             self._install_rootwrap_filters()
             self._write_systemd_services()
-        except RuntimeError as e:
-            logger.error("Nova user UID conflict: %s", e)
-            self.unit.status = ops.BlockedStatus(str(e))
-            return
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
@@ -294,19 +268,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- core configure logic ---
 
     def _configure(self, event):
-        # Nova UID check runs on every configure path (install, relation-changed,
-        # config-changed) so no event can override a BlockedStatus set by install.
-        # _ensure_nova_user() is a fast no-op when nova is already at 42436.
-        try:
-            self._ensure_nova_user()
-        except RuntimeError as e:
-            logger.error("Nova user UID conflict: %s", e)
-            self.unit.status = ops.BlockedStatus(str(e))
-            return
-        except subprocess.CalledProcessError as e:
-            self.unit.status = ops.BlockedStatus(f"Nova user setup failed: {e}")
-            return
-
         missing = self._missing_relations()
         if missing:
             self.unit.status = ops.WaitingStatus(f"Waiting for: {', '.join(missing)}")
@@ -314,7 +275,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         try:
             self._write_ca_cert()
-            self._sync_nova_conf()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
@@ -396,22 +356,18 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _write_ca_cert(self):
         """Write CA bundle from the receive-ca-cert relation to host trust store and to
-        a nova-readable path so tvault-contego can verify Keystone TLS.
+        a root-readable path so tvault-contego can verify Keystone TLS.
 
         CA content comes from the Juju relation — not copied from any snap path.
-        CA_BUNDLE_COPY (root:nova 640) is written first so _sync_nova_conf() can
-        reference it in the cafile= patch.
         """
         ca_cert = self._get_ca_cert()
         if not ca_cert:
             return
-        # Write to our managed path (root:nova 640) for direct use by tvault-contego
         os.makedirs(os.path.dirname(CA_BUNDLE_COPY), exist_ok=True)
         with open(CA_BUNDLE_COPY, "w") as f:
             f.write(ca_cert)
-        shutil.chown(CA_BUNDLE_COPY, user="root", group="nova")
-        os.chmod(CA_BUNDLE_COPY, 0o640)
-        logger.info("CA cert written to %s (root:nova 640)", CA_BUNDLE_COPY)
+        os.chmod(CA_BUNDLE_COPY, 0o644)
+        logger.info("CA cert written to %s (root:root 644)", CA_BUNDLE_COPY)
         # Also add to system trust store so other tools on this host trust the CA
         ca_path = "/usr/local/share/ca-certificates/trilio-ca.crt"
         os.makedirs(os.path.dirname(ca_path), exist_ok=True)
@@ -429,130 +385,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         subprocess.run(["apt-get", "update", "-qq"], check=True)
         logger.info("Trilio apt repo configured")
 
-    def _ensure_nova_user(self):
-        """Create or normalize nova user to UID 42436.
-
-        Sunbeam compute nodes run nova-compute inside the openstack-hypervisor snap,
-        so no host-level nova user exists. If a legacy nova user exists (e.g. from
-        a nova-common deb install) with a different UID, the charm blocks by default
-        to avoid unintended system changes.  Set change-nova-user-id=true to allow
-        the UID update.  Both WLM containers and DataMover must use the same nova UID
-        (42436) to read/write the same NFS backup target.
-
-        Three cases:
-          1. nova user does not exist  → create fresh at UID 42436
-          2. nova user exists at 42436 → nothing to do
-          3. nova user exists at other UID:
-               change-nova-user-id=false → raise RuntimeError (blocks install)
-               change-nova-user-id=true  → update UID/GID, re-own nova-owned files
-        """
-        try:
-            pw = pwd.getpwnam("nova")
-            current_uid = pw.pw_uid
-        except KeyError:
-            current_uid = None
-
-        if current_uid is None:
-            # Case 1: nova does not exist — create fresh at the correct UID
-            try:
-                _grp.getgrnam("nova")
-            except KeyError:
-                subprocess.run(
-                    ["groupadd", "--system", "--gid", str(NOVA_TARGET_UID), "nova"],
-                    check=False,  # ignore if GID is taken; fallback to system-assigned GID
-                )
-            subprocess.run(
-                ["useradd", "--system", "--no-create-home",
-                 "--uid", str(NOVA_TARGET_UID), "--gid", "nova",
-                 "--shell", "/usr/sbin/nologin", "nova"],
-                check=True,
-            )
-            logger.info("Created nova user at UID %d", NOVA_TARGET_UID)
-
-        elif current_uid == NOVA_TARGET_UID:
-            # Case 2: already correct
-            logger.info("nova user already at UID %d — no change needed", NOVA_TARGET_UID)
-
-        else:
-            # Case 3: nova exists but has a different UID
-            if not self.config.get("change-nova-user-id"):
-                raise RuntimeError(
-                    f"nova user exists with UID {current_uid} but UID {NOVA_TARGET_UID} is "
-                    f"required (WLM containers use {NOVA_TARGET_UID} for NFS access). "
-                    f"Set change-nova-user-id=true to allow automatic UID update, "
-                    f"or recreate nova at UID {NOVA_TARGET_UID} manually before deploying."
-                )
-            logger.info(
-                "change-nova-user-id=true: updating nova from UID %d to %d",
-                current_uid, NOVA_TARGET_UID,
-            )
-            # Update nova group GID first (usermod -g requires the group to exist at new GID)
-            try:
-                nova_grp = _grp.getgrnam("nova")
-                old_gid = nova_grp.gr_gid
-                if old_gid != NOVA_TARGET_UID:
-                    subprocess.run(
-                        ["groupmod", "--gid", str(NOVA_TARGET_UID), "nova"],
-                        check=True,
-                    )
-            except KeyError:
-                subprocess.run(
-                    ["groupadd", "--system", "--gid", str(NOVA_TARGET_UID), "nova"],
-                    check=True,
-                )
-                old_gid = None
-            # Stop Trilio services before usermod — usermod refuses to change UID
-            # while the user has running processes.  stop() + kill(all) ensures
-            # all cgroup members (including s3vaultfuse children) are terminated.
-            for svc in (DATAMOVER_SERVICE, DMS_SERVICE):
-                subprocess.run(["systemctl", "stop", svc], check=False)
-                subprocess.run(
-                    ["systemctl", "kill", "--kill-who=all", "--signal=SIGKILL", svc],
-                    check=False,
-                )
-            # Update nova user UID
-            subprocess.run(
-                ["usermod", "--uid", str(NOVA_TARGET_UID),
-                 "--gid", str(NOVA_TARGET_UID), "nova"],
-                check=True,
-            )
-            # Re-own files in Trilio directories that were previously owned by old UID/GID.
-            # We scope to known Trilio directories rather than running find / (too expensive).
-            re_own_dirs = [
-                "/etc/triliovault-datamover", "/etc/triliovault-dms",
-                "/etc/triliovault-object-store",
-                "/var/log/triliovault", "/var/triliovault-mounts",
-                "/var/triliovault", "/opt/triliovault",
-            ]
-            for d in re_own_dirs:
-                if os.path.exists(d):
-                    subprocess.run(
-                        ["find", d, "-user", str(current_uid),
-                         "-exec", "chown", "nova:nova", "{}", "+"],
-                        check=False,
-                    )
-                    if old_gid is not None:
-                        subprocess.run(
-                            ["find", d, "-group", str(old_gid),
-                             "-exec", "chgrp", "nova", "{}", "+"],
-                            check=False,
-                        )
-            logger.info("Updated nova to UID %d and re-owned Trilio directories", NOVA_TARGET_UID)
-
-        # TVAULT-7404 root-user experiment: contego/DMS now run as root (see
-        # DATAMOVER_SYSTEMD_UNIT/DMS_SYSTEMD_UNIT), so the disk/kvm/root group
-        # memberships previously granted here for socket/device access are no
-        # longer needed — root already has full access to those regardless of
-        # group. See nova-user-known-good-state.md for the nova-user approach
-        # this replaces and how to roll back to it.
-
     def _install_packages(self):
         version = self.config["trilio-version"].strip()
 
         dm_pkg = f"{DATAMOVER_PACKAGE}={version}*" if version else DATAMOVER_PACKAGE
         dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
 
-        self._ensure_nova_user()
         subprocess.run(
             ["apt-get", "install", "-y", "--no-install-recommends",
              "fuse", "libfuse2", "nfs-common",
@@ -578,10 +416,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
-        # opt/triliovault owned by nova (mirrors kolla Dockerfile)
-        shutil.chown("/opt/triliovault", user="nova", group="nova")
-        shutil.chown("/var/triliovault-mounts", user="nova", group="nova")
-        shutil.chown("/var/triliovault", user="nova", group="nova")
         os.chmod("/var/triliovault-mounts", 0o777)
         os.chmod("/var/triliovault", 0o777)
         # Fuse requires user_allow_other for DMS FUSE mounts.
@@ -714,20 +548,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # back to it.
     LIBVIRT_SOCKET_PATH = "/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock"
 
-    def _write_nova_sudoers(self):
-        """Write sudoers rule for nova privsep-helper (mirrors kolla nova-sudoers).
-
-        Pre-existing (predates the qemu+nc libvirt fix removed above) — kept
-        as-is; unrelated to the root-user experiment.
-        """
-        sudoers_path = "/etc/sudoers.d/nova-sudoers"
-        content = "nova ALL=(root) NOPASSWD: /usr/bin/privsep-helper *\n"
-        os.makedirs("/etc/sudoers.d", exist_ok=True)
-        with open(sudoers_path, "w") as f:
-            f.write(content)
-        os.chmod(sudoers_path, 0o440)
-        logger.info("Wrote %s", sudoers_path)
-
     # --- ceph-client relation: fetch contego's own Ceph credentials ---
 
     def _on_ceph_broker_available(self, event):
@@ -804,7 +624,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(keyring_path, "w") as f:
             f.write(content)
         os.chmod(keyring_path, 0o640)
-        shutil.chown(keyring_path, group="nova")
         logger.info("Wrote %s", keyring_path)
 
     def _discover_cinder_ceph_pools(self) -> set:
@@ -852,12 +671,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         """Return Nova's own ephemeral-disk RBD pool name, if it uses one.
 
         Only relevant when nova.conf's [libvirt] images_type is rbd — reads
-        the already-synced copy of nova.conf (_sync_nova_conf), not the
-        snap-internal original, since that one is root-only.
+        directly from the snap nova.conf (service runs as root so the file
+        is readable regardless of its root:root 640 permissions).
         """
         parser = configparser.ConfigParser(strict=False)
         try:
-            parser.read(NOVA_CONF_COPY)
+            parser.read(SNAP_NOVA_CONF)
         except OSError:
             return None
         if not parser.has_section("libvirt"):
@@ -916,75 +735,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         )
         logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
-    # Matches any cafile= line whose value starts with /var/snap/ — the snap-internal
-    # path is root-only; we replace it with CA_BUNDLE_COPY which is root:nova 640.
-    _SNAP_CAFILE_RE = re.compile(rb"(?m)^([ \t]*cafile[ \t]*=[ \t]*)/var/snap/[^\n]*")
-
-    def _sync_nova_conf(self) -> bool:
-        """Copy snap nova.conf to our location if content changed.
-
-        The snap nova.conf is root:root 640 — unreadable by the nova user that
-        tvault-contego runs as.  Charm hooks run as root, so we copy it to
-        NOVA_CONF_COPY (root:nova 640).
-
-        The cafile= line in [keystone_authtoken] references a snap-internal path
-        (also root-only).  We rewrite it to CA_BUNDLE_COPY, which is written by
-        _write_ca_cert() from the receive-ca-cert relation (root:nova 640).
-        If no CA cert is available yet, the cafile= line is removed so
-        keystoneauth1 falls back to the system CA trust store.
-
-        Returns True if the file was updated, False if nothing changed.
-        """
-        try:
-            with open(SNAP_NOVA_CONF, "rb") as f:
-                snap_content = f.read()
-        except OSError as e:
-            logger.warning("Cannot read snap nova.conf: %s", e)
-            return False
-
-        # Patch cafile= to point to our nova-readable CA bundle (from relation).
-        if os.path.exists(CA_BUNDLE_COPY):
-            new_content = self._SNAP_CAFILE_RE.sub(
-                rb"\g<1>" + CA_BUNDLE_COPY.encode(), snap_content
-            )
-        else:
-            # CA not yet available — strip cafile so keystoneauth1 uses system store
-            new_content = self._SNAP_CAFILE_RE.sub(b"", snap_content)
-
-        new_hash = hashlib.sha256(new_content).hexdigest()
-
-        try:
-            with open(NOVA_CONF_COPY, "rb") as f:
-                old_hash = hashlib.sha256(f.read()).hexdigest()
-        except OSError:
-            old_hash = None
-
-        if new_hash == old_hash:
-            # Content unchanged — still fix ownership in case nova GID changed
-            if os.path.exists(NOVA_CONF_COPY):
-                shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
-                os.chmod(NOVA_CONF_COPY, 0o640)
-            return False
-
-        os.makedirs(os.path.dirname(NOVA_CONF_COPY), exist_ok=True)
-        with open(NOVA_CONF_COPY, "wb") as f:
-            f.write(new_content)
-        shutil.chown(NOVA_CONF_COPY, user="root", group="nova")
-        os.chmod(NOVA_CONF_COPY, 0o640)
-        logger.info("Synced nova.conf from snap to %s (cafile patched)", NOVA_CONF_COPY)
-        return True
-
     def _on_update_status(self, event):
-        """Detect snap nova.conf changes and restart services only when content changed."""
-        if self._sync_nova_conf():
-            logger.info("nova.conf changed — restarting DataMover and DMS")
-            try:
-                subprocess.run(
-                    ["systemctl", "restart", DATAMOVER_SERVICE, DMS_SERVICE],
-                    check=True,
-                )
-            except subprocess.CalledProcessError as e:
-                self.unit.status = ops.BlockedStatus(f"Service restart failed: {e}")
+        """Periodic status check — verify services are running."""
+        pass
 
     # --- service management ---
 
