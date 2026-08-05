@@ -198,7 +198,6 @@ Dockerfiles are in `docker/`:
 |-------|-----------|---------|
 | `docker.io/trilio/trilio-wlm-canonical` | `sunbeam-canonical/docker/trilio-wlm/Dockerfile_2024.1` | `trilio-wlm-k8s` |
 | `docker.io/trilio/trilio-datamover-api-canonical` | `sunbeam-canonical/docker/trilio-datamover-api/Dockerfile_2024.1` | `trilio-dm-api-k8s` |
-| `docker.io/trilio/trilio-dms-canonical` | `sunbeam-canonical/docker/trilio-dms/Dockerfile` | `trilio-wlm-k8s` (embedded `trilio-dms` sidecar resource) |
 | `docker.io/trilio/trilio-horizon-plugin-canonical` | `sunbeam-canonical/docker/trilio-horizon-plugin/Dockerfile_2024.1` | `horizon` attach-resource |
 
 Build and publish all images:

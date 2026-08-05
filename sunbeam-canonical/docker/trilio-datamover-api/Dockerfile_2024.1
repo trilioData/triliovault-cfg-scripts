@@ -39,10 +39,6 @@ RUN apt-get install -y \
         python3-novaclient \
     && apt-get clean -y
 
-# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
-COPY nova_userid.sh /opt/triliovault-datamover/nova_userid.sh
-RUN chmod +x /opt/triliovault-datamover/nova_userid.sh && /opt/triliovault-datamover/nova_userid.sh
-
 # Install TrilioVault DataMover API packages from Trilio APT repo
 # python3-dmapi creates the dmapi user/group
 ADD trilio.list /etc/apt/sources.list.d/

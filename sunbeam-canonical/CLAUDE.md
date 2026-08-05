@@ -11,6 +11,23 @@ This directory contains the native Juju charm implementation for T4O on Sunbeam 
 
 ---
 
+## Local Test Environment Files
+
+All test credentials and environment config live under **`C:\vscode-workspace\env\`** (local machine only — never committed to any repo). Always check here before asking for credentials or server access.
+
+| File | Path | Purpose |
+|------|------|---------|
+| `backup_targets.yaml` | `C:\vscode-workspace\env\backup_targets.yaml` | S3/NFS backup target credentials and endpoint details. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh` via `TRILIO_ENV_DIR`. |
+| `setups.yaml` | `C:\vscode-workspace\env\setups.yaml` | SSH access details for ALL lab environments — build server, Canonical QA, RHOSO18, etc. Check here first. |
+| `license_trilio.txt` | `C:\vscode-workspace\env\license_trilio.txt` | TrilioVault license file. Used with `juju attach-resource trilio-wlm-k8s license=...` (copy to build server as `license` — no `.txt` extension). |
+
+**Build-server override**: on the build server the env dir is `/home/ubuntu/env/`. Always set `TRILIO_ENV_DIR` when running test scripts there:
+```bash
+TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+```
+
+---
+
 ## Architecture
 
 ### Sunbeam deployment model
@@ -29,17 +46,15 @@ This directory contains the native Juju charm implementation for T4O on Sunbeam 
 ```
 sunbeam-canonical/
 ├── charms/
-│   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble)
+│   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble); embeds DMS as sidecar container
 │   ├── trilio-dm-api-k8s/           # DMAPI k8s charm (ops + Pebble)
-│   ├── trilio-dms-k8s/              # DMS server k8s charm (ops + Pebble)
 │   └── trilio-data-mover-sunbeam/   # DataMover machine subordinate charm
 ├── docker/
-│   ├── trilio-wlm/Dockerfile        # OCI image for WLM (wlm-api/workloads/scheduler/cron)
-│   ├── trilio-datamover-api/Dockerfile
-│   ├── trilio-dms/Dockerfile        # OCI image for DMS server (k8s side)
+│   ├── trilio-wlm/Dockerfile_2024.1 # OCI image for WLM + DMS sidecar (wlm-api/workloads/scheduler/cron/dms)
+│   ├── trilio-datamover-api/Dockerfile_2024.1
 │   ├── trilio-horizon-plugin/Dockerfile_2024.1  # Trilio Horizon Plugin (extends ghcr.io/canonical/horizon)
-│   ├── devops-build-publish.sh      # Primary build+publish script (supports all 4 images)
-│   └── build_images.sh              # Legacy build script (APT-repo substitution, 3 images)
+│   ├── devops-build-publish.sh      # Primary build+publish script (3 images: wlm, dmapi, horizon-plugin)
+│   └── build_images.sh              # Legacy build script (APT-repo substitution)
 ├── trilio-bundle.yaml               # Juju bundle for control plane (openstack model)
 ├── trilio-dataplane-bundle.yaml     # Juju bundle for data plane (openstack-machines model)
 └── CLAUDE.md                        # This file
@@ -169,49 +184,34 @@ The RabbitMQ user and vhost for WLM are `workloadmgr`/`workloadmgr`. The charm r
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
 ### DMS node_id
-- **Control plane (trilio-dms-k8s)**: `node_id` is the k8s node hostname, injected via the Kubernetes Downward API as `K8S_NODE_NAME` env var in the workload container (`charmcraft.yaml` `envConfig`). The charm reads it via `container.exec(["printenv", "K8S_NODE_NAME"])`. Do NOT use `socket.gethostname()` (returns pod name) or `self.unit.name` (returns Juju unit name).
+- **Control plane (embedded trilio-dms container in trilio-wlm-k8s pod)**: `node_id` = `self.unit.name.replace("/", "-")` (e.g. `trilio-wlm-k8s-0`). The DMS server is 1:1 with the WLM unit, so the WLM Juju unit name is a natural, stable, unique identity. WLM's own DMS client config uses the same value via `_dms_node_id()` — no hardcoded constant; each unit talks only to its own co-located DMS server.
 - **Data plane (trilio-data-mover)**: `node_id` is `socket.getfqdn()`, matching what `openstack-hypervisor` charm sets as `node.fqdn` in snap config for nova-compute. Must match `OS-EXT-SRV-ATTR:host` from nova.
 
 ### DMS systemd units (data plane)
 Neither `python3-trilio-dms` nor `tvault-contego` packages ship systemd unit files (both were designed for kolla containers). The `trilio-data-mover` charm writes both units to `/lib/systemd/system/` during install:
 - `triliovault-dms.service` — runs `trilio-dms-server` as root, with `PYTHONPATH=/snap/openstack-hypervisor/current/usr/lib/python3/dist-packages` so it can import nova/kombu from the snap
-- `triliovault-datamover.service` — runs tvault-contego as root with the same PYTHONPATH, using `--config-file=/etc/triliovault-datamover/nova.conf` (our patched copy) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
+- `triliovault-datamover.service` — runs tvault-contego as root with the same PYTHONPATH, using `--config-file=/var/snap/openstack-hypervisor/common/etc/nova/nova.conf` (direct snap path, readable because service runs as root) and `--config-file=/etc/triliovault-datamover/triliovault-datamover.conf`
 
 **`StartLimitIntervalSec=0` is required in both unit `[Unit]` sections.** The systemd default allows only 5 starts in 10 seconds; an earlier version had an explicit `StartLimitIntervalSec=120 / StartLimitBurst=3` limit. When the DataMover crashes quickly due to transient issues (e.g. RabbitMQ `ACCESS_REFUSED` errors during credential rotation), the rapid restart cycle exhausts the limit and the unit enters `start-limit-hit` state (`systemctl status triliovault-datamover.service` shows `Result: start-limit-hit`). Once in that state, `systemctl start` immediately returns an error — the charm's own restart calls silently do nothing, leaving the DataMover permanently down even after the underlying issue is resolved. Setting `StartLimitIntervalSec=0` disables the limit entirely so the service always retries. If a compute node gets stuck in `start-limit-hit` on an older charm revision, recover with: `sudo systemctl reset-failed triliovault-datamover.service && sudo systemctl reset-failed triliovault-dms.service`, then trigger a charm hook re-run.
 
-### Nova user UID normalisation (data plane)
-WLM containers (trilio-wlm-k8s, trilio-dms-k8s) run as `nova` UID 42436. DataMover on compute nodes also runs as `nova` and writes to the same NFS backup target, so both sides must use the same UID.
-
-Sunbeam compute nodes run nova-compute inside the `openstack-hypervisor` snap as **root** — no host-level `nova` user exists. The charm creates one at UID 42436. If a legacy `nova` user exists (e.g. from a `nova-common` deb install at UID 116), the charm:
-- `change-nova-user-id=false` (default): sets `BlockedStatus` with an error message
-- `change-nova-user-id=true`: runs `groupmod`/`usermod` to move nova to UID/GID 42436 and re-owns Trilio directories
-
-**Before `usermod`**: stop Trilio services and then run `systemctl kill --kill-who=all --signal=SIGKILL <service>` for both `triliovault-datamover` and `triliovault-dms`. The `kill --kill-who=all` is required because `s3vaultfuse` (spawned by trilio-dms-server as a child process) can outlive `systemctl stop` and block `usermod` with "user is currently used by process".
-
-The `_ensure_nova_user()` check runs at the **top of `_configure()`** (not only in `_on_install()`). This means every event path — install, config-changed, relation-changed — enforces the check. Setting `change-nova-user-id=true` via `juju config` fires a `config-changed` event which triggers the UID update automatically.
-
-**`nova.conf` re-chown on stale ownership**: `_sync_nova_conf()` normally returns early (no file write) when nova.conf content has not changed. After a nova GID change, this leaves `/etc/triliovault-datamover/nova.conf` with the old GID — unreadable by the `nova` user. Fix: always call `shutil.chown(NOVA_CONF_COPY, user="root", group="nova")` even on the early-return path so ownership is corrected after every `_configure()` call.
-
 ### nova.conf and CA cert handling (data plane)
-The `openstack-hypervisor` snap's nova.conf is at `/var/snap/openstack-hypervisor/common/etc/nova/nova.conf` (root:root 640 — unreadable by the nova user). The charm copies it to `/etc/triliovault-datamover/nova.conf` (root:nova 640).
+All data-plane services (tvault-contego, trilio-dms-server) run as **root** — the nova user is no longer used. This means:
+- tvault-contego reads nova.conf directly from the snap path (`/var/snap/openstack-hypervisor/common/etc/nova/nova.conf`, root:root 640) — no copy needed
+- CA bundle is written to `/etc/triliovault-datamover/ca-bundle.pem` (root:root 644) — world-readable, no nova-group ownership required
+- No `_sync_nova_conf()` needed — the snap nova.conf is the authoritative source; service reads it directly on every startup
+- `s3vaultfuse-global.conf.j2` uses `vault_cache_username = root` (FUSE cache files owned by root)
 
-**Only one line is patched in the copy**: the `cafile=` line in `[keystone_authtoken]` (and any other section) that references a snap-internal path (`/var/snap/openstack-hypervisor/.../receive-ca-bundle.pem`, also root:root 640). It is rewritten to `/etc/triliovault-datamover/ca-bundle.pem`.
-
-The CA cert at that path comes from the **`receive-ca-cert` Juju relation** — NOT copied from the snap. `_write_ca_cert()` reads the CA from the relation databag and writes it to:
-1. `/etc/triliovault-datamover/ca-bundle.pem` (root:nova 640) — for tvault-contego's direct use via `cafile=`
-2. `/usr/local/share/ca-certificates/trilio-ca.crt` + `update-ca-certificates` — system trust store for all other tools
-
-**Ordering in `_configure()`**: `_write_ca_cert()` must run before `_sync_nova_conf()` so the CA file exists before nova.conf references it.
-
-If the `receive-ca-cert` relation has no data yet, the `cafile=` line is stripped entirely so keystoneauth1 falls back to the world-readable system CA trust store.
+The CA cert comes from the **`receive-ca-cert` Juju relation** — `_write_ca_cert()` reads it from the relation databag and writes it to:
+1. `/etc/triliovault-datamover/ca-bundle.pem` (root:root 644) — for tvault-contego's `cafile=` reference
+2. `/usr/local/share/ca-certificates/trilio-ca.crt` + `update-ca-certificates` — system trust store
 
 ### DMS client conf (data plane)
 `/etc/triliovault-dms/client.conf` is written by the `trilio-data-mover` charm when `wlm-db-url` config is set. It contains WLM DB URL, same RabbitMQ credentials as DMS server, and `node_id = socket.getfqdn()`.
 
 ### DMS client conf (control plane — WLM) — vhost and node_id are NOT WLM's own
 `trilio-wlm-k8s` also writes `/etc/triliovault-dms/client.conf` (`_write_dms_client_config`) for the `trilio_dms` Python client library's mount/unmount RPC calls (used by `workloadmgr trust-create`'s post-trust settings upload and by `backup-target-create`'s mount validation). Two easy-to-get-wrong fields:
-- **`rabbitmq_url`**: must be the **`dmapi`** RabbitMQ vhost, not WLM's own `wlm` vhost — the DMS server's `trilio_dms` topic exchange lives in the `dmapi` vhost (`trilio-dms-k8s`'s own `amqp` relation explicitly requests `username=dmapi, vhost=dmapi`, "since they communicate via shared RabbitMQ queues"). WLM needs a **second, separate** `amqp`-interface relation (`amqp-dms`, wired to `rabbitmq:amqp` in `trilio-ctlplane-bundle.yaml`) requesting the same `dmapi`/`dmapi` username/vhost — this is idempotent, rabbitmq-k8s just returns the already-provisioned user. Using WLM's own `wlm` vhost silently "succeeds" (kombu auto-declares a private `trilio_dms` exchange in the wrong vhost) and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange.
-- **`node_id`**: `trilio_dms.client.DMSClient` defaults a request's target `host` to the **client's own** `node_id` when not explicitly given. This field must be the **DMS server's** identity, not WLM's — get it wrong and WLM publishes to `dms.<wrong-name>`, a routing key nothing is bound to, again a silent 60s timeout. `trilio-dms-k8s` is a `scale: 1` singleton (like wlm-cron) with a deterministic k8s pod name (`<app-name>-0`), so WLM hardcodes `DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"` as a documented constant — there's no relation currently exposing DMS's own resolved node_id (which itself falls back to this exact same value when `K8S_NODE_NAME` downward-api injection is unavailable — confirm both sides agree via `cat /etc/triliovault-dms/client.conf` on WLM and `grep node_id /etc/triliovault-dms/server.conf` on DMS if debugging).
+- **`rabbitmq_url`**: must be the **`dmapi`** RabbitMQ vhost, not WLM's own `wlm` vhost — the embedded DMS server's `trilio_dms` topic exchange lives in the `dmapi` vhost. WLM has a dedicated `amqp-dms` relation (wired to `rabbitmq:amqp` in `trilio-ctlplane-bundle.yaml`) that requests `username=dmapi, vhost=dmapi` — this is idempotent, rabbitmq-k8s just returns the already-provisioned user. Using WLM's own `wlm` vhost silently "succeeds" (kombu auto-declares a private `trilio_dms` exchange in the wrong vhost) and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange.
+- **`node_id`**: `trilio_dms.client.DMSClient` defaults a request's target `host` to the **client's own** `node_id` when not explicitly given. This field must be the **DMS server's** identity, not WLM's — get it wrong and WLM publishes to `dms.<wrong-name>`, a routing key nothing is bound to, again a silent 60s timeout. The embedded DMS server's node_id = `self.unit.name.replace("/", "-")` (e.g. `trilio-wlm-k8s-0`), set via `_dms_node_id()` in charm.py. WLM writes the same value into its own DMS client conf so both sides always agree — confirm with `cat /etc/triliovault-dms/client.conf` on WLM and `grep node_id /etc/triliovault-dms/server.conf` on the trilio-dms container.
 
 Kolla-ansible sidesteps both issues entirely: WLM and DMS share ONE RabbitMQ vhost/user (`openstack`, kolla's global RPC convention) and are co-located on the same host (`node_id = {{ ansible_fqdn }}` on both sides) — so there's nothing to compare against in that reference implementation; the mismatch is Sunbeam-specific (per-service vhosts + separate pods).
 
@@ -224,7 +224,7 @@ Required once after WLM reaches `active` (`juju run trilio-wlm-k8s/leader create
 
 **Root-caused and fixed as of 2026-07-25 — WLM service account needs its own Keystone `default_project_id` set, or every Nova/Cinder/Glance call gets an empty service catalog.** `workload-snapshot` used to fail immediately with `Failed creating workload snapshot: The service catalog is empty.` This was initially misdiagnosed as Keystone rejecting trust-scoped-token reuse in `nova_micro_client()` (that rejection IS real Keystone behavior, confirmed independently, but turned out not to be the code path actually hit — the password-auth branch is what runs). The **actual** cause, found by direct comparison against a working charm-trilio-wlm reference deployment: `nova_micro_client()`/`_get_tenant_context()` in `workloadmgr/compute/nova.py` never pass an explicit project scope (`project_id`/`project_name`/`tenant_id`) on ANY client session they build — they rely entirely on Keystone auto-scoping to the authenticating user's own `default_project_id` when none is given, and an unscoped token has zero catalog entries by Keystone's own spec. keystone-k8s creates the WLM service account via the identity-service relation but never sets `default_project_id` on it, unlike the working reference deployment's equivalent account (which has it set to its own "services" project). **Fix (now in charm code, self-healing):** the charm sets its own service account's `default_project_id` (to its own "services" project, which it already holds a role on) as part of every `_configure()` run — see `_ensure_service_user_default_project` in `charm.py`, called right after `_register_keystone_service`. Verified: a real full snapshot progressed past workflow initialization into actual execution for the first time after this fix (previously always failed within seconds). The underlying WLM code gap (never setting explicit project scope) is still worth a product-level fix and would recur on any other deployment whose WLM service account happens to lack a usable default project — this charm-side fix is a robust workaround, not a fix to WLM itself.
 
-**Next blocker after both of the above are fixed — TVAULT-7515 (open, unresolved as of 2026-07-25):** snapshot execution now reaches the freeze/snapshot step, then fails with `novaclient.exceptions.ClientException: Unknown Error (HTTP 502)` from contego's `vast_instance` Nova server-action call — fatal to the whole snapshot. The same 502 also occurs on contego's `vast_thaw` action from the identical `contego_python_novaclient_ext` code path, but that failure is swallowed by the calling workflow code and doesn't itself abort the snapshot — meaning the bug isn't specific to one action, it affects every call this client extension makes. **novaclient-version-mismatch theory tested live and disproven**: `contego_python_novaclient_ext` builds requests using legacy `HTTPClient` attributes (`management_url`, `service_catalog`, `get_service_url()`, `auth_token`, `projectid`) that don't exist on novaclient's modern `SessionClient`; Sunbeam runs a newer novaclient than the working reference deployment, so a version mismatch looked plausible. Rebuilt the WLM image pinned to the reference env's exact novaclient version (`pip3 install python-novaclient==17.6.0` — apt-level pinning fails because `python3-openstackclient` hard-requires `>=2:18.1.0`), deployed it live, retested — **identical 502 still occurred**. Confirmed `SessionClient` lacks those legacy attributes in both versions at the source level, and `novaclient.client._construct_http_client()` always builds `SessionClient` regardless of version/auth method — the version difference was a red herring. Also confirmed via simultaneous log capture across wlm-api/wlm-workloads/dm-api that **dm-api is never contacted during a failed attempt** — contego's calls go directly WLM→Nova-API, never through dm-api. And confirmed nova-api itself and the ingress path are NOT the problem: reproducing the same action call directly (bypassing `contego_python_novaclient_ext`) gets clean 404/400 responses, not a 502. `python3-tvault-contego` and the WLM-side client extension are confirmed byte-for-byte identical between Sunbeam and the reference deployment. Genuinely not yet root-caused — the actual differentiator is unknown. This is the current active blocker for finishing NFS/S3 backup validation.
+**TVAULT-7515 — HTTP 502 on snapshot creation — RESOLVED in `trilio-dm-api-k8s` rev 6 (2026-08-05):** Root cause: WLM's novaclient extension (`contego_python_novaclient_ext`) calls DMAPI using the Keystone _internal_ endpoint (`management_url`). The DMAPI charm was incorrectly registering the internal endpoint as the Traefik MetalLB ingress URL. From inside a k8s pod, the MetalLB external IP is unreachable via hairpin NAT — the TCP connection fails at the network layer before reaching the DMAPI Pebble service (explains why simultaneous dm-api log capture showed no incoming requests — the 502 occurred at the network level, not the application layer). Fix: `_register_keystone_service()` now always uses the direct ClusterIP service URL (`http://trilio-dm-api-k8s:8784/v2`) for the internal endpoint (`internal_base = fallback`), leaving the Traefik ingress URL only for the public endpoint. **Pattern to remember for all Sunbeam k8s charms**: any service called by another charm _inside_ the same k8s cluster must register its Keystone internal endpoint as the direct ClusterIP service URL, never the MetalLB/Traefik ingress URL (unreachable via hairpin NAT from within the cluster). This matches the RHOSO18 endpoint pattern.
 
 ### `workloadmgr trust-create` CLI exits 0 even on API failure — never trust the action return value alone
 The `workloadmgr trust-create` binary (cliff/cmd2 based) exits with code 0 regardless of what the API returns — a 500 Internal Server Error from wlm-api still results in exit code 0, so the charm action (`create-cloud-admin-trust`) cannot detect the failure and reports "Cloud admin trust created successfully" even when nothing was stored. Always verify by running `workloadmgr trust-list` after `trust-create` and confirming at least one row appears (or check the wlm-api logs for `job_service.py` errors). The root cause is the job table migration gap (see `job table missing audit columns` above) — once migration 030 is in the image, trust-create works correctly. This CLI behavior is inherent and will not be fixed upstream, so charm callers must do an explicit verify step.
@@ -243,11 +243,11 @@ The `secret_ref` stored in the backup-target is `http://<ClusterIP>:8765/<secret
 ### FUSE device access for s3vaultfuse (control plane k8s charms only)
 `s3vaultfuse` (S3 backup targets) needs `/dev/fuse` + a privileged security context. Data-plane machine charms (`trilio-data-mover-sunbeam`, and the legacy `charm-trilio-data-mover`) get this for free — they install `fuse`/`libfuse2` on a real host, which already has `/dev/fuse`. The k8s control-plane charms (`trilio-wlm-k8s`, `trilio-dms-k8s`) do **not** — and worse, **sidecar k8s charms have no `charmcraft.yaml` field for `securityContext`/host-device access at all** (only `resource` and `mounts` under `containers:`). Both charms self-patch their own StatefulSet at runtime via `lightkube` (`_patch_fuse_device()`, using a strategic-merge patch adding `securityContext.privileged: true` + a `dev-fuse` hostPath volume/mount) — this requires `trust: true` on the application (already set in `trilio-ctlplane-bundle.yaml`, which grants the operator service account a namespace-scoped `apiGroups: ["*"], resources: ["*"], verbs: ["*"]` Role — no extra RBAC needed). The patch triggers one StatefulSet-driven pod restart to take effect; `_configure()` calls it idempotently (checks for the existing `securityContext.privileged` + `dev-fuse` volumeMount before patching) so it's a no-op on every subsequent hook run.
 
-### `python3-s3-fuse-plugin` boto3/botocore pin (docker/trilio-dms image)
-The Trilio APT package `python3-s3-fuse-plugin` (6.2.1.1) declares `boto3==1.35.12`/`botocore==1.35.12` in its own dependency metadata, but as installed in the `trilio-dms-canonical` image, `boto3 1.20.34`/`botocore 1.23.34` end up on disk instead — old enough that `botocore.httpsession` fails to import against the image's `urllib3` 2.x (`ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'`), crashing `s3vaultfuse` immediately on every mount attempt. Fixed with an explicit `pip3 install boto3==1.35.12 botocore==1.35.12` in the Dockerfile right after the apt install — pin to what the package itself already requires, don't chase urllib3 downgrades instead.
+### `python3-s3-fuse-plugin` boto3/botocore pin (trilio-wlm image)
+The Trilio APT package `python3-s3-fuse-plugin` (6.2.1.1) declares `boto3==1.35.12`/`botocore==1.35.12` in its own dependency metadata, but apt installs `boto3 1.20.34`/`botocore 1.23.34` instead — old enough that `botocore.httpsession` fails to import against the image's `urllib3` 2.x (`ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'`), crashing `s3vaultfuse` on every mount attempt. Fixed with an explicit `pip3 install boto3==1.35.12 botocore==1.35.12` in the Dockerfile right after the apt install. This fix applies to `docker/trilio-wlm/Dockerfile_2024.1` only (the DMS sidecar reuses that image; there is no separate DMS Docker image).
 
-### `docker/trilio-dms/trilio.list` is a template, not a literal apt source
-It ships as the literal string `{DEB_REPO_URL}` — `devops-build-publish.sh` substitutes the real APT repo line into it (`sed -i "s|{DEB_REPO_URL}|${APT_REPO_URL}|g"`) before `docker build`. Building directly (as the existing dev-build note above already recommends for dev tags) will fail apt with `Malformed line 1 in source list` unless you substitute this placeholder yourself first — and restore it afterward so the checked-in file stays a template.
+### `docker/trilio-*/trilio.list` is a template, not a literal apt source
+It ships as the literal string `{DEB_REPO_URL}` — `devops-build-publish.sh` substitutes the real APT repo line into it (`sed -i "s|{DEB_REPO_URL}|${APT_REPO_URL}|g"`) before `docker build`. Building directly will fail apt with `Malformed line 1 in source list` unless you substitute this placeholder yourself first — and restore it afterward so the checked-in file stays a template.
 
 ### Root-user architecture (current, as of 2026-07-24) — supersedes nova-user for WLM/DMS/datamover
 After validating the nova-user approach (sections above), an experiment ran WLM, DMS, and datamover entirely as **root** instead of the dedicated `nova` user, specifically to remove the libvirt UID-resolution relay workaround (the "main blocker" described in the historical notes above) and the ownership/permission workarounds it needed. The experiment succeeded and is now the standing architecture:
@@ -419,9 +419,8 @@ The tag **must** follow the `<trilio-version>-<openstack-release>` format (e.g. 
 Images:
 | Image | Dockerfile | Base | Service user |
 |---|---|---|---|
-| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `nova` (UID 42436) |
-| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-datamover-api/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `dmapi` |
-| `docker.io/trilio/trilio-dms-canonical:<tag>` | `docker/trilio-dms/Dockerfile` | `ubuntu:jammy` + cloud-archive:caracal | `nova` (UID 42436) |
+| `docker.io/trilio/trilio-wlm-canonical:<tag>` | `docker/trilio-wlm/Dockerfile_2024.1` | `ubuntu:jammy` + cloud-archive:caracal | `root` — used for both `trilio-wlm` and `trilio-dms` containers |
+| `docker.io/trilio/trilio-datamover-api-canonical:<tag>` | `docker/trilio-datamover-api/Dockerfile_2024.1` | `ubuntu:jammy` + cloud-archive:caracal | `dmapi` |
 | `docker.io/trilio/trilio-horizon-plugin-canonical:<tag>` | `docker/trilio-horizon-plugin/Dockerfile_2024.1` | `ghcr.io/canonical/horizon:2024.1` | default (root/www-data) |
 
 #### OCI image design decisions (DO NOT CHANGE without reading this)
@@ -430,18 +429,14 @@ Images:
 
 **Ubuntu Cloud Archive (UCA)**: `cloud-archive:caracal` is added to get OpenStack Caracal (2024.1) packages (`nova-common`, `python3-nova`, `python3-novaclient`, `python3-neutronclient`, `python3-glanceclient`). Without UCA, Ubuntu 22.04's base repos only have OpenStack Yoga packages.
 
-**nova user UID = 42436**: Confirmed from the running Sunbeam cluster (`kubectl exec -n openstack nova-0 -c nova-api -- id nova`). All other distros also use 42436 (Kolla enforces it; UCA creates nova at a different UID by default).
-
-**`nova_userid.sh`**: Required because `nova-common` from UCA creates nova at a system-allocated UID (not 42436). The script deletes the existing nova user, recreates it at UID/GID 42436, and restores group memberships. Source: `docker/openstack-helm/trilio-wlm/nova_userid.sh`. Run this BEFORE installing Trilio packages.
-
-**Service user mapping** (matches Kolla reference pattern):
+**Service user mapping** (current):
 | Service | User | Why |
 |---|---|---|
-| wlm-api, wlm-workloads, wlm-scheduler, wlm-cron | `nova` | WLM is a nova-adjacent service; file permissions on /var/lib/workloadmgr and mounts use nova |
-| DMS server (k8s) | `nova` | DMS manages NFS/S3 mounts on behalf of nova-compatible services |
+| wlm-api, wlm-workloads, wlm-scheduler, wlm-cron | `root` | Pebble default; no user/group set in layer |
+| DMS server (k8s embedded sidecar) | `root` | Pebble default; shares pod with WLM |
+| DataMover (tvault-contego) on compute | `root` | Systemd unit has User=root; reads snap nova.conf directly |
+| DMS server on compute | `root` | Systemd unit has User=root |
 | DataMover API (dmapi) | `dmapi` | DMAPI is an independent control-plane service; dmapi user created by python3-dmapi package |
-
-**nova-sudoers** (`nova ALL = (root) NOPASSWD: /usr/bin/workloadmgr-rootwrap *`): Required for WLM to execute privileged rootwrap operations (NFS mount/unmount, libvirt interactions).
 
 **dmapi_sudoers** (`dmapi ALL=(ALL) NOPASSWD: ALL`): Full sudo for dmapi user, matching Kolla reference (`docker/kolla-ansible/trilio-datamover-api/dmapi_sudoers`).
 
@@ -455,9 +450,8 @@ All four charms are registered on Charmhub under the `triliodata` publisher:
 
 | Charm | Type | Charmhub name |
 |---|---|---|
-| WLM k8s | k8s | `trilio-wlm-k8s` |
+| WLM k8s (embeds DMS sidecar) | k8s | `trilio-wlm-k8s` |
 | DMAPI k8s | k8s | `trilio-dm-api-k8s` |
-| DMS k8s | k8s | `trilio-dms-k8s` |
 | DataMover machine | subordinate | `trilio-data-mover-sunbeam` |
 
 Publish channel: **`6.2/candidate`**
@@ -512,7 +506,7 @@ Also strip CRLF from bundle files copied from the Windows working tree before de
 ## Testing
 
 ### Fresh reinstall procedure (clean slate)
-When a fresh reinstall is needed (e.g. to pick up new charm revisions or reset corrupt state), follow this order:
+When a fresh reinstall is needed (e.g. to pick up new charm revisions or reset corrupt state), follow this order. **Always run all cleanup steps (RabbitMQ, MySQL, Keystone) — do not skip even if the previous removal looked clean.** Juju relation-broken hooks may not fire correctly when charms are in a broken/errored state, leaving stale users, vhosts, databases, and Keystone services that cause "already exists" failures on the next deploy.
 
 ```bash
 # 1. Remove control plane applications (--destroy-storage drops MySQL databases too)
@@ -529,22 +523,97 @@ juju remove-application trilio-data-mover
 # Wait until subordinate units are gone
 juju status trilio-data-mover   # expect: "not found"
 
-# 3. Verify MySQL databases are gone (--destroy-storage above should handle this,
-#    but verify if re-deploy gets a "database already exists" error)
-kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
-  mysql -u root -p$(kubectl get secret -n openstack mysql-k8s-app -o jsonpath='{.data.root-password}' | base64 -d) \
-  -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
-# If databases still exist, drop them:
-# DROP DATABASE workloadmgr; DROP DATABASE dmapi;
+# 3. Clean up RabbitMQ users and vhosts
+#    rabbitmq-k8s should do this automatically via relation-broken, but always
+#    verify and clean manually — stale users cause password-mismatch failures on redeploy
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
+# Delete WLM user and vhost (both named workloadmgr):
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_vhost workloadmgr
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_user workloadmgr
+# Delete DMAPI user and vhost (both named dmapi):
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_vhost dmapi
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl delete_user dmapi
+# Verify — workloadmgr and dmapi should no longer appear:
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
 
-# 4. Deploy fresh
+# 4. Clean up MySQL databases and managed users
+#    --destroy-storage above drops the mysql-router PVCs but the databases themselves
+#    may still exist on the mysql-k8s primary — always verify and drop explicitly
+MYSQL_ROOT_PW=$(kubectl get secret -n openstack mysql-k8s-app \
+  -o jsonpath='{.data.root-password}' | base64 -d)
+# Check which Trilio databases still exist:
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
+# Drop them if present (run on the PRIMARY mysql pod — check `juju status mysql` for leader):
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "
+    DROP DATABASE IF EXISTS workloadmgr;
+    DROP DATABASE IF EXISTS dmapi;
+    DROP USER IF EXISTS 'charmed_dba_workloadmgr_00'@'%';
+    DROP USER IF EXISTS 'charmed_dba_workloadmgr_01'@'%';
+    DROP USER IF EXISTS 'charmed_dba_dmapi_00'@'%';
+    DROP USER IF EXISTS 'charmed_dba_dmapi_01'@'%';
+  "
+# Verify — neither database should appear:
+kubectl exec -n openstack mysql-k8s-0 -c mysql -- \
+  mysql -u root -p"${MYSQL_ROOT_PW}" -e "SHOW DATABASES;" | grep -E 'workloadmgr|dmapi'
+
+# 5. Clean up Keystone services and endpoints
+#    keystone-k8s should handle this via relation-broken, but stale endpoints
+#    cause "service already exists" conflicts on redeploy — always clean explicitly
+# Get admin credentials:
+juju run keystone/leader get-admin-account -m controller0/openstack
+# Then source admin creds and delete Trilio service/endpoints:
+export OS_AUTH_URL=<keystone-public-url>
+export OS_USERNAME=admin OS_PASSWORD=<admin-password>
+export OS_PROJECT_DOMAIN_NAME=admin_domain OS_USER_DOMAIN_NAME=admin_domain
+export OS_PROJECT_NAME=admin OS_IDENTITY_API_VERSION=3
+# Delete all WLM endpoints, then the service:
+openstack --insecure endpoint list --service workloads -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing TrilioVaultWLM
+# Delete all DMAPI endpoints, then the service:
+openstack --insecure endpoint list --service datamover -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing dmapi
+# If an old standalone DMS charm was deployed (trilio-dms-k8s), also clean its service:
+openstack --insecure endpoint list --service dms -f value -c ID | \
+  xargs -r -I{} openstack --insecure endpoint delete {}
+openstack --insecure service delete --ignore-missing trilio-dms-k8s 2>/dev/null || true
+# Verify — neither service should appear:
+openstack --insecure service list | grep -E 'workloads|datamover|trilio'
+
+# 6. Clean up orphaned k8s resources
+#    Older bundle versions deployed standalone trilio-mysql and trilio-rabbitmq
+#    applications (separate from the main Sunbeam mysql/rabbitmq). These leave
+#    orphaned StatefulSets, Services, PVCs, Secrets, ConfigMaps, ServiceAccounts,
+#    Roles, and RoleBindings after juju remove-application — always clean explicitly.
+kubectl delete statefulset -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete svc -n openstack trilio-mysql trilio-mysql-endpoints \
+  trilio-rabbitmq trilio-rabbitmq-endpoints 2>/dev/null || true
+kubectl get pvc -n openstack | grep -iE 'trilio' | awk '{print $1}' | \
+  xargs -r kubectl delete pvc -n openstack 2>/dev/null || true
+kubectl delete secret -n openstack \
+  trilio-mysql-application-config trilio-mysql-mysql-secret \
+  trilio-rabbitmq-application-config trilio-rabbitmq-rabbitmq-secret 2>/dev/null || true
+kubectl delete configmap -n openstack trilio-secret-payloads 2>/dev/null || true
+kubectl delete serviceaccount -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete role -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+kubectl delete rolebinding -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null || true
+# Verify — no Trilio k8s resources should remain:
+kubectl get all,secrets,configmaps,pvc,serviceaccounts,roles,rolebindings \
+  -n openstack 2>/dev/null | grep -iE 'trilio|wlm|dmapi' || echo 'Clean'
+
+# 8. Deploy fresh
 juju switch openstack
 juju deploy ./trilio-ctlplane-bundle.yaml --trust
 
 juju switch openstack-machines
 juju deploy ./trilio-dataplane-bundle.yaml
 
-# 5. Wait for active, then attach license and create trust
+# 9. Wait for active, then attach license and create trust
 juju switch openstack
 juju wait-for application trilio-wlm-k8s --query='status=="active"' --timeout=15m
 juju attach-resource trilio-wlm-k8s license=<path-to-license>
@@ -601,3 +670,207 @@ kubectl cp /home/ubuntu/license openstack/trilio-wlm-k8s-0:/tmp/license -c trili
 juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
 ```
 The license file must have **no extension** when uploading via `juju attach-resource` (the resource type is `file`, not `string`, and Juju validates extension against the resource definition — which expects empty extension). Copy it as `license` (no `.txt`).
+
+---
+
+## Complete Test Command Reference
+
+All commands below run on the **build server** (`ubuntu@<build-server-ip>`) unless noted. Credentials are in `C:\vscode-workspace\env\setups.yaml`. Replace `<...>` with actual values from `setups.yaml` or Juju.
+
+### Step 1 — Build and publish charms
+
+```bash
+# Pack each charm (run from its directory on the build server)
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-wlm-k8s
+charmcraft pack
+
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-dm-api-k8s
+charmcraft pack
+
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-data-mover-sunbeam
+charmcraft pack
+
+# Upload and release to Charmhub (requires ~/creds.txt on build server)
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft upload trilio-wlm-k8s_*.charm --name trilio-wlm-k8s
+# Note the revision number printed, then:
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft release trilio-wlm-k8s --revision <N> --channel 6.2/candidate
+
+# Same for trilio-dm-api-k8s and trilio-data-mover-sunbeam
+
+# Check current revisions on Charmhub
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft status trilio-wlm-k8s
+```
+
+### Step 2 — Build and push Docker images
+
+```bash
+# Build all 4 images (run from sunbeam-canonical/docker/ on build server)
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/docker
+bash devops-build-publish.sh \
+  --tag 6.2.1-2024.1 \
+  --containers all \
+  --mode build-and-publish
+```
+
+### Step 3 — Deploy / reinstall T4O
+
+```bash
+# Remove existing (clean slate)
+juju switch openstack
+juju remove-application trilio-wlm-k8s trilio-dm-api-k8s --destroy-storage
+kubectl get pods -n openstack | grep trilio   # wait: no output
+
+juju switch openstack-machines
+juju remove-application trilio-data-mover
+
+# Deploy control plane
+juju switch openstack
+juju deploy ./trilio-ctlplane-bundle.yaml --trust
+
+# Deploy data plane
+juju switch openstack-machines
+juju deploy ./trilio-dataplane-bundle.yaml
+
+# Wait for active
+juju switch openstack
+juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=15m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+```
+
+### Step 4 — Apply license
+
+```bash
+# Copy license file to build server (no .txt extension)
+scp C:\vscode-workspace\env\license_trilio.txt ubuntu@<build-server>:/tmp/license
+
+# Copy into WLM container, then apply
+kubectl cp /tmp/license openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm
+juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+
+# Expected output: "result: License applied successfully"
+```
+
+### Step 5 — Create cloud admin trust
+
+```bash
+# Get admin password first
+juju run keystone/leader get-admin-account -m controller0/openstack
+
+# Create trust
+juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+
+# Verify trust was actually created (CLI always exits 0 even on error — must verify)
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr \
+    --os-auth-url <OS_AUTH_URL> \
+    --os-username admin --os-password <admin-password> \
+    --os-project-name admin \
+    --os-user-domain-name admin_domain \
+    --os-project-domain-name admin_domain \
+    trust-list
+# Must return at least one row. Empty list = trust failed — check wlm-api logs.
+```
+
+### Step 6 — Create backup targets (S3)
+
+```bash
+# Credentials read from C:\vscode-workspace\env\backup_targets.yaml (or /home/ubuntu/env/ on build server)
+TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+
+# Verify backup target is accessible
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr \
+    --os-auth-url <OS_AUTH_URL> \
+    --os-username admin --os-password <admin-password> \
+    --os-project-name admin \
+    --os-user-domain-name admin_domain \
+    --os-project-domain-name admin_domain \
+    backup-target-list
+```
+
+**S3 backup target secret_ref rules:**
+- Always use the Barbican **public** endpoint URL (from Keystone catalog, `key-manager` service, `public` interface) for `secret_ref` — this is reachable from compute nodes.
+- Never use the Barbican ClusterIP URL — compute nodes cannot reach k8s ClusterIPs.
+- Always create a **fresh** backup target with the new `secret_ref` rather than modifying an existing one in-place — in-flight snapshots embed a stale copy of the backup target and won't be affected by an in-place update.
+- Validate S3 connectivity before creating the backup target (the script does this automatically).
+
+### Step 7 — Create workload
+
+```bash
+# Run from inside the WLM pod (workloadmgrclient is only available inside the pod)
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- bash
+
+# Inside the pod — export auth env vars first
+export OS_AUTH_URL=<keystone-url>
+export OS_USERNAME=admin
+export OS_PASSWORD=<admin-password>
+export OS_PROJECT_NAME=admin
+export OS_USER_DOMAIN_NAME=admin_domain
+export OS_PROJECT_DOMAIN_NAME=admin_domain
+export OS_IDENTITY_API_VERSION=3
+
+# List available VMs to protect
+setsid workloadmgr nova-list
+
+# Create workload (one VM per workload)
+setsid workloadmgr workload-create \
+  --instance <nova-instance-uuid> \
+  --display-name <workload-name> \
+  --backup-target-type <backup-target-name>
+
+# Verify workload is available
+setsid workloadmgr workload-list
+setsid workloadmgr workload-show <workload-id>
+```
+
+### Step 8 — Create snapshot
+
+```bash
+# Inside the WLM pod (with auth env vars set as above)
+
+# Trigger a full snapshot
+setsid workloadmgr workload-snapshot <workload-id> --full --display-name <snapshot-name>
+
+# Poll snapshot status (repeat until available or error)
+setsid workloadmgr snapshot-show <snapshot-id> -f value -c status
+# Expected progression: creating → uploading → available
+
+# List all snapshots
+setsid workloadmgr snapshot-list
+```
+
+### Step 9 — Verify snapshot (check logs on failure)
+
+```bash
+# WLM logs (all services)
+kubectl logs -n openstack trilio-wlm-k8s-0 -c trilio-wlm --tail=100
+
+# DMAPI logs
+kubectl logs -n openstack trilio-dm-api-k8s-0 -c trilio-dm-api --tail=100
+
+# DataMover logs on compute node
+journalctl -u triliovault-datamover --since "1 hour ago"
+journalctl -u triliovault-dms --since "1 hour ago"
+
+# Check DMS mount state on k8s node (not inside pod — mounts are host-level)
+ssh ubuntu@<k8s-node-ip> "mount | grep trilio"
+```
+
+### Quick status check
+
+```bash
+# All Trilio pods
+kubectl get pods -n openstack | grep trilio
+
+# Juju charm status
+juju status trilio-wlm-k8s trilio-dm-api-k8s -m openstack
+juju status trilio-data-mover -m openstack-machines
+
+# Verify DMAPI internal endpoint (must be ClusterIP, not Traefik)
+openstack --insecure endpoint list --service datamover
+# Internal URL should be: http://trilio-dm-api-k8s:8784/v2
+
+# Check RabbitMQ users (workloadmgr and dmapi must exist)
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
+```

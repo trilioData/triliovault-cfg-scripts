@@ -16,21 +16,22 @@
 #              use the full track/risk form, e.g. 6.2/candidate)
 #
 # Charm names on Charmhub:
-#   trilio-wlm-k8s            (also carries the embedded DMS sidecar image as
-#                              an additional resource — trilio-dms-image, see
-#                              note below)
+#   trilio-wlm-k8s            (one OCI image resource: trilio-wlm-image —
+#                              both the trilio-wlm and trilio-dms containers
+#                              use the same image; no separate DMS image)
 #   trilio-dm-api-k8s
 #   trilio-data-mover-sunbeam
 #
 # Note: there is no separate trilio-dms-k8s charm as of 2026-07-25 — the
 # Dynamic Mount Service control-plane instance is now a second container
 # embedded directly in trilio-wlm-k8s's own pod (1:1 with each WLM replica).
+# Both containers use the trilio-wlm image (it already includes
+# python3-trilio-dms and python3-s3-fuse-plugin).
 #
 # OCI image resources are NOT uploaded by this script — it only re-releases
 # whatever resource revisions are already on Charmhub. If you've rebuilt any
 # image (via devops-build-publish.sh), upload it as a fresh resource first:
 #   charmcraft upload-resource trilio-wlm-k8s trilio-wlm-image --image=docker.io/trilio/trilio-wlm-canonical:<tag>
-#   charmcraft upload-resource trilio-wlm-k8s trilio-dms-image --image=docker.io/trilio/trilio-dms-canonical:<tag>
 #   charmcraft upload-resource trilio-dm-api-k8s trilio-dm-api-image --image=docker.io/trilio/trilio-datamover-api-canonical:<tag>
 # then note the new resource revision number(s) and pass them via
 # `charmcraft release ... --resource=<name>:<rev>` yourself — this script
@@ -77,17 +78,16 @@ Usage: $0 --charms <all|charm[,charm,...]> --mode <MODE> [OPTIONS]
              Always use the full track/risk form, e.g. 6.2/candidate.
 
 Charms:
-  trilio-wlm-k8s            WorkloadManager (k8s) — also carries the embedded
-                             DMS sidecar image as resource trilio-dms-image
+  trilio-wlm-k8s            WorkloadManager (k8s) — single OCI resource
+                             trilio-wlm-image used for both containers
   trilio-dm-api-k8s         DataMover API (k8s)
   trilio-data-mover-sunbeam DataMover on compute nodes (machine subordinate)
 
-Note: there is no separate trilio-dms-k8s charm as of 2026-07-25 — DMS is
-now a second container embedded in trilio-wlm-k8s's own pod. This script
-does NOT upload OCI image resources — if you rebuilt any image, upload it
-yourself first with 'charmcraft upload-resource' and pass the resulting
-revision to 'charmcraft release --resource=name:rev' (see comments at the
-top of this script for the exact commands).
+Note: there is no separate trilio-dms-k8s charm or trilio-dms Docker image.
+DMS is embedded as a second container in trilio-wlm-k8s's pod, using the
+same trilio-wlm-canonical image (which already includes python3-trilio-dms).
+This script does NOT upload OCI image resources — if you rebuilt an image,
+upload it first with 'charmcraft upload-resource' (see top of this script).
 
 Examples:
   $0 --charms all --mode build-and-publish --channel 6.2/candidate
@@ -187,7 +187,7 @@ for charm in "${SELECTED_CHARMS[@]}"; do
     [[ -n "$charm_file" ]] || die "No .charm file found for '$charm' in $charm_dir. Run with --mode build-only or build-and-publish first."
 
     log "[$charm] Uploading $charm_file ..."
-    upload_out=$(charmcraft --format json upload "$charm_file")
+    upload_out=$(cd "$charm_dir" && charmcraft upload --format json "$charm_file")
     revision=$(python3 -c "import sys, json; print(json.load(sys.stdin)['revision'])" <<< "$upload_out")
     log "[$charm] Uploaded as revision $revision"
 

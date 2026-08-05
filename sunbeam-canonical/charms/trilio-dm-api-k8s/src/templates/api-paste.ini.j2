@@ -6,10 +6,6 @@
 use = call:dmapi.api.openstack.urlmap:urlmap_factory
 /: dmversions
 /v2: dmapi_v2
-{% if traefik_prefix %}
-{{ traefik_prefix }}: dmversions
-{{ traefik_prefix }}/v2: dmapi_v2
-{% endif %}
 
 [composite:dmapi_v2]
 use = call:dmapi.api.auth:pipeline_factory_v2

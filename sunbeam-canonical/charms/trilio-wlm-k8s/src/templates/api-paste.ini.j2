@@ -2,10 +2,6 @@
 use = call:workloadmgr.api:root_app_factory
 /: apiversions
 /v1: openstack_workloads_api_v1
-{% if traefik_prefix %}
-{{ traefik_prefix }}: apiversions
-{{ traefik_prefix }}/v1: openstack_workloads_api_v1
-{% endif %}
 
 [composite:openstack_workloads_api_v1]
 use = call:workloadmgr.api.middleware.auth:pipeline_factory

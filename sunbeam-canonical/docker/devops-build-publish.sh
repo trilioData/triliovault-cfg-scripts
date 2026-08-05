@@ -24,8 +24,7 @@
 # Containers:
 #   trilio-datamover-api    Control plane DataMover API
 #   trilio-horizon-plugin   OpenStack Horizon UI plugin
-#   trilio-wlm              WorkloadManager
-#   trilio-dms              Dynamic Mount Service (release-independent; uses plain Dockerfile)
+#   trilio-wlm              WorkloadManager (also used as DMS sidecar image)
 #
 # Note: trilio-datamover is NOT included — the DataMover is installed via APT
 #       packages by the trilio-data-mover-sunbeam machine subordinate charm
@@ -37,7 +36,7 @@
 #
 # Release build examples:
 #   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers all --mode build-and-publish
-#   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers trilio-wlm,trilio-dms --mode build-only
+#   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers trilio-wlm --mode build-only
 #   bash devops-build-publish.sh --tag 6.2.1-2024.1 --containers all --mode publish-only
 #
 # Dev build example (custom tag that does not follow <version>-<os-release> format):
@@ -55,7 +54,7 @@ set -e
 OPENSTACK_RELEASE=""
 APT_REPO_URL=""
 TRILIO_PIP_INDEX_URL=""
-ALL_CONTAINERS=(trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
+ALL_CONTAINERS=(trilio-datamover-api trilio-horizon-plugin trilio-wlm)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -78,8 +77,7 @@ Usage: $0 --tag <TAG> --containers <all|container[,...]> --mode <MODE>
 Containers:
   trilio-datamover-api    Control plane DataMover API
   trilio-horizon-plugin   OpenStack Horizon UI plugin
-  trilio-wlm              WorkloadManager
-  trilio-dms              Dynamic Mount Service (release-independent; plain Dockerfile)
+  trilio-wlm              WorkloadManager (also serves as DMS sidecar image)
 
 Note: trilio-datamover is NOT built here. The DataMover is installed directly
 via APT packages by the trilio-data-mover-sunbeam machine charm on compute nodes.
@@ -256,7 +254,6 @@ for CONTAINER in "${SELECTED_CONTAINERS[@]}"; do
     # --- Build ---
     if [ "$MODE" != "publish-only" ]; then
         # Prefer release-specific Dockerfile; fall back to generic Dockerfile.
-        # (trilio-dms is release-independent and ships a plain Dockerfile)
         RELEASE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}"
         GENERIC_DF="$BASE_DIR/$CONTAINER/Dockerfile"
 

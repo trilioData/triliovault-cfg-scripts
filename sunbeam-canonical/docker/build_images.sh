@@ -18,9 +18,8 @@
 #   --push       Push built images to registry after building
 #
 # Images built:
-#   <registry>/trilio-wlm-canonical:<version>
+#   <registry>/trilio-wlm-canonical:<version>       (also used as DMS sidecar)
 #   <registry>/trilio-datamover-api-canonical:<version>
-#   <registry>/trilio-dms-canonical:<version>
 #   <registry>/trilio-horizon-plugin-canonical:<version>
 
 set -euo pipefail
@@ -64,7 +63,6 @@ done
 declare -A IMAGES=(
     [trilio-wlm-canonical]="$SCRIPT_DIR/trilio-wlm"
     [trilio-datamover-api-canonical]="$SCRIPT_DIR/trilio-datamover-api"
-    [trilio-dms-canonical]="$SCRIPT_DIR/trilio-dms"
 )
 
 for name in "${!IMAGES[@]}"; do

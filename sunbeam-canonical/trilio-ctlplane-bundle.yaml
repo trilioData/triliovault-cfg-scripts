@@ -61,22 +61,26 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 17
+    revision: 18
     scale: 3
     trust: true
     options:
       api-workers: 2
       debug: false
+    resources:
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 5
+    revision: 7
     scale: 3
     trust: true
     options:
       debug: false
       api-workers: 2
+    resources:
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
 
 relations:
   # WLM relations

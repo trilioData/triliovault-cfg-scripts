@@ -355,10 +355,9 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", DMAPI_LOGGING_CONF_PATH)
-        traefik_prefix = f"/{DMAPI_INGRESS_MODEL}-{DMAPI_INGRESS_NAME}"
         container.push(
             DMAPI_API_PASTE_PATH,
-            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            self._render_template("api-paste.ini.j2", {}),
             make_dirs=True,
         )
         logger.info("Wrote %s", DMAPI_API_PASTE_PATH)
@@ -392,9 +391,8 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     # --- Pebble layer ---
 
     def _update_pebble_layer(self, container):
-        # Pin to the dmapi user (created by python3-dmapi's own postinst,
-        # normalized to uid/gid 42436 by nova_userid.sh in the Dockerfile —
-        # see that Dockerfile's chown -R dmapi:dmapi on its data directories).
+        # Pin to the dmapi user (created by python3-dmapi's own postinst;
+        # the Dockerfile chown -R dmapi:dmapi on its data directories).
         # Juju's k8s sidecar packaging otherwise runs Pebble services as root
         # by default, overriding the image's own "USER dmapi" directive.
         # dm-api is out of scope for the WLM/DMS/datamover root-vs-nova
@@ -480,6 +478,9 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         - Leader writes app databag: model, name, port (individual JSON-encoded keys).
         - Every unit writes its own unit databag: host, ip (required by Traefik's
           is_ready validation before it will publish the ingress URL back).
+
+        strip-prefix: true tells Traefik to strip the /trilio-dmapi path prefix
+        before forwarding to DMAPI pods, so the service always sees /v2/... paths.
         """
         # App databag — leader only.
         if self.unit.is_leader():
@@ -488,6 +489,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             rel.data[self.app]["model"] = json.dumps(DMAPI_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(DMAPI_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(DMAPI_PORT)
+            rel.data[self.app]["strip-prefix"] = json.dumps(True)
         # Unit databag — every unit. Traefik validates host/ip for each unit
         # before it considers the requirer ready and publishes the ingress URL.
         binding = self.model.get_binding(rel)

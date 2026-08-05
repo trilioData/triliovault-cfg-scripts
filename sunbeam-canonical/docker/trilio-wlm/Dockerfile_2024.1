@@ -35,6 +35,7 @@ RUN apt-get -y update && \
         libxml2-dev \
         libxslt-dev \
         libvirt-clients \
+        kmod \
         python3-pip \
         ubuntu-cloud-keyring \
     && apt-get clean -y \
@@ -46,8 +47,7 @@ RUN echo "deb https://ubuntu-cloud.archive.canonical.com/ubuntu jammy-updates/ca
         > /etc/apt/sources.list.d/cloudarchive-caracal.list && \
     apt-get update -y
 
-# Install nova-common to create nova user/group, and OpenStack Python packages
-# needed by WLM at runtime
+# OpenStack Python packages needed by WLM at runtime
 RUN apt-get install -y \
         nova-common \
         python3-nova \
@@ -55,10 +55,6 @@ RUN apt-get install -y \
         python3-neutronclient \
         python3-glanceclient \
     && apt-get clean -y
-
-# Normalize nova UID/GID to 42436 (matches Sunbeam cluster)
-COPY nova_userid.sh /opt/triliovault-wlm/nova_userid.sh
-RUN chmod +x /opt/triliovault-wlm/nova_userid.sh && /opt/triliovault-wlm/nova_userid.sh
 
 # pip packages not available in cloud-archive
 RUN pip3 --no-cache-dir install "SQLAlchemy==1.4.51" && \
@@ -84,23 +80,9 @@ RUN apt-get update -y && \
 # (boto3 1.20.34/botocore 1.23.34), which crash s3vaultfuse at import time:
 # "ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'"
 # — that botocore predates urllib3 2.x. Pin explicitly to what the package
-# itself requires. Same fix as docker/trilio-dms/Dockerfile; s3vaultfuse also
-# runs inside the WLM pod (WLM mounts S3 backup targets directly too), so it
-# hits the identical bug here.
+# itself requires. This image is used for both the WLM containers and the
+# embedded DMS sidecar container, so the fix covers all s3vaultfuse usage.
 RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
-
-# workloadmgr/api/common.py's remove_version_from_href() assumes the API
-# version ("v1") is always the first URL path segment (e.g. "/v1/<tenant>"),
-# which holds for kolla/RHOSP (WLM exposed directly on its own port, no path
-# prefix) but not Sunbeam: Traefik ingress routes all OpenStack services off
-# shared host IPs by path prefix, so WLM's registered endpoint is
-# "/trilio-wlm/v1/<tenant>" — version is the *second* segment. The unpatched
-# function raises "href ... does not contain version" on every self-referential
-# href it builds during workload-create. Patch it to find the version segment
-# anywhere in the path instead of assuming position 1.
-COPY patch_remove_version_from_href.py /tmp/patch_remove_version_from_href.py
-RUN python3 /tmp/patch_remove_version_from_href.py && \
-    rm -f /tmp/patch_remove_version_from_href.py
 
 # Migration 030: add WorkloadsBase audit columns (created_at, updated_at,
 # deleted_at, deleted, version) and progress to the job table.
@@ -122,18 +104,8 @@ RUN mkdir -p \
     /var/lib/workloadmgr/taskflow \
     /opt/triliovault
 
-# All WLM services run as nova user
-RUN chown -R nova:nova \
-        /var/log/triliovault \
-        /var/trilio/triliovault-mounts \
-        /var/triliovault \
-        /var/lib/workloadmgr \
-        /opt/triliovault && \
-    chown -R root:nova \
-        /etc/triliovault-wlm \
-        /etc/triliovault-object-store \
-        /etc/triliovault-dms && \
-    chmod -R 755 \
+# All WLM services run as root
+RUN chmod -R 755 \
         /var/log/triliovault \
         /etc/triliovault-wlm \
         /etc/triliovault-object-store && \
@@ -141,9 +113,4 @@ RUN chown -R nova:nova \
         /var/trilio/triliovault-mounts \
         /var/triliovault
 
-RUN usermod -aG disk nova
-
-ADD nova-sudoers /etc/sudoers.d/nova-sudoers
-RUN chmod 440 /etc/sudoers.d/nova-sudoers
-
-USER nova
+USER root

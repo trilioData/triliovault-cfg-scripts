@@ -84,8 +84,10 @@ WLM_SERVICE_TYPE = "workloads"
 WLM_SERVICE_NAME = "TrilioVaultWLM"
 # Endpoint path template matching production WLM endpoint format.
 WLM_ENDPOINT_TEMPLATE = "{}/v1/$(tenant_id)s"
-# Traefik ingress model+name — Traefik constructs the path as /{model}-{name}.
-# Setting model="trilio" and name="wlm" gives path /trilio-wlm (no openstack- prefix).
+# Traefik ingress model+name — Traefik constructs the external path as /{model}-{name}.
+# Setting model="trilio" and name="wlm" gives external path /trilio-wlm (no openstack- prefix).
+# strip-prefix: true is set in _publish_ingress so Traefik strips /trilio-wlm before
+# forwarding, and WLM pods always see /v1/... paths internally.
 WLM_INGRESS_MODEL = "trilio"
 WLM_INGRESS_NAME = "wlm"
 
@@ -341,6 +343,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._write_ca_cert(container)
+        # Load nbd before starting wlm-workloads so the module is present when
+        # the service first runs. DMS container is already connectable here (checked
+        # above) and is privileged with /lib/modules mounted, so modprobe works.
+        self._load_nbd_module(dms_container)
         # Run DB migrations before starting services (idempotent — safe on every leader call).
         if self.unit.is_leader():
             self._db_sync(container)
@@ -480,9 +486,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             logger.warning("Container %s not found in StatefulSet %s", DMS_CONTAINER, name)
             return
 
+        mounts = target.volumeMounts or []
         already_patched = (
             target.securityContext and target.securityContext.privileged
-            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+            and any(vm.name == "dev-fuse" for vm in mounts)
+            and any(vm.name == "lib-modules" for vm in mounts)
         )
         if already_patched:
             return
@@ -496,7 +504,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                                 "name": DMS_CONTAINER,
                                 "securityContext": {"privileged": True},
                                 "volumeMounts": [
-                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"},
+                                    {"name": "lib-modules", "mountPath": "/lib/modules", "readOnly": True},
                                 ],
                             }
                         ],
@@ -504,7 +513,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                             {
                                 "name": "dev-fuse",
                                 "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
-                            }
+                            },
+                            {
+                                "name": "lib-modules",
+                                "hostPath": {"path": "/lib/modules", "type": "Directory"},
+                            },
                         ],
                     }
                 }
@@ -515,9 +528,24 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 StatefulSet, name=name, namespace=namespace,
                 obj=patch, patch_type=PatchType.STRATEGIC,
             )
-            logger.info("Patched StatefulSet %s with FUSE device access", name)
+            logger.info("Patched StatefulSet %s with FUSE device and lib-modules access", name)
         except Exception as e:
-            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
+            logger.error("Failed to patch StatefulSet %s for FUSE/nbd access: %s", name, e)
+
+    def _load_nbd_module(self, dms_container):
+        """Load the nbd kernel module via the privileged trilio-dms sidecar container.
+
+        All containers on a node share the host kernel, so loading nbd here
+        makes it available to wlm-workloads in the sibling trilio-wlm container —
+        lsmod | grep nbd returns the same result from either container.
+        Requires the /lib/modules hostPath volume mount on trilio-dms (patched
+        by _patch_fuse_device). modprobe is idempotent: a no-op if already loaded.
+        """
+        try:
+            dms_container.exec(["modprobe", "nbd", "nbds_max=128"]).wait()
+            logger.info("Loaded nbd kernel module (nbds_max=128)")
+        except Exception as e:
+            logger.warning("modprobe nbd failed (nbd may not be available on this host): %s", e)
 
     def _patch_shared_vault_mount(self):
         """Share VAULT_MOUNTS_PATH between trilio-wlm and the embedded trilio-dms container.
@@ -742,10 +770,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
-        traefik_prefix = f"/{WLM_INGRESS_MODEL}-{WLM_INGRESS_NAME}"
         container.push(
             API_PASTE_PATH,
-            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            self._render_template("api-paste.ini.j2", {}),
             make_dirs=True,
         )
         logger.info("Wrote %s", API_PASTE_PATH)
@@ -1069,6 +1096,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         - Leader writes app databag: model, name, port (individual JSON-encoded keys).
         - Every unit writes its own unit databag: host, ip (required by Traefik's
           is_ready validation before it will publish the ingress URL back).
+
+        strip-prefix: true tells Traefik to remove the /trilio-wlm path prefix
+        before forwarding to WLM pods, so WLM always sees /v1/<tenant>/... paths
+        internally. Without this, WLM's remove_version_from_href() fails because
+        it assumes v1 is at path index 1 but Traefik's prefix puts it at index 2.
         """
         # App databag — leader only.
         if self.unit.is_leader():
@@ -1077,6 +1109,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             rel.data[self.app]["model"] = json.dumps(WLM_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(WLM_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(WLM_PORT)
+            rel.data[self.app]["strip-prefix"] = json.dumps(True)
         # Unit databag — every unit. Traefik validates host/ip for each unit
         # before it considers the requirer ready and publishes the ingress URL.
         binding = self.model.get_binding(rel)
