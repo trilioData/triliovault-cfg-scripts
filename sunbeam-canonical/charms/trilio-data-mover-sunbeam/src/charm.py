@@ -186,6 +186,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._setup_apt_repo()
             self._install_packages()
             self._create_directories()
+            self._load_kernel_modules()
             self._install_rootwrap_filters()
             self._write_systemd_services()
         except subprocess.CalledProcessError as e:
@@ -208,6 +209,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             # written by the original install if this was a pre-v14 deployment, or
             # the unit content may have changed between Trilio releases.
             self._create_directories()
+            self._load_kernel_modules()
             self._install_rootwrap_filters()
             self._write_systemd_services()
         except subprocess.CalledProcessError as e:
@@ -438,6 +440,20 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         # back to it.
 
         logger.info("Directories created")
+
+    def _load_kernel_modules(self):
+        """Ensure the nbd kernel module is loaded and persists across reboots.
+
+        tvault-contego uses NBD (Network Block Device) for volume-level backups.
+        Matches the three-step pattern used by RHOSO18 ansible role and
+        kolla-ansible role: persist boot load, persist params, load immediately.
+        """
+        with open("/etc/modules-load.d/nbd.conf", "w") as f:
+            f.write("nbd\n")
+        with open("/etc/modprobe.d/nbd.conf", "w") as f:
+            f.write("options nbd nbds_max=128\n")
+        subprocess.run(["modprobe", "nbd", "nbds_max=128"], check=True)
+        logger.info("Loaded nbd module (nbds_max=128)")
 
     def _render_template(self, template_name: str, context: dict) -> str:
         """Render a Jinja2 template from src/templates/."""
