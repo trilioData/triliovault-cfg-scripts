@@ -35,19 +35,16 @@ containers:
   trilio-wlm:
     resource: trilio-wlm-image
   trilio-dms:
-    resource: trilio-dms-image
+    resource: trilio-wlm-image
 
 resources:
   trilio-wlm-image:
     type: oci-image
-    description: OCI image for TrilioVault WorkloadManager
-    upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
-  trilio-dms-image:
-    type: oci-image
     description: >
-      OCI image for the embedded TrilioVault Dynamic Mount Service, co-located
-      1:1 with this WLM pod (see charm docstring)
-    upstream-source: docker.io/trilio/trilio-dms-canonical:6.2.1-2024.1
+      OCI image for TrilioVault WorkloadManager and the embedded DMS sidecar.
+      Both trilio-wlm and trilio-dms containers use this same image — the WLM
+      image already includes python3-trilio-dms and python3-s3-fuse-plugin.
+    upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
   license:
     type: file
     filename: license
