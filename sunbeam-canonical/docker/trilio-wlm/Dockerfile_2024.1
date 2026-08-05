@@ -84,19 +84,6 @@ RUN apt-get update -y && \
 # embedded DMS sidecar container, so the fix covers all s3vaultfuse usage.
 RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
 
-# workloadmgr/api/common.py's remove_version_from_href() assumes the API
-# version ("v1") is always the first URL path segment (e.g. "/v1/<tenant>"),
-# which holds for kolla/RHOSP (WLM exposed directly on its own port, no path
-# prefix) but not Sunbeam: Traefik ingress routes all OpenStack services off
-# shared host IPs by path prefix, so WLM's registered endpoint is
-# "/trilio-wlm/v1/<tenant>" — version is the *second* segment. The unpatched
-# function raises "href ... does not contain version" on every self-referential
-# href it builds during workload-create. Patch it to find the version segment
-# anywhere in the path instead of assuming position 1.
-COPY patch_remove_version_from_href.py /tmp/patch_remove_version_from_href.py
-RUN python3 /tmp/patch_remove_version_from_href.py && \
-    rm -f /tmp/patch_remove_version_from_href.py
-
 # Migration 030: add WorkloadsBase audit columns (created_at, updated_at,
 # deleted_at, deleted, version) and progress to the job table.
 # The job table was created in migration 001 with only jobid/status/action,

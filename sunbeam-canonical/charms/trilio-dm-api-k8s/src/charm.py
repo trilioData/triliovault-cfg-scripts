@@ -355,10 +355,9 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", DMAPI_LOGGING_CONF_PATH)
-        traefik_prefix = f"/{DMAPI_INGRESS_MODEL}-{DMAPI_INGRESS_NAME}"
         container.push(
             DMAPI_API_PASTE_PATH,
-            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            self._render_template("api-paste.ini.j2", {}),
             make_dirs=True,
         )
         logger.info("Wrote %s", DMAPI_API_PASTE_PATH)
@@ -479,6 +478,9 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         - Leader writes app databag: model, name, port (individual JSON-encoded keys).
         - Every unit writes its own unit databag: host, ip (required by Traefik's
           is_ready validation before it will publish the ingress URL back).
+
+        strip-prefix: true tells Traefik to strip the /trilio-dmapi path prefix
+        before forwarding to DMAPI pods, so the service always sees /v2/... paths.
         """
         # App databag — leader only.
         if self.unit.is_leader():
@@ -487,6 +489,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
             rel.data[self.app]["model"] = json.dumps(DMAPI_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(DMAPI_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(DMAPI_PORT)
+            rel.data[self.app]["strip-prefix"] = json.dumps(True)
         # Unit databag — every unit. Traefik validates host/ip for each unit
         # before it considers the requirer ready and publishes the ingress URL.
         binding = self.model.get_binding(rel)

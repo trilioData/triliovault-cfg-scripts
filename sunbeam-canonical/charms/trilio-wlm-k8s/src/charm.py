@@ -84,8 +84,10 @@ WLM_SERVICE_TYPE = "workloads"
 WLM_SERVICE_NAME = "TrilioVaultWLM"
 # Endpoint path template matching production WLM endpoint format.
 WLM_ENDPOINT_TEMPLATE = "{}/v1/$(tenant_id)s"
-# Traefik ingress model+name — Traefik constructs the path as /{model}-{name}.
-# Setting model="trilio" and name="wlm" gives path /trilio-wlm (no openstack- prefix).
+# Traefik ingress model+name — Traefik constructs the external path as /{model}-{name}.
+# Setting model="trilio" and name="wlm" gives external path /trilio-wlm (no openstack- prefix).
+# strip-prefix: true is set in _publish_ingress so Traefik strips /trilio-wlm before
+# forwarding, and WLM pods always see /v1/... paths internally.
 WLM_INGRESS_MODEL = "trilio"
 WLM_INGRESS_NAME = "wlm"
 
@@ -768,10 +770,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             make_dirs=True,
         )
         logger.info("Wrote %s", WLM_LOGGING_CONF_PATH)
-        traefik_prefix = f"/{WLM_INGRESS_MODEL}-{WLM_INGRESS_NAME}"
         container.push(
             API_PASTE_PATH,
-            self._render_template("api-paste.ini.j2", {"traefik_prefix": traefik_prefix}),
+            self._render_template("api-paste.ini.j2", {}),
             make_dirs=True,
         )
         logger.info("Wrote %s", API_PASTE_PATH)
@@ -1095,6 +1096,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         - Leader writes app databag: model, name, port (individual JSON-encoded keys).
         - Every unit writes its own unit databag: host, ip (required by Traefik's
           is_ready validation before it will publish the ingress URL back).
+
+        strip-prefix: true tells Traefik to remove the /trilio-wlm path prefix
+        before forwarding to WLM pods, so WLM always sees /v1/<tenant>/... paths
+        internally. Without this, WLM's remove_version_from_href() fails because
+        it assumes v1 is at path index 1 but Traefik's prefix puts it at index 2.
         """
         # App databag — leader only.
         if self.unit.is_leader():
@@ -1103,6 +1109,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             rel.data[self.app]["model"] = json.dumps(WLM_INGRESS_MODEL)
             rel.data[self.app]["name"] = json.dumps(WLM_INGRESS_NAME)
             rel.data[self.app]["port"] = json.dumps(WLM_PORT)
+            rel.data[self.app]["strip-prefix"] = json.dumps(True)
         # Unit databag — every unit. Traefik validates host/ip for each unit
         # before it considers the requirer ready and publishes the ingress URL.
         binding = self.model.get_binding(rel)
