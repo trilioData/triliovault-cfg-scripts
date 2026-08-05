@@ -67,6 +67,8 @@ applications:
     options:
       api-workers: 2
       debug: false
+    resources:
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:shyam-tv7404-11
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
@@ -77,6 +79,8 @@ applications:
     options:
       debug: false
       api-workers: 2
+    resources:
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:shyam-tv7404-11
 
 relations:
   # WLM relations
