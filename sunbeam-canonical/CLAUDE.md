@@ -46,17 +46,15 @@ TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_tar
 ```
 sunbeam-canonical/
 ├── charms/
-│   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble)
+│   ├── trilio-wlm-k8s/              # WLM k8s charm (ops + Pebble); embeds DMS as sidecar container
 │   ├── trilio-dm-api-k8s/           # DMAPI k8s charm (ops + Pebble)
-│   ├── trilio-dms-k8s/              # DMS server k8s charm (ops + Pebble)
 │   └── trilio-data-mover-sunbeam/   # DataMover machine subordinate charm
 ├── docker/
-│   ├── trilio-wlm/Dockerfile        # OCI image for WLM (wlm-api/workloads/scheduler/cron)
-│   ├── trilio-datamover-api/Dockerfile
-│   ├── trilio-dms/Dockerfile        # OCI image for DMS server (k8s side)
+│   ├── trilio-wlm/Dockerfile_2024.1 # OCI image for WLM + DMS sidecar (wlm-api/workloads/scheduler/cron/dms)
+│   ├── trilio-datamover-api/Dockerfile_2024.1
 │   ├── trilio-horizon-plugin/Dockerfile_2024.1  # Trilio Horizon Plugin (extends ghcr.io/canonical/horizon)
-│   ├── devops-build-publish.sh      # Primary build+publish script (supports all 4 images)
-│   └── build_images.sh              # Legacy build script (APT-repo substitution, 3 images)
+│   ├── devops-build-publish.sh      # Primary build+publish script (3 images: wlm, dmapi, horizon-plugin)
+│   └── build_images.sh              # Legacy build script (APT-repo substitution)
 ├── trilio-bundle.yaml               # Juju bundle for control plane (openstack model)
 ├── trilio-dataplane-bundle.yaml     # Juju bundle for data plane (openstack-machines model)
 └── CLAUDE.md                        # This file
@@ -186,7 +184,7 @@ The RabbitMQ user and vhost for WLM are `workloadmgr`/`workloadmgr`. The charm r
 Only ONE instance of `wlm-cron` must run cluster-wide. The charm enforces this by setting `startup: disabled` for wlm-cron on non-leader units. Multiple wlm-cron instances cause duplicate scheduled job execution and corrupt workload state in the database.
 
 ### DMS node_id
-- **Control plane (trilio-dms-k8s)**: `node_id` is the k8s node hostname, injected via the Kubernetes Downward API as `K8S_NODE_NAME` env var in the workload container (`charmcraft.yaml` `envConfig`). The charm reads it via `container.exec(["printenv", "K8S_NODE_NAME"])`. Do NOT use `socket.gethostname()` (returns pod name) or `self.unit.name` (returns Juju unit name).
+- **Control plane (embedded trilio-dms container in trilio-wlm-k8s pod)**: `node_id` = `self.unit.name.replace("/", "-")` (e.g. `trilio-wlm-k8s-0`). The DMS server is 1:1 with the WLM unit, so the WLM Juju unit name is a natural, stable, unique identity. WLM's own DMS client config uses the same value via `_dms_node_id()` — no hardcoded constant; each unit talks only to its own co-located DMS server.
 - **Data plane (trilio-data-mover)**: `node_id` is `socket.getfqdn()`, matching what `openstack-hypervisor` charm sets as `node.fqdn` in snap config for nova-compute. Must match `OS-EXT-SRV-ATTR:host` from nova.
 
 ### DMS systemd units (data plane)
@@ -212,8 +210,8 @@ The CA cert comes from the **`receive-ca-cert` Juju relation** — `_write_ca_ce
 
 ### DMS client conf (control plane — WLM) — vhost and node_id are NOT WLM's own
 `trilio-wlm-k8s` also writes `/etc/triliovault-dms/client.conf` (`_write_dms_client_config`) for the `trilio_dms` Python client library's mount/unmount RPC calls (used by `workloadmgr trust-create`'s post-trust settings upload and by `backup-target-create`'s mount validation). Two easy-to-get-wrong fields:
-- **`rabbitmq_url`**: must be the **`dmapi`** RabbitMQ vhost, not WLM's own `wlm` vhost — the DMS server's `trilio_dms` topic exchange lives in the `dmapi` vhost (`trilio-dms-k8s`'s own `amqp` relation explicitly requests `username=dmapi, vhost=dmapi`, "since they communicate via shared RabbitMQ queues"). WLM needs a **second, separate** `amqp`-interface relation (`amqp-dms`, wired to `rabbitmq:amqp` in `trilio-ctlplane-bundle.yaml`) requesting the same `dmapi`/`dmapi` username/vhost — this is idempotent, rabbitmq-k8s just returns the already-provisioned user. Using WLM's own `wlm` vhost silently "succeeds" (kombu auto-declares a private `trilio_dms` exchange in the wrong vhost) and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange.
-- **`node_id`**: `trilio_dms.client.DMSClient` defaults a request's target `host` to the **client's own** `node_id` when not explicitly given. This field must be the **DMS server's** identity, not WLM's — get it wrong and WLM publishes to `dms.<wrong-name>`, a routing key nothing is bound to, again a silent 60s timeout. `trilio-dms-k8s` is a `scale: 1` singleton (like wlm-cron) with a deterministic k8s pod name (`<app-name>-0`), so WLM hardcodes `DMS_SERVER_NODE_ID = "trilio-dms-k8s-0"` as a documented constant — there's no relation currently exposing DMS's own resolved node_id (which itself falls back to this exact same value when `K8S_NODE_NAME` downward-api injection is unavailable — confirm both sides agree via `cat /etc/triliovault-dms/client.conf` on WLM and `grep node_id /etc/triliovault-dms/server.conf` on DMS if debugging).
+- **`rabbitmq_url`**: must be the **`dmapi`** RabbitMQ vhost, not WLM's own `wlm` vhost — the embedded DMS server's `trilio_dms` topic exchange lives in the `dmapi` vhost. WLM has a dedicated `amqp-dms` relation (wired to `rabbitmq:amqp` in `trilio-ctlplane-bundle.yaml`) that requests `username=dmapi, vhost=dmapi` — this is idempotent, rabbitmq-k8s just returns the already-provisioned user. Using WLM's own `wlm` vhost silently "succeeds" (kombu auto-declares a private `trilio_dms` exchange in the wrong vhost) and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange.
+- **`node_id`**: `trilio_dms.client.DMSClient` defaults a request's target `host` to the **client's own** `node_id` when not explicitly given. This field must be the **DMS server's** identity, not WLM's — get it wrong and WLM publishes to `dms.<wrong-name>`, a routing key nothing is bound to, again a silent 60s timeout. The embedded DMS server's node_id = `self.unit.name.replace("/", "-")` (e.g. `trilio-wlm-k8s-0`), set via `_dms_node_id()` in charm.py. WLM writes the same value into its own DMS client conf so both sides always agree — confirm with `cat /etc/triliovault-dms/client.conf` on WLM and `grep node_id /etc/triliovault-dms/server.conf` on the trilio-dms container.
 
 Kolla-ansible sidesteps both issues entirely: WLM and DMS share ONE RabbitMQ vhost/user (`openstack`, kolla's global RPC convention) and are co-located on the same host (`node_id = {{ ansible_fqdn }}` on both sides) — so there's nothing to compare against in that reference implementation; the mismatch is Sunbeam-specific (per-service vhosts + separate pods).
 
@@ -431,18 +429,14 @@ Images:
 
 **Ubuntu Cloud Archive (UCA)**: `cloud-archive:caracal` is added to get OpenStack Caracal (2024.1) packages (`nova-common`, `python3-nova`, `python3-novaclient`, `python3-neutronclient`, `python3-glanceclient`). Without UCA, Ubuntu 22.04's base repos only have OpenStack Yoga packages.
 
-**nova user UID = 42436**: Confirmed from the running Sunbeam cluster (`kubectl exec -n openstack nova-0 -c nova-api -- id nova`). All other distros also use 42436 (Kolla enforces it; UCA creates nova at a different UID by default).
-
-**`nova_userid.sh`**: Required because `nova-common` from UCA creates nova at a system-allocated UID (not 42436). The script deletes the existing nova user, recreates it at UID/GID 42436, and restores group memberships. Source: `docker/openstack-helm/trilio-wlm/nova_userid.sh`. Run this BEFORE installing Trilio packages.
-
-**Service user mapping** (matches Kolla reference pattern):
+**Service user mapping** (current):
 | Service | User | Why |
 |---|---|---|
-| wlm-api, wlm-workloads, wlm-scheduler, wlm-cron | `nova` | WLM is a nova-adjacent service; file permissions on /var/lib/workloadmgr and mounts use nova |
-| DMS server (k8s) | `nova` | DMS manages NFS/S3 mounts on behalf of nova-compatible services |
+| wlm-api, wlm-workloads, wlm-scheduler, wlm-cron | `root` | Pebble default; no user/group set in layer |
+| DMS server (k8s embedded sidecar) | `root` | Pebble default; shares pod with WLM |
+| DataMover (tvault-contego) on compute | `root` | Systemd unit has User=root; reads snap nova.conf directly |
+| DMS server on compute | `root` | Systemd unit has User=root |
 | DataMover API (dmapi) | `dmapi` | DMAPI is an independent control-plane service; dmapi user created by python3-dmapi package |
-
-**nova-sudoers** (`nova ALL = (root) NOPASSWD: /usr/bin/workloadmgr-rootwrap *`): Required for WLM to execute privileged rootwrap operations (NFS mount/unmount, libvirt interactions).
 
 **dmapi_sudoers** (`dmapi ALL=(ALL) NOPASSWD: ALL`): Full sudo for dmapi user, matching Kolla reference (`docker/kolla-ansible/trilio-datamover-api/dmapi_sudoers`).
 
@@ -456,9 +450,8 @@ All four charms are registered on Charmhub under the `triliodata` publisher:
 
 | Charm | Type | Charmhub name |
 |---|---|---|
-| WLM k8s | k8s | `trilio-wlm-k8s` |
+| WLM k8s (embeds DMS sidecar) | k8s | `trilio-wlm-k8s` |
 | DMAPI k8s | k8s | `trilio-dm-api-k8s` |
-| DMS k8s | k8s | `trilio-dms-k8s` |
 | DataMover machine | subordinate | `trilio-data-mover-sunbeam` |
 
 Publish channel: **`6.2/candidate`**
