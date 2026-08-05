@@ -11,6 +11,23 @@ This directory contains the native Juju charm implementation for T4O on Sunbeam 
 
 ---
 
+## Local Test Environment Files
+
+All test credentials and environment config live under **`C:\vscode-workspace\env\`** (local machine only — never committed to any repo). Always check here before asking for credentials or server access.
+
+| File | Path | Purpose |
+|------|------|---------|
+| `backup_targets.yaml` | `C:\vscode-workspace\env\backup_targets.yaml` | S3/NFS backup target credentials and endpoint details. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh` via `TRILIO_ENV_DIR`. |
+| `setups.yaml` | `C:\vscode-workspace\env\setups.yaml` | SSH access details for ALL lab environments — build server, Canonical QA, RHOSO18, etc. Check here first. |
+| `license_trilio.txt` | `C:\vscode-workspace\env\license_trilio.txt` | TrilioVault license file. Used with `juju attach-resource trilio-wlm-k8s license=...` (copy to build server as `license` — no `.txt` extension). |
+
+**Build-server override**: on the build server the env dir is `/home/ubuntu/env/`. Always set `TRILIO_ENV_DIR` when running test scripts there:
+```bash
+TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+```
+
+---
+
 ## Architecture
 
 ### Sunbeam deployment model
@@ -224,7 +241,7 @@ Required once after WLM reaches `active` (`juju run trilio-wlm-k8s/leader create
 
 **Root-caused and fixed as of 2026-07-25 — WLM service account needs its own Keystone `default_project_id` set, or every Nova/Cinder/Glance call gets an empty service catalog.** `workload-snapshot` used to fail immediately with `Failed creating workload snapshot: The service catalog is empty.` This was initially misdiagnosed as Keystone rejecting trust-scoped-token reuse in `nova_micro_client()` (that rejection IS real Keystone behavior, confirmed independently, but turned out not to be the code path actually hit — the password-auth branch is what runs). The **actual** cause, found by direct comparison against a working charm-trilio-wlm reference deployment: `nova_micro_client()`/`_get_tenant_context()` in `workloadmgr/compute/nova.py` never pass an explicit project scope (`project_id`/`project_name`/`tenant_id`) on ANY client session they build — they rely entirely on Keystone auto-scoping to the authenticating user's own `default_project_id` when none is given, and an unscoped token has zero catalog entries by Keystone's own spec. keystone-k8s creates the WLM service account via the identity-service relation but never sets `default_project_id` on it, unlike the working reference deployment's equivalent account (which has it set to its own "services" project). **Fix (now in charm code, self-healing):** the charm sets its own service account's `default_project_id` (to its own "services" project, which it already holds a role on) as part of every `_configure()` run — see `_ensure_service_user_default_project` in `charm.py`, called right after `_register_keystone_service`. Verified: a real full snapshot progressed past workflow initialization into actual execution for the first time after this fix (previously always failed within seconds). The underlying WLM code gap (never setting explicit project scope) is still worth a product-level fix and would recur on any other deployment whose WLM service account happens to lack a usable default project — this charm-side fix is a robust workaround, not a fix to WLM itself.
 
-**Next blocker after both of the above are fixed — TVAULT-7515 (open, unresolved as of 2026-07-25):** snapshot execution now reaches the freeze/snapshot step, then fails with `novaclient.exceptions.ClientException: Unknown Error (HTTP 502)` from contego's `vast_instance` Nova server-action call — fatal to the whole snapshot. The same 502 also occurs on contego's `vast_thaw` action from the identical `contego_python_novaclient_ext` code path, but that failure is swallowed by the calling workflow code and doesn't itself abort the snapshot — meaning the bug isn't specific to one action, it affects every call this client extension makes. **novaclient-version-mismatch theory tested live and disproven**: `contego_python_novaclient_ext` builds requests using legacy `HTTPClient` attributes (`management_url`, `service_catalog`, `get_service_url()`, `auth_token`, `projectid`) that don't exist on novaclient's modern `SessionClient`; Sunbeam runs a newer novaclient than the working reference deployment, so a version mismatch looked plausible. Rebuilt the WLM image pinned to the reference env's exact novaclient version (`pip3 install python-novaclient==17.6.0` — apt-level pinning fails because `python3-openstackclient` hard-requires `>=2:18.1.0`), deployed it live, retested — **identical 502 still occurred**. Confirmed `SessionClient` lacks those legacy attributes in both versions at the source level, and `novaclient.client._construct_http_client()` always builds `SessionClient` regardless of version/auth method — the version difference was a red herring. Also confirmed via simultaneous log capture across wlm-api/wlm-workloads/dm-api that **dm-api is never contacted during a failed attempt** — contego's calls go directly WLM→Nova-API, never through dm-api. And confirmed nova-api itself and the ingress path are NOT the problem: reproducing the same action call directly (bypassing `contego_python_novaclient_ext`) gets clean 404/400 responses, not a 502. `python3-tvault-contego` and the WLM-side client extension are confirmed byte-for-byte identical between Sunbeam and the reference deployment. Genuinely not yet root-caused — the actual differentiator is unknown. This is the current active blocker for finishing NFS/S3 backup validation.
+**TVAULT-7515 — HTTP 502 on snapshot creation — RESOLVED in `trilio-dm-api-k8s` rev 6 (2026-08-05):** Root cause: WLM's novaclient extension (`contego_python_novaclient_ext`) calls DMAPI using the Keystone _internal_ endpoint (`management_url`). The DMAPI charm was incorrectly registering the internal endpoint as the Traefik MetalLB ingress URL. From inside a k8s pod, the MetalLB external IP is unreachable via hairpin NAT — the TCP connection fails at the network layer before reaching the DMAPI Pebble service (explains why simultaneous dm-api log capture showed no incoming requests — the 502 occurred at the network level, not the application layer). Fix: `_register_keystone_service()` now always uses the direct ClusterIP service URL (`http://trilio-dm-api-k8s:8784/v2`) for the internal endpoint (`internal_base = fallback`), leaving the Traefik ingress URL only for the public endpoint. **Pattern to remember for all Sunbeam k8s charms**: any service called by another charm _inside_ the same k8s cluster must register its Keystone internal endpoint as the direct ClusterIP service URL, never the MetalLB/Traefik ingress URL (unreachable via hairpin NAT from within the cluster). This matches the RHOSO18 endpoint pattern.
 
 ### `workloadmgr trust-create` CLI exits 0 even on API failure — never trust the action return value alone
 The `workloadmgr trust-create` binary (cliff/cmd2 based) exits with code 0 regardless of what the API returns — a 500 Internal Server Error from wlm-api still results in exit code 0, so the charm action (`create-cloud-admin-trust`) cannot detect the failure and reports "Cloud admin trust created successfully" even when nothing was stored. Always verify by running `workloadmgr trust-list` after `trust-create` and confirming at least one row appears (or check the wlm-api logs for `job_service.py` errors). The root cause is the job table migration gap (see `job table missing audit columns` above) — once migration 030 is in the image, trust-create works correctly. This CLI behavior is inherent and will not be fixed upstream, so charm callers must do an explicit verify step.
@@ -601,3 +618,207 @@ kubectl cp /home/ubuntu/license openstack/trilio-wlm-k8s-0:/tmp/license -c trili
 juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
 ```
 The license file must have **no extension** when uploading via `juju attach-resource` (the resource type is `file`, not `string`, and Juju validates extension against the resource definition — which expects empty extension). Copy it as `license` (no `.txt`).
+
+---
+
+## Complete Test Command Reference
+
+All commands below run on the **build server** (`ubuntu@<build-server-ip>`) unless noted. Credentials are in `C:\vscode-workspace\env\setups.yaml`. Replace `<...>` with actual values from `setups.yaml` or Juju.
+
+### Step 1 — Build and publish charms
+
+```bash
+# Pack each charm (run from its directory on the build server)
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-wlm-k8s
+charmcraft pack
+
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-dm-api-k8s
+charmcraft pack
+
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/charms/trilio-data-mover-sunbeam
+charmcraft pack
+
+# Upload and release to Charmhub (requires ~/creds.txt on build server)
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft upload trilio-wlm-k8s_*.charm --name trilio-wlm-k8s
+# Note the revision number printed, then:
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft release trilio-wlm-k8s --revision <N> --channel 6.2/candidate
+
+# Same for trilio-dm-api-k8s and trilio-data-mover-sunbeam
+
+# Check current revisions on Charmhub
+CHARMCRAFT_AUTH=$(cat ~/creds.txt) charmcraft status trilio-wlm-k8s
+```
+
+### Step 2 — Build and push Docker images
+
+```bash
+# Build all 4 images (run from sunbeam-canonical/docker/ on build server)
+cd ~/triliovault-cfg-scripts/sunbeam-canonical/docker
+bash devops-build-publish.sh \
+  --tag 6.2.1-2024.1 \
+  --containers all \
+  --mode build-and-publish
+```
+
+### Step 3 — Deploy / reinstall T4O
+
+```bash
+# Remove existing (clean slate)
+juju switch openstack
+juju remove-application trilio-wlm-k8s trilio-dm-api-k8s --destroy-storage
+kubectl get pods -n openstack | grep trilio   # wait: no output
+
+juju switch openstack-machines
+juju remove-application trilio-data-mover
+
+# Deploy control plane
+juju switch openstack
+juju deploy ./trilio-ctlplane-bundle.yaml --trust
+
+# Deploy data plane
+juju switch openstack-machines
+juju deploy ./trilio-dataplane-bundle.yaml
+
+# Wait for active
+juju switch openstack
+juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=15m
+juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+```
+
+### Step 4 — Apply license
+
+```bash
+# Copy license file to build server (no .txt extension)
+scp C:\vscode-workspace\env\license_trilio.txt ubuntu@<build-server>:/tmp/license
+
+# Copy into WLM container, then apply
+kubectl cp /tmp/license openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm
+juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+
+# Expected output: "result: License applied successfully"
+```
+
+### Step 5 — Create cloud admin trust
+
+```bash
+# Get admin password first
+juju run keystone/leader get-admin-account -m controller0/openstack
+
+# Create trust
+juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+
+# Verify trust was actually created (CLI always exits 0 even on error — must verify)
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr \
+    --os-auth-url <OS_AUTH_URL> \
+    --os-username admin --os-password <admin-password> \
+    --os-project-name admin \
+    --os-user-domain-name admin_domain \
+    --os-project-domain-name admin_domain \
+    trust-list
+# Must return at least one row. Empty list = trust failed — check wlm-api logs.
+```
+
+### Step 6 — Create backup targets (S3)
+
+```bash
+# Credentials read from C:\vscode-workspace\env\backup_targets.yaml (or /home/ubuntu/env/ on build server)
+TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+
+# Verify backup target is accessible
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
+  setsid workloadmgr \
+    --os-auth-url <OS_AUTH_URL> \
+    --os-username admin --os-password <admin-password> \
+    --os-project-name admin \
+    --os-user-domain-name admin_domain \
+    --os-project-domain-name admin_domain \
+    backup-target-list
+```
+
+**S3 backup target secret_ref rules:**
+- Always use the Barbican **public** endpoint URL (from Keystone catalog, `key-manager` service, `public` interface) for `secret_ref` — this is reachable from compute nodes.
+- Never use the Barbican ClusterIP URL — compute nodes cannot reach k8s ClusterIPs.
+- Always create a **fresh** backup target with the new `secret_ref` rather than modifying an existing one in-place — in-flight snapshots embed a stale copy of the backup target and won't be affected by an in-place update.
+- Validate S3 connectivity before creating the backup target (the script does this automatically).
+
+### Step 7 — Create workload
+
+```bash
+# Run from inside the WLM pod (workloadmgrclient is only available inside the pod)
+kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- bash
+
+# Inside the pod — export auth env vars first
+export OS_AUTH_URL=<keystone-url>
+export OS_USERNAME=admin
+export OS_PASSWORD=<admin-password>
+export OS_PROJECT_NAME=admin
+export OS_USER_DOMAIN_NAME=admin_domain
+export OS_PROJECT_DOMAIN_NAME=admin_domain
+export OS_IDENTITY_API_VERSION=3
+
+# List available VMs to protect
+setsid workloadmgr nova-list
+
+# Create workload (one VM per workload)
+setsid workloadmgr workload-create \
+  --instance <nova-instance-uuid> \
+  --display-name <workload-name> \
+  --backup-target-type <backup-target-name>
+
+# Verify workload is available
+setsid workloadmgr workload-list
+setsid workloadmgr workload-show <workload-id>
+```
+
+### Step 8 — Create snapshot
+
+```bash
+# Inside the WLM pod (with auth env vars set as above)
+
+# Trigger a full snapshot
+setsid workloadmgr workload-snapshot <workload-id> --full --display-name <snapshot-name>
+
+# Poll snapshot status (repeat until available or error)
+setsid workloadmgr snapshot-show <snapshot-id> -f value -c status
+# Expected progression: creating → uploading → available
+
+# List all snapshots
+setsid workloadmgr snapshot-list
+```
+
+### Step 9 — Verify snapshot (check logs on failure)
+
+```bash
+# WLM logs (all services)
+kubectl logs -n openstack trilio-wlm-k8s-0 -c trilio-wlm --tail=100
+
+# DMAPI logs
+kubectl logs -n openstack trilio-dm-api-k8s-0 -c trilio-dm-api --tail=100
+
+# DataMover logs on compute node
+journalctl -u triliovault-datamover --since "1 hour ago"
+journalctl -u triliovault-dms --since "1 hour ago"
+
+# Check DMS mount state on k8s node (not inside pod — mounts are host-level)
+ssh ubuntu@<k8s-node-ip> "mount | grep trilio"
+```
+
+### Quick status check
+
+```bash
+# All Trilio pods
+kubectl get pods -n openstack | grep trilio
+
+# Juju charm status
+juju status trilio-wlm-k8s trilio-dm-api-k8s -m openstack
+juju status trilio-data-mover -m openstack-machines
+
+# Verify DMAPI internal endpoint (must be ClusterIP, not Traefik)
+openstack --insecure endpoint list --service datamover
+# Internal URL should be: http://trilio-dm-api-k8s:8784/v2
+
+# Check RabbitMQ users (workloadmgr and dmapi must exist)
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
+kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
+```
