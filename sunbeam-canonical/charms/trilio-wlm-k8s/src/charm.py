@@ -341,6 +341,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._write_ca_cert(container)
+        # Load nbd before starting wlm-workloads so the module is present when
+        # the service first runs. DMS container is already connectable here (checked
+        # above) and is privileged with /lib/modules mounted, so modprobe works.
+        self._load_nbd_module(dms_container)
         # Run DB migrations before starting services (idempotent — safe on every leader call).
         if self.unit.is_leader():
             self._db_sync(container)
@@ -480,9 +484,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             logger.warning("Container %s not found in StatefulSet %s", DMS_CONTAINER, name)
             return
 
+        mounts = target.volumeMounts or []
         already_patched = (
             target.securityContext and target.securityContext.privileged
-            and any(vm.name == "dev-fuse" for vm in (target.volumeMounts or []))
+            and any(vm.name == "dev-fuse" for vm in mounts)
+            and any(vm.name == "lib-modules" for vm in mounts)
         )
         if already_patched:
             return
@@ -496,7 +502,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                                 "name": DMS_CONTAINER,
                                 "securityContext": {"privileged": True},
                                 "volumeMounts": [
-                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"}
+                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"},
+                                    {"name": "lib-modules", "mountPath": "/lib/modules", "readOnly": True},
                                 ],
                             }
                         ],
@@ -504,7 +511,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                             {
                                 "name": "dev-fuse",
                                 "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
-                            }
+                            },
+                            {
+                                "name": "lib-modules",
+                                "hostPath": {"path": "/lib/modules", "type": "Directory"},
+                            },
                         ],
                     }
                 }
@@ -515,9 +526,24 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 StatefulSet, name=name, namespace=namespace,
                 obj=patch, patch_type=PatchType.STRATEGIC,
             )
-            logger.info("Patched StatefulSet %s with FUSE device access", name)
+            logger.info("Patched StatefulSet %s with FUSE device and lib-modules access", name)
         except Exception as e:
-            logger.error("Failed to patch StatefulSet %s for FUSE access: %s", name, e)
+            logger.error("Failed to patch StatefulSet %s for FUSE/nbd access: %s", name, e)
+
+    def _load_nbd_module(self, dms_container):
+        """Load the nbd kernel module via the privileged trilio-dms sidecar container.
+
+        All containers on a node share the host kernel, so loading nbd here
+        makes it available to wlm-workloads in the sibling trilio-wlm container —
+        lsmod | grep nbd returns the same result from either container.
+        Requires the /lib/modules hostPath volume mount on trilio-dms (patched
+        by _patch_fuse_device). modprobe is idempotent: a no-op if already loaded.
+        """
+        try:
+            dms_container.exec(["modprobe", "nbd", "nbds_max=128"]).wait()
+            logger.info("Loaded nbd kernel module (nbds_max=128)")
+        except Exception as e:
+            logger.warning("modprobe nbd failed (nbd may not be available on this host): %s", e)
 
     def _patch_shared_vault_mount(self):
         """Share VAULT_MOUNTS_PATH between trilio-wlm and the embedded trilio-dms container.
