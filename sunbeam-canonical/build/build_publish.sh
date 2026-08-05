@@ -187,7 +187,7 @@ for charm in "${SELECTED_CHARMS[@]}"; do
     [[ -n "$charm_file" ]] || die "No .charm file found for '$charm' in $charm_dir. Run with --mode build-only or build-and-publish first."
 
     log "[$charm] Uploading $charm_file ..."
-    upload_out=$(charmcraft --format json upload "$charm_file")
+    upload_out=$(charmcraft upload --format json "$charm_file")
     revision=$(python3 -c "import sys, json; print(json.load(sys.stdin)['revision'])" <<< "$upload_out")
     log "[$charm] Uploaded as revision $revision"
 
