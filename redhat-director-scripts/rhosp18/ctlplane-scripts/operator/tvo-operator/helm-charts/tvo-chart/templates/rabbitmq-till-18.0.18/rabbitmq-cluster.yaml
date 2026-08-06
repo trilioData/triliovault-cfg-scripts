@@ -4,6 +4,31 @@ kind: RabbitmqCluster
 metadata:
   name: trilio-rabbitmq-cluster
   namespace: {{ .Values.rabbitmq.common.namespace }}
+  annotations:
+    # Install-only hook (TVAULT-7556). Keeping this CR a Helm *hook* keeps it out of the
+    # release manifest, so Helm never runs its resource-ownership check against it. Without
+    # the annotation the CR became a normal templated resource, and upgrading from a release
+    # where it *was* a hook failed with "invalid ownership metadata; missing key
+    # app.kubernetes.io/managed-by" - Helm refuses to adopt a pre-existing object that it
+    # never stamped, aborting the upgrade before any candidate release is built (no hooks
+    # run, no Deployments updated, pods stay on the old build).
+    #
+    # Deliberately post-install ONLY, never post-upgrade: helm upgrade fires only pre/post
+    # upgrade hooks, so this one is skipped entirely and the existing CR is left untouched -
+    # neither deleted+recreated (TVAULT-7517: the default hook-delete-policy is
+    # before-hook-creation, which minted a fresh default-user secret against reused PVCs and
+    # broke auth) nor removed by manifest diffing (it is absent from both old and new
+    # manifests). Do not add post-upgrade, and do not set a hook-delete-policy of
+    # hook-succeeded - that would delete the broker after install.
+    #
+    # Trade-off: the CR spec is frozen after install, so RabbitMQ fields in
+    # tvo-operator-inputs.yaml are no longer propagated by an upgrade. Any future change to
+    # this CR needs a migration script rather than an upgrade.
+    "helm.sh/hook": post-install
+    # Required: orders this CR ahead of the post-install hooks that depend on the broker
+    # existing - the rabbitmq wait-job (-17) and the rabbitmq-init Jobs (-4). Without a
+    # weight it defaults to 0 and the wait-job would block on a cluster not yet created.
+    "helm.sh/hook-weight": "-18"
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.images.rabbitmq }}
