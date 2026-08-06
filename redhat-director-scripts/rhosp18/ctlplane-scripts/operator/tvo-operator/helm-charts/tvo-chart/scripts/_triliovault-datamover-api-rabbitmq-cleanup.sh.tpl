@@ -9,9 +9,11 @@ export RABBITMQ_ADMIN_USER
 export RABBITMQ_ADMIN_PASSWORD
 
 if [ "$RABBIT_TRANSIENT_QUORUM_QUEUE" != "true" ]; then
-  echo "rabbit_transient_quorum_queue is not enabled, nothing to clean up."
+  echo "SKIPPED: rabbit_transient_quorum_queue is '${RABBIT_TRANSIENT_QUORUM_QUEUE:-unset}' (not 'true') - stale fanout exchange cleanup does not apply."
   exit 0
 fi
+
+echo "rabbit_transient_quorum_queue is enabled - will scan vhost '${DMAPI_RABBITMQ_VHOST_NAME}' for stale non-durable fanout exchanges."
 
 URL="https://trilio-rabbitmq-cluster.trilio-openstack.svc:15671/api/vhosts"
 
@@ -51,16 +53,25 @@ else
   RABBITMQADMIN_EXTRA_ARGS=""
 fi
 
-rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" -V "${DMAPI_RABBITMQ_VHOST_NAME}" $RABBITMQADMIN_EXTRA_ARGS \
-  list exchanges name type durable -f tsv |
+# Process substitution rather than a pipe: a piped `while` runs in a subshell, so the
+# counters below would be lost and the summary would always report zero.
+examined=0
+deleted=0
 while IFS=$'\t' read -r name type durable; do
   case "$name" in
     *_fanout)
+      examined=$((examined + 1))
       if [ "$type" = "fanout" ] && [ "$durable" = "False" ]; then
-        echo "Deleting stale non-durable fanout exchange '${name}' in vhost '${DMAPI_RABBITMQ_VHOST_NAME}'"
+        echo "DELETING stale non-durable fanout exchange '${name}' (type=${type}, durable=${durable}) in vhost '${DMAPI_RABBITMQ_VHOST_NAME}'"
         rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" -V "${DMAPI_RABBITMQ_VHOST_NAME}" $RABBITMQADMIN_EXTRA_ARGS \
           delete exchange name="${name}"
+        deleted=$((deleted + 1))
+      else
+        echo "KEEPING fanout exchange '${name}' (type=${type}, durable=${durable}) - already correct, nothing to fix"
       fi
       ;;
   esac
-done
+done < <(rabbitmqadmin -H "$RABBITMQ_HOST" -P "$RABBITMQ_PORT" -u "$RABBITMQ_ADMIN_USER" -p "$RABBITMQ_ADMIN_PASSWORD" -V "${DMAPI_RABBITMQ_VHOST_NAME}" $RABBITMQADMIN_EXTRA_ARGS \
+  list exchanges name type durable -f tsv)
+
+echo "SUMMARY: vhost '${DMAPI_RABBITMQ_VHOST_NAME}' - ${examined} '*_fanout' exchange(s) examined, ${deleted} deleted."

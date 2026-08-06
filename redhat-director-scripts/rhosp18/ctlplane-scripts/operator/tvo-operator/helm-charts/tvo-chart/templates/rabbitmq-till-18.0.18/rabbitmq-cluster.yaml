@@ -4,6 +4,23 @@ kind: RabbitmqCluster
 metadata:
   name: trilio-rabbitmq-cluster
   namespace: {{ .Values.rabbitmq.common.namespace }}
+  # No helm.sh/hook annotations here on purpose (TVAULT-7517 + TVAULT-7556).
+  #
+  # As a hook with the default hook-delete-policy (before-hook-creation) this CR was
+  # deleted and recreated on EVERY helm upgrade, minting a fresh auto-generated
+  # default-user secret while the StatefulSet's PVCs kept the old Mnesia credentials -
+  # breaking dmapi/wlm auth (TVAULT-7517).
+  #
+  # As a plain templated resource Helm patches it in place across upgrades, so the broker
+  # keeps a stable identity and RabbitMQ fields in tvo-operator-inputs.yaml still take
+  # effect. Deleting it out-of-band is also self-healing: it is part of the release
+  # manifest, so the next upgrade recreates it.
+  #
+  # This requires the pre-existing CR to carry Helm ownership metadata, which Helm never
+  # stamps on hook resources - without it an upgrade from a release where this WAS a hook
+  # aborts with "invalid ownership metadata" before any candidate release is built
+  # (TVAULT-7556). patch_helm_ownership_metadata.sh, run from
+  # deploy_tvo_control_plane.sh before the CR is applied, stamps that metadata once.
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
   image: {{ .Values.images.rabbitmq }}
