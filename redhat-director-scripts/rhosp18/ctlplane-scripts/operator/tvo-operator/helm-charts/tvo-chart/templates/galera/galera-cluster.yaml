@@ -8,9 +8,29 @@ metadata:
   labels:
     app: galera
     component: database
-  annotations:
-    helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-weight: "-15"
+  # No helm.sh/hook annotations here on purpose (TVAULT-7556).
+  #
+  # As a post-install,post-upgrade hook with no hook-delete-policy, Helm's default
+  # (before-hook-creation) deleted and recreated this CR on EVERY helm upgrade. That tore
+  # down the MariaDB StatefulSet mid-upgrade, so the previous revision's wlm/dmapi pods -
+  # still running, because Helm had not yet reached the Deployment hooks at weight 100 -
+  # lost their database and crash-looped until Galera re-formed. Confirmed by the CR uid
+  # and creationTimestamp changing on every upgrade.
+  #
+  # As a plain templated resource Helm patches it in place, so the database is never torn
+  # down and Galera fields in tvo-operator-inputs.yaml still take effect. Deleting the CR
+  # out-of-band is self-healing too: it is part of the release manifest, so the next
+  # upgrade recreates it - and because the PVCs come from the StatefulSet's
+  # volumeClaimTemplates they are not garbage-collected with it, so the rebuilt cluster
+  # re-binds the same PVs with the data intact (verified: databases survived a CR
+  # delete+recreate). Galera's credentials come from a fixed secret
+  # (spec.secret: trilio-openstack-secret), not an auto-generated one, so a recreate does
+  # not suffer RabbitMQ's regenerated-credential problem.
+  #
+  # Ordering note: manifest resources are applied before post-install/post-upgrade hooks,
+  # so the CR still exists before galera-cluster-wait-job (-13) runs - no hook-weight
+  # needed. Requires Helm ownership metadata on a pre-existing CR; see
+  # patch_helm_ownership_metadata.sh, run from deploy_tvo_control_plane.sh.
 spec:
   # Galera cluster configuration
   replicas: {{ .Values.database.galera.replicas }}
