@@ -1,10 +1,47 @@
 # triliovault-cfg-scripts — CLAUDE.md
+This repository holds Trilio deployment and upgrade scripts for following openstack distros
+1. Kolla-ansible  : ./triliovault-cfg-scripts/kolla-ansible
+2. Redhat OpenStack RHOSO18 : ./triliovault-cfg-scripts/redhat-director-scripts/rhoso18
+3. Redhat OpenStack RHOSP17.1 : ./triliovault-cfg-scripts/redhat-director-scripts/rhosp17
+4. Canonical OpenStack - Juju charms based: ./triliovault-cfg-scripts/juju-charms
+5. Sunbeam Canonical OpenStack : ./triliovault-cfg-scripts/sunbeam-canonical
+6. OpenStack Helm and MOSK: ./triliovault-cfg-scripts/openstack-helm
+
 
 ## Introduction
 T4O is shortform for Trilio for OpenStack product
 In triliovault-cfg-scripts repo we keep all deployment scripts to deploy and upgrade T4O on different OpenStack distributions clouds like RedHat OpenStack, Kolla Ansible OpenStack, Mirantis OpenStack, Canonical OpenStack etc.
 You need to understand openstack architecture to work on this project
 https://www.openstack.org/software/
+
+## DevOps Reference Document — SINGLE SOURCE OF TRUTH
+
+**https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5125144595/DevOps+Reference+Document+for+Trilio+for+OpenStack**
+
+This Confluence page is the authoritative, distro-agnostic implementation reference for T4O: every service and its start command, node placement, Ubuntu + CentOS/RHEL 9 package lists and Python pins, users/UIDs, directories, kernel modules, FUSE, sudoers/rootwrap, DB/RabbitMQ/Keystone bootstrap, **every config-file parameter with an explanation and how to derive its value**, container mounts and flags (Kolla + RHOSO 18), HAProxy, start order, verification, upgrade, and known failure modes.
+
+Use it for two things:
+1. **Writing install/upgrade automation for a new OpenStack distro** — implement its sections in order; §13 is the completion checklist.
+2. **Diagnosing bugs in existing devops scripts** — diff the deployed artefact against its reference tables. §7.10 (cross-file consistency rules) and §12 (symptom → root cause) resolve most field issues.
+
+Keep it current: when a fix changes a service command, package, directory, config parameter, mount, or ordering constraint, update that page in the same change as the code.
+
+### Companion: DevOps Build and Testing Reference
+
+**https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5126914053/DevOps+Build+and+Testing+Reference**
+
+The build/test execution counterpart: what artefacts to build for each distro and with which script, deploy, apply the licence, validate the cloud admin trust, add NFS and S3 backup targets, create a workload and take full + incremental backups, restore, and test an upgrade from build X to build Y. Contains the 10 pass criteria used to sign off a build and a per-run test record template.
+
+Keep it current when a build script gains or changes arguments, when the artefact list for a distro changes, or when a new validation step becomes necessary.
+
+### Known convention drift: WLM Keystone service user
+
+The WLM Keystone service user is **`workloadmgr`**. Several distro defaults still ship the older name `triliovault` and should be aligned:
+- `kolla-ansible/ansible/roles/triliovault/defaults/main.yml` → `triliovault_wlm_keystone_user`
+- `kolla-ansible/ansible/input_values.txt` → `WLM_USER_NAME`
+- `openstack-helm/trilio-openstack/` → `endpoints.identity.auth.triliovault_wlm.username`
+
+**Do not rename the user on a live cloud.** `cloud_unique_id` in the WLM config is this user's Keystone *ID* and stamps every workload — creating a new user changes the ID and orphans existing workloads. Renaming is a planned-migration task, not a config fix.
 
 ## T4O Product Documentation Links
 
