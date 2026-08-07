@@ -58,7 +58,3 @@ triliovault_docker_registry: "docker.io"
 
 ## Set to true if your RabbitMQ cluster uses quorum queues (version >= 3.13)
 # rabbit_quorum_queue: false
-
-## Set to true to fail the snapshot when the QEMU guest agent filesystem
-## freeze fails. Default false - the snapshot continues, crash-consistent.
-# fail_on_qga_freeze_failure: false
