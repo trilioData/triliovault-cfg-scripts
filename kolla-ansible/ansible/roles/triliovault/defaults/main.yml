@@ -459,6 +459,10 @@ rabbit_quorum_queue: false
 ## cinder http retries default value
 cinder_http_retries: '10'
 
+## Fail the snapshot when the QEMU guest agent filesystem freeze fails.
+## false (default) = log the failure and continue with a crash-consistent snapshot.
+fail_on_qga_freeze_failure: false
+
 ##################
 # DMS (Trilio Dynamic Mount Service)
 ##################
