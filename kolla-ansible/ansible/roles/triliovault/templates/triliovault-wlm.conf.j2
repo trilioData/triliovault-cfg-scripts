@@ -75,6 +75,9 @@ vault_data_directory = /var/trilio/triliovault-mounts
 max_wait_for_upload = 48
 neutron_api_insecure = False
 
+## Fail the snapshot when the QEMU guest agent filesystem freeze fails
+fail_on_qga_freeze_failure = {{ fail_on_qga_freeze_failure | default(false, true) | bool }}
+
 [global_job_scheduler]
 misfire_grace_time = 600
 
