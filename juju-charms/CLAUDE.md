@@ -136,6 +136,23 @@ This does **not** create a second DB user or rotate anything. `mysql-innodb-clus
 ### Gotcha: "config renders correctly" is not "the credential works"
 Directly related to the above, and the reason TVAULT-7592 survived a full upgrade-and-backup verification round: the documented check was that `db_url` in `/etc/triliovault-dms/client.conf` was a populated `mysql+pymysql://...` URL, and it always was. On the setup where that verification ran, `sending DMS mount request` appeared **zero** times in the DMAPI log — the mount path was never exercised, because the old static `/var/triliovault-mounts` mounts from the 6.1.x baseline were still in place and DMS never needed a dynamic mount. Any verification of a rendered credential must actually **connect** with it, and any Canonical upgrade test must take a snapshot **after** `unmount-old-backup-targets`, which is what forces the first real dynamic mount.
 
+### Gotcha: `alembic.ini` is charm-rendered, so `db_sync()` must never run before the render
+`/etc/triliovault-wlm/alembic.ini` comes from `charm-trilio-wlm/src/templates/alembic.ini`, **not** from the `workloadmgr` deb (`dpkg -L workloadmgr` has no alembic file). So on a **fresh install** the file does not exist until `render_with_interfaces()` runs. The TVAULT-7522 fix deliberately moved `charm_class.db_sync()` *ahead* of that render, so wlm-api/workloads/scheduler/cron would not restart against an unmigrated schema — correct on an upgrade, fatal on a fresh install:
+```
+alembic --config=/etc/triliovault-wlm/alembic.ini upgrade head -> exit 255
+FAILED: No config file '/etc/triliovault-wlm/alembic.ini' found
+```
+`db_sync()` kills the hook *before* the render that would have created the file, and every Juju retry hits the same wall — the unit deadlocks in `hook failed: "identity-service-relation-changed"` forever. **Upgrades never expose this** because `alembic.ini` is already on disk from the previous release's render, which is exactly why upgrade-only verification passed it (TVAULT-7592). The fix is to render that one file first — its `restart_map` entry is `[]`, so it restarts nothing and the TVAULT-7522 ordering still holds:
+```python
+charm_class.render_with_interfaces(args, configs=[charm_class.alembic_ini])
+charm_class.db_sync()
+charm_class.render_with_interfaces(args)
+```
+General rule for these charms: **any charm-rendered file that a migration/bootstrap command reads must be rendered before that command runs**, and reordering a migration relative to a render must always be re-tested on a fresh install, never on an upgrade alone.
+
+### Always test fresh install *and* upgrade — they exercise different code
+Two separate 6.2.1 blockers (TVAULT-7592's missing MySQL grant, and the `alembic.ini` deadlock above) both survived a full upgrade-and-backup verification round and both broke on the paths the other test would have caught. Upgrades inherit on-disk state (rendered configs, existing DB grants, migrated schemas) that a fresh install must create from nothing; fresh installs skip the migration/`update-trilio` logic that upgrades depend on. Passing one says nothing about the other. Every charm change needs both, and the fresh-install run must start from a genuinely clean slate — see the Uninstall section, especially dropping the DBs **and every grant row**.
+
 ### Gotcha: reactive handlers gated only on relation flags run on *every* hook
 `@reactive.when('shared-db.available')` + `@reactive.when('amqp.available')` stay true for the life of the deployment, so such a handler fires on every hook — `update-status` included, roughly every 5 minutes. An unguarded `host.service_restart()` at the end of one of these is therefore an infinite restart loop, not a one-off: `tvault-datamover-api` was observed bouncing every ~4-5 minutes indefinitely, killing any snapshot mid-transfer. Guard with `reactive.helpers.data_changed(...)` **plus** an on-disk staleness check (a package reinstall can blank the file without any relation data changing), and add `@reactive.when_not('is-update-status-hook')`. See `render_dms_client_config()` / `_dms_client_conf_is_stale()` in `charm-trilio-dm-api` and `render_dms_config()` / `_dms_server_conf_is_stale()` in `charm-trilio-data-mover`. Related trap: two handlers writing the same file with different content (one bootstrap render with a blank `db_url`, one real render) will fight on every hook — render a single context from one code path instead.
 

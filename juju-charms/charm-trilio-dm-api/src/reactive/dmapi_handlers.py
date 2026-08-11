@@ -83,6 +83,18 @@ def _ensure_dmapi_log_file():
     os.chown(log_file, dmapi_uid, dmapi_gid)
 
 
+def _existing_db_url():
+    """Return the db_url currently in client.conf on disk, or '' if none."""
+    if not os.path.exists(DMS_CLIENT_CONF):
+        return ''
+    with open(DMS_CLIENT_CONF) as f:
+        for line in f:
+            if line.startswith('db_url'):
+                _, _, value = line.partition('=')
+                return value.strip()
+    return ''
+
+
 def _build_dms_client_context():
     """Build the render context for the DMS client.conf, or None if not ready.
 
@@ -105,9 +117,15 @@ def _build_dms_client_context():
         db_url = ("mysql+pymysql://workloadmgr:"
                   f"{wlm_db_password}@{mysql_host}:3306/workloadmgr")
     else:
+        # Keep whatever is already on disk rather than blanking a working
+        # db_url: the credentials can be briefly absent from relation data
+        # (e.g. while the mysql-router subordinate restarts), and writing an
+        # empty db_url would break every backup target mount until the next
+        # hook restored it. Empty only on a genuine fresh install.
+        db_url = _existing_db_url()
         hookenv.log("workloadmgr DB credentials not on shared-db yet; "
-                    "rendering DMS client.conf with an empty db_url.")
-        db_url = ''
+                    "keeping existing db_url (%s)."
+                    % ("present" if db_url else "empty"))
 
     return {
         'rabbitmq_url': transport_url,
@@ -134,14 +152,22 @@ def _dms_client_conf_is_stale(context):
     )
 
 
-def _write_dms_client_config(context):
-    """Disable the (unused on dmapi nodes) DMS server and write client.conf."""
-    # DMS server must not run on DMAPI nodes — only the client library is
-    # needed here. python3-trilio-dms installs the systemd unit; explicitly
-    # stop and disable it.
+def _ensure_dms_server_disabled():
+    """Keep trilio-dms-server stopped and disabled on DMAPI nodes.
+
+    Only the DMS *client* library is used here, but python3-trilio-dms ships
+    the server's systemd unit and debhelper's postinst enables and starts it
+    on every (re)install. This must therefore be re-asserted on each hook, not
+    only when client.conf changes -- a package reinstall can re-enable the
+    service without altering the rendered config. Both calls are idempotent
+    and are no-ops once the unit is already stopped and disabled.
+    """
     host.service('disable', 'trilio-dms-server')
     host.service('stop', 'trilio-dms-server')
 
+
+def _write_dms_client_config(context):
+    """Write the DMS client.conf and restart the datamover API."""
     root_uid = pwd.getpwnam('root').pw_uid
     dmapi_gid = grp.getgrnam('dmapi').gr_gid
 
@@ -171,6 +197,7 @@ def render_dmapi_and_dms_configs():
     render_dms_client_config() skip it.
     """
     _ensure_dmapi_log_file()
+    _ensure_dms_server_disabled()
     context = _build_dms_client_context()
     if context is None:
         return
@@ -205,6 +232,10 @@ def render_dms_client_config(*args):
     supplied a valid password but no grant for this host, so every backup
     target mount failed with ERROR 1045 (TVAULT-7592).
     """
+    # Re-asserted every hook, deliberately outside the change guard below --
+    # see _ensure_dms_server_disabled().
+    _ensure_dms_server_disabled()
+
     context = _build_dms_client_context()
     if context is None:
         return
