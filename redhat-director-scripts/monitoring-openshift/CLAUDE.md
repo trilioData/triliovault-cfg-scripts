@@ -41,7 +41,9 @@ The `sql_exporter/sql-exporter-config.yaml` defines the `mysql_workloads` collec
 - `mysql_trilio_backup_size_info` — backup size in GB by project
 - `mysql_trilio_snapshots_status` — per-snapshot detail with workload/snapshot IDs
 - `mysql_trilio_snapshot_last_updated` — per-snapshot last-status-change timestamp, enables Grafana time-range filtering on the Backup Monitor dashboard
+- `mysql_trilio_restore_last_updated` — per-restore last-status-change timestamp, mirrors `mysql_trilio_snapshot_last_updated`; not yet wired to a dashboard panel
 - `openstack_protected_vm` — count of unique VMs in active workloads per project
+- `openstack_protected_vm_total` — true global `COUNT(DISTINCT vm_id)` across all projects, avoiding the double-count `sum(openstack_protected_vm)` is susceptible to when a VM's `workload_vms` rows span more than one project; not yet wired to a dashboard panel
 - `trilio_allowed_quota_value` / `trilio_quota_high_watermark` — quota tracking
 - `trilio_workload_info` / `trilio_workload_vm_info` — full workload metadata
 
