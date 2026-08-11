@@ -175,7 +175,34 @@ def render_config(*args):
         charm_class.assess_status()
 
     render_wlm_and_dms_configs(*args)
+
+    with charm.provide_charm_instance() as charm_class:
+        _start_services_locked_out_by_systemd(charm_class)
+        charm_class.assess_status()
+
     set_flag("config.rendered")
+
+
+def _start_services_locked_out_by_systemd(charm_class):
+    """Start charm-managed services that systemd has refused to restart.
+
+    The workloadmgr deb's postinst starts the wlm-* services during package
+    installation, before this charm has rendered triliovault-wlm.conf, so they
+    crash against the config shipped in the package. After StartLimitBurst
+    failures systemd stops honouring start requests entirely -- including the
+    restart_map restart this charm issues seconds later once the correct
+    config is on disk -- so the unit sits blocked on "Services not running
+    that should be: ..." indefinitely. Observed on every fresh install
+    (TVAULT-7592); upgrades are unaffected because the packages are already
+    installed and the services are already running against a valid config.
+
+    reset-failed clears the lockout and is a no-op for a service that is not
+    in a failed state, so this is safe to run on every render.
+    """
+    for service_name in charm_class.services:
+        if not host.service_running(service_name):
+            host.service('reset-failed', service_name)
+            host.service_start(service_name)
 
 
 def render_wlm_and_dms_configs(*args):
