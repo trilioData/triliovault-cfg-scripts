@@ -152,6 +152,19 @@ def render_config(*args):
             if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
                 host.service('stop', 'tvault-object-store')
                 host.service('disable', 'tvault-object-store')
+            # alembic.ini is rendered by this charm, not shipped by the
+            # workloadmgr package, so on a fresh install it does not exist
+            # yet at this point. db_sync() would then exit 255 ("No config
+            # file ... found") and kill the hook *before* the
+            # render_with_interfaces() call below ever creates it -- the
+            # retry hits the same wall, deadlocking the unit permanently.
+            # Upgrades never showed this because alembic.ini was already on
+            # disk from the previous release's render (TVAULT-7592).
+            # Rendering it alone is safe and preserves the ordering below:
+            # its restart_map entry is [], so no service is restarted here.
+            charm_class.render_with_interfaces(
+                args, configs=[charm_class.alembic_ini])
+
             # Run the DB migration now, before render_with_interfaces() below
             # can restart wlm-api/workloads/scheduler/cron via restart_map.
             # Otherwise those services come back up on the just-installed
