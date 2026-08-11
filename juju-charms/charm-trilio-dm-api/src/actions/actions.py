@@ -58,9 +58,10 @@ def update_trilio(*args):
         # the DMS client config render (normally triggered by render_config()
         # on a later hook) must be run explicitly here, with the correct
         # rabbitmq_url, before trilio-dms-server settles (TVAULT-7521).
+        # render_dmapi_and_dms_configs() writes client.conf unconditionally,
+        # including the workloadmgr db_url once shared-db has supplied it, so
+        # no separate render_dms_client_config() call is needed here.
         dmapi_handlers.render_dmapi_and_dms_configs()
-        if reactive.flags.is_flag_set('wlm-db.connected'):
-            dmapi_handlers.render_dms_client_config()
 
         trilio_charm._assess_status()
 

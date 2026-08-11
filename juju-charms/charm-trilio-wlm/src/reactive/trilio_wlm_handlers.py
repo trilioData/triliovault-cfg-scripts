@@ -392,28 +392,6 @@ def register_endpoints_and_request_notification(identity_service):
         instance.assess_status()
 
 
-@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
-def wlm_db_connected():
-    reactive.clear_flag('wlm-db.connected')
-    reactive.set_flag('wlm-db.connected')
-
-
-@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
-def wlm_db_disconnected():
-    reactive.clear_flag('wlm-db.connected')
-
-
-@reactive.when('wlm-db.connected')
-@reactive.when('shared-db.available')
-def publish_wlm_db_credentials(*args):
-    shared_db = reactive.RelationBase.from_state('shared-db.available')
-    if shared_db and shared_db.password():
-        for rid in hookenv.relation_ids('wlm-db'):
-            hookenv.relation_set(relation_id=rid,
-                                 workloadmgr_password=shared_db.password())
-        hookenv.log("Published workloadmgr DB password to wlm-db relation.")
-
-
 @reactive.when_any("config.changed.triliovault-pkg-source",
                    "config.changed.openstack-origin")
 def install_source_changed():
