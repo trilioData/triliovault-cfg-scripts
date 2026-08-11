@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/version: 2.18.0
   name: kube-state-metrics
-  namespace: openshift-user-workload-monitoring
+  namespace: trilio-monitoring
 spec:
   clusterIP: None
   ports:

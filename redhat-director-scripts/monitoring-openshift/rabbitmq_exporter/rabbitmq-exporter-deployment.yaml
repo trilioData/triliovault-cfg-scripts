@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-exporter
+  namespace: trilio-monitoring
+  # Override name and labels when deploying a second instance for a
+  # different RabbitMQ endpoint (e.g. a dedicated per-compute cluster).
+  # Example: name: rabbitmq-exporter-compute-0
+  #          labels.rabbitmq-exporter-instance: compute-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-exporter
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-exporter
+        # The ServiceMonitor relabels this value into the Prometheus
+        # `instance` label so the dashboard "Exporter Instance" variable
+        # shows a meaningful name instead of host:port.
+        # Change to "compute-0", "compute-1", etc. for additional instances.
+        rabbitmq-exporter-instance: controller
+    spec:
+      containers:
+        - name: rabbitmq-exporter
+          image: docker.io/kbudde/rabbitmq-exporter:latest
+          env:
+            - name: RABBIT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-exporter-secret
+                  key: RABBIT_URL
+            - name: RABBIT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-exporter-secret
+                  key: RABBIT_USER
+            - name: RABBIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-exporter-secret
+                  key: RABBIT_PASSWORD
+            # Only scrape Trilio vhosts (workloadmgr and dmapi)
+            - name: INCLUDE_VHOST
+              value: "^(workloadmgr|dmapi)$"
+            # Export queue-level and exchange-level metrics
+            - name: RABBIT_EXPORTERS
+              value: "queue,exchange"
+            - name: PUBLISH_PORT
+              value: "9419"
+            - name: OUTPUT_FORMAT
+              value: "prometheus"
+            - name: SKIPVERIFY
+              value: "true"
+          ports:
+            - name: metrics
+              containerPort: 9419
