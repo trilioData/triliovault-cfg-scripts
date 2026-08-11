@@ -185,11 +185,23 @@ class TrilioDataMoverBaseCharm(
 
     @property
     def restart_map(self):
+        # The DMS files are deliberately NOT in this map. charms_openstack
+        # renders every restart_map key by deriving a template name from the
+        # path, so /etc/triliovault-dms/server.conf is looked up as
+        # "server.conf" / "etc_triliovault-dms_server.conf" -- neither of
+        # which exists (the template is "triliovault-dms-server.conf"), and
+        # s3vaultfuse-global.conf has no template at all. Any
+        # render_with_interfaces() over the full map therefore dies with
+        # "Could not load template ...", which is what made the update-trilio
+        # action fail on every data-mover unit (TVAULT-7592).
+        #
+        # Nothing is lost by leaving them out: _write_dms_server_config()
+        # renders server.conf explicitly and enables/restarts
+        # trilio-dms-server itself. charm-trilio-dm-api keeps its DMS client
+        # conf out of restart_map for the same reason.
         _restart_map = {
             self.data_mover_conf: self.services,
             self.datamover_log_conf: self.services,
-            self.dms_server_conf: ["trilio-dms-server"],
-            self.dms_s3vaultfuse_conf: ["trilio-dms-server"],
         }
         if reactive.flags.is_flag_set("ceph.available"):
             _restart_map[self.ceph_conf] = self.services
