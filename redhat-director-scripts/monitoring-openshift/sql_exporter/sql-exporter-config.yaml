@@ -119,6 +119,17 @@ data:
               JOIN workloads w ON wv.workload_id = w.id
               WHERE w.deleted = 0 AND wv.deleted = 0
               GROUP BY w.project_id;
+          - metric_name: openstack_protected_vm_total
+            help: "Count of unique protected VMs across all projects. NOT the same as sum(openstack_protected_vm): a VM can have workload_vms rows under more than one project_id (no cross-project uniqueness constraint in workloadmgr), so summing the per-project distinct counts can double-count it. This metric dedupes vm_id globally instead."
+            type: gauge
+            values:
+              - protected_vm_count
+            query: |
+              SELECT
+                COUNT(DISTINCT wv.vm_id) AS protected_vm_count
+              FROM workload_vms wv
+              JOIN workloads w ON wv.workload_id = w.id
+              WHERE w.deleted = 0 AND wv.deleted = 0;
           - metric_name: mysql_trilio_backup_size_info
             type: gauge
             help: "Aggregated backup size metrics by project_id"
@@ -215,6 +226,40 @@ data:
                 END AS updated_at_unix
               FROM workloadmgr.snapshots
               WHERE status IN ('available', 'error', 'executing', 'wait_to_be_uploading', 'uploading');
+          - metric_name: mysql_trilio_restore_last_updated
+            type: gauge
+            help: "Unix timestamp (ms) of last status change per restore, enables Grafana time-range filtering"
+            key_labels:
+              - RestoreID
+              - ProjectID
+              - WorkloadID
+              - SnapshotID
+              - RestoreName
+              - status
+              - error_msg
+            values:
+              - updated_at_unix
+            query: |
+              SELECT
+                r.id AS RestoreID,
+                r.project_id AS ProjectID,
+                s.workload_id AS WorkloadID,
+                r.snapshot_id AS SnapshotID,
+                r.display_name AS RestoreName,
+                CASE
+                  WHEN r.status = 'available' THEN 'successful'
+                  WHEN r.status = 'error' THEN 'failed'
+                  ELSE 'running'
+                END AS status,
+                COALESCE(r.error_msg, '') AS error_msg,
+                CASE
+                  WHEN r.status IN ('executing', 'wait_to_be_uploading', 'uploading')
+                    THEN UNIX_TIMESTAMP(NOW()) * 1000
+                  ELSE UNIX_TIMESTAMP(COALESCE(r.updated_at, r.created_at)) * 1000
+                END AS updated_at_unix
+              FROM workloadmgr.restores r
+              JOIN workloadmgr.snapshots s ON r.snapshot_id = s.id
+              WHERE r.status IN ('available', 'error', 'executing', 'wait_to_be_uploading', 'uploading');
           - metric_name: trilio_allowed_quota_value
             type: gauge
             help: "Allowed quota value per project and quota type"
