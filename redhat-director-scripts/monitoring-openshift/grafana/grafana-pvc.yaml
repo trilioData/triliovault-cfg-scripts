@@ -1,0 +1,16 @@
+# This PVC is created and owned by the Grafana operator when
+# spec.persistentVolumeClaim is set in the Grafana CR (grafana-instance.yaml).
+# Do NOT apply this file manually — the operator names it "grafana-pvc"
+# and manages its lifecycle.  This file is kept for documentation purposes only.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: openshift-user-workload-monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ocs-storagecluster-ceph-rbd
+  resources:
+    requests:
+      storage: 1Gi
