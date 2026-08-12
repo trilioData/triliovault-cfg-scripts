@@ -88,6 +88,9 @@ rabbitmq:
     driver: "messagingv2"
     ssl: true
     namespace: "trilio-openstack"
+    rabbit_quorum_queue: true
+    rabbit_transient_quorum_queue: true
+    amqp_durable_queues: true
   operator:
     api_version: "operators.coreos.com/v1"
     operator_name: "rabbitmq-cluster-operator"
@@ -99,7 +102,6 @@ rabbitmq:
   cluster:
     api_version: "rabbitmq.com/v1beta1"
     replicas: 3
-    rabbit_quorum_queue: false
     image: "rabbitmq:3.13.7-management"
     resources:
       requests:

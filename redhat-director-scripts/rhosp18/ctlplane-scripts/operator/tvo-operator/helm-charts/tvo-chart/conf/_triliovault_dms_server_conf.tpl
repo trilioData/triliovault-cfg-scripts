@@ -7,7 +7,7 @@
 # Keystone auth URL
 auth_url = {{ .Values.keystone.common.auth_url }}
 
-{{- if .Values.rabbitmq.cluster.rabbit_quorum_queue }}
+{{- if .Values.rabbitmq.common.rabbit_quorum_queue }}
 # Use quorum queue type for RabbitMQ
 rabbitmq_queue_type = quorum
 {{- end }}

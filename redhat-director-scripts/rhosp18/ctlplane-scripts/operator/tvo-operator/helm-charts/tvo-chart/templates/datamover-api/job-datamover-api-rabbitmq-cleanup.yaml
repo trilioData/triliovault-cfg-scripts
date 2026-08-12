@@ -1,0 +1,64 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "job-triliovault-datamover-api-rabbitmq-cleanup"
+  labels:
+    application: triliovault
+    component: datamover-api-rabbitmq-cleanup
+  annotations:
+    helm.sh/hook: pre-upgrade
+    helm.sh/hook-weight: "-4"
+spec:
+  backoffLimit: 1000
+  template:
+    metadata:
+      labels:
+        application: triliovault
+        component: datamover-api-rabbitmq-cleanup
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+        fsGroup: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsGroup }}
+      serviceAccountName: triliovault-datamover-api
+      restartPolicy: OnFailure
+      nodeSelector:
+        trilio-control-plane: enabled
+      containers:
+        - name: "datamover-api-rabbitmq-cleanup"
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: {{ .Values.pod.security_context.triliovault.container.triliovault_datamover_api.runAsUser }}
+          image: {{ .Values.images.triliovault_datamover_api }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RABBITMQ_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-rabbitmq-cluster-default-user
+                  key: username
+            - name: RABBITMQ_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trilio-rabbitmq-cluster-default-user
+                  key: password
+          command:
+            - /bin/bash
+            - -c
+            - |
+              {{ tpl (.Files.Get "scripts/_triliovault-datamover-api-rabbitmq-cleanup.sh.tpl") . | nindent 14 }}
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+              name: combined-ca-bundle
+              readOnly: true
+              subPath: tls-ca-bundle.pem
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: combined-ca-bundle
+          secret:
+            defaultMode: 292
+            secretName: combined-ca-bundle
+{{- end }}

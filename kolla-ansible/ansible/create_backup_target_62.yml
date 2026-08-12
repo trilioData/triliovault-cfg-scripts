@@ -66,12 +66,27 @@
     # S3 backup target — credentials are stored in Barbican before creation.
     #
     # Flow:
-    #   1. trilio-dms-cli creates an encrypted secret payload in the container
-    #   2. openstack secret store saves it to Barbican (inside container)
-    #   3. openstack endpoint list resolves the public Barbican URL
-    #   4. Secret href is normalised to the public endpoint
-    #   5. workloadmgr backup-target-create uses --secret-ref
+    #   1. If a custom SSL cert is configured (triliovault_copy_ceph_s3_ssl_cert),
+    #      copy it from the Ansible control node's
+    #      /etc/kolla/config/triliovault/ (per the T4O install docs, this is
+    #      where the operator places it — s3_ssl_cert_file_name is a bare
+    #      filename, not a path) onto the wlm-api host.
+    #   2. trilio-dms-cli creates an encrypted secret payload in the container
+    #   3. openstack secret store saves it to Barbican (inside container)
+    #   4. openstack endpoint list resolves the public Barbican URL
+    #   5. Secret href is normalised to the public endpoint
+    #   6. workloadmgr backup-target-create uses --secret-ref
     # -----------------------------------------------------------------------
+    - name: Copy S3 SSL certificate to wlm-api host
+      copy:
+        src: "/etc/kolla/config/triliovault/{{ bt_data.backup_target.s3_ssl_cert_file_name }}"
+        dest: "/tmp/{{ bt_data.backup_target.s3_ssl_cert_file_name }}"
+        mode: "0644"
+      become: true
+      when:
+        - bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
+        - bt_data.backup_target.copy_ceph_s3_ssl_cert | default(false) | bool
+
     - name: Create S3 secret payload via trilio-dms-cli
       shell: |
         set -a; source {{ cloudrc }}; set +a
@@ -85,8 +100,12 @@
           SSL_FLAG="--no-ssl "
         fi
         if [ "{{ bt_data.backup_target.s3_ssl_verify | lower }}" == "true" ]; then
-          docker cp {{ bt_data.backup_target.s3_ssl_cert_file_name }} {{ wlm_container }}:/tmp/s3-cert.pem
-          SSL_VERIFY_FLAG="--ssl-verify --ssl-cert /tmp/s3-cert.pem "
+          if [ "{{ bt_data.backup_target.copy_ceph_s3_ssl_cert | default(false) | lower }}" == "true" ]; then
+            docker cp /tmp/{{ bt_data.backup_target.s3_ssl_cert_file_name }} {{ wlm_container }}:/tmp/s3-cert.pem
+            SSL_VERIFY_FLAG="--ssl-verify --ssl-cert /tmp/s3-cert.pem "
+          else
+            SSL_VERIFY_FLAG="--ssl-verify "
+          fi
         else
           SSL_VERIFY_FLAG="--no-ssl-verify"
         fi
@@ -107,6 +126,15 @@
       become: true
       no_log: true
       when: bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
+
+    - name: Remove S3 SSL certificate temp copy from wlm-api host
+      file:
+        path: "/tmp/{{ bt_data.backup_target.s3_ssl_cert_file_name }}"
+        state: absent
+      become: true
+      when:
+        - bt_data.backup_target.type | lower in ['amazon_s3', 'other_s3_compatible']
+        - bt_data.backup_target.copy_ceph_s3_ssl_cert | default(false) | bool
 
     - name: Store S3 credentials in Barbican
       shell: |

@@ -23,11 +23,11 @@ spec:
             - /bin/sh
             - -xc
             - |
-              until oc get rabbitmqcluster -n {{ .Values.rabbitmq.common.namespace }} | grep -q trilio-rabbitmq-cluster; do
+              until oc get rabbitmq.rabbitmq.openstack.org -n {{ .Values.rabbitmq.common.namespace }} | grep -q trilio-rabbitmq-cluster; do
                 echo "Waiting for RabbitMQ Cluster CR...";
                 sleep 10;
               done
-              oc wait --for=condition=AllReplicasReady rabbitmqcluster/trilio-rabbitmq-cluster -n trilio-openstack --timeout=120s
+              oc wait --for=condition=Ready rabbitmq.rabbitmq.openstack.org/trilio-rabbitmq-cluster -n trilio-openstack --timeout=120s
               echo "RabbitMQ Cluster is ready."
 
 {{- end }}

@@ -1,0 +1,14 @@
+[client]
+rabbitmq_url = {{ rabbitmq_url }}
+
+{% if db_url %}db_url = {{ db_url }}
+{% endif %}
+node_id = {{ node_id }}
+request_timeout = 60
+log_level = {{ log_level }}
+log_file = {{ log_file }}
+log_max_bytes = 26214400
+log_backup_count = 5
+db_pool_size = 20
+db_max_overflow = 40
+db_pool_recycle = 3600

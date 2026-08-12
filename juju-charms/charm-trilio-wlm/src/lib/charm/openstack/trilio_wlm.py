@@ -332,6 +332,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
                 hookenv.config("region"),
                 "license-create",
                 license_file,
+                "--accept-eula",
             ]
         )
         hookenv.leader_set({"licensed": True})

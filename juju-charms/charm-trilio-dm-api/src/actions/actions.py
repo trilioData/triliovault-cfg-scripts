@@ -16,8 +16,9 @@
 import os
 import sys
 
-# Load modules from $CHARM_DIR/lib
+# Load modules from $CHARM_DIR/lib and $CHARM_DIR/reactive
 sys.path.append("lib")
+sys.path.append("reactive")
 
 from charms.layer import basic
 
@@ -33,6 +34,12 @@ import charms_openstack.charm
 # import the trilio module to get the charm definitions created.
 import charm.openstack.dmapi  # noqa
 
+# import the reactive handlers module so the update-trilio action can
+# explicitly re-render the DMS client config — actions never go through the
+# reactive hook-dispatch loop, so render_config() would otherwise not run as
+# part of an upgrade (TVAULT-7521).
+import dmapi_handlers  # noqa
+
 
 def update_trilio(*args):
     """Run setup after Trilio upgrade.
@@ -46,6 +53,16 @@ def update_trilio(*args):
         # reactive.RelationBase and needs a different method to instantiate it.
         endpoints.append(reactive.endpoint_from_name("identity-service"))
         trilio_charm.run_trilio_upgrade(endpoints)
+
+        # This action never goes through the reactive hook-dispatch loop, so
+        # the DMS client config render (normally triggered by render_config()
+        # on a later hook) must be run explicitly here, with the correct
+        # rabbitmq_url, before trilio-dms-server settles (TVAULT-7521).
+        # render_dmapi_and_dms_configs() writes client.conf unconditionally,
+        # including the workloadmgr db_url once shared-db has supplied it, so
+        # no separate render_dms_client_config() call is needed here.
+        dmapi_handlers.render_dmapi_and_dms_configs()
+
         trilio_charm._assess_status()
 
 

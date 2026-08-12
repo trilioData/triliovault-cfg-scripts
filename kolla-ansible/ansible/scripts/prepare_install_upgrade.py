@@ -202,6 +202,28 @@ def _strip_trilio_plays(text):
     return ''.join(filtered)
 
 
+# Matches a Trilio-owned Ansible inventory group section (e.g.
+# "[triliovault-datamover-api:children]") plus its child lines, up to the
+# next "[" section header or end of file.
+_TRILIO_INVENTORY_GROUP_RE = re.compile(
+    r'^\[triliovault-[^\]]*\](?:\n(?!\[).*)*\n?',
+    re.MULTILINE,
+)
+
+
+def _strip_trilio_inventory_groups(text):
+    """
+    Remove Trilio-owned inventory group sections from text, regardless of
+    whether they still exist in the current template. Used to clean up
+    groups added manually before this script existed (e.g. upgrading from
+    a release without marker-block support) so they don't linger as
+    duplicates — or as stale, discontinued groups — alongside the new
+    managed block (TVAULT-7420).
+    """
+    cleaned = _TRILIO_INVENTORY_GROUP_RE.sub('', text)
+    return re.sub(r'\n{3,}', '\n\n', cleaned)
+
+
 def extract_block_content(text):
     """Return the text between the Trilio marker lines, or None if absent."""
     begin = text.find(MARKER_BEGIN)
@@ -212,23 +234,6 @@ def extract_block_content(text):
     return text[start:end].strip('\n')
 
 
-def insert_or_replace_block(filepath, new_content):
-    """
-    Insert the Trilio managed block into filepath if absent, or replace it.
-    Returns 'appended' or 'replaced'.
-    """
-    current = read_file(filepath)
-    block = _make_block(new_content)
-
-    if has_marker_block(current):
-        pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
-        updated = re.sub(pattern, block, current, flags=re.DOTALL)
-        write_file(filepath, updated)
-        return 'replaced'
-    else:
-        updated = current.rstrip('\n') + '\n\n' + block
-        write_file(filepath, updated)
-        return 'appended'
 
 
 # ─── Globals merge ────────────────────────────────────────────────────────────
@@ -267,6 +272,12 @@ def merge_globals_content(template_text, old_values):
         always use the new template value so version bumps take effect
     - Key is new (not in old block)     → use template value, log as NEW
     - Key removed from template         → silently dropped (not in new template)
+    - Template line is a commented-out optional parameter (e.g.
+      "# rabbit_quorum_queue: false"):
+        customer previously uncommented it → keep it uncommented, carry
+                                              their value forward as-is
+        customer never uncommented it      → leave commented, exactly as
+                                              the new template has it
 
     Comments and blank lines are preserved from the new template.
     Returns (merged_text, new_keys_list).
@@ -278,7 +289,24 @@ def merge_globals_content(template_text, old_values):
     for line in lines:
         stripped = line.strip()
 
-        if not stripped or stripped.startswith('#'):
+        if not stripped:
+            result.append(line)
+            continue
+
+        # A commented-out "key: value" parameter also starts with '#', so
+        # check for it before the general comment passthrough below — if
+        # the customer previously uncommented it, restore it uncommented
+        # instead of silently dropping their setting back to the default.
+        cm = re.match(r'^(\s*)#\s*([a-zA-Z_][a-zA-Z0-9_]*)(\s*:\s*)(.*)$', line.rstrip('\n'))
+        if cm:
+            indent, key, sep, _ = cm.groups()
+            if key in old_values:
+                result.append(f"{indent}{key}{sep}{old_values[key]}\n")
+            else:
+                result.append(line)
+            continue
+
+        if stripped.startswith('#'):
             result.append(line)
             continue
 
@@ -301,6 +329,26 @@ def merge_globals_content(template_text, old_values):
             result.append(line)
 
     return ''.join(result), new_keys
+
+
+def _find_legacy_block_start(text, template_text):
+    """
+    Find where a pre-marker-block Trilio section begins in text, identified
+    by the current template's own first line (its header comment). Every
+    triliovault_globals_<release>.yml begins with the same header and is
+    appended as a single block to the end of globals.yml, so any release's
+    header works as the boundary — derived from the template itself, not a
+    fixed string, so it stays correct even if the header wording changes.
+
+    Returns the index into text where the header line starts, or -1 if not found.
+    """
+    header_line = template_text.splitlines()[0].strip()
+    if not header_line:
+        return -1
+    for m in re.finditer(r'^.*$', text, re.MULTILINE):
+        if m.group(0).strip() == header_line:
+            return m.start()
+    return -1
 
 
 def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
@@ -327,11 +375,20 @@ def step_globals(globals_file, trilio_globals_file, mode, backup_dir):
             pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
             current_globals = re.sub(pattern, '', current_globals, flags=re.DOTALL)
         else:
-            # Pre-script setup: scan full file for existing values
-            old_values = _parse_kv_raw(current_globals)
-            print(f"  No existing marker block — reading existing values from globals.yml")
+            # Pre-script install (e.g. upgrading from a release before this
+            # script existed) — the whole Trilio section is a single block
+            # appended to the end of the file. Excise it entirely (not just
+            # keys the new template still recognizes) so any parameter no
+            # longer in this release's template is dropped, not retained.
+            legacy_start = _find_legacy_block_start(current_globals, template_text)
+            if legacy_start != -1:
+                old_values = _parse_kv_raw(current_globals[legacy_start:])
+                current_globals = current_globals[:legacy_start]
+                print(f"  Found legacy (pre-script) Trilio block with {len(old_values)} parameter(s)")
+            else:
+                print("  No existing Trilio content found in globals.yml")
 
-        # Strip any Trilio keys sitting outside the marker block (both cases above)
+        # Strip any Trilio keys still sitting loose outside the block removed above
         current_globals = _strip_trilio_keys(current_globals, template_keys)
 
     merged_text, new_keys = merge_globals_content(template_text, old_values)
@@ -377,6 +434,39 @@ def _split_passwords_file(content):
     return content.rstrip(), ''
 
 
+def merge_password_content(trilio_section, valid_keys):
+    """
+    Filter the existing Trilio section of passwords.yml down to only keys
+    in valid_keys (TRILIO_PASSWORD_KEYS). Any key no longer defined by this
+    release — e.g. a password for a since-discontinued component — is
+    dropped rather than carried forward. Generic against whatever
+    valid_keys is at call time, so it works unchanged for future releases
+    without needing any version-specific list.
+
+    Returns (kept_lines_text, removed_keys).
+    """
+    if not trilio_section:
+        return '', []
+
+    body = trilio_section
+    if body.startswith(_TRILIO_PWD_COMMENT):
+        body = body[len(_TRILIO_PWD_COMMENT):]
+
+    kept = []
+    removed = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        m = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*:', stripped)
+        if m and m.group(1) not in valid_keys:
+            removed.append(m.group(1))
+            continue
+        kept.append(line)
+
+    return '\n'.join(kept), removed
+
+
 def step_passwords(passwords_file, mode, backup_dir):
     print("\n[3] passwords.yml")
 
@@ -388,34 +478,32 @@ def step_passwords(passwords_file, mode, backup_dir):
     missing = [k for k in TRILIO_PASSWORD_KEYS if k not in existing]
 
     kolla_part, trilio_part = _split_passwords_file(current)
-    # Normalized = kolla (no trailing blank lines) + blank line + Trilio section
-    normalized = kolla_part + '\n\n' + trilio_part if trilio_part else None
+    kept_body, removed_keys = merge_password_content(trilio_part, TRILIO_PASSWORD_KEYS)
 
     backup_file(passwords_file, backup_dir)
 
-    if not missing:
-        # Normalize trailing blank lines even when skipping password generation
-        if normalized and normalized != current:
-            write_file(passwords_file, normalized)
-            print("  All Trilio password keys already present — normalized blank lines")
-        else:
-            print("  All Trilio password keys already present — skipping")
-        return
-
-    if mode == 'upgrade':
-        print(f"  {len(missing)} missing password key(s) — adding only missing ones")
-    else:
-        print(f"  Generating {len(missing)} password(s)")
-
     new_passwords = {k: generate_password() for k in missing}
+
     with open(passwords_file, 'w', encoding='utf-8') as f:
         f.write(kolla_part + '\n')
         f.write('\n' + _TRILIO_PWD_COMMENT)
-        if trilio_part:
-            # Preserve existing Trilio passwords (lines after the comment)
-            f.write(trilio_part[len(_TRILIO_PWD_COMMENT):].lstrip('\n'))
+        if kept_body:
+            f.write(kept_body + '\n')
         for key, val in new_passwords.items():
             f.write(f'{key}: {val}\n')
+
+    if removed_keys:
+        print("  Parameters removed (no longer in this release):")
+        for k in removed_keys:
+            print(f"    - {k}")
+
+    if missing:
+        if mode == 'upgrade':
+            print(f"  {len(missing)} missing password key(s) — adding only missing ones")
+        else:
+            print(f"  Generating {len(missing)} password(s)")
+    elif not removed_keys:
+        print("  All Trilio password keys already present — skipping")
 
     print(f"  Added {len(missing)} password key(s) to {passwords_file}")
 
@@ -454,11 +542,24 @@ def step_inventory(inventory_file, trilio_inventory_file, backup_dir):
     if not os.path.exists(inventory_file):
         die(f"Inventory file not found: {inventory_file}")
 
-    inv_content = read_file(trilio_inventory_file)
+    new_inventory_content = read_file(trilio_inventory_file)
+    current = read_file(inventory_file)
+
+    # Remove existing marker block (handles re-runs via this script)
+    if has_marker_block(current):
+        block_pattern = re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END) + r'\n?'
+        current = re.sub(block_pattern, '', current, flags=re.DOTALL)
+
+    # Remove any Trilio inventory groups sitting outside the marker block
+    # (handles upgrading from a release before this script existed, where
+    # groups were added manually with no markers — and drops any group
+    # discontinued in the new template rather than just deduplicating it)
+    current = _strip_trilio_inventory_groups(current)
 
     backup_file(inventory_file, backup_dir)
-    action = insert_or_replace_block(inventory_file, inv_content)
-    print(f"  {action} Trilio inventory block in {inventory_file}")
+    updated = current.rstrip('\n') + '\n\n' + _make_block(new_inventory_content)
+    write_file(inventory_file, updated)
+    print(f"  replaced Trilio inventory block in {inventory_file}")
 
 
 # ─── Ansible role ─────────────────────────────────────────────────────────────

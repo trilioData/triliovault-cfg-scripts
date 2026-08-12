@@ -16,9 +16,6 @@ series:
 - bionic
 - focal
 - jammy
-provides:
-  wlm-db:
-    interface: trilio-wlm-db
 resources:
   license:
     type: file

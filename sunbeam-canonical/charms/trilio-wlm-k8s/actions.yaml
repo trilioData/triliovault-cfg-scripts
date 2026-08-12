@@ -1,0 +1,43 @@
+create-cloud-admin-trust:
+  description: |
+    Create trust between the TrilioVault WLM service user and the Cloud Admin.
+    This is required once after initial deployment before using TrilioVault.
+
+    Example:
+      juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+  params:
+    password:
+      type: string
+      description: Cloud admin account password
+    user-domain-name:
+      type: string
+      description: Admin user domain name
+      default: admin_domain
+    project-name:
+      type: string
+      description: Admin project name
+      default: admin
+    project-domain-name:
+      type: string
+      description: Admin project domain name
+      default: admin_domain
+  required:
+    - password
+
+create-license:
+  description: |
+    Apply the TrilioVault license file. The file must already exist inside the
+    trilio-wlm workload container (e.g. via
+    `kubectl cp <license-file> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm`),
+    then run:
+
+      juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+
+    OpenStack credentials are read automatically from the identity-service
+    relation (the WLM service account) — no password parameter needed.
+  params:
+    license-file-path:
+      type: string
+      description: Path to the license file inside the trilio-wlm workload container
+  required:
+    - license-file-path

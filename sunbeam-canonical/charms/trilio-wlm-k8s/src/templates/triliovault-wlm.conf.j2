@@ -1,0 +1,150 @@
+[DEFAULT]
+log_config_append = {{ wlm_logging_conf_path }}
+
+my_ip = {{ my_ip }}
+
+osapi_workloads_listen = {{ my_ip }}
+
+triliovault_hostnames = {{ my_ip }}
+
+config_status = configured
+
+state_path = {{ state_path }}
+rootwrap_config = /etc/triliovault-wlm/rootwrap.conf
+
+wlm_rootwrap = /usr/bin/workloadmgr-rootwrap
+api_paste_config = /etc/triliovault-wlm/api-paste.ini
+
+sql_connection = {{ sql_connection }}
+
+osapi_workloads_listen_port = {{ osapi_workloads_listen_port }}
+
+##OS Details
+{% if cloud_admin_user_id %}cloud_admin_user_id = {{ cloud_admin_user_id }}
+{% endif %}
+{% if cloud_admin_project_id %}cloud_admin_project_id = {{ cloud_admin_project_id }}
+{% endif %}
+cloud_admin_domain = {{ cloud_admin_domain }}
+cloud_admin_role = {{ cloud_admin_role }}
+
+trustee_role = {{ trustee_role }}
+domain_name = {{ cloud_admin_domain }}
+
+{% if cloud_unique_id %}cloud_unique_id = {{ cloud_unique_id }}
+{% endif %}
+triliovault_user_domain_id = {{ service_domain_id }}
+region_name_for_services = {{ region_name_for_services }}
+global_job_scheduler_override = False
+
+transport_url = {{ transport_url }}
+
+api_workers = {{ api_workers }}
+workloads_workers = {{ workloads_workers }}
+
+
+glance_production_api_servers = {{ glance_production_api_servers }}
+glance_api_version = 2
+
+## Keystone URL for internal authentication
+keystone_endpoint_url = {{ auth_url }}
+keystone_auth_version = 3
+
+cinder_production_endpoint_template = {{ cinder_production_endpoint_template }}
+
+nova_admin_auth_url = {{ auth_url }}
+nova_production_endpoint_template = {{ nova_production_endpoint_template }}
+
+neutron_admin_auth_url = {{ auth_url }}
+neutron_production_url = {{ neutron_production_url }}
+
+
+
+# The path to store the taskflow data
+taskflow_path = /var/lib/workloadmgr/taskflow
+taskflow_max_cache_size = 1024
+
+rabbit_virtual_host = {{ rabbit_virtual_host }}
+compute_driver = libvirt.LibvirtDriver
+vault_storage_das_device = none
+
+vault_enable_threadpool = True
+vault_s3_support_empty_dir = False
+
+vault_data_directory_old = /var/triliovault
+vault_data_directory = /var/triliovault-mounts
+
+max_wait_for_upload = 48
+neutron_api_insecure = False
+
+auth_strategy = keystone
+log_dir = {{ log_dir }}
+use_stderr = true
+debug = {{ debug }}
+
+[global_job_scheduler]
+misfire_grace_time = 600
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+
+[keystone_authtoken]
+project_name = {{ keystone_project_name }}
+
+signing_dir = /var/cache/workloadmgr
+auth_url = {{ auth_url }}
+
+www_authenticate_uri = {{ auth_url }}
+auth_type = password
+
+username = {{ keystone_username }}
+password = {{ keystone_password }}
+
+# Trilio needs the deprecated keystonemiddleware v2 admin_* aliases too —
+# workloadmgr's trust-create path (context.trusts_auth_plugin) builds its
+# Keystone auth plugin from admin_user/admin_password, not username/password.
+admin_user = {{ keystone_username }}
+admin_password = {{ keystone_password }}
+admin_tenant_name = {{ keystone_project_name }}
+
+user_domain_name = {{ service_domain_name }}
+project_domain_name = {{ service_domain_name }}
+user_domain_id = {{ service_domain_id }}
+
+insecure = False
+service_token_roles_required = True
+{% if cafile %}cafile = {{ cafile }}
+{% endif %}
+
+[clients]
+client_retry_limit = 3
+endpoint_type = internal
+insecure = False
+{% if cafile %}cafile = {{ cafile }}
+{% endif %}
+
+[alembic]
+script_location = /usr/share/workloadmgr/migrate_repo
+version_locations = /usr/share/workloadmgr/migrate_repo/versions
+sqlalchemy.url = {{ sql_connection }}
+
+
+[filesearch]
+process_timeout = 300
+
+[barbican]
+encryption_support = True
+
+[oslo_messaging_rabbit]
+heartbeat_in_pthread = False
+# Must match nova.conf's rabbit_quorum_queue on the compute nodes — contego
+# (which loads nova.conf alongside its own config) declares its RPC queues as
+# quorum queues there. A mismatch means whichever side declares a shared-name
+# queue second gets a 406 PRECONDITION_FAILED from RabbitMQ for the
+# conflicting durability flag (quorum queues are always durable).
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+amqp_durable_queues = {{ amqp_durable_queues }}
+
+[wlm]
+
+[database]
+connection = {{ sql_connection }}

@@ -107,7 +107,3 @@ relations:
     - vault:certificates
   - - mysql-innodb-cluster:db-router
     - trilio-wlm-mysql-router:db-router
-
-  # DMS client relation - dmapi uses workloadmgr DB credentials from wlm
-  - - trilio-wlm:wlm-db
-    - trilio-dm-api:wlm-db

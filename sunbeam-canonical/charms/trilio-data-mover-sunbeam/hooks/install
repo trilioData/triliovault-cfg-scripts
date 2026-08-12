@@ -1,0 +1,7 @@
+#!/bin/bash
+# Juju machine agents may not preserve execute bits on the dispatch file when
+# extracting the charm zip. Ensure dispatch is executable before delegating.
+CHARM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+chmod +x "$CHARM_DIR/dispatch"
+JUJU_DISPATCH_PATH="${JUJU_DISPATCH_PATH:-$0}" PYTHONPATH="$CHARM_DIR/lib:$CHARM_DIR/venv" \
+    exec python3 "$CHARM_DIR/src/charm.py"

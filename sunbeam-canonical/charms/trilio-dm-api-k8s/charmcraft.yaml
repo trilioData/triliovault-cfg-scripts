@@ -1,0 +1,89 @@
+name: trilio-dm-api-k8s
+type: charm
+title: TrilioVault DataMover API (Kubernetes)
+summary: TrilioVault DataMover API K8s charm for Sunbeam Canonical OpenStack
+description: |
+  Deploys TrilioVault DataMover API (dmapi) on Sunbeam Canonical OpenStack as a
+  Kubernetes charm. Runs the dmapi service as a Pebble-managed process inside
+  a Kubernetes pod, listening on port 8784.
+
+  Requires a relation to trilio-wlm-k8s (wlm-service interface) to configure
+  the WLM API endpoint that DataMover API communicates with.
+
+assumes:
+  - k8s-api
+  - juju >= 3.1
+
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+
+containers:
+  trilio-dm-api:
+    resource: trilio-dm-api-image
+
+resources:
+  trilio-dm-api-image:
+    type: oci-image
+    description: OCI image for TrilioVault DataMover API
+    upstream-source: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
+
+requires:
+  database:
+    interface: mysql_client
+    limit: 1
+  amqp:
+    interface: rabbitmq
+    limit: 1
+  identity-service:
+    interface: keystone
+    limit: 1
+  wlm-service:
+    interface: wlm-service
+    limit: 1
+  ingress-internal:
+    interface: ingress
+    optional: true
+    limit: 1
+  ingress-public:
+    interface: ingress
+    optional: true
+    limit: 1
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+
+peers:
+  peers:
+    interface: trilio-dm-api-peer
+
+config:
+  options:
+    api-workers:
+      type: int
+      default: 2
+      description: Number of dmapi worker processes
+    debug:
+      type: boolean
+      default: false
+      description: Enable debug logging
+    rabbit-quorum-queue:
+      type: boolean
+      default: true
+      description: |
+        Must match nova.conf's rabbit_quorum_queue on the compute nodes —
+        contego shares RPC queue names with dm-api/DMS, and declaring the
+        same queue with a different durability flag on each side gets a 406
+        PRECONDITION_FAILED from RabbitMQ. Sunbeam/Caracal defaults to true;
+        override only if your deployment's nova.conf sets this to false.
+    amqp-durable-queues:
+      type: boolean
+      default: true
+      description: |
+        Standard oslo.messaging amqp_durable_queues setting. Must match
+        nova.conf's convention on the compute nodes for the same reason as
+        rabbit-quorum-queue.

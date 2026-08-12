@@ -1,0 +1,63 @@
+[DEFAULT]
+vault_data_directory = /var/triliovault-mounts
+vault_data_directory_old = /var/triliovault
+
+log_config_append = /etc/triliovault-datamover/datamover_logging.conf
+
+debug = {{ debug }}
+verbose = True
+max_uploads_pending = 3
+max_commit_pending = 3
+qemu_agent_ping_timeout = 30
+
+dmapi_transport_url = {{ transport_url }}
+
+[contego_sys_admin]
+# Must use tvault-contego-rootwrap — bare privsep-helper bypasses the rootwrap
+# filter allow-list and causes permission errors on disk/mount operations.
+helper_command = sudo /usr/bin/tvault-contego-rootwrap {{ dm_config_path }} privsep-helper
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper
+
+[conductor]
+use_local = True
+
+[oslo_messaging_rabbit]
+ssl = false
+# nova.conf (loaded alongside this file) already sets rabbit_quorum_queue,
+# but state it explicitly here too so it can't silently drift from
+# dm-api/DMS/WLM's own value — a mismatched durability flag on a shared-name
+# queue gets a 406 PRECONDITION_FAILED from RabbitMQ (quorum queues are
+# always durable).
+rabbit_quorum_queue = {{ rabbit_quorum_queue }}
+amqp_durable_queues = {{ amqp_durable_queues }}
+
+[barbican]
+barbican_endpoint_type = internal
+verify_ssl = {{ 'true' if cafile else 'false' }}
+{% if cafile %}verify_ssl_path = {{ cafile }}
+{% endif %}
+
+[libvirt]
+# openstack-hypervisor's embedded libvirtd listens on a snap-confined socket
+# path, not the standard system path (/var/run/libvirt/libvirt-sock) contego's
+# libvirt-python bindings default to — without this, every contego libvirt call
+# (freeze/thaw, disk snapshot, etc) fails with "Failed to connect socket ...:
+# No such file or directory".
+# TVAULT-7404 root-user experiment: contego now runs as root, so the earlier
+# qemu+ext:// sudo-wrapped-nc relay (needed to make the peer look like root
+# while contego ran as nova) is unnecessary — plain qemu+unix:// works since
+# root always resolves in libvirtd's own confined passwd. See
+# nova-user-known-good-state.md for that approach and how to roll back to it.
+connection_uri = qemu+unix:///system?socket=/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock
+{% if ceph_backend_enabled %}
+# Matches kolla-ansible's own datamover conf (rendered when cinder_backend_ceph
+# is true) and RHOSO18's libvirt_images_rbd_ceph_conf default — feeds Nova's own
+# Rbd image-backend class, which contego's rbd backend subclasses.
+images_rbd_ceph_conf = {{ ceph_conf_path }}
+rbd_user = {{ ceph_client_name }}
+
+[ceph]
+keyring_ext = .keyring
+{% endif %}

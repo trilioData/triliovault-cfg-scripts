@@ -1,0 +1,33 @@
+{{- if eq .Values.crdType "TVOControlPlane" }}
+---
+# Job 2: Wait for RabbitMQ Cluster CR Creation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-wait-for-rabbitmq-cluster
+  namespace: trilio-openstack
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-17"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      serviceAccountName: wait-job-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: wait-for-rabbitmq-cluster
+          image: {{ .Values.images.openshift_cli }}
+          command:
+            - /bin/sh
+            - -xc
+            - |
+              until oc get rabbitmqcluster -n {{ .Values.rabbitmq.common.namespace }} | grep -q trilio-rabbitmq-cluster; do
+                echo "Waiting for RabbitMQ Cluster CR...";
+                sleep 10;
+              done
+              oc wait --for=condition=AllReplicasReady rabbitmqcluster/trilio-rabbitmq-cluster -n trilio-openstack --timeout=120s
+              echo "RabbitMQ Cluster is ready."
+
+{{- end }}

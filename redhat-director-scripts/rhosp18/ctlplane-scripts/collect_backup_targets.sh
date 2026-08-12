@@ -87,14 +87,17 @@ log_step "Step 1: Read backup targets from ${INPUTS_FILE}"
 #
 #       Field names are normalised to a common internal format:
 #         backup_target_name → name
-#         backup_target_type → type
-#         s3_bucket          → bucket
-#         s3_endpoint_url    → endpoint_url
-#         s3_ssl_enabled     → ssl
-#         s3_ssl_verify      → ssl_verify
-#         s3_ssl_ca_cert     → ssl_cert  (only when s3_self_signed_cert=true)
+#         backup_target_type → type            (s3 or nfs)
+#         s3_bucket          → bucket          (s3 only)
+#         s3_endpoint_url    → endpoint_url    (s3 only)
+#         s3_ssl_enabled     → ssl             (s3 only)
+#         s3_ssl_verify      → ssl_verify      (s3 only)
+#         s3_ssl_ca_cert     → ssl_cert        (s3 only, when s3_self_signed_cert=true)
+#         nfs_shares         → nfs_shares      (nfs only)
+#         nfs_options        → nfs_options     (nfs only)
 #
 #       If the section is absent the script logs a notice and moves on.
+#       Any other backup_target_type is unsupported and skipped with a warning.
 
 STATIC_BTS_JSON=$(python3 - "${INPUTS_FILE}" <<'PYEOF'
 import yaml, json, sys
@@ -117,17 +120,21 @@ for b in spec.get("triliovault_backup_targets", []):
     if not bt["name"]:
         print("[WARN] Entry without backup_target_name — skipping", file=sys.stderr)
         continue
-    if bt["type"] != "s3":
-        print(f"[WARN] '{bt['name']}' type='{bt['type']}' — skipping (S3 only)",
+    if bt["type"] == "s3":
+        bt["s3_type"]      = b.get("s3_type", "other_s3")
+        bt["bucket"]       = b.get("s3_bucket", "")
+        bt["endpoint_url"] = b.get("s3_endpoint_url", "")
+        bt["ssl"]          = b.get("s3_ssl_enabled", False)
+        bt["ssl_verify"]   = b.get("s3_ssl_verify", False)
+        if b.get("s3_self_signed_cert") and b.get("s3_ssl_ca_cert"):
+            bt["ssl_cert"] = b["s3_ssl_ca_cert"]
+    elif bt["type"] == "nfs":
+        bt["nfs_shares"]  = b.get("nfs_shares", "")
+        bt["nfs_options"] = b.get("nfs_options", "")
+    else:
+        print(f"[WARN] '{bt['name']}' type='{bt['type']}' — skipping (unsupported type)",
               file=sys.stderr)
         continue
-    bt["s3_type"]      = b.get("s3_type", "other_s3")
-    bt["bucket"]       = b.get("s3_bucket", "")
-    bt["endpoint_url"] = b.get("s3_endpoint_url", "")
-    bt["ssl"]          = b.get("s3_ssl_enabled", False)
-    bt["ssl_verify"]   = b.get("s3_ssl_verify", False)
-    if b.get("s3_self_signed_cert") and b.get("s3_ssl_ca_cert"):
-        bt["ssl_cert"] = b["s3_ssl_ca_cert"]
     bts.append(bt)
 
 if bts:
@@ -156,7 +163,7 @@ log "TVOBackupTarget CRs found: ${CR_COUNT}"
 
 # Extract fields from each CR.
 # T4O 6.0/6.1 stores backup target config under spec.triliovault_backup_target
-# (singular, nested) using s3_* prefixed field names.
+# (singular, nested) using s3_* (S3) or nfs_* (NFS) prefixed field names.
 # Fields are normalised to the same internal format used for the YAML source.
 #
 # NOTE: CR_RAW is embedded via bash expansion (not piped) to avoid the
@@ -189,23 +196,26 @@ for item in data.get("items", []):
         "type":       bt_type,
     }
 
-    if bt_type != "s3":
-        continue  # S3 targets only
-
-    bt["s3_type"]      = bt_spec.get("s3_type", "other_s3")
-    bt["bucket"]       = bt_spec.get("s3_bucket",
-                           bt_spec.get("bucket", ""))
-    bt["endpoint_url"] = bt_spec.get("s3_endpoint_url",
-                           bt_spec.get("endpoint_url", ""))
-    bt["ssl"]          = bt_spec.get("s3_ssl_enabled",
-                           bt_spec.get("ssl", False))
-    bt["ssl_verify"]   = bt_spec.get("s3_ssl_verify",
-                           bt_spec.get("ssl_verify", False))
-    if (bt_spec.get("s3_self_signed_cert") and
-            bt_spec.get("s3_ssl_ca_cert")):
-        bt["ssl_cert"] = bt_spec["s3_ssl_ca_cert"]
-    elif bt_spec.get("ssl_cert"):
-        bt["ssl_cert"] = bt_spec["ssl_cert"]
+    if bt_type == "s3":
+        bt["s3_type"]      = bt_spec.get("s3_type", "other_s3")
+        bt["bucket"]       = bt_spec.get("s3_bucket",
+                               bt_spec.get("bucket", ""))
+        bt["endpoint_url"] = bt_spec.get("s3_endpoint_url",
+                               bt_spec.get("endpoint_url", ""))
+        bt["ssl"]          = bt_spec.get("s3_ssl_enabled",
+                               bt_spec.get("ssl", False))
+        bt["ssl_verify"]   = bt_spec.get("s3_ssl_verify",
+                               bt_spec.get("ssl_verify", False))
+        if (bt_spec.get("s3_self_signed_cert") and
+                bt_spec.get("s3_ssl_ca_cert")):
+            bt["ssl_cert"] = bt_spec["s3_ssl_ca_cert"]
+        elif bt_spec.get("ssl_cert"):
+            bt["ssl_cert"] = bt_spec["ssl_cert"]
+    elif bt_type == "nfs":
+        bt["nfs_shares"]  = bt_spec.get("nfs_shares", "")
+        bt["nfs_options"] = bt_spec.get("nfs_options", "")
+    else:
+        continue  # unsupported type
 
     bts.append(bt)
 
@@ -255,6 +265,8 @@ log "Inventory file created: ${INVENTORY_FILE}"
 
 # -----------------------------------------------------------------------
 # Step 4: Collect S3 credentials (6.1 cluster — must run BEFORE upgrade)
+#
+# NFS targets have no vault credentials and are skipped in this step.
 #
 # Credential source depends on how the backup target was added:
 #
@@ -308,7 +320,7 @@ import yaml
 with open('${INVENTORY_FILE}') as f:
     inv = yaml.safe_load(f)
 for bt in inv.get('backup_targets', []):
-    if 'TVOBackupTarget CR' in bt.get('source', ''):
+    if bt.get('type') == 's3' and 'TVOBackupTarget CR' in bt.get('source', ''):
         print(bt['name'])
 ")
 
@@ -329,7 +341,9 @@ with open("${INVENTORY_FILE}") as f:
 bts     = inventory.get("backup_targets", [])
 missing = []
 
-for bt in bts:
+s3_bts = [bt for bt in bts if bt.get("type") == "s3"]
+
+for bt in s3_bts:
     name   = bt["name"]
     source = bt.get("source", "")
 
@@ -361,8 +375,8 @@ with open("${INVENTORY_FILE}", "w") as f:
 
 os.remove("${CR_CREDS_FILE}")
 
-found = len(bts) - len(missing)
-print(f"[INFO] Credentials collected for {found}/{len(bts)} backup target(s)")
+found = len(s3_bts) - len(missing)
+print(f"[INFO] Credentials collected for {found}/{len(s3_bts)} S3 backup target(s)")
 PYEOF
 
 log "Credentials written to ${INVENTORY_FILE}"
@@ -451,49 +465,65 @@ with open("${INVENTORY_FILE}") as f:
     inventory = yaml.safe_load(f)
 
 inv_bts = inventory.get("backup_targets", [])
-# Use S3 bucket names for verification — target names may differ between
-# tvo-operator-inputs.yaml and the WLM database.
-inv_buckets = sorted(b["bucket"] for b in inv_bts if b.get("bucket"))
+# Compare S3 and NFS targets separately, using S3 bucket name or NFS share
+# path as the identifier — target names may differ between
+# tvo-operator-inputs.yaml/CRs and the WLM database.
+inv_s3  = sorted(b["bucket"]     for b in inv_bts if b.get("type") == "s3"  and b.get("bucket"))
+inv_nfs = sorted(b["nfs_shares"] for b in inv_bts if b.get("type") == "nfs" and b.get("nfs_shares"))
 
 try:
     wlm_bts = json.loads(r"""${WLM_BT_JSON}""")
-    # workloadmgr backup-target-list --format json returns the bucket/endpoint
-    # in "Backend Endpoint".  Format is either a plain bucket name or
-    # "host:port/bucket" — extract the last path component in both cases.
-    wlm_buckets = sorted(
+    # workloadmgr backup-target-list --format json returns the target type in
+    # "Type" ("s3" or "nfs") and the bucket/endpoint in "Backend Endpoint".
+    #   S3  Backend Endpoint: plain bucket name, or "host:port/bucket" —
+    #       extract the last path component in both cases.
+    #   NFS Backend Endpoint: the share path itself (e.g. "host:/export") —
+    #       compare as-is; splitting on "/" would truncate it (this was the
+    #       cause of the false "rhosp" mismatch from an NFS share ending in
+    #       .../rhosp).
+    wlm_s3 = sorted(
         (b.get("Backend Endpoint") or "").split("/")[-1]
         for b in wlm_bts
-        if b.get("Backend Endpoint")
+        if b.get("Backend Endpoint") and (b.get("Type") or "").lower() == "s3"
+    )
+    wlm_nfs = sorted(
+        b.get("Backend Endpoint") or ""
+        for b in wlm_bts
+        if b.get("Backend Endpoint") and (b.get("Type") or "").lower() == "nfs"
     )
 except Exception as exc:
     print(f"[WARN] Cannot parse workloadmgr output ({exc}). "
           "Verify manually: workloadmgr backup-target-list")
     sys.exit(0)
 
-print(f"\n  Inventory S3 count   : {len(inv_buckets)}")
-print(f"  workloadmgr count    : {len(wlm_buckets)}")
+print(f"\n  Inventory S3 count    : {len(inv_s3)}")
+print(f"  workloadmgr S3 count  : {len(wlm_s3)}")
+print(f"  Inventory NFS count   : {len(inv_nfs)}")
+print(f"  workloadmgr NFS count : {len(wlm_nfs)}")
 
 mismatches = False
 
-only_in_inv = set(inv_buckets) - set(wlm_buckets)
-only_in_wlm = set(wlm_buckets) - set(inv_buckets)
+def report(label, only_inv, only_wlm):
+    global mismatches
+    if only_inv:
+        print(f"\n[MISMATCH] {label} in inventory but not in workloadmgr:")
+        for b in sorted(only_inv):
+            print(f"  - {b}")
+        mismatches = True
+    if only_wlm:
+        print(f"\n[MISMATCH] {label} in workloadmgr but not in inventory:")
+        for b in sorted(only_wlm):
+            print(f"  - {b}  <-- add to ${INVENTORY_FILE} before running "
+                  "update_backup_targets_62.sh")
+        mismatches = True
 
-if only_in_inv:
-    print(f"\n[MISMATCH] Buckets in inventory but not in workloadmgr:")
-    for b in sorted(only_in_inv):
-        print(f"  - {b}")
-    mismatches = True
-
-if only_in_wlm:
-    print(f"\n[MISMATCH] Buckets in workloadmgr but not in inventory:")
-    for b in sorted(only_in_wlm):
-        print(f"  - {b}  <-- add to ${INVENTORY_FILE} before running "
-              "update_backup_targets_62.sh")
-    mismatches = True
+report("S3 buckets", set(inv_s3) - set(wlm_s3), set(wlm_s3) - set(inv_s3))
+report("NFS shares", set(inv_nfs) - set(wlm_nfs), set(wlm_nfs) - set(inv_nfs))
 
 if not mismatches:
     print("\n[OK] Inventory matches workloadmgr exactly.")
-    print(f"     S3 buckets: {inv_buckets}")
+    print(f"     S3 buckets: {inv_s3}")
+    print(f"     NFS shares: {inv_nfs}")
 else:
     print("\n[ACTION] Correct ${INVENTORY_FILE} before running "
           "update_backup_targets_62.sh")

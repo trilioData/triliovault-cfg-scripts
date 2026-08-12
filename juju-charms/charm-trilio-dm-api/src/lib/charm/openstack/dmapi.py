@@ -13,6 +13,7 @@
 import collections
 import os
 
+import charms.reactive as reactive
 import charms_openstack.adapters as adapters
 import charms_openstack.ip as os_ip
 import charms_openstack.plugins as plugins
@@ -131,6 +132,22 @@ class DmapiCharm(plugins.TrilioVaultCharm):
     def get_amqp_credentials(self):
         return ("dmapi", "openstack")
 
+    def custom_assess_status_check(self):
+        """Block while the workloadmgr DB grant for this host is missing.
+
+        The DMS client needs its own 'workloadmgr'@<dmapi-host> grant (see
+        get_database_setup()). Until mysql-innodb-cluster answers that
+        request there is no usable db_url, and every backup target mount
+        fails at snapshot time -- previously with the unit still reporting
+        "Unit is ready", which hid the fault from operators (TVAULT-7592).
+        """
+        db = reactive.endpoint_from_flag('shared-db.available')
+        if db and not db.password(prefix='wlm'):
+            return ('blocked',
+                    'workloadmgr database access not granted yet; '
+                    'DMS backup target mounts will fail')
+        return None, None
+
     def get_database_setup(self):
         return [
             {"database": "nova", "username": "nova", "prefix": "dmapinova"},
@@ -210,6 +227,21 @@ class DmapiCharmQueens41(DmapiCharm):
                 "database": "dmapi",
                 "username": "dmapi",
                 "prefix": "dmapi",
+            },
+            # The DMS client on DMAPI nodes queries the workloadmgr database
+            # directly (db_url in /etc/triliovault-dms/client.conf) to resolve
+            # backup targets at mount time. mysql-innodb-cluster only creates
+            # a 'workloadmgr'@<host> grant for hosts that request the database
+            # over shared-db, so without this entry the grant exists solely for
+            # the trilio-wlm unit and every mount fails with ERROR 1045
+            # "Access denied for user 'workloadmgr'@<dmapi-ip>" (TVAULT-7592).
+            # This does not create a second DB user: the password is stored
+            # per-username (leader key mysql-workloadmgr.passwd), so the same
+            # credential WLM already holds is reused for the new host grant.
+            {
+                "database": "workloadmgr",
+                "username": "workloadmgr",
+                "prefix": "wlm",
             },
         ]
 

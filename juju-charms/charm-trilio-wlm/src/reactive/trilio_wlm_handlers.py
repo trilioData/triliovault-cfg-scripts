@@ -141,8 +141,6 @@ def run_trilio_install_upgrade_packages(packages):
 def render_config(*args):
     """Render the configuration for the charm when all the interfaces are available."""
 
-    haproxy_port = 8780
-    api_port = determine_api_port(haproxy_port, singlenode_mode=True)
     with charm.provide_charm_instance() as charm_class:
         packages_to_install = TrilioWLMBaseCharm().base_packages
         hookenv.log(f"Trilio Wlm Charm Packages: {packages_to_install}")
@@ -154,8 +152,69 @@ def render_config(*args):
             if os.path.exists('/lib/systemd/system/tvault-object-store.service'):
                 host.service('stop', 'tvault-object-store')
                 host.service('disable', 'tvault-object-store')
+            # alembic.ini is rendered by this charm, not shipped by the
+            # workloadmgr package, so on a fresh install it does not exist
+            # yet at this point. db_sync() would then exit 255 ("No config
+            # file ... found") and kill the hook *before* the
+            # render_with_interfaces() call below ever creates it -- the
+            # retry hits the same wall, deadlocking the unit permanently.
+            # Upgrades never showed this because alembic.ini was already on
+            # disk from the previous release's render (TVAULT-7592).
+            # Rendering it alone is safe and preserves the ordering below:
+            # its restart_map entry is [], so no service is restarted here.
+            charm_class.render_with_interfaces(
+                args, configs=[charm_class.alembic_ini])
+
+            # Run the DB migration now, before render_with_interfaces() below
+            # can restart wlm-api/workloads/scheduler/cron via restart_map.
+            # Otherwise those services come back up on the just-installed
+            # package against a schema that hasn't been migrated yet
+            # (TVAULT-7522).
+            charm_class.db_sync()
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
+
+    render_wlm_and_dms_configs(*args)
+
+    with charm.provide_charm_instance() as charm_class:
+        _start_services_locked_out_by_systemd(charm_class)
+        charm_class.assess_status()
+
+    set_flag("config.rendered")
+
+
+def _start_services_locked_out_by_systemd(charm_class):
+    """Start charm-managed services that systemd has refused to restart.
+
+    The workloadmgr deb's postinst starts the wlm-* services during package
+    installation, before this charm has rendered triliovault-wlm.conf, so they
+    crash against the config shipped in the package. After StartLimitBurst
+    failures systemd stops honouring start requests entirely -- including the
+    restart_map restart this charm issues seconds later once the correct
+    config is on disk -- so the unit sits blocked on "Services not running
+    that should be: ..." indefinitely. Observed on every fresh install
+    (TVAULT-7592); upgrades are unaffected because the packages are already
+    installed and the services are already running against a valid config.
+
+    reset-failed clears the lockout and is a no-op for a service that is not
+    in a failed state, so this is safe to run on every render.
+    """
+    for service_name in charm_class.services:
+        if not host.service_running(service_name):
+            host.service('reset-failed', service_name)
+            host.service_start(service_name)
+
+
+def render_wlm_and_dms_configs(*args):
+    """Render triliovault-wlm.conf and the DMS server/client configs.
+
+    Extracted from render_config() so it can also be called directly from
+    the update-trilio action (charms.reactive actions never go through the
+    reactive hook-dispatch loop, so this handler would otherwise not run
+    again until some later hook fires — TVAULT-7521).
+    """
+    haproxy_port = 8780
+    api_port = determine_api_port(haproxy_port, singlenode_mode=True)
 
     # Load configurations
     charm_config = config()
@@ -371,28 +430,6 @@ def register_endpoints_and_request_notification(identity_service):
             instance.admin_url,
             requested_roles=[instance.options.trustee_role])
         instance.assess_status()
-
-
-@hook('wlm-db-relation-joined', 'wlm-db-relation-changed')
-def wlm_db_connected():
-    reactive.clear_flag('wlm-db.connected')
-    reactive.set_flag('wlm-db.connected')
-
-
-@hook('wlm-db-relation-departed', 'wlm-db-relation-broken')
-def wlm_db_disconnected():
-    reactive.clear_flag('wlm-db.connected')
-
-
-@reactive.when('wlm-db.connected')
-@reactive.when('shared-db.available')
-def publish_wlm_db_credentials(*args):
-    shared_db = reactive.RelationBase.from_state('shared-db.available')
-    if shared_db and shared_db.password():
-        for rid in hookenv.relation_ids('wlm-db'):
-            hookenv.relation_set(relation_id=rid,
-                                 workloadmgr_password=shared_db.password())
-        hookenv.log("Published workloadmgr DB password to wlm-db relation.")
 
 
 @reactive.when_any("config.changed.triliovault-pkg-source",

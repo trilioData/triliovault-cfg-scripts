@@ -11,14 +11,43 @@ import re
 import base64
 
 
-# Define the input YAML file
-yaml_file = "tvo-operator-inputs.yaml"
+# RHOSO switched RabbitMQ from the upstream community RabbitMQ Cluster Operator to its
+# own native operator starting with FR6 (18.0.21) - the community operator is no longer
+# deployed by RHOSO from that version on (TVAULT-7511). Pick the input template matching
+# the target cluster's RHOSO version, then resolve it into the canonical output file so
+# other scripts (uninstall_tvo_control_plane.sh, collect_backup_targets.sh, etc.) that
+# expect tvo-operator-inputs.yaml keep working unchanged.
+def get_input_template():
+    try:
+        result = subprocess.run(
+            ["oc", "get", "openstackversion", "openstack-controlplane", "-n", "openstack",
+             "-o", "jsonpath={.status.deployedVersion}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        deployed_version = result.stdout.strip()
+        match = re.match(r"^(\d+\.\d+\.\d+)", deployed_version)
+        base_version = match.group(1) if match else ""
+        patch = int(base_version.split(".")[2]) if base_version.count(".") == 2 else None
+        if patch is not None and patch >= 21:
+            print(f"Detected OpenStack version: {deployed_version} (>=18.0.21, FR6 onwards)")
+            return "tvo-operator-inputs-fr6-onwards.yaml"
+        print(f"Detected OpenStack version: {deployed_version or 'unknown'} (<18.0.21, till FR5)")
+        return "tvo-operator-inputs-till-fr5.yaml"
+    except subprocess.CalledProcessError:
+        print("Failed to detect OpenStack version. Defaulting to tvo-operator-inputs-till-fr5.yaml.")
+        return "tvo-operator-inputs-till-fr5.yaml"
+
+
+input_template = get_input_template()
+output_file = "tvo-operator-inputs.yaml"
 
 yaml_parser = YAML()
 yaml_parser.preserve_quotes = True
 yaml_parser.width = 4096
 
-with open(yaml_file, "r") as file:
+with open(input_template, "r") as file:
     yaml_data = yaml_parser.load(file)
 
 
@@ -119,6 +148,37 @@ def fetch_and_extract_cluster_domain():
         print(f"Failed to fetch Glance endpoint: {e}")
         return None, None
 
+# Function to fetch OpenStack's Nova rabbitmq queue type (Quorum vs Mirrored/Classic)
+def get_openstack_rabbit_quorum_state():
+    try:
+        print("Checking OpenStack Nova rabbitmq queue type...")
+        result = subprocess.run(
+            ["oc", "get", "transporturl", "nova-api-transport", "-n", "openstack", "-o", "jsonpath={.status.queueType}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        queue_type = result.stdout.strip()
+        if not queue_type:
+            print("nova-api-transport queueType not found. Leaving rabbit_quorum_queue as configured.")
+            return None
+        print(f"OpenStack Nova rabbitmq queueType: '{queue_type}'")
+        return queue_type.lower() == "quorum"
+    except subprocess.CalledProcessError:
+        print("Failed to fetch nova-api-transport queueType. Leaving rabbit_quorum_queue as configured.")
+        return None
+
+# Function to sync T4O's rabbitmq client params (rabbit_quorum_queue, amqp_durable_queues) with OpenStack's
+def update_rabbit_params():
+    quorum_enabled = get_openstack_rabbit_quorum_state()
+    if quorum_enabled is None:
+        return
+    if "spec" in yaml_data and "rabbitmq" in yaml_data["spec"] and "common" in yaml_data["spec"]["rabbitmq"]:
+        yaml_data["spec"]["rabbitmq"]["common"]["rabbit_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["common"]["rabbit_transient_quorum_queue"] = quorum_enabled
+        yaml_data["spec"]["rabbitmq"]["common"]["amqp_durable_queues"] = quorum_enabled
+        print(f"- Updated rabbitmq.common.rabbit_quorum_queue, rabbit_transient_quorum_queue and amqp_durable_queues to: {quorum_enabled}")
+
 # Function to update keystone endpoints for trilio services
 def update_keystone_endpoints():
     glance_url, cluster_domain = fetch_and_extract_cluster_domain()
@@ -203,8 +263,8 @@ if keystone_url:
 
 
 update_keystone_endpoints()
-print("Calling rabbit params method")
-with open(yaml_file, "w") as file:
+update_rabbit_params()
+with open(output_file, "w") as file:
     yaml_parser.dump(yaml_data, file)
 
-print("YAML file tvo-operator-inputs.yaml is updated successfully.")
+print(f"YAML file {output_file} is updated successfully.")
