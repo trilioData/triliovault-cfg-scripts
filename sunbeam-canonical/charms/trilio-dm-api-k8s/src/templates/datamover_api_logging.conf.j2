@@ -42,9 +42,9 @@ format = %(asctime)s - %(name)s - %(levelname)s - %(message)s
 datefmt = %Y-%m-%d %H:%M:%S,%s %Z
 
 [formatter_advanced-utc]
-class = dmapi.common.log.UTCFormatter
+class = dmapi.common.log.UTCContextFormatter
 format =  %(asctime)s - %(name)s - %(levelname)s - PID:%(process)d - TID:%(thread)d - %(message)s
-datefmt = %Y-%m-%d %H:%M:%S,%s %Z
+datefmt = %Y-%m-%d %H:%M:%S
 
 [formatter_default]
 format = %(asctime)s - %(name)s - %(levelname)s - %(message)s

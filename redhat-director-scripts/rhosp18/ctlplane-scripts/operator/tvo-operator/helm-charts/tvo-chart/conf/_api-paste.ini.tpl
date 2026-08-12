@@ -5,12 +5,15 @@ use = call:workloadmgr.api:root_app_factory
 
 [composite:openstack_workloads_api_v1]
 use = call:workloadmgr.api.middleware.auth:pipeline_factory
-noauth = faultwrap sizelimit noauth apiv1
-keystone = faultwrap sizelimit authtoken keystonecontext apiv1
-keystone_nolimit = faultwrap sizelimit authtoken keystonecontext apiv1
+noauth = faultwrap sizelimit wlmtraceid noauth apiv1
+keystone = faultwrap sizelimit wlmtraceid authtoken keystonecontext apiv1
+keystone_nolimit = faultwrap sizelimit wlmtraceid authtoken keystonecontext apiv1
 
 [filter:faultwrap]
 paste.filter_factory = workloadmgr.api.middleware.fault:FaultWrapper.factory
+
+[filter:wlmtraceid]
+paste.filter_factory = workloadmgr.api.middleware.auth:WlmTraceIdMiddleware.factory
 
 [filter:noauth]
 paste.filter_factory = workloadmgr.api.middleware.auth:NoAuthMiddleware.factory
