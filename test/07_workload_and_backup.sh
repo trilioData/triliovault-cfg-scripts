@@ -1,225 +1,197 @@
 #!/usr/bin/env bash
-# 07_workload_and_backup.sh
-# Creates a TrilioVault workload for the test VM, takes a full backup snapshot,
-# and captures all output and results to a timestamped file.
+# 07_workload_and_backup.sh — create a workload per selected target and back it up.
 #
-# What this script does:
-#   1. Reads TEST_INSTANCE_ID from /tmp/trilio_test_resources.env
-#      (written by 06_create_test_resources.sh)
-#   2. Creates a workload with --manual schedule for the instance
-#   3. Takes a full snapshot (backup) of the workload
-#   4. Polls until the snapshot reaches 'available' or 'error'
-#   5. Captures all workload and snapshot details to $RESULTS_FILE
+# One workload per selected backup target, each pinned to its own target:
 #
-# Doc reference: https://docs.trilio.io/openstack/t4o-6.x/user-guide/snapshots
+#   trilio-test-workload-s3   -> trilio-test-vm-s3   -> the S3 target
+#   trilio-test-workload-nfs  -> trilio-test-vm-nfs  -> the NFS target
 #
-# Usage:
-#   bash 07_workload_and_backup.sh
+# The backup target type is IMMUTABLE after workload creation, which is why
+# each target needs its own workload rather than one workload retargeted twice.
 #
-# Verify results:
-#   cat /tmp/trilio_backup_results_*.txt
+# In `both` mode the two backups run sequentially and THE SECOND RUNS EVEN IF
+# THE FIRST FAILS. Knowing that S3 works while NFS does not (or the reverse) is
+# the single most useful diagnostic this suite produces, so one failure must not
+# short-circuit the other path.
+#
+# Usage: bash 07_workload_and_backup.sh
 
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./t4o_env.sh
 source "$SCRIPT_DIR/t4o_env.sh"
 
-# Load instance ID saved by 06_create_test_resources.sh
-RESOURCES_FILE="/tmp/trilio_test_resources.env"
-if [[ ! -f "$RESOURCES_FILE" ]]; then
-  echo "ERROR: $RESOURCES_FILE not found. Run 06_create_test_resources.sh first." >&2
-  exit 1
-fi
-# shellcheck source=/dev/null
-source "$RESOURCES_FILE"
+t4o_init
 
-if [[ -z "${TEST_INSTANCE_ID:-}" ]]; then
-  echo "ERROR: TEST_INSTANCE_ID not set in $RESOURCES_FILE" >&2
-  exit 1
-fi
+[[ -f "$T4O_RESOURCES_FILE" ]] || t4o_die "No resources file at $T4O_RESOURCES_FILE — run 06_create_test_resources.sh first."
+# shellcheck disable=SC1090
+source "$T4O_RESOURCES_FILE"
 
-echo "OS_AUTH_URL:      $OS_AUTH_URL"
-echo "TEST_INSTANCE_ID: $TEST_INSTANCE_ID"
-echo "WORKLOAD_NAME:    $WORKLOAD_NAME"
-echo "SNAPSHOT_NAME:    $SNAPSHOT_NAME"
-echo "Results file:     $RESULTS_FILE"
+BT_ENV="${T4O_WORK_DIR}/backup_targets.env"
+[[ -f "$BT_ENV" ]] || t4o_die "No backup target record at $BT_ENV — run 04_create_backup_targets.sh first."
+# shellcheck disable=SC1090
+source "$BT_ENV"
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+t4o_info ""
+t4o_info "=== Step 7: Workloads and backups (scope: $T4O_BT_SCOPE) ==="
 
-wlm_exec() {
-  kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-    env OS_AUTH_URL="$OS_AUTH_URL" \
-        OS_USERNAME="$OS_USERNAME" \
-        OS_PASSWORD="$OS_PASSWORD" \
-        OS_PROJECT_NAME="$OS_PROJECT_NAME" \
-        OS_USER_DOMAIN_NAME="$OS_USER_DOMAIN_NAME" \
-        OS_PROJECT_DOMAIN_NAME="$OS_PROJECT_DOMAIN_NAME" \
-        OS_IDENTITY_API_VERSION="$OS_IDENTITY_API_VERSION" \
-    workloadmgr "$@"
+POLL_INTERVAL="${T4O_SNAPSHOT_POLL_INTERVAL:-30}"
+MAX_POLLS="${T4O_SNAPSHOT_MAX_POLLS:-60}"      # 30 minutes at the default interval
+
+RESULTS_FILE="${T4O_WORK_DIR}/backup_results.env"
+: > "$RESULTS_FILE"
+
+# The workloadmgr CLI is inconsistent about column naming, and getting it wrong
+# fails the command outright rather than returning something odd:
+#
+#   workload-create / workload-snapshot   table view,  columns 'ID','Name','Status'
+#   workload-show   / snapshot-show       detail view, fields  'id','status',...
+#
+# Rather than encode that per command, ask for the capitalised column and fall
+# back to pulling the first UUID out of the plain output. Neither view contains
+# any other UUID, so the extraction is unambiguous.
+_id_from() {
+    local out="$1"
+    local id
+    id="$(printf '%s' "$out" | tr -d '\r' | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)"
+    printf '%s' "$id"
 }
 
-# log to both stdout and results file
-tee_log() {
-  tee -a "$RESULTS_FILE"
+run_one() {
+    local role="$1" btt="$2" instance_id="$3"
+    local wl_name snap_name workload_id snapshot_id status progress
+
+    wl_name="$(t4o_workload_name "$role")"
+    snap_name="$(t4o_snapshot_name "$role")"
+
+    t4o_info ""
+    t4o_info "--- $role: workload '$wl_name' on backup target type '$btt' ---"
+
+    if [[ -z "$instance_id" ]]; then
+        t4o_error "  no instance recorded for role '$role' — skipping"
+        echo "${role^^}_RESULT='NO_INSTANCE'" >> "$RESULTS_FILE"
+        return 1
+    fi
+
+    # Adopt an existing workload of OUR name rather than failing.
+    #
+    # An instance can belong to only one workload, so a re-run after any hiccup
+    # between "the API created it" and "we recorded the ID" would otherwise die
+    # with "Invalid instance as <vm> already attached with other workload" and
+    # leave the first workload orphaned. The name is ours by convention
+    # (trilio-test-workload-<role>), so reusing it is safe and makes re-runs
+    # idempotent.
+    local existing_wl
+    existing_wl="$(wlm_exec workload-list -f value -c ID -c Name 2>/dev/null | t4o_denoise \
+                   | awk -v n="$wl_name" '$2==n {print $1; exit}')"
+    if [[ -n "$existing_wl" ]]; then
+        t4o_info "  reusing existing workload $existing_wl ('$wl_name')"
+        workload_id="$existing_wl"
+        echo "${role^^}_WORKLOAD_ID='$workload_id'" >> "$T4O_RESOURCES_FILE"
+    else
+
+    # --instance takes a BARE UUID. The docs' "instance-id=<uuid>" form is the
+    # positional argument syntax; passing it to the flag fails with
+    # "badly formed hexadecimal UUID string".
+    local out
+    out="$(wlm_exec workload-create \
+        --instance "$instance_id" \
+        --display-name "$wl_name" \
+        --display-description "t4o-test functional run ($role)" \
+        --backup-target-type "$btt" \
+        --manual retention=30 2>&1 | t4o_denoise)"
+    workload_id="$(_id_from "$out")"
+
+    if [[ -z "$workload_id" ]]; then
+        t4o_error "  workload-create failed:"
+        printf '%s\n' "$out" | sed 's/^/    /'
+        echo "${role^^}_RESULT='WORKLOAD_CREATE_FAILED'" >> "$RESULTS_FILE"
+        return 1
+    fi
+    t4o_info "  workload: $workload_id"
+    echo "${role^^}_WORKLOAD_ID='$workload_id'" >> "$T4O_RESOURCES_FILE"
+    fi
+
+    local i
+    for ((i=1; i<=20; i++)); do
+        status="$(wlm_exec workload-show "$workload_id" -f value -c status 2>/dev/null | t4o_denoise | tr -d '\r' | head -1)"
+        t4o_info "    workload status: ${status:-?}"
+        [[ "$status" == "available" ]] && break
+        if [[ "$status" == "error" ]]; then
+            wlm_exec workload-show "$workload_id" 2>&1 | t4o_denoise | sed 's/^/    /'
+            echo "${role^^}_RESULT='WORKLOAD_ERROR'" >> "$RESULTS_FILE"
+            return 1
+        fi
+        sleep 10
+    done
+    [[ "$status" == "available" ]] || { t4o_error "  workload never became available"; \
+        echo "${role^^}_RESULT='WORKLOAD_TIMEOUT'" >> "$RESULTS_FILE"; return 1; }
+
+    out="$(wlm_exec workload-snapshot "$workload_id" --full \
+        --display-name "$snap_name" \
+        --display-description "t4o-test full backup ($role)" 2>&1 | t4o_denoise)"
+    # The workload UUID appears in this output too, so take the one that is not
+    # the workload we just created.
+    snapshot_id="$(printf '%s' "$out" | tr -d '\r' \
+        | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+        | grep -v "^${workload_id}$" | head -1)"
+
+    if [[ -z "$snapshot_id" ]]; then
+        t4o_error "  workload-snapshot failed:"
+        printf '%s\n' "$out" | sed 's/^/    /'
+        echo "${role^^}_RESULT='SNAPSHOT_CREATE_FAILED'" >> "$RESULTS_FILE"
+        return 1
+    fi
+    t4o_info "  snapshot: $snapshot_id"
+    echo "${role^^}_SNAPSHOT_ID='$snapshot_id'" >> "$T4O_RESOURCES_FILE"
+
+    t4o_info "  polling (creating -> uploading -> available); up to $((POLL_INTERVAL*MAX_POLLS/60)) minutes"
+    for ((i=1; i<=MAX_POLLS; i++)); do
+        # Poll via snapshot-LIST, not snapshot-show. snapshot-show emits TWO
+        # tables — an Instances table, then the Field/Value detail — so
+        # "-f value -c status" is ambiguous and returns table borders rather
+        # than a status. snapshot-list is a single clean table.
+        status="$(wlm_exec snapshot-list -f value -c ID -c Status 2>/dev/null | t4o_denoise \
+                  | awk -v s="$snapshot_id" '$1==s {print $2; exit}')"
+        printf '    [%s] %s\n' "$(date +%H:%M:%S)" "${status:-?}"
+        case "$status" in
+          available)
+            t4o_info "  BACKUP PASSED ($role)"
+            echo "${role^^}_RESULT='PASS'"           >> "$RESULTS_FILE"
+            echo "${role^^}_SNAPSHOT_ID='$snapshot_id'" >> "$RESULTS_FILE"
+            return 0 ;;
+          error)
+            t4o_error "  BACKUP FAILED ($role)"
+            # error_msg and warning_msg are the two fields worth reading first;
+            # the rest of snapshot-show is noise at this point.
+            wlm_exec snapshot-show "$snapshot_id" 2>/dev/null | t4o_denoise \
+              | grep -iE 'error_msg|warning_msg|host|time_taken' | sed 's/^/    /'
+            echo "${role^^}_RESULT='FAIL'"           >> "$RESULTS_FILE"
+            echo "${role^^}_SNAPSHOT_ID='$snapshot_id'" >> "$RESULTS_FILE"
+            return 1 ;;
+        esac
+        sleep "$POLL_INTERVAL"
+    done
+
+    t4o_error "  BACKUP TIMED OUT ($role) after $((POLL_INTERVAL*MAX_POLLS/60)) minutes"
+    echo "${role^^}_RESULT='TIMEOUT'" >> "$RESULTS_FILE"
+    echo "${role^^}_SNAPSHOT_ID='$snapshot_id'" >> "$RESULTS_FILE"
+    return 1
 }
 
-# ---------------------------------------------------------------------------
-# Initialise results file
-# ---------------------------------------------------------------------------
+overall=0
 
-mkdir -p "$(dirname "$RESULTS_FILE")"
-{
-  echo "======================================================"
-  echo "TrilioVault Backup Test Results"
-  echo "Date:        $(date)"
-  echo "Instance ID: $TEST_INSTANCE_ID"
-  echo "Workload:    $WORKLOAD_NAME"
-  echo "Snapshot:    $SNAPSHOT_NAME"
-  echo "======================================================"
-  echo ""
-} > "$RESULTS_FILE"
+if t4o_scope_includes s3; then
+    run_one s3 "${BT_S3_BTT_NAME:-}" "${S3_INSTANCE_ID:-}" || overall=1
+fi
 
-# ---------------------------------------------------------------------------
-# Step 1: Create workload
-# Reference: https://docs.trilio.io/openstack/t4o-6.x/user-guide/workloads
-# ---------------------------------------------------------------------------
+# Deliberately NOT short-circuited on the first failure.
+if t4o_scope_includes nfs; then
+    run_one nfs "${BT_NFS_BTT_NAME:-}" "${NFS_INSTANCE_ID:-}" || overall=1
+fi
 
-echo ""
-echo "=== Step 1: Creating workload '$WORKLOAD_NAME' ===" | tee_log
-
-WORKLOAD_JSON=$(wlm_exec workload-create \
-  --instance "$TEST_INSTANCE_ID" \
-  --display-name "$WORKLOAD_NAME" \
-  --display-description "Automated test workload created by 07_workload_and_backup.sh" \
-  --manual retention=30 \
-  -f json 2>&1)
-
-echo "$WORKLOAD_JSON" | tee_log
-WORKLOAD_ID=$(echo "$WORKLOAD_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])" 2>/dev/null \
-  || echo "$WORKLOAD_JSON" | grep '"id"' | head -1 | sed 's/.*"id": "\([^"]*\)".*/\1/')
-
-echo ""
-echo "  Workload ID: $WORKLOAD_ID" | tee_log
-
-# Wait for workload to be 'available' (charm validates the instance exists)
-echo "  Waiting for workload to become available..." | tee_log
-for i in $(seq 1 20); do
-  WL_STATUS=$(wlm_exec workload-show "$WORKLOAD_ID" -f value -c status 2>/dev/null)
-  echo "  Workload status: $WL_STATUS" | tee_log
-  if [[ "$WL_STATUS" == "available" ]]; then
-    break
-  elif [[ "$WL_STATUS" == "error" ]]; then
-    echo "ERROR: Workload entered error state." | tee_log >&2
-    wlm_exec workload-show "$WORKLOAD_ID" | tee_log
-    exit 1
-  fi
-  sleep 10
-done
-
-echo ""
-echo "  Workload details:" | tee_log
-wlm_exec workload-show "$WORKLOAD_ID" | tee_log
-
-# ---------------------------------------------------------------------------
-# Step 2: Take full snapshot (backup)
-# Reference: https://docs.trilio.io/openstack/t4o-6.x/user-guide/snapshots
-# A snapshot is a point-in-time backup of all instances in the workload.
-# --full forces a full backup regardless of schedule type.
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "=== Step 2: Taking full snapshot '$SNAPSHOT_NAME' ===" | tee_log
-
-SNAPSHOT_JSON=$(wlm_exec workload-snapshot "$WORKLOAD_ID" \
-  --full \
-  --display-name "$SNAPSHOT_NAME" \
-  --display-description "Full backup test — $(date)" \
-  -f json 2>&1)
-
-echo "$SNAPSHOT_JSON" | tee_log
-SNAPSHOT_ID=$(echo "$SNAPSHOT_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])" 2>/dev/null \
-  || echo "$SNAPSHOT_JSON" | grep '"id"' | head -1 | sed 's/.*"id": "\([^"]*\)".*/\1/')
-
-echo ""
-echo "  Snapshot ID: $SNAPSHOT_ID" | tee_log
-
-# ---------------------------------------------------------------------------
-# Step 3: Poll until snapshot completes
-# Snapshot lifecycle: creating → uploading → available (or error)
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "=== Step 3: Polling snapshot status ===" | tee_log
-echo "  (This may take several minutes — full backup uploads data to the backup target)"
-
-POLL_INTERVAL=30
-MAX_POLLS=60   # 30 minutes max
-
-for i in $(seq 1 $MAX_POLLS); do
-  SNAP_STATUS=$(wlm_exec snapshot-show "$SNAPSHOT_ID" -f value -c status 2>/dev/null || echo "unknown")
-  SNAP_PROGRESS=$(wlm_exec snapshot-show "$SNAPSHOT_ID" -f value -c progress_percent 2>/dev/null || echo "0")
-  echo "  [$(date +%H:%M:%S)] Snapshot status: $SNAP_STATUS  progress: ${SNAP_PROGRESS}%" | tee_log
-
-  if [[ "$SNAP_STATUS" == "available" ]]; then
-    echo "  Snapshot completed successfully." | tee_log
-    break
-  elif [[ "$SNAP_STATUS" == "error" ]]; then
-    echo "ERROR: Snapshot entered error state." | tee_log >&2
-    break
-  fi
-  sleep $POLL_INTERVAL
-done
-
-# ---------------------------------------------------------------------------
-# Step 4: Capture final state
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "=== Step 4: Final state ===" | tee_log
-
-echo ""
-echo "--- Workload details ---" | tee_log
-wlm_exec workload-show "$WORKLOAD_ID" | tee_log
-
-echo ""
-echo "--- Snapshot details ---" | tee_log
-wlm_exec snapshot-show "$SNAPSHOT_ID" | tee_log
-
-echo ""
-echo "--- Snapshot list for workload ---" | tee_log
-wlm_exec snapshot-list --workload-id "$WORKLOAD_ID" | tee_log
-
-echo ""
-echo "--- All workloads ---" | tee_log
-wlm_exec workload-list | tee_log
-
-echo ""
-echo "--- Backup target list ---" | tee_log
-wlm_exec backup-target-list | tee_log
-
-# ---------------------------------------------------------------------------
-# Result summary
-# ---------------------------------------------------------------------------
-
-FINAL_STATUS=$(wlm_exec snapshot-show "$SNAPSHOT_ID" -f value -c status 2>/dev/null || echo "unknown")
-
-{
-  echo ""
-  echo "======================================================"
-  echo "TEST RESULT SUMMARY"
-  echo "======================================================"
-  echo "Workload ID:  $WORKLOAD_ID"
-  echo "Snapshot ID:  $SNAPSHOT_ID"
-  echo "Final status: $FINAL_STATUS"
-  if [[ "$FINAL_STATUS" == "available" ]]; then
-    echo "RESULT: PASS — snapshot completed successfully"
-  else
-    echo "RESULT: FAIL — snapshot status: $FINAL_STATUS"
-  fi
-  echo "======================================================"
-} | tee_log
-
-echo ""
-echo "Full results written to: $RESULTS_FILE"
+t4o_info ""
+t4o_info "=== Backup results ==="
+sed 's/^/  /' "$RESULTS_FILE"
+exit $overall

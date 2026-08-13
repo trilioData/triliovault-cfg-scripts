@@ -11,7 +11,13 @@ deps/
 results.txt
 *.db
 tvo-chart-manifest.yaml
-.claude/
+# Claude Code config is local-only, EXCEPT the shared commands and skills that
+# are meant to be reviewed and used by the whole team. Note this must ignore
+# .claude/* (the contents) rather than .claude/ (the directory) — git cannot
+# re-include a path whose parent directory is itself excluded.
+.claude/*
+!.claude/commands/
+!.claude/skills/
 kubeconfig/
 # Ignore DMS investigation folder
 DMS/
