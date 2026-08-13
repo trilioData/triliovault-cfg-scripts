@@ -34,6 +34,9 @@ common:
   memcached_servers: ""
   oslo_enable_proxy_headers_parsing: false
   vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+  # Fail the snapshot when the QEMU guest agent filesystem freeze fails.
+  # false (default) = log the failure and continue with a crash-consistent snapshot.
+  fail_on_qga_freeze_failure: false
 openstack:
   namespace: "openstack"
   osp_secret_name: "osp-secret"
