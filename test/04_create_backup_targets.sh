@@ -1,350 +1,277 @@
 #!/usr/bin/env bash
-# 04_create_backup_targets.sh
-# Creates T4O backup targets on Sunbeam Canonical OpenStack:
-#   - BT1_S3: Ceph RGW with self-signed SSL cert (default target)
-#   - BT2_S3: Wasabi S3
-#   - BT_NFS: NFS target
+# 04_create_backup_targets.sh — create the selected backup target(s).
 #
-# All endpoint URLs, bucket names, credentials, and NFS paths are loaded from:
-#   <workspace-root>/env/backup_targets.yaml
+# Creates ONLY the target(s) named by T4O_BT_SCOPE. A type that was not selected
+# is never created and never touched, even if it already exists on the cloud.
 #
-# Override the env directory with: export TRILIO_ENV_DIR=/path/to/env
+# Reachability was already proven in step 01, so there is no probing here — this
+# step is creation only. If step 01 was resolved by swapping to a different
+# entry (T4O_S3_TARGET / T4O_NFS_TARGET), the same entry is used here.
 #
-# DMS secret payloads are stored in Barbican (OpenStack Key Manager), which is
-# deployed by Sunbeam. Secrets are created via the Barbican REST API from inside
-# the WLM pod (the build server's openstack CLI may lack the barbicanclient plugin).
+# ORDERING: this must run AFTER the cloud admin trust (step 03).
+# backup-target-create performs a trust lookup and fails with
+#   "No cloud admin trust found. Please recreate using CLI"
+# if the trust does not exist yet.
 #
-# Usage:
-#   bash 04_create_backup_targets.sh
+# S3 credentials go into Barbican and the target stores only a secret_ref.
+# Two things that must not drift:
+#   - payload_content_type MUST be text/plain. Barbican rejects application/json;
+#     the DMS payload is JSON stored as opaque text, which DMS reads fine.
+#   - Use the PUBLIC key-manager endpoint from the Keystone catalog. Compute
+#     nodes cannot reach cluster-internal ClusterIPs, and the DataMover is the
+#     component that resolves the secret at backup time.
+#   - Store the ref exactly as Barbican returns it. WLM appends /payload itself
+#     at fetch time; appending it here yields .../payload/payload and a 404 that
+#     surfaces as the target going offline.
 #
-# Verify:
-#   kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
-#     env OS_AUTH_URL=... workloadmgr backup-target-list
+# Usage: bash 04_create_backup_targets.sh
 
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./t4o_env.sh
 source "$SCRIPT_DIR/t4o_env.sh"
 
-# ---------------------------------------------------------------------------
-# Load backup target config from env/backup_targets.yaml
-# ---------------------------------------------------------------------------
+t4o_init
+t4o_load_backup_targets
 
-WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BACKUP_TARGETS_FILE="${TRILIO_ENV_DIR:-${WORKSPACE_ROOT}/env}/backup_targets.yaml"
+t4o_info ""
+t4o_info "=== Step 4: Create backup target(s) (scope: $T4O_BT_SCOPE) ==="
 
-if [[ ! -f "$BACKUP_TARGETS_FILE" ]]; then
-  echo "ERROR: $BACKUP_TARGETS_FILE not found." >&2
-  echo "  Set TRILIO_ENV_DIR to point to your local env directory." >&2
-  exit 1
-fi
+CREATED_FILE="${T4O_WORK_DIR}/backup_targets.env"
+: > "$CREATED_FILE"
 
-echo "Loading backup target config from: $BACKUP_TARGETS_FILE"
+# Two distinct objects, and confusing them is the easy mistake here:
+#
+#   backup target      the storage itself. Identified by "Backend Endpoint"
+#                      (the filesystem_export). It has NO name column.
+#   backup target type the NAMED abstraction over a backup target, created by
+#                      --btt-name. This name is what workload-create consumes
+#                      via --backup-target-type.
+#
+# So existence is decided by endpoint, and the name we must hand to step 07 is
+# whatever BTT already points at that endpoint — which is often NOT the name in
+# backup_targets.yaml. On this lab the export is registered as "BT_NFS_LAB"
+# while the yaml calls it "BT_NFS"; building a workload on "BT_NFS" would fail.
 
-_ENV_TMPFILE=$(mktemp /tmp/trilio-bt-env-XXXXXX.sh)
-trap "rm -f $_ENV_TMPFILE" EXIT
+# backup target ID whose Backend Endpoint matches $1, or empty.
+target_id_for_endpoint() {
+    wlm_exec backup-target-list -f value -c ID -c "Backend Endpoint" 2>/dev/null | t4o_denoise \
+      | awk -v ep="$1" '$2==ep {print $1; exit}'
+}
 
-python3 - "$BACKUP_TARGETS_FILE" > "$_ENV_TMPFILE" << 'PYEOF'
-import sys
-try:
-    import yaml
-except ImportError:
-    sys.exit('ERROR: python3-yaml not installed. Run: pip3 install pyyaml')
+# BTT name pointing at backup target ID $1, or empty.
+btt_name_for_target_id() {
+    wlm_exec backup-target-type-list -f value -c Name -c "Backup Target ID" 2>/dev/null | t4o_denoise \
+      | awk -v id="$1" '$2==id {print $1; exit}'
+}
 
-with open(sys.argv[1]) as f:
-    cfg = yaml.safe_load(f)
-
-targets = {t['backup_target_name']: t for t in cfg.get('triliovault_backup_targets', [])}
-
-bt1 = targets.get('BT1_S3', {})
-bt2 = targets.get('BT2_S3', {})
-nfs = targets.get('BT_NFS', {})
-
-# Write BT1 CA cert to a temp file on the local machine
-ca_cert = bt1.get('s3_ssl_ca_cert', '').strip()
-ca_file = '/tmp/trilio-bt1-ca.pem'
-if ca_cert:
-    with open(ca_file, 'w') as fh:
-        fh.write(ca_cert + '\n')
-
-def sh(name, val):
-    val = str(val).replace("'", "'\\''")
-    print(f"{name}='{val}'")
-
-sh('BT1_NAME',         bt1.get('backup_target_name', 'BT1_S3'))
-sh('BT1_ENDPOINT',     bt1.get('s3_endpoint_url', ''))
-sh('BT1_BUCKET',       bt1.get('s3_bucket', ''))
-sh('BT1_REGION',       bt1.get('s3_region_name', 'us-east-1'))
-sh('BT1_AUTH_VERSION', bt1.get('s3_auth_version', 'DEFAULT'))
-sh('BT1_SIG_VERSION',  bt1.get('s3_signature_version', 'default'))
-sh('BT1_SSL',          'true' if bt1.get('s3_ssl_enabled', True) else 'false')
-sh('BT1_SSL_VERIFY',   'true' if bt1.get('s3_ssl_verify', True) else 'false')
-sh('BT1_CA_CERT_FILE', ca_file if ca_cert else '')
-sh('BT1_ACCESS_KEY',   bt1.get('s3_access_key', ''))
-sh('BT1_SECRET_KEY',   bt1.get('s3_secret_key', ''))
-sh('BT1_DEFAULT',      'true' if bt1.get('is_default', False) else 'false')
-
-sh('BT2_NAME',         bt2.get('backup_target_name', 'BT2_S3'))
-sh('BT2_ENDPOINT',     bt2.get('s3_endpoint_url', ''))
-sh('BT2_BUCKET',       bt2.get('s3_bucket', ''))
-sh('BT2_REGION',       bt2.get('s3_region_name', 'us-east-1'))
-sh('BT2_AUTH_VERSION', bt2.get('s3_auth_version', 'DEFAULT'))
-sh('BT2_SIG_VERSION',  bt2.get('s3_signature_version', 'default'))
-sh('BT2_SSL',          'true' if bt2.get('s3_ssl_enabled', True) else 'false')
-sh('BT2_ACCESS_KEY',   bt2.get('s3_access_key', ''))
-sh('BT2_SECRET_KEY',   bt2.get('s3_secret_key', ''))
-
-sh('NFS_TARGET_NAME',    nfs.get('backup_target_name', 'BT_NFS'))
-sh('NFS_SERVER_EXPORT',  nfs.get('nfs_server_export', ''))
-sh('NFS_MOUNT_OPTS',     nfs.get('nfs_mount_opts', ''))
-PYEOF
-
-# shellcheck source=/dev/null
-source "$_ENV_TMPFILE"
-
-# Validate mandatory fields were loaded
-for var in BT1_ENDPOINT BT1_BUCKET BT1_ACCESS_KEY BT1_SECRET_KEY \
-           BT2_ENDPOINT BT2_BUCKET BT2_ACCESS_KEY BT2_SECRET_KEY \
-           NFS_SERVER_EXPORT; do
-  if [[ -z "${!var:-}" ]]; then
-    echo "ERROR: $var is empty after loading $BACKUP_TARGETS_FILE" >&2
-    exit 1
-  fi
-done
-
-# Derive filesystem_export from endpoint hostname + bucket (strip https://)
-BT1_FS_EXPORT="${BT1_ENDPOINT#https://}/${BT1_BUCKET}"
-BT2_FS_EXPORT="${BT2_ENDPOINT#https://}/${BT2_BUCKET}"
-
-echo "OS_AUTH_URL: $OS_AUTH_URL"
-echo "OS_USERNAME: $OS_USERNAME / project: $OS_PROJECT_NAME"
-echo "BT1_S3:  $BT1_ENDPOINT  bucket=$BT1_BUCKET  default=$BT1_DEFAULT"
-echo "BT2_S3:  $BT2_ENDPOINT  bucket=$BT2_BUCKET"
-echo "BT_NFS:  $NFS_SERVER_EXPORT"
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-wlm_exec() {
-  kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-    env OS_AUTH_URL="$OS_AUTH_URL" \
-        OS_USERNAME="$OS_USERNAME" \
-        OS_PASSWORD="$OS_PASSWORD" \
-        OS_PROJECT_NAME="$OS_PROJECT_NAME" \
-        OS_USER_DOMAIN_NAME="$OS_USER_DOMAIN_NAME" \
-        OS_PROJECT_DOMAIN_NAME="$OS_PROJECT_DOMAIN_NAME" \
-        OS_IDENTITY_API_VERSION="$OS_IDENTITY_API_VERSION" \
-    "$@"
+# Effective BTT name for an endpoint that already exists, or empty.
+existing_btt_for_endpoint() {
+    local tid; tid="$(target_id_for_endpoint "$1")"
+    [[ -z "$tid" ]] && return 1
+    btt_name_for_target_id "$tid"
 }
 
 # ---------------------------------------------------------------------------
-# Step 1: Generate S3 secret payloads via trilio-dms-cli inside the WLM pod
+# S3
 # ---------------------------------------------------------------------------
+create_s3() {
+    local name="$BT_S3_NAME" ep existing
+    # S3 backend endpoint as the list renders it: host/bucket, scheme stripped.
+    ep="${BT_S3_ENDPOINT#https://}"; ep="${ep#http://}/$BT_S3_BUCKET"
 
-echo ""
-echo "=== Step 1: Generating S3 secret payloads ==="
+    if existing="$(existing_btt_for_endpoint "$ep")" && [[ -n "$existing" ]]; then
+        t4o_info "  S3 storage '$ep' already registered as backup target type '$existing' — reusing it."
+        echo "BT_S3_BTT_NAME='$existing'" >> "$CREATED_FILE"
+        return 0
+    fi
 
-if [[ -n "$BT1_CA_CERT_FILE" && -f "$BT1_CA_CERT_FILE" ]]; then
-  echo "  Copying BT1 CA cert to pod..."
-  kubectl cp "$BT1_CA_CERT_FILE" \
-    "$K8S_NAMESPACE/$WLM_POD:/tmp/bt1-ca.pem" -c "$WLM_CONTAINER"
-  BT1_SSL_CERT_ARG="--ssl-cert /tmp/bt1-ca.pem"
-else
-  BT1_SSL_CERT_ARG=""
-fi
+    t4o_info "  Creating S3 target '$name' (endpoint $BT_S3_ENDPOINT, bucket $BT_S3_BUCKET)"
 
-echo "  Generating BT1_S3 payload ($BT1_NAME, CA cert)..."
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  env VAULT_S3_ACCESS_KEY_ID="$BT1_ACCESS_KEY" \
-      VAULT_S3_SECRET_ACCESS_KEY="$BT1_SECRET_KEY" \
-  trilio-dms-cli secret-payload create \
-    --bucket            "$BT1_BUCKET" \
-    --endpoint-url      "$BT1_ENDPOINT" \
-    --filesystem-export "$BT1_FS_EXPORT" \
-    --region            "$BT1_REGION" \
-    --auth-version      "$BT1_AUTH_VERSION" \
-    --signature-version "$BT1_SIG_VERSION" \
-    --ssl \
-    --ssl-verify \
-    $BT1_SSL_CERT_ARG \
-    -o /tmp/bt1_s3_secret.json
+    # filesystem_export is host/bucket with the scheme stripped.
+    local fs_export="${BT_S3_ENDPOINT#https://}"; fs_export="${fs_export#http://}/$BT_S3_BUCKET"
 
-[[ -n "$BT1_CA_CERT_FILE" ]] && \
-  kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- rm -f /tmp/bt1-ca.pem
+    local ssl_cert_arg=""
+    if [[ -n "${BT_S3_CA_CERT_FILE:-}" && -f "$BT_S3_CA_CERT_FILE" ]]; then
+        copy_to_wlm "$BT_S3_CA_CERT_FILE" /tmp/t4o-s3-ca.pem
+        ssl_cert_arg="--ssl-cert /tmp/t4o-s3-ca.pem"
+        t4o_info "    CA cert supplied — passing it to the secret payload."
+    fi
 
-echo "  Generating BT2_S3 payload ($BT2_NAME)..."
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  env VAULT_S3_ACCESS_KEY_ID="$BT2_ACCESS_KEY" \
-      VAULT_S3_SECRET_ACCESS_KEY="$BT2_SECRET_KEY" \
-  trilio-dms-cli secret-payload create \
-    --bucket            "$BT2_BUCKET" \
-    --endpoint-url      "$BT2_ENDPOINT" \
-    --filesystem-export "$BT2_FS_EXPORT" \
-    --region            "$BT2_REGION" \
-    --auth-version      "$BT2_AUTH_VERSION" \
-    --signature-version "$BT2_SIG_VERSION" \
-    --ssl \
-    --ssl-verify \
-    -o /tmp/bt2_s3_secret.json
+    local ssl_args=""
+    [[ "$BT_S3_SSL" == "true" ]]        && ssl_args="--ssl"
+    [[ "$BT_S3_SSL_VERIFY" == "true" ]] && ssl_args="$ssl_args --ssl-verify"
 
-echo "  Payloads generated."
+    # 1. Build the DMS secret payload inside the WLM service.
+    wlm_shell "env VAULT_S3_ACCESS_KEY_ID='$BT_S3_ACCESS_KEY' \
+                   VAULT_S3_SECRET_ACCESS_KEY='$BT_S3_SECRET_KEY' \
+               trilio-dms-cli secret-payload create \
+                 --bucket '$BT_S3_BUCKET' \
+                 --endpoint-url '$BT_S3_ENDPOINT' \
+                 --filesystem-export '$fs_export' \
+                 --region '$BT_S3_REGION' \
+                 --auth-version '$BT_S3_AUTH_VERSION' \
+                 --signature-version '$BT_S3_SIG_VERSION' \
+                 $ssl_args $ssl_cert_arg \
+                 -o /tmp/t4o_s3_secret.json" >/dev/null \
+      || t4o_die "Failed to build the S3 secret payload."
 
-# ---------------------------------------------------------------------------
-# Step 2: Store DMS secret payloads in Barbican (OpenStack Key Manager)
-#
-# Barbican is deployed by Sunbeam as part of the core control plane.
-# The build server's openstack CLI may lack the barbicanclient plugin, so
-# secret creation is performed via the Barbican REST API from inside the WLM
-# pod (which has python3-requests available).
-#
-# Payload content type must be 'text/plain' (Barbican does not accept
-# 'application/json'). The DMS payload is valid JSON stored as opaque text.
-#
-# The Barbican endpoint is discovered from the Keystone service catalog
-# (key-manager service, public interface) — no hardcoded URLs.
-# ---------------------------------------------------------------------------
+    # 2. Store it in Barbican and capture the ref.
+    local secret_ref
+    secret_ref="$(store_secret_in_barbican trilio-test-s3 /tmp/t4o_s3_secret.json)"
+    [[ -n "$secret_ref" ]] || t4o_die "Barbican did not return a secret_ref."
+    t4o_info "    secret_ref: $secret_ref"
 
-echo ""
-echo "=== Step 2: Storing DMS secret payloads in Barbican ==="
+    local default_flag=""
+    [[ "$BT_S3_IS_DEFAULT" == "true" ]] && default_flag="--default"
 
-_BARBICAN_SCRIPT=$(mktemp /tmp/trilio-barbican-create-XXXXXX.py)
-trap "rm -f $_ENV_TMPFILE $_BARBICAN_SCRIPT" EXIT
+    wlm_exec backup-target-create \
+        --btt-name "$name" \
+        --type s3 \
+        --s3-endpoint-url "$BT_S3_ENDPOINT" \
+        --s3-bucket "$BT_S3_BUCKET" \
+        --secret-ref "$secret_ref" \
+        $default_flag -f json 2>&1 | t4o_denoise | sed 's/^/    /'
 
-cat > "$_BARBICAN_SCRIPT" << 'PYEOF'
-import os, requests, json, sys, warnings
+    wlm_shell "rm -f /tmp/t4o_s3_secret.json /tmp/t4o-s3-ca.pem" >/dev/null 2>&1 || true
+    echo "BT_S3_BTT_NAME='$name'" >> "$CREATED_FILE"
+}
+
+# Stores <local-json-in-wlm> in Barbican, prints the secret_ref.
+# Run from inside the WLM service: the build host often lacks the
+# barbicanclient plugin, and the pod already has python3-requests.
+store_secret_in_barbican() {
+    local secret_name="$1" payload_path="$2"
+    local script="${T4O_WORK_DIR}/barbican_put.py"
+
+    cat > "$script" <<'PYEOF'
+import os, sys, json, warnings
+import requests
 warnings.filterwarnings('ignore')
 
-auth_url  = os.environ['OS_AUTH_URL']
-username  = os.environ['OS_USERNAME']
-password  = os.environ['OS_PASSWORD']
-project   = os.environ['OS_PROJECT_NAME']
-user_dom  = os.environ['OS_USER_DOMAIN_NAME']
-proj_dom  = os.environ['OS_PROJECT_DOMAIN_NAME']
+name, payload_file = sys.argv[1], sys.argv[2]
 
-# Authenticate to Keystone
-auth_resp = requests.post(auth_url + '/auth/tokens', verify=False, json={
+auth = requests.post(os.environ['OS_AUTH_URL'] + '/auth/tokens', verify=False, json={
     'auth': {
-        'identity': {'methods': ['password'], 'password': {
-            'user': {'name': username, 'domain': {'name': user_dom}, 'password': password}
-        }},
-        'scope': {'project': {'name': project, 'domain': {'name': proj_dom}}}
-    }
-})
-auth_resp.raise_for_status()
-token = auth_resp.headers['X-Subject-Token']
+        'identity': {'methods': ['password'], 'password': {'user': {
+            'name': os.environ['OS_USERNAME'],
+            'domain': {'name': os.environ['OS_USER_DOMAIN_NAME']},
+            'password': os.environ['OS_PASSWORD']}}},
+        'scope': {'project': {'name': os.environ['OS_PROJECT_NAME'],
+                              'domain': {'name': os.environ['OS_PROJECT_DOMAIN_NAME']}}}}})
+auth.raise_for_status()
+token = auth.headers['X-Subject-Token']
 
-# Discover Barbican endpoint from service catalog
-barbican_base = None
-for svc in auth_resp.json()['token']['catalog']:
+# PUBLIC key-manager endpoint: compute nodes cannot reach ClusterIPs, and the
+# DataMover is what resolves this ref at backup time.
+base = None
+for svc in auth.json()['token']['catalog']:
     if svc['type'] == 'key-manager':
         for ep in svc['endpoints']:
             if ep['interface'] == 'public':
-                barbican_base = ep['url'].rstrip('/')
-                break
-if not barbican_base:
-    sys.exit('ERROR: Barbican (key-manager) endpoint not found in service catalog')
-print(f'Barbican: {barbican_base}')
+                base = ep['url'].rstrip('/')
+if not base:
+    sys.exit('ERROR: no public key-manager endpoint in the Keystone catalog')
 
-secrets_url = barbican_base + '/v1/secrets'
-headers = {'X-Auth-Token': token}
+url = base + '/v1/secrets'
+hdrs = {'X-Auth-Token': token}
 
-for name, payload_file, ref_file in [
-    ('trilio-bt1-s3', '/tmp/bt1_s3_secret.json', '/tmp/trilio-bt1-s3_ref.txt'),
-    ('trilio-bt2-s3', '/tmp/bt2_s3_secret.json', '/tmp/trilio-bt2-s3_ref.txt'),
-]:
-    payload = open(payload_file).read().strip()
+# Replace any same-named secret so re-runs are idempotent. The name is
+# test-scoped so this cannot collide with a real credential.
+for s in requests.get(url, headers=hdrs, params={'name': name}, verify=False).json().get('secrets', []):
+    requests.delete(s['secret_ref'], headers=hdrs, verify=False)
+    print('REPLACED:' + s['secret_ref'], file=sys.stderr)
 
-    # Delete any existing secret with the same name
-    existing = requests.get(secrets_url, headers=headers,
-                            params={'name': name}, verify=False)
-    for s in existing.json().get('secrets', []):
-        requests.delete(s['secret_ref'], headers=headers, verify=False)
-        print(f'  Deleted existing {name}: {s["secret_ref"]}')
-
-    # Create new secret — payload_content_type must be text/plain (Barbican
-    # does not accept application/json; DMS payload is JSON stored as text)
-    resp = requests.post(secrets_url,
-        headers={**headers, 'Content-Type': 'application/json'},
-        json={'name': name, 'payload': payload,
-              'payload_content_type': 'text/plain', 'secret_type': 'opaque'},
-        verify=False)
-    resp.raise_for_status()
-    ref = resp.json()['secret_ref']
-    print(f'  {name}: {ref}')
-    open(ref_file, 'w').write(ref)
-
-print('Barbican secrets created.')
+payload = open(payload_file).read().strip()
+r = requests.post(url, headers={**hdrs, 'Content-Type': 'application/json'},
+                  json={'name': name, 'payload': payload,
+                        'payload_content_type': 'text/plain',   # NOT application/json
+                        'secret_type': 'opaque'}, verify=False)
+r.raise_for_status()
+print(r.json()['secret_ref'])
 PYEOF
 
-kubectl cp "$_BARBICAN_SCRIPT" \
-  "$K8S_NAMESPACE/$WLM_POD:/tmp/barbican_create_secrets.py" -c "$WLM_CONTAINER"
+    copy_to_wlm "$script" /tmp/barbican_put.py
+    wlm_exec_python /tmp/barbican_put.py "$secret_name" "$payload_path"
+    wlm_shell "rm -f /tmp/barbican_put.py" >/dev/null 2>&1 || true
+}
 
-wlm_exec python3 /tmp/barbican_create_secrets.py
-
-BT1_SECRET_REF=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" \
-  -- cat /tmp/trilio-bt1-s3_ref.txt)
-BT2_SECRET_REF=$(kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" \
-  -- cat /tmp/trilio-bt2-s3_ref.txt)
-
-kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
-  rm -f /tmp/barbican_create_secrets.py \
-        /tmp/trilio-bt1-s3_ref.txt /tmp/trilio-bt2-s3_ref.txt \
-        /tmp/bt1_s3_secret.json /tmp/bt2_s3_secret.json
-
-echo "  BT1_SECRET_REF: $BT1_SECRET_REF"
-echo "  BT2_SECRET_REF: $BT2_SECRET_REF"
-
-# ---------------------------------------------------------------------------
-# Step 3: Create S3 backup targets
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "=== Step 3: Creating S3 backup targets ==="
-
-DEFAULT_FLAG=""
-[[ "$BT1_DEFAULT" == "true" ]] && DEFAULT_FLAG="--default"
-
-echo "  Creating $BT1_NAME (Ceph)..."
-wlm_exec workloadmgr backup-target-create \
-  --btt-name        "$BT1_NAME" \
-  --type s3 \
-  --s3-endpoint-url "$BT1_ENDPOINT" \
-  --s3-bucket       "$BT1_BUCKET" \
-  --secret-ref      "$BT1_SECRET_REF" \
-  $DEFAULT_FLAG \
-  -f json
-
-echo ""
-echo "  Creating $BT2_NAME (Wasabi)..."
-wlm_exec workloadmgr backup-target-create \
-  --btt-name        "$BT2_NAME" \
-  --type s3 \
-  --s3-endpoint-url "$BT2_ENDPOINT" \
-  --s3-bucket       "$BT2_BUCKET" \
-  --secret-ref      "$BT2_SECRET_REF" \
-  -f json
+wlm_exec_python() {
+    local script="$1"; shift
+    case "$T4O_DISTRO" in
+      sunbeam)
+        kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
+          env $(_t4o_os_env_args) python3 "$script" "$@" 2>/dev/null ;;
+      openstack-helm)
+        kubectl exec -n "$K8S_NAMESPACE" "$WLM_DEPLOY" -- \
+          env $(_t4o_os_env_args) python3 "$script" "$@" 2>/dev/null ;;
+      rhoso18)
+        oc -n "$K8S_NAMESPACE" exec "$WLM_DEPLOY" -- \
+          env $(_t4o_os_env_args) python3 "$script" "$@" 2>/dev/null ;;
+      kolla)
+        docker exec $(printf -- '-e %s ' $(_t4o_os_env_args)) "$WLM_CTR" python3 "$script" "$@" 2>/dev/null ;;
+      rhosp17)
+        sudo podman exec $(printf -- '-e %s ' $(_t4o_os_env_args)) "$WLM_CTR" python3 "$script" "$@" 2>/dev/null ;;
+      canonical)
+        juju ssh trilio-wlm/leader -- "env $(_t4o_os_env_args) python3 $script $*" 2>/dev/null ;;
+    esac | tail -1
+}
 
 # ---------------------------------------------------------------------------
-# Step 4: Create NFS backup target
+# NFS
 # ---------------------------------------------------------------------------
+create_nfs() {
+    local name="$BT_NFS_NAME" existing
+    # Do NOT split the export on '/' to derive server or path — that mangles
+    # exports whose path contains slashes and caused TVAULT-7419. Match it whole.
+    if existing="$(existing_btt_for_endpoint "$BT_NFS_EXPORT")" && [[ -n "$existing" ]]; then
+        t4o_info "  NFS export '$BT_NFS_EXPORT' already registered as backup target type '$existing' — reusing it."
+        echo "BT_NFS_BTT_NAME='$existing'" >> "$CREATED_FILE"
+        return 0
+    fi
 
-echo ""
-echo "=== Step 4: Creating NFS backup target ==="
-echo "  NFS export: $NFS_SERVER_EXPORT"
-
-wlm_exec workloadmgr backup-target-create \
-  --btt-name        "$NFS_TARGET_NAME" \
-  --type nfs \
-  --filesystem-export "$NFS_SERVER_EXPORT" \
-  --nfs-mount-opts    "$NFS_MOUNT_OPTS" \
-  -f json
+    t4o_info "  Creating NFS target '$name' (export $BT_NFS_EXPORT)"
+    wlm_exec backup-target-create \
+        --btt-name "$name" \
+        --type nfs \
+        --filesystem-export "$BT_NFS_EXPORT" \
+        --nfs-mount-opts "$BT_NFS_MOUNT_OPTS" \
+        -f json 2>&1 | t4o_denoise | sed 's/^/    /'
+    echo "BT_NFS_BTT_NAME='$name'" >> "$CREATED_FILE"
+}
 
 # ---------------------------------------------------------------------------
-# Verify
+# Main
 # ---------------------------------------------------------------------------
+t4o_scope_includes s3  && create_s3
+t4o_scope_includes nfs && create_nfs
 
-echo ""
-echo "=== Backup target list ==="
-wlm_exec workloadmgr backup-target-list
+t4o_info ""
+t4o_info "Backup targets now defined:"
+wlm_exec backup-target-list 2>&1 | t4o_denoise | sed 's/^/  /'
+
+# Every selected target must be online before workloads are built on it.
+rc=0
+for kind in s3 nfs; do
+    t4o_scope_includes "$kind" || continue
+    if [[ "$kind" == "s3" ]]; then
+        ep="${BT_S3_ENDPOINT#https://}"; ep="${ep#http://}/$BT_S3_BUCKET"
+    else
+        ep="$BT_NFS_EXPORT"
+    fi
+    status=$(wlm_exec backup-target-list -f value -c "Backend Endpoint" -c Status 2>/dev/null | t4o_denoise \
+             | awk -v e="$ep" '$1==e {print $2}')
+    if [[ "$status" == "online" ]]; then
+        t4o_info "  $ep: online"
+    else
+        t4o_error "  $ep: status='${status:-unknown}' (expected 'online')"
+        t4o_error "    A target that is present but not online usually means the credential"
+        t4o_error "    fetch failed — check that the secret_ref resolves and that nothing"
+        t4o_error "    appended /payload to it."
+        rc=1
+    fi
+done
+
+t4o_info "Selected target names saved to: $CREATED_FILE"
+exit $rc
