@@ -49,7 +49,9 @@ if [[ "${T4O_SKIP_VOLUMES:-0}" == "1" ]]; then
 else
     mapfile -t VOLUME_TYPES < <(os_exec volume type list -f value -c Name 2>/dev/null | t4o_denoise | grep -v '^$')
 fi
-if [[ ${#VOLUME_TYPES[@]} -eq 0 && "${T4O_SKIP_VOLUMES:-0}" != "1" ]]; then
+if [[ "${T4O_SKIP_VOLUMES:-0}" == "1" ]]; then
+    :   # already warned above; nothing to enumerate
+elif [[ ${#VOLUME_TYPES[@]} -eq 0 ]]; then
     t4o_warn "No Cinder volume types found — VMs will be created without volumes."
 else
     t4o_info "Volume types offered by this cloud: ${VOLUME_TYPES[*]}"

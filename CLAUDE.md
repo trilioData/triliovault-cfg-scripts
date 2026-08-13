@@ -134,14 +134,30 @@ https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift
 
 ## Local Workspace Environment (`C:\vscode-workspace\env\`)
 
-A sibling directory `env/` at the workspace root holds local credentials and test-environment config that must NOT be committed to any repo. Test scripts reference it via `TRILIO_ENV_DIR` env var (default: three levels up from `sunbeam-canonical/test/`).
+A sibling directory `env/` at the workspace root holds local credentials and test-environment config that must NOT be committed to any repo. Test scripts reference it via the `TRILIO_ENV_DIR` env var (default: **two** levels up from `test/`, i.e. the workspace root).
 
 | File | Purpose |
 |------|---------|
-| `backup_targets.yaml` | Backup target definitions for automated tests. Contains S3 endpoints, bucket names, access/secret keys, CA certs, and NFS export paths. Keyed under `triliovault_backup_targets:` list. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh`. |
+| `backup_targets.yaml` | Backup target definitions for automated tests. Contains S3 endpoints, bucket names, access/secret keys, CA certs, and NFS export paths. Keyed under `triliovault_backup_targets:` list. Loaded by `test/t4o_env.sh`. |
 | `setups.yaml` | SSH access details for all lab/test environments (RHOSO18, Canonical, Sunbeam build server). Always check here before asking for server access. |
-| `license_trilio.txt` | TrilioVault license file used during test installs (`juju attach-resource trilio-wlm-k8s license=...`). |
-| `package_repo_urls.yaml.txt` | APT/PyPI repo URL reference (currently empty). |
+| `license_trilio.txt` | TrilioVault license file used during test installs. |
+| `build_artifacts.yaml` | Written by the build step; read by `test/` only to name the build in the report. |
+| `package_repo_urls.yaml.txt` | APT/PyPI repo URL reference. Plain text despite the name — never feed it to a YAML parser. |
+
+---
+
+## Functional testing (`test/`)
+
+`test/` holds the distro-agnostic functional test suite: licence → cloud admin trust → backup target(s) → trustee roles → test VM(s) with volumes → workload(s) → full backup → report. It answers the question `/verify-deployment` does not: *does this deployment actually back up a VM?*
+
+Run it standalone with `bash test/run_all.sh`, or through the `t4o-test` skill (`.claude/skills/t4o-test/`), which picks the setup, sets the scope, and triages failures.
+
+Two rules the suite depends on:
+
+- **It never builds and never deploys.** Those happen beforehand via other scripts. If T4O is not installed, the suite reports that and stops.
+- **All distro differences live in `test/t4o_env.sh`.** The numbered scripts never call `kubectl`/`oc`/`docker`/`podman`/`juju` directly. If a numbered script needs a distro branch, the abstraction is leaking.
+
+See `test/README.md` for usage and the per-distro adapter notes.
 
 ---
 
