@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 01_create_backup_targets.sh
+# 04_create_backup_targets.sh
 # Creates T4O backup targets on Sunbeam Canonical OpenStack:
 #   - BT1_S3: Ceph RGW with self-signed SSL cert (default target)
 #   - BT2_S3: Wasabi S3
@@ -15,7 +15,7 @@
 # the WLM pod (the build server's openstack CLI may lack the barbicanclient plugin).
 #
 # Usage:
-#   bash 01_create_backup_targets.sh
+#   bash 04_create_backup_targets.sh
 #
 # Verify:
 #   kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
@@ -24,14 +24,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./env.sh
-source "$SCRIPT_DIR/env.sh"
+# shellcheck source=./t4o_env.sh
+source "$SCRIPT_DIR/t4o_env.sh"
 
 # ---------------------------------------------------------------------------
 # Load backup target config from env/backup_targets.yaml
 # ---------------------------------------------------------------------------
 
-WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BACKUP_TARGETS_FILE="${TRILIO_ENV_DIR:-${WORKSPACE_ROOT}/env}/backup_targets.yaml"
 
 if [[ ! -f "$BACKUP_TARGETS_FILE" ]]; then

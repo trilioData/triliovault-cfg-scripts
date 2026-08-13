@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# 03_create_workload_and_backup.sh
+# 07_workload_and_backup.sh
 # Creates a TrilioVault workload for the test VM, takes a full backup snapshot,
 # and captures all output and results to a timestamped file.
 #
 # What this script does:
 #   1. Reads TEST_INSTANCE_ID from /tmp/trilio_test_resources.env
-#      (written by 02_create_test_vm.sh)
+#      (written by 06_create_test_resources.sh)
 #   2. Creates a workload with --manual schedule for the instance
 #   3. Takes a full snapshot (backup) of the workload
 #   4. Polls until the snapshot reaches 'available' or 'error'
@@ -14,7 +14,7 @@
 # Doc reference: https://docs.trilio.io/openstack/t4o-6.x/user-guide/snapshots
 #
 # Usage:
-#   bash 03_create_workload_and_backup.sh
+#   bash 07_workload_and_backup.sh
 #
 # Verify results:
 #   cat /tmp/trilio_backup_results_*.txt
@@ -22,12 +22,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/env.sh"
+source "$SCRIPT_DIR/t4o_env.sh"
 
-# Load instance ID saved by 02_create_test_vm.sh
+# Load instance ID saved by 06_create_test_resources.sh
 RESOURCES_FILE="/tmp/trilio_test_resources.env"
 if [[ ! -f "$RESOURCES_FILE" ]]; then
-  echo "ERROR: $RESOURCES_FILE not found. Run 02_create_test_vm.sh first." >&2
+  echo "ERROR: $RESOURCES_FILE not found. Run 06_create_test_resources.sh first." >&2
   exit 1
 fi
 # shellcheck source=/dev/null
@@ -92,7 +92,7 @@ echo "=== Step 1: Creating workload '$WORKLOAD_NAME' ===" | tee_log
 WORKLOAD_JSON=$(wlm_exec workload-create \
   --instance "$TEST_INSTANCE_ID" \
   --display-name "$WORKLOAD_NAME" \
-  --display-description "Automated test workload created by 03_create_workload_and_backup.sh" \
+  --display-description "Automated test workload created by 07_workload_and_backup.sh" \
   --manual retention=30 \
   -f json 2>&1)
 

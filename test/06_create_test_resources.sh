@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# 02_create_test_vm.sh
+# 06_create_test_resources.sh
 # Creates a test VM in OpenStack with a Cinder volume attached.
-# Used to create the instance that will be backed up in 03_create_workload_and_backup.sh.
+# Used to create the instance that will be backed up in 07_workload_and_backup.sh.
 #
 # What this script does:
-#   1. Creates a VM (openstack server create) using image/flavor/network from env.sh
+#   1. Creates a VM (openstack server create) using image/flavor/network from t4o_env.sh
 #   2. Creates a Cinder volume
 #   3. Attaches the volume to the VM
 #   4. Writes the instance ID and volume ID to /tmp/trilio_test_resources.env
-#      so that 03_create_workload_and_backup.sh can pick them up.
+#      so that 07_workload_and_backup.sh can pick them up.
 #
 # Usage:
-#   bash 02_create_test_vm.sh
+#   bash 06_create_test_resources.sh
 #
 # Verify:
 #   source /tmp/trilio_test_resources.env
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/env.sh"
+source "$SCRIPT_DIR/t4o_env.sh"
 
 # All openstack CLI commands run inside the WLM pod because the openstack CLI
 # there already has access to the internal Keystone endpoint, and we pass
@@ -161,7 +161,7 @@ os_exec volume show "$VOLUME_ID"   -f table -c id -c name -c status -c size -c a
 
 RESOURCES_FILE="/tmp/trilio_test_resources.env"
 cat > "$RESOURCES_FILE" <<EOF
-# Written by 02_create_test_vm.sh — sourced by 03_create_workload_and_backup.sh
+# Written by 06_create_test_resources.sh — sourced by 07_workload_and_backup.sh
 export TEST_INSTANCE_ID="$INSTANCE_ID"
 export TEST_VOLUME_ID="$VOLUME_ID"
 EOF
@@ -172,4 +172,4 @@ echo "  Instance ID: $INSTANCE_ID"
 echo "  Volume ID:   $VOLUME_ID"
 echo "  Resource IDs saved to: $RESOURCES_FILE"
 echo ""
-echo "Next: bash 03_create_workload_and_backup.sh"
+echo "Next: bash 07_workload_and_backup.sh"

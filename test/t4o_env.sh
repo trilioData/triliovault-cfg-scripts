@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# env.sh — Shared configuration for Sunbeam T4O test scripts
+# t4o_env.sh — Shared configuration for the T4O functional test suite
 #
 # Source this file at the top of each test script:
-#   source "$(dirname "$0")/env.sh"
+#   source "$(dirname "$0")/t4o_env.sh"
 #
 # OpenStack admin credentials are fetched automatically from the Sunbeam
 # Juju charm (keystone/leader) and the WLM pod config — no hardcoded values.
@@ -48,7 +48,7 @@ export OS_PROJECT_DOMAIN_NAME="admin_domain"
 export OS_IDENTITY_API_VERSION="3"
 
 # Backup target config (endpoints, buckets, credentials, NFS path) is loaded
-# from <workspace-root>/env/backup_targets.yaml by 01_create_backup_targets.sh.
+# from <workspace-root>/env/backup_targets.yaml by 04_create_backup_targets.sh.
 # DMS secret payloads are stored in Barbican (deployed by Sunbeam).
 
 # ---------------------------------------------------------------------------
