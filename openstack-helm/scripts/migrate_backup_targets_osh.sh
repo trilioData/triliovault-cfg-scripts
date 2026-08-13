@@ -94,9 +94,6 @@ for i in $(seq 0 $((COUNT - 1))); do
         BUCKET=$(echo "$BUCKET_RAW" | awk -F'/' '{print $NF}')
         # S3 endpoint URL — field name varies between 6.1 and 6.2 JSON schemas
         S3_ENDPOINT=$(echo "$BT_OBJ" | jq -r '.s3_endpoint // .endpoint_url // ."S3 Endpoint" // empty')
-        # filesystem-export in DMS format: s3server:/<bucket>
-        S3_FS_EXPORT="s3server:/${BUCKET}"
-        
         # Check if target already exists natively in 6.2 (by Backend Endpoint or Name)
         EXISTS=$(exec_in_wlm "workloadmgr --insecure backup-target-list --format json" | jq -r ".[] | select(.Name == \"$BT_NAME\" or .\"Backend Endpoint\" == \"$BUCKET_RAW\") | .ID")
         
@@ -116,13 +113,19 @@ for i in $(seq 0 $((COUNT - 1))); do
         fi
 
         # Build secret JSON via trilio-dms-cli inside WLM
-        # --filesystem-export is required by 6.2 CLI: format is s3server:/<bucket>
-        # --endpoint-url is optional but passed when available from 6.1 metadata
-        DMS_CMD="trilio-dms-cli secret-payload create --access-key '$ACCESS_KEY' --secret-key '$SECRET_KEY' --bucket '$BUCKET' --filesystem-export '$S3_FS_EXPORT'"
-        if [ -n "$S3_ENDPOINT" ] && [ "$S3_ENDPOINT" != "null" ]; then
-            DMS_CMD="$DMS_CMD --endpoint-url '$S3_ENDPOINT'"
+        if [ -z "$S3_ENDPOINT" ] || [ "$S3_ENDPOINT" == "null" ]; then
+            # AWS S3 (no endpoint URL provided)
+            # filesystem-export is just the bucket name
+            S3_FS_EXPORT="${BUCKET}"
+            DMS_CMD="trilio-dms-cli secret-payload create --access-key '$ACCESS_KEY' --secret-key '$SECRET_KEY' --bucket '$BUCKET' --filesystem-export '$S3_FS_EXPORT' -o /tmp/secret.json"
+        else
+            # Non-AWS S3 (Ceph, etc.)
+            # Extract domain from endpoint URL (e.g. https://s3.demo.com/ -> s3.demo.com)
+            S3_DOMAIN=$(echo "$S3_ENDPOINT" | awk -F/ '{print $3}')
+            # filesystem-export is <s3_domain>/<bucket>
+            S3_FS_EXPORT="${S3_DOMAIN}/${BUCKET}"
+            DMS_CMD="trilio-dms-cli secret-payload create --access-key '$ACCESS_KEY' --secret-key '$SECRET_KEY' --bucket '$BUCKET' --endpoint-url '$S3_ENDPOINT' --filesystem-export '$S3_FS_EXPORT' -o /tmp/secret.json"
         fi
-        DMS_CMD="$DMS_CMD -o /tmp/secret.json"
         exec_in_wlm "$DMS_CMD"
         
         # Push to barbican
