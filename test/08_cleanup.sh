@@ -43,7 +43,10 @@ SETUP_LABEL="${T4O_SETUP_NAME:-$T4O_DISTRO}"
 REPORT="${T4O_WORK_DIR}/t4o-test-report-${SETUP_LABEL}-${STAMP}.md"
 
 scope_has()  { t4o_scope_includes "$1"; }
-result_of()  { local r="${1^^}"; local v="${r}_RESULT"; echo "${!v:-}"; }
+# A missing result means the step never got far enough to record one. Render it
+# as NO RESULT rather than an empty cell — a blank reads like "nothing to
+# report" when it actually means "not proven", and it is counted as a failure.
+result_of()  { local r="${1^^}"; local v="${r}_RESULT"; echo "${!v:-NO RESULT}"; }
 
 # ---------------------------------------------------------------------------
 # Report
