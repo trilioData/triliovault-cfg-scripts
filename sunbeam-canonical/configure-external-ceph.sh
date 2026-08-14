@@ -6,11 +6,16 @@
 # after you have created the Ceph client:
 #
 #   1. validates the ceph.conf and keyring you pass in
-#   2. sets ceph-enabled / internal-ceph-enabled / trilio-ceph-username
-#   3. loads ceph.conf into the charm config
-#   4. creates the Juju secret for the keyring, grants it to the application,
+#   2. writes ceph-enabled / internal-ceph-enabled / trilio-ceph-username and
+#      the ceph.conf contents into the deployment bundle
+#   3. creates the Juju secret for the keyring, grants it to the application,
 #      and points the charm at it
+#   4. applies the same values to the running application, when it is deployed
 #   5. waits for the units to settle and verifies Ceph access from each one
+#
+# ceph.conf goes in the bundle because it holds no secret and belongs under
+# version control with the rest of the deployment. The keyring is a cephx
+# credential and only ever goes into a Juju secret.
 #
 # NOT for Sunbeam's own microceph. That path is fully automated by the ceph
 # relation in trilio-dataplane-bundle.yaml — do not run this script for it.
@@ -20,6 +25,10 @@
 #
 #   --ceph-conf <file>   ceph.conf from the external cluster (required)
 #   --keyring <file>     keyring for the Trilio Ceph client (required)
+#   --bundle <file>      Bundle to write ceph-conf into. Default:
+#                        trilio-dataplane-bundle-no-microceph.yaml beside this
+#                        script. Comments and unrelated keys are preserved.
+#   --no-bundle          Do not touch any bundle; configure the live app only.
 #   --client <name>      Ceph client name. Default: read from the keyring's
 #                        [client.X] stanza.
 #   --app <name>         Juju application. Default: trilio-data-mover
@@ -29,12 +38,19 @@
 #                        Skipped if not given.
 #   --dry-run            Print what would run, change nothing.
 #
+# Run it before deploying — it prepares the bundle and the secret, then prints
+# the deploy and grant steps — or after, when it also configures the live app.
+#
 # Re-runnable: an existing secret is updated rather than recreated.
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 CEPH_CONF="" KEYRING="" CLIENT="" APP="trilio-data-mover"
 MODEL="" SECRET_NAME="" DRY_RUN=0
+BUNDLE="${SCRIPT_DIR}/trilio-dataplane-bundle-no-microceph.yaml"
+USE_BUNDLE=1
 POOLS=()
 
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -57,9 +73,11 @@ while [[ $# -gt 0 ]]; do
         --app)         APP="$2";       shift 2 ;;
         --model)       MODEL="$2";     shift 2 ;;
         --secret-name) SECRET_NAME="$2"; shift 2 ;;
+        --bundle)      BUNDLE="$2"; USE_BUNDLE=1; shift 2 ;;
+        --no-bundle)   USE_BUNDLE=0;   shift ;;
         --pool)        POOLS+=("$2");  shift 2 ;;
         --dry-run)     DRY_RUN=1;      shift ;;
-        -h|--help)     sed -n '2,33p' "$0"; exit 0 ;;
+        -h|--help)     sed -n '2,44p' "$0"; exit 0 ;;
         *)             die "Unknown argument: $1  (try --help)" ;;
     esac
 done
@@ -103,48 +121,169 @@ fi
 grep -qE '^[[:space:]]*key[[:space:]]*=' "$KEYRING" \
     || die "$KEYRING has no 'key =' line — it does not look like a Ceph keyring."
 
+# Is the application deployed yet? The script is useful either way: before
+# deploy it prepares the bundle and the secret, after deploy it also configures
+# the live application.
+#
 # `juju status <name>` exits 0 for an application that does not exist — the
-# name is treated as a filter pattern that simply matches nothing. So check the
-# parsed output instead, or a typo'd --app silently "passes" here and fails
-# later on a confusing juju config error.
-juju status "${MODEL_ARG[@]}" --format=json 2>/dev/null \
-  | python3 -c "
+# name is treated as a filter pattern that simply matches nothing — so check
+# the parsed output instead.
+APP_DEPLOYED=0
+if juju status "${MODEL_ARG[@]}" --format=json 2>/dev/null \
+     | python3 -c "
 import json,sys
 try: d=json.load(sys.stdin)
 except Exception: sys.exit(1)
 sys.exit(0 if '$APP' in (d.get('applications') or {}) else 1)
-" 2>/dev/null \
-    || die "Juju application '$APP' not found${MODEL:+ in model $MODEL}.
-  Deploy the data plane first, using trilio-dataplane-bundle-no-microceph.yaml.
-  Check the name and model with: juju status"
+" 2>/dev/null; then
+    APP_DEPLOYED=1
+fi
 
 info "  ceph.conf: $CEPH_CONF"
 info "  keyring:   $KEYRING"
 info "  juju app:  $APP${MODEL:+  (model $MODEL)}"
+if [[ $APP_DEPLOYED -eq 1 ]]; then
+    info "  $APP is deployed — the bundle and the live application are both updated"
+else
+    info "  $APP is not deployed yet — preparing the bundle and the secret"
+fi
 
 [[ -z "$SECRET_NAME" ]] && SECRET_NAME="${APP}-ceph-keyring"
 
 # ---------------------------------------------------------------------------
-# 2. Flags and client name
+# 2. Flags and client name — live application only; for a not-yet-deployed app
+#    the same three values go into the bundle in step 3.
 # ---------------------------------------------------------------------------
-step "Configuring $APP for an external Ceph cluster"
-run juju config "${MODEL_ARG[@]}" "$APP" \
-    ceph-enabled=true \
-    internal-ceph-enabled=false \
-    trilio-ceph-username="$CLIENT"
-info "  ceph-enabled=true  internal-ceph-enabled=false  trilio-ceph-username=$CLIENT"
+if [[ $APP_DEPLOYED -eq 1 ]]; then
+    step "Configuring $APP for an external Ceph cluster"
+    run juju config "${MODEL_ARG[@]}" "$APP" \
+        ceph-enabled=true \
+        internal-ceph-enabled=false \
+        trilio-ceph-username="$CLIENT"
+    info "  ceph-enabled=true  internal-ceph-enabled=false  trilio-ceph-username=$CLIENT"
+fi
 
 # ---------------------------------------------------------------------------
-# 3. ceph.conf — plain config, it holds no secret
+# 3. ceph.conf into the bundle
+#
+# It holds no secret, so it belongs in the bundle where it is version-
+# controlled alongside the rest of the deployment definition. The keyring does
+# NOT — that goes into a Juju secret in step 4.
+#
+# The edit is textual rather than a YAML round-trip: these bundles carry
+# extensive comments (including the revision/scale caution) that a
+# load-then-dump would silently discard.
 # ---------------------------------------------------------------------------
-step "Loading ceph.conf"
-if [[ $DRY_RUN -eq 1 ]]; then
-    printf '  [dry-run] juju config %s ceph-conf="$(cat %s)"\n' "$APP" "$CEPH_CONF"
-else
-    juju config "${MODEL_ARG[@]}" "$APP" ceph-conf="$(cat "$CEPH_CONF")" \
-        || die "Failed to set ceph-conf"
+write_bundle() {
+    python3 - "$1" "$2" "$3" "$4" <<'PYEOF'
+import io, re, sys
+
+bundle_path, conf_path, client, app = sys.argv[1:5]
+conf = open(conf_path, encoding="utf-8").read().rstrip("\n")
+lines = open(bundle_path, encoding="utf-8").read().splitlines()
+
+CEPH_KEYS = ("ceph-enabled", "internal-ceph-enabled",
+             "trilio-ceph-username", "ceph-conf")
+
+# Find "<app>:" then its "options:" block.
+app_i = next((i for i, l in enumerate(lines)
+              if re.match(rf"^(\s*){re.escape(app)}:\s*$", l)), None)
+if app_i is None:
+    sys.exit(f"ERROR: application '{app}' not found in {bundle_path}")
+app_indent = len(lines[app_i]) - len(lines[app_i].lstrip())
+
+opt_i = None
+for i in range(app_i + 1, len(lines)):
+    stripped = lines[i].strip()
+    ind = len(lines[i]) - len(lines[i].lstrip())
+    if stripped and not stripped.startswith("#") and ind <= app_indent:
+        break                      # left this application
+    if re.match(r"^\s*options:\s*$", lines[i]):
+        opt_i = i
+        break
+if opt_i is None:
+    sys.exit(f"ERROR: no options: block under '{app}' in {bundle_path}")
+opt_indent = len(lines[opt_i]) - len(lines[opt_i].lstrip())
+key_indent = opt_indent + 2
+
+# End of the options block.
+end_i = len(lines)
+for i in range(opt_i + 1, len(lines)):
+    stripped = lines[i].strip()
+    if not stripped or stripped.startswith("#"):
+        continue
+    ind = len(lines[i]) - len(lines[i].lstrip())
+    if ind <= opt_indent:
+        end_i = i
+        break
+
+# Drop any existing ceph-* keys, including block-scalar continuations and the
+# comment block documenting them — otherwise the explanation for a key that is
+# no longer there sits above the freshly written one.
+out, i, removed = [], opt_i + 1, 0
+while i < end_i:
+    m = re.match(r"^(\s*)([A-Za-z0-9_.-]+):", lines[i])
+    if m and len(m.group(1)) == key_indent and m.group(2) in CEPH_KEYS:
+        removed += 1
+        while out and (out[-1].strip().startswith("#") or not out[-1].strip()):
+            out.pop()
+        i += 1
+        while i < end_i:
+            nxt = lines[i]
+            if not nxt.strip():
+                i += 1
+                continue
+            if len(nxt) - len(nxt.lstrip()) > key_indent:
+                i += 1
+                continue
+            break
+        continue
+    out.append(lines[i])
+    i += 1
+
+pad = " " * key_indent
+block = [
+    f"{pad}# --- External Ceph (written by configure-external-ceph.sh) ---",
+    f"{pad}ceph-enabled: true",
+    f"{pad}internal-ceph-enabled: false",
+    f'{pad}trilio-ceph-username: "{client}"',
+    f"{pad}ceph-conf: |",
+] + [f"{pad}  {l}" if l.strip() else "" for l in conf.splitlines()]
+
+new = lines[:opt_i + 1] + out + block + lines[end_i:]
+open(bundle_path, "w", encoding="utf-8").write("\n".join(new) + "\n")
+print(f"  replaced {removed} existing ceph-* key(s); wrote {len(conf.splitlines())} ceph.conf lines")
+PYEOF
+}
+
+if [[ $USE_BUNDLE -eq 1 ]]; then
+    step "Writing ceph.conf into the bundle"
+    [[ -f "$BUNDLE" ]] || die "Bundle not found: $BUNDLE  (use --bundle or --no-bundle)"
+    if [[ $DRY_RUN -eq 1 ]]; then
+        info "  [dry-run] would write ceph-enabled / internal-ceph-enabled /"
+        info "            trilio-ceph-username / ceph-conf into $BUNDLE"
+    else
+        cp -f "$BUNDLE" "${BUNDLE}.bak" || die "Could not back up $BUNDLE"
+        write_bundle "$BUNDLE" "$CEPH_CONF" "$CLIENT" "$APP" \
+            || die "Failed to update $BUNDLE (original kept at ${BUNDLE}.bak)"
+        python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1],encoding='utf-8'))" "$BUNDLE" \
+            || die "$BUNDLE is not valid YAML after the edit — restore ${BUNDLE}.bak"
+        info "  updated $BUNDLE  (original at ${BUNDLE}.bak)"
+    fi
 fi
-info "  loaded $(wc -l < "$CEPH_CONF") lines"
+
+# If the application is already deployed, apply ceph-conf live too, so the
+# bundle and the running app cannot drift.
+if [[ $APP_DEPLOYED -eq 1 ]]; then
+    step "Applying ceph.conf to the running application"
+    if [[ $DRY_RUN -eq 1 ]]; then
+        printf '  [dry-run] juju config %s ceph-conf="$(cat %s)"\n' "$APP" "$CEPH_CONF"
+    else
+        juju config "${MODEL_ARG[@]}" "$APP" ceph-conf="$(cat "$CEPH_CONF")" \
+            || die "Failed to set ceph-conf"
+    fi
+    info "  loaded $(wc -l < "$CEPH_CONF") lines"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Keyring — a Juju secret, never plain config
@@ -189,17 +328,39 @@ info "  secret id: $SECRET_ID"
 
 # The grant is what lets the application read it. Without this the charm gets
 # SecretNotFoundError at hook time — Juju does not distinguish "absent" from
-# "not authorised".
-step "Granting the secret to $APP"
-run juju grant-secret "${MODEL_ARG[@]}" "$SECRET_NAME" "$APP" \
-    || die "Failed to grant secret $SECRET_NAME to $APP"
+# "not authorised". Both the grant and the config need the application to
+# exist, so they wait until after the deploy when it does not.
+if [[ $APP_DEPLOYED -eq 1 ]]; then
+    step "Granting the secret to $APP"
+    run juju grant-secret "${MODEL_ARG[@]}" "$SECRET_NAME" "$APP" \
+        || die "Failed to grant secret $SECRET_NAME to $APP"
 
-step "Pointing $APP at the secret"
-run juju config "${MODEL_ARG[@]}" "$APP" ceph-keyring="$SECRET_ID" \
-    || die "Failed to set ceph-keyring"
+    step "Pointing $APP at the secret"
+    run juju config "${MODEL_ARG[@]}" "$APP" ceph-keyring="$SECRET_ID" \
+        || die "Failed to set ceph-keyring"
+fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
     printf '\nDry run complete. Nothing was changed.\n'
+    exit 0
+fi
+
+if [[ $APP_DEPLOYED -eq 0 ]]; then
+    cat <<EOF
+
+Bundle and secret are ready. '$APP' is not deployed yet, so the grant could not
+be made — a secret cannot be granted to an application that does not exist.
+
+Deploy, then run these two commands:
+
+  juju deploy ${MODEL_ARG[*]:+${MODEL_ARG[*]} }./$(basename "$BUNDLE")
+
+  juju grant-secret ${MODEL:+-m $MODEL }$SECRET_NAME $APP
+  juju config ${MODEL:+-m $MODEL }$APP ceph-keyring=$SECRET_ID
+
+Or simply re-run this script after the deploy — it is idempotent, and will then
+take the grant and verification path.
+EOF
     exit 0
 fi
 

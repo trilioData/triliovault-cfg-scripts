@@ -79,56 +79,60 @@ applications:
       debug: false
 
       # --- Ceph ------------------------------------------------------------
-      # Ceph as storage used for Cinder or Nova.
+      # Do not hand-edit the four ceph-* keys below. Run
       #
-      # CASE 1 — no Ceph anywhere. Set false and stop; nothing else applies.
-      # CASE 2 — external Ceph cluster. Leave true and set the options below.
+      #   ./configure-external-ceph.sh --ceph-conf <file> --keyring <file>
+      #
+      # which validates both files, rewrites this whole block, and puts the
+      # keyring in a Juju secret. Everything from this comment down to the end
+      # of ceph-conf is replaced wholesale on each run, so notes added here do
+      # not survive.
+      #
+      # ceph-enabled — Ceph is used as storage for Cinder or Nova.
+      #   CASE 1, no Ceph anywhere: set false and stop; nothing else applies.
+      #   CASE 2, external Ceph cluster: leave true and set the rest.
+      #
+      # internal-ceph-enabled — the cluster is Sunbeam's own microceph, reached
+      #   over the ceph relation. Considered only when ceph-enabled is true.
+      #   false means EXTERNAL, which is why this bundle offers no microceph
+      #   relation to relate to.
+      #
+      # trilio-ceph-username — the Ceph client contego authenticates as. YOU
+      #   create it on the external cluster with read/write/execute on the
+      #   Cinder and Nova RBD pools; the charm cannot, holding no admin
+      #   credential for a cluster it does not manage:
+      #
+      #     ceph auth get-or-create client.trilio-data-mover \
+      #       mon 'profile rbd' \
+      #       osd 'profile rbd pool=<cinder-pool>, profile rbd pool=<nova-pool>' \
+      #       -o ceph.client.trilio-data-mover.keyring
+      #
+      #   The default matches the name the relation path uses, so one name
+      #   works in both modes. Change it only to reuse an existing client.
+      #
+      # ceph-conf — contents of the external cluster's ceph.conf. WRITE-IF-
+      #   ABSENT, as is the keyring: neither /etc/ceph/ceph.conf nor the
+      #   keyring is ever overwritten on a compute node. On Sunbeam a compute
+      #   node usually has neither, because Nova reaches Ceph via Cinder's
+      #   per-volume connection_info rather than /etc/ceph, so these values are
+      #   normally what provides them. A file another tool did place is reused
+      #   untouched and the value ignored.
+      #
+      # ceph-keyring is deliberately absent from this file. It is a cephx
+      #   credential and lives in a JUJU USER SECRET, so it never lands in the
+      #   controller's config store, `juju config` output, or
+      #   `juju export-bundle`. Nothing sensitive belongs in a bundle:
+      #
+      #     juju add-secret trilio-data-mover-ceph-keyring \
+      #       keyring#file=./ceph.client.trilio-data-mover.keyring
+      #     juju grant-secret trilio-data-mover-ceph-keyring trilio-data-mover
+      #     juju config trilio-data-mover ceph-keyring=secret:<id-from-add-secret>
+      #
+      #   The secret must carry a key named `keyring`. Rotate it later with
+      #   `juju update-secret`; the charm re-renders on secret-changed.
       ceph-enabled: true
-
-      # The Ceph cluster is Sunbeam's own microceph, reached over the ceph
-      # relation. Considered ONLY when ceph-enabled is true.
-      #
-      # false here means an EXTERNAL cluster, which is why this bundle has no
-      # microceph relation to offer.
       internal-ceph-enabled: false
-
-      # Ceph client contego authenticates as. YOU must create it on the
-      # external cluster with read/write/execute on the Cinder and Nova RBD
-      # pools — the charm cannot, having no admin credential for a cluster it
-      # does not manage:
-      #
-      #   ceph auth get-or-create client.trilio-data-mover \
-      #     mon 'profile rbd' \
-      #     osd 'profile rbd pool=cinder-volumes, profile rbd pool=nova' \
-      #     -o ceph.client.trilio-data-mover.keyring
-      #
-      # The default below matches the name the relation path uses, so the same
-      # name works in both modes. Change it only to reuse an existing client.
       trilio-ceph-username: "trilio-data-mover"
-
-      # ceph-conf and ceph-keyring are WRITE-IF-ABSENT: neither
-      # /etc/ceph/ceph.conf nor the keyring is ever overwritten. On Sunbeam a
-      # compute node usually has neither — Nova reaches Ceph via Cinder's
-      # per-volume connection_info, not /etc/ceph — so these values are
-      # normally what provides them. A file another tool did place is reused
-      # untouched and the value ignored.
-      #
-      # ceph-conf holds no secret, so set it from the file after deploying:
-      #
-      #   juju config trilio-data-mover ceph-conf="$(cat /etc/ceph/ceph.conf)"
-      #
-      # ceph-keyring IS a cephx credential and is a JUJU USER SECRET, not a
-      # config string — so it never lands in the controller's config store,
-      # `juju config` output, or `juju export-bundle`. Nothing sensitive
-      # belongs in this file:
-      #
-      #   juju add-secret trilio-ceph-keyring \
-      #     keyring#file=./ceph.client.trilio-data-mover.keyring
-      #   juju grant-secret trilio-ceph-keyring trilio-data-mover
-      #   juju config trilio-data-mover ceph-keyring=secret:<id-from-add-secret>
-      #
-      # The secret must carry a key named `keyring`. Rotate it later with
-      # `juju update-secret`; the charm re-renders on secret-changed.
 
 relations:
   # Subordinate binding to the compute principal
