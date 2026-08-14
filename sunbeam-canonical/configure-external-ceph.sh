@@ -346,6 +346,11 @@ if [[ $DRY_RUN -eq 1 ]]; then
 fi
 
 if [[ $APP_DEPLOYED -eq 0 ]]; then
+    if [[ ${#POOLS[@]} -gt 0 ]]; then
+        info ""
+        info "NOTE: --pool was given but there are no units to verify against yet."
+        info "      Pass it on the re-run after the deploy, where it does the work."
+    fi
     cat <<EOF
 
 Bundle and secret are ready. '$APP' is not deployed yet, so the grant could not
@@ -384,9 +389,10 @@ credential works:
 
   juju ssh ${MODEL:+-m $MODEL }$APP/0 -- sudo rbd --id $CLIENT ls <cinder-pool>
 
-Find <cinder-pool> with:
+Find <cinder-pool> on a cinder-volume unit:
 
-  openstack volume backend pool list      # the part after '#' is the pool
+  juju ssh ${MODEL:+-m $MODEL }cinder-volume/0 -- sudo grep -r -e rbd_pool \\
+    /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/
 EOF
     exit 0
 fi
@@ -421,13 +427,17 @@ for unit in $units; do
 done
 
 if [[ $rc -ne 0 ]]; then
-    caps="$(printf "profile rbd pool=%s, " "${POOLS[@]}" | sed 's/, $//')"
+    # Mirror exactly what the microceph relation path requests in
+    # _request_ceph_permissions(), so both modes end up with the same caps.
+    caps="$(printf "allow rwx pool=%s, " "${POOLS[@]}" | sed 's/, $//')"
     cat >&2 <<EOF
 
 At least one unit cannot read a pool as client.$CLIENT. Usually the client is
 missing rwx on that pool. Re-grant on a Ceph admin node:
 
-  ceph auth caps client.$CLIENT mon 'profile rbd' osd '$caps'
+  ceph auth caps client.$CLIENT \\
+    mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"' \\
+    osd '$caps'
 EOF
     exit 1
 fi

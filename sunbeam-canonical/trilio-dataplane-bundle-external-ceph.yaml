@@ -97,13 +97,14 @@ applications:
       #   relation to relate to.
       #
       # trilio-ceph-username — the Ceph client contego authenticates as. YOU
-      #   create it on the external cluster with read/write/execute on the
-      #   Cinder and Nova RBD pools; the charm cannot, holding no admin
-      #   credential for a cluster it does not manage:
+      #   create it on the external cluster with rwx on the Cinder and Nova RBD
+      #   pools; the charm cannot, holding no admin credential for a cluster it
+      #   does not manage. These are the same caps the microceph relation path
+      #   requests, so both modes end up identical:
       #
       #     ceph auth get-or-create client.trilio-data-mover \
-      #       mon 'profile rbd' \
-      #       osd 'profile rbd pool=<cinder-pool>, profile rbd pool=<nova-pool>' \
+      #       mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"' \
+      #       osd 'allow rwx pool=<cinder-pool>, allow rwx pool=<nova-pool>' \
       #       -o ceph.client.trilio-data-mover.keyring
       #
       #   The default matches the name the relation path uses, so one name

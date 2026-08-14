@@ -88,13 +88,14 @@ config:
         mint a key for us, and the charm holds no admin credential for a
         cluster it does not manage.
 
-        With false you MUST pre-create the Ceph client yourself, with read,
-        write and execute permission on the Cinder and Nova RBD pools, named
-        to match trilio-ceph-username. On a Ceph admin node:
+        With false you MUST pre-create the Ceph client yourself, with rwx on
+        the Cinder and Nova RBD pools, named to match trilio-ceph-username.
+        These are the same capabilities the relation path requests from the
+        microceph broker. On a Ceph admin node:
 
           ceph auth get-or-create client.trilio-data-mover \
-            mon 'profile rbd' \
-            osd 'profile rbd pool=<cinder-pool>, profile rbd pool=<nova-pool>' \
+            mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"' \
+            osd 'allow rwx pool=<cinder-pool>, allow rwx pool=<nova-pool>' \
             -o ceph.client.trilio-data-mover.keyring
 
         then set ceph-conf and ceph-keyring from that cluster.
