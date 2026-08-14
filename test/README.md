@@ -40,6 +40,25 @@ explicitly for a flat clone.
 
 ## Usage
 
+### Through the `t4o-test` skill (interactive)
+
+```
+/t4o-test
+```
+
+It asks two questions up front — **which setup** (from `env/setups.yaml`) and
+**which backup targets** (S3, NFS, or both) — then copies the suite to that
+setup, detects the distro, runs every step, and triages anything that fails.
+
+It never assumes the setup. These are live lab and QA clouds and the test
+creates VMs, applies a licence and grants Keystone roles, so the target is
+always an explicit choice.
+
+### Standalone (no Claude)
+
+Copy this directory and your `env/` directory to a host that can reach the
+cloud, then:
+
 ```bash
 # everything, both backup targets
 bash test/run_all.sh
@@ -103,6 +122,14 @@ scope, or stop.
 - Cleanup only touches IDs in this run's `resources.env`. Leftovers from an
   earlier run, or anyone else's resources, are never removed.
 - The generated `openrc` is removed either way.
+
+## Also documented in
+
+- **DevOps Build and Testing Reference**, section 14 — the same how-to in the
+  context of the full build/deploy/test cycle, including which of the 10 build
+  pass criteria a green run actually covers.
+- **DevOps Implementation Reference**, section 10 (Verification) — points here
+  as the automated alternative to verifying by hand.
 
 ## Adding a distro
 
