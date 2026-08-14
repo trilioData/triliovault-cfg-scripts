@@ -55,48 +55,98 @@ config:
   options:
     # --- External Ceph -------------------------------------------------------
     # For a Ceph cluster deployed OUTSIDE Sunbeam by third-party tooling there
-    # is no microceph/ceph-mon Juju application to relate to, so no broker can
-    # mint us a key. Supply the cluster's own artefacts instead — the same two
-    # files that tooling already gives Nova and Cinder.
+    # is no microceph/ceph-mon Juju application to relate to.
+    #
+    # YOU MUST PRE-CREATE THE CEPH CLIENT YOURSELF. In relation mode the broker
+    # auto-provisions a client named after the Juju application and the charm
+    # only adjusts its caps. In external mode there is no broker and the charm
+    # holds no admin credential for a cluster it does not manage, so it can
+    # neither create a user nor grant caps. On a Ceph admin node:
+    #
+    #   ceph auth get-or-create client.trilio \
+    #     mon 'profile rbd' \
+    #     osd 'profile rbd pool=<cinder-pool>, profile rbd pool=<nova-pool>' \
+    #     -o ceph.client.trilio.keyring
+    #
+    # then pass that client name as ceph-client-name and the file contents as
+    # ceph-keyring. Reusing an existing client (e.g. cinder) works too.
     #
     # Setting BOTH ceph-conf and ceph-keyring switches the charm to external
-    # mode: it writes them to /etc/ceph, renders the [ceph] stanzas in
-    # triliovault-datamover.conf, and skips the broker request entirely.
+    # mode: it renders the [ceph] stanzas in triliovault-datamover.conf and
+    # skips the broker request entirely.
+    #
+    # Note Nova does not read /etc/ceph on Sunbeam — its attach flow is dynamic
+    # via Cinder's connection_info, which carries the mon addresses per volume.
+    # So a compute node here typically has NO ceph.conf of its own, and these
+    # values are what actually provide one. They are still write-if-absent, so
+    # a file some other tool did place is reused rather than replaced.
+    #
     # Leave both empty on a cloud with no Ceph at all — the Ceph stanzas are
     # then simply not rendered, which is the correct outcome, not a failure.
     ceph-conf:
       type: string
       default: ""
       description: |
-        Full contents of ceph.conf for an EXTERNAL Ceph cluster. Written
-        verbatim to /etc/ceph/ceph.conf. Must include a mon host line.
-        Ignored unless ceph-keyring is also set.
+        EXTERNAL MODE ONLY. Full contents of ceph.conf for an external Ceph
+        cluster. Must include a mon host line.
+
+        Source it from the external cluster, e.g. /etc/ceph/ceph.conf on a Ceph
+        admin node.
+
+        WRITE-IF-ABSENT: written to /etc/ceph/ceph.conf only when that file
+        does not already exist. On Sunbeam a compute node usually has none —
+        Nova reaches Ceph via Cinder's per-volume connection_info, not via
+        /etc/ceph — so in practice this value is what provides it. If some
+        other tool did place a ceph.conf there, that file is reused as-is and
+        this value is ignored, because whatever put it there is the authority
+        on its contents. Delete it first if you want ours instead.
+        Ignored entirely unless ceph-keyring is also set.
     ceph-keyring:
       type: string
       default: ""
       description: |
-        Full contents of the Ceph client keyring for an EXTERNAL cluster,
-        written verbatim to /etc/ceph/ceph.client.<ceph-client-name>.keyring.
-        Written as-is rather than synthesised, so an existing [client.X] stanza
-        and its caps lines are preserved. The client needs at least
-        'osd allow rwx' on the Cinder/Nova RBD pools contego must read.
-        Ignored unless ceph-conf is also set.
+        EXTERNAL MODE ONLY. Full contents of the Ceph client keyring.
+
+        WRITE-IF-ABSENT: written to
+        /etc/ceph/ceph.client.<ceph-client-name>.keyring only when that file
+        does not already exist. If you point ceph-client-name at a client the
+        cloud already has a keyring for (commonly `cinder`), that keyring is
+        reused untouched and this value is ignored — overwriting it would
+        replace the credential Nova and Cinder use on that node.
+        When written, it is written as-is rather than synthesised, so an
+        existing [client.X] stanza and its caps lines are preserved. The client
+        needs at least 'osd allow rwx' on the Cinder/Nova RBD pools contego
+        must read. Ignored entirely unless ceph-conf is also set.
+
+        SECURITY: this is a cephx secret and Juju config is NOT secret storage.
+        The value is held in the controller database, printed by
+        `juju config trilio-data-mover`, and emitted by `juju export-bundle`.
+        Never paste a real key into a bundle file that gets committed. Set it
+        from a file at deploy time instead:
+          juju config trilio-data-mover ceph-keyring="$(cat ./ceph.client.cinder.keyring)"
+        Migrating this to a Juju user secret is tracked as follow-up work.
     ceph-client-name:
       type: string
       default: ""
       description: |
-        Ceph client name for the EXTERNAL keyring, e.g. cinder or trilio.
-        Determines the keyring filename and rbd_user. Defaults to the Juju
-        application name, which is required for the relation path but is
-        usually NOT what an external cluster calls its client.
+        EXTERNAL MODE ONLY — has no effect without ceph-conf and ceph-keyring,
+        because the relation path takes its client name from the Juju
+        application name (the broker mints the key under that name, and a
+        mismatch silently targets a key that was never created).
+        Name of a Ceph client YOU created on the external cluster (or an
+        existing one you are reusing, e.g. cinder). The charm cannot create it
+        — see the header note above. Determines the keyring filename and
+        rbd_user. Defaults to the Juju application name, which is usually NOT
+        what an external cluster calls its client, so the charm warns if you
+        leave it unset in external mode.
     ceph-pools:
       type: string
       default: ""
       description: |
-        Comma-separated RBD pools the external client can read, e.g.
-        "cinder-volumes,nova". Informational only — recorded so diagnostics
-        match the relation path. Nothing verifies it against the cluster,
-        because with an external cluster there is no broker to ask.
+        EXTERNAL MODE ONLY. Comma-separated RBD pools the external client can
+        read, e.g. "cinder-volumes,nova". Informational only — recorded so
+        diagnostics match the relation path. Nothing verifies it against the
+        cluster, because with an external cluster there is no broker to ask.
 
     triliovault-pkg-source:
       type: string

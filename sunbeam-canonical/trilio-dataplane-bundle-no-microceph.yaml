@@ -9,9 +9,10 @@
 #
 #   2. The cloud uses Ceph, but the cluster lives OUTSIDE Sunbeam — deployed by
 #      cephadm, Rook, or another third-party tool. There is no microceph/
-#      ceph-mon application to relate to, so no broker can mint a key for us.
-#      Supply the cluster's own artefacts as charm config instead; see the
-#      commented ceph-* options below.
+#      ceph-mon application to relate to, so no broker can mint a key for us,
+#      and the charm holds no admin credential for a cluster it does not
+#      manage. YOU pre-create the Ceph client and hand the charm its name and
+#      keyring; see the ceph-* options below.
 #
 # The only difference from trilio-dataplane-bundle.yaml is the absence of the
 # microceph reference entry and the trilio-data-mover:ceph relation. Deploying
@@ -46,44 +47,69 @@ applications:
   # triggering a near-total control-plane outage. Always keep revision: and
   # scale: pinned to the CURRENTLY DEPLOYED values (check with `juju status`
   # before touching this file) — never leave them implicit.
+  #
+  # >>> SET THESE FROM YOUR OWN CLOUD BEFORE DEPLOYING. <<<
+  # The values below are placeholders from one lab. This bundle is written for
+  # other people's clouds, which by definition differ — deploying with a
+  # revision or scale that does not match what is actually running is exactly
+  # what triggered the 2026-07-24 outage. Check first:
+  #     juju status openstack-hypervisor
   openstack-hypervisor:
     charm: openstack-hypervisor
     channel: 2024.1/stable
-    revision: 438
-    scale: 2
+    revision: 438      # <-- REPLACE with your deployed revision
+    scale: 2           # <-- REPLACE with your compute node count
 
   # NOTE: no microceph reference entry here — that is the point of this bundle.
 
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
     channel: 6.2/candidate
-    revision: 13
+    # Deliberately NOT pinned to revision 13: the ceph-* options below were
+    # added after it, so pinning 13 makes `juju deploy` fail on an unknown
+    # config option for the very case this bundle exists to serve. Track the
+    # channel, or pin to the first revision published with external-Ceph
+    # support once it is released.
+    #
+    # (The pin-the-revision caution above applies to REFERENCE entries for
+    # pre-existing applications, not to the app this bundle actually deploys.)
     options:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
 
       # --- Case 2 only: EXTERNAL Ceph cluster ------------------------------
-      # Uncomment and fill in when Cinder or Nova use a Ceph cluster that was
-      # not deployed by Sunbeam. Setting BOTH ceph-conf and ceph-keyring puts
-      # the charm in external mode: it writes them to /etc/ceph, renders the
-      # [ceph] stanzas, and skips the broker request entirely.
+      # Set these when Cinder or Nova use a Ceph cluster not deployed by
+      # Sunbeam. Setting BOTH ceph-conf and ceph-keyring puts the charm in
+      # external mode: it renders the [ceph] stanzas and skips the broker
+      # request entirely. Leave them unset for case 1 (no Ceph anywhere).
       #
-      # Leave them unset for case 1 (no Ceph anywhere).
+      # FIRST, create the client on the external cluster — the charm cannot,
+      # having no admin credential for a cluster it does not manage:
       #
-      # ceph-client-name: "cinder"
+      #   ceph auth get-or-create client.trilio \
+      #     mon 'profile rbd' \
+      #     osd 'profile rbd pool=cinder-volumes, profile rbd pool=nova' \
+      #     -o ceph.client.trilio.keyring
+      #
+      # WRITE-IF-ABSENT: neither /etc/ceph/ceph.conf nor the keyring is ever
+      # overwritten. On Sunbeam a compute node usually has neither — Nova
+      # reaches Ceph via Cinder's per-volume connection_info, not /etc/ceph —
+      # so these values are normally what provides them. If another tool did
+      # place a file there, it is reused untouched and the value is ignored.
+      #
+      # ceph-client-name: "trilio"
       # ceph-pools: "cinder-volumes,nova"
-      # ceph-conf: |
-      #   [global]
-      #   mon host = 10.0.0.11,10.0.0.12,10.0.0.13
-      #   auth_cluster_required = cephx
-      #   auth_service_required = cephx
-      #   auth_client_required = cephx
-      # ceph-keyring: |
-      #   [client.cinder]
-      #       key = <base64 key from the external cluster>
-      #       caps mon = "profile rbd"
-      #       caps osd = "profile rbd pool=cinder-volumes, profile rbd pool=nova"
+
+      # >>> DO NOT PASTE A REAL KEYRING INTO THIS FILE. <<<
+      # Juju config is not secret storage: the value lives in the controller
+      # database, is printed by `juju config trilio-data-mover`, and is emitted
+      # by `juju export-bundle`. Committing a cephx key here leaks it into git.
+      # Set it from a file at deploy time instead:
+      #
+      #   juju config trilio-data-mover \
+      #     ceph-conf="$(cat /etc/ceph/ceph.conf)" \
+      #     ceph-keyring="$(cat /etc/ceph/ceph.client.cinder.keyring)"
 
 relations:
   # Subordinate binding to the compute principal
