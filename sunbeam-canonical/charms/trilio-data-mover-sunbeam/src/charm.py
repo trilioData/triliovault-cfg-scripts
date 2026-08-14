@@ -168,19 +168,23 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._setup_ceph_client()
 
     @property
-    def _ceph_external(self) -> bool:
-        """True when Ceph config is supplied directly rather than by relation.
+    def _ceph_enabled(self) -> bool:
+        """Ceph is used as storage for Cinder or Nova on this cloud."""
+        return bool(self.config.get("ceph_enabled", True))
 
-        For a Ceph cluster deployed OUTSIDE Sunbeam by third-party tooling there
-        is no microceph/ceph-mon Juju application to relate to, so there is no
-        broker to mint us a key. The operator supplies the cluster's ceph.conf
-        and a client keyring as charm config instead, exactly as they already
-        do for Nova and Cinder.
+    @property
+    def _ceph_external(self) -> bool:
+        """Ceph is in use, but the cluster lives outside Sunbeam.
+
+        Only meaningful when ceph_enabled is true — internal_ceph_enabled is
+        explicitly documented as ignored otherwise, so it must not be able to
+        turn Ceph on by itself.
+
+        With an external cluster there is no microceph/ceph-mon application to
+        relate to and so no broker to mint us a key; the operator pre-creates
+        the client and supplies its ceph.conf and keyring as config.
         """
-        return bool(
-            (self.config.get("ceph-conf") or "").strip()
-            and (self.config.get("ceph-keyring") or "").strip()
-        )
+        return self._ceph_enabled and not bool(self.config.get("internal_ceph_enabled", True))
 
     @property
     def _ceph_client_name(self):
@@ -196,15 +200,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         as `cinder` reused for reads, or a dedicated `trilio` client).
         """
         if self._ceph_external:
-            configured = (self.config.get("ceph-client-name") or "").strip()
+            configured = (self.config.get("trilio_ceph_username") or "").strip()
             if configured:
                 return configured
             logger.warning(
-                "External Ceph config is set but ceph-client-name is empty; "
-                "falling back to the Juju application name '%s'. That is "
-                "required for the relation path but is rarely what an external "
-                "cluster calls its client, and a mismatch means the keyring is "
-                "written to a filename rbd_user will not look for.",
+                "internal_ceph_enabled is false but trilio_ceph_username is "
+                "empty; falling back to the Juju application name '%s'.",
                 self.app.name,
             )
         return self.app.name
@@ -238,7 +239,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             logger.info(
                 "interface_ceph_client is not importable; the ceph relation is "
                 "disabled. Ceph-backed volumes cannot be backed up unless "
-                "ceph-conf/ceph-keyring config is supplied instead."
+                "internal_ceph_enabled=false with ceph_conf/ceph_keyring is "
+                "used instead."
             )
             return
 
@@ -350,6 +352,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         all, and every Ceph-backed volume backup fails silently.
         """
         if not getattr(self, "_ceph_import_failed", False):
+            return False
+        if not self._ceph_enabled or self._ceph_external:
+            # The relation is not being used, so the interface is irrelevant.
             return False
         return self.model.get_relation("ceph") is not None
 
@@ -681,13 +686,14 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         being sent. Concretely: don't try to "upgrade" an already-granted key
         to a different capability string later — it won't take effect.
         """
-        if self._ceph_external:
-            # Config wins. Asking the broker for caps on a key we did not get
-            # from it is at best a no-op and at worst rewrites the caps on a
-            # same-named client the external cluster's own tooling manages.
+        if not self._ceph_enabled or self._ceph_external:
+            # Never ask a broker for caps we do not intend to use. With an
+            # external cluster this also avoids rewriting caps on a same-named
+            # client that cluster's own tooling manages.
             logger.info(
-                "ceph-conf/ceph-keyring are set; skipping the broker request "
-                "and using the externally supplied credentials."
+                "Skipping the ceph broker request (ceph_enabled=%s, "
+                "internal_ceph_enabled=%s).",
+                self._ceph_enabled, not self._ceph_external,
             )
             return
 
@@ -717,15 +723,17 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _on_ceph_pools_available(self, event):
         """Fires once our one-and-only ceph-client request is satisfied."""
-        if self._ceph_external:
-            # Both a relation and explicit config are present. Config wins, and
-            # this guard is what makes that true: without it the relation's
+        if not self._ceph_enabled or self._ceph_external:
+            # A relation exists but config says not to use it. This guard is
+            # what makes config authoritative: without it the relation's
             # mon_hosts/key would overwrite the operator's external ceph.conf
             # and keyring on the next relation event, silently swapping the
-            # credential out from under a working deployment.
+            # credential out from under a working deployment — or write Ceph
+            # config onto a cloud that set ceph_enabled=false.
             logger.info(
-                "Ignoring ceph relation data: ceph-conf/ceph-keyring are set "
-                "and take precedence."
+                "Ignoring ceph relation data (ceph_enabled=%s, "
+                "internal_ceph_enabled=%s).",
+                self._ceph_enabled, not self._ceph_external,
             )
             return
 
@@ -751,18 +759,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         data-plane services run as root, so no group is needed — see the
         root-user architecture note in sunbeam-canonical/CLAUDE.md.
         """
-        conf = (self.config.get("ceph-conf") or "").strip()
-        keyring = (self.config.get("ceph-keyring") or "").strip()
-
-        if not (conf and keyring):
-            # Half-configured is a likely mistake, and its symptom (backups of
-            # Ceph-backed volumes failing) surfaces far from its cause.
-            if conf or keyring:
-                logger.warning(
-                    "Only one of ceph-conf/ceph-keyring is set; external Ceph "
-                    "mode needs BOTH and stays DISABLED. The Ceph stanzas will "
-                    "not be rendered and Ceph-backed volumes cannot be backed up."
-                )
+        if not self._ceph_external:
             # Clear any marker a previous external configuration left behind.
             # Without this, _ceph_backend_enabled() keeps returning True from
             # the stale marker after the config is reset, so the template still
@@ -777,6 +774,25 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
                     CEPH_GRANTED_POOLS_MARKER,
                 )
             return False
+
+        conf = (self.config.get("ceph_conf") or "").strip()
+        keyring = (self.config.get("ceph_keyring") or "").strip()
+
+        # internal_ceph_enabled=false is an explicit statement that an external
+        # cluster is in use, so missing artefacts are a configuration error, not
+        # something to warn about and carry on from. Raising here puts the unit
+        # in BlockedStatus via _configure's handler, which is the honest signal:
+        # backups of Ceph-backed volumes cannot work in this state.
+        missing = [n for n, v in (("ceph_conf", conf), ("ceph_keyring", keyring)) if not v]
+        if missing:
+            raise ValueError(
+                f"internal_ceph_enabled is false (external Ceph cluster) but "
+                f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} "
+                f"not set. Supply the external cluster's ceph.conf and the "
+                f"keyring for client.{self._ceph_client_name}, or set "
+                f"internal_ceph_enabled=true to use Sunbeam's microceph, or "
+                f"ceph_enabled=false if this cloud has no Ceph."
+            )
 
         os.makedirs("/etc/ceph", exist_ok=True)
 
@@ -800,19 +816,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             os.chmod(path, mode)
             logger.info("Wrote %s to %s", label, path)
 
-        # Record the pools so status and any later diagnostics agree with the
-        # relation path's marker. Purely informational here — nothing verifies
-        # these against the cluster, because we have no broker to ask.
-        pools = [p.strip() for p in (self.config.get("ceph-pools") or "").split(",") if p.strip()]
-        os.makedirs(os.path.dirname(CEPH_GRANTED_POOLS_MARKER), exist_ok=True)
-        with open(CEPH_GRANTED_POOLS_MARKER, "w") as f:
-            f.write("\n".join(pools))
-
-        logger.info(
-            "External Ceph mode active (client=%s, pools=%s).",
-            self._ceph_client_name,
-            ",".join(pools) if pools else "<unspecified>",
-        )
+        logger.info("External Ceph mode active (client=%s)", self._ceph_client_name)
         return True
 
     def _write_ceph_conf(self, mon_hosts):
@@ -914,6 +918,11 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         On a cloud with no Ceph at all, neither holds and the Ceph stanzas are
         simply not rendered. That is the correct outcome, not a failure.
         """
+        if not self._ceph_enabled:
+            # ceph_enabled=false is authoritative. Checking it first means a
+            # marker left over from an earlier Ceph-enabled deployment cannot
+            # resurrect the Ceph stanzas after the operator turns Ceph off.
+            return False
         if self._ceph_external:
             return True
         try:
