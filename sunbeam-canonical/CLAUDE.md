@@ -56,7 +56,10 @@ sunbeam-canonical/
 │   ├── devops-build-publish.sh      # Primary build+publish script (3 images: wlm, dmapi, horizon-plugin)
 │   └── build_images.sh              # Legacy build script (APT-repo substitution)
 ├── trilio-bundle.yaml               # Juju bundle for control plane (openstack model)
-├── trilio-dataplane-bundle.yaml     # Juju bundle for data plane (openstack-machines model)
+├── trilio-dataplane-bundle.yaml                # Data plane, Sunbeam's own microceph
+├── trilio-dataplane-bundle-external-ceph.yaml  # Data plane, external Ceph cluster
+├── trilio-dataplane-bundle-no-ceph.yaml        # Data plane, no Ceph on this cloud
+├── configure-external-ceph.sh       # Fills the external-ceph bundle + keyring secret
 └── CLAUDE.md                        # This file
 ```
 
