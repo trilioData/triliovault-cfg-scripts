@@ -26,7 +26,7 @@
 #   --ceph-conf <file>   ceph.conf from the external cluster (required)
 #   --keyring <file>     keyring for the Trilio Ceph client (required)
 #   --bundle <file>      Bundle to write ceph-conf into. Default:
-#                        trilio-dataplane-bundle-no-microceph.yaml beside this
+#                        trilio-dataplane-bundle-external-ceph.yaml beside this
 #                        script. Comments and unrelated keys are preserved.
 #   --no-bundle          Do not touch any bundle; configure the live app only.
 #   --client <name>      Ceph client name. Default: read from the keyring's
@@ -49,7 +49,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CEPH_CONF="" KEYRING="" CLIENT="" APP="trilio-data-mover"
 MODEL="" SECRET_NAME="" DRY_RUN=0
-BUNDLE="${SCRIPT_DIR}/trilio-dataplane-bundle-no-microceph.yaml"
+BUNDLE="${SCRIPT_DIR}/trilio-dataplane-bundle-external-ceph.yaml"
 USE_BUNDLE=1
 POOLS=()
 

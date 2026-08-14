@@ -57,14 +57,18 @@ applications:
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
 
-      # Ceph as storage used for Cinder or Nova. Set false on a cloud with no
-      # Ceph at all — then use trilio-dataplane-bundle-no-microceph.yaml, which
-      # also drops the microceph relation this bundle declares below.
+      # This bundle is for Sunbeam's own microceph, reached over the ceph
+      # relation declared below. For any other Ceph arrangement, use a
+      # different bundle — both drop that relation, which Juju cannot resolve
+      # when there is no microceph application:
+      #
+      #   External Ceph cluster  -> trilio-dataplane-bundle-external-ceph.yaml
+      #   No Ceph anywhere       -> trilio-dataplane-bundle-no-ceph.yaml
+      #
+      # Ceph as storage used for Cinder or Nova.
       ceph-enabled: true
-      # The Ceph cluster is Sunbeam's own microceph, reached over the ceph
-      # relation. Considered ONLY when ceph-enabled is true. Set false for a
-      # cluster deployed outside Sunbeam — again via the no-microceph bundle,
-      # since there is then no microceph application to relate to.
+      # The Ceph cluster is Sunbeam's own microceph. Considered ONLY when
+      # ceph-enabled is true.
       internal-ceph-enabled: true
 
 relations:

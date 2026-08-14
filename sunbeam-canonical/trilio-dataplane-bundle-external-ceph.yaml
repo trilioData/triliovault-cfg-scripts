@@ -1,27 +1,26 @@
-# TrilioVault Data Plane Bundle — clouds WITHOUT a microceph Juju application
+# TrilioVault Data Plane Bundle — EXTERNAL Ceph cluster
 #
-# Use this instead of trilio-dataplane-bundle.yaml in either of these cases:
+# For a cloud where Cinder or Nova use Ceph, but the cluster lives OUTSIDE
+# Sunbeam — deployed by cephadm, Rook, or another third-party tool. There is no
+# microceph/ceph-mon application to relate to, so no broker can mint a key for
+# us, and the charm holds no admin credential for a cluster it does not manage.
+# YOU pre-create the Ceph client and hand the charm its name and keyring.
 #
-#   1. The cloud uses no Ceph at all — Cinder is LVM/iSCSI or a vendor driver,
-#      and Nova ephemeral is on local disk. Nothing further to configure: the
-#      charm renders triliovault-datamover.conf with no [ceph] stanzas, which
-#      is the correct outcome, not a degraded one.
-#
-#   2. The cloud uses Ceph, but the cluster lives OUTSIDE Sunbeam — deployed by
-#      cephadm, Rook, or another third-party tool. There is no microceph/
-#      ceph-mon application to relate to, so no broker can mint a key for us,
-#      and the charm holds no admin credential for a cluster it does not
-#      manage. YOU pre-create the Ceph client and hand the charm its name and
-#      keyring; see the ceph-* options below.
+# Which bundle to use:
+#   Sunbeam's own microceph   -> trilio-dataplane-bundle.yaml
+#   External Ceph cluster     -> this file
+#   No Ceph anywhere          -> trilio-dataplane-bundle-no-ceph.yaml
 #
 # The only difference from trilio-dataplane-bundle.yaml is the absence of the
 # microceph reference entry and the trilio-data-mover:ceph relation. Deploying
-# the standard bundle on a cloud with no microceph application fails, because
-# Juju cannot resolve that relation endpoint.
+# the standard bundle here fails, because Juju cannot resolve that endpoint.
 #
-# Usage:
+# Usage — run the helper first; it fills in the ceph-* options below and puts
+# the keyring in a Juju secret:
+#
+#   ./configure-external-ceph.sh --ceph-conf <file> --keyring <file>
 #   juju switch openstack-machines
-#   juju deploy ./trilio-dataplane-bundle-no-microceph.yaml
+#   juju deploy ./trilio-dataplane-bundle-external-ceph.yaml
 #
 # Cross-model SAAS offers are declared in the saas: section below.
 # Find the correct offer URLs for your deployment with:

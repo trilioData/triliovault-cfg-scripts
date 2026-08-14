@@ -269,7 +269,7 @@ Two boolean flags decide how contego reaches Ceph, if at all:
 | `true` | `true` *(default)* | Sunbeam's own microceph over the `ceph` relation. |
 | `true` | `false` | External cluster; operator supplies `trilio-ceph-username`, `ceph-conf`, `ceph-keyring`. |
 
-Both non-default cases use `trilio-dataplane-bundle-no-microceph.yaml` — the standard bundle fails on them because Juju cannot resolve the `trilio-data-mover:ceph` endpoint when no microceph application exists.
+One bundle per case: `trilio-dataplane-bundle.yaml` (microceph), `trilio-dataplane-bundle-external-ceph.yaml`, `trilio-dataplane-bundle-no-ceph.yaml`. The two non-default bundles exist because the standard one declares a `trilio-data-mover:ceph` relation that Juju cannot resolve when no microceph application exists — the deploy fails outright, so this cannot be handled by config alone.
 
 `ceph-enabled=false` is checked **first** in `_ceph_backend_enabled()`, so a `.ceph-granted-pools` marker left by an earlier Ceph-enabled deployment cannot resurrect the stanzas after Ceph is turned off. `internal-ceph-enabled` is gated on `ceph-enabled` so it can never enable Ceph by itself.
 
@@ -301,10 +301,12 @@ It runs before or after deploy. Before, it prepares bundle and secret and prints
 
 #### Finding the pool names on a live Sunbeam cloud
 
-The unit configs are authoritative; `openstack volume backend pool list` only shows what Cinder advertises.
+Read the pool names off the units. `cinder-volume` is a **machine** application in the `openstack-machines` model (confirmed on the lab: 3 units, each with a `cinder-volume-ceph` subordinate) — not a k8s app in `controller0/openstack`, where you will not find it.
 
-- **Cinder** — `juju ssh -m openstack-machines cinder-volume/0 -- sudo grep -rE 'rbd_pool|rbd_user|rbd_ceph_conf' /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/`. One file per backend; only those with an `rbd_pool` are on Ceph. In one lab: `rbd_pool = cinder-volume-ceph`, `rbd_user = cinder-volume-ceph` — note the pool is **not** named `cinder-ceph`, and guessing it wastes a debugging cycle.
-- **Nova** — `juju ssh -m openstack-machines openstack-hypervisor/0 -- sudo grep -E '^(images_type|images_rbd_pool|rbd_user|rbd_secret_uuid)' /var/snap/openstack-hypervisor/common/etc/nova/nova.conf`. `rbd_user`/`rbd_secret_uuid` **without** `images_type` means Nova attaches Ceph-backed Cinder volumes but keeps ephemeral disks on local disk — there is no Nova pool to grant, which is the Sunbeam default. Always check rather than assuming a Nova pool exists.
+- **Cinder** — `juju ssh -m openstack-machines cinder-volume/1 -- sudo grep -r -e rbd_pool -e rbd_user -e volume_driver /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/`. One file per backend; only those with an `rbd_pool` are on Ceph. Lab values: `rbd_pool = cinder-volume-ceph`, `rbd_user = cinder-volume-ceph`, `rbd_ceph_conf = /var/snap/cinder-volume/common/etc/ceph/cinder-volume-ceph.conf`. The pool is **not** named `cinder-ceph`; guessing it wastes a debugging cycle.
+- **Nova** — `juju ssh -m openstack-machines openstack-hypervisor/0 -- sudo grep -r -e images_type -e images_rbd_pool -e rbd_user -e rbd_secret_uuid /var/snap/openstack-hypervisor/common/etc/nova/`. `rbd_user`/`rbd_secret_uuid` **without** `images_type` means Nova attaches Ceph-backed Cinder volumes but keeps ephemeral disks on local disk — there is no Nova pool to grant, which is the Sunbeam default and what the lab shows. Always check rather than assuming a Nova pool exists.
+
+Use repeated `-e` patterns, not `grep -E 'a|b'`: `juju ssh <unit> -- <cmd>` hands the command to a remote shell, which splits on the `|` and reports `b: command not found` while still exiting 0-ish — it looks like a grep miss, not a quoting bug.
 
 When verifying access, `rbd` without `--id <client>` authenticates as `client.admin` and proves nothing about Trilio's own credential.
 
