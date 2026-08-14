@@ -2,20 +2,25 @@
 # configure-external-ceph.sh — wire trilio-data-mover to an EXTERNAL Ceph cluster.
 #
 # For a Ceph cluster deployed outside Sunbeam (cephadm, Rook, or other
-# third-party tooling) that Cinder and/or Nova already use. It does everything
-# after you have created the Ceph client:
+# third-party tooling) that Cinder and/or Nova already use.
+#
+# RUN THIS BEFORE `juju deploy`. It prepares the deployment, nothing more:
 #
 #   1. validates the ceph.conf and keyring you pass in
 #   2. writes ceph-enabled / internal-ceph-enabled / trilio-ceph-username and
 #      the ceph.conf contents into the deployment bundle
-#   3. creates the Juju secret for the keyring, grants it to the application,
-#      and points the charm at it
-#   4. applies the same values to the running application, when it is deployed
-#   5. waits for the units to settle and verifies Ceph access from each one
+#   3. stores the keyring in a Juju secret
+#   4. prints the deploy and grant commands to run next
 #
 # ceph.conf goes in the bundle because it holds no secret and belongs under
 # version control with the rest of the deployment. The keyring is a cephx
 # credential and only ever goes into a Juju secret.
+#
+# It deliberately does NOT grant the secret. `juju grant-secret` requires the
+# application to exist, so it cannot run before the deploy — and a script that
+# behaves differently on its second run is harder to reason about than one
+# clear boundary: prepare here, deploy and grant afterwards. The exact commands
+# are printed at the end and are also in the install document.
 #
 # NOT for Sunbeam's own microceph. That path is fully automated by the ceph
 # relation in trilio-dataplane-bundle.yaml — do not run this script for it.
@@ -28,20 +33,16 @@
 #   --bundle <file>      Bundle to write ceph-conf into. Default:
 #                        trilio-dataplane-bundle-external-ceph.yaml beside this
 #                        script. Comments and unrelated keys are preserved.
-#   --no-bundle          Do not touch any bundle; configure the live app only.
+#   --no-bundle          Do not touch any bundle; create the secret only.
 #   --client <name>      Ceph client name. Default: read from the keyring's
 #                        [client.X] stanza.
 #   --app <name>         Juju application. Default: trilio-data-mover
 #   --model <name>       Juju model. Default: current model
 #   --secret-name <name> Juju secret label. Default: <app>-ceph-keyring
-#   --pool <name>        RBD pool to verify access against. Repeatable.
-#                        Skipped if not given.
 #   --dry-run            Print what would run, change nothing.
 #
-# Run it before deploying — it prepares the bundle and the secret, then prints
-# the deploy and grant steps — or after, when it also configures the live app.
-#
-# Re-runnable: an existing secret is updated rather than recreated.
+# Re-runnable: an existing secret is updated rather than recreated, which is
+# also how you rotate the keyring later.
 
 set -uo pipefail
 
@@ -51,7 +52,6 @@ CEPH_CONF="" KEYRING="" CLIENT="" APP="trilio-data-mover"
 MODEL="" SECRET_NAME="" DRY_RUN=0
 BUNDLE="${SCRIPT_DIR}/trilio-dataplane-bundle-external-ceph.yaml"
 USE_BUNDLE=1
-POOLS=()
 
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 info() { printf '%s\n' "$*"; }
@@ -75,9 +75,8 @@ while [[ $# -gt 0 ]]; do
         --secret-name) SECRET_NAME="$2"; shift 2 ;;
         --bundle)      BUNDLE="$2"; USE_BUNDLE=1; shift 2 ;;
         --no-bundle)   USE_BUNDLE=0;   shift ;;
-        --pool)        POOLS+=("$2");  shift 2 ;;
         --dry-run)     DRY_RUN=1;      shift ;;
-        -h|--help)     sed -n '2,44p' "$0"; exit 0 ;;
+        -h|--help)     sed -n '2,45p' "$0"; exit 0 ;;
         *)             die "Unknown argument: $1  (try --help)" ;;
     esac
 done
@@ -121,54 +120,33 @@ fi
 grep -qE '^[[:space:]]*key[[:space:]]*=' "$KEYRING" \
     || die "$KEYRING has no 'key =' line — it does not look like a Ceph keyring."
 
-# Is the application deployed yet? The script is useful either way: before
-# deploy it prepares the bundle and the secret, after deploy it also configures
-# the live application.
-#
-# `juju status <name>` exits 0 for an application that does not exist — the
-# name is treated as a filter pattern that simply matches nothing — so check
-# the parsed output instead.
-APP_DEPLOYED=0
-if juju status "${MODEL_ARG[@]}" --format=json 2>/dev/null \
-     | python3 -c "
-import json,sys
-try: d=json.load(sys.stdin)
-except Exception: sys.exit(1)
-sys.exit(0 if '$APP' in (d.get('applications') or {}) else 1)
-" 2>/dev/null; then
-    APP_DEPLOYED=1
-fi
+# juju is a strictly-confined snap, so it gets a PRIVATE /tmp namespace: a
+# keyring under /tmp is readable by this script and invisible to `juju
+# add-secret`, which fails with a bare "no such file or directory" on a file
+# that plainly exists. Catch it here, before the bundle has been rewritten.
+KEYRING_ABS="$(cd "$(dirname "$KEYRING")" && pwd)/$(basename "$KEYRING")"
+case "$KEYRING_ABS" in
+    /tmp/*|/var/tmp/*|/dev/shm/*)
+        die "The keyring is under ${KEYRING_ABS%%/*}/tmp, which juju cannot read.
+  juju is a strictly-confined snap and gets its own private /tmp, so
+  'juju add-secret ... keyring#file=' fails there on a file that exists.
+  Move it under your home directory and re-run:
+
+    mv $KEYRING_ABS ~/" ;;
+esac
 
 info "  ceph.conf: $CEPH_CONF"
 info "  keyring:   $KEYRING"
 info "  juju app:  $APP${MODEL:+  (model $MODEL)}"
-if [[ $APP_DEPLOYED -eq 1 ]]; then
-    info "  $APP is deployed — the bundle and the live application are both updated"
-else
-    info "  $APP is not deployed yet — preparing the bundle and the secret"
-fi
 
 [[ -z "$SECRET_NAME" ]] && SECRET_NAME="${APP}-ceph-keyring"
 
 # ---------------------------------------------------------------------------
-# 2. Flags and client name — live application only; for a not-yet-deployed app
-#    the same three values go into the bundle in step 3.
-# ---------------------------------------------------------------------------
-if [[ $APP_DEPLOYED -eq 1 ]]; then
-    step "Configuring $APP for an external Ceph cluster"
-    run juju config "${MODEL_ARG[@]}" "$APP" \
-        ceph-enabled=true \
-        internal-ceph-enabled=false \
-        trilio-ceph-username="$CLIENT"
-    info "  ceph-enabled=true  internal-ceph-enabled=false  trilio-ceph-username=$CLIENT"
-fi
-
-# ---------------------------------------------------------------------------
-# 3. ceph.conf into the bundle
+# 2. ceph.conf and the Ceph flags into the bundle
 #
 # It holds no secret, so it belongs in the bundle where it is version-
 # controlled alongside the rest of the deployment definition. The keyring does
-# NOT — that goes into a Juju secret in step 4.
+# NOT — that goes into a Juju secret in step 3.
 #
 # The edit is textual rather than a YAML round-trip: these bundles carry
 # extensive comments (including the revision/scale caution) that a
@@ -272,35 +250,27 @@ if [[ $USE_BUNDLE -eq 1 ]]; then
     fi
 fi
 
-# If the application is already deployed, apply ceph-conf live too, so the
-# bundle and the running app cannot drift.
-if [[ $APP_DEPLOYED -eq 1 ]]; then
-    step "Applying ceph.conf to the running application"
-    if [[ $DRY_RUN -eq 1 ]]; then
-        printf '  [dry-run] juju config %s ceph-conf="$(cat %s)"\n' "$APP" "$CEPH_CONF"
-    else
-        juju config "${MODEL_ARG[@]}" "$APP" ceph-conf="$(cat "$CEPH_CONF")" \
-            || die "Failed to set ceph-conf"
-    fi
-    info "  loaded $(wc -l < "$CEPH_CONF") lines"
-fi
-
 # ---------------------------------------------------------------------------
-# 4. Keyring — a Juju secret, never plain config
+# 3. Keyring — a Juju secret, never plain config
 #
 # The keyring is a cephx credential. As a secret it stays out of the
 # controller's config store, `juju config` output, and `juju export-bundle`.
 # ---------------------------------------------------------------------------
 step "Storing the keyring as a Juju secret"
 
+# Look the secret up by NAME. `juju secrets --format=json` is no good for this:
+# it reports a `label`, which for a user-created secret is null — the name you
+# passed to add-secret is simply absent from that listing. `show-secret`
+# resolves a name and does return it. It exits 0 with `{}` on a miss, so the
+# empty output is the signal, not the exit code.
 existing_id() {
-    juju secrets "${MODEL_ARG[@]}" --format=json 2>/dev/null \
+    juju show-secret "${MODEL_ARG[@]}" "$SECRET_NAME" --format=json 2>/dev/null \
       | python3 -c "
 import json,sys
 try: d=json.load(sys.stdin)
 except Exception: sys.exit(0)
 for sid, s in (d or {}).items():
-    if s.get('label') == '$SECRET_NAME':
+    if s.get('name') == '$SECRET_NAME':
         print(sid); break
 " 2>/dev/null
 }
@@ -320,126 +290,61 @@ else
     else
         SECRET_ID="$(juju add-secret "${MODEL_ARG[@]}" "$SECRET_NAME" \
                      "keyring#file=$KEYRING" 2>&1 | tr -d '\r' | tail -1)"
-        [[ "$SECRET_ID" == secret:* ]] \
-            || die "add-secret did not return a secret URI. Output was: $SECRET_ID"
+        if [[ "$SECRET_ID" != secret:* ]]; then
+            case "$SECRET_ID" in
+                *"no such file or directory"*)
+                    die "juju cannot read $KEYRING, although this script just did.
+  juju is a strictly-confined snap: it can only read files it is permitted to
+  see, which excludes /tmp and most paths outside your home directory. Copy the
+  keyring under your home directory and re-run.
+
+  juju said: $SECRET_ID" ;;
+                *) die "add-secret did not return a secret URI. Output was: $SECRET_ID" ;;
+            esac
+        fi
     fi
 fi
 info "  secret id: $SECRET_ID"
 
-# The grant is what lets the application read it. Without this the charm gets
-# SecretNotFoundError at hook time — Juju does not distinguish "absent" from
-# "not authorised". Both the grant and the config need the application to
-# exist, so they wait until after the deploy when it does not.
-if [[ $APP_DEPLOYED -eq 1 ]]; then
-    step "Granting the secret to $APP"
-    run juju grant-secret "${MODEL_ARG[@]}" "$SECRET_NAME" "$APP" \
-        || die "Failed to grant secret $SECRET_NAME to $APP"
-
-    step "Pointing $APP at the secret"
-    run juju config "${MODEL_ARG[@]}" "$APP" ceph-keyring="$SECRET_ID" \
-        || die "Failed to set ceph-keyring"
-fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
     printf '\nDry run complete. Nothing was changed.\n'
     exit 0
 fi
 
-if [[ $APP_DEPLOYED -eq 0 ]]; then
-    if [[ ${#POOLS[@]} -gt 0 ]]; then
-        info ""
-        info "NOTE: --pool was given but there are no units to verify against yet."
-        info "      Pass it on the re-run after the deploy, where it does the work."
-    fi
-    cat <<EOF
+# ---------------------------------------------------------------------------
+# 4. Hand off the commands that need live units
+#
+# The grant deliberately is NOT done here. `juju grant-secret` requires the
+# application to exist, so it cannot run before the deploy — and this script's
+# whole job is to prepare the bundle you are about to deploy. Printing the
+# commands keeps one clear boundary (prepare here, deploy and grant there)
+# instead of a script that behaves differently depending on whether it is being
+# run for the first or the second time.
+# ---------------------------------------------------------------------------
+cat <<EOF
 
-Bundle and secret are ready. '$APP' is not deployed yet, so the grant could not
-be made — a secret cannot be granted to an application that does not exist.
+Bundle and secret are ready.
 
-Deploy, then run these two commands:
+Deploy, then run these two commands — the grant is what lets the application
+read the secret. Without it the charm reports the secret cannot be found, since
+Juju does not distinguish "absent" from "you are not allowed to read it":
 
-  juju deploy ${MODEL_ARG[*]:+${MODEL_ARG[*]} }./$(basename "$BUNDLE")
+  juju deploy ${MODEL:+-m $MODEL }./$(basename "$BUNDLE")
 
   juju grant-secret ${MODEL:+-m $MODEL }$SECRET_NAME $APP
   juju config ${MODEL:+-m $MODEL }$APP ceph-keyring=$SECRET_ID
 
-Or simply re-run this script after the deploy — it is idempotent, and will then
-take the grant and verification path.
-EOF
-    exit 0
-fi
-
-# ---------------------------------------------------------------------------
-# 5. Settle and verify
-# ---------------------------------------------------------------------------
-step "Waiting for $APP to settle"
-juju wait-for application "${MODEL_ARG[@]}" "$APP" \
-    --query='status=="active"' --timeout=10m 2>/dev/null \
-    || info "  (not active yet — check 'juju status $APP' below)"
-
-juju status "${MODEL_ARG[@]}" "$APP" 2>/dev/null | sed 's/^/  /'
-
-if [[ ${#POOLS[@]} -eq 0 ]]; then
-    cat <<EOF
-
-Done. No --pool given, so Ceph access was not verified.
-
-Verify by hand on any compute node — this is the check that actually proves the
-credential works:
+Then confirm the credential works, from a compute node. --id is required:
+without it rbd authenticates as client.admin and proves nothing about this
+client:
 
   juju ssh ${MODEL:+-m $MODEL }$APP/0 -- sudo rbd --id $CLIENT ls <cinder-pool>
 
-Find <cinder-pool> on a cinder-volume unit:
-
-  juju ssh ${MODEL:+-m $MODEL }cinder-volume/0 -- sudo grep -r -e rbd_pool \\
-    /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/
-EOF
-    exit 0
-fi
-
-step "Verifying Ceph access from every unit"
-units="$(juju status "${MODEL_ARG[@]}" "$APP" --format=json 2>/dev/null \
-         | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-out=set()
-for a in d.get('applications',{}).values():
-    for u,ud in (a.get('units') or {}).items():
-        if u.startswith('$APP/'): out.add(u)
-        for s in (ud.get('subordinates') or {}):
-            if s.startswith('$APP/'): out.add(s)
-for u in sorted(out): print(u)
-" 2>/dev/null)"
-
-[[ -n "$units" ]] || die "Could not enumerate units of $APP"
-
-rc=0
-for unit in $units; do
-    for pool in "${POOLS[@]}"; do
-        if juju ssh "${MODEL_ARG[@]}" --pty=false "$unit" -- \
-             "sudo rbd --id $CLIENT ls $pool" </dev/null >/dev/null 2>&1; then
-            info "  PASS  $unit -> $pool"
-        else
-            info "  FAIL  $unit -> $pool"
-            rc=1
-        fi
-    done
-done
-
-if [[ $rc -ne 0 ]]; then
-    # Mirror exactly what the microceph relation path requests in
-    # _request_ceph_permissions(), so both modes end up with the same caps.
-    caps="$(printf "allow rwx pool=%s, " "${POOLS[@]}" | sed 's/, $//')"
-    cat >&2 <<EOF
-
-At least one unit cannot read a pool as client.$CLIENT. Usually the client is
-missing rwx on that pool. Re-grant on a Ceph admin node:
+A permission error means client.$CLIENT is missing rwx on that pool. Widen it
+on a Ceph admin node:
 
   ceph auth caps client.$CLIENT \\
     mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"' \\
-    osd '$caps'
+    osd 'allow rwx pool=<cinder-pool>, allow rwx pool=<nova-pool>'
 EOF
-    exit 1
-fi
-
-printf '\nExternal Ceph configured and verified.\n'
