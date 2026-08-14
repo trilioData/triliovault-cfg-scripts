@@ -127,7 +127,7 @@ grep -qE '^[[:space:]]*key[[:space:]]*=' "$KEYRING" \
 KEYRING_ABS="$(cd "$(dirname "$KEYRING")" && pwd)/$(basename "$KEYRING")"
 case "$KEYRING_ABS" in
     /tmp/*|/var/tmp/*|/dev/shm/*)
-        die "The keyring is under ${KEYRING_ABS%%/*}/tmp, which juju cannot read.
+        die "The keyring is under $(dirname "$KEYRING_ABS"), which juju cannot read.
   juju is a strictly-confined snap and gets its own private /tmp, so
   'juju add-secret ... keyring#file=' fails there on a file that exists.
   Move it under your home directory and re-run:
@@ -241,12 +241,18 @@ if [[ $USE_BUNDLE -eq 1 ]]; then
         info "  [dry-run] would write ceph-enabled / internal-ceph-enabled /"
         info "            trilio-ceph-username / ceph-conf into $BUNDLE"
     else
-        cp -f "$BUNDLE" "${BUNDLE}.bak" || die "Could not back up $BUNDLE"
+        # Keep the FIRST backup only. Overwriting it on every run would mean
+        # the "original" is itself a rewritten bundle by the second run, which
+        # is precisely when someone reaches for it.
+        if [[ ! -f "${BUNDLE}.bak" ]]; then
+            cp -f "$BUNDLE" "${BUNDLE}.bak" || die "Could not back up $BUNDLE"
+            info "  backed up the original to ${BUNDLE}.bak"
+        fi
         write_bundle "$BUNDLE" "$CEPH_CONF" "$CLIENT" "$APP" \
             || die "Failed to update $BUNDLE (original kept at ${BUNDLE}.bak)"
         python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1],encoding='utf-8'))" "$BUNDLE" \
             || die "$BUNDLE is not valid YAML after the edit — restore ${BUNDLE}.bak"
-        info "  updated $BUNDLE  (original at ${BUNDLE}.bak)"
+        info "  updated $BUNDLE"
     fi
 fi
 
@@ -322,16 +328,28 @@ fi
 # instead of a script that behaves differently depending on whether it is being
 # run for the first or the second time.
 # ---------------------------------------------------------------------------
+if [[ $USE_BUNDLE -eq 1 ]]; then
+    READY="Bundle and secret are ready."
+    DEPLOY_LINE="  juju deploy ${MODEL:+-m $MODEL }./$(basename "$BUNDLE")
+"
+else
+    # --no-bundle: naming a bundle we never touched would send someone off to
+    # deploy a file that has none of the Ceph options in it.
+    READY="Secret is ready. No bundle was written (--no-bundle), so set
+ceph-enabled, internal-ceph-enabled, trilio-ceph-username and ceph-conf
+yourself before deploying."
+    DEPLOY_LINE=""
+fi
+
 cat <<EOF
 
-Bundle and secret are ready.
+$READY
 
 Deploy, then run these two commands — the grant is what lets the application
 read the secret. Without it the charm reports the secret cannot be found, since
 Juju does not distinguish "absent" from "you are not allowed to read it":
 
-  juju deploy ${MODEL:+-m $MODEL }./$(basename "$BUNDLE")
-
+$DEPLOY_LINE
   juju grant-secret ${MODEL:+-m $MODEL }$SECRET_NAME $APP
   juju config ${MODEL:+-m $MODEL }$APP ceph-keyring=$SECRET_ID
 

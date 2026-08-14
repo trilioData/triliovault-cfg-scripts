@@ -71,9 +71,9 @@ TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 # but the broker swallows that error and still reports exit-code 0).
 CEPH_CONF_PATH = "/etc/ceph/ceph.conf"
 
-# EXTERNAL MODE IS WRITE-IF-ABSENT, NEVER OVERWRITE.
+# EXTERNAL MODE NEVER OVERWRITES A FILE IT DID NOT WRITE.
 #
-# Case 2 is by definition a cloud whose third-party tooling already placed
+# An external-Ceph cloud has by definition had its own tooling place
 # /etc/ceph/ceph.conf and /etc/ceph/ceph.client.<name>.keyring on the compute
 # host for Nova and Cinder — and the client an operator is most likely to name
 # is exactly the one already there (commonly `cinder`). Overwriting those would
@@ -81,13 +81,27 @@ CEPH_CONF_PATH = "/etc/ceph/ceph.conf"
 # rbd_default_features, a missing [client.X] section or an older key would
 # break Nova and Cinder, not just us.
 #
-# So in external mode the charm only fills in what is missing. A file that
-# already exists is left exactly as-is and reused — the cluster's own tooling
-# is the authority on its contents, not our config.
+# Files this charm wrote itself are a different matter and ARE replaced — see
+# CEPH_MANAGED_FILES_MARKER below for why reusing them is the dangerous option.
+
 # Records the last set of pools our ceph key was scoped to, so we only send a
 # follow-up broker request when that set actually changes (new pool discovered,
 # or one disappeared) rather than on every hook run.
 CEPH_GRANTED_POOLS_MARKER = "/var/lib/trilio-data-mover/.ceph-granted-pools"
+
+# Paths under /etc/ceph that THIS charm created, one per line.
+#
+# External mode is write-if-absent so we never clobber a file the cluster's own
+# tooling placed for Nova and Cinder. But the relation path writes to those same
+# paths and overwrites unconditionally, so on a microceph cloud the files there
+# are ours — and `trilio-ceph-username` defaults to the very name the relation
+# path uses. Without this record, switching that cloud to an external cluster
+# would find our stale microceph keyring, "reuse" it, report active, and then
+# fail auth against the external cluster on every Ceph-backed volume.
+#
+# So: a file listed here is ours and may be replaced; anything else is somebody
+# else's and is left strictly alone.
+CEPH_MANAGED_FILES_MARKER = "/var/lib/trilio-data-mover/.ceph-managed-files"
 
 # Systemd unit for the DMS server on compute nodes.
 # python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
@@ -750,6 +764,29 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._write_ceph_conf(mon_hosts)
         self._write_ceph_keyring(key)
 
+    def _ceph_managed_files(self) -> set:
+        """Paths under /etc/ceph this charm created. See the marker's comment."""
+        try:
+            with open(CEPH_MANAGED_FILES_MARKER) as f:
+                return {ln.strip() for ln in f if ln.strip()}
+        except FileNotFoundError:
+            return set()
+        except OSError as e:
+            # Treat an unreadable marker as "we own nothing": that only ever
+            # makes us more conservative, never more destructive.
+            logger.warning("Could not read %s: %s", CEPH_MANAGED_FILES_MARKER, e)
+            return set()
+
+    def _record_ceph_managed_file(self, path):
+        """Remember that we wrote path, so a later run may replace it."""
+        paths = self._ceph_managed_files()
+        if path in paths:
+            return
+        paths.add(path)
+        os.makedirs(os.path.dirname(CEPH_MANAGED_FILES_MARKER), exist_ok=True)
+        with open(CEPH_MANAGED_FILES_MARKER, "w") as f:
+            f.write("\n".join(sorted(paths)) + "\n")
+
     # Key expected inside the ceph-keyring Juju user secret.
     CEPH_KEYRING_SECRET_KEY = "keyring"
 
@@ -841,24 +878,34 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         os.makedirs("/etc/ceph", exist_ok=True)
 
-        # Write-if-absent, never overwrite — see the note above. An existing
-        # file was put there by the cluster's own tooling for Nova/Cinder, and
-        # it is the authority on its own contents.
+        # Write-if-absent for somebody else's files, replace-if-ours for the
+        # ones we wrote — see the note above CEPH_MANAGED_FILES_MARKER. An
+        # existing file we did not write was put there by the cluster's own
+        # tooling for Nova/Cinder, and it is the authority on its own contents.
         keyring_path = self._ceph_keyring_path()
+        ours = self._ceph_managed_files()
         for path, content, mode, label in (
             (CEPH_CONF_PATH, conf, 0o644, "ceph.conf"),
             (keyring_path, keyring, 0o640, "keyring"),
         ):
-            if os.path.exists(path):
+            if os.path.exists(path) and path not in ours:
                 logger.info(
-                    "%s already exists at %s — reusing it, config value ignored. "
-                    "Remove the file if you want the charm to write ours instead.",
+                    "%s already exists at %s and was not written by this charm "
+                    "— reusing it, config value ignored. Remove the file if you "
+                    "want the charm to write ours instead.",
                     label, path,
                 )
                 continue
+            if os.path.exists(path):
+                # Ours, from an earlier config or from the relation path on a
+                # cloud that has since moved to an external cluster. Replacing
+                # it is the whole point: reusing it would authenticate to the
+                # new cluster with the old cluster's credential.
+                logger.info("Replacing %s at %s (written by this charm)", label, path)
             with open(path, "w") as f:
                 f.write(content + "\n")
             os.chmod(path, mode)
+            self._record_ceph_managed_file(path)
             logger.info("Wrote %s to %s", label, path)
 
         logger.info("External Ceph mode active (client=%s)", self._ceph_client_name)
@@ -876,6 +923,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(CEPH_CONF_PATH, "w") as f:
             f.write(content)
         os.chmod(CEPH_CONF_PATH, 0o644)
+        # Record it as ours: if this cloud later moves to an external cluster,
+        # external mode must know it may replace this file rather than reuse a
+        # ceph.conf pointing at the old cluster's monitors.
+        self._record_ceph_managed_file(CEPH_CONF_PATH)
         logger.info("Wrote %s", CEPH_CONF_PATH)
 
     def _write_ceph_keyring(self, key):
@@ -884,6 +935,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(keyring_path, "w") as f:
             f.write(content)
         os.chmod(keyring_path, 0o640)
+        # As above — this key is minted by the microceph broker and is useless
+        # against any other cluster, so external mode must be free to replace it.
+        self._record_ceph_managed_file(keyring_path)
         logger.info("Wrote %s", keyring_path)
 
     def _discover_cinder_ceph_pools(self) -> set:
