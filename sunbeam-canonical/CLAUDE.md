@@ -293,6 +293,21 @@ Two failure modes the code guards explicitly. Resetting the external config clea
 
 `_setup_ceph_client()` guards its `interface_ceph_client` import. It runs unconditionally from `__init__`, so without the guard an unimportable dependency would fail **every hook** on a cloud that never wanted Ceph.
 
+#### `configure-external-ceph.sh` — what it writes where
+
+`ceph.conf` goes into the **bundle**, the keyring into a **Juju secret**. The split is the point: config that holds no secret belongs in the version-controlled deployment definition, and a cephx credential must never appear in a file that gets committed or in `juju export-bundle`. The script edits `applications.trilio-data-mover.options` textually rather than round-tripping YAML — the bundles carry the revision/scale outage caution and other load-bearing comments that a PyYAML load-then-dump would silently delete. It removes the previous `ceph-*` run *and the contiguous comment block above it* before writing, which is why the bundle keeps all its Ceph commentary in one block ahead of the keys rather than interleaved: interleaved comments would be stranded above values they no longer describe.
+
+It runs before or after deploy. Before, it prepares bundle and secret and prints the follow-up commands; after, it also applies the values live so bundle and running app cannot drift. **`juju grant-secret` and the `ceph-keyring` config are gated on the app existing** — a secret cannot be granted to an application that has not been deployed. Note `juju status <name>` exits 0 for a nonexistent application (the name is read as a filter that matches nothing), so the deployed check parses `--format=json` instead of relying on the exit code.
+
+#### Finding the pool names on a live Sunbeam cloud
+
+The unit configs are authoritative; `openstack volume backend pool list` only shows what Cinder advertises.
+
+- **Cinder** — `juju ssh -m openstack-machines cinder-volume/0 -- sudo grep -rE 'rbd_pool|rbd_user|rbd_ceph_conf' /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/`. One file per backend; only those with an `rbd_pool` are on Ceph. In one lab: `rbd_pool = cinder-volume-ceph`, `rbd_user = cinder-volume-ceph` — note the pool is **not** named `cinder-ceph`, and guessing it wastes a debugging cycle.
+- **Nova** — `juju ssh -m openstack-machines openstack-hypervisor/0 -- sudo grep -E '^(images_type|images_rbd_pool|rbd_user|rbd_secret_uuid)' /var/snap/openstack-hypervisor/common/etc/nova/nova.conf`. `rbd_user`/`rbd_secret_uuid` **without** `images_type` means Nova attaches Ceph-backed Cinder volumes but keeps ephemeral disks on local disk — there is no Nova pool to grant, which is the Sunbeam default. Always check rather than assuming a Nova pool exists.
+
+When verifying access, `rbd` without `--id <client>` authenticates as `client.admin` and proves nothing about Trilio's own credential.
+
 ### Ceph-client relation for datamover (contego's own RBD credentials)
 `trilio-data-mover-sunbeam` has its own `ceph` relation (interface `ceph-client`) to the Ceph cluster application (microceph on Sunbeam), so contego gets a dedicated Ceph client key for direct `rbd` CLI usage against Ceph-backed Cinder volumes — not needed for Nova's own attach flow, only for contego's own rbd reads. Two library/behavior gotchas:
 - **`interface_ceph_client`'s `_ops_equal()` bug**: it only compares a fixed key list (`replicas`, `name`, `op`, `pg_num`, `group-permission`, `object-prefix-permissions`) when deciding if a new broker request duplicates a prior one — `client`/`permissions` are NOT in that list. Sending a first broad request then a second, narrower `set-key-permissions` request gets silently discarded as a "duplicate". **Workaround implemented**: never send two differing requests — discover the exact pool name(s) and final capability string up front (via a direct libvirt domain scan, which works even before any Ceph credentials exist) and send exactly ONE `set-key-permissions` request ever, already scoped to the final permission needed.
