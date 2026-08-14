@@ -263,24 +263,31 @@ After validating the nova-user approach (sections above), an experiment ran WLM,
 
 Two boolean flags decide how contego reaches Ceph, if at all:
 
-| `ceph_enabled` | `internal_ceph_enabled` | Result |
+| `ceph-enabled` | `internal-ceph-enabled` | Result |
 |---|---|---|
 | `false` | *(ignored)* | No Ceph anywhere. No relation used, no Ceph stanzas rendered. |
 | `true` | `true` *(default)* | Sunbeam's own microceph over the `ceph` relation. |
-| `true` | `false` | External cluster; operator supplies `trilio_ceph_username`, `ceph_conf`, `ceph_keyring`. |
+| `true` | `false` | External cluster; operator supplies `trilio-ceph-username`, `ceph-conf`, `ceph-keyring`. |
 
 Both non-default cases use `trilio-dataplane-bundle-no-microceph.yaml` — the standard bundle fails on them because Juju cannot resolve the `trilio-data-mover:ceph` endpoint when no microceph application exists.
 
-`ceph_enabled=false` is checked **first** in `_ceph_backend_enabled()`, so a `.ceph-granted-pools` marker left by an earlier Ceph-enabled deployment cannot resurrect the stanzas after Ceph is turned off. `internal_ceph_enabled` is gated on `ceph_enabled` so it can never enable Ceph by itself.
+`ceph-enabled=false` is checked **first** in `_ceph_backend_enabled()`, so a `.ceph-granted-pools` marker left by an earlier Ceph-enabled deployment cannot resurrect the stanzas after Ceph is turned off. `internal-ceph-enabled` is gated on `ceph-enabled` so it can never enable Ceph by itself.
 
-Setting `internal_ceph_enabled=false` switches the charm to external mode: `_write_external_ceph()` supplies them, `_ceph_backend_enabled()` returns True, and both `_on_ceph_broker_available()` and `_on_ceph_pools_available()` return early. Guarding **both** matters — the first stops us asking a broker for caps on a key it did not mint, the second stops relation data overwriting the operator's files on a later relation event.
+Setting `internal-ceph-enabled=false` switches the charm to external mode: `_write_external_ceph()` supplies them, `_ceph_backend_enabled()` returns True, and both `_on_ceph_broker_available()` and `_on_ceph_pools_available()` return early. Guarding **both** matters — the first stops us asking a broker for caps on a key it did not mint, the second stops relation data overwriting the operator's files on a later relation event.
 
 Five differences from the relation path worth knowing:
 - **The operator pre-creates the Ceph client; the charm cannot.** With no broker and no admin credential to a cluster we do not manage, there is nothing to create a user or grant caps with. `ceph auth get-or-create client.trilio mon 'profile rbd' osd 'profile rbd pool=…'` on a Ceph admin node, then pass the name and keyring as config.
-- **`trilio_ceph_username` defaults to `trilio-data-mover`**, the same name the relation path uses, so one name works in both modes. Change it only to reuse an existing client such as `cinder`.
+- **`trilio-ceph-username` defaults to `trilio-data-mover`**, the same name the relation path uses, so one name works in both modes. Change it only to reuse an existing client such as `cinder`.
 - **Write-if-absent, never overwrite.** Neither `/etc/ceph/ceph.conf` nor the keyring is replaced if it already exists — whatever put it there is the authority on its contents, and clobbering it could break Nova and Cinder on that node. In practice on Sunbeam a compute node has **neither**: `/etc/ceph` holds only `rbdmap` from the `ceph-common` package, because Nova reaches Ceph via Cinder's per-volume `connection_info` rather than `/etc/ceph`. So the config values normally are what provides them.
 - **The keyring is written verbatim, not synthesised.** The relation path builds `[client.X]\n\tkey = …` from a bare key; an external keyring usually already has that stanza plus `caps` lines, and rebuilding it would drop them.
-- **Nothing validates the credential.** With no broker there is nobody to confirm a grant. Verify by hand on a compute node: `sudo rbd --id <trilio_ceph_username> ls <pool>`. Missing `ceph_conf`/`ceph_keyring` in external mode is a config error and blocks the unit, rather than silently disabling Ceph.
+- **The keyring is a Juju user secret, not a config string.** `ceph-keyring` is `type: secret`, so the option holds only a URI and the cephx credential never enters the controller's config store, `juju config` output, or `juju export-bundle`. Create it with a key named `keyring`, grant it, then point the option at it:
+  ```bash
+  juju add-secret trilio-ceph-keyring keyring#file=./ceph.client.trilio-data-mover.keyring
+  juju grant-secret trilio-ceph-keyring trilio-data-mover
+  juju config trilio-data-mover ceph-keyring=secret:<id>
+  ```
+  The charm observes `secret_changed`, so `juju update-secret` re-renders — a rotated credential would otherwise sit unused, since the config value (the URI) has not changed. A secret that is missing, ungranted, or lacks the `keyring` key raises with an actionable message and blocks the unit rather than silently disabling Ceph.
+- **Nothing validates the credential.** With no broker there is nobody to confirm a grant. Verify by hand on a compute node: `sudo rbd --id <trilio-ceph-username> ls <pool>`. Missing `ceph-conf`/`ceph-keyring` in external mode is a config error and blocks the unit.
 
 Two failure modes the code guards explicitly. Resetting the external config clears `.ceph-granted-pools`, because a stale marker would keep `_ceph_backend_enabled()` True while `rbd_user` reverted to the app name and no keyring of that name existed — contego would then fail auth on every Ceph volume instead of cleanly disabling Ceph. And a `ceph` relation present while `interface_ceph_client` fails to import now goes **blocked**, not active: otherwise the unit reports healthy with no Ceph credentials at all.
 
