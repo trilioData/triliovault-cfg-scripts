@@ -125,11 +125,9 @@ scope, or stop.
 
 ## Also documented in
 
-- **DevOps Build and Testing Reference**, section 14 — the same how-to in the
-  context of the full build/deploy/test cycle, including which of the 10 build
-  pass criteria a green run actually covers.
-- **DevOps Implementation Reference**, section 10 (Verification) — points here
-  as the automated alternative to verifying by hand.
+[DevOps Reference Document for Trilio for OpenStack](https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5125144595/DevOps+Reference+Document+for+Trilio+for+OpenStack),
+**section 15** — the same how-to in the context of the full DevOps reference.
+That page is the single source of truth; keep it in step with this file.
 
 ## Adding a distro
 

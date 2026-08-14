@@ -145,5 +145,5 @@ Do not just relay the error string. Work out the cause.
 ## Related
 
 - `test/README.md` — running the suite standalone, and adding a distro.
-- [Plan — t4o-test Skill](https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5140283393)
+- [DevOps Reference Document](https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5125144595/DevOps+Reference+Document+for+Trilio+for+OpenStack) §15 — the single source of truth for this suite
 - [Cloud Admin Credentials per Distro](https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5140414466)

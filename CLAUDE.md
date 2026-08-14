@@ -20,19 +20,14 @@ https://www.openstack.org/software/
 
 This Confluence page is the authoritative, distro-agnostic implementation reference for T4O: every service and its start command, node placement, Ubuntu + CentOS/RHEL 9 package lists and Python pins, users/UIDs, directories, kernel modules, FUSE, sudoers/rootwrap, DB/RabbitMQ/Keystone bootstrap, **every config-file parameter with an explanation and how to derive its value**, container mounts and flags (Kolla + RHOSO 18), HAProxy, start order, verification, upgrade, and known failure modes.
 
-Use it for two things:
+**This is the only DevOps reference document to refer to.** Do not cite or update any other Confluence page as a DevOps reference.
+
+Use it for three things:
 1. **Writing install/upgrade automation for a new OpenStack distro** — implement its sections in order; §13 is the completion checklist.
 2. **Diagnosing bugs in existing devops scripts** — diff the deployed artefact against its reference tables. §7.10 (cross-file consistency rules) and §12 (symptom → root cause) resolve most field issues.
+3. **Functionally testing a deployment** — §15 documents the `test/` suite and the `t4o-test` skill: how to run them, the environment variables, the step order, and how the reachability gate hands control back.
 
-Keep it current: when a fix changes a service command, package, directory, config parameter, mount, or ordering constraint, update that page in the same change as the code.
-
-### Companion: DevOps Build and Testing Reference
-
-**https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5126914053/DevOps+Build+and+Testing+Reference**
-
-The build/test execution counterpart: what artefacts to build for each distro and with which script, deploy, apply the licence, validate the cloud admin trust, add NFS and S3 backup targets, create a workload and take full + incremental backups, restore, and test an upgrade from build X to build Y. Contains the 10 pass criteria used to sign off a build and a per-run test record template.
-
-Keep it current when a build script gains or changes arguments, when the artefact list for a distro changes, or when a new validation step becomes necessary.
+Keep it current: when a fix changes a service command, package, directory, config parameter, mount, ordering constraint, or the test suite's interface, update that page in the same change as the code.
 
 ### Known convention drift: WLM Keystone service user
 
