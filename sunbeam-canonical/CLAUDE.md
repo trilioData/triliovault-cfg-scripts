@@ -259,6 +259,24 @@ After validating the nova-user approach (sections above), an experiment ran WLM,
 - Tradeoff: this diverges from kolla/RHOSP convention (UID-consistent `nova` user across compute-side and control-plane-side components). Intentional for Sunbeam specifically, not a recommendation for other platforms.
 - A rollback snapshot documenting the pre-experiment nova-user charm revisions/container tags was written before this change — ask if you need to find/recreate it; the nova-user code paths themselves are described in the historical sections above and are fully removed from the current charm source (git history has the diff if a rollback is ever needed).
 
+### Clouds without microceph — no Ceph at all, or an external Ceph cluster
+
+The `ceph` relation assumes a microceph/ceph-mon **Juju application** to relate to. Two common deployments have none, and both use `trilio-dataplane-bundle-no-microceph.yaml` — the standard dataplane bundle fails on them because Juju cannot resolve the `trilio-data-mover:ceph` endpoint.
+
+| Cloud | What to do |
+|---|---|
+| **No Ceph anywhere** (Cinder on LVM/iSCSI or a vendor driver, Nova ephemeral local) | Nothing beyond the bundle. `_ceph_backend_enabled()` returns False, so the `[libvirt] images_rbd_ceph_conf`/`rbd_user` and `[ceph] keyring_ext` stanzas are simply not rendered. That is correct, not degraded. |
+| **Ceph exists but is external** (cephadm, Rook, any third-party tool) | Set `ceph-conf` and `ceph-keyring` charm config to the cluster's own artefacts, plus `ceph-client-name` and optionally `ceph-pools`. |
+
+Setting **both** `ceph-conf` and `ceph-keyring` switches the charm to external mode: `_write_external_ceph()` writes them to `/etc/ceph`, `_ceph_backend_enabled()` returns True, and `_on_ceph_broker_available()` returns early. That last part matters — asking a broker for caps on a key it did not mint is at best a no-op, and at worst rewrites caps on a same-named client the external cluster's own tooling manages.
+
+Three differences from the relation path worth knowing:
+- **`ceph-client-name` defaults to the Juju app name, which is almost never right for an external cluster.** The app-name constraint exists only because the broker names the key it mints; with no broker there is no such rule, and external clusters typically call the client `cinder` or similar.
+- **The keyring is written verbatim, not synthesised.** The relation path builds `[client.X]\n\tkey = …` from a bare key; an external keyring usually already has that stanza plus `caps` lines, and rebuilding it would drop them.
+- **Nothing validates the credential.** With no broker there is nobody to confirm a grant, so `ceph-pools` is recorded for diagnostics only. Verify by hand on a compute node: `sudo rbd --id <ceph-client-name> ls <pool>`.
+
+`_setup_ceph_client()` guards its `interface_ceph_client` import. It runs unconditionally from `__init__`, so without the guard an unimportable dependency would fail **every hook** on a cloud that never wanted Ceph.
+
 ### Ceph-client relation for datamover (contego's own RBD credentials)
 `trilio-data-mover-sunbeam` has its own `ceph` relation (interface `ceph-client`) to the Ceph cluster application (microceph on Sunbeam), so contego gets a dedicated Ceph client key for direct `rbd` CLI usage against Ceph-backed Cinder volumes — not needed for Nova's own attach flow, only for contego's own rbd reads. Two library/behavior gotchas:
 - **`interface_ceph_client`'s `_ops_equal()` bug**: it only compares a fixed key list (`replicas`, `name`, `op`, `pg_num`, `group-permission`, `object-prefix-permissions`) when deciding if a new broker request duplicates a prior one — `client`/`permissions` are NOT in that list. Sending a first broad request then a second, narrower `set-key-permissions` request gets silently discarded as a "duplicate". **Workaround implemented**: never send two differing requests — discover the exact pool name(s) and final capability string up front (via a direct libvirt domain scan, which works even before any Ceph credentials exist) and send exactly ONE `set-key-permissions` request ever, already scoped to the final permission needed.
