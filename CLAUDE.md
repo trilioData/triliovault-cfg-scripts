@@ -20,19 +20,14 @@ https://www.openstack.org/software/
 
 This Confluence page is the authoritative, distro-agnostic implementation reference for T4O: every service and its start command, node placement, Ubuntu + CentOS/RHEL 9 package lists and Python pins, users/UIDs, directories, kernel modules, FUSE, sudoers/rootwrap, DB/RabbitMQ/Keystone bootstrap, **every config-file parameter with an explanation and how to derive its value**, container mounts and flags (Kolla + RHOSO 18), HAProxy, start order, verification, upgrade, and known failure modes.
 
-Use it for two things:
+**This is the only DevOps reference document to refer to.** Do not cite or update any other Confluence page as a DevOps reference.
+
+Use it for three things:
 1. **Writing install/upgrade automation for a new OpenStack distro** — implement its sections in order; §13 is the completion checklist.
 2. **Diagnosing bugs in existing devops scripts** — diff the deployed artefact against its reference tables. §7.10 (cross-file consistency rules) and §12 (symptom → root cause) resolve most field issues.
+3. **Functionally testing a deployment** — §15 documents the `test/` suite and the `t4o-test` skill: how to run them, the environment variables, the step order, and how the reachability gate hands control back.
 
-Keep it current: when a fix changes a service command, package, directory, config parameter, mount, or ordering constraint, update that page in the same change as the code.
-
-### Companion: DevOps Build and Testing Reference
-
-**https://triliodata.atlassian.net/wiki/spaces/TVO/pages/5126914053/DevOps+Build+and+Testing+Reference**
-
-The build/test execution counterpart: what artefacts to build for each distro and with which script, deploy, apply the licence, validate the cloud admin trust, add NFS and S3 backup targets, create a workload and take full + incremental backups, restore, and test an upgrade from build X to build Y. Contains the 10 pass criteria used to sign off a build and a per-run test record template.
-
-Keep it current when a build script gains or changes arguments, when the artefact list for a distro changes, or when a new validation step becomes necessary.
+Keep it current: when a fix changes a service command, package, directory, config parameter, mount, ordering constraint, or the test suite's interface, update that page in the same change as the code.
 
 ### Known convention drift: WLM Keystone service user
 
@@ -134,28 +129,91 @@ https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift
 
 ## Local Workspace Environment (`C:\vscode-workspace\env\`)
 
-A sibling directory `env/` at the workspace root holds local credentials and test-environment config that must NOT be committed to any repo. Test scripts reference it via `TRILIO_ENV_DIR` env var (default: three levels up from `sunbeam-canonical/test/`).
+A sibling directory `env/` at the workspace root holds local credentials and test-environment config that must NOT be committed to any repo. Test scripts reference it via the `TRILIO_ENV_DIR` env var (default: **two** levels up from `test/`, i.e. the workspace root).
 
 | File | Purpose |
 |------|---------|
-| `backup_targets.yaml` | Backup target definitions for automated tests. Contains S3 endpoints, bucket names, access/secret keys, CA certs, and NFS export paths. Keyed under `triliovault_backup_targets:` list. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh`. |
+| `backup_targets.yaml` | Backup target definitions for automated tests. Contains S3 endpoints, bucket names, access/secret keys, CA certs, and NFS export paths. Keyed under `triliovault_backup_targets:` list. Loaded by `test/t4o_env.sh`. |
 | `setups.yaml` | SSH access details for all lab/test environments (RHOSO18, Canonical, Sunbeam build server). Always check here before asking for server access. |
-| `license_trilio.txt` | TrilioVault license file used during test installs (`juju attach-resource trilio-wlm-k8s license=...`). |
-| `package_repo_urls.yaml.txt` | APT/PyPI repo URL reference (currently empty). |
+| `license_trilio.txt` | TrilioVault license file used during test installs. |
+| `build_artifacts.yaml` | Written by the build step; read by `test/` only to name the build in the report. |
+| `package_repo_urls.yaml.txt` | APT/PyPI repo URL reference. Plain text despite the name — never feed it to a YAML parser. |
 
 ---
 
-## Steps to Fix a Jira for Juju Charms
+## Functional testing (`test/`)
 
-Charm source code lives in `juju-charms/` — fixes go here AND in the standalone upstream charm repos.
+`test/` holds the distro-agnostic functional test suite: licence → cloud admin trust → backup target(s) → trustee roles → test VM(s) with volumes → workload(s) → full backup → report. It answers the question `/verify-deployment` does not: *does this deployment actually back up a VM?*
 
-1. Identify which charm needs the fix (wlm, dm-api, data-mover, horizon-plugin)
-2. Identify the branch (e.g. `dev-maint8/6.1` for a 6.1.x maintenance release)
-3. Sync the relevant charm directory with upstream before starting:
-   - In the standalone charm repo (`C:\vscode-workspace\charm-trilio-*`), merge upstream branch
-   - Re-copy updated files into `juju-charms/<charm-name>/` (excluding `.git`)
-4. Create a topic branch in `triliovault-cfg-scripts` (e.g. `tv7147`)
-5. Make the fix inside `juju-charms/<charm-name>/src/`
-6. Commit, push, and raise a PR against the upstream `triliovault-cfg-scripts` branch
-7. Also raise a mirrored PR against the standalone upstream charm repo (`trilioData/charm-trilio-*`)
-8. Add both PR links as a comment on the Jira ticket
+Run it standalone with `bash test/run_all.sh`, or through the `t4o-test` skill (`.claude/skills/t4o-test/`), which picks the setup, sets the scope, and triages failures.
+
+Two rules the suite depends on:
+
+- **It never builds and never deploys.** Those happen beforehand via other scripts. If T4O is not installed, the suite reports that and stops.
+- **All distro differences live in `test/t4o_env.sh`.** The numbered scripts never call `kubectl`/`oc`/`docker`/`podman`/`juju` directly. If a numbered script needs a distro branch, the abstraction is leaking.
+
+See `test/README.md` for usage and the per-distro adapter notes.
+
+---
+
+## Steps to fix a jira.
+1. In current directory, we have cloned all the repos.
+- https://github.com/shyam-biradar/triliovault-cfg-scripts
+
+2. Read the jira, collect all data including target release, in which branch we need to work and raise PR against which branch, summary of the jira, on which openstack distro we are getting the issue, what is the setup details etc
+
+3. Second, in which branch we need fix
+For example, dev-maint8/6.1
+
+**Current convention:** For all Jiras targeted at the 6.2.1 release, use the `maint/6.2` branch directly (not `dev-maint1/6.2` or `stable/6.2`).
+
+4. Once we decide the branch, we sync our forked repo branch with upstream repo branch.
+
+git checkout dev-maint8/6.1
+git pull origin dev-maint8/6.1
+git fetch upstream
+git merge upstream/dev-maint8/6.1
+
+5. Now our local branch is up to date with upstream
+
+6. Create topic branch for give jira, for example if jira is TVAULT-7147 then topic branch would be tv7147
+
+Sample command
+git checkout -b tv7147
+
+7. Find the root cause of the issue and present it to me
+
+8. Once I agree, propose the fix and wait for my approval
+-- If there are any changes in input yamls or deployment bundles, do not miss those
+
+9. Once I approve the fix, add the fix
+- If not approved and then iterate and find the correct approach to fix the issue.
+
+10. Run "review" for the fix that we done. If we find any issues, present those to me and once approved, add those fixes
+
+11. Then commit, push, create PR. always carry it all the way through: commit, push, and create the PR against upstream <BRANCH> — do not stop and wait for a separate "create PR" instruction. Never add Claude/Anthropic co-author attribution to commit messages.
+Add comment to jira that PR is raised. Always share the full PR URL (e.g. `https://github.com/trilioData/triliovault-cfg-scripts/pull/1509`), both in the Jira comment and in chat — not just the PR number.
+
+12. Build and Publish - Build necessary artifacts like charms, docker images and publish those.
+-- Use existing scripts for build and publish.
+
+13. Uninstall and clean T4O and related resources
+
+14. Deploy latest build artifacts and write output to env/build_artifacts.yaml
+-- If there are any major changes in install flow as part of this fix, ask for install document that we are going to use here and we need to update that document with changes steps, otherwise use install document for that T4O release.
+
+15. Run skill - 't4o-test'
+
+16. If 't4o-test' skill fails, then troubleshoot the issue and find root cause. Again we need to repeat cycle from step 
+"propose the fix and get approval" from this list of tasks till we get 't4o-test' skill tests passed.
+
+17. Add comment on jira with fix summary and PR link. Tag reporter of the jira.
+
+18. Update related confluence page of install or upgrade for any changes in install, upgrade steps.
+-- You need to mention these changes on jira as well. If there are not changes in install steps from a end user perspective, you can skip this step.
+
+18. Then we need to conclude the fix and present summary of the fix with build artifacts details in tabular format and full PR link to me on screen.
+
+19. **Update CLAUDE.md** — After completing the fix, update the relevant CLAUDE.md file(s) with any non-obvious knowledge discovered during the fix. See the "CLAUDE.md Maintenance Guidelines" section below.
+
+
