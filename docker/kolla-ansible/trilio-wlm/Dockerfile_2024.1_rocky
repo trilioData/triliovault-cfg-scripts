@@ -14,59 +14,103 @@ LABEL name="kolla/openstack-nova-api-triliodata-wlm-plugin" \
 # switch to root and install a custom RPM packages, etc.
 USER root
 
+# TVAULT-7629: install_weak_deps=False keeps RHEL9 "Recommends:" packages out of the image.
+ARG DNF_OPTS="-y --setopt=install_weak_deps=False"
+
 # temporary fix
-RUN dnf clean all
-RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true && dnf config-manager --disable epel epel-cisco-openh264
+RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
+    && dnf config-manager --disable epel epel-cisco-openh264
 
 ##Add trilio.repo which contains the path for TrilioVaultWLM RPM packages
 ADD trilio.repo /etc/yum.repos.d/
 
+# TVAULT-7629: the blanket `dnf update -y` that used to run here has been removed -- see
+# the trilio-datamover Dockerfile for the full rationale and the security trade-off. In
+# short: it stored a second copy of every base file it replaced, and the image now pins to
+# the kolla base's package versions instead of syncing to the newest Rocky 9 minor release.
+
 ## INSTALL REQUIRED PACKAGES
+# TVAULT-7629: every package transaction lives in this one layer so the removable build
+# toolchain (gcc, gcc-c++, make, python3-devel) and the dnf/pip caches it produces can be
+# dropped again before the layer is committed. Splitting these across layers is why the
+# toolchain used to ship to production.
+#
+# Only those four are removed. libxslt-devel, openssl-devel and swig must STAY: they are
+# hard Requires: of python3-workloadmgr-el9 (along with libxml2-devel). Removing them makes
+# dnf erase workloadmgr itself and cascade through 216 packages -- python3-nova,
+# openstack-nova-common, os-brick, oslo-db and taskflow included. Verified with
+# `dnf remove --assumeno`: the four-package set erases 11 packages, all toolchain.
+#
+# The relative order of the transactions is unchanged from the original, and it matters:
+# the pip "SQLAlchemy==1.4.51" pin must land before the workloadmgr RPMs, otherwise an
+# RPM-provided python3-sqlalchemy clobbers it. epel is likewise left enabled after the
+# python3-mysqlclient install, exactly as before, since the Trilio RPMs resolve with it on.
+#
+# One transaction was deliberately collapsed. This file used to install python3-novaclient,
+# remove it with --noautoremove, then install it again. That dance came from
+# Dockerfile_zed_rocky (commit 24f40559), where the third install carried
+# "--repo=centos-openstack-zed" and so genuinely re-sourced novaclient from the OpenStack
+# repo while keeping the deps the first install had pulled. When the file was copied forward
+# for Caracal (commit 08569ed1) the --repo flag was dropped, which makes all three steps
+# resolve from the same repo set and leaves exactly the package set a single install would.
+# It is now one install; the rpm -qa diff in the TVAULT-7629 verification confirms this.
+# NOTE: Dockerfile_zed_rocky still has the meaningful --repo form -- do not "simplify" it.
+#
+# `dnf remove` also removes anything that *requires* the named packages, so the rpm -q and
+# import checks after it assert the runtime set survived. Without them a dependency cascade
+# would yield a broken image that still built successfully; set -e makes it a build failure.
 RUN set -ex \
-     && dnf update -y \
-     && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
-     && dnf install -y fuse fuse-libs python3-neutronclient python3-retrying python3-cryptography
-
-RUN dnf install -y python3-novaclient \
-    && dnf remove -y --noautoremove python3-novaclient \
-    && dnf install -y python3-novaclient
-
-RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient ntfs-3g
-
-RUN /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install igraph namedatomiclock jinja2 munch paramiko taskflow \
-    && /usr/bin/pip3 install "SQLAlchemy==1.4.51" \
-    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
-RUN dnf -y install python3-tzlocal
-
-
-# Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
-RUN dnf install -y --allowerasing \
-    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y python3-s3fuse-plugin-el9
+    && dnf install $DNF_OPTS python3-devel libxslt-devel swig python3-pip \
+                             gcc gcc-c++ make openssl-devel \
+    && dnf install $DNF_OPTS libguestfs-tools fuse fuse-libs python3-neutronclient \
+                             python3-retrying python3-cryptography \
+    && dnf install $DNF_OPTS python3-novaclient \
+    && dnf config-manager --enable epel epel-cisco-openh264 \
+    && dnf install $DNF_OPTS python3-mysqlclient ntfs-3g \
+    && /usr/bin/pip3 install --no-cache-dir --upgrade pip \
+    && /usr/bin/pip3 install --no-cache-dir igraph namedatomiclock jinja2 munch paramiko taskflow \
+    && /usr/bin/pip3 install --no-cache-dir "SQLAlchemy==1.4.51" \
+    && /usr/bin/pip3 install --no-cache-dir azure-storage-blob==12.25.1 azure-core loguru \
+    && dnf install $DNF_OPTS python3-tzlocal \
+    && dnf install $DNF_OPTS python3-workloadmgr-el9 python3-workloadmgrclient-el9 \
+                             python3-contegoclient-el9 python3-trilio-dms-el9 \
+    && dnf install -y --allowerasing --setopt=install_weak_deps=False \
+       https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm \
+    && dnf install $DNF_OPTS python3-s3fuse-plugin-el9 \
+    && dnf remove -y gcc gcc-c++ make python3-devel \
+    && rpm -q python3-workloadmgr-el9 python3-workloadmgrclient-el9 python3-contegoclient-el9 \
+              python3-trilio-dms-el9 python3-s3fuse-plugin-el9 python3-mysqlclient \
+              python3-tzlocal python3-novaclient python3-neutronclient python3-retrying \
+              python3-cryptography python3-eventlet virt-win-reg fuse fuse-libs ntfs-3g \
+    && command -v guestmount >/dev/null \
+    && rpm -q --qf '%{VERSION}\n' python3-eventlet | grep -qx 0.30.2 \
+    && /usr/bin/python3 -c "import igraph, paramiko, taskflow, munch, MySQLdb, jinja2, loguru; import azure.core; import azure.storage.blob; import sqlalchemy; assert sqlalchemy.__version__ == '1.4.51', sqlalchemy.__version__" \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /var/cache/yum /root/.cache /var/tmp/* /tmp/*
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
-RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
-    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
-RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store  /var/lib/workloadmgr \
-    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
+# TVAULT-7629: one mkdir/chown/chmod pass instead of three separate layers -- each
+# recursive pass in its own layer duplicated every file of the tree it touched.
+# usermod stays after the chown/chmod passes, in the original order.
+RUN set -ex \
+    && mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault \
+                /var/trilio/triliovault-mounts /var/log/triliovault /opt/triliovault \
+    && chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts \
+                          /var/triliovault /var/lib/workloadmgr /opt/triliovault \
+    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store \
+    && chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store \
+                    /var/lib/workloadmgr \
+    && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault \
+    && ln -s /usr/bin/workloadmgr-rootwrap /var/lib/kolla/venv/bin/workloadmgr-rootwrap \
+    && usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
+
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
-RUN ln -s /usr/bin/workloadmgr-rootwrap /var/lib/kolla/venv/bin/workloadmgr-rootwrap
 
 ## Kolla specific settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 COPY triliovault_wlm_extend_start.sh /usr/local/bin/kolla_triliovault_wlm_extend_start
 
-## Create directory to hold service start scripts
-RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
-
-## Nova user changes
-RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
-
 ##Clean subscription
-RUN dnf clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Become nova user for further operations
