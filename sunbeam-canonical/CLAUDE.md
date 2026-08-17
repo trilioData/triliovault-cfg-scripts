@@ -17,13 +17,13 @@ All test credentials and environment config live under **`C:\vscode-workspace\en
 
 | File | Path | Purpose |
 |------|------|---------|
-| `backup_targets.yaml` | `C:\vscode-workspace\env\backup_targets.yaml` | S3/NFS backup target credentials and endpoint details. Loaded by `sunbeam-canonical/test/01_create_backup_targets.sh` via `TRILIO_ENV_DIR`. |
+| `backup_targets.yaml` | `C:\vscode-workspace\env\backup_targets.yaml` | S3/NFS backup target credentials and endpoint details. Loaded by `test/04_create_backup_targets.sh` via `TRILIO_ENV_DIR`. |
 | `setups.yaml` | `C:\vscode-workspace\env\setups.yaml` | SSH access details for ALL lab environments — build server, Canonical QA, RHOSO18, etc. Check here first. |
 | `license_trilio.txt` | `C:\vscode-workspace\env\license_trilio.txt` | TrilioVault license file. Used with `juju attach-resource trilio-wlm-k8s license=...` (copy to build server as `license` — no `.txt` extension). |
 
 **Build-server override**: on the build server the env dir is `/home/ubuntu/env/`. Always set `TRILIO_ENV_DIR` when running test scripts there:
 ```bash
-TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+TRILIO_ENV_DIR=/home/ubuntu/env bash test/04_create_backup_targets.sh
 ```
 
 ---
@@ -229,16 +229,10 @@ Required once after WLM reaches `active` (`juju run trilio-wlm-k8s/leader create
 ### `workloadmgr trust-create` CLI exits 0 even on API failure — never trust the action return value alone
 The `workloadmgr trust-create` binary (cliff/cmd2 based) exits with code 0 regardless of what the API returns — a 500 Internal Server Error from wlm-api still results in exit code 0, so the charm action (`create-cloud-admin-trust`) cannot detect the failure and reports "Cloud admin trust created successfully" even when nothing was stored. Always verify by running `workloadmgr trust-list` after `trust-create` and confirming at least one row appears (or check the wlm-api logs for `job_service.py` errors). The root cause is the job table migration gap (see `job table missing audit columns` above) — once migration 030 is in the image, trust-create works correctly. This CLI behavior is inherent and will not be fixed upstream, so charm callers must do an explicit verify step.
 
-### Secret-server (Barbican replacement for Sunbeam) — must handle `/payload` URL suffix
-WLM treats every `secret_ref` stored in a backup-target's credentials as a **Barbican URL** and appends `/payload` to it when fetching the actual credential value (`workloadmgr/vault/secret_resolver.py` pattern). The Sunbeam `secret-server` is a lightweight Python HTTP server (`sunbeam-canonical/test/01_create_backup_targets.sh`) serving credentials out of ConfigMap entries — not a real Barbican instance. Its `do_GET` handler must strip the `/payload` suffix before looking up the secret name, otherwise every credential fetch returns 404 and the backup-target goes offline:
-```python
-def do_GET(self):
-    name = self.path.lstrip('/')
-    if name.endswith('/payload'):
-        name = name[:-len('/payload')]
-    path = f'/secrets/{name}'
-```
-The `secret_ref` stored in the backup-target is `http://<ClusterIP>:8765/<secret-name>` (no `/payload`); WLM appends `/payload` at fetch time. Both the secret-server and the backup-target creation call must be consistent — store the base URL without `/payload`, strip it on the server side.
+### `secret_ref` and the `/payload` suffix
+WLM treats every `secret_ref` stored in a backup-target's credentials as a **Barbican URL** and appends `/payload` to it when fetching the actual credential value (`workloadmgr/vault/secret_resolver.py` pattern). Store the base secret ref exactly as Barbican returns it — never append `/payload` yourself, or the fetch resolves to `.../payload/payload` and returns 404, which surfaces as the backup target going offline rather than as an obvious URL error.
+
+> **Removed:** an earlier Sunbeam-only `secret-server` (a lightweight Python HTTP server serving credentials from a ConfigMap, as a Barbican substitute) is gone. Sunbeam ships Barbican in its core control plane, so use it — see "Barbican (Key Manager) for DMS secret storage" below. Do not reintroduce a substitute.
 
 ### FUSE device access for s3vaultfuse (control plane k8s charms only)
 `s3vaultfuse` (S3 backup targets) needs `/dev/fuse` + a privileged security context. Data-plane machine charms (`trilio-data-mover-sunbeam`, and the legacy `charm-trilio-data-mover`) get this for free — they install `fuse`/`libfuse2` on a real host, which already has `/dev/fuse`. The k8s control-plane charms (`trilio-wlm-k8s`, `trilio-dms-k8s`) do **not** — and worse, **sidecar k8s charms have no `charmcraft.yaml` field for `securityContext`/host-device access at all** (only `resource` and `mounts` under `containers:`). Both charms self-patch their own StatefulSet at runtime via `lightkube` (`_patch_fuse_device()`, using a strategic-merge patch adding `securityContext.privileged: true` + a `dev-fuse` hostPath volume/mount) — this requires `trust: true` on the application (already set in `trilio-ctlplane-bundle.yaml`, which grants the operator service account a namespace-scoped `apiGroups: ["*"], resources: ["*"], verbs: ["*"]` Role — no extra RBAC needed). The patch triggers one StatefulSet-driven pod restart to take effect; `_configure()` calls it idempotently (checks for the existing `securityContext.privileged` + `dev-fuse` volumeMount before patching) so it's a no-op on every subsequent hook run.
@@ -288,7 +282,7 @@ Sunbeam deploys Barbican as part of its core control plane — it is always avai
 Key gotchas:
 - **Barbican `payload_content_type` must be `text/plain`** — Barbican rejects `application/json`. The DMS payload is JSON text stored as an opaque text secret; this is correct and DMS reads it fine.
 - **Barbican endpoint is not reachable via k8s ClusterIP from compute nodes** — Compute nodes (172.26.2.5, .6) cannot reach MicroK8s ClusterIPs. Always use the public endpoint from the Keystone service catalog (`key-manager` service, `public` interface), which routes via the floating IP/ingress and IS reachable from compute nodes.
-- **Build server may lack the barbicanclient openstack CLI plugin** — create secrets via the Barbican REST API from inside the WLM pod instead (see `sunbeam-canonical/test/01_create_backup_targets.sh`).
+- **Build server may lack the barbicanclient openstack CLI plugin** — create secrets via the Barbican REST API from inside the WLM pod instead (see `test/04_create_backup_targets.sh`).
 - **Sunbeam admin user is in `admin_domain` domain** (not `Default`) — Keystone auth must use `user_domain_name=admin_domain`, `project_domain_name=admin_domain`.
 
 ### DMS mounts on-demand (event-driven), not proactively at startup
@@ -657,7 +651,7 @@ The `setsid` prefix is required — see the "workloadmgr CLI in Pebble exec" sec
 
 ### Snapshot verification test flow
 After fresh install and license/trust setup:
-1. Create backup target (NFS or S3) via the test script: `sunbeam-canonical/test/01_create_backup_targets.sh`
+1. Create backup target (NFS or S3) via the test script: `test/04_create_backup_targets.sh`
 2. Create a test workload (one VM): run `workloadmgr workload-create` from inside the WLM pod
 3. Trigger a snapshot: `workloadmgr snapshot-create <workload-id>`
 4. Poll status: `workloadmgr snapshot-show <snapshot-id>` until `available` (success) or `error`
@@ -665,19 +659,32 @@ After fresh install and license/trust setup:
 
 ---
 
-## Testing Scripts (`sunbeam-canonical/test/`)
+## Testing Scripts (`test/` at the repo root)
 
-### `env.sh` — shared environment setup
-Sources OpenStack credentials automatically from two places:
+The Sunbeam-only scripts that used to live here were generalised and moved to
+**`test/` at the repo root**, where they serve every distro. See `test/README.md`.
+Sunbeam is now one adapter branch in `test/t4o_env.sh` rather than the whole
+implementation.
+
+```bash
+TRILIO_ENV_DIR=/home/ubuntu/env T4O_BT_SCOPE=both bash test/run_all.sh
+```
+
+### `t4o_env.sh` — shared environment setup
+Discovers OpenStack credentials rather than hardcoding them:
 - `OS_AUTH_URL`: read from `/etc/triliovault-wlm/triliovault-wlm.conf` inside the WLM pod (always reflects the current Keystone ClusterIP set by the charm)
 - `OS_PASSWORD`: fetched via Juju action `juju run keystone/leader get-admin-account -m controller0/openstack` — output field `password:`. **Not** `get-admin-password` (that action does not exist on keystone-k8s).
 
-### `01_create_backup_targets.sh` — backup-target creation test
-Reads S3 and NFS credentials from `backup_targets.yaml` via an embedded Python block — no credentials should be hardcoded or exported as env vars beforehand. The expected file path is `${TRILIO_ENV_DIR}/backup_targets.yaml`; `TRILIO_ENV_DIR` defaults to `<repo-root>/env/`.
+Sunbeam's Juju models are controller-qualified: use `-m controller0/openstack`.
+A bare `-m openstack` fails with "model admin/openstack not found".
 
-**Build-server path override required**: on the build server the repo is cloned at `~/sunbeam-canonical/` (a flat clone), not `~/triliovault-cfg-scripts/sunbeam-canonical/`. The default path resolution walks up three parent directories to find the repo root, landing at `/home/`, which doesn't contain an `env/` subdirectory. Always set `TRILIO_ENV_DIR=/home/ubuntu/env` when running these scripts on the build server:
+### `TRILIO_ENV_DIR` on the build server
+The default walks **two** levels up from `test/` (it was three when the scripts
+lived under `sunbeam-canonical/test/`). On a flat clone that default can miss,
+and the failure is silent — the scripts report a missing `backup_targets.yaml`
+rather than a wrong path. Set it explicitly:
 ```bash
-TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+TRILIO_ENV_DIR=/home/ubuntu/env bash test/04_create_backup_targets.sh
 ```
 
 ### `create-license` Juju action — requires `kubectl cp` first
@@ -792,7 +799,7 @@ kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
 
 ```bash
 # Credentials read from C:\vscode-workspace\env\backup_targets.yaml (or /home/ubuntu/env/ on build server)
-TRILIO_ENV_DIR=/home/ubuntu/env bash sunbeam-canonical/test/01_create_backup_targets.sh
+TRILIO_ENV_DIR=/home/ubuntu/env bash test/04_create_backup_targets.sh
 
 # Verify backup target is accessible
 kubectl exec -n openstack trilio-wlm-k8s-0 -c trilio-wlm -- \
