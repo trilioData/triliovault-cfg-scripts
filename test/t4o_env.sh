@@ -117,6 +117,10 @@ _t4o_set_distro_constants() {
       rhoso18)
         K8S_NAMESPACE="${K8S_NAMESPACE:-trilio-openstack}"
         WLM_DEPLOY="${WLM_DEPLOY:-deploy/triliovault-wlm-api}"
+        # EDPM names its podman containers with hyphens, unlike kolla/rhosp17's
+        # underscores. Without this DM_CTR was empty on rhoso18 and every
+        # dm_shell/dm_logs call ran `podman exec  <cmd>` with no container.
+        DM_CTR="${DM_CTR:-triliovault-datamover}"
         T4O_OS_INSECURE=""
         ;;
       kolla|rhosp17)
@@ -202,6 +206,13 @@ wlm_exec() {
 }
 
 # ---------------------------------------------------------------------------
+# RHOSO 18 lives in two namespaces: T4O in K8S_NAMESPACE (trilio-openstack) and
+# OpenStack itself — including the openstackclient pod that carries the only
+# openstack CLI on the cluster — in T4O_OS_NAMESPACE (openstack).
+# ---------------------------------------------------------------------------
+export T4O_OS_NAMESPACE="${T4O_OS_NAMESPACE:-openstack}"
+
+# ---------------------------------------------------------------------------
 # os_exec — run `openstack <args>` from wherever the CLI is available
 #
 # Unlike workloadmgr, the openstack CLI is usually present on the host we are
@@ -220,6 +231,13 @@ wlm_exec_raw_openstack() {
       sunbeam)
         kubectl exec -n "$K8S_NAMESPACE" "$WLM_POD" -c "$WLM_CONTAINER" -- \
           env $(_t4o_os_env_args) openstack $T4O_OS_INSECURE "$@" ;;
+      rhoso18)
+        # RHOSO ships the openstackclient pod with credentials already in its
+        # environment, so no _t4o_os_env_args here. `exec --` (not `rsh`) so argv
+        # is passed through verbatim - rsh wraps the command in `sh -c` and would
+        # word-split arguments such as --property 'a=b c'.
+        oc exec -n "$T4O_OS_NAMESPACE" openstackclient -- \
+          openstack $T4O_OS_INSECURE "$@" ;;
       *) t4o_die "os_exec: no openstack CLI on this host and no in-service fallback for '$T4O_DISTRO'" ;;
     esac
 }
@@ -289,6 +307,60 @@ for pname,p in sorted(d.get('applications',{}).items()):
     esac
 }
 
+# ---------------------------------------------------------------------------
+# RHOSO 18 DataMover access
+#
+# dm_hosts yields nova-compute hostnames, but on RHOSO those are usually absent
+# from the bastion's DNS and the EDPM nodes do not trust the bastion's own SSH
+# key. Both are solved from the cluster: the OpenStackDataPlaneNodeSet records a
+# routable ansibleHost per node, and the dataplane ansible key is in a Secret.
+# cloud-admin exists on EDPM nodes but is not authorised for podman, so the
+# default user is root.
+# ---------------------------------------------------------------------------
+export T4O_EDPM_SSH_SECRET="${T4O_EDPM_SSH_SECRET:-dataplane-ansible-ssh-private-key-secret}"
+export T4O_DM_SSH_USER="${T4O_DM_SSH_USER:-root}"
+
+_t4o_edpm_key() {
+    local key="$T4O_WORK_DIR/edpm_ssh_key"
+    if [[ ! -s "$key" ]]; then
+        mkdir -p "$T4O_WORK_DIR"
+        oc get secret -n "$T4O_OS_NAMESPACE" "$T4O_EDPM_SSH_SECRET" \
+            -o jsonpath='{.data.ssh-privatekey}' 2>/dev/null | base64 -d > "$key" 2>/dev/null
+        chmod 600 "$key" 2>/dev/null
+    fi
+    [[ -s "$key" ]] || {
+        t4o_error "_t4o_edpm_key: cannot read secret '$T4O_EDPM_SSH_SECRET' in namespace '$T4O_OS_NAMESPACE'"
+        return 1
+    }
+    printf '%s' "$key"
+}
+
+_t4o_edpm_addr() {
+    local short="${1%%.*}" ip
+    ip=$(oc get openstackdataplanenodeset -n "$T4O_OS_NAMESPACE" -o json 2>/dev/null \
+      | python3 -c "
+import json,sys
+short=sys.argv[1]
+for item in json.load(sys.stdin).get('items',[]):
+    for name,node in (item.get('spec',{}).get('nodes') or {}).items():
+        if short in (name, node.get('hostName')):
+            addr=(node.get('ansible') or {}).get('ansibleHost')
+            if addr:
+                print(addr)
+                raise SystemExit
+" "$short" 2>/dev/null)
+    # Fall back to the name we were given: on a cloud where DNS does resolve, it works.
+    printf '%s' "${ip:-$1}"
+}
+
+_t4o_edpm_ssh() {
+    local host="$1"; shift
+    local key
+    key=$(_t4o_edpm_key) || return 1
+    ssh -i "$key" -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 \
+        "${T4O_DM_SSH_USER}@$(_t4o_edpm_addr "$host")" "$@" < /dev/null
+}
+
 dm_shell() {
     local host="$1"; shift
     case "$T4O_DISTRO" in
@@ -300,7 +372,20 @@ dm_shell() {
         juju ssh $model_arg --pty=false "$host" -- "$*" < /dev/null ;;
       kolla)
         ssh -o StrictHostKeyChecking=no "$host" "docker exec $DM_CTR bash -lc '$*'" < /dev/null ;;
-      rhoso18|rhosp17)
+      rhoso18)
+        # Ship the command base64-encoded and decode it on the node. Callers pass
+        # commands that contain single quotes - 01_check_backup_targets.sh sends
+        # curl -w 'CODE:%{http_code}' and printf '|RC:%s' - and the `bash -lc '$*'`
+        # form used by the other branches lets those quotes close the wrapper
+        # early, so the node ran a fragment as its own command
+        # ("RC:%s $?: command not found"). The encoded string contains no quotes
+        # at all, so nothing can be re-split on the way through ssh.
+        _t4o_edpm_ssh "$host" \
+          "echo $(printf '%s' "$*" | base64 | tr -d '\n') | base64 -d | sudo podman exec -i $DM_CTR bash -l" ;;
+      rhosp17)
+        # Same nested-quoting weakness as above; left as-is because it cannot be
+        # exercised from here. Mirror the rhoso18 branch when a RHOSP 17 setup is
+        # available to test against.
         ssh -o StrictHostKeyChecking=no "$host" "sudo podman exec $DM_CTR bash -lc '$*'" < /dev/null ;;
       openstack-helm)
         local pod
@@ -319,7 +404,9 @@ dm_logs() {
         dm_shell "$host" "sudo journalctl -u triliovault-datamover -n $lines --no-pager" ;;
       kolla)
         ssh -o StrictHostKeyChecking=no "$host" "docker logs --tail $lines $DM_CTR" < /dev/null ;;
-      rhoso18|rhosp17)
+      rhoso18)
+        _t4o_edpm_ssh "$host" "sudo podman logs --tail $lines $DM_CTR" ;;
+      rhosp17)
         ssh -o StrictHostKeyChecking=no "$host" "sudo podman logs --tail $lines $DM_CTR" < /dev/null ;;
       openstack-helm)
         dm_shell "$host" "tail -n $lines /var/log/triliovault/triliovault-datamover.log" ;;
@@ -347,7 +434,12 @@ copy_to_wlm() {
 
 _t4o_first_pod() {
     case "$T4O_DISTRO" in
-      rhoso18)  oc -n "$K8S_NAMESPACE" get pods -l service=triliovault-wlm-api -o jsonpath='{.items[0].metadata.name}' ;;
+      # The label is service=triliovault-wlm (the whole WLM service); the
+      # per-microservice discriminator is component=wlm-api. There is no
+      # service=triliovault-wlm-api label, so that selector matched nothing and
+      # the jsonpath died with "array index out of bounds", leaving copy_to_wlm
+      # to run `oc cp` against an empty pod name.
+      rhoso18)  oc -n "$K8S_NAMESPACE" get pods -l application=triliovault,component=wlm-api -o jsonpath='{.items[0].metadata.name}' ;;
       *)        kubectl get pods -n "$K8S_NAMESPACE" -l application=triliovault-wlm -o jsonpath='{.items[0].metadata.name}' ;;
     esac
 }
