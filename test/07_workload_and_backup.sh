@@ -49,12 +49,23 @@ RESULTS_FILE="${T4O_WORK_DIR}/backup_results.env"
 #   workload-show   / snapshot-show       detail view, fields  'id','status',...
 #
 # Rather than encode that per command, ask for the capitalised column and fall
-# back to pulling the first UUID out of the plain output. Neither view contains
-# any other UUID, so the extraction is unambiguous.
+# back to pulling the first UUID out of the plain output.
+#
+# Pass every UUID the caller already knows as $2.. so they can be excluded. On
+# SUCCESS the output holds only the new object's UUID, but on FAILURE workloadmgr
+# echoes the arguments back in its error text - so `workload-create --instance
+# <uuid>` failing with "Unencrypted workload cannot have instance <uuid> with
+# encrypted Volume <uuid>" made this return the INSTANCE id, which the caller
+# then stored as the workload id and polled for 15 minutes ("workload never
+# became available") instead of reporting the HTTP 400 it was handed.
 _id_from() {
-    local out="$1"
-    local id
-    id="$(printf '%s' "$out" | tr -d '\r' | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)"
+    local out="$1"; shift
+    local ids id
+    ids="$(printf '%s' "$out" | tr -d '\r' | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')"
+    for known in "$@"; do
+        [[ -n "$known" ]] && ids="$(printf '%s\n' "$ids" | grep -vixF "$known")"
+    done
+    id="$(printf '%s\n' "$ids" | grep -v '^$' | head -1)"
     printf '%s' "$id"
 }
 
@@ -101,7 +112,7 @@ run_one() {
         --display-description "t4o-test functional run ($role)" \
         --backup-target-type "$btt" \
         --manual retention=30 2>&1 | t4o_denoise)"
-    workload_id="$(_id_from "$out")"
+    workload_id="$(_id_from "$out" "$instance_id")"
 
     if [[ -z "$workload_id" ]]; then
         t4o_error "  workload-create failed:"
