@@ -27,16 +27,28 @@ sudo mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/da
 sudo cp grafana-datasource.yaml /etc/grafana/provisioning/datasources/grafana-datasource.yaml
 sudo cp dashboards-provider.yaml /etc/grafana/provisioning/dashboards/dashboards-provider.yaml
 
-# TrilioGrafanaDashboard.json already ships with this exact uid baked in — copy verbatim.
-sudo cp TrilioGrafanaDashboard.json /etc/grafana/provisioning/dashboards/trilio/TrilioGrafanaDashboard.json
+# TrilioRabbitMQDashboard.json ships with a stale templating default baked in
+# from whatever environment it was last exported from (vhost "current":
+# "workloadmgr|dmapi" — RHOSO's vhost names, not valid here or on any other
+# environment's actual vhosts). Grafana doesn't discard a saved "current"
+# just because it no longer matches an available option, so every dashboard
+# gets `.templating.list[].current` reset to {} at deploy time — forces
+# Grafana to resolve fresh defaults from live label values on every load
+# instead of replaying whatever was selected when the JSON was last exported.
+# The checked-in files are left untouched; only the provisioned copies are
+# rewritten.
+jq '.templating.list |= map(.current = {})' TrilioGrafanaDashboard.json | \
+  sudo tee /etc/grafana/provisioning/dashboards/trilio/TrilioGrafanaDashboard.json > /dev/null
 
-# TrilioRabbitMQDashboard.json and TrilioServiceHealthDashboard.json use the
-# ${DS_PROMETHEUS} placeholder (Grafana Operator "input" convention, carried
-# over unmodified from the RHOSO dashboards) — resolve it to the datasource
-# uid configured above. The checked-in files are left untouched.
+# TrilioRabbitMQDashboard.json and TrilioServiceHealthDashboard.json also use
+# the ${DS_PROMETHEUS} placeholder (Grafana Operator "input" convention,
+# carried over unmodified from the RHOSO dashboards) — resolve it to the
+# datasource uid configured above, on top of the templating reset.
 sed "s/\${DS_PROMETHEUS}/${DATASOURCE_UID}/g" TrilioRabbitMQDashboard.json | \
+  jq '.templating.list |= map(.current = {})' | \
   sudo tee /etc/grafana/provisioning/dashboards/trilio/TrilioRabbitMQDashboard.json > /dev/null
 sed "s/\${DS_PROMETHEUS}/${DATASOURCE_UID}/g" TrilioServiceHealthDashboard.json | \
+  jq '.templating.list |= map(.current = {})' | \
   sudo tee /etc/grafana/provisioning/dashboards/trilio/TrilioServiceHealthDashboard.json > /dev/null
 
 sudo systemctl enable --now grafana-server
