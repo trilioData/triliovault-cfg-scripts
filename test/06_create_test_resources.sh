@@ -42,10 +42,28 @@ t4o_scope_includes nfs && ROLES+=("nfs")
 # volume-backed one fails, the fault is in the block-storage path (the
 # DataMover's Ceph/iSCSI access), not in WLM, the trust, or the target.
 # It is NOT the default — a backup that never touches a volume tests less.
+VTYPE_SOURCE="every type offered by this cloud"
 if [[ "${T4O_SKIP_VOLUMES:-0}" == "1" ]]; then
     t4o_warn "T4O_SKIP_VOLUMES=1 — booting from image only."
     t4o_warn "This does NOT exercise the block-storage path; treat a pass accordingly."
     VOLUME_TYPES=()
+elif [[ -n "${T4O_VOLUME_TYPES:-}" ]]; then
+    # An explicit subset, comma- or space-separated.
+    #
+    # Needed on any cloud offering ENCRYPTED volume types. The default attaches one
+    # volume of every type, and T4O then refuses to build a plain workload over an
+    # instance holding an encrypted volume:
+    #   "Unencrypted workload cannot have instance <id> with encrypted Volume <id>"
+    #   (HTTP 400)
+    # which fails step 7 outright. Naming the non-encrypted type(s) keeps the
+    # block-storage path under test instead of dropping volumes altogether.
+    mapfile -t VOLUME_TYPES < <(printf '%s' "${T4O_VOLUME_TYPES//,/ }" | tr ' ' '\n' | grep -v '^$')
+    mapfile -t _all_vtypes < <(os_exec volume type list -f value -c Name 2>/dev/null | t4o_denoise | grep -v '^$')
+    for _vt in "${VOLUME_TYPES[@]}"; do
+        printf '%s\n' "${_all_vtypes[@]}" | grep -qxF "$_vt" \
+          || t4o_die "T4O_VOLUME_TYPES: '$_vt' is not offered by this cloud. Available: ${_all_vtypes[*]}"
+    done
+    VTYPE_SOURCE="T4O_VOLUME_TYPES (subset of ${#_all_vtypes[@]} offered)"
 else
     mapfile -t VOLUME_TYPES < <(os_exec volume type list -f value -c Name 2>/dev/null | t4o_denoise | grep -v '^$')
 fi
@@ -54,7 +72,7 @@ if [[ "${T4O_SKIP_VOLUMES:-0}" == "1" ]]; then
 elif [[ ${#VOLUME_TYPES[@]} -eq 0 ]]; then
     t4o_warn "No Cinder volume types found — VMs will be created without volumes."
 else
-    t4o_info "Volume types offered by this cloud: ${VOLUME_TYPES[*]}"
+    t4o_info "Volume types — $VTYPE_SOURCE: ${VOLUME_TYPES[*]}"
     if [[ ${#VOLUME_TYPES[@]} -eq 1 ]]; then
         t4o_info "  (only one type — multi-backend coverage is NOT exercised on this cloud)"
     fi

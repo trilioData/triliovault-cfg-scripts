@@ -80,6 +80,7 @@ bash test/01_check_backup_targets.sh
 |---|---|
 | `T4O_BT_SCOPE` | `s3` \| `nfs` \| `both` (default `both`) |
 | `T4O_S3_TARGET` / `T4O_NFS_TARGET` | use a named entry instead of the default-flagged one |
+| `T4O_VOLUME_TYPES` | comma/space-separated Cinder volume types to attach, instead of every type the cloud offers. Required on clouds with encrypted types — T4O rejects a plain workload over an instance holding an encrypted volume (HTTP 400) |
 | `T4O_DISTRO` | skip detection and force an adapter |
 | `TRILIO_ENV_DIR` | directory holding `backup_targets.yaml` etc. |
 | `T4O_WORK_DIR` | scratch dir for openrc, resources, report (default `~/t4o-test`) |
