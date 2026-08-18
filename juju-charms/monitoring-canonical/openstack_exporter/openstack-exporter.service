@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenStack Prometheus Exporter (T4O Backup Monitor dashboard)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/openstack-exporter
+ExecStart=/usr/local/bin/openstack-exporter --os-client-config=/etc/openstack-exporter/clouds.yaml --web.listen-address=:9180 openstack
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
