@@ -23,6 +23,27 @@ metadata:
   # deploy_tvo_control_plane.sh before the CR is applied, stamps that metadata once.
 spec:
   replicas: {{ .Values.rabbitmq.cluster.replicas }}
+  # Pin the broker to RHOSO's own RabbitMQ container image (TVAULT-7511 follow-up).
+  #
+  # The native RabbitMq CRD documents containerImage as "will be set to environmental
+  # default if empty", and that default is the upstream community build
+  # quay.io/podified-antelope-centos9/openstack-rabbitmq:current-podified - not a Red Hat
+  # supported image. RHOSO's own rabbitmq/rabbitmq-cell1 CRs avoid it only because
+  # openstack-operator injects OpenStackVersion.status.containerImages.rabbitmqImage into
+  # the CRs it owns; a standalone CR like this one is never touched by that, and
+  # infra-operator (which reconciles RabbitMq from FR6 on) ships no RELATED_IMAGE_* env
+  # for rabbitmq to fall back on. So T4O has to set it explicitly, exactly as
+  # galera-cluster.yaml does for MariaDB.
+  #
+  # values.yaml carries a Red Hat default for images.rabbitmq, so an inputs file that
+  # merely omits the key still resolves to a supported image - the CR spec is merged over
+  # the chart defaults, not instead of them. The guard therefore only covers the explicit
+  # images.rabbitmq: "" (or null) case: it keeps that from rendering a null containerImage,
+  # which the CRD's string type would reject and which would fail the whole release, and
+  # hands the choice back to the operator default instead.
+{{- if .Values.images.rabbitmq }}
+  containerImage: {{ .Values.images.rabbitmq }}
+{{- end }}
   delayStartSeconds: 30
   resources:
     requests:

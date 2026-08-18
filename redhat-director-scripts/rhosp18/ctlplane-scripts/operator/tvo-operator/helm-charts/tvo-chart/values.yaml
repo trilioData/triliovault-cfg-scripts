@@ -26,6 +26,12 @@ images:
   triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_dms: docker.io/trilio/trilio-dms:6.2.0-stable-rhosp18.0
   openshift_cli: registry.redhat.io/openshift4/ose-cli:latest
+  # RHOSO's supported RabbitMQ image. Consumed by both rabbitmq chart variants
+  # (spec.image on the community RabbitmqCluster, spec.containerImage on the native
+  # RabbitMq). Kept here as a chart default so an inputs file that predates the
+  # images.rabbitmq key still gets a Red Hat image instead of the RabbitMq operator's
+  # upstream quay.io/podified-antelope-centos9 default.
+  rabbitmq: registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0
 common:
   nova_user_id: "42436"
   nova_group_id: "42436"
