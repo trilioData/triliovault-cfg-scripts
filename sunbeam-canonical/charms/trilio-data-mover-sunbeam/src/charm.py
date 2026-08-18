@@ -70,10 +70,38 @@ TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 # key that was never created (ceph auth caps on a nonexistent client fails,
 # but the broker swallows that error and still reports exit-code 0).
 CEPH_CONF_PATH = "/etc/ceph/ceph.conf"
+
+# EXTERNAL MODE NEVER OVERWRITES A FILE IT DID NOT WRITE.
+#
+# An external-Ceph cloud has by definition had its own tooling place
+# /etc/ceph/ceph.conf and /etc/ceph/ceph.client.<name>.keyring on the compute
+# host for Nova and Cinder — and the client an operator is most likely to name
+# is exactly the one already there (commonly `cinder`). Overwriting those would
+# silently replace credentials other services depend on: a dropped
+# rbd_default_features, a missing [client.X] section or an older key would
+# break Nova and Cinder, not just us.
+#
+# Files this charm wrote itself are a different matter and ARE replaced — see
+# CEPH_MANAGED_FILES_MARKER below for why reusing them is the dangerous option.
+
 # Records the last set of pools our ceph key was scoped to, so we only send a
 # follow-up broker request when that set actually changes (new pool discovered,
 # or one disappeared) rather than on every hook run.
 CEPH_GRANTED_POOLS_MARKER = "/var/lib/trilio-data-mover/.ceph-granted-pools"
+
+# Paths under /etc/ceph that THIS charm created, one per line.
+#
+# External mode is write-if-absent so we never clobber a file the cluster's own
+# tooling placed for Nova and Cinder. But the relation path writes to those same
+# paths and overwrites unconditionally, so on a microceph cloud the files there
+# are ours — and `trilio-ceph-username` defaults to the very name the relation
+# path uses. Without this record, switching that cloud to an external cluster
+# would find our stale microceph keyring, "reuse" it, report active, and then
+# fail auth against the external cluster on every Ceph-backed volume.
+#
+# So: a file listed here is ours and may be replaced; anything else is somebody
+# else's and is left strictly alone.
+CEPH_MANAGED_FILES_MARKER = "/var/lib/trilio-data-mover/.ceph-managed-files"
 
 # Systemd unit for the DMS server on compute nodes.
 # python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
@@ -151,11 +179,54 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self.on.receive_ca_cert_relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.update_status, self._on_update_status)
+        # Rotating the ceph-keyring user secret (juju update-secret) fires this
+        # rather than config-changed, since the config value — the secret URI —
+        # has not changed. Without it a rotated credential would sit unused
+        # until some unrelated hook happened to re-render.
+        self.framework.observe(self.on.secret_changed, self._on_relation_changed)
         self._setup_ceph_client()
 
     @property
+    def _ceph_enabled(self) -> bool:
+        """Ceph is used as storage for Cinder or Nova on this cloud."""
+        return bool(self.config.get("ceph-enabled", True))
+
+    @property
+    def _ceph_external(self) -> bool:
+        """Ceph is in use, but the cluster lives outside Sunbeam.
+
+        Only meaningful when ceph_enabled is true — internal_ceph_enabled is
+        explicitly documented as ignored otherwise, so it must not be able to
+        turn Ceph on by itself.
+
+        With an external cluster there is no microceph/ceph-mon application to
+        relate to and so no broker to mint us a key; the operator pre-creates
+        the client and supplies its ceph.conf and keyring as config.
+        """
+        return self._ceph_enabled and not bool(self.config.get("internal-ceph-enabled", True))
+
+    @property
     def _ceph_client_name(self):
-        """Must match self.app.name — see comment above CEPH_CONF_PATH."""
+        """Ceph client name.
+
+        With the relation this MUST equal self.app.name — see the comment above
+        CEPH_CONF_PATH: the broker auto-provisions a key named after the
+        requesting Juju application, and a mismatch silently targets a key that
+        was never created.
+
+        With an external cluster there is no broker and no such constraint, so
+        the operator names the client they created (commonly a shared one such
+        as `cinder` reused for reads, or a dedicated `trilio` client).
+        """
+        if self._ceph_external:
+            configured = (self.config.get("trilio-ceph-username") or "").strip()
+            if configured:
+                return configured
+            logger.warning(
+                "internal_ceph_enabled is false but trilio-ceph-username is "
+                "empty; falling back to the Juju application name '%s'.",
+                self.app.name,
+            )
         return self.app.name
 
     def _ceph_keyring_path(self):
@@ -167,8 +238,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         Lazy-imported so charms/tests that never relate "ceph" don't need the
         dependency importable, and so a missing/optional relation at deploy
         time doesn't break charm startup.
+
+        The import is guarded because this runs unconditionally from __init__:
+        on a cloud with no Ceph at all, an unimportable interface_ceph_client
+        would fail EVERY hook of a charm that never wanted Ceph in the first
+        place. Without the guard the docstring above was aspirational — the
+        relation was optional but the dependency was not.
         """
-        import interface_ceph_client.ceph_client as ceph_client
+        self.ceph = None
+        self._ceph_import_failed = False
+        try:
+            import interface_ceph_client.ceph_client as ceph_client
+        except ImportError:
+            # Expected and harmless on a cloud with no Ceph. NOT harmless if a
+            # ceph relation exists — see _ceph_import_broken(), which turns
+            # that case into BlockedStatus rather than a green unit with no
+            # credentials.
+            self._ceph_import_failed = True
+            logger.info(
+                "interface_ceph_client is not importable; the ceph relation is "
+                "disabled. Ceph-backed volumes cannot be backed up unless "
+                "internal-ceph-enabled=false with ceph-conf/ceph-keyring is "
+                "used instead."
+            )
+            return
 
         self.ceph = ceph_client.CephClientRequires(self, "ceph")
         self.framework.observe(
@@ -269,14 +362,40 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     # --- core configure logic ---
 
+    def _ceph_import_broken(self) -> bool:
+        """A ceph relation exists but interface_ceph_client would not import.
+
+        Distinguishes "this cloud has no Ceph" (fine, stay active) from "this
+        cloud relates ceph but we cannot speak the interface" (broken). Without
+        this the unit reports active while contego has no Ceph credentials at
+        all, and every Ceph-backed volume backup fails silently.
+        """
+        if not getattr(self, "_ceph_import_failed", False):
+            return False
+        if not self._ceph_enabled or self._ceph_external:
+            # The relation is not being used, so the interface is irrelevant.
+            return False
+        return self.model.get_relation("ceph") is not None
+
     def _configure(self, event):
         missing = self._missing_relations()
         if missing:
             self.unit.status = ops.WaitingStatus(f"Waiting for: {', '.join(missing)}")
             return
 
+        if self._ceph_import_broken():
+            msg = ("ceph relation present but interface_ceph_client failed to "
+                   "import — Ceph credentials cannot be obtained")
+            logger.error("%s. This is a charm packaging problem.", msg)
+            self.unit.status = ops.BlockedStatus(msg)
+            return
+
         try:
             self._write_ca_cert()
+            # Must precede _write_datamover_config: it decides whether the
+            # [ceph] stanzas render, and for an external cluster the answer
+            # comes from config rather than from a relation event.
+            self._write_external_ceph()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
@@ -586,6 +705,17 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         being sent. Concretely: don't try to "upgrade" an already-granted key
         to a different capability string later — it won't take effect.
         """
+        if not self._ceph_enabled or self._ceph_external:
+            # Never ask a broker for caps we do not intend to use. With an
+            # external cluster this also avoids rewriting caps on a same-named
+            # client that cluster's own tooling manages.
+            logger.info(
+                "Skipping the ceph broker request (ceph-enabled=%s, "
+                "internal_ceph-enabled=%s).",
+                self._ceph_enabled, not self._ceph_external,
+            )
+            return
+
         candidates = self._discover_cinder_ceph_pools()
         nova_pool = self._discover_nova_ceph_pool()
         if nova_pool:
@@ -612,6 +742,20 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
     def _on_ceph_pools_available(self, event):
         """Fires once our one-and-only ceph-client request is satisfied."""
+        if not self._ceph_enabled or self._ceph_external:
+            # A relation exists but config says not to use it. This guard is
+            # what makes config authoritative: without it the relation's
+            # mon_hosts/key would overwrite the operator's external ceph.conf
+            # and keyring on the next relation event, silently swapping the
+            # credential out from under a working deployment — or write Ceph
+            # config onto a cloud that set ceph-enabled=false.
+            logger.info(
+                "Ignoring ceph relation data (ceph-enabled=%s, "
+                "internal_ceph-enabled=%s).",
+                self._ceph_enabled, not self._ceph_external,
+            )
+            return
+
         data = self.ceph.get_relation_data()
         mon_hosts = data.get("mon_hosts")
         key = data.get("key")
@@ -619,6 +763,153 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             return
         self._write_ceph_conf(mon_hosts)
         self._write_ceph_keyring(key)
+
+    def _ceph_managed_files(self) -> set:
+        """Paths under /etc/ceph this charm created. See the marker's comment."""
+        try:
+            with open(CEPH_MANAGED_FILES_MARKER) as f:
+                return {ln.strip() for ln in f if ln.strip()}
+        except FileNotFoundError:
+            return set()
+        except OSError as e:
+            # Treat an unreadable marker as "we own nothing": that only ever
+            # makes us more conservative, never more destructive.
+            logger.warning("Could not read %s: %s", CEPH_MANAGED_FILES_MARKER, e)
+            return set()
+
+    def _record_ceph_managed_file(self, path):
+        """Remember that we wrote path, so a later run may replace it."""
+        paths = self._ceph_managed_files()
+        if path in paths:
+            return
+        paths.add(path)
+        os.makedirs(os.path.dirname(CEPH_MANAGED_FILES_MARKER), exist_ok=True)
+        with open(CEPH_MANAGED_FILES_MARKER, "w") as f:
+            f.write("\n".join(sorted(paths)) + "\n")
+
+    # Key expected inside the ceph-keyring Juju user secret.
+    CEPH_KEYRING_SECRET_KEY = "keyring"
+
+    def _ceph_keyring_from_secret(self) -> str:
+        """Resolve the external keyring from its Juju user secret.
+
+        A cephx credential does not belong in plain config: that value lives in
+        the controller's config store, is printed by `juju config`, and is
+        emitted by `juju export-bundle`. As a `type: secret` option this holds
+        only a secret URI, and the content is fetched here at hook time.
+
+        Raises with an actionable message rather than returning empty, so a
+        misgranted or malformed secret surfaces as BlockedStatus instead of
+        silently disabling Ceph.
+        """
+        secret_id = (self.config.get("ceph-keyring") or "").strip()
+        if not secret_id:
+            return ""
+
+        try:
+            secret = self.model.get_secret(id=secret_id)
+            content = secret.get_content(refresh=True)
+        except ops.SecretNotFoundError:
+            raise ValueError(
+                f"ceph-keyring points at {secret_id}, which this application "
+                f"cannot read. Grant it first:  "
+                f"juju grant-secret <secret-name> {self.app.name}"
+            )
+        except ops.ModelError as e:
+            raise ValueError(f"Could not read the ceph-keyring secret {secret_id}: {e}")
+
+        keyring = (content.get(self.CEPH_KEYRING_SECRET_KEY) or "").strip()
+        if not keyring:
+            raise ValueError(
+                f"The ceph-keyring secret {secret_id} has no "
+                f"'{self.CEPH_KEYRING_SECRET_KEY}' key. Create it as:  "
+                f"juju add-secret <name> {self.CEPH_KEYRING_SECRET_KEY}#file=./ceph.client.<user>.keyring"
+            )
+        return keyring
+
+    def _write_external_ceph(self):
+        """Write ceph.conf and the keyring supplied as charm config.
+
+        For a Ceph cluster external to Sunbeam there is no relation and no
+        broker, so the operator hands us the same two artefacts their own
+        tooling already gives Nova and Cinder. We write them verbatim — we do
+        not synthesise a [client.X] stanza the way the relation path does,
+        because an external keyring usually already contains one (and may
+        contain several, or caps lines we must not drop).
+
+        Written 0640 (keyring) and 0644 (ceph.conf), both root-owned. The
+        data-plane services run as root, so no group is needed — see the
+        root-user architecture note in sunbeam-canonical/CLAUDE.md.
+        """
+        if not self._ceph_external:
+            # Clear any marker a previous external configuration left behind.
+            # Without this, _ceph_backend_enabled() keeps returning True from
+            # the stale marker after the config is reset, so the template still
+            # renders images_rbd_ceph_conf and rbd_user — but rbd_user has
+            # reverted to the Juju app name and no keyring of that name was
+            # ever written. contego then fails auth on every Ceph-backed volume
+            # instead of cleanly disabling Ceph.
+            if os.path.exists(CEPH_GRANTED_POOLS_MARKER):
+                os.remove(CEPH_GRANTED_POOLS_MARKER)
+                logger.info(
+                    "Removed stale %s left by a previous external Ceph config.",
+                    CEPH_GRANTED_POOLS_MARKER,
+                )
+            return False
+
+        conf = (self.config.get("ceph-conf") or "").strip()
+        keyring = self._ceph_keyring_from_secret()
+
+        # internal-ceph-enabled=false is an explicit statement that an external
+        # cluster is in use, so missing artefacts are a configuration error, not
+        # something to warn about and carry on from. Raising here puts the unit
+        # in BlockedStatus via _configure's handler, which is the honest signal:
+        # backups of Ceph-backed volumes cannot work in this state.
+        missing = [n for n, v in (("ceph-conf", conf), ("ceph-keyring", keyring)) if not v]
+        if missing:
+            raise ValueError(
+                f"internal_ceph_enabled is false (external Ceph cluster) but "
+                f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} "
+                f"not set. Supply the external cluster's ceph.conf and the "
+                f"keyring for client.{self._ceph_client_name}, or set "
+                f"internal-ceph-enabled=true to use Sunbeam's microceph, or "
+                f"ceph-enabled=false if this cloud has no Ceph."
+            )
+
+        os.makedirs("/etc/ceph", exist_ok=True)
+
+        # Write-if-absent for somebody else's files, replace-if-ours for the
+        # ones we wrote — see the note above CEPH_MANAGED_FILES_MARKER. An
+        # existing file we did not write was put there by the cluster's own
+        # tooling for Nova/Cinder, and it is the authority on its own contents.
+        keyring_path = self._ceph_keyring_path()
+        ours = self._ceph_managed_files()
+        for path, content, mode, label in (
+            (CEPH_CONF_PATH, conf, 0o644, "ceph.conf"),
+            (keyring_path, keyring, 0o640, "keyring"),
+        ):
+            if os.path.exists(path) and path not in ours:
+                logger.info(
+                    "%s already exists at %s and was not written by this charm "
+                    "— reusing it, config value ignored. Remove the file if you "
+                    "want the charm to write ours instead.",
+                    label, path,
+                )
+                continue
+            if os.path.exists(path):
+                # Ours, from an earlier config or from the relation path on a
+                # cloud that has since moved to an external cluster. Replacing
+                # it is the whole point: reusing it would authenticate to the
+                # new cluster with the old cluster's credential.
+                logger.info("Replacing %s at %s (written by this charm)", label, path)
+            with open(path, "w") as f:
+                f.write(content + "\n")
+            os.chmod(path, mode)
+            self._record_ceph_managed_file(path)
+            logger.info("Wrote %s to %s", label, path)
+
+        logger.info("External Ceph mode active (client=%s)", self._ceph_client_name)
+        return True
 
     def _write_ceph_conf(self, mon_hosts):
         content = (
@@ -632,6 +923,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(CEPH_CONF_PATH, "w") as f:
             f.write(content)
         os.chmod(CEPH_CONF_PATH, 0o644)
+        # Record it as ours: if this cloud later moves to an external cluster,
+        # external mode must know it may replace this file rather than reuse a
+        # ceph.conf pointing at the old cluster's monitors.
+        self._record_ceph_managed_file(CEPH_CONF_PATH)
         logger.info("Wrote %s", CEPH_CONF_PATH)
 
     def _write_ceph_keyring(self, key):
@@ -640,6 +935,9 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         with open(keyring_path, "w") as f:
             f.write(content)
         os.chmod(keyring_path, 0o640)
+        # As above — this key is minted by the microceph broker and is useless
+        # against any other cluster, so external mode must be free to replace it.
+        self._record_ceph_managed_file(keyring_path)
         logger.info("Wrote %s", keyring_path)
 
     def _discover_cinder_ceph_pools(self) -> set:
@@ -702,14 +1000,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         return parser.get("libvirt", "images_rbd_pool", fallback="nova")
 
     def _ceph_backend_enabled(self) -> bool:
-        """True once we have at least one pool actually granted.
+        """True when contego can actually reach Ceph.
 
         Gates the [libvirt] images_rbd_ceph_conf/rbd_user and [ceph]
         keyring_ext block in triliovault-datamover.conf.j2 — mirrors kolla-
         ansible's own cinder_backend_ceph conditional, except driven by
-        confirmed pool grants rather than a static deployment variable, since
-        we discover this dynamically rather than being told about it.
+        confirmed access rather than a static deployment variable, since we
+        discover this dynamically rather than being told about it.
+
+        Two ways to be enabled:
+          external  — the operator supplied ceph.conf and a keyring, so access
+                      is asserted by configuration; there is no broker to
+                      confirm a grant with.
+          relation  — at least one pool was actually granted by the broker.
+
+        On a cloud with no Ceph at all, neither holds and the Ceph stanzas are
+        simply not rendered. That is the correct outcome, not a failure.
         """
+        if not self._ceph_enabled:
+            # ceph-enabled=false is authoritative. Checking it first means a
+            # marker left over from an earlier Ceph-enabled deployment cannot
+            # resurrect the Ceph stanzas after the operator turns Ceph off.
+            return False
+        if self._ceph_external:
+            return True
         try:
             with open(CEPH_GRANTED_POOLS_MARKER) as f:
                 return bool(f.read().split())

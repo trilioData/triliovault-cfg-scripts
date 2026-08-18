@@ -69,6 +69,16 @@ kubectl get pods -n openstack | grep trilio
 
 ### Step 3 — Deploy data plane (machine model)
 
+Pick the bundle that matches how this cloud uses Ceph:
+
+| This cloud | Bundle | Extra steps |
+|---|---|---|
+| Cinder or Nova use Sunbeam's own `microceph` | `trilio-dataplane-bundle.yaml` | None |
+| Cinder or Nova use a Ceph cluster deployed outside Sunbeam | `trilio-dataplane-bundle-external-ceph.yaml` | Run `configure-external-ceph.sh` first — see `--help` |
+| No Ceph anywhere | `trilio-dataplane-bundle-no-ceph.yaml` | None |
+
+The two non-default bundles exist because the standard one declares a relation to `microceph`; deploying it without that application fails, as Juju cannot resolve the endpoint.
+
 ```bash
 juju switch openstack-machines
 juju deploy ./trilio-dataplane-bundle.yaml

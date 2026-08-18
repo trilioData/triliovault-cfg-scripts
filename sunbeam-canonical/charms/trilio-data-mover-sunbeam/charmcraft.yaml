@@ -53,6 +53,112 @@ provides:
 
 config:
   options:
+    # --- Ceph ----------------------------------------------------------------
+    # Two flags decide how contego reaches Ceph, if at all:
+    #
+    #   ceph-enabled  internal-ceph-enabled  Result
+    #   ------------  ---------------------  --------------------------------
+    #   false         (ignored)              No Ceph anywhere. No relation is
+    #                                        used, no Ceph stanzas rendered.
+    #   true          true   (default)       Sunbeam's own microceph, via the
+    #                                        ceph relation. The broker mints a
+    #                                        client named after the Juju app.
+    #   true          false                  External cluster. You pre-create
+    #                                        the client and supply its keyring
+    #                                        and ceph.conf below.
+    ceph-enabled:
+      type: boolean
+      default: true
+      description: |
+        Ceph is used as storage for Cinder or Nova on this cloud.
+        Set false when Cinder uses LVM/iSCSI or a vendor driver and Nova
+        ephemeral is on local disk. With false, contego renders no Ceph
+        configuration at all — that is the correct outcome for such a cloud,
+        not a degraded one — and the ceph relation is ignored if present.
+    internal-ceph-enabled:
+      type: boolean
+      default: true
+      description: |
+        The Ceph cluster is Sunbeam's own microceph, reached over the ceph
+        relation. Considered ONLY when ceph-enabled is true.
+
+        Set false when Cinder or Nova use a Ceph cluster deployed OUTSIDE
+        Sunbeam by third-party tooling (cephadm, Rook, and so on). There is
+        then no microceph/ceph-mon application to relate to, so no broker can
+        mint a key for us, and the charm holds no admin credential for a
+        cluster it does not manage.
+
+        With false you MUST pre-create the Ceph client yourself, with rwx on
+        the Cinder and Nova RBD pools, named to match trilio-ceph-username.
+        These are the same capabilities the relation path requests from the
+        microceph broker. On a Ceph admin node:
+
+          ceph auth get-or-create client.trilio-data-mover \
+            mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"' \
+            osd 'allow rwx pool=<cinder-pool>, allow rwx pool=<nova-pool>' \
+            -o ceph.client.trilio-data-mover.keyring
+
+        then set ceph-conf and ceph-keyring from that cluster.
+    trilio-ceph-username:
+      type: string
+      default: "trilio-data-mover"
+      description: |
+        Name of the Ceph client contego authenticates as. Determines rbd_user
+        and the keyring filename. Considered ONLY when ceph-enabled is true
+        and internal-ceph-enabled is false.
+
+        This is the client YOU created on the external cluster (see above).
+        The default matches the name the relation path uses, so the same name
+        works in both modes; change it only if you are reusing an existing
+        client such as `cinder`.
+
+        In internal mode this option is ignored: the broker names the key after
+        the Juju application, and a mismatch silently targets a key that was
+        never created.
+    ceph-conf:
+      type: string
+      default: ""
+      description: |
+        Full contents of ceph.conf for the external cluster, including its mon
+        host line. Considered ONLY when ceph-enabled is true and
+        internal-ceph-enabled is false. Source it from the external cluster,
+        e.g. /etc/ceph/ceph.conf on a Ceph admin node.
+
+        WRITE-IF-ABSENT: written to /etc/ceph/ceph.conf only when that file
+        does not already exist. On Sunbeam a compute node usually has none —
+        Nova reaches Ceph via Cinder's per-volume connection_info rather than
+        /etc/ceph — so in practice this value is what provides it. A file some
+        other tool did place is reused untouched, because whatever put it there
+        is the authority on its contents; delete it first if you want ours.
+    ceph-keyring:
+      type: secret
+      description: |
+        A JUJU USER SECRET holding the keyring for trilio-ceph-username.
+        Considered ONLY when ceph-enabled is true and internal-ceph-enabled is
+        false.
+
+        This is a cephx credential, so it is a Juju secret rather than a plain
+        config string: the value never enters the controller's config store,
+        is not printed by `juju config`, and is not emitted by
+        `juju export-bundle`. Create and grant it, then point this option at it:
+
+          juju add-secret trilio-ceph-keyring \
+            keyring#file=./ceph.client.trilio-data-mover.keyring
+          juju grant-secret trilio-ceph-keyring trilio-data-mover
+          juju config trilio-data-mover ceph-keyring=secret:<id-from-add-secret>
+
+        The secret must contain a key named `keyring` whose value is the full
+        keyring file contents. Rotating it (`juju update-secret`) re-triggers
+        the charm, which rewrites the file if it owns it.
+
+        WRITE-IF-ABSENT, to
+        /etc/ceph/ceph.client.<trilio-ceph-username>.keyring. If you point
+        trilio-ceph-username at a client the node already has a keyring for
+        (e.g. cinder), that keyring is reused untouched — overwriting it would
+        replace the credential Nova and Cinder use on that node. When written,
+        it is written verbatim, so an existing [client.X] stanza and its caps
+        lines are preserved.
+
     triliovault-pkg-source:
       type: string
       default: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"

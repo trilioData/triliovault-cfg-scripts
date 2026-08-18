@@ -1,0 +1,95 @@
+# TrilioVault Data Plane Bundle — cloud with NO Ceph
+#
+# For a cloud that uses no Ceph at all: Cinder is LVM/iSCSI or a vendor driver,
+# and Nova ephemeral disks are on local storage. Nothing to configure beyond
+# deploying this file — the charm renders triliovault-datamover.conf with no
+# [ceph] stanzas, which is the correct outcome, not a degraded one.
+#
+# Which bundle to use:
+#   Sunbeam's own microceph   -> trilio-dataplane-bundle.yaml
+#   External Ceph cluster     -> trilio-dataplane-bundle-external-ceph.yaml
+#   No Ceph anywhere          -> this file
+#
+# The only difference from trilio-dataplane-bundle.yaml is ceph-enabled: false,
+# the absence of the microceph reference entry, and the absence of the
+# trilio-data-mover:ceph relation. Deploying the standard bundle here fails,
+# because Juju cannot resolve that relation endpoint.
+#
+# Usage:
+#   juju switch openstack-machines
+#   juju deploy ./trilio-dataplane-bundle-no-ceph.yaml
+#
+# Cross-model SAAS offers are declared in the saas: section below.
+# Find the correct offer URLs for your deployment with:
+#   juju find-offers --format=tabular
+# Update the saas: urls to match your controller name (default: sunbeam-controller).
+
+saas:
+  rabbitmq:
+    url: sunbeam-controller:controller0/openstack.rabbitmq
+  keystone-credentials:
+    url: sunbeam-controller:controller0/openstack.keystone-credentials
+  cert-distributor:
+    url: sunbeam-controller:controller0/openstack.cert-distributor
+
+applications:
+
+  # Reference entry for the existing principal — not redeployed by this bundle.
+  # Juju requires all relation endpoints to be declared even for pre-existing apps.
+  #
+  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale on
+  # reference entries for pre-existing apps once caused Juju to force-scale
+  # and force-upgrade unrelated core apps during a ctlplane bundle deploy,
+  # triggering a near-total control-plane outage. Always keep revision: and
+  # scale: pinned to the CURRENTLY DEPLOYED values (check with `juju status`
+  # before touching this file) — never leave them implicit.
+  #
+  # >>> SET THESE FROM YOUR OWN CLOUD BEFORE DEPLOYING. <<<
+  # The values below are placeholders from one lab. This bundle is written for
+  # other people's clouds, which by definition differ — deploying with a
+  # revision or scale that does not match what is actually running is exactly
+  # what triggered the 2026-07-24 outage. Check first:
+  #     juju status openstack-hypervisor
+  openstack-hypervisor:
+    charm: openstack-hypervisor
+    channel: 2024.1/stable
+    revision: 438      # <-- REPLACE with your deployed revision
+    scale: 2           # <-- REPLACE with your compute node count
+
+  # NOTE: no microceph reference entry — this cloud has no Ceph.
+
+  trilio-data-mover:
+    charm: trilio-data-mover-sunbeam
+    channel: 6.2/candidate
+    # Deliberately NOT pinned to revision 13: ceph-enabled was added after it,
+    # so pinning 13 makes `juju deploy` fail on an unknown config option for
+    # the very case this bundle exists to serve. Track the channel, or pin to
+    # the first revision published with the ceph-* options once it is released.
+    #
+    # (The pin-the-revision caution above applies to REFERENCE entries for
+    # pre-existing applications, not to the app this bundle actually deploys.)
+    options:
+      triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
+      trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
+      debug: false
+
+      # No Ceph as storage for Cinder or Nova on this cloud. Checked before
+      # anything else, so a .ceph-granted-pools marker left by an earlier
+      # Ceph-enabled deployment cannot resurrect the [ceph] stanzas.
+      #
+      # internal-ceph-enabled, trilio-ceph-username, ceph-conf and ceph-keyring
+      # are all ignored while this is false — do not set them here.
+      ceph-enabled: false
+
+relations:
+  # Subordinate binding to the compute principal
+  - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
+  # Cross-model relations via saas: aliases above
+  - [trilio-data-mover:amqp, rabbitmq:amqp]
+  - [trilio-data-mover:identity-credentials, keystone-credentials:identity-credentials]
+  # Without this, tvault-contego's ca-bundle.pem never gets written by
+  # _write_ca_cert() (it early-returns when no cert is available), leaving a
+  # stale/incorrectly-owned file in place — SSL verification against Keystone
+  # then fails with a permission error.
+  - [trilio-data-mover:receive-ca-cert, cert-distributor:send-ca-cert]
+  # NOTE: no trilio-data-mover:ceph relation — nothing to relate to.

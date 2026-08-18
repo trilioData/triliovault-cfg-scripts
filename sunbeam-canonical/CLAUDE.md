@@ -56,7 +56,10 @@ sunbeam-canonical/
 │   ├── devops-build-publish.sh      # Primary build+publish script (3 images: wlm, dmapi, horizon-plugin)
 │   └── build_images.sh              # Legacy build script (APT-repo substitution)
 ├── trilio-bundle.yaml               # Juju bundle for control plane (openstack model)
-├── trilio-dataplane-bundle.yaml     # Juju bundle for data plane (openstack-machines model)
+├── trilio-dataplane-bundle.yaml                # Data plane, Sunbeam's own microceph
+├── trilio-dataplane-bundle-external-ceph.yaml  # Data plane, external Ceph cluster
+├── trilio-dataplane-bundle-no-ceph.yaml        # Data plane, no Ceph on this cloud
+├── configure-external-ceph.sh       # Fills the external-ceph bundle + keyring secret
 └── CLAUDE.md                        # This file
 ```
 
@@ -252,6 +255,58 @@ After validating the nova-user approach (sections above), an experiment ran WLM,
 - **dm-api log directory ownership must self-heal every `_configure()` run** (fixed 2026-07-25): `/var/log/triliovault/triliovault-datamover-api.log` was found root-owned at runtime even though the Dockerfile chowns the directory to `dmapi:dmapi` at build time — since the Pebble service always runs as `dmapi`, a root-owned log file makes oslo_log's `FileHandler` fail with `PermissionError` on every startup, so `dmapi-api` exits immediately and Pebble respawns it in a silent ~30s crash loop (silent because it dies before it can log anywhere but stdout — the Juju unit itself still shows `active`/`idle` with no visible error). `_configure()` now runs `chown -R dmapi:dmapi` on `LOG_DIR` (`_ensure_log_permissions`) before applying the Pebble layer, on every hook — don't rely on the Docker build-time chown alone, since any runtime-created file trivially bypasses it.
 - Tradeoff: this diverges from kolla/RHOSP convention (UID-consistent `nova` user across compute-side and control-plane-side components). Intentional for Sunbeam specifically, not a recommendation for other platforms.
 - A rollback snapshot documenting the pre-experiment nova-user charm revisions/container tags was written before this change — ask if you need to find/recreate it; the nova-user code paths themselves are described in the historical sections above and are fully removed from the current charm source (git history has the diff if a rollback is ever needed).
+
+### Clouds without microceph — no Ceph at all, or an external Ceph cluster
+
+Two boolean flags decide how contego reaches Ceph, if at all:
+
+| `ceph-enabled` | `internal-ceph-enabled` | Result |
+|---|---|---|
+| `false` | *(ignored)* | No Ceph anywhere. No relation used, no Ceph stanzas rendered. |
+| `true` | `true` *(default)* | Sunbeam's own microceph over the `ceph` relation. |
+| `true` | `false` | External cluster; operator supplies `trilio-ceph-username`, `ceph-conf`, `ceph-keyring`. |
+
+One bundle per case: `trilio-dataplane-bundle.yaml` (microceph), `trilio-dataplane-bundle-external-ceph.yaml`, `trilio-dataplane-bundle-no-ceph.yaml`. The two non-default bundles exist because the standard one declares a `trilio-data-mover:ceph` relation that Juju cannot resolve when no microceph application exists — the deploy fails outright, so this cannot be handled by config alone.
+
+`ceph-enabled=false` is checked **first** in `_ceph_backend_enabled()`, so a `.ceph-granted-pools` marker left by an earlier Ceph-enabled deployment cannot resurrect the stanzas after Ceph is turned off. `internal-ceph-enabled` is gated on `ceph-enabled` so it can never enable Ceph by itself.
+
+Setting `internal-ceph-enabled=false` switches the charm to external mode: `_write_external_ceph()` supplies them, `_ceph_backend_enabled()` returns True, and both `_on_ceph_broker_available()` and `_on_ceph_pools_available()` return early. Guarding **both** matters — the first stops us asking a broker for caps on a key it did not mint, the second stops relation data overwriting the operator's files on a later relation event.
+
+Five differences from the relation path worth knowing:
+- **The operator pre-creates the Ceph client; the charm cannot.** With no broker and no admin credential to a cluster we do not manage, there is nothing to create a user or grant caps with. The caps must match what `_request_ceph_permissions()` asks the microceph broker for (`src/charm.py`), so both modes converge — `mon 'allow r, allow command "osd blacklist", allow command "osd blocklist"'` and `osd 'allow rwx pool=<p>'` per pool. Write them explicitly rather than as `profile rbd`: the profile does expand to rwx, but the explicit form is what the relation path sends, and a reader comparing the two paths should not have to know the expansion. The `osd blocklist` commands let an RBD client break a stale exclusive lock left by a dead holder; without them an `rbd` operation can hang instead of failing cleanly.
+- **`trilio-ceph-username` defaults to `trilio-data-mover`**, the same name the relation path uses, so one name works in both modes. Change it only to reuse an existing client such as `cinder`.
+- **Never overwrite a file we did not write.** `.ceph-managed-files` records every `/etc/ceph` path the charm creates, on **both** the relation and external paths. External mode replaces a file listed there and reuses anything else. Recording the relation path's writes is the load-bearing half: it writes `/etc/ceph/ceph.client.<app-name>.keyring` unconditionally, and `trilio-ceph-username` defaults to that same app name — so without the record, a microceph cloud moving to an external cluster would find its own stale microceph keyring, "reuse" it, report **active**, and fail auth on every Ceph-backed volume. That is the default configuration of that migration, not an edge case.
+- **Write-if-absent for foreign files.** Neither `/etc/ceph/ceph.conf` nor the keyring is replaced if it already exists and is not ours — whatever put it there is the authority on its contents, and clobbering it could break Nova and Cinder on that node. In practice on Sunbeam a compute node has **neither**: `/etc/ceph` holds only `rbdmap` from the `ceph-common` package, because Nova reaches Ceph via Cinder's per-volume `connection_info` rather than `/etc/ceph`. So the config values normally are what provides them.
+- **The keyring is written verbatim, not synthesised.** The relation path builds `[client.X]\n\tkey = …` from a bare key; an external keyring usually already has that stanza plus `caps` lines, and rebuilding it would drop them.
+- **The keyring is a Juju user secret, not a config string.** `ceph-keyring` is `type: secret`, so the option holds only a URI and the cephx credential never enters the controller's config store, `juju config` output, or `juju export-bundle`. Create it with a key named `keyring`, grant it, then point the option at it:
+  ```bash
+  juju add-secret trilio-ceph-keyring keyring#file=./ceph.client.trilio-data-mover.keyring
+  juju grant-secret trilio-ceph-keyring trilio-data-mover
+  juju config trilio-data-mover ceph-keyring=secret:<id>
+  ```
+  The charm observes `secret_changed`, so `juju update-secret` re-renders — a rotated credential would otherwise sit unused, since the config value (the URI) has not changed. A secret that is missing, ungranted, or lacks the `keyring` key raises with an actionable message and blocks the unit rather than silently disabling Ceph.
+- **Nothing validates the credential.** With no broker there is nobody to confirm a grant. Verify by hand on a compute node: `sudo rbd --id <trilio-ceph-username> ls <pool>`. Missing `ceph-conf`/`ceph-keyring` in external mode is a config error and blocks the unit.
+
+Two failure modes the code guards explicitly. Resetting the external config clears `.ceph-granted-pools`, because a stale marker would keep `_ceph_backend_enabled()` True while `rbd_user` reverted to the app name and no keyring of that name existed — contego would then fail auth on every Ceph volume instead of cleanly disabling Ceph. And a `ceph` relation present while `interface_ceph_client` fails to import now goes **blocked**, not active: otherwise the unit reports healthy with no Ceph credentials at all.
+
+`_setup_ceph_client()` guards its `interface_ceph_client` import. It runs unconditionally from `__init__`, so without the guard an unimportable dependency would fail **every hook** on a cloud that never wanted Ceph.
+
+#### `configure-external-ceph.sh` — what it writes where
+
+`ceph.conf` goes into the **bundle**, the keyring into a **Juju secret**. The split is the point: config that holds no secret belongs in the version-controlled deployment definition, and a cephx credential must never appear in a file that gets committed or in `juju export-bundle`. The script edits `applications.trilio-data-mover.options` textually rather than round-tripping YAML — the bundles carry the revision/scale outage caution and other load-bearing comments that a PyYAML load-then-dump would silently delete. It removes the previous `ceph-*` run *and the contiguous comment block above it* before writing, which is why the bundle keeps all its Ceph commentary in one block ahead of the keys rather than interleaved: interleaved comments would be stranded above values they no longer describe.
+
+It runs before or after deploy. Before, it prepares bundle and secret and prints the follow-up commands; after, it also applies the values live so bundle and running app cannot drift. **`juju grant-secret` and the `ceph-keyring` config are gated on the app existing** — a secret cannot be granted to an application that has not been deployed. Note `juju status <name>` exits 0 for a nonexistent application (the name is read as a filter that matches nothing), so the deployed check parses `--format=json` instead of relying on the exit code.
+
+#### Finding the pool names on a live Sunbeam cloud
+
+Read the pool names off the units. `cinder-volume` is a **machine** application in the `openstack-machines` model (confirmed on the lab: 3 units, each with a `cinder-volume-ceph` subordinate) — not a k8s app in `controller0/openstack`, where you will not find it.
+
+- **Cinder** — `juju ssh -m openstack-machines cinder-volume/1 -- sudo grep -r -e rbd_pool -e rbd_user -e volume_driver /var/snap/cinder-volume/common/etc/cinder/cinder.conf.d/`. One file per backend; only those with an `rbd_pool` are on Ceph. Lab values: `rbd_pool = cinder-volume-ceph`, `rbd_user = cinder-volume-ceph`, `rbd_ceph_conf = /var/snap/cinder-volume/common/etc/ceph/cinder-volume-ceph.conf`. The pool is **not** named `cinder-ceph`; guessing it wastes a debugging cycle.
+- **Nova** — `juju ssh -m openstack-machines openstack-hypervisor/0 -- sudo grep -r -e images_type -e images_rbd_pool -e rbd_user -e rbd_secret_uuid /var/snap/openstack-hypervisor/common/etc/nova/`. `rbd_user`/`rbd_secret_uuid` **without** `images_type` means Nova attaches Ceph-backed Cinder volumes but keeps ephemeral disks on local disk — there is no Nova pool to grant, which is the Sunbeam default and what the lab shows. Always check rather than assuming a Nova pool exists.
+
+Use repeated `-e` patterns, not `grep -E 'a|b'`: `juju ssh <unit> -- <cmd>` hands the command to a remote shell, which splits on the `|` and reports `b: command not found` while still exiting 0-ish — it looks like a grep miss, not a quoting bug.
+
+When verifying access, `rbd` without `--id <client>` authenticates as `client.admin` and proves nothing about Trilio's own credential.
 
 ### Ceph-client relation for datamover (contego's own RBD credentials)
 `trilio-data-mover-sunbeam` has its own `ceph` relation (interface `ceph-client`) to the Ceph cluster application (microceph on Sunbeam), so contego gets a dedicated Ceph client key for direct `rbd` CLI usage against Ceph-backed Cinder volumes — not needed for Nova's own attach flow, only for contego's own rbd reads. Two library/behavior gotchas:
