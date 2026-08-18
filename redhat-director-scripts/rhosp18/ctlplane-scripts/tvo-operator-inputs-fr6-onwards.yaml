@@ -32,6 +32,7 @@ spec:
     triliovault_wlm_db_sync: registry.connect.redhat.com/trilio/trilio-wlm:stable-6.0-rhosp18
     triliovault_dms: registry.connect.redhat.com/trilio/trilio-dms-rhoso:stable-6.2-rhosp18
     openshift_cli: registry.redhat.io/openshift4/ose-cli:v4.15
+    rabbitmq: registry.redhat.io/rhoso/openstack-rabbitmq-rhel9:18.0.21
     galera: registry.redhat.io/rhoso/openstack-mariadb-rhel9:18.0
   common:
     nova_user_id: "42436"

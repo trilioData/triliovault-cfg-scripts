@@ -21,9 +21,15 @@ import sys
 # any), so every other line - including comments, quote style, and boolean literal casing -
 # is left byte-for-byte unchanged. Run it once as part of upgrading to the TVAULT-7511 fix,
 # after the RabbitMQ CR/PVC cleanup (if applicable) and the tvo-operator image upgrade.
+#
+# spec.images.rabbitmq is deliberately NOT in this list. It was originally removed here,
+# on the assumption that the native CRD had no image field - it does
+# (spec.containerImage), and leaving it unset makes the operator fall back to the upstream
+# community image. Stripping the key would therefore downgrade an upgrading customer from
+# RHOSO's supported RabbitMQ image to quay.io/podified-antelope-centos9. The FR5 and FR6
+# inputs files both carry the key, and the FR6 chart consumes it, so it must survive.
 
 FIELDS_TO_REMOVE = [
-    ("spec", "images", "rabbitmq"),
     ("spec", "rabbitmq", "cluster", "api_version"),
     ("spec", "rabbitmq", "cluster", "tls"),
     ("spec", "rabbitmq", "cluster", "rabbitmq"),
