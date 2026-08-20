@@ -70,6 +70,19 @@ TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 # key that was never created (ceph auth caps on a nonexistent client fails,
 # but the broker swallows that error and still reports exit-code 0).
 CEPH_CONF_PATH = "/etc/ceph/ceph.conf"
+# Marks /etc/ceph/ceph.conf as created (and therefore owned) by THIS charm.
+# nova-compute is a snap on Sunbeam and keeps its own Ceph config under
+# /var/snap/openstack-hypervisor/common/etc, so host /etc/ceph is normally ours
+# alone — but an operator or a deb-based Ceph client may have populated it with
+# a richer, cluster-specific config (fsid, rbd cache/feature tuning, per-
+# [client.x] sections, explicit keyring paths). Without this marker we cannot
+# tell "the file we wrote last hook" apart from "somebody else's file", and the
+# only safe reading of an unmarked file is that it is someone else's — so it is
+# left strictly alone. The one exception is a conf whose content still matches
+# our own template exactly — that is how units deployed before this marker
+# existed get adopted on upgrade instead of disowning their own file forever
+# (see _is_charm_shaped_conf).
+CEPH_CONF_MARKER = "/etc/ceph/.trilio-managed-ceph-conf"
 # Records the last set of pools our ceph key was scoped to, so we only send a
 # follow-up broker request when that set actually changes (new pool discovered,
 # or one disappeared) rather than on every hook run.
@@ -151,6 +164,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self.on.receive_ca_cert_relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(self.on.stop, self._on_stop)
         self._setup_ceph_client()
 
     @property
@@ -617,26 +631,148 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         key = data.get("key")
         if not mon_hosts or not key:
             return
-        self._write_ceph_conf(mon_hosts)
+        self._ensure_ceph_conf(mon_hosts)
         self._write_ceph_keyring(key)
 
-    def _write_ceph_conf(self, mon_hosts):
-        content = (
+    # Every setting a ceph.conf rendered by this charm can contain. Used to
+    # recognise our own output — see _is_charm_shaped_conf.
+    _CHARM_CONF_KEYS = frozenset({
+        "mon host",
+        "auth_cluster_required",
+        "auth_service_required",
+        "auth_client_required",
+    })
+
+    def _render_ceph_conf(self, mon_hosts):
+        return (
             "[global]\n"
             f"mon host = {','.join(mon_hosts)}\n"
             "auth_cluster_required = cephx\n"
             "auth_service_required = cephx\n"
             "auth_client_required = cephx\n"
         )
+
+    @classmethod
+    def _is_charm_shaped_conf(cls, text):
+        """True if `text` could only plausibly have been rendered by this charm.
+
+        Units deployed before CEPH_CONF_MARKER existed have a charm-written
+        ceph.conf and no marker, so on upgrade they would otherwise be misread
+        as an operator's file and disowned permanently — the charm could then
+        never refresh its own mon list again, which is the exact staleness the
+        marker was introduced to prevent. Recognising our own output closes
+        that gap for already-deployed units.
+
+        Deliberately strict: [global] only, a mon host line and the three cephx
+        auth lines, nothing else. A real operator conf carries an fsid, tuning
+        keys or per-[client.x] sections and will not match. If a foreign conf
+        somehow does match, adopting it costs at most the mon host line —
+        everything else we would write is byte-identical anyway.
+        """
+        seen = set()
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line or line.startswith(("#", ";")):
+                continue
+            if line == "[global]":
+                continue
+            if line.startswith("["):
+                return False
+            key, sep, _ = line.partition("=")
+            if not sep:
+                return False
+            key = key.strip()
+            if key not in cls._CHARM_CONF_KEYS:
+                return False
+            seen.add(key)
+        return seen == set(cls._CHARM_CONF_KEYS)
+
+    def _ensure_ceph_conf(self, mon_hosts):
+        """Create /etc/ceph/ceph.conf if absent; never clobber a foreign one.
+
+        This used to be an unconditional truncating write that ran on every
+        pools-available event, so any pre-existing ceph.conf on the host was
+        destroyed — no backup, no merge, nothing but an INFO log — and its mode
+        was loosened to 0644 into the bargain. Since the datamover is co-located
+        with nova-compute on the host, that is somebody else's file to lose.
+
+        Now: a conf we did not write (no CEPH_CONF_MARKER beside it, and its
+        content does not match our own template) is left strictly alone —
+        contents, mode and ownership. One that is ours stays ours and is
+        rewritten whenever the rendered content differs, so it cannot go stale
+        if microceph's monitors move. Note that "whenever the content differs"
+        also means hand edits to a charm-owned conf are reverted; the file is
+        ours, and there is no sane way to merge someone else's [global] tuning
+        into a template we regenerate.
+
+        Either way the keyring is still written — that is the one file this
+        charm genuinely needs to own, and being named after the Juju application
+        it cannot collide with cinder's or nova's.
+        """
+        content = self._render_ceph_conf(mon_hosts)
+        # lexists, not exists: a dangling symlink here is still somebody's
+        # deliberate placement, and exists() would follow it and let the write
+        # below land on whatever it points at.
+        exists = os.path.lexists(CEPH_CONF_PATH)
+        ours = os.path.lexists(CEPH_CONF_MARKER)
+
+        if exists and not ours:
+            try:
+                with open(CEPH_CONF_PATH) as f:
+                    ours = self._is_charm_shaped_conf(f.read())
+            except OSError:
+                ours = False
+            if ours:
+                logger.info(
+                    "Adopting pre-existing %s — its content matches this "
+                    "charm's own template exactly",
+                    CEPH_CONF_PATH,
+                )
+
+        if exists and not ours:
+            logger.warning(
+                "%s exists and was not created by this charm — leaving it "
+                "untouched. Only %s is managed here. Note that contego is "
+                "still configured with images_rbd_ceph_conf=%s, so if that "
+                "file describes a different Ceph cluster than this charm's "
+                "ceph relation, rbd reads will fail at backup time.",
+                CEPH_CONF_PATH,
+                self._ceph_keyring_path(),
+                CEPH_CONF_PATH,
+            )
+            return
+
+        if exists:
+            try:
+                with open(CEPH_CONF_PATH) as f:
+                    if f.read() == content:
+                        return
+            except OSError:
+                pass
+
         os.makedirs("/etc/ceph", exist_ok=True)
+        # Marker before conf: interrupted between the two writes, a marker with
+        # no conf self-corrects on the next hook, whereas a conf with no marker
+        # would read as foreign and be disowned.
+        with open(CEPH_CONF_MARKER, "w"):
+            pass
         with open(CEPH_CONF_PATH, "w") as f:
             f.write(content)
-        os.chmod(CEPH_CONF_PATH, 0o644)
-        logger.info("Wrote %s", CEPH_CONF_PATH)
+        if not exists:
+            # Only on create: an admin who has since tightened the mode on our
+            # own file should keep that, we are not here to re-widen it.
+            os.chmod(CEPH_CONF_PATH, 0o644)
+        logger.info("%s %s", "Refreshed" if exists else "Created", CEPH_CONF_PATH)
 
     def _write_ceph_keyring(self, key):
+        """Write/refresh our own keyring - always kept at the latest key.
+
+        makedirs here because _ensure_ceph_conf may now return early without
+        having created /etc/ceph.
+        """
         keyring_path = self._ceph_keyring_path()
         content = f"[client.{self._ceph_client_name}]\n\tkey = {key}\n"
+        os.makedirs("/etc/ceph", exist_ok=True)
         with open(keyring_path, "w") as f:
             f.write(content)
         os.chmod(keyring_path, 0o640)
@@ -754,6 +890,23 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _on_update_status(self, event):
         """Periodic status check — verify services are running."""
         pass
+
+    def _on_stop(self, event):
+        """Drop our ceph.conf ownership marker when the unit goes away.
+
+        Left behind, the marker would authorise a future redeploy to overwrite
+        whatever /etc/ceph/ceph.conf exists on the host by then — quite possibly
+        an operator's, written after this unit was removed. The conf itself is
+        deliberately left in place: deleting files on teardown is a bigger
+        promise than this charm should make, and an unmarked conf is treated as
+        foreign anyway unless it still matches our own template.
+        """
+        try:
+            os.remove(CEPH_CONF_MARKER)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            logger.warning("Could not remove %s: %s", CEPH_CONF_MARKER, e)
 
     # --- service management ---
 
