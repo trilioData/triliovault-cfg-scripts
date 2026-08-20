@@ -53,12 +53,12 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templat
 #
 # The dmapi schema has no index wide enough to hit InnoDB's 3072-byte key limit
 # today, so unlike the WLM database this is not fixing a current failure. It is
-# here because every distro that pins the charset pins it for BOTH databases --
-# RHOSP 17's puppet does so in wlmapi/db/mysql.pp and dmapi/db/mysql.pp alike
-# ($charset = 'utf8'), and openstack-helm sets charset=utf8 on the datamover and
-# datamover-api connection strings -- and because leaving one of the two on
-# MySQL 8's utf8mb4 default is a trap for whoever next adds a wide composite
-# index here. The WLM side shows what that failure looks like: a UNIQUE index
+# here because RHOSO 18 settles the charset for BOTH databases the same way, in
+# matching db-init jobs (_triliovault-wlm-db-init.sh.tpl and
+# _triliovault-datamover-api-db-init.sh.tpl), and because leaving one of the two
+# on MySQL 8's utf8mb4 default is a trap for whoever next adds a wide composite
+# index here. The value differs from RHOSO 18's on purpose -- see the WLM charm
+# for why utf8mb4 cannot hold these indexes on either platform. The WLM side shows what that failure looks like: a UNIQUE index
 # over four String(255) columns costs 3060 bytes at 3 bytes/char and fits, but
 # 4080 bytes at 4 bytes/char and fails with (1071) Specified key was too long,
 # aborting the migration and leaving a half-built schema behind.
@@ -95,6 +95,24 @@ try:
         # character and both satisfy the index, so neither needs changing.
         if current in ("utf8mb3", "utf8"):
             print("ALREADY " + str(current))
+            sys.exit(0)
+
+        # Only ever act on a schema with no tables in it. ALTER DATABASE changes
+        # the default for tables created afterwards and leaves existing ones on
+        # whatever they were built with, so running it against a populated schema
+        # produces a mixed-charset database: new tables utf8mb3, old ones utf8mb4.
+        # The next migration that joins or FKs across that boundary then fails
+        # with "Illegal mix of collations" (errno 1267/3780). That is a worse
+        # state than the one being fixed, and it would be reported as a success.
+        #
+        # This matters most for dmapi, whose schema builds fine under utf8mb4 and
+        # so is already populated on every install made before this guard existed.
+        cur.execute(
+            "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s",
+            (db,),
+        )
+        if cur.fetchone()[0]:
+            print("POPULATED " + str(current))
             sys.exit(0)
 
         cur.execute(
@@ -359,16 +377,24 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         endpoint = db["endpoints"].split(",")[0].strip()
         db_host, _, db_port = endpoint.partition(":")
 
-        out, _ = container.exec(
-            ["python3", "-c", DB_CHARSET_SCRIPT],
-            environment={
-                "TVO_DB_HOST": db_host,
-                "TVO_DB_PORT": db_port or "3306",
-                "TVO_DB_USER": db["username"],
-                "TVO_DB_PASSWORD": db["password"],
-                "TVO_DB_NAME": db["database"],
-            },
-        ).wait_output()
+        try:
+            out, _ = container.exec(
+                ["python3", "-c", DB_CHARSET_SCRIPT],
+                environment={
+                    "TVO_DB_HOST": db_host,
+                    "TVO_DB_PORT": db_port or "3306",
+                    "TVO_DB_USER": db["username"],
+                    "TVO_DB_PASSWORD": db["password"],
+                    "TVO_DB_NAME": db["database"],
+                },
+            ).wait_output()
+        except ops.pebble.ExecError as e:
+            # Do not fail the hook on this. A transient database blip during a
+            # mysql-k8s rolling restart, or a grant without database-level ALTER,
+            # would otherwise wedge the unit here. If the charset genuinely is
+            # wrong, the migration that runs next says so in its own terms.
+            logger.warning("could not verify database charset: %s", e)
+            return
 
         out = (out or "").strip()
         for line in out.splitlines():
@@ -376,6 +402,18 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
                 logger.info("database charset %s", line[len("CHANGED "):])
             elif line.startswith("ALREADY"):
                 logger.debug("database charset already %s", line[len("ALREADY "):])
+            elif line.startswith("POPULATED"):
+                # Deliberately not "fixed" here -- see DB_CHARSET_SCRIPT. Saying
+                # so plainly beats a silent ALTER that reports success and breaks
+                # the next migration instead.
+                logger.warning(
+                    "database already contains tables and its default charset is"
+                    " %s, not utf8mb3; leaving it alone. Tables already built"
+                    " cannot be converted by ALTER DATABASE, so a schema created"
+                    " before this guard stays as it is. To move it, drop the"
+                    " database and redeploy.",
+                    line[len("POPULATED "):],
+                )
 
     def _db_sync(self, container):
         """Run DMAPI database migrations (idempotent; leader only).
