@@ -900,7 +900,13 @@ kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
 ```
 
 #### Both T4O databases must be utf8mb3, and Sunbeam is the only distro that has to say so
-`workloadmgr`'s migration `001` builds a UNIQUE index over four `String(255)` columns on `snapshot_vm_resources`. InnoDB caps an index key at **3072 bytes**, so the character width decides whether it can exist: `4 x 255 x 3 = 3060` fits with 12 bytes to spare, `4 x 255 x 4 = 4080` fails with `(1071) Specified key was too long`. The index has always been this marginal — the other distros just never exposed it, because RHOSP 17's puppet (`wlmapi/db/mysql.pp`, `dmapi/db/mysql.pp`) and openstack-helm's connection strings both pin `utf8` explicitly.
+`workloadmgr`'s migration `001` builds a UNIQUE index over four `String(255)` columns on `snapshot_vm_resources`. InnoDB caps an index key at **3072 bytes**, so the character width decides whether it can exist: `4 x 255 x 3 = 3060` fits with 12 bytes to spare, `4 x 255 x 4 = 4080` fails with `(1071) Specified key was too long`. The index has always been this marginal.
+
+**RHOSO 18 already solves this the same way**, in its db-init jobs (`_triliovault-wlm-db-init.sh.tpl`, `_triliovault-datamover-api-db-init.sh.tpl`): settle the charset with `CREATE DATABASE ... DEFAULT CHARACTER SET` / `ALTER DATABASE ... CHARACTER SET`, *then* run `alembic upgrade head`. Sunbeam cannot do the CREATE half — mysql-k8s creates the database on the relation — so the charm does the ALTER half of the same sequence, in the same place.
+
+The charset **value** deliberately differs from RHOSO 18's, which asks for `utf8mb4`. Its MariaDB 10.5 has the same `innodb_page_size=16384` and dynamic row format, so the same 3072-byte key limit applies and 4080 bytes does not fit there either. Every other database on both platforms is utf8mb3 (`keystone`, `cinder`, `barbican`, `nova_api` on RHOSO 18; all thirteen OpenStack schemas on Canonical). **Canonical never hits this only because `mysql-innodb-cluster` creates every database as utf8mb3** — nothing in T4O protects it there. Worth confirming separately whether a fresh RHOSO 18 install actually completes its migrations, given it requests the one charset these indexes cannot live in.
+
+**openstack-helm/MOSK is not protected either**: its `?charset=utf8` is a client connection option on the datamover connections only, which does not affect what a `CREATE TABLE` inherits, and both databases are created with no `CHARACTER SET`.
 
 Sunbeam is the first to hand `workloadmgr` a **MySQL 8** database with nothing pinned, and MySQL 8 defaults `character_set_server` to `utf8mb4`. The result is that `alembic upgrade head` aborts inside migration 001 on a fresh install, leaving a partial schema; every job-creating API call then fails, which surfaces as a licence or trust that "reports success" but never appears.
 
