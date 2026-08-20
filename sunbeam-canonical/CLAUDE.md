@@ -898,3 +898,15 @@ openstack --insecure endpoint list --service datamover
 kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_users
 kubectl exec -n openstack rabbitmq-0 -c rabbitmq -- rabbitmqctl list_vhosts
 ```
+
+#### Both T4O databases must be utf8mb3, and Sunbeam is the only distro that has to say so
+`workloadmgr`'s migration `001` builds a UNIQUE index over four `String(255)` columns on `snapshot_vm_resources`. InnoDB caps an index key at **3072 bytes**, so the character width decides whether it can exist: `4 x 255 x 3 = 3060` fits with 12 bytes to spare, `4 x 255 x 4 = 4080` fails with `(1071) Specified key was too long`. The index has always been this marginal — the other distros just never exposed it, because RHOSP 17's puppet (`wlmapi/db/mysql.pp`, `dmapi/db/mysql.pp`) and openstack-helm's connection strings both pin `utf8` explicitly.
+
+Sunbeam is the first to hand `workloadmgr` a **MySQL 8** database with nothing pinned, and MySQL 8 defaults `character_set_server` to `utf8mb4`. The result is that `alembic upgrade head` aborts inside migration 001 on a fresh install, leaving a partial schema; every job-creating API call then fails, which surfaces as a licence or trust that "reports success" but never appears.
+
+`_ensure_db_charset()` runs `ALTER DATABASE ... CHARACTER SET utf8mb3` before the migrations in both the WLM and dm-api charms. Three things about it are deliberate:
+- **It must run before any table exists.** `ALTER DATABASE` sets the default for tables created *afterwards* and never rewrites existing ones.
+- **It targets fresh installs only, by design.** Nothing here converts tables that were already built as `utf8mb4`, and it deliberately does not try: T4O on Sunbeam has no deployed installs to migrate. A schema left half-built by an interrupted first deploy is recovered by dropping the database and redeploying, not by the charm.
+- **dm-api's copy is preventative.** The dmapi schema has no index that wide today; it is pinned so the pair stays consistent with every other distro and so the next wide composite index added there does not resurrect this.
+
+`utf8mb3` is deprecated in MySQL 8 and will eventually be removed. The durable fix is upstream — shorter columns or a prefix index — at which point this guard can go.

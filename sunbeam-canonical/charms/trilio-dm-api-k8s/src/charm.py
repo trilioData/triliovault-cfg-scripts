@@ -49,6 +49,65 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templat
 
 
 
+# Ensure the schema default character set is utf8mb3 before any table is created.
+#
+# The dmapi schema has no index wide enough to hit InnoDB's 3072-byte key limit
+# today, so unlike the WLM database this is not fixing a current failure. It is
+# here because every distro that pins the charset pins it for BOTH databases --
+# RHOSP 17's puppet does so in wlmapi/db/mysql.pp and dmapi/db/mysql.pp alike
+# ($charset = 'utf8'), and openstack-helm sets charset=utf8 on the datamover and
+# datamover-api connection strings -- and because leaving one of the two on
+# MySQL 8's utf8mb4 default is a trap for whoever next adds a wide composite
+# index here. The WLM side shows what that failure looks like: a UNIQUE index
+# over four String(255) columns costs 3060 bytes at 3 bytes/char and fits, but
+# 4080 bytes at 4 bytes/char and fails with (1071) Specified key was too long,
+# aborting the migration and leaving a half-built schema behind.
+#
+# ALTER DATABASE sets the default for tables created afterwards and never
+# rewrites existing ones. That is exactly the semantic wanted on a fresh deploy:
+# it runs before the migrations, on a schema with no tables yet, and is a no-op
+# on every later hook once the default already matches. It is not a repair for a
+# database whose tables were already built as utf8mb4 -- nothing here converts
+# existing tables, and T4O on Sunbeam has no deployed installs to migrate.
+DB_CHARSET_SCRIPT = """
+import os, sys
+import pymysql
+
+db = os.environ["TVO_DB_NAME"]
+conn = pymysql.connect(
+    host=os.environ["TVO_DB_HOST"],
+    port=int(os.environ["TVO_DB_PORT"]),
+    user=os.environ["TVO_DB_USER"],
+    password=os.environ["TVO_DB_PASSWORD"],
+    database=db,
+)
+try:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA"
+            " WHERE SCHEMA_NAME = %s",
+            (db,),
+        )
+        row = cur.fetchone()
+        current = row[0] if row else None
+
+        # utf8 is MySQL's deprecated alias for utf8mb3; both are 3 bytes per
+        # character and both satisfy the index, so neither needs changing.
+        if current in ("utf8mb3", "utf8"):
+            print("ALREADY " + str(current))
+            sys.exit(0)
+
+        cur.execute(
+            "ALTER DATABASE `" + db + "` CHARACTER SET utf8mb3"
+            " COLLATE utf8mb3_general_ci"
+        )
+        conn.commit()
+        print("CHANGED " + str(current) + " -> utf8mb3")
+finally:
+    conn.close()
+"""
+
+
 class TrilioDmApiK8sCharm(ops.CharmBase):
 
     def __init__(self, *args):
@@ -282,12 +341,49 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         """
         container.exec(["chown", "-R", "dmapi:dmapi", LOG_DIR]).wait()
 
+    def _ensure_db_charset(self, container):
+        """Pin the database default charset to utf8mb3 before migrations run.
+
+        See DB_CHARSET_SCRIPT for why: preventative here rather than a fix for a
+        current failure, and consistent with how every other distro provisions
+        both T4O databases.
+
+        Credentials go through the environment rather than argv so they do not
+        appear in the container's process list.
+        """
+        db = self._db_data()
+        if not db:
+            logger.warning("no database relation data; skipping charset check")
+            return
+
+        endpoint = db["endpoints"].split(",")[0].strip()
+        db_host, _, db_port = endpoint.partition(":")
+
+        out, _ = container.exec(
+            ["python3", "-c", DB_CHARSET_SCRIPT],
+            environment={
+                "TVO_DB_HOST": db_host,
+                "TVO_DB_PORT": db_port or "3306",
+                "TVO_DB_USER": db["username"],
+                "TVO_DB_PASSWORD": db["password"],
+                "TVO_DB_NAME": db["database"],
+            },
+        ).wait_output()
+
+        out = (out or "").strip()
+        for line in out.splitlines():
+            if line.startswith("CHANGED"):
+                logger.info("database charset %s", line[len("CHANGED "):])
+            elif line.startswith("ALREADY"):
+                logger.debug("database charset already %s", line[len("ALREADY "):])
+
     def _db_sync(self, container):
         """Run DMAPI database migrations (idempotent; leader only).
 
         DMAPI uses dmapi-dbsync (not dmapi-manage db_sync). The tool reads the
         database connection from [database].connection in CONFIG_PATH.
         """
+        self._ensure_db_charset(container)
         container.exec(
             ["/usr/bin/dmapi-dbsync", "--config-file", CONFIG_PATH],
         ).wait()

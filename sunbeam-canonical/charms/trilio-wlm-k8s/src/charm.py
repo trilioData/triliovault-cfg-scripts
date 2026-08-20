@@ -92,6 +92,72 @@ WLM_INGRESS_MODEL = "trilio"
 WLM_INGRESS_NAME = "wlm"
 
 
+# Ensure the schema default character set is utf8mb3 before any table is created.
+#
+# workloadmgr's migration 001 creates a UNIQUE index over four String(255)
+# columns on snapshot_vm_resources:
+#
+#     Index('vm_id', 'vm_id', 'snapshot_id', 'resource_name', 'resource_pit_id',
+#           unique=True)
+#
+# InnoDB caps an index key at 3072 bytes, so the byte width of a character
+# decides whether that index can exist at all:
+#
+#     utf8mb3   4 x 255 x 3 = 3060 bytes   fits, with 12 bytes to spare
+#     utf8mb4   4 x 255 x 4 = 4080 bytes   fails: (1071) Specified key was too long
+#
+# MySQL 8 defaults character_set_server to utf8mb4 and mysql-k8s creates our
+# database with that default, so on Sunbeam `alembic upgrade head` aborts inside
+# migration 001 and leaves a half-built schema behind. Every distro that pins the
+# charset explicitly avoids this -- RHOSP 17's puppet (wlmapi/db/mysql.pp and
+# dmapi/db/mysql.pp, $charset = 'utf8') and openstack-helm's connection strings
+# (charset=utf8). Sunbeam was simply the one place nothing pinned it.
+#
+# ALTER DATABASE sets the default for tables created afterwards and never
+# rewrites existing ones. That is exactly the semantic wanted on a fresh deploy:
+# it runs before the migrations, on a schema with no tables yet, and is a no-op
+# on every later hook once the default already matches. It is not a repair for a
+# database whose tables were already built as utf8mb4 -- nothing here converts
+# existing tables, and T4O on Sunbeam has no deployed installs to migrate.
+DB_CHARSET_SCRIPT = """
+import os, sys
+import pymysql
+
+db = os.environ["TVO_DB_NAME"]
+conn = pymysql.connect(
+    host=os.environ["TVO_DB_HOST"],
+    port=int(os.environ["TVO_DB_PORT"]),
+    user=os.environ["TVO_DB_USER"],
+    password=os.environ["TVO_DB_PASSWORD"],
+    database=db,
+)
+try:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA"
+            " WHERE SCHEMA_NAME = %s",
+            (db,),
+        )
+        row = cur.fetchone()
+        current = row[0] if row else None
+
+        # utf8 is MySQL's deprecated alias for utf8mb3; both are 3 bytes per
+        # character and both satisfy the index, so neither needs changing.
+        if current in ("utf8mb3", "utf8"):
+            print("ALREADY " + str(current))
+            sys.exit(0)
+
+        cur.execute(
+            "ALTER DATABASE `" + db + "` CHARACTER SET utf8mb3"
+            " COLLATE utf8mb3_general_ci"
+        )
+        conn.commit()
+        print("CHANGED " + str(current) + " -> utf8mb3")
+finally:
+    conn.close()
+"""
+
+
 class TrilioWlmK8sCharm(ops.CharmBase):
 
     def __init__(self, *args):
@@ -669,6 +735,42 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         container.exec(["update-ca-certificates"]).wait()
         logger.info("CA bundle written to container")
 
+    def _ensure_db_charset(self, container):
+        """Pin the database default charset to utf8mb3 before migrations run.
+
+        See DB_CHARSET_SCRIPT for why: a 4x255 unique index does not fit in
+        InnoDB's 3072-byte key limit at 4 bytes per character, so migrations
+        cannot complete on a utf8mb4 schema.
+
+        Credentials go through the environment rather than argv so they do not
+        appear in the container's process list.
+        """
+        db = self._db_data()
+        if not db:
+            logger.warning("no database relation data; skipping charset check")
+            return
+
+        endpoint = db["endpoints"].split(",")[0].strip()
+        db_host, _, db_port = endpoint.partition(":")
+
+        out, _ = container.exec(
+            ["python3", "-c", DB_CHARSET_SCRIPT],
+            environment={
+                "TVO_DB_HOST": db_host,
+                "TVO_DB_PORT": db_port or "3306",
+                "TVO_DB_USER": db["username"],
+                "TVO_DB_PASSWORD": db["password"],
+                "TVO_DB_NAME": db["database"],
+            },
+        ).wait_output()
+
+        out = (out or "").strip()
+        for line in out.splitlines():
+            if line.startswith("CHANGED"):
+                logger.info("database charset %s", line[len("CHANGED "):])
+            elif line.startswith("ALREADY"):
+                logger.debug("database charset already %s", line[len("ALREADY "):])
+
     def _db_sync(self, container):
         """Run WLM database migrations via alembic (idempotent; leader only).
 
@@ -676,6 +778,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         into triliovault-wlm.conf provides sqlalchemy.url and script_location so
         alembic can find the migration repo without a separate alembic.ini.
         """
+        self._ensure_db_charset(container)
         container.exec(
             ["alembic", "--config", CONFIG_PATH, "upgrade", "head"],
         ).wait()
