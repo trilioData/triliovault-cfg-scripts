@@ -29,14 +29,27 @@ trust_count() {
     # Count with -f value rather than by parsing the pretty table: trust IDs are
     # rendered as "trust-<uuid>", not a bare UUID, so a UUID-shaped row regex
     # silently matches nothing and reports "no trust" on a healthy deployment.
-    wlm_exec trust-list -f value -c TrustID 2>/dev/null | t4o_denoise \
+    # --is_cloud_admin True is REQUIRED, and its absence is not cosmetic. A cloud
+    # trust is stored with user_id='cloud_admin' (a literal string, not a UUID),
+    # while trust_list filters on context.user_id unless is_cloud_admin is set:
+    #
+    #     check_for_user_id = context.user_id
+    #     if is_cloud_admin:
+    #         check_for_user_id = 'cloud_admin'
+    #
+    # so a plain trust-list compares the admin's real UUID against the literal
+    # 'cloud_admin' and always returns empty -- reporting "no trust" on a
+    # deployment whose trust is present and available. Note the flag is spelled
+    # --is_cloud_admin here but --is_cloud_trust on trust-create; they are not
+    # interchangeable and each errors out on the other's name.
+    wlm_exec trust-list --is_cloud_admin True -f value -c TrustID 2>/dev/null | t4o_denoise \
       | grep -c '[^[:space:]]' || true
 }
 
 existing=$(trust_count)
 if [[ "${existing:-0}" -gt 0 ]]; then
     t4o_info "A cloud admin trust already exists ($existing row(s)); nothing to create."
-    wlm_exec trust-list 2>/dev/null | t4o_denoise | sed 's/^/  /'
+    wlm_exec trust-list --is_cloud_admin True 2>/dev/null | t4o_denoise | sed 's/^/  /'
     exit 0
 fi
 
@@ -80,12 +93,16 @@ t4o_info ""
 t4o_info "Verifying trust exists (trust-create exits 0 even on HTTP 500)..."
 count=$(trust_count)
 if [[ "${count:-0}" -gt 0 ]]; then
-    wlm_exec trust-list 2>/dev/null | t4o_denoise | sed 's/^/  /'
+    wlm_exec trust-list --is_cloud_admin True 2>/dev/null | t4o_denoise | sed 's/^/  /'
     t4o_info "Cloud admin trust present ($count row(s))."
     exit 0
 fi
 
 t4o_error "trust-list is empty — the trust was NOT created, whatever the command reported."
+t4o_error ""
+t4o_error "Note: this check passes --is_cloud_admin True. Without that flag a cloud"
+t4o_error "trust is invisible regardless of health, so an empty result here means the"
+t4o_error "trust genuinely is not there — not that the query missed it."
 t4o_error ""
 t4o_error "Most common cause: the WLM 'job' table is missing its audit columns"
 t4o_error "(created_at/updated_at/deleted_at/deleted/version/progress), so every"
