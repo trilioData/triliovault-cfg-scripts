@@ -422,7 +422,7 @@ copy_to_wlm() {
     local src="$1" dst="$2"
     [[ -f "$src" ]] || t4o_die "copy_to_wlm: source file not found: $src"
     case "$T4O_DISTRO" in
-      sunbeam)        kubectl cp "$src" "$K8S_NAMESPACE/$WLM_POD:$dst" -c "$WLM_CONTAINER" ;;
+      sunbeam)        _t4o_copy_to_all_wlm_pods "$src" "$dst" ;;
       openstack-helm) kubectl cp "$src" "$K8S_NAMESPACE/$(_t4o_first_pod):$dst" ;;
       rhoso18)        oc -n "$K8S_NAMESPACE" cp "$src" "$(_t4o_first_pod):$dst" ;;
       kolla)          docker cp "$src" "$WLM_CTR:$dst" ;;
@@ -430,6 +430,30 @@ copy_to_wlm() {
       canonical)      juju scp "$src" "trilio-wlm/leader:$dst" ;;
       *) t4o_die "copy_to_wlm: unsupported distro '$T4O_DISTRO'" ;;
     esac
+}
+
+# _t4o_copy_to_all_wlm_pods — put a file on every WLM pod, not just pod 0.
+#
+# The charm actions that consume these files run as
+# `juju run trilio-wlm-k8s/leader ...`, i.e. on whichever unit currently holds
+# leadership. Copying to a single hard-coded pod only worked while pod 0 happened
+# to be the leader; once a redeploy moved leadership to unit 2, create-license
+# read a path that did not exist there and the action still reported
+# "License applied successfully", which cost a long detour to diagnose.
+#
+# Copying to every pod also closes the race where leadership moves between the
+# copy and the action. These files are a few hundred bytes, so the cost is
+# irrelevant next to the failure mode.
+_t4o_copy_to_all_wlm_pods() {
+    local src="$1" dst="$2" pods pod rc=0
+    pods=$(kubectl get pods -n "$K8S_NAMESPACE"              -l app.kubernetes.io/name=trilio-wlm-k8s              -o jsonpath='{range .items[*]}{.metadata.name} {end}' 2>/dev/null)
+    # Fall back to the configured pod if the selector finds nothing, so this is
+    # never worse than the behaviour it replaces.
+    [[ -n "${pods// /}" ]] || pods="$WLM_POD"
+    for pod in $pods; do
+        kubectl cp "$src" "$K8S_NAMESPACE/$pod:$dst" -c "$WLM_CONTAINER" || rc=1
+    done
+    return $rc
 }
 
 _t4o_first_pod() {

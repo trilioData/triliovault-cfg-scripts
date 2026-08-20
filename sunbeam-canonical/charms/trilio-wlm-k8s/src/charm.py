@@ -345,7 +345,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
         )
-        cmd = [
+        # Kept as its own list so the verification call below reuses exactly the
+        # same credentials, rather than slicing this one by index and drifting
+        # the moment an argument is added.
+        wlm_auth = [
             "setsid",
             "workloadmgr",
             "--os-username", identity["service_username"],
@@ -355,15 +358,68 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "--os-project-domain-name", "service_domain",
             "--os-project-name", identity["service_tenant"],
             "--os-region-name", self.config.get("region", "RegionOne"),
+        ]
+        cmd = wlm_auth + [
             "license-create", license_file_path, "-f", "json", "--accept-eula",
         ]
+        # The licence file has to be here before we run anything. Checked through
+        # the Pebble file API rather than `test -f` via exec, because exec is
+        # exactly what cannot be trusted here -- see below.
+        directory, _, basename = license_file_path.rpartition("/")
+        try:
+            present = any(
+                f.name == basename
+                for f in container.list_files(directory or "/", pattern=basename)
+            )
+        except ops.pebble.PathError:
+            present = False
+        if not present:
+            event.fail(
+                f"licence file {license_file_path} does not exist in the {CONTAINER}"
+                f" container on this unit ({self.unit.name}). Note this action runs"
+                " on the leader, so the file has to be copied to the leader's pod,"
+                " not just to pod 0."
+            )
+            return
+
         try:
             process = container.exec(cmd)
             out, err = process.wait_output()
-            logger.info("license-create output: %s", out)
-            event.set_results({"result": "License applied successfully", "output": out})
+        except ops.pebble.ExecError as e:
+            event.fail(
+                f"license-create failed (exit {e.exit_code}): {e.stderr or e.stdout}"
+            )
+            return
         except Exception as e:
             event.fail(f"license-create failed: {e}")
+            return
+
+        logger.info("license-create output: %s", out)
+
+        # Do not report success on the strength of the exit code. Running this
+        # command under `setsid` through Pebble exec has been observed to return
+        # 0 with empty output even when workloadmgr itself exited non-zero -- an
+        # action pointed at a nonexistent path still reported "License applied
+        # successfully". The only trustworthy evidence is asking for the licence
+        # back, so that is what decides the result.
+        verify = wlm_auth + ["license-list"]
+        try:
+            listed, _ = container.exec(verify).wait_output()
+        except Exception as e:
+            event.fail(
+                "license-create reported no error, but the licence could not be"
+                f" read back to confirm it: {e}"
+            )
+            return
+
+        if not listed or "LicenseID" not in listed:
+            event.fail(
+                "license-create reported no error, but license-list shows no"
+                " licence, so nothing was applied. Check the wlm-api log."
+            )
+            return
+
+        event.set_results({"result": "License applied successfully", "output": out or listed})
 
     def _send_relation_requests(self):
         """Write requirer data to all relations. Idempotent — safe to call on every configure.
