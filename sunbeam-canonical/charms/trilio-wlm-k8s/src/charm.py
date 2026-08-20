@@ -108,10 +108,30 @@ WLM_INGRESS_NAME = "wlm"
 #
 # MySQL 8 defaults character_set_server to utf8mb4 and mysql-k8s creates our
 # database with that default, so on Sunbeam `alembic upgrade head` aborts inside
-# migration 001 and leaves a half-built schema behind. Every distro that pins the
-# charset explicitly avoids this -- RHOSP 17's puppet (wlmapi/db/mysql.pp and
-# dmapi/db/mysql.pp, $charset = 'utf8') and openstack-helm's connection strings
-# (charset=utf8). Sunbeam was simply the one place nothing pinned it.
+# migration 001 and leaves a half-built schema behind.
+#
+# This mirrors what RHOSO 18 already does. Its db-init job
+# (redhat-director-scripts/rhosp18/.../scripts/_triliovault-wlm-db-init.sh.tpl)
+# settles the charset explicitly before running the same migrations:
+#
+#     CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET ... COLLATE ...
+#     ALTER DATABASE $DB_NAME CHARACTER SET ... COLLATE ...      # if it existed
+#     ...
+#     alembic --config ... upgrade head
+#
+# Sunbeam cannot do the CREATE half -- mysql-k8s creates the database when the
+# relation is established -- so this is the ALTER half of the same sequence, run
+# in the same place: after the database exists, before the migrations touch it.
+#
+# The charset VALUE deliberately differs from RHOSO 18's. That script asks for
+# utf8mb4, and by the arithmetic above a utf8mb4 schema cannot hold these
+# indexes: MariaDB 10.5 on RHOSO 18 has the same innodb_page_size=16384 and
+# dynamic row format, hence the same 3072-byte key limit, and 4080 > 3072 there
+# too. Every other database on both platforms is utf8mb3 -- keystone, cinder,
+# barbican and nova_api on RHOSO 18, and all thirteen OpenStack schemas on
+# Canonical, where mysql-innodb-cluster creates every database that way and is
+# the only reason T4O has never hit this on juju-charms. utf8mb3 is what is
+# known to work; utf8mb4 is what is known to fail here.
 #
 # ALTER DATABASE sets the default for tables created afterwards and never
 # rewrites existing ones. That is exactly the semantic wanted on a fresh deploy:
@@ -145,6 +165,24 @@ try:
         # character and both satisfy the index, so neither needs changing.
         if current in ("utf8mb3", "utf8"):
             print("ALREADY " + str(current))
+            sys.exit(0)
+
+        # Only ever act on a schema with no tables in it. ALTER DATABASE changes
+        # the default for tables created afterwards and leaves existing ones on
+        # whatever they were built with, so running it against a populated schema
+        # produces a mixed-charset database: new tables utf8mb3, old ones utf8mb4.
+        # The next migration that joins or FKs across that boundary then fails
+        # with "Illegal mix of collations" (errno 1267/3780). That is a worse
+        # state than the one being fixed, and it would be reported as a success.
+        #
+        # This matters most for dmapi, whose schema builds fine under utf8mb4 and
+        # so is already populated on every install made before this guard existed.
+        cur.execute(
+            "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s",
+            (db,),
+        )
+        if cur.fetchone()[0]:
+            print("POPULATED " + str(current))
             sys.exit(0)
 
         cur.execute(
@@ -753,16 +791,24 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         endpoint = db["endpoints"].split(",")[0].strip()
         db_host, _, db_port = endpoint.partition(":")
 
-        out, _ = container.exec(
-            ["python3", "-c", DB_CHARSET_SCRIPT],
-            environment={
-                "TVO_DB_HOST": db_host,
-                "TVO_DB_PORT": db_port or "3306",
-                "TVO_DB_USER": db["username"],
-                "TVO_DB_PASSWORD": db["password"],
-                "TVO_DB_NAME": db["database"],
-            },
-        ).wait_output()
+        try:
+            out, _ = container.exec(
+                ["python3", "-c", DB_CHARSET_SCRIPT],
+                environment={
+                    "TVO_DB_HOST": db_host,
+                    "TVO_DB_PORT": db_port or "3306",
+                    "TVO_DB_USER": db["username"],
+                    "TVO_DB_PASSWORD": db["password"],
+                    "TVO_DB_NAME": db["database"],
+                },
+            ).wait_output()
+        except ops.pebble.ExecError as e:
+            # Do not fail the hook on this. A transient database blip during a
+            # mysql-k8s rolling restart, or a grant without database-level ALTER,
+            # would otherwise wedge the unit here. If the charset genuinely is
+            # wrong, the migration that runs next says so in its own terms.
+            logger.warning("could not verify database charset: %s", e)
+            return
 
         out = (out or "").strip()
         for line in out.splitlines():
@@ -770,6 +816,18 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 logger.info("database charset %s", line[len("CHANGED "):])
             elif line.startswith("ALREADY"):
                 logger.debug("database charset already %s", line[len("ALREADY "):])
+            elif line.startswith("POPULATED"):
+                # Deliberately not "fixed" here -- see DB_CHARSET_SCRIPT. Saying
+                # so plainly beats a silent ALTER that reports success and breaks
+                # the next migration instead.
+                logger.warning(
+                    "database already contains tables and its default charset is"
+                    " %s, not utf8mb3; leaving it alone. Tables already built"
+                    " cannot be converted by ALTER DATABASE, so a schema created"
+                    " before this guard stays as it is. To move it, drop the"
+                    " database and redeploy.",
+                    line[len("POPULATED "):],
+                )
 
     def _db_sync(self, container):
         """Run WLM database migrations via alembic (idempotent; leader only).
