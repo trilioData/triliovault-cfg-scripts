@@ -493,7 +493,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         cafile = CA_BUNDLE_COPY if os.path.exists(CA_BUNDLE_COPY) else ""
         context = {
             "transport_url": transport_url,
-            "dm_config_path": DM_CONFIG_PATH,
             "debug": str(self.config["debug"]).lower(),
             "cafile": cafile,
             "rabbit_quorum_queue": str(self.config.get("rabbit-quorum-queue", True)).lower(),
