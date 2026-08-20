@@ -76,15 +76,57 @@ probe_dns() {
     echo "FAIL: cannot resolve '$host'"; return 1
 }
 
-# _curl_probe <node> <url> <extra-curl-args> — returns "<rc>|<http_code>|<text>"
+# HTTP probe — python3, deliberately NOT curl.
 #
-# curl's own exit status decides pass/fail, NOT the digits in its output.
-# Scraping digits out of a merged stdout+stderr stream reads the "60" in
-# "curl: (60) SSL certificate problem" as part of the HTTP code and turns a
-# hard failure into a false PASS. Tag both values and parse them explicitly.
-_curl_probe() {
-    local node="$1" url="$2" extra="${3:-}"
-    run_on "$node" "curl -sS $extra -o /dev/null -w 'CODE:%{http_code}' --max-time 15 '$url' 2>&1; printf '|RC:%s' \$?"
+# T4O is a Python product, so every node that can host WLM/DMAPI/DMS/contego has
+# python3 by construction. curl has no such guarantee: it is absent from the
+# trilio-wlm image, where this probe reported a false "unreachable (rc=127)" for
+# an endpoint that in fact answers HTTP 200. wget is in that image but is just as
+# unguaranteed elsewhere, so python3 is the only client we can actually rely on.
+#
+# The exit status decides pass/fail, NOT digits scraped from the output. Scraping
+# a merged stdout+stderr stream reads the "60" of "SSL certificate problem" as
+# part of the HTTP code and turns a hard failure into a false PASS. Both values
+# are tagged and parsed explicitly.
+#
+# rc values mirror curl's so the failure messages stay recognisable:
+#   6 = DNS, 7 = connect, 28 = timeout, 35 = SSL, 60 = certificate not trusted.
+read -r -d '' _HTTP_PROBE_PY <<'PYPROBE' || true
+import sys, ssl, socket, urllib.request, urllib.error
+url, verify = sys.argv[1], sys.argv[2] == "1"
+ctx = ssl.create_default_context()
+if not verify:                       # equivalent of curl -k
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+rc, code, text = 0, 0, ""
+try:
+    code = urllib.request.urlopen(url, timeout=15, context=ctx).status
+except urllib.error.HTTPError as e:
+    code = e.code                    # 403/404 is still proof of reachability
+except urllib.error.URLError as e:
+    r = e.reason
+    if isinstance(r, ssl.SSLCertVerificationError): rc, text = 60, "SSL certificate problem: %s" % r
+    elif isinstance(r, ssl.SSLError):               rc, text = 35, "SSL error: %s" % r
+    elif isinstance(r, socket.gaierror):            rc, text = 6,  "could not resolve host: %s" % r
+    elif isinstance(r, (TimeoutError, socket.timeout)): rc, text = 28, "operation timed out"
+    else:                                           rc, text = 7,  "failed to connect: %s" % r
+except (TimeoutError, socket.timeout):
+    rc, text = 28, "operation timed out"
+except Exception as e:
+    rc, text = 1, str(e)
+sys.stdout.write("%sCODE:%d|RC:%d" % (text + " " if text else "", code, rc))
+PYPROBE
+_HTTP_PROBE_B64=$(printf '%s' "$_HTTP_PROBE_PY" | base64 -w0)
+
+# _http_probe <node> <url> <verify:0|1> — returns "...CODE:<http_code>|RC:<rc>"
+#
+# The program is shipped base64-encoded and fed through stdin rather than
+# inlined: run_on hands a single string to kubectl/juju exec, and a multi-line
+# python program with its own quoting does not survive that intact. The remote
+# side needs only coreutils' base64 and python3.
+_http_probe() {
+    local node="$1" url="$2" verify="${3:-0}"
+    run_on "$node" "echo $_HTTP_PROBE_B64 | base64 -d | python3 - '$url' '$verify'"
 }
 
 _curl_parse() {                       # <raw>  ->  sets _RC and _CODE
@@ -98,27 +140,29 @@ _curl_parse() {                       # <raw>  ->  sets _RC and _CODE
 probe_s3() {
     local node="$1" url="$2" raw
     # Any HTTP response — including 403 — proves the endpoint is reachable.
-    # Only a connect/DNS/timeout error (curl rc != 0) means it is not.
-    # -k here on purpose: this row answers "can I reach it", not "do I trust it".
-    raw=$(_curl_probe "$node" "$url" "-k")
+    # Only a connect/DNS/timeout error (rc != 0) means it is not.
+    # Verification off on purpose: this row answers "can I reach it", not
+    # "do I trust it".
+    raw=$(_http_probe "$node" "$url" 0)
     _curl_parse "$raw"
     if [[ "$_RC" == "0" ]]; then
         echo "PASS(http ${_CODE:-?})"; return 0
     fi
-    echo "FAIL: unreachable (curl rc=$_RC) — $_TEXT"; return 1
+    echo "FAIL: unreachable (rc=$_RC) — $_TEXT"; return 1
 }
 
 probe_s3_tls() {
     local node="$1" url="$2" raw
-    # Repeat WITHOUT -k. Failing here while probe_s3 passed means the endpoint
-    # is reachable but its certificate is not trusted on this node — a distinct
-    # problem with a distinct fix (install the CA), so it gets its own row.
-    raw=$(_curl_probe "$node" "$url" "")
+    # Repeat WITH verification on. Failing here while probe_s3 passed means the
+    # endpoint is reachable but its certificate is not trusted on this node — a
+    # distinct problem with a distinct fix (install the CA), so it gets its own
+    # row.
+    raw=$(_http_probe "$node" "$url" 1)
     _curl_parse "$raw"
     if [[ "$_RC" == "0" ]]; then
         echo "PASS(http ${_CODE:-?})"; return 0
     fi
-    echo "FAIL: TLS not trusted (curl rc=$_RC) — $_TEXT"; return 1
+    echo "FAIL: TLS not trusted (rc=$_RC) — $_TEXT"; return 1
 }
 
 probe_nfs() {
