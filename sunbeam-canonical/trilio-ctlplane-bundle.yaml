@@ -61,26 +61,26 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 18
+    revision: 22
     scale: 3
     trust: true
     options:
       api-workers: 2
       debug: false
     resources:
-      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-maint-1-2024.1
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 7
+    revision: 10
     scale: 3
     trust: true
     options:
       debug: false
       api-workers: 2
     resources:
-      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-maint-1-2024.1
 
 relations:
   # WLM relations
@@ -106,3 +106,18 @@ relations:
   # Without these, keystonemiddleware fails TLS verification → 503 on every API request
   - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
   - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
+
+# ---------------------------------------------------------------------------
+# Trilio Horizon plugin — NOT deployed by this bundle.
+#
+# Sunbeam's own horizon-k8s charm owns the dashboard. The Trilio plugin ships
+# as a REPLACEMENT for that charm's horizon-image OCI resource, so it is applied
+# by hand after the bundle and re-applied on every image rebuild:
+#
+#   juju attach-resource -m <ctlplane-model> horizon \
+#     horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:<tag>
+#
+# Deliberately left out of applications: above. Declaring horizon here would
+# make this bundle a desired-state authority over a core Sunbeam app — the
+# exact failure mode described in the CAUTION notes (TVAULT-7404, 2026-07-24).
+# Attaching the resource touches only the image and leaves revision/scale alone.

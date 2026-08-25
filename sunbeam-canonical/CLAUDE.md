@@ -453,7 +453,16 @@ Images:
 
 **Horizon plugin**: Uses `ghcr.io/canonical/horizon:2024.1` (the Canonical Sunbeam Horizon image confirmed from running cluster). Installs `tvault-horizon-plugin`, `workloadmgrclient`, `contegoclient` via pip with `TRILIO_PIP_INDEX_URL`. This is release-specific — the Dockerfile is named `Dockerfile_2024.1`.
 
-**`devops-build-publish.sh` for dev builds**: With a dev tag like `shyam-tv7404-10`, the script's tag parsing breaks (expects `<version>-<openstack>` format). For dev builds, run `docker build` directly with the correct Dockerfile and `--build-arg TRILIO_PIP_INDEX_URL=<url>` for horizon plugin.
+**`devops-build-publish.sh` handles dev tags — do not hand-roll `docker build`.** A tag that does not follow `<version>-<os-release>` (e.g. `6.2.1-maint-1-2024.1`, whose `${TAG#*-}` parses as `maint-1-2024.1`) makes the script look for `Dockerfile_maint-1-2024.1` and skip every container. Pass the overrides rather than bypassing the script:
+```bash
+bash devops-build-publish.sh --tag 6.2.1-maint-1-2024.1 \
+  --openstack-release 2024.1 \
+  --apt-url "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /" \
+  --containers all --mode build-and-publish
+```
+`--pip-url` is only needed if the derived `https://pypi.fury.io/trilio-<major>-<minor>/` is wrong.
+
+**`build_images.sh` is dead — never use it.** It runs `docker build -t "$tag" "$ctx"` with no `-f`, but every context ships only `Dockerfile_2024.1` and no plain `Dockerfile`, so it fails immediately. Its `IMAGES` map also covers just wlm and datamover-api, silently omitting the horizon plugin its own header claims to build. `devops-build-publish.sh` is the only working path.
 
 ### Charms (Charmhub)
 
@@ -916,3 +925,45 @@ Sunbeam is the first to hand `workloadmgr` a **MySQL 8** database with nothing p
 - **dm-api's copy is preventative.** The dmapi schema has no index that wide today; it is pinned so the pair stays consistent with every other distro and so the next wide composite index added there does not resurrect this.
 
 `utf8mb3` is deprecated in MySQL 8 and will eventually be removed. The durable fix is upstream — shorter columns or a prefix index — at which point this guard can go.
+
+### Charmhub `6.2/candidate` can lag the branch — always diff before you refresh
+A published candidate revision is not proof it matches `maint/6.2`. WLM rev 21 carried the DB-charset fix but not the `create-license` fix, because the two arrived via *separate* PRs (#1576, #1577) and only the merge commit has both — refreshing to it would have silently reinstated a fixed bug. Verify before every refresh, and rebuild if it does not match:
+
+```bash
+juju download <charm> --channel 6.2/candidate --filepath ~/x.charm --no-progress
+python3 -c 'import zipfile;zipfile.ZipFile("/home/ubuntu/x.charm").extractall("/home/ubuntu/x")'
+git show upstream/maint/6.2:sunbeam-canonical/charms/<charm>/src/charm.py > /tmp/m.py
+diff /tmp/m.py ~/x/src/charm.py     # must be empty
+```
+
+Three mechanical traps in that snippet, each of which cost a cycle:
+- **`juju download` has no `--revision` flag.** Passing it fails with a bare non-zero exit and no useful message. Download by `--channel` (which resolves to whatever the channel currently points at) and confirm the revision from the "Fetching ... revision N" line it prints.
+- **Never download into `/tmp`.** `juju` is a snap with a private `/tmp`, so the file lands inside the snap's namespace and is invisible to your shell — the download "succeeds" and the file does not exist. Use a path under `$HOME`.
+- **`unzip` is not installed on the build node.** Use `python3 -c 'import zipfile; ...'` to extract.
+
+### `juju refresh --switch` rejects `--revision`
+Moving an app from a local charm to Charmhub (`--switch ch:<charm>`) is mutually exclusive with `--revision` — juju errors with `--switch and --revision are mutually exclusive`. Use `--channel` alone and let it resolve, then confirm the landed revision in `juju status`. Supply k8s images in the same command so the charm and its image change together, rather than triggering two separate pod cycles:
+
+```bash
+juju refresh -m controller0/openstack trilio-wlm-k8s \
+  --switch ch:trilio-wlm-k8s --channel 6.2/candidate \
+  --resource trilio-wlm-image=docker.io/trilio/trilio-wlm-canonical:<tag>
+```
+
+Note the model is `controller0/openstack` — a bare `-m openstack` fails.
+
+### Charmhub export tokens last ~30 hours, not weeks
+`charmcraft login --export <file>` mints a macaroon with a `time-before` caveat about 30 hours out, so a token file goes stale between sessions and every store call fails with `[401] UNAUTHORIZED`. There is no keyring over SSH, so `CHARMCRAFT_AUTH` is the only path. Check the window without a round trip:
+
+```bash
+python3 -c '
+import base64,json,re
+d=json.loads(base64.b64decode(open("/home/ubuntu/creds.txt").read().strip()+"=="))
+s=base64.b64decode((d.get("v") or "")+"==").decode("utf8","replace")
+print(*re.findall(r"time-(?:before|since) [0-9T:.\-]+Z", s), sep="\n")'
+```
+
+Re-minting needs an interactive browser and cannot be automated. Note the export path is whatever was passed to `--export` — `~/creds.txt` and `~/charmhub-creds.auth` are both in use here and hold *different* tokens, so test with `charmcraft whoami` rather than assuming which file is current.
+
+### pip's `ERROR: ... dependency resolver` line in the wlm image is expected
+The `trilio-wlm` build prints `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed`, listing `asn1crypto`, `bunch`, `configparser`, `contegoclient`, `IPy`, `linecache2` as missing for `workloadmgr`. It is pip commentary, not a build failure — pip exits 0. Four of those six are stale entries in the `workloadmgr` deb's `requires.txt` that no code imports. `contegoclient` *is* installed, as `python3-contegoclient`, but ships its module at `contego_python_novaclient_ext.contegoclient` — so top-level `import contegoclient` can never succeed. The live code path uses a relative import into a vendored copy and works; the only module that fails to import is `workloadmgr/common/clients/os/contegoclient/v2/client.py`, which nothing imports. All four WLM entrypoints import cleanly. The same six are absent from every previously shipped image, so this is not a regression — do not "fix" it by pip-installing them.
