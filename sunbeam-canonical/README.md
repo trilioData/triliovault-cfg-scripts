@@ -30,21 +30,53 @@ When a new compute node joins via `sunbeam cluster join`, Juju automatically dep
 
 ## Install
 
+### What gets installed
+
+These scripts install **Trilio services only**. Sunbeam's own services — mysql, rabbitmq,
+keystone, traefik, microceph, openstack-hypervisor — must already exist in your cloud and
+are never deployed, refreshed or rescaled by Trilio. The deploy scripts only add relations
+to them.
+
 ### Step 1 — Verify cross-model offers
 
-Sunbeam creates RabbitMQ and Keystone offers by default. Verify they exist:
+The data plane reaches RabbitMQ and Keystone across models. Sunbeam creates these offers by
+default; verify they exist:
 
 ```bash
-juju find-offers --format=tabular | grep -E 'rabbitmq|keystone-credentials'
+juju offers -m openstack | grep -E 'rabbitmq|keystone-credentials|cert-distributor'
 ```
 
-If missing, create them:
+`rabbitmq` and `keystone-credentials` are required. If either is missing, create it:
 
 ```bash
 juju switch openstack
-juju offer rabbitmq:amqp
-juju offer keystone:identity-credentials
+juju offer rabbitmq:amqp rabbitmq
+juju offer keystone:identity-credentials keystone-credentials
 ```
+
+> **The trailing offer name is required, not cosmetic.** `juju offer <app>:<endpoint>` names
+> the offer after the *application*, so `juju offer keystone:identity-credentials` alone
+> creates an offer called `keystone` — which the deploy script will not find. Worse, both
+> keystone offers would take that same default name and the second would overwrite the
+> first, leaving you with neither.
+
+`cert-distributor` (`keystone:send-ca-cert`) is **optional** and present on TLS-enabled
+clouds. If it exists the deploy script wires CA distribution automatically; if not, it skips
+that step. Create it only if your cloud uses TLS and it is missing:
+
+```bash
+juju offer keystone:send-ca-cert cert-distributor
+```
+
+You do not need to note the offer URLs — `deploy_dataplane.py` reads them itself, from the
+control-plane model only (`juju offers -m openstack`). They are site-specific — they embed
+your own controller, user and model — so nothing is hardcoded.
+
+Scoping the lookup to one model is deliberate: offer names are unique *within* a model, not
+across a controller, so a second Sunbeam cloud or a model left over from a re-bootstrap
+cannot be picked up by mistake. If your control plane is not the `openstack` model, name it
+with `--ctlplane-model`; to point at an individual offer elsewhere, use `--rabbitmq-offer`,
+`--keystone-offer` or `--cert-offer`.
 
 ### Step 2 — Deploy control plane (k8s model)
 
@@ -52,44 +84,77 @@ juju offer keystone:identity-credentials
 git clone https://github.com/trilioData/triliovault-cfg-scripts.git
 cd triliovault-cfg-scripts/sunbeam-canonical
 
-juju switch openstack
-juju deploy ./trilio-ctlplane-bundle.yaml
+./deploy_ctlplane.py
 ```
 
-All relations — including CA certificate distribution for Keystone TLS — are included in the bundle.
+This deploys `trilio-wlm-k8s` and `trilio-dm-api-k8s` (with `--trust`, which both charms
+require to patch their own StatefulSets for FUSE access) and then relates them to mysql,
+rabbitmq, keystone, traefik and traefik-public, including CA certificate distribution for
+Keystone TLS.
+
+If your control-plane model is not named `openstack`, pass it explicitly:
+
+```bash
+./deploy_ctlplane.py -m controller0/openstack
+```
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
-juju status trilio-wlm-k8s trilio-dm-api-k8s
+juju wait-for application -m openstack trilio-wlm-k8s    --query='status=="active"' --timeout=10m
+juju wait-for application -m openstack trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+juju status -m openstack trilio-wlm-k8s trilio-dm-api-k8s
 kubectl get pods -n openstack | grep trilio
 ```
 
 ### Step 3 — Deploy data plane (machine model)
 
 ```bash
-juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml
+./deploy_dataplane.py
 ```
 
-Cross-model RabbitMQ and Keystone relations are declared in the bundle's `saas:` section.
+This deploys the `trilio-data-mover` subordinate, binds it to `openstack-hypervisor`,
+consumes the RabbitMQ and Keystone offers, and adds two relations **conditionally**:
+
+| Relation | Added when |
+|---|---|
+| `trilio-data-mover:receive-ca-cert` ↔ `cert-distributor:send-ca-cert` | the `cert-distributor` offer exists (TLS-enabled cloud) |
+| `trilio-data-mover:ceph` ↔ `microceph:ceph` | `microceph` is deployed in the model |
+
+Ceph is only needed where OpenStack itself uses Ceph — it gives the DataMover its own
+credentials for direct `rbd` access to Ceph-backed Cinder volumes. On a cloud with
+local/LVM storage the DataMover runs without it and the script skips the relation.
+
+Use `-m` if your machine model is not named `openstack-machines`:
+
+```bash
+./deploy_dataplane.py -m admin/openstack-machines
+```
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
-juju status trilio-data-mover
+juju wait-for application -m openstack-machines trilio-data-mover --query='status=="active"' --timeout=10m
+juju status -m openstack-machines trilio-data-mover
 ```
 
-### Step 4 — Attach Horizon Plugin
+A DataMover unit appears on every `openstack-hypervisor` machine, including nodes that join
+later via `sunbeam cluster join` — no action needed for new compute nodes.
+
+### Step 4 — Attach the Trilio Horizon plugin
+
+The Trilio dashboard plugin is **not** a separate application. It ships as a replacement for
+Sunbeam's own `horizon` charm's `horizon-image` resource, so it is attached to that charm
+rather than deployed. Re-attach it on every plugin image rebuild.
 
 ```bash
-juju attach-resource horizon \
-  horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:shyam-tv7404-12 \
-  -m openstack
+juju attach-resource -m openstack horizon \
+  horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:6.2.1-maint-1-2024.1
 ```
+
+This touches only the image — `horizon`'s charm revision and scale are left alone. That is
+deliberate: declaring `horizon` in a bundle would make Trilio a desired-state authority over
+a core Sunbeam application.
 
 **Verify:**
 
@@ -98,48 +163,114 @@ kubectl exec -n openstack horizon-0 -c horizon -- \
   python3 -c 'import trilio_dashboard; print(trilio_dashboard.__file__)'
 ```
 
-### Step 5 — Post-install: Cloud Admin Trust and License
+### Step 5 — Post-install: cloud admin trust and licence
+
+Both actions run on the WLM **leader** unit, and the order matters — the trust must exist
+before the licence is applied.
 
 ```bash
-juju switch openstack
-juju run trilio-wlm-k8s/leader create-cloud-admin-trust \
+# 1. Cloud admin trust (WLM uses it to act on behalf of projects)
+juju run -m openstack trilio-wlm-k8s/leader create-cloud-admin-trust \
   password=<cloud-admin-password>
 
-juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
-juju run trilio-wlm-k8s/leader create-license
+# 2. Copy the licence file INTO the LEADER's workload container, then apply it by
+#    its in-container path. The action checks for the file inside its own unit's
+#    container, and with scale: 3 the leader is often /1 or /2 — never assume /0.
+LEADER=$(juju status -m openstack trilio-wlm-k8s --format=json | python3 -c \
+  'import json,sys; a=json.load(sys.stdin)["applications"]["trilio-wlm-k8s"]["units"]; \
+   print(next(u for u,v in a.items() if v.get("leader")).replace("/","-"))')
+
+kubectl cp <licence-file> openstack/$LEADER:/tmp/license -c trilio-wlm
+
+juju run -m openstack trilio-wlm-k8s/leader create-license \
+  license-file-path=/tmp/license
 ```
+
+> **`juju attach-resource ... license=<file>` does not apply the licence.** The charm never
+> reads that resource. `create-license` takes a *required* `license-file-path` parameter and
+> checks for the file inside the `trilio-wlm` container **on the unit the action runs on** —
+> see `charms/trilio-wlm-k8s/actions.yaml`. Running the action without the parameter fails
+> with `required parameter license-file-path not specified`; copying to the wrong pod fails
+> with a file-not-found even though the copy itself succeeded.
+
+OpenStack credentials are read automatically from the identity-service relation, so the
+action takes no password.
+
+### Verify the install
+
+```bash
+juju status -m openstack          trilio-wlm-k8s trilio-dm-api-k8s
+juju status -m openstack-machines trilio-data-mover
+openstack endpoint list | grep -Ei 'workloads|datamover'
+```
+
+All Trilio applications should reach `active/idle`, a DataMover unit should be present on
+every compute node, and both Trilio service endpoints should be registered in Keystone.
+
+### Re-running the scripts
+
+Both scripts are safe to re-run, and re-running is a normal operation rather than a repair of
+last resort. A re-run never fails a working deployment: an already-deployed bundle, an
+already-consumed offer and an already-existing relation are each skipped.
+
+Re-run when you want to:
+
+| Situation | What the re-run does |
+|---|---|
+| A relation is missing (removed by hand, or lost in a failed hook) | Adds just that relation |
+| Ceph was enabled on the cloud after Trilio was installed | Adds `trilio-data-mover:ceph ↔ microceph:ceph` |
+| TLS was enabled, so `cert-distributor` now exists | Consumes the offer and adds `receive-ca-cert` |
+| An upgrade introduced a new relation the charm now needs | Adds the new relation |
+| The bundle created one Trilio app and failed before the other | Re-applies the bundle to finish the job |
+
+The conditional relations are re-evaluated against the live cloud on every run, which is what
+makes the middle three rows work — nothing is remembered from the first install.
+
+> **One caveat on the last row.** Re-applying a bundle is a desired-state operation, so the
+> application that *did* deploy gets reconciled to the revision and image pinned in the
+> bundle. That only ever touches applications Trilio owns — never a Sunbeam one — so it
+> cannot repeat the TVAULT-7404 failure, but it does mean a partial re-run can move your own
+> Trilio app onto the bundle's pins.
+
+> **The scripts install; they do not upgrade.** Once *all* the Trilio applications exist, the
+> bundle is skipped entirely — so bumping a charm revision or image tag and re-running will
+> not move a deployed cloud onto it. Upgrade explicitly, with `juju refresh` (see
+> [Upgrade](#upgrade) below).
 
 ## Upgrade
 
 ### Step 1 — Upgrade control plane
 
 ```bash
-juju switch openstack
-juju refresh trilio-wlm-k8s    --channel latest/candidate
-juju refresh trilio-dm-api-k8s --channel latest/candidate
+juju refresh -m openstack trilio-wlm-k8s --channel 6.2/candidate   --resource trilio-wlm-image=docker.io/trilio/trilio-wlm-canonical:<tag>
+
+juju refresh -m openstack trilio-dm-api-k8s --channel 6.2/candidate   --resource trilio-dm-api-image=docker.io/trilio/trilio-datamover-api-canonical:<tag>
 ```
+
+Pass `--resource` in the same command as the charm refresh, so the charm and its image move
+together rather than triggering two separate pod cycles. Use the image tags recorded in
+`trilio-ctlplane-bundle.yaml` for the release you are moving to.
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
-juju status trilio-wlm-k8s trilio-dm-api-k8s
+juju wait-for application -m openstack trilio-wlm-k8s    --query='status=="active"' --timeout=10m
+juju wait-for application -m openstack trilio-dm-api-k8s --query='status=="active"' --timeout=10m
+juju status -m openstack trilio-wlm-k8s trilio-dm-api-k8s
 ```
 
 ### Step 2 — Upgrade data plane
 
 ```bash
-juju switch openstack-machines
-juju config trilio-data-mover trilio-version=<new-version>
-juju refresh trilio-data-mover --channel latest/candidate
+juju config -m openstack-machines trilio-data-mover trilio-version=<new-version>
+juju refresh -m openstack-machines trilio-data-mover --channel 6.2/candidate
 ```
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
-juju status trilio-data-mover
+juju wait-for application -m openstack-machines trilio-data-mover --query='status=="active"' --timeout=10m
+juju status -m openstack-machines trilio-data-mover
 ```
 
 ### Step 3 — Upgrade Horizon plugin

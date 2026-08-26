@@ -19,7 +19,7 @@ All test credentials and environment config live under **`C:\vscode-workspace\en
 |------|------|---------|
 | `backup_targets.yaml` | `C:\vscode-workspace\env\backup_targets.yaml` | S3/NFS backup target credentials and endpoint details. Loaded by `test/04_create_backup_targets.sh` via `TRILIO_ENV_DIR`. |
 | `setups.yaml` | `C:\vscode-workspace\env\setups.yaml` | SSH access details for ALL lab environments — build server, Canonical QA, RHOSO18, etc. Check here first. |
-| `license_trilio.txt` | `C:\vscode-workspace\env\license_trilio.txt` | TrilioVault license file. Used with `juju attach-resource trilio-wlm-k8s license=...` (copy to build server as `license` — no `.txt` extension). |
+| `license_trilio.txt` | `C:\vscode-workspace\env\license_trilio.txt` | TrilioVault license file. Applied by `kubectl cp`-ing it into the WLM leader container and running `create-license license-file-path=...` — NOT via `juju attach-resource`. |
 
 **Build-server override**: on the build server the env dir is `/home/ubuntu/env/`. Always set `TRILIO_ENV_DIR` when running test scripts there:
 ```bash
@@ -210,7 +210,7 @@ The CA cert comes from the **`receive-ca-cert` Juju relation** — `_write_ca_ce
 
 ### DMS client conf (control plane — WLM) — vhost and node_id are NOT WLM's own
 `trilio-wlm-k8s` also writes `/etc/triliovault-dms/client.conf` (`_write_dms_client_config`) for the `trilio_dms` Python client library's mount/unmount RPC calls (used by `workloadmgr trust-create`'s post-trust settings upload and by `backup-target-create`'s mount validation). Two easy-to-get-wrong fields:
-- **`rabbitmq_url`**: must be the **`dmapi`** RabbitMQ vhost, not WLM's own `wlm` vhost — the embedded DMS server's `trilio_dms` topic exchange lives in the `dmapi` vhost. WLM has a dedicated `amqp-dms` relation (wired to `rabbitmq:amqp` in `trilio-ctlplane-bundle.yaml`) that requests `username=dmapi, vhost=dmapi` — this is idempotent, rabbitmq-k8s just returns the already-provisioned user. Using WLM's own `wlm` vhost silently "succeeds" (kombu auto-declares a private `trilio_dms` exchange in the wrong vhost) and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange.
+- **`rabbitmq_url`**: must be the **`workloadmgr`** vhost — the one WLM's own main `amqp` relation provisions. The embedded DMS server's `trilio_dms` topic exchange lives in whichever vhost both sides share, and both sides are configured from `_amqp_data()` (`charm.py:1021`, `:1068` — `amqp_dms.get('vhost', 'workloadmgr')`). WLM declares an `amqp-dms` relation that would request `username=dmapi, vhost=dmapi`, but it is **deliberately left unwired** — neither `trilio-ctlplane-bundle.yaml` nor `deploy_ctlplane.py` adds it. The DMS client and the embedded DMS server both use the main `amqp` relation's credentials instead, because two relations requesting the same RabbitMQ username get different passwords from rabbitmq-k8s and one of them then fails to authenticate. WLM still reaches Active without it — `_missing_relations()` in `charms/trilio-wlm-k8s/src/charm.py` does not list `amqp-dms`. The failure mode to watch for: if the two sides ever end up on DIFFERENT vhosts, it silently "succeeds" — kombu auto-declares a private `trilio_dms` exchange in the wrong vhost — and then hangs for exactly `request_timeout` (60s) with no error, because nothing is listening on that phantom exchange. That is why both sides must read the same `_amqp_data()`, and why wiring `amqp-dms` back up would break it.
 - **`node_id`**: `trilio_dms.client.DMSClient` defaults a request's target `host` to the **client's own** `node_id` when not explicitly given. This field must be the **DMS server's** identity, not WLM's — get it wrong and WLM publishes to `dms.<wrong-name>`, a routing key nothing is bound to, again a silent 60s timeout. The embedded DMS server's node_id = `self.unit.name.replace("/", "-")` (e.g. `trilio-wlm-k8s-0`), set via `_dms_node_id()` in charm.py. WLM writes the same value into its own DMS client conf so both sides always agree — confirm with `cat /etc/triliovault-dms/client.conf` on WLM and `grep node_id /etc/triliovault-dms/server.conf` on the trilio-dms container.
 
 Kolla-ansible sidesteps both issues entirely: WLM and DMS share ONE RabbitMQ vhost/user (`openstack`, kolla's global RPC convention) and are co-located on the same host (`node_id = {{ ansible_fqdn }}` on both sides) — so there's nothing to compare against in that reference implementation; the mismatch is Sunbeam-specific (per-service vhosts + separate pods).
@@ -385,10 +385,37 @@ Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-regi
 ### dispatch file permissions
 The `dispatch` file in machine subordinate charms MUST be stored with execute permission (`100755`) in git. Windows git clones silently drop the x-bit — always verify with `git ls-files -s dispatch` (should show `100755`). If it shows `100644`, run `git update-index --chmod=+x dispatch` and commit. Without the x-bit, Juju logs "exec: dispatch: permission denied" on every hook invocation.
 
-### Bundle reference entries for pre-existing apps MUST pin revision + scale — this caused a real outage
-Both `trilio-ctlplane-bundle.yaml` and `trilio-dataplane-bundle.yaml` declare "reference entries" for Sunbeam core applications they relate to but don't own (mysql, rabbitmq, keystone, traefik, traefik-public, openstack-hypervisor, microceph) — Juju requires every relation endpoint in a bundle to be declared, even for apps the bundle isn't meant to manage. **On 2026-07-24, omitting `revision:` and `scale:` on these entries caused `juju deploy` to treat them as a desired-state change**: Juju force-scaled all five ctlplane reference apps toward 0 units and force-upgraded their charm revisions to whatever the channel currently resolved to, cascading into a near-total control-plane outage (nova, neutron, cinder, glance, horizon, barbican, placement all went blocked/error, plus ~35 mysql-router subordinate units). Recovery took about 20 minutes of `juju resolved` cycling and waiting for in-flight charm upgrades to complete a pod cycle; no data was actually lost (underlying pods/PVCs were never destroyed — confirmed via `kubectl get pods` showing continuous multi-week uptime through the incident), but it was a serious live-outage scare.
+### Our bundles install Trilio services ONLY — never declare an app Sunbeam owns
+`trilio-ctlplane-bundle.yaml` and `trilio-dataplane-bundle.yaml` declare Trilio applications and nothing else. mysql, rabbitmq, keystone, traefik, traefik-public, openstack-hypervisor and microceph already exist in a bootstrapped Sunbeam cloud and are owned by Sunbeam. We relate to them; we never declare, deploy, refresh or rescale them.
 
-**Rule going forward: before deploying either bundle, always check `juju status` for the CURRENT revision and unit count of every reference-entry app, and make sure the bundle's `revision:`/`scale:` fields match exactly.** Both bundle files now have these pinned and carry an inline caution comment — never remove or leave them implicit again. `juju deploy ./bundle.yaml --dry-run` is a good sanity check before a real deploy: it should show ONLY the Trilio apps being deployed/related, never "scale X to N units" or "upgrade charm" for any of the reference-entry apps.
+`juju deploy <bundle>` is a **desired-state operation over every application named in the applications section**, whether or not the bundle is meant to own it. Both bundles used to carry "reference entries" for those seven apps, purely so that relations naming them would pass Juju's validator. Every possible form of such an entry is broken, and two of the four cost us a live incident:
+
+| Reference entry has… | Juju does | Outcome |
+|---|---|---|
+| `revision`/`scale` omitted | resolves scale→0, revision→channel tip | **TVAULT-7404**, 2026-07-24: force-rescaled all five ctlplane apps toward 0 units and force-upgraded their revisions, cascading into a near-total control-plane outage (nova, neutron, cinder, glance, horizon, barbican, placement blocked/error, plus ~35 mysql-router subordinates). ~20 min of `juju resolved` cycling to recover; no data lost (pods/PVCs were never destroyed) but a serious scare. |
+| `revision` pinned **below** deployed | rejects the downgrade | **TVAULT-7644**: `application "microceph": downgrades are not currently supported: deployed revision 296 is newer than requested revision 251`. Install blocked before a single Trilio charm deploys. Loud, at least. |
+| `revision` pinned **above** deployed | refreshes, successfully | **Silent.** A Trilio install drags a core Sunbeam charm off its supported revision with no error at all. The dangerous one. |
+| `scale` pinned ≠ actual units | rescales the statefulset | mysql/keystone/rabbitmq scaled up or down against the operator's intent. |
+
+There is no value of `revision:`/`scale:` that is correct on more than one cloud on more than one day. **Declaring the app at all is the bug** — the pins were only ever an attempt to make the declaration harmless, and they bind the file to one cluster at one moment. The same applies to any other site-local value: the dataplane `saas:` block used to hardcode `sunbeam-controller:controller0/openstack.*` offer URLs that match exactly one lab.
+
+**Why the relations can't just stay in the bundle.** Juju's validator (`BundleData.Verify` → `verifyRelations`) requires every relation endpoint to name an application declared in that bundle (or a `saas:` alias) — there is no fallback to "it already exists in the model". So the relations move OUT: `deploy_ctlplane.py` and `deploy_dataplane.py` add them with `juju integrate`, which touches only the relation and can never refresh or rescale an application. The scripts also read offer URLs with `juju offers -m <ctlplane-model>` instead of hardcoding them — scoped to one model, never a controller-wide `juju find-offers` search, because offer names are unique only within a model and a second Sunbeam cloud would otherwise be picked up by mistake.
+
+Note the overlay bundles under `juju-charms/sample_overlay_bundles/` *can* name undeclared apps (`keystone`, `rabbitmq-server`, `nova-compute`, …). That is not a precedent for these files: overlays are merged onto a base bundle by `juju deploy <base> --overlay <file>` before verification runs. Sunbeam has no base bundle — the cloud is built by Terraform — so that route is unavailable.
+
+**Rules going forward:**
+- Never add an application to either bundle that Trilio does not own. If a relation needs a Sunbeam app, it belongs in the deploy script.
+- Never commit a site-local value (charm revision of someone else's app, unit counts, offer URLs, controller/model names) to a shipped bundle.
+- Deploy via `./deploy_ctlplane.py` / `./deploy_dataplane.py`, not `juju deploy` by hand. Both are idempotent and re-runnable.
+- `juju deploy ./bundle.yaml --dry-run` remains a good sanity check: it must show ONLY Trilio apps, never "scale X to N units" or "upgrade charm" for anything else.
+
+### Relate to optional infrastructure only when the cloud actually has it
+Upstream Sunbeam treats Ceph and CA-cert distribution as optional, and so must we — "if OpenStack uses it, then we use it; otherwise we don't need it".
+
+- **microceph / `trilio-data-mover:ceph`**: a Sunbeam cloud backed by local/LVM storage is a valid configuration with no microceph at all. The charm declares `ceph` as `optional: true`, discovers whether Cinder/Nova actually use Ceph (`_discover_cinder_ceph_pools()` / `_discover_nova_ceph_pool()`), and `_ceph_backend_enabled()` gates the `[libvirt]`/`[ceph]` config blocks off when no pools were granted. The relation only buys contego its own Ceph credentials for direct `rbd` CLI use against Ceph-backed Cinder volumes — Nova's own attach flow doesn't need it.
+- **cert-distributor / `receive-ca-cert`**: upstream returns this offer from `get_optional_control_plane_offers()`, types it `optional(string)` in tfvars, and gates every cross-model integration with `count = (var.cert-distributor-offer-url != null) ? 1 : 0`. All 27 upstream charms declare `receive-ca-cert` with `optional: true`, and `ops_sunbeam` registers `CertificateTransferRequiresHandler` *without* a `mandatory` flag (`ops-sunbeam/ops_sunbeam/charm.py:228`) — unlike every neighbouring handler — with `ready` hardcoded `True`, so absence yields `UnknownStatus`, never `BlockedStatus`. Our three charms match. Same-model consumers relate directly to `keystone:send-ca-cert` unconditionally; only cross-model ones are gated.
+
+A hard relation in a bundle overrides all of that charm-level optionality, because a bundle relation is unconditional — which is exactly how a missing storage charm ends up blocking a Trilio install.
 
 ---
 
@@ -495,22 +522,21 @@ Error: The device already exists
 ```
 Check for stopped containers: `lxc list | grep charmcraft`. If the container is `STOPPED` (not `RUNNING`), wait a moment and retry — charmcraft will reuse or clean it up. If it is `RUNNING` from a background job, wait for it to finish before starting a new pack.
 
-#### Deploying bundles — use `./` path and `--trust`
-`juju deploy` does NOT accept an absolute path outside the current directory for bundle YAML files:
-- **Wrong**: `juju deploy /tmp/trilio-ctlplane-bundle.yaml` → "no charm was found"
-- **Correct**: copy the bundle to the working directory and deploy with `./`: `juju deploy ./trilio-ctlplane-bundle.yaml`
-
-Both control-plane bundles require `--trust` because the WLM and DMAPI charms patch their own StatefulSets at runtime via the Kubernetes API (FUSE device access, shared vault-mounts volume):
+#### Deploying — always via the deploy scripts
 ```bash
-juju switch openstack
-juju deploy ./trilio-ctlplane-bundle.yaml --trust
-
-juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml
-# (data plane bundle does NOT need --trust)
+./deploy_ctlplane.py     # k8s model,     default: openstack
+./deploy_dataplane.py    # machine model, default: openstack-machines
 ```
+Override the model with `-m` (e.g. `-m controller0/openstack`) or `TRILIO_CTLPLANE_MODEL` / `TRILIO_DATAPLANE_MODEL`. Both scripts are idempotent — re-running skips an already-deployed bundle, an already-consumed offer and an already-existing relation.
 
-Also strip CRLF from bundle files copied from the Windows working tree before deploying — see the "Windows-checkout file sync" note above.
+Do not `juju deploy` the bundles by hand: they intentionally contain no relations to Sunbeam's own apps (see the SCOPE rule above), so a bare deploy leaves the Trilio apps installed but unrelated and non-functional. The scripts add those relations with `juju integrate` and read cross-model offer URLs with `juju offers -m <ctlplane-model>` (model-scoped, never controller-wide).
+
+Two things the scripts handle that hand-deploys got wrong:
+- `--trust` is required on the control plane — the WLM and DMAPI charms patch their own StatefulSets at runtime via the Kubernetes API (FUSE device access, shared vault-mounts volume). Without it Juju refuses the deploy outright. The data plane does not need it.
+- `juju deploy` does NOT accept an absolute path outside the current directory for bundle YAML (`juju deploy /tmp/x.yaml` → "no charm was found"), which is why the scripts `cd` to their own directory and use a `./` path.
+
+Also strip CRLF from any file copied from the Windows working tree before using it — see the "Windows-checkout file sync" note above. This covers the bundle YAMLs and the deploy scripts alike: `core.autocrlf=true` means a fresh Windows checkout has CRLF working files, and a CRLF `deploy_ctlplane.py` fails as `/usr/bin/env: 'python3
+': No such file or directory`. The committed blobs are LF and the index modes are `100755`, so a plain `git clone` on Linux is fine — this only bites the copy-from-Windows path. Run `dos2unix *.py *.yaml` on the target host before running anything.
 
 ---
 
@@ -617,18 +643,16 @@ kubectl delete rolebinding -n openstack trilio-mysql trilio-rabbitmq 2>/dev/null
 kubectl get all,secrets,configmaps,pvc,serviceaccounts,roles,rolebindings \
   -n openstack 2>/dev/null | grep -iE 'trilio|wlm|dmapi' || echo 'Clean'
 
-# 8. Deploy fresh
-juju switch openstack
-juju deploy ./trilio-ctlplane-bundle.yaml --trust
-
-juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml
+# 8. Deploy fresh (scripts add the relations to Sunbeam's own services)
+./deploy_ctlplane.py
+./deploy_dataplane.py
 
 # 9. Wait for active, then attach license and create trust
 juju switch openstack
 juju wait-for application trilio-wlm-k8s --query='status=="active"' --timeout=15m
-juju attach-resource trilio-wlm-k8s license=<path-to-license>
-juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+juju run -m openstack trilio-wlm-k8s/leader create-cloud-admin-trust password=<admin-password>
+kubectl cp <path-to-license> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm
+juju run -m openstack trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
 ```
 
 ### workloadmgr test scope — admin credentials required
@@ -688,12 +712,17 @@ TRILIO_ENV_DIR=/home/ubuntu/env bash test/04_create_backup_targets.sh
 ```
 
 ### `create-license` Juju action — requires `kubectl cp` first
+**Copy to the LEADER pod, not pod 0.** `_on_create_license_action` checks for the file inside the container of the unit the action runs on. With `scale: 3` the leader is frequently `trilio-wlm-k8s/1` or `/2`, and copying to `-0` then fails with file-not-found even though `kubectl cp` succeeded. Resolve it first:
+```bash
+LEADER=$(juju status -m openstack trilio-wlm-k8s --format=json | python3 -c \n  'import json,sys; a=json.load(sys.stdin)["applications"]["trilio-wlm-k8s"]["units"]; \n   print(next(u for u,v in a.items() if v.get("leader")).replace("/","-"))')
+kubectl cp <license> openstack/$LEADER:/tmp/license -c trilio-wlm
+```
 The `create-license` charm action requires `license-file-path` to be a path **inside the WLM container**, not the host. The license file must be copied into the container before calling the action:
 ```bash
 kubectl cp /home/ubuntu/license openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm
 juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
 ```
-The license file must have **no extension** when uploading via `juju attach-resource` (the resource type is `file`, not `string`, and Juju validates extension against the resource definition — which expects empty extension). Copy it as `license` (no `.txt`).
+**`juju attach-resource trilio-wlm-k8s license=<file>` does NOT apply the licence.** The charm never reads that resource — `_on_create_license_action` takes the required `license-file-path` parameter and checks for the file inside the container. Attaching the resource is a no-op, and running the action without the parameter fails with `required parameter license-file-path not specified`. `kubectl cp` is the only path.
 
 ---
 
@@ -748,12 +777,10 @@ juju switch openstack-machines
 juju remove-application trilio-data-mover
 
 # Deploy control plane
-juju switch openstack
-juju deploy ./trilio-ctlplane-bundle.yaml --trust
+./deploy_ctlplane.py
 
 # Deploy data plane
-juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml
+./deploy_dataplane.py
 
 # Wait for active
 juju switch openstack

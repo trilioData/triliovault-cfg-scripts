@@ -7,102 +7,132 @@
 # Run this bundle AFTER Sunbeam bootstrap completes and the openstack model is healthy.
 #
 # Usage:
-#   juju switch openstack
-#   juju deploy ./trilio-ctlplane-bundle.yaml
+#   ./deploy_ctlplane.py
 #
-# Cross-model SAAS relations (database, amqp, identity-service) are offered by
-# Sunbeam's own charms in the openstack model and are added automatically by
-# the relations section below.
+# Deploying this file directly with `juju deploy` installs the Trilio apps but
+# leaves them unrelated and therefore non-functional — the script adds the
+# relations to Sunbeam's own services afterwards.
+#
+# ---------------------------------------------------------------------------
+# SCOPE — this bundle installs Trilio services ONLY.
+#
+# The applications section lists Trilio applications and nothing else. Sunbeam's
+# own infrastructure — mysql, rabbitmq, keystone, traefik, traefik-public —
+# already exists in a bootstrapped Sunbeam cloud and is owned by Sunbeam. We
+# integrate with it after deploy; we never declare, deploy, refresh or rescale it.
+#
+# This is not a style preference, it is the fix for two production incidents.
+# `juju deploy <bundle>` is a DESIRED-STATE operation over every application
+# named in the applications section, whether or not the bundle is meant to own
+# it. Earlier revisions of this file declared the five Sunbeam apps above as
+# "reference entries". Every possible form of such an entry is broken:
+#
+#   * revision/scale omitted         -> Juju resolves scale to 0 and revision to
+#                                       channel tip: force-rescale + force-upgrade
+#                                       of core apps (TVAULT-7404, 2026-07-24,
+#                                       near-total control-plane outage).
+#   * revision pinned BELOW deployed -> "downgrades are not currently supported",
+#                                       install blocked (TVAULT-7644).
+#   * revision pinned ABOVE deployed -> refresh SUCCEEDS SILENTLY. A Trilio
+#                                       install drags a core Sunbeam charm off
+#                                       its supported revision, no error at all.
+#                                       This is the dangerous one.
+#   * scale pinned != actual units   -> statefulset rescale of mysql / keystone /
+#                                       rabbitmq against the operator's intent.
+#
+# There is no value of revision/scale that is correct on more than one cloud on
+# more than one day — a bundle that pins them is bound to one cluster at one
+# moment. Declaring the app at all is the bug; the pins were only ever an attempt
+# to make the declaration harmless.
+#
+# NEVER add an application to this file that Trilio does not own.
+# ---------------------------------------------------------------------------
 
 bundle: kubernetes
 
 applications:
 
-  # Reference entries for existing Sunbeam core applications — not redeployed
-  # by this bundle. Juju requires all relation endpoints to be declared even
-  # for pre-existing apps.
-  #
-  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale here
-  # once caused Juju to interpret these as a desired-state change and force
-  # these apps toward "scale to 0 + upgrade to whatever the channel resolves
-  # to today", cascading into a near-total control-plane outage. Always keep
-  # revision: and scale: pinned to the CURRENTLY DEPLOYED values (check with
-  # `juju status` before touching this file) — never leave them implicit.
-  mysql:
-    charm: mysql-k8s
-    channel: 8.0/stable
-    revision: 423
-    scale: 3
-
-  rabbitmq:
-    charm: rabbitmq-k8s
-    channel: 3.12/stable
-    revision: 71
-    scale: 3
-
-  keystone:
-    charm: keystone-k8s
-    channel: 2024.1/stable
-    revision: 424
-    scale: 3
-
-  traefik:
-    charm: traefik-k8s
-    channel: latest/stable
-    revision: 377
-    scale: 3
-
-  traefik-public:
-    charm: traefik-k8s
-    channel: latest/stable
-    revision: 377
-    scale: 3
-
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 18
+    revision: 22
     scale: 3
     trust: true
     options:
       api-workers: 2
       debug: false
     resources:
-      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-maint-1-2024.1
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 7
+    revision: 10
     scale: 3
     trust: true
     options:
       debug: false
       api-workers: 2
     resources:
-      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-maint-1-2024.1
 
 relations:
-  # WLM relations
-  - [trilio-wlm-k8s:database, mysql:database]
-  - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
-  # NOTE: amqp-dms relation is intentionally absent. WLM's DMS client and embedded
-  # DMS server both use the main amqp relation credentials (workloadmgr/workloadmgr).
-  # Two separate relations requesting the same RabbitMQ username would get different
-  # passwords from rabbitmq-k8s, causing an auth failure for one of them.
-  - [trilio-wlm-k8s:identity-service, keystone:identity-service]
-  - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
-  - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]
+  # Trilio-to-Trilio ONLY. Both endpoints are owned by this bundle, so declaring
+  # this relation here carries no authority over anything Sunbeam owns.
+  - - trilio-dm-api-k8s:wlm-service
+    - trilio-wlm-k8s:wlm-service
 
-  # DM-API relations
-  - [trilio-dm-api-k8s:database, mysql:database]
-  - [trilio-dm-api-k8s:amqp, rabbitmq:amqp]
-  - [trilio-dm-api-k8s:identity-service, keystone:identity-service]
-  - [trilio-dm-api-k8s:ingress-internal, traefik:ingress]
-  - [trilio-dm-api-k8s:ingress-public, traefik-public:ingress]
-  - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
-
-  # CA certificate distribution (required for Sunbeam TLS — Keystone HTTPS endpoint)
-  # Without these, keystonemiddleware fails TLS verification → 503 on every API request
-  - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
-  - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
+# ---------------------------------------------------------------------------
+# Relations to Sunbeam's own applications are added by deploy_ctlplane.py, NOT here.
+#
+# They cannot live in this file. Juju's bundle validator (BundleData.Verify ->
+# verifyRelations) requires every relation endpoint to name an application that
+# is declared in this bundle — there is no fallback to "it already exists in the
+# model". Listing them here would force us to re-declare the Sunbeam apps, which
+# is the exact bug described in SCOPE above.
+#
+# (The overlay bundles under juju-charms/sample_overlay_bundles/ CAN name
+# undeclared apps because they are merged onto a base bundle by
+# `juju deploy <base> --overlay <file>` before verification runs. Sunbeam has no
+# base bundle — the cloud is built by Terraform — so that route is unavailable.)
+#
+# `juju integrate` touches only the relation: it can never refresh or rescale an
+# application. deploy_ctlplane.py adds these, idempotently:
+#
+#   trilio-wlm-k8s:database            <-> mysql:database
+#   trilio-wlm-k8s:amqp                <-> rabbitmq:amqp
+#   trilio-wlm-k8s:identity-service    <-> keystone:identity-service
+#   trilio-wlm-k8s:ingress-internal    <-> traefik:ingress
+#   trilio-wlm-k8s:ingress-public      <-> traefik-public:ingress
+#   trilio-wlm-k8s:receive-ca-cert     <-> keystone:send-ca-cert
+#   trilio-dm-api-k8s:database         <-> mysql:database
+#   trilio-dm-api-k8s:amqp             <-> rabbitmq:amqp
+#   trilio-dm-api-k8s:identity-service <-> keystone:identity-service
+#   trilio-dm-api-k8s:ingress-internal <-> traefik:ingress
+#   trilio-dm-api-k8s:ingress-public   <-> traefik-public:ingress
+#   trilio-dm-api-k8s:receive-ca-cert  <-> keystone:send-ca-cert
+#
+# NOTE: the amqp-dms relation is intentionally absent. WLM's DMS client and
+# embedded DMS server both use the main amqp relation credentials
+# (workloadmgr/workloadmgr). Two separate relations requesting the same RabbitMQ
+# username would get different passwords from rabbitmq-k8s, causing an auth
+# failure for one of them.
+#
+# NOTE: receive-ca-cert is wired unconditionally because keystone is guaranteed
+# to exist in this same model. This matches upstream Sunbeam, which gates the CA
+# relation on a nullable offer URL only for CROSS-model consumers and relates
+# directly to keystone:send-ca-cert for same-model ones.
+#
+# ---------------------------------------------------------------------------
+# Trilio Horizon plugin — NOT deployed by this bundle.
+#
+# Sunbeam's own horizon-k8s charm owns the dashboard. The Trilio plugin ships as
+# a REPLACEMENT for that charm's horizon-image OCI resource, so it is applied
+# after the bundle and re-applied on every image rebuild:
+#
+#   juju attach-resource -m <ctlplane-model> horizon \
+#     horizon-image=docker.io/trilio/trilio-horizon-plugin-canonical:<tag>
+#
+# Same rule as SCOPE: declaring horizon in the applications section would make
+# this bundle a desired-state authority over a core Sunbeam app. Attaching the
+# resource touches only the image and leaves revision/scale alone.

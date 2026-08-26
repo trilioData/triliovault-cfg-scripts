@@ -1,75 +1,97 @@
 # TrilioVault Data Plane Bundle for Sunbeam Canonical OpenStack
 #
 # Deploys trilio-data-mover as a Juju subordinate charm into the
-# "openstack-machines" (machine) model.  The subordinate co-locates automatically
+# "openstack-machines" (machine) model. The subordinate co-locates automatically
 # on every machine running openstack-hypervisor — including new nodes that join
 # the cluster later via "sunbeam cluster join".
 #
 # Usage:
-#   juju switch openstack-machines
-#   juju deploy ./trilio-dataplane-bundle.yaml
+#   ./deploy_dataplane.py
 #
-# Cross-model SAAS offers are declared in the saas: section below.
-# Find the correct offer URLs for your deployment with:
-#   juju find-offers --format=tabular
-# Update the saas: urls to match your controller name (default: sunbeam-controller).
-
-saas:
-  rabbitmq:
-    url: sunbeam-controller:controller0/openstack.rabbitmq
-  keystone-credentials:
-    url: sunbeam-controller:controller0/openstack.keystone-credentials
-  cert-distributor:
-    url: sunbeam-controller:controller0/openstack.cert-distributor
+# Deploying this file directly with `juju deploy` installs the DataMover but
+# leaves it unrelated — a subordinate with no principal never gets a unit. The
+# script binds it to openstack-hypervisor and wires the rest.
+#
+# ---------------------------------------------------------------------------
+# SCOPE — this bundle installs Trilio services ONLY.
+#
+# The applications section lists trilio-data-mover and nothing else.
+# openstack-hypervisor and microceph already exist in a bootstrapped Sunbeam
+# cloud and are owned by Sunbeam — microceph in particular is Sunbeam's storage
+# layer, never ours to install. We integrate with them after deploy; we never
+# declare, deploy, refresh or rescale them.
+#
+# This is not a style preference, it is the fix for TVAULT-7644. `juju deploy
+# <bundle>` is a DESIRED-STATE operation over every application named in the
+# applications section, whether or not the bundle is meant to own it. This file
+# used to declare microceph with revision 251 pinned to whatever one cloud ran on
+# 2026-07-24; the QA cloud had since moved to microceph 296, so the entire
+# install died before a single Trilio charm was deployed:
+#
+#   ERROR cannot deploy bundle: application "microceph": downgrades are not
+#   currently supported: deployed revision 296 is newer than requested revision 251
+#
+# Pinning the other direction is worse, not better — it silently refreshes a core
+# Sunbeam charm off its supported revision with no error at all. And omitting the
+# pins is what caused the TVAULT-7404 control-plane outage. There is no safe
+# value: declaring the app at all is the bug.
+#
+# NEVER add an application to this file that Trilio does not own.
+# ---------------------------------------------------------------------------
 
 applications:
-
-  # Reference entry for the existing principal — not redeployed by this bundle.
-  # Juju requires all relation endpoints to be declared even for pre-existing apps.
-  #
-  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale on
-  # reference entries for pre-existing apps once caused Juju to force-scale
-  # and force-upgrade unrelated core apps during a ctlplane bundle deploy,
-  # triggering a near-total control-plane outage. Always keep revision: and
-  # scale: pinned to the CURRENTLY DEPLOYED values (check with `juju status`
-  # before touching this file) — never leave them implicit.
-  openstack-hypervisor:
-    charm: openstack-hypervisor
-    channel: 2024.1/stable
-    revision: 438
-    scale: 2
-
-  # Reference entry for the existing microceph application (same model as
-  # trilio-data-mover — no saas: cross-model entry needed, unlike rabbitmq/
-  # keystone-credentials/cert-distributor above which live in a different model).
-  microceph:
-    charm: microceph
-    channel: squid/stable
-    revision: 251
-    scale: 3
 
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
     channel: 6.2/candidate
-    revision: 13
+    revision: 15
     options:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
 
-relations:
-  # Subordinate binding to the compute principal
-  - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
-  # Cross-model relations via saas: aliases above
-  - [trilio-data-mover:amqp, rabbitmq:amqp]
-  - [trilio-data-mover:identity-credentials, keystone-credentials:identity-credentials]
-  # Without this, tvault-contego's ca-bundle.pem never gets written by
-  # _write_ca_cert() (it early-returns when no cert is available), leaving a
-  # stale/incorrectly-owned file in place — SSL verification against Keystone
-  # then fails with a permission error when contego runs as the nova user.
-  - [trilio-data-mover:receive-ca-cert, cert-distributor:send-ca-cert]
-  # contego's own Ceph client credentials for rbd commands against Ceph-backed
-  # Cinder volumes attached to instances — see ceph-client relation handling
-  # in charm.py. Not needed for Nova's own attach flow (that's dynamic, via
-  # Cinder's connection_info), only for contego's direct rbd CLI use.
-  - [trilio-data-mover:ceph, microceph:ceph]
+# ---------------------------------------------------------------------------
+# There is deliberately no relations section and no saas section.
+#
+# Every relation this charm needs points at something Sunbeam owns, so none of
+# them can be expressed here: Juju's bundle validator requires each relation
+# endpoint to name an application declared in this bundle (or a saas alias).
+# deploy_dataplane.py adds them all with `juju integrate`, which touches only the
+# relation and can never refresh or rescale an application.
+#
+# ALWAYS (the DataMover cannot work without these):
+#   trilio-data-mover:juju-info            <-> openstack-hypervisor:juju-info
+#   trilio-data-mover:amqp                 <-> <rabbitmq offer>:amqp
+#   trilio-data-mover:identity-credentials <-> <keystone-credentials offer>:identity-credentials
+#
+# CONDITIONAL — added only when the cloud actually has them:
+#   trilio-data-mover:ceph            <-> microceph:ceph
+#   trilio-data-mover:receive-ca-cert <-> <cert-distributor offer>:send-ca-cert
+#
+# The saas section is gone on purpose. Offer URLs are SITE-SPECIFIC: they embed
+# the offering controller/user and model of your own cloud. This file used to
+# hardcode "sunbeam-controller:controller0/openstack.*", which matches exactly
+# one lab — the same class of bug as the revision pins. The script now discovers
+# the real URLs with `juju offers -m <ctlplane-model>` and consumes them, so nothing site-local
+# is committed here.
+#
+# WHY ceph is conditional: microceph may not exist at all — a Sunbeam cloud
+# backed by local/LVM storage is a valid configuration and Trilio must run there.
+# The charm declares `ceph` as optional and runs fine unrelated; it discovers
+# whether Cinder/Nova actually use Ceph (_discover_cinder_ceph_pools /
+# _discover_nova_ceph_pool) and _ceph_backend_enabled() gates the [libvirt] and
+# [ceph] config blocks off when no pools were granted. The relation only buys
+# contego its own Ceph credentials for direct rbd CLI use against Ceph-backed
+# Cinder volumes; Nova's own attach flow does not need it. If OpenStack does not
+# use Ceph, neither do we.
+#
+# WHY receive-ca-cert is conditional: upstream Sunbeam treats cert-distributor as
+# an optional offer — the CLI returns it from get_optional_control_plane_offers(),
+# types it as optional(string) in tfvars, and gates every cross-model integration
+# with `count = (var.cert-distributor-offer-url != null) ? 1 : 0`. All 27 upstream
+# charms declare receive-ca-cert with `optional: true`, and ops_sunbeam registers
+# its handler without the mandatory flag, so the charm must go Active without it.
+# Ours match that. When the offer IS present (any TLS-enabled Sunbeam) the script
+# adds the relation — and it matters there: without the CA bundle,
+# keystonemiddleware fails TLS verification against the Keystone HTTPS endpoint.
+# ---------------------------------------------------------------------------
