@@ -67,6 +67,13 @@ config:
       type: boolean
       default: false
       description: Enable debug logging
+    cinder-http-retries:
+      type: int
+      default: 10
+      description: |
+        Cinder API connect_retries for the datamover ([cinder] http_retries).
+        Matches every other Trilio distro. Raise it on a cloud whose Cinder API
+        is slow to respond or restarts during long backups.
     rabbit-quorum-queue:
       type: boolean
       default: true

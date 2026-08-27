@@ -31,6 +31,17 @@ ssl = false
 rabbit_quorum_queue = {{ rabbit_quorum_queue }}
 amqp_durable_queues = {{ amqp_durable_queues }}
 
+[cinder]
+# Read by nova/volume/cinder.py as the Cinder client's connect_retries -- an
+# option nova registers, not contego, which is why it is absent from contego's
+# own source. contego reuses nova's Cinder API wrapper and is started with both
+# nova.conf and this file, so the value set here wins for the datamover process.
+# Every other Trilio distro sets 10 (kolla-ansible, RHOSP17, RHOSO18,
+# openstack-helm and the older Juju charm); Sunbeam alone left it unset and so
+# silently ran on nova's much lower default, giving up early on a Cinder API
+# that is briefly busy or restarting mid-backup.
+http_retries = {{ cinder_http_retries }}
+
 [barbican]
 barbican_endpoint_type = internal
 verify_ssl = {{ 'true' if cafile else 'false' }}

@@ -1,52 +1,24 @@
 # TrilioVault Data Plane Bundle for Sunbeam Canonical OpenStack
 #
 # Deploys trilio-data-mover as a Juju subordinate charm into the
-# "openstack-machines" (machine) model.  The subordinate co-locates automatically
-# on every machine running openstack-hypervisor — including new nodes that join
+# "openstack-machines" (machine) model. The subordinate co-locates automatically
+# on every machine running openstack-hypervisor -- including new nodes that join
 # the cluster later via "sunbeam cluster join".
 #
 # Usage:
-#   juju switch openstack-machines
-#   juju deploy ./trilio-dataplane-bundle.yaml
+#   ./deploy_trilio.py dataplane
 #
-# Cross-model SAAS offers are declared in the saas: section below.
-# Find the correct offer URLs for your deployment with:
-#   juju find-offers --format=tabular
-# Update the saas: urls to match your controller name (default: sunbeam-controller).
-
-saas:
-  rabbitmq:
-    url: sunbeam-controller:controller0/openstack.rabbitmq
-  keystone-credentials:
-    url: sunbeam-controller:controller0/openstack.keystone-credentials
-  cert-distributor:
-    url: sunbeam-controller:controller0/openstack.cert-distributor
+# This bundle declares TRILIO APPLICATIONS ONLY. openstack-hypervisor and
+# microceph are Sunbeam's, not ours, and are NOT declared here -- see the note
+# in trilio-ctlplane-bundle.yaml for why referencing them is what broke
+# TVAULT-7644. The relations to them, and the cross-model offers for rabbitmq /
+# keystone-credentials / cert-distributor, are added by deploy_trilio.py.
+#
+# There is no saas: section either: the offer URLs embed the controller, user
+# and model name, so they differ on every cloud. The script reads the real ones
+# from the control-plane model instead of hardcoding one lab's values.
 
 applications:
-
-  # Reference entry for the existing principal — not redeployed by this bundle.
-  # Juju requires all relation endpoints to be declared even for pre-existing apps.
-  #
-  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale on
-  # reference entries for pre-existing apps once caused Juju to force-scale
-  # and force-upgrade unrelated core apps during a ctlplane bundle deploy,
-  # triggering a near-total control-plane outage. Always keep revision: and
-  # scale: pinned to the CURRENTLY DEPLOYED values (check with `juju status`
-  # before touching this file) — never leave them implicit.
-  openstack-hypervisor:
-    charm: openstack-hypervisor
-    channel: 2024.1/stable
-    revision: 438
-    scale: 2
-
-  # Reference entry for the existing microceph application (same model as
-  # trilio-data-mover — no saas: cross-model entry needed, unlike rabbitmq/
-  # keystone-credentials/cert-distributor above which live in a different model).
-  microceph:
-    charm: microceph
-    channel: squid/stable
-    revision: 251
-    scale: 3
 
   trilio-data-mover:
     charm: trilio-data-mover-sunbeam
@@ -56,20 +28,3 @@ applications:
       triliovault-pkg-source: "deb [trusted=yes] https://apt.fury.io/trilio-maint-6-2 /"
       trilio-version: ""     # Leave empty for latest; or pin to e.g. "6.2.1"
       debug: false
-
-relations:
-  # Subordinate binding to the compute principal
-  - [trilio-data-mover:juju-info, openstack-hypervisor:juju-info]
-  # Cross-model relations via saas: aliases above
-  - [trilio-data-mover:amqp, rabbitmq:amqp]
-  - [trilio-data-mover:identity-credentials, keystone-credentials:identity-credentials]
-  # Without this, tvault-contego's ca-bundle.pem never gets written by
-  # _write_ca_cert() (it early-returns when no cert is available), leaving a
-  # stale/incorrectly-owned file in place — SSL verification against Keystone
-  # then fails with a permission error when contego runs as the nova user.
-  - [trilio-data-mover:receive-ca-cert, cert-distributor:send-ca-cert]
-  # contego's own Ceph client credentials for rbd commands against Ceph-backed
-  # Cinder volumes attached to instances — see ceph-client relation handling
-  # in charm.py. Not needed for Nova's own attach flow (that's dynamic, via
-  # Cinder's connection_info), only for contego's direct rbd CLI use.
-  - [trilio-data-mover:ceph, microceph:ceph]

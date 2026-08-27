@@ -500,6 +500,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "ceph_client_name": self._ceph_client_name,
             "ceph_conf_path": CEPH_CONF_PATH,
             "ceph_backend_enabled": self._ceph_backend_enabled(),
+            "cinder_http_retries": self.config.get("cinder-http-retries", 10),
         }
         self._write_file(DM_CONFIG_PATH, self._render_template("triliovault-datamover.conf.j2", context))
         logger.info("Wrote %s", DM_CONFIG_PATH)
