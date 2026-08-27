@@ -33,7 +33,7 @@ applications:
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 18
+    revision: 22
     scale: 3
     trust: true
     options:
@@ -45,7 +45,7 @@ applications:
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 7
+    revision: 10
     scale: 3
     trust: true
     options:
