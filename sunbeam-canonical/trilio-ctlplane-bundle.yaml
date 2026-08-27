@@ -40,7 +40,7 @@ applications:
       api-workers: 2
       debug: false
     resources:
-      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-maint-1-2024.1
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
@@ -52,7 +52,7 @@ applications:
       debug: false
       api-workers: 2
     resources:
-      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-maint-1-2024.1
 
 relations:
   # Trilio-to-Trilio only. Both endpoints are owned by this bundle, so there is
