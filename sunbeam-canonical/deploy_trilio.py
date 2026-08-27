@@ -166,8 +166,14 @@ def do_dataplane(model, ctl_model):
     offers = json.loads(run(["offers", "-m", ctl_model, "--format=json"]).stdout or "{}")
     print("\n-- consuming cross-model offers --")
     consumed = set()
-    for name, detail in offers.items():
-        url = detail.get("offer-url")
+    # ONLY the offers the DataMover actually has an endpoint for. The control
+    # plane model exposes a dozen offers that belong to Sunbeam (nova,
+    # ovn-relay, barbican, traefik-rgw...); consuming those would add SaaS
+    # entries to the machine model that nothing binds to, which is the same
+    # "install Trilio services only" rule the bundles now follow.
+    for name in ("rabbitmq", "keystone-credentials", "cert-distributor"):
+        detail = offers.get(name)
+        url = detail.get("offer-url") if detail else None
         if not url:
             continue
         p = run(["consume", "-m", model, url, name], check=False)
