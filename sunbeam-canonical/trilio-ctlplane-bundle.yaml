@@ -3,106 +3,58 @@
 # Deploys trilio-wlm-k8s and trilio-dm-api-k8s into the "openstack" (k8s)
 # model. trilio-wlm-k8s embeds its own co-located DMS (Dynamic Mount Service)
 # server as a second container in the same pod (one DMS instance per WLM
-# replica, 1:1) — there is no separate trilio-dms-k8s application anymore.
-# Run this bundle AFTER Sunbeam bootstrap completes and the openstack model is healthy.
+# replica, 1:1) -- there is no separate trilio-dms-k8s application anymore.
+# Run this bundle AFTER Sunbeam bootstrap completes and the openstack model is
+# healthy.
 #
 # Usage:
-#   juju switch openstack
-#   juju deploy ./trilio-ctlplane-bundle.yaml
+#   ./deploy_trilio.py ctlplane
 #
-# Cross-model SAAS relations (database, amqp, identity-service) are offered by
-# Sunbeam's own charms in the openstack model and are added automatically by
-# the relations section below.
+# This bundle declares TRILIO APPLICATIONS ONLY. Sunbeam's own applications
+# (mysql, rabbitmq, keystone, traefik, traefik-public) are NOT declared here,
+# and the relations to them are added afterwards by deploy_trilio.py.
+#
+# WHY (TVAULT-7644): a bundle is a DESIRED-STATE document. Naming an existing
+# application in it -- even purely to reference it in a relation -- makes Juju
+# reconcile that application to whatever revision/scale the bundle states. Those
+# numbers are read off one cloud at one moment in time, so on any OTHER cloud
+# the same file is an instruction to DOWNGRADE. That is exactly how this broke:
+# microceph was pinned to 251 from the dev cloud and the QA cloud ran 296, so
+# the deploy tried to roll Sunbeam's storage layer backwards.
+#
+# Pinning to the "currently deployed" values is not a fix either -- it just
+# moves the breakage to the next cloud, or to the next time Sunbeam is upgraded.
+# The only safe bundle is one that never mentions an application it does not own.
 
 bundle: kubernetes
 
 applications:
 
-  # Reference entries for existing Sunbeam core applications — not redeployed
-  # by this bundle. Juju requires all relation endpoints to be declared even
-  # for pre-existing apps.
-  #
-  # CAUTION (TVAULT-7404 incident, 2026-07-24): omitting revision/scale here
-  # once caused Juju to interpret these as a desired-state change and force
-  # these apps toward "scale to 0 + upgrade to whatever the channel resolves
-  # to today", cascading into a near-total control-plane outage. Always keep
-  # revision: and scale: pinned to the CURRENTLY DEPLOYED values (check with
-  # `juju status` before touching this file) — never leave them implicit.
-  mysql:
-    charm: mysql-k8s
-    channel: 8.0/stable
-    revision: 423
-    scale: 3
-
-  rabbitmq:
-    charm: rabbitmq-k8s
-    channel: 3.12/stable
-    revision: 71
-    scale: 3
-
-  keystone:
-    charm: keystone-k8s
-    channel: 2024.1/stable
-    revision: 424
-    scale: 3
-
-  traefik:
-    charm: traefik-k8s
-    channel: latest/stable
-    revision: 377
-    scale: 3
-
-  traefik-public:
-    charm: traefik-k8s
-    channel: latest/stable
-    revision: 377
-    scale: 3
-
   trilio-wlm-k8s:
     charm: trilio-wlm-k8s
     channel: 6.2/candidate
-    revision: 18
+    revision: 22
     scale: 3
     trust: true
     options:
       api-workers: 2
       debug: false
     resources:
-      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
+      trilio-wlm-image: docker.io/trilio/trilio-wlm-canonical:6.2.1-maint-1-2024.1
 
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 7
+    revision: 10
     scale: 3
     trust: true
     options:
       debug: false
       api-workers: 2
     resources:
-      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-2024.1
+      trilio-dm-api-image: docker.io/trilio/trilio-datamover-api-canonical:6.2.1-maint-1-2024.1
 
 relations:
-  # WLM relations
-  - [trilio-wlm-k8s:database, mysql:database]
-  - [trilio-wlm-k8s:amqp, rabbitmq:amqp]
-  # NOTE: amqp-dms relation is intentionally absent. WLM's DMS client and embedded
-  # DMS server both use the main amqp relation credentials (workloadmgr/workloadmgr).
-  # Two separate relations requesting the same RabbitMQ username would get different
-  # passwords from rabbitmq-k8s, causing an auth failure for one of them.
-  - [trilio-wlm-k8s:identity-service, keystone:identity-service]
-  - [trilio-wlm-k8s:ingress-internal, traefik:ingress]
-  - [trilio-wlm-k8s:ingress-public, traefik-public:ingress]
-
-  # DM-API relations
-  - [trilio-dm-api-k8s:database, mysql:database]
-  - [trilio-dm-api-k8s:amqp, rabbitmq:amqp]
-  - [trilio-dm-api-k8s:identity-service, keystone:identity-service]
-  - [trilio-dm-api-k8s:ingress-internal, traefik:ingress]
-  - [trilio-dm-api-k8s:ingress-public, traefik-public:ingress]
+  # Trilio-to-Trilio only. Both endpoints are owned by this bundle, so there is
+  # no third-party application to reconcile. Everything else is in the script.
   - [trilio-dm-api-k8s:wlm-service, trilio-wlm-k8s:wlm-service]
-
-  # CA certificate distribution (required for Sunbeam TLS — Keystone HTTPS endpoint)
-  # Without these, keystonemiddleware fails TLS verification → 503 on every API request
-  - [trilio-wlm-k8s:receive-ca-cert, keystone:send-ca-cert]
-  - [trilio-dm-api-k8s:receive-ca-cert, keystone:send-ca-cert]
