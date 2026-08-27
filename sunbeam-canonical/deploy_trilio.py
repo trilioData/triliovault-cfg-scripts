@@ -18,6 +18,7 @@ already exist.
 """
 
 import json
+import os
 import subprocess
 import sys
 
@@ -106,21 +107,30 @@ def integrate(model, trilio_ep, other_app, other_ep, present):
     return False
 
 
-def deploy_bundle(model, bundle, apps):
+def deploy_bundle(model, bundle, apps, trust=False):
     """Skip the deploy once the applications are there -- re-deploying a bundle
     would reconcile our own charms' revisions on every re-run."""
     present = status(model).get("applications", {})
     if all(a in present for a in apps):
         print("  ok      %s already deployed" % bundle)
         return
-    run(["deploy", "-m", model, "./" + bundle])
+    # juju deploy will not accept an absolute path outside the working
+    # directory for a bundle ("no charm was found"), hence the leading "./"
+    # and the chdir in main().
+    cmd = ["deploy", "-m", model, "./" + bundle]
+    if trust:
+        # The k8s charms patch their own StatefulSets via lightkube to get
+        # /dev/fuse for s3vaultfuse. Without --trust the bundle's own
+        # "trust: true" is not honoured and the patch fails on RBAC.
+        cmd.append("--trust")
+    run(cmd)
     print("  deployed %s" % bundle)
 
 
 def do_ctlplane(model):
     print("\n== Control plane -> %s ==" % model)
     deploy_bundle(model, CTLPLANE_BUNDLE,
-                  ["trilio-wlm-k8s", "trilio-dm-api-k8s"])
+                  ["trilio-wlm-k8s", "trilio-dm-api-k8s"], trust=True)
 
     present = status(model).get("applications", {})
     rc = 0
@@ -193,6 +203,10 @@ def do_dataplane(model, ctl_model):
 
 
 def main():
+    # Bundle paths below are relative; juju rejects an absolute path outside
+    # the working directory, so run from where the bundles live.
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     if what not in ("ctlplane", "dataplane", "all"):
         raise SystemExit(__doc__)
