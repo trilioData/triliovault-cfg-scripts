@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import socket
+import time
 
 import jinja2
 import ops
@@ -36,6 +37,19 @@ DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 LOG_DIR = "/var/log/triliovault"
 
 DMAPI_PORT = 8784
+# Pebble service name, as declared in _update_pebble_layer().
+DMAPI_PEBBLE_SERVICE = "dmapi-api"
+# How long _wait_for_service() gives dmapi-api to settle into "active" before
+# the unit reports itself blocked. replan() returns once Pebble has *started*
+# the process, not once it has stayed up, so a service that exits on startup
+# needs an explicit settle window to be observed.
+SERVICE_START_TIMEOUT = 60
+SERVICE_POLL_INTERVAL = 3
+# Consecutive ACTIVE samples required before the service is called healthy.
+# A single sample is worthless: replan() already returns with the service
+# ACTIVE, so one look always succeeds and a process that dies seconds later --
+# precisely the crash loop this guards against -- reads as healthy.
+SERVICE_STABLE_SAMPLES = 4
 # Service type/name confirmed from `openstack endpoint list` — same on all platforms:
 #   Service Name=dmapi  Service Type=datamover
 DMAPI_SERVICE_TYPE = "datamover"
@@ -134,6 +148,7 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.leader_elected, self._configure)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
+        self.framework.observe(self.on.update_status, self._on_update_status)
         for rel in ("database", "amqp", "identity_service", "wlm_service"):
             self.framework.observe(
                 getattr(self.on, f"{rel}_relation_changed"), self._configure
@@ -203,6 +218,26 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         if ks_rel and not ks_rel.data[self.app].get("service-endpoints"):
             self._register_keystone_service()
 
+    def _on_update_status(self, event):
+        """Re-check the workload so a failed start cannot latch forever.
+
+        _configure() sets BlockedStatus when dmapi-api will not stay up, and
+        this charm observes no other periodic event -- so without this the unit
+        would keep reporting blocked long after Pebble's own backoff retry
+        succeeded, until some unrelated hook happened to fire. Cheap in the
+        healthy case: one Pebble sample, no reconfigure.
+        """
+        container = self.unit.get_container(CONTAINER)
+        if not container.can_connect() or self._missing_relations():
+            return
+        if self._service_is_active(container):
+            self.unit.status = ops.ActiveStatus("DM-API ready")
+            return
+        logger.warning(
+            "%s not active at update-status; reconfiguring", DMAPI_PEBBLE_SERVICE
+        )
+        self._configure(event)
+
     def _configure(self, event):
         self._send_relation_requests()
         container = self.unit.get_container(CONTAINER)
@@ -219,7 +254,6 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         self._write_config(container)
         self._write_dms_client_config(container)
         self._write_ca_cert(container)
-        self._ensure_log_permissions(container)
         if self.unit.is_leader():
             self._db_sync(container)
         self._update_pebble_layer(container)
@@ -227,6 +261,13 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
 
         if self.unit.is_leader():
             self._register_keystone_service()
+
+        if not self._wait_for_service(container):
+            self.unit.status = ops.BlockedStatus(
+                f"{DMAPI_PEBBLE_SERVICE} is not running; check "
+                f"'pebble logs {DMAPI_PEBBLE_SERVICE}' in the {CONTAINER} container"
+            )
+            return
 
         self.unit.status = ops.ActiveStatus("DM-API ready")
 
@@ -344,20 +385,43 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         container.exec(["update-ca-certificates"]).wait()
         logger.info("CA bundle written to container")
 
-    def _ensure_log_permissions(self, container):
-        """Force LOG_DIR (and its contents) back to dmapi:dmapi ownership.
+    def _wait_for_service(self, container):
+        """True once Pebble reports dmapi-api genuinely active.
 
-        The Dockerfile chowns this directory at build time, but the pebble
-        service always runs as user=dmapi/group=dmapi (_update_pebble_layer),
-        so any log file that ends up root-owned at runtime (e.g. left behind
-        from a period where the container ran as root) makes oslo_log's
-        FileHandler fail with PermissionError on every startup. dmapi-api then
-        exits immediately, pebble restarts it, and it fails again in a ~30s
-        crash loop — silently, since the process never gets far enough to log
-        anywhere but stdout. Re-chown on every _configure() run so this
-        self-heals regardless of how the file got into a bad state.
+        container.replan() returns as soon as Pebble has started the service,
+        not once it has stayed up. A service that exits immediately -- an
+        unreadable log file, a bad config -- leaves Pebble retrying in the
+        background while the charm happily reports ActiveStatus. That is what
+        let a crash-looping replica sit in the Kubernetes Service endpoints
+        refusing roughly a third of every WLM call to DM-API, with nothing in
+        "juju status" to show for it.
         """
-        container.exec(["chown", "-R", "dmapi:dmapi", LOG_DIR]).wait()
+        deadline = time.monotonic() + SERVICE_START_TIMEOUT
+        stable = 0
+        while True:
+            if self._service_is_active(container):
+                stable += 1
+                if stable >= SERVICE_STABLE_SAMPLES:
+                    return True
+            else:
+                stable = 0
+            if time.monotonic() >= deadline:
+                logger.error(
+                    "%s did not stay active for %s consecutive checks within %ss",
+                    DMAPI_PEBBLE_SERVICE, SERVICE_STABLE_SAMPLES,
+                    SERVICE_START_TIMEOUT,
+                )
+                return False
+            time.sleep(SERVICE_POLL_INTERVAL)
+
+    def _service_is_active(self, container):
+        """Single-sample: is dmapi-api ACTIVE right now?"""
+        try:
+            service = container.get_service(DMAPI_PEBBLE_SERVICE)
+        except (ops.pebble.ConnectionError, ops.ModelError) as e:
+            logger.warning("could not query %s: %s", DMAPI_PEBBLE_SERVICE, e)
+            return False
+        return service.current == ops.pebble.ServiceStatus.ACTIVE
 
     def _ensure_db_charset(self, container):
         """Pin the database default charset to utf8mb3 before migrations run.
@@ -422,6 +486,10 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
         database connection from [database].connection in CONFIG_PATH.
         """
         self._ensure_db_charset(container)
+        # Runs as root, like the service itself and like every other charm's
+        # migration. dmapi-dbsync shares log_config_append with dmapi-api, so
+        # it creates the log file root-owned if missing -- which is now simply
+        # correct rather than a hazard.
         container.exec(
             ["/usr/bin/dmapi-dbsync", "--config-file", CONFIG_PATH],
         ).wait()
@@ -525,14 +593,15 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
     # --- Pebble layer ---
 
     def _update_pebble_layer(self, container):
-        # Pin to the dmapi user (created by python3-dmapi's own postinst;
-        # the Dockerfile chown -R dmapi:dmapi on its data directories).
-        # Juju's k8s sidecar packaging otherwise runs Pebble services as root
-        # by default, overriding the image's own "USER dmapi" directive.
-        # dm-api is out of scope for the WLM/DMS/datamover root-vs-nova
-        # experiment (see nova-user-known-good-state.md) — it doesn't touch
-        # the shared NFS backup-target filesystem, so it always runs as its
-        # own dmapi user regardless of how that experiment concludes.
+        # Runs as root -- Pebble's default for a Juju k8s sidecar, and now
+        # deliberate. dm-api used to pin user/group to dmapi, which made it the
+        # one Trilio service on Sunbeam not running as root and gave it a bug
+        # class of its own: anything that touched a dm-api file as root
+        # (dmapi-dbsync, via the log_config_append it shares with the service)
+        # left that file unopenable by the service, crash-looping it behind an
+        # "active" status. Root cannot be locked out of its own files, so the
+        # failure mode is structurally gone rather than patched around.
+        # See "Root-user architecture" in CLAUDE.md; TVAULT-7653.
         layer = ops.pebble.Layer({
             "summary": "TrilioVault DM-API",
             "services": {
@@ -542,13 +611,18 @@ class TrilioDmApiK8sCharm(ops.CharmBase):
                     "command": f"/usr/bin/dmapi-api --config-file {CONFIG_PATH}",
                     "startup": "enabled",
                     "environment": self._get_ca_bundle_env(),
-                    "user": "dmapi",
-                    "group": "dmapi",
                 }
             },
         })
         container.add_layer(CONTAINER, layer, combine=True)
-        container.replan()
+        try:
+            container.replan()
+        except ops.pebble.ChangeError as e:
+            # dmapi-api died inside Pebble's own start window. Letting this
+            # propagate would error the hook, and the caller's BlockedStatus --
+            # which names the log to read -- would never be set.
+            logger.error("replan failed for %s: %s", DMAPI_PEBBLE_SERVICE, e)
+            return
         logger.info("Pebble layer applied for dmapi-api")
 
     # --- endpoint / ingress publishing ---
