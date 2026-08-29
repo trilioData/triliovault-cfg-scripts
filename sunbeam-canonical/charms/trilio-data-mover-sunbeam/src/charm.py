@@ -26,6 +26,7 @@ import jinja2
 import logging
 import os
 import pathlib
+import pwd
 import shutil
 import socket
 import subprocess
@@ -36,6 +37,50 @@ import ops
 logger = logging.getLogger(__name__)
 
 DATAMOVER_PACKAGE = "python3-tvault-contego"
+
+# Host prerequisites the Trilio debs need but do not (and cannot) pull in
+# themselves. Installed in their own apt transaction, BEFORE the Trilio
+# packages -- see _install_packages() for why the ordering is load-bearing.
+#
+# nova-common / python3-nova: on Sunbeam, Nova is the openstack-hypervisor
+# snap, so nothing on the host provides the pieces contego expects to find
+# next to a deb-installed Nova:
+#   * A "nova" user for the postinst to chown to. python3-tvault-contego's
+#     postinst runs "usermod -a -G disk nova" and "chown -R nova:nova ..."
+#     under "set -e" but never creates the user, and nothing makes it depend
+#     on python3-trilio-dms (which does create it). Without this the install
+#     is an apt-ordering coin flip on a clean node: contego configured first
+#     means the postinst aborts and the package install fails outright.
+#     nova-common pins the uid/gid to Ubuntu's static 64060 -- the same id the
+#     WLM and dm-api images get from this very package. That matters far less
+#     than it looks, because every Trilio service on Sunbeam runs as root
+#     (see "Root-user architecture" in CLAUDE.md); it is worth having only so
+#     compute and control plane do not disagree should a future change put a
+#     service back under the nova user. See _warn_on_nova_uid().
+#   * /usr/bin/nova-rootwrap (python3-nova) and /etc/nova/rootwrap.conf
+#     (nova-common). contego shells every rbd call through
+#     "sudo nova-rootwrap <config> rbd ..."; with neither present that dies on
+#     "sudo: nova-rootwrap: command not found" and surfaces to the user as
+#     "Could not find any valid ceph key to use" on every Ceph-backed backup
+#     and restore. Every other distro inherits both from the Nova container
+#     the datamover runs inside.
+#
+# qemu-block-extra: Ubuntu's qemu is modular and ships the rbd block driver
+# here. Without it /usr/bin/qemu-img cannot open an "rbd:" URI at all
+# ("Unable to load block driver rbd"), which fails restore to any Ceph-backed
+# volume. Not needed on other distros, whose in-container qemu-img is a
+# monolithic build with rbd compiled in.
+# Ubuntu's statically-assigned nova uid/gid, set by nova-common's postinst.
+NOVA_EXPECTED_UID = 64060
+
+HOST_PACKAGES = [
+    "fuse", "libfuse2", "nfs-common",
+    "udev", "qemu-utils", "qemu-block-extra", "ceph-common",
+    "nova-common", "python3-nova",
+    "python3-novaclient", "python3-cinderclient",
+    "python3-oslo.rootwrap", "python3-libvirt",
+]
+
 DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
@@ -407,16 +452,58 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         dm_pkg = f"{DATAMOVER_PACKAGE}={version}*" if version else DATAMOVER_PACKAGE
         dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
 
+        # Two apt transactions, deliberately, not one. python3-tvault-contego's
+        # postinst chowns to "nova" under "set -e" without ever creating that
+        # user, so nova must already exist by the time it is configured.
+        # Listing nova-common in the same apt-get call would NOT guarantee
+        # that: apt chooses its own configuration order and no dependency
+        # relates the two packages.
+        subprocess.run(
+            ["apt-get", "install", "-y", "--no-install-recommends"]
+            + HOST_PACKAGES,
+            check=True,
+        )
+        logger.info("Installed host prerequisites: %s", " ".join(HOST_PACKAGES))
+
         subprocess.run(
             ["apt-get", "install", "-y", "--no-install-recommends",
-             "fuse", "libfuse2", "nfs-common",
-             "udev", "qemu-utils", "ceph-common",
-             "python3-novaclient", "python3-cinderclient",
-             "python3-libvirt", "python3-s3-fuse-plugin",
-             dm_pkg, dms_pkg],
+             "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
             check=True,
         )
         logger.info("Installed %s and python3-trilio-dms", dm_pkg)
+        self._warn_on_nova_uid()
+
+    def _warn_on_nova_uid(self):
+        """Report, but do not repair, a nova uid that is not Ubuntu's 64060.
+
+        nova-common only creates nova when the user does not already exist. On
+        a node where an earlier revision of this charm ran, python3-trilio-dms
+        will already have created it via "adduser --system" at whatever uid was
+        free, and nova-common leaves that alone -- so upgraded nodes keep the
+        old uid while freshly installed ones get 64060, and a cluster can end
+        up with both.
+
+        Deliberately a warning and not a fix: renumbering a live uid means
+        re-chowning every file it owns, which here includes mounted
+        backup-target data, and doing that from a charm hook is far more
+        dangerous than the inconsistency it would correct. Harmless while every
+        service runs as root; it only becomes real if a service is ever put
+        back under the nova user.
+        """
+        try:
+            uid = pwd.getpwnam("nova").pw_uid
+        except KeyError:
+            # nova-common's postinst should have created it moments ago.
+            logger.error("nova user still absent after installing nova-common")
+            return
+        if uid != NOVA_EXPECTED_UID:
+            logger.warning(
+                "nova uid is %s, not Ubuntu's static %s -- this node predates "
+                "the nova-common install, so it will not match nodes installed "
+                "fresh. Harmless while services run as root; align the uids "
+                "before putting any service back under the nova user.",
+                uid, NOVA_EXPECTED_UID,
+            )
 
     def _create_directories(self):
         dirs = [

@@ -45,7 +45,7 @@ applications:
   trilio-dm-api-k8s:
     charm: trilio-dm-api-k8s
     channel: 6.2/candidate
-    revision: 10
+    revision: 11
     scale: 3
     trust: true
     options:
