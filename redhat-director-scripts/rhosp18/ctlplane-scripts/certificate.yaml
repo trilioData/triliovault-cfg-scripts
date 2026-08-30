@@ -107,6 +107,6 @@ spec:
     name: rootca-public
     kind: Issuer
   duration: 43800h0m0s
-  commonName: trilio-galera-cluster.trilio-openstack.svc
+  commonName: trilio-db-cluster.trilio-openstack.svc
   dnsNames:
-    - trilio-galera-cluster.trilio-openstack.svc
+    - trilio-db-cluster.trilio-openstack.svc
