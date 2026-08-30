@@ -332,6 +332,14 @@ triliovault_ks_services:
 
 triliovault_datamover_keystone_user: "dmapi"
 triliovault_wlm_keystone_user: "triliovault"
+# Dedicated service-role account: some Neutron operations (e.g. port
+# create with binding:profile) are restricted by Secure RBAC
+# (enforce_new_defaults/enforce_scope, default since 2023.2) to role:service
+# only -- policy denies them even to role:admin. This account exists solely
+# so wlm-api can obtain a role:service token for those specific calls; it is
+# not used for anything else and is not the trust-based cloud-admin
+# identity created by wlm_cloud_trust.yml.
+triliovault_neutron_service_keystone_user: "trilio-neutron-svc"
 service_ks_register_domain: "default"
 service_ks_register_retries: 5
 service_ks_register_delay: 10
@@ -346,6 +354,10 @@ triliovault_ks_users:
     user: "{{ triliovault_wlm_keystone_user }}"
     password: "{{ triliovault_wlm_keystone_password }}"
     role: "admin"
+  - project: "service"
+    user: "{{ triliovault_neutron_service_keystone_user }}"
+    password: "{{ triliovault_neutron_service_keystone_password }}"
+    role: "service"
 
 ####################
 # Notification
