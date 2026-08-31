@@ -1,0 +1,13 @@
+clouds:
+  openstack:
+    auth:
+      auth_url: ${OPENSTACK_KEYSTONE_AUTH_URL}
+      username: ${OPENSTACK_ADMIN_USER_NAME}
+      password: ${OPENSTACK_ADMIN_USER_PASSWORD}
+      project_name: ${OPENSTACK_PROJECT_NAME}
+      user_domain_name: ${OPENSTACK_USER_DOMAIN_NAME}
+      project_domain_name: ${OPENSTACK_PROJECT_DOMAIN_NAME}
+    region_name: ${OPENSTACK_REGION_NAME}
+    ${CACERT_LINE}
+    interface: public
+    identity_api_version: 3

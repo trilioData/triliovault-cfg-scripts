@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: openstack-exporter
+    static_configs:
+      - targets: ["localhost:9180"]
+
+  - job_name: rabbitmq-exporter
+    static_configs:
+      - targets: ["localhost:9419"]
+
+  - job_name: sql-exporter
+    static_configs:
+      - targets: ["${SQL_EXPORTER_TARGET}"]
+        labels:
+          trilio_unit: trilio-wlm/0
+
+  - job_name: node-exporter
+    file_sd_configs:
+      # Must live under the snap's own data dir — the prometheus snap's strict
+      # AppArmor confinement denies reads from arbitrary /etc paths.
+      - files:
+          - /var/snap/prometheus/current/file_sd/node_exporter_targets.json
+        refresh_interval: 1m

@@ -1,0 +1,18 @@
+[Unit]
+Description=Prometheus Node Exporter (Trilio service health)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node_exporter \
+  --collector.systemd \
+  --collector.systemd.unit-include=^(wlm-.*|tvault-.*|trilio-dms-server|apache2)\.service$ \
+  --web.listen-address=:9100
+Restart=on-failure
+User=nobody
+Group=nogroup
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
