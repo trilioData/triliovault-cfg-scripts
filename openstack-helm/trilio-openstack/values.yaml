@@ -881,6 +881,9 @@ conf:
       vault_data_directory: /var/lib/trilio/triliovault-mounts
       #The amount of time(in hrs) that snapshot upload operation should wait for the upload
       max_wait_for_upload: 48
+      # Fail the snapshot when the QEMU guest agent filesystem freeze fails.
+      # False (default) = log the failure and continue with a crash-consistent snapshot.
+      fail_on_qga_freeze_failure: False
       helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
       # The path to store the taskflow data
       taskflow_path: /var/lib/workloadmgr/taskflow

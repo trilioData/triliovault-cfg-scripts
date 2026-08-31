@@ -12,6 +12,7 @@ keystone_auth_version = 3
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
 max_wait_for_upload = 48
 neutron_api_insecure = false
+fail_on_qga_freeze_failure = {{ .Values.common.fail_on_qga_freeze_failure }}
 
 osapi_workloads_listen_port = 8780
 region_name_for_services = "{{ .Values.keystone.common.region_name }}"

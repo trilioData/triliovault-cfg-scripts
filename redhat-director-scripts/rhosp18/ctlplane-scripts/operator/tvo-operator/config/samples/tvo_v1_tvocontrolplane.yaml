@@ -7,6 +7,7 @@ spec:
   crdType: "TVOControlPlane"
   common:
     dmapi_workers: "16"
+    fail_on_qga_freeze_failure: false
     memcached_servers: ""
     my_ip:
       host_interface: null
