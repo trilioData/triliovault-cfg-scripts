@@ -487,20 +487,30 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         # Listing nova-common in the same apt-get call would NOT guarantee
         # that: apt chooses its own configuration order and no dependency
         # relates the two packages.
-        subprocess.run(
-            ["apt-get", "install", "-y", "--no-install-recommends"]
-            + HOST_PACKAGES,
-            check=True,
-        )
-        logger.info("Installed host prerequisites: %s", " ".join(HOST_PACKAGES))
+        try:
+            subprocess.run(
+                ["apt-get", "install", "-y", "--no-install-recommends"]
+                + HOST_PACKAGES,
+                check=True,
+            )
+            logger.info("Installed host prerequisites: %s", " ".join(HOST_PACKAGES))
 
-        subprocess.run(
-            ["apt-get", "install", "-y", "--no-install-recommends",
-             "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
-            check=True,
-        )
-        logger.info("Installed %s and python3-trilio-dms", dm_pkg)
-        self._mask_packaged_units()
+            subprocess.run(
+                ["apt-get", "install", "-y", "--no-install-recommends",
+                 "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
+                check=True,
+            )
+            logger.info("Installed %s and python3-trilio-dms", dm_pkg)
+        finally:
+            # In a "finally" because a part-way apt failure is exactly when
+            # masking matters most: python3-tvault-contego can configure
+            # (postinst enables and starts its unit) and python3-trilio-dms
+            # then fail to fetch. The hook goes Blocked, but _configure() on
+            # the next relation/config-changed hook still runs
+            # _restart_services() and brings our units up beside the packaged
+            # one -- and the packaged one is now enabled across reboots too.
+            # Masking a unit whose deb never installed is harmless.
+            self._mask_packaged_units()
         self._warn_on_nova_uid()
 
     def _mask_packaged_units(self):
@@ -524,12 +534,28 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         check=False throughout: an older package revision genuinely ships no
         such unit, and "already masked" is the steady state on every hook run
         after the first. Neither is a failure, and neither should be allowed to
-        block an install.
+        block an install. The "mask" result is still inspected, though --
+        see below.
         """
         for unit in PACKAGED_UNITS:
             subprocess.run(["systemctl", "disable", "--now", unit], check=False)
-            subprocess.run(["systemctl", "mask", unit], check=False)
-            logger.info("Masked package-shipped unit %s", unit)
+            # "disable" fails for perfectly ordinary reasons (no such unit, or
+            # already masked from a previous run), but "mask" succeeds even for
+            # a unit that does not exist -- so a non-zero exit here is a real
+            # failure and must not be reported as a mask. Logging it as one
+            # would leave the documented check ("anything other than masked
+            # means this regressed") with nothing to go on.
+            result = subprocess.run(["systemctl", "mask", unit], check=False)
+            if result.returncode == 0:
+                logger.info("Masked package-shipped unit %s", unit)
+            else:
+                logger.warning(
+                    "Failed to mask package-shipped unit %s (systemctl exited "
+                    "%s); it may come up as a second DMS consumer on this "
+                    "node's queue -- see TVAULT-7654",
+                    unit,
+                    result.returncode,
+                )
 
     def _warn_on_nova_uid(self):
         """Report, but do not repair, a nova uid that is not Ubuntu's 64060.
