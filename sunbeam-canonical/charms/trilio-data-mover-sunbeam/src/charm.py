@@ -133,8 +133,37 @@ CEPH_CONF_MARKER = "/etc/ceph/.trilio-managed-ceph-conf"
 # or one disappeared) rather than on every hook run.
 CEPH_GRANTED_POOLS_MARKER = "/var/lib/trilio-data-mover/.ceph-granted-pools"
 
-# Systemd unit for the DMS server on compute nodes.
-# python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
+# Unit files shipped -- and enabled and started by their own postinst -- by the
+# Trilio debs themselves. Every other distro runs these services inside a
+# container, so nothing there ever sees them; Sunbeam is the only deployment
+# that installs the debs onto a host running systemd, which makes this ours to
+# deal with.
+#
+# They cannot simply be left alone. The packaged DMS unit is
+# "ExecStart=/usr/bin/trilio-dms-server" with no --config-file, and
+# trilio_dms.config falls back to SERVER_CONFIG_FILE
+# ("/etc/triliovault-dms/server.conf") when none is given -- the very file this
+# charm renders. So it comes up on the same rabbitmq_url with the same node_id
+# and becomes a SECOND consumer on this node's queue, beside the unit we
+# manage. RabbitMQ round-robins mount/unmount requests between the two, and the
+# packaged copy (User=nova, and without the snap PYTHONPATH) cannot service
+# either one: mounts finish "status=error" having mounted nothing, and unmounts
+# fail to kill our root-owned s3vaultfuse ("[Errno 1] Operation not permitted")
+# yet still umount and delete the mount directory it is serving -- out from
+# under an in-flight snapshot. Both paths surface to the user as an
+# intermittent "[Errno 2] No such file or directory" under
+# /var/triliovault-mounts, on S3 backup targets only (NFS is a plain kernel
+# mount and never goes through DMS). See TVAULT-7654.
+#
+# tvault-contego's packaged unit duplicates ours the same way and is listed
+# here for the same reason, even though it has so far happened to come out
+# disabled -- nothing guarantees that, and the failure mode would be identical.
+PACKAGED_UNITS = ["trilio-dms-server.service", "tvault-contego.service"]
+
+# Systemd unit for the DMS server on compute nodes. Deliberately a unit of our
+# own rather than the packaged one above: it must run as root, needs the snap
+# PYTHONPATH, and needs StartLimitIntervalSec=0 -- none of which the deb's unit
+# provides. _mask_packaged_units() keeps the two from colliding.
 DMS_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault Dynamic Mount Service
@@ -471,7 +500,36 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             check=True,
         )
         logger.info("Installed %s and python3-trilio-dms", dm_pkg)
+        self._mask_packaged_units()
         self._warn_on_nova_uid()
+
+    def _mask_packaged_units(self):
+        """Neutralise the deb-shipped units that duplicate our own.
+
+        Called from here rather than alongside _write_systemd_services()
+        because here is where the postinst that enables them has just run --
+        on install and, just as importantly, on every package upgrade, which
+        re-enables and restarts them however thoroughly they were turned off
+        before. See PACKAGED_UNITS for what goes wrong when they are left up.
+
+        Three steps, none of which is redundant:
+          * disable  -- clears the postinst's enablement, so it stays off
+                        across reboots;
+          * --now    -- masking does not stop an already-running unit, and by
+                        this point the postinst has started it;
+          * mask     -- the only state a later "apt install"/"apt upgrade" of
+                        the Trilio debs cannot quietly undo. deb-systemd-helper
+                        honours a mask and leaves it alone.
+
+        check=False throughout: an older package revision genuinely ships no
+        such unit, and "already masked" is the steady state on every hook run
+        after the first. Neither is a failure, and neither should be allowed to
+        block an install.
+        """
+        for unit in PACKAGED_UNITS:
+            subprocess.run(["systemctl", "disable", "--now", unit], check=False)
+            subprocess.run(["systemctl", "mask", unit], check=False)
+            logger.info("Masked package-shipped unit %s", unit)
 
     def _warn_on_nova_uid(self):
         """Report, but do not repair, a nova uid that is not Ubuntu's 64060.
@@ -953,8 +1011,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _write_systemd_services(self):
         """Write systemd unit files for DMS server and tvault-contego.
 
-        Both units are not shipped by their packages (designed for kolla containers).
-        Written once at install time; daemon-reload is called before service start.
+        These are ours, under names the packages do not use; the units the
+        packages do ship are neutralised separately by _mask_packaged_units().
+        Written on install and re-written on upgrade; daemon-reload is called
+        before service start.
         """
         units = {
             f"/lib/systemd/system/{DMS_SERVICE}.service": DMS_SYSTEMD_UNIT,
