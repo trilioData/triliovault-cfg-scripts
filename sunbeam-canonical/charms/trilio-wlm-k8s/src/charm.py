@@ -486,15 +486,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
-        devices_patched = self._patch_privileged_devices()
+        self._patch_privileged_devices()
         self._patch_shared_vault_mount()
-        if devices_patched:
-            # The StatefulSet rollout this triggers replaces the pod, so the
-            # Pebble work below would run against a container that is going
-            # away and error the hook. Both patches have been issued by now, so
-            # one rollout covers them; the next hook run does the real work.
-            self.unit.status = ops.MaintenanceStatus("Applying host device access")
-            return
         container = self.unit.get_container(CONTAINER)
         dms_container = self.unit.get_container(DMS_CONTAINER)
         if not container.can_connect() or not dms_container.can_connect():
@@ -629,9 +622,6 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _patch_privileged_devices(self):
         """Grant trilio-dms and trilio-wlm the host device access they need.
 
-        Returns True when a patch was applied, so the caller can stop
-        configuring a pod that the resulting rollout is about to replace.
-
         Two containers, two reasons:
 
         * trilio-dms runs s3vaultfuse, which needs /dev/fuse to mount the backup
@@ -668,7 +658,8 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         (already set on this app in trilio-ctlplane-bundle.yaml) — without it
         the API call fails with a 403 and the unit falls back to WaitingStatus.
         Idempotent: patches only the containers still missing access, so it is
-        a no-op once they all have it.
+        a no-op once they all have it. The patch rolls the pod; the hook run
+        that follows on the replacement pod does the rest of _configure.
         """
         # {container: ((volume, mount path, read-only), ...)}. Every container
         # listed here also gets securityContext.privileged.
@@ -695,7 +686,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             sts = client.get(StatefulSet, name=name, namespace=namespace)
         except Exception as e:
             logger.warning("Could not read StatefulSet %s: %s", name, e)
-            return False
+            return
 
         by_name = {c.name: c for c in sts.spec.template.spec.containers}
 
@@ -709,9 +700,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             )
 
         # Decided per container, never all-or-nothing: a container missing from
-        # the StatefulSet must not stop the others being patched, and upgrading
-        # from a release that patched only trilio-dms must still patch
-        # trilio-wlm rather than short-circuit on the DMS container's state.
+        # the StatefulSet must not stop the others being patched.
         containers = []
         for cname, volumes in wanted.items():
             if cname not in by_name:
@@ -728,7 +717,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 ],
             })
         if not containers:
-            return False
+            return
 
         vol_names = []
         for c in containers:
@@ -755,13 +744,12 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             )
         except Exception as e:
             logger.error("Failed to patch StatefulSet %s for device access: %s", name, e)
-            return False
+            return
 
         logger.info(
             "Patched StatefulSet %s for host device access: %s",
             name, ", ".join(c["name"] for c in containers),
         )
-        return True
 
     def _load_nbd_module(self, dms_container):
         """Load the nbd kernel module via the privileged trilio-dms sidecar container.
