@@ -276,7 +276,13 @@ triliovault_dms_default_volumes:
   - "/var/log/kolla/triliovault-dms:/var/log/triliovault:rw"
   - "/dev:/dev"
   - "/lib/modules:/lib/modules:ro"
-  - "/run:/run:shared"
+  # The host's /run is intentionally not mounted here. The DMS server needs /run
+  # only for its own s3vaultfuse pid/lock files under /run/dms, which the image
+  # ships (owned by nova) in an image layer, so the container's own /run is
+  # enough. Mounting the host's /run made those paths depend on a tmpfs that is
+  # emptied on every node reboot, which left the service dead after a reboot
+  # until the role was re-run (TVAULT-7655). The datamover and wlm containers
+  # still mount the host's /run - they genuinely need it.
   - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
 
 

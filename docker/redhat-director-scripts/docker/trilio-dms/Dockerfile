@@ -59,6 +59,13 @@ RUN dnf install --releasever 9.6 -y fuse fuse-libs && \
 ## container. Baking the tree into an image layer instead means it is always
 ## present on a podman start, a container recreate and a node reboot, with
 ## no runtime step at all (TVAULT-7655).
+## This applies to the RHOSO18 DATA PLANE only. The ctlplane DaemonSet
+## (tvo-chart templates/dms/daemonset-trilio-dms.yaml) runs this same image
+## with a hostPath /run, which masks the tree baked in here, and relies on
+## its root init container (_triliovault-dms-init.sh.tpl) to mkdir/chown
+## /run/dms on every pod start. That is correct there - init containers
+## re-run on every pod start, so a node reboot self-heals - so do not
+## remove the init script's mkdir/chown on the strength of this comment.
 ## Ownership must be applied to /run/dms itself and not only to its
 ## children: the server creates any missing subdirectory with os.makedirs(),
 ## which needs write permission on the parent.
