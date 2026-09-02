@@ -51,6 +51,17 @@ RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure
 RUN dnf install --releasever 9.6 -y fuse fuse-libs && \
       ldconfig
 
+## The host's /run is deliberately NOT bind-mounted into this container
+## (see triliovault-dms-container-json.j2). The DMS server keeps its
+## s3vaultfuse pid files and lock files under /run/dms, and the host's /run
+## is a tmpfs that is emptied on every node reboot - so a host directory
+## would have to be recreated on every boot by something outside the
+## container. Baking the tree into an image layer instead means it is always
+## present on a podman start, a container recreate and a node reboot, with
+## no runtime step at all (TVAULT-7655).
+## Ownership must be applied to /run/dms itself and not only to its
+## children: the server creates any missing subdirectory with os.makedirs(),
+## which needs write permission on the parent.
 RUN mkdir -p \
     /var/lib/trilio/triliovault-mounts \
     /var/triliovault \
@@ -58,11 +69,13 @@ RUN mkdir -p \
     /etc/triliovault-dms/client.conf.d \
     /var/log/triliovault \
     /run/dms/s3 \
+    /run/dms/locks \
     && chmod 777 /var/lib/trilio/triliovault-mounts \
+    && chmod 0755 /run/dms /run/dms/s3 /run/dms/locks \
     && chown -R nova:nova \
     /var/lib/trilio/triliovault-mounts \
     /var/log/triliovault \
-    /run/dms/s3 \
+    /run/dms \
     /etc/triliovault-dms
 
 RUN echo "user_allow_other" > /etc/fuse.conf
