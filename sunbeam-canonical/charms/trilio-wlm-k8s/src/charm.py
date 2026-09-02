@@ -486,8 +486,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
     def _configure(self, event):
         self._send_relation_requests()
-        self._patch_privileged_devices()
+        devices_patched = self._patch_privileged_devices()
         self._patch_shared_vault_mount()
+        if devices_patched:
+            # The StatefulSet rollout this triggers replaces the pod, so the
+            # Pebble work below would run against a container that is going
+            # away and error the hook. Both patches have been issued by now, so
+            # one rollout covers them; the next hook run does the real work.
+            self.unit.status = ops.MaintenanceStatus("Applying host device access")
+            return
         container = self.unit.get_container(CONTAINER)
         dms_container = self.unit.get_container(DMS_CONTAINER)
         if not container.can_connect() or not dms_container.can_connect():
@@ -506,8 +513,9 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         # Load nbd before starting wlm-workloads so the module is present when
         # the service first runs. DMS container is already connectable here (checked
         # above) and is privileged with /lib/modules mounted, so modprobe works.
-        # Note this only loads the module: the /dev/nbd* nodes file search needs
-        # come from the privileged patch in _patch_privileged_devices, not from here.
+        # Note this only loads the module. File search sees the resulting
+        # /dev/nbd* nodes because _patch_privileged_devices bind-mounts the
+        # host /dev into trilio-wlm, not because of anything done here.
         self._load_nbd_module(dms_container)
         # Run DB migrations before starting services (idempotent — safe on every leader call).
         if self.unit.is_leader():
@@ -619,35 +627,67 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         }
 
     def _patch_privileged_devices(self):
-        """Grant trilio-dms and trilio-wlm host device access + SYS_ADMIN.
+        """Grant trilio-dms and trilio-wlm the host device access they need.
+
+        Returns True when a patch was applied, so the caller can stop
+        configuring a pod that the resulting rollout is about to replace.
 
         Two containers, two reasons:
 
         * trilio-dms runs s3vaultfuse, which needs /dev/fuse to mount the backup
           target. trilio-wlm never mounts a backup target directly.
-        * trilio-wlm runs file search (workloadmgr/workloads/filesearch.py), which
-          attaches each backup qcow2 to an NBD device. filesearch's list_devices()
-          enumerates the *container's* /dev, so an unprivileged trilio-wlm finds
-          zero /dev/nbd* entries even though the module is loaded on the host and
-          /sys/block/nbd* is visible — connect() then returns False and the search
-          dies on `lsblk /dev/False` (TVAULT-7662). Privileged gives the container
-          the host devtmpfs, so both /dev/nbd0..N and the /dev/nbdXpN partition
-          nodes partprobe creates at runtime are visible, and supplies the
-          CAP_SYS_ADMIN that qemu-nbd -c, partprobe, the LVM scans and the
-          partition mounts all require. Static hostPath CharDevice mounts of
-          individual nbd nodes cannot substitute: the partition nodes do not
-          exist at pod creation time. Every other platform does the same — on
-          Kolla all wlm containers run privileged with /dev and /lib/modules
-          bind-mounted.
+        * trilio-wlm runs file search (workloadmgr/workloads/filesearch.py) as
+          part of wlm-workloads — all four WLM services are Pebble services in
+          this one container, there is no separate workloads container. File
+          search attaches each backup qcow2 to an NBD device, and its
+          list_devices() finds candidates by scanning the *container's own*
+          /dev for nbd* entries (TVAULT-7662).
+
+        For file search the /dev bind mount is the load-bearing part, not
+        privileged. A container's /dev is a private tmpfs that the runtime
+        populates with device nodes once, at container creation; it is not the
+        host devtmpfs, not even when privileged (verify with
+        `mount | grep " /dev "` inside the container). Without the bind mount:
+
+        * a node whose nbd module is loaded only after the pod started has no
+          /dev/nbd* inside the container at all, so connect() returns False and
+          the search dies on `lsblk /dev/False` — the reported failure; and
+        * the /dev/nbdXpN partition nodes partprobe creates at runtime never
+          appear, so filesearch's per-partition mount() calls fail even when
+          the whole-disk attach succeeded.
+
+        Bind-mounting the host /dev gives a live view, which resolves both.
+        privileged is still required alongside it, for the CAP_SYS_ADMIN that
+        qemu-nbd -c, partprobe, the LVM scans and the partition mounts need.
+        This mirrors Kolla, where every wlm container runs privileged with
+        /dev:/dev and /lib/modules:ro.
 
         Sidecar k8s charms (charmcraft.yaml `containers:`) have no field for
         securityContext/host-device access, so this patches the underlying
         StatefulSet directly via the Kubernetes API. Requires `juju trust`
         (already set on this app in trilio-ctlplane-bundle.yaml) — without it
         the API call fails with a 403 and the unit falls back to WaitingStatus.
-        Idempotent: skips the patch (and the pod restart it would trigger) once
-        both containers already have it.
+        Idempotent: patches only the containers still missing access, so it is
+        a no-op once they all have it.
         """
+        # {container: ((volume, mount path, read-only), ...)}. Every container
+        # listed here also gets securityContext.privileged.
+        wanted = {
+            DMS_CONTAINER: (
+                ("dev-fuse", "/dev/fuse", False),
+                ("lib-modules", "/lib/modules", True),
+            ),
+            CONTAINER: (
+                ("dev", "/dev", False),
+                ("lib-modules", "/lib/modules", True),
+            ),
+        }
+        host_paths = {
+            "dev-fuse": {"path": "/dev/fuse", "type": "CharDevice"},
+            "dev": {"path": "/dev", "type": "Directory"},
+            "lib-modules": {"path": "/lib/modules", "type": "Directory"},
+        }
+
         namespace = self.model.name
         name = self.app.name
         client = Client()
@@ -655,63 +695,54 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             sts = client.get(StatefulSet, name=name, namespace=namespace)
         except Exception as e:
             logger.warning("Could not read StatefulSet %s: %s", name, e)
-            return
+            return False
 
         by_name = {c.name: c for c in sts.spec.template.spec.containers}
-        absent = [n for n in (DMS_CONTAINER, CONTAINER) if n not in by_name]
-        if absent:
-            logger.warning(
-                "Container(s) %s not found in StatefulSet %s", ", ".join(absent), name
-            )
-            return
 
-        def _is_patched(container, volume_names):
+        def _needs_patch(container, volumes):
             mounts = container.volumeMounts or []
-            return bool(
-                container.securityContext
-                and container.securityContext.privileged
-                and all(any(vm.name == v for vm in mounts) for v in volume_names)
+            privileged = bool(
+                container.securityContext and container.securityContext.privileged
+            )
+            return not privileged or not all(
+                any(vm.name == v for vm in mounts) for v, _, _ in volumes
             )
 
-        # Checked per container: an upgrade from a release that only patched
-        # trilio-dms must still fall through and patch trilio-wlm.
-        if _is_patched(by_name[DMS_CONTAINER], ("dev-fuse", "lib-modules")) and _is_patched(
-            by_name[CONTAINER], ("lib-modules",)
-        ):
-            return
+        # Decided per container, never all-or-nothing: a container missing from
+        # the StatefulSet must not stop the others being patched, and upgrading
+        # from a release that patched only trilio-dms must still patch
+        # trilio-wlm rather than short-circuit on the DMS container's state.
+        containers = []
+        for cname, volumes in wanted.items():
+            if cname not in by_name:
+                logger.warning("Container %s not found in StatefulSet %s", cname, name)
+                continue
+            if not _needs_patch(by_name[cname], volumes):
+                continue
+            containers.append({
+                "name": cname,
+                "securityContext": {"privileged": True},
+                "volumeMounts": [
+                    {"name": v, "mountPath": path, "readOnly": ro}
+                    for v, path, ro in volumes
+                ],
+            })
+        if not containers:
+            return False
+
+        vol_names = []
+        for c in containers:
+            for vm in c["volumeMounts"]:
+                if vm["name"] not in vol_names:
+                    vol_names.append(vm["name"])
 
         patch = {
             "spec": {
                 "template": {
                     "spec": {
-                        "containers": [
-                            {
-                                "name": DMS_CONTAINER,
-                                "securityContext": {"privileged": True},
-                                "volumeMounts": [
-                                    {"name": "dev-fuse", "mountPath": "/dev/fuse"},
-                                    {"name": "lib-modules", "mountPath": "/lib/modules", "readOnly": True},
-                                ],
-                            },
-                            {
-                                # File search runs here and needs the host's
-                                # /dev/nbd* nodes — see the docstring above.
-                                "name": CONTAINER,
-                                "securityContext": {"privileged": True},
-                                "volumeMounts": [
-                                    {"name": "lib-modules", "mountPath": "/lib/modules", "readOnly": True},
-                                ],
-                            },
-                        ],
+                        "containers": containers,
                         "volumes": [
-                            {
-                                "name": "dev-fuse",
-                                "hostPath": {"path": "/dev/fuse", "type": "CharDevice"},
-                            },
-                            {
-                                "name": "lib-modules",
-                                "hostPath": {"path": "/lib/modules", "type": "Directory"},
-                            },
+                            {"name": v, "hostPath": host_paths[v]} for v in vol_names
                         ],
                     }
                 }
@@ -722,12 +753,15 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 StatefulSet, name=name, namespace=namespace,
                 obj=patch, patch_type=PatchType.STRATEGIC,
             )
-            logger.info(
-                "Patched StatefulSet %s: privileged device access for %s and %s",
-                name, DMS_CONTAINER, CONTAINER,
-            )
         except Exception as e:
-            logger.error("Failed to patch StatefulSet %s for FUSE/nbd access: %s", name, e)
+            logger.error("Failed to patch StatefulSet %s for device access: %s", name, e)
+            return False
+
+        logger.info(
+            "Patched StatefulSet %s for host device access: %s",
+            name, ", ".join(c["name"] for c in containers),
+        )
+        return True
 
     def _load_nbd_module(self, dms_container):
         """Load the nbd kernel module via the privileged trilio-dms sidecar container.
@@ -736,12 +770,16 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         makes the *module* available to wlm-workloads in the sibling trilio-wlm
         container — lsmod | grep nbd returns the same result from either one.
         The matching /dev/nbd* device nodes are a separate concern: /dev is
-        per-container, so trilio-wlm only sees them because it is patched
-        privileged in _patch_privileged_devices. Loading the module here without
-        that patch leaves file search with no devices to attach (TVAULT-7662).
+        per-container, and trilio-wlm sees them only because
+        _patch_privileged_devices bind-mounts the host /dev into it. That bind
+        mount is also what makes the ordering here harmless — the nodes this
+        modprobe creates show up in the already-running container immediately,
+        with no pod restart (TVAULT-7662).
         Requires the /lib/modules hostPath volume mount on trilio-dms (patched
         by _patch_privileged_devices). modprobe is idempotent: a no-op if already
-        loaded.
+        loaded — note that means it will not re-apply nbds_max to a module some
+        other component loaded first, which caps the device count at the
+        default 16 on such a node.
         """
         try:
             dms_container.exec(["modprobe", "nbd", "nbds_max=128"]).wait()
