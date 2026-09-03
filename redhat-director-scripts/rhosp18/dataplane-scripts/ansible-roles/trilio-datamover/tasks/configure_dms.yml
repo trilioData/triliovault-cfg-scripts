@@ -56,6 +56,35 @@
     - "Restart triliovault-dms"
 
 
+- name: Ship tmpfiles.d config for the Triliovault DMS runtime directory
+  become: true
+  template:
+    src: trilio_dms_tmpfiles_conf.j2
+    dest: /etc/tmpfiles.d/trilio-dms.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+# Apply it now instead of waiting for the next boot. Idempotent: for a "d"
+# line systemd-tmpfiles creates the directory when it is missing and corrects
+# the mode/owner when it is not, so this is safe on every run.
+#
+# Must stay ahead of "Deploy trilio DMS containers" below - the directory has
+# to exist before edpm_container_manage starts the container. Deliberately no
+# handler notify: the container json task above already notifies a restart
+# when the mount list changes, and a DMS server sitting dead on a missing
+# /run/dms is under Restart=always and picks the directory up on its next
+# retry.
+#
+# Bare command name, not an absolute path: systemd-tmpfiles lives in /usr/bin
+# on RHEL 9 but this role is also read on hosts where /bin vs /usr/bin
+# symlinking differs.
+- name: Create the Triliovault DMS runtime directory now
+  become: true
+  ansible.builtin.command:
+    cmd: systemd-tmpfiles --create /etc/tmpfiles.d/trilio-dms.conf
+  changed_when: false
+
 - name: Deploy trilio DMS containers
   ansible.builtin.include_role:
     name: osp.edpm.edpm_container_manage
