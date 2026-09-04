@@ -18,14 +18,22 @@
         "/etc/localtime:/etc/localtime:ro",
         "/lib/modules:/lib/modules:ro",
         "/dev:/dev",
-{# The host's /run is intentionally not mounted here. The DMS server needs
-   /run only for its own s3vaultfuse pid/lock files under /run/dms, which the
-   image ships (owned by nova) in an image layer, so the container's own /run
-   is enough. Mounting the host's /run made those paths depend on a tmpfs
-   that is emptied on every node reboot, which left the service dead after a
-   reboot until the data plane was redeployed (TVAULT-7655). The datamover
-   container still mounts the host's /run - it genuinely needs it for
-   libvirt. #}
+{# The host's /run is mounted so that /run/dms is node-scoped. The DMS server
+   keeps its s3vaultfuse pid and lock files there, and it must be able to read
+   the ones written by a previous instance of this container: the FUSE mounts
+   it manages survive a container recreate (vault_data_dir below is :shared
+   onto the host), so its record of which s3vaultfuse owns which backup target
+   has to survive one too. Baking the tree into an image layer instead puts it
+   in the container's writable overlay, which podman discards on every
+   recreate - and edpm_container_manage recreates on any config change,
+   redeploy or image upgrade.
+
+   /run is a tmpfs, so the directory itself is gone after a node reboot.
+   /etc/tmpfiles.d/trilio-dms.conf (shipped by this role, see
+   configure_dms.yml) recreates it before any container unit starts. Losing
+   the *contents* on a reboot is expected and fine; losing the *directory* is
+   what left the service dead until a redeploy (TVAULT-7655). #}
+        "/run:/run",
         "/var/log/containers/triliovault-dms:/var/log/triliovault:z",
         "{{ vault_data_dir }}:{{ vault_data_dir }}:shared",
         "/etc/ssh/ssh_known_hosts:/etc/ssh/ssh_known_hosts:ro",
