@@ -26,21 +26,31 @@ RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 ##Copy RPM Repo
 ADD trilio.repo /etc/yum.repos.d/
 
-# TVAULT-7629: the blanket `dnf update -y` that used to run here has been removed. It
-# rewrote hundreds of base-image files into a new layer while the originals stayed resident
-# in the base layer, storing them twice. Measured cost of that one instruction: 1.26 GB.
+# TVAULT-7629: the blanket `dnf update -y` that used to run here is now
+# `dnf update --security`, and it has moved down into the install RUN so the cache it
+# creates is cleaned inside the same layer that created it.
 #
-# TRADE-OFF, accepted deliberately: the image now pins to whatever package versions the
-# kolla base ships, rather than syncing to the newest Rocky 9 minor release at build time.
-# In the 2024.1 base that means Rocky 9.7-level packages -- openssh 8.7p1 rather than 9.9p1,
-# openssl 3.5.1 rather than 3.5.5, sudo 1.9.5p2 rather than 1.9.17p2, ~147 packages in all.
-# The upside beyond size is reproducibility: builds no longer drift the OS minor version
-# under the product depending on the day they run.
+# Why not the full update. It rewrote hundreds of base-image files into a new layer while
+# the originals stayed resident in the base layer, so every replaced file shipped twice.
+# On this base a full update is 2 installs + 242 upgrades, 265 MB of downloads. Most of
+# that is bugfix/enhancement, plus a silent Rocky 9.7 -> 9.8 minor-version bump that made
+# the image depend on the day it happened to be built.
 #
-# The kolla base already applies `dnf -y distro-sync --security --sec-severity=Important`
-# at ITS build time, so Important+ errata are covered as of that point. To pick up anything
-# newer, bump the FROM tag -- that is now the only channel for errata, so revisit it when
-# rebasing this image.
+# Why not drop updating altogether. `dnf updateinfo summary` on this base reports 137
+# outstanding security notices (75 Important, 56 Moderate, 6 Low), so --security is a real
+# transaction and not a quiet no-op: 2 installs + 93 upgrades, 143 MB of downloads. It
+# keeps the CVE coverage and leaves the non-security drift behind. The kolla base does run
+# `dnf -y distro-sync --security --sec-severity=Important` at ITS own build time, so this
+# tops up what has accrued since the base was built, and additionally covers Moderate and
+# Low, which the base's --sec-severity flag excludes.
+#
+# Measured cost of keeping --security: 5.84 GB without it, 6.58 GB with. That exceeds the
+# 143 MB downloaded because an updated file is stored in the base layer and again here --
+# the same duplication that made the full update so expensive, at a third of the scale.
+# Against the image this ticket set out to shrink it is still 8.16 GB -> 6.58 GB.
+#
+# Re-measure both numbers when the FROM tag is bumped: a newer base has fewer outstanding
+# errata, so the --security transaction shrinks and the image gets closer to 5.84 GB.
 
 ##Add nova user into the disk and kvm group, and create the config directories
 RUN set -ex \
@@ -74,6 +84,7 @@ RUN set -ex \
 # pruned by install_weak_deps=False. set -e turns a miss into a build failure instead of a
 # green build that breaks on a compute node.
 RUN set -ex \
+    && dnf update --security $DNF_OPTS \
     && dnf install $DNF_OPTS openstack-nova-common python3-nova python3-novaclient \
                              python3-monotonic udev fuse \
     && dnf install $DNF_OPTS python3-tvault-contego-el9 qemu-img ceph-common \

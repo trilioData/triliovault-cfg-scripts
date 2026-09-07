@@ -86,9 +86,12 @@ The Kolla datamover and WLM images had grown to 8.16 GB and 5.95 GB as actually 
 apply these when touching any Dockerfile, and when converging the remaining releases
 (2023.x / 2025.x) and the ubuntu variants onto the same pattern:
 
-- **No blanket `dnf update -y` / `apt-get upgrade`.** It rewrites base-image files into a new
-  layer while the originals stay resident in the base layer, so every updated file is stored
-  twice. Pick up errata by bumping the `FROM` tag instead — both build scripts pass `--pull`.
+- **No blanket `dnf update -y` / `apt-get upgrade` — use `dnf update --security`.** A full
+  update rewrites base-image files into a new layer while the originals stay resident in the
+  base layer, so every updated file is stored twice, and it silently drifts the OS minor
+  version. `--security` keeps the CVE coverage for a fraction of the bytes. On the 2024.1
+  bases: nova-api 64 upgrades / 71 MB vs 175 / 181 MB full; nova-compute 93 upgrades /
+  143 MB vs 242 / 265 MB full. Put it inside the install `RUN` so its cache is cleaned there.
 - **Clean inside the layer that dirtied it.** `dnf clean all && rm -rf /var/cache/dnf` must be
   the tail of the *same* `RUN` as the installs. A clean in a later `RUN` cannot free bytes an
   earlier layer already committed. Same for `pip install --no-cache-dir` and `/root/.cache`.
@@ -145,21 +148,38 @@ Non-obvious traps found while doing this (all verified against real builds):
   real `baseurl` in each `trilio.repo` (`https://yum.fury.io/trilio-6-2/`; the apt form
   `https://apt.fury.io/...` is for `trilio.list` and is not a valid yum `baseurl`).
 
-### Security trade-off of removing `dnf update`
+### Security posture
 
-Removing it pins the image to the kolla base's package set. For the 2024.1 base that is
-Rocky 9.7-level: openssh 8.7p1 not 9.9p1, openssl 3.5.1 not 3.5.5, sudo 1.9.5p2 not
-1.9.17p2 -- ~147 packages. The kolla base does apply
-`dnf -y distro-sync --security --sec-severity=Important` at its own build time, so
-Important+ errata are covered as of then, and builds become reproducible instead of
-drifting the OS minor version. **Bumping the `FROM` tag is now the only channel for newer
-errata** -- revisit it when rebasing. Accepted deliberately under TVAULT-7629.
+`dnf update --security` runs first in the install layer of both 2024.1 rocky Dockerfiles.
+The kolla base already applies `dnf -y distro-sync --security --sec-severity=Important` at
+its own build time; ours tops up what has accrued since, and also covers Moderate/Low which
+the base's `--sec-severity=Important` excludes. At the time of measuring, the bases carried
+137 (nova-compute) and 83 (nova-api) outstanding security notices, so this is not a no-op.
+
+Verified against the published image, which used a full `dnf update -y`: every
+security-critical package matches it exactly — openssl 3.5.5-6.el9_8, openssh
+9.9p1-9.el9_8, glibc 2.34-275.el9_8, sudo 1.9.17p2-3.el9_8, krb5-libs, libxml2,
+python3-libs, systemd. `--security` reaches parity on the packages that matter.
+
+What is deliberately **not** picked up is non-security drift: bugfix/enhancement errata and
+`rocky-release` itself. **Consequence worth knowing:** `/etc/os-release` still reports
+Rocky 9.7 while the security packages are at el9_8 level, because `rocky-release` carries
+no security erratum. A scanner that grades by `PRETTY_NAME` rather than by package NEVRA
+will mis-assess these images. Bumping the `FROM` tag is what moves the marker, and it also
+makes builds reproducible instead of dependent on the day they ran. Re-measure the sizes
+when rebasing: a fresher base has fewer outstanding errata, so the `--security` transaction
+shrinks and the images get smaller.
 
 ### Measured results (2024.1 rocky)
 
-| Image | Published | Baseline rebuild | Optimized |
-|-------|-----------|------------------|-----------|
-| trilio-wlm | 5.95 GB | 5.12 GB | **3.85 GB** |
+| Image | Published | Baseline rebuild | Optimized, no update | **Shipped (`--security`)** |
+|-------|-----------|------------------|----------------------|----------------------------|
+| trilio-wlm | 5.95 GB | 5.12 GB | 3.85 GB | **4.03 GB** |
+| trilio-datamover | 8.16 GB | 7.51 GB | 5.84 GB | **6.58 GB** |
+
+The `--security` column is what ships. The "no update" column is kept to show what the
+security transaction costs (+0.18 GB WLM, +0.74 GB datamover) — more than the download
+size, because an updated file is stored in both the base layer and ours.
 
 Most of the waste was layer duplication, not packages: the published datamover held 3.94 GB
 of actual files in an 8.16 GB image, and the WLM 2.42 GB in 5.95 GB.

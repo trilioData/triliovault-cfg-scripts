@@ -17,17 +17,25 @@ USER root
 # TVAULT-7629: install_weak_deps=False keeps RHEL9 "Recommends:" packages out of the image.
 ARG DNF_OPTS="-y --setopt=install_weak_deps=False"
 
-# temporary fix
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true \
     && dnf config-manager --disable epel epel-cisco-openh264
 
 ##Add trilio.repo which contains the path for TrilioVaultWLM RPM packages
 ADD trilio.repo /etc/yum.repos.d/
 
-# TVAULT-7629: the blanket `dnf update -y` that used to run here has been removed -- see
-# the trilio-datamover Dockerfile for the full rationale and the security trade-off. In
-# short: it stored a second copy of every base file it replaced, and the image now pins to
-# the kolla base's package versions instead of syncing to the newest Rocky 9 minor release.
+# TVAULT-7629: the blanket `dnf update -y` that used to run here is now
+# `dnf update --security`, moved into the install RUN below so its cache is cleaned in the
+# same layer. See the trilio-datamover Dockerfile for the full rationale.
+#
+# Figures for THIS base (nova-api:2024.1-rocky-9), which differ from the datamover's:
+#   outstanding errata   83 security notices (43 Important, 36 Moderate, 4 Low)
+#   dnf update --security   64 upgrades,  71 MB download
+#   dnf update (full)      175 upgrades, 181 MB download
+#   image cost of --security   3.85 GB -> 4.03 GB   (published baseline was 5.95 GB)
+#
+# The full update is skipped because it stores a second copy of every base file it
+# replaces and drifts the OS minor version; --security keeps the CVE coverage for a
+# fraction of the bytes.
 
 ## INSTALL REQUIRED PACKAGES
 # TVAULT-7629: every package transaction lives in this one layer so the removable build
@@ -60,6 +68,7 @@ ADD trilio.repo /etc/yum.repos.d/
 # import checks after it assert the runtime set survived. Without them a dependency cascade
 # would yield a broken image that still built successfully; set -e makes it a build failure.
 RUN set -ex \
+    && dnf update --security $DNF_OPTS \
     && dnf install $DNF_OPTS python3-devel libxslt-devel swig python3-pip \
                              gcc gcc-c++ make openssl-devel \
     && dnf install $DNF_OPTS libguestfs-tools fuse fuse-libs python3-neutronclient \
