@@ -26,6 +26,7 @@ import jinja2
 import logging
 import os
 import pathlib
+import pwd
 import shutil
 import socket
 import subprocess
@@ -36,6 +37,50 @@ import ops
 logger = logging.getLogger(__name__)
 
 DATAMOVER_PACKAGE = "python3-tvault-contego"
+
+# Host prerequisites the Trilio debs need but do not (and cannot) pull in
+# themselves. Installed in their own apt transaction, BEFORE the Trilio
+# packages -- see _install_packages() for why the ordering is load-bearing.
+#
+# nova-common / python3-nova: on Sunbeam, Nova is the openstack-hypervisor
+# snap, so nothing on the host provides the pieces contego expects to find
+# next to a deb-installed Nova:
+#   * A "nova" user for the postinst to chown to. python3-tvault-contego's
+#     postinst runs "usermod -a -G disk nova" and "chown -R nova:nova ..."
+#     under "set -e" but never creates the user, and nothing makes it depend
+#     on python3-trilio-dms (which does create it). Without this the install
+#     is an apt-ordering coin flip on a clean node: contego configured first
+#     means the postinst aborts and the package install fails outright.
+#     nova-common pins the uid/gid to Ubuntu's static 64060 -- the same id the
+#     WLM and dm-api images get from this very package. That matters far less
+#     than it looks, because every Trilio service on Sunbeam runs as root
+#     (see "Root-user architecture" in CLAUDE.md); it is worth having only so
+#     compute and control plane do not disagree should a future change put a
+#     service back under the nova user. See _warn_on_nova_uid().
+#   * /usr/bin/nova-rootwrap (python3-nova) and /etc/nova/rootwrap.conf
+#     (nova-common). contego shells every rbd call through
+#     "sudo nova-rootwrap <config> rbd ..."; with neither present that dies on
+#     "sudo: nova-rootwrap: command not found" and surfaces to the user as
+#     "Could not find any valid ceph key to use" on every Ceph-backed backup
+#     and restore. Every other distro inherits both from the Nova container
+#     the datamover runs inside.
+#
+# qemu-block-extra: Ubuntu's qemu is modular and ships the rbd block driver
+# here. Without it /usr/bin/qemu-img cannot open an "rbd:" URI at all
+# ("Unable to load block driver rbd"), which fails restore to any Ceph-backed
+# volume. Not needed on other distros, whose in-container qemu-img is a
+# monolithic build with rbd compiled in.
+# Ubuntu's statically-assigned nova uid/gid, set by nova-common's postinst.
+NOVA_EXPECTED_UID = 64060
+
+HOST_PACKAGES = [
+    "fuse", "libfuse2", "nfs-common",
+    "udev", "qemu-utils", "qemu-block-extra", "ceph-common",
+    "nova-common", "python3-nova",
+    "python3-novaclient", "python3-cinderclient",
+    "python3-oslo.rootwrap", "python3-libvirt",
+]
+
 DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
@@ -88,8 +133,37 @@ CEPH_CONF_MARKER = "/etc/ceph/.trilio-managed-ceph-conf"
 # or one disappeared) rather than on every hook run.
 CEPH_GRANTED_POOLS_MARKER = "/var/lib/trilio-data-mover/.ceph-granted-pools"
 
-# Systemd unit for the DMS server on compute nodes.
-# python3-trilio-dms is designed for kolla (container); it ships no systemd unit.
+# Unit files shipped -- and enabled and started by their own postinst -- by the
+# Trilio debs themselves. Every other distro runs these services inside a
+# container, so nothing there ever sees them; Sunbeam is the only deployment
+# that installs the debs onto a host running systemd, which makes this ours to
+# deal with.
+#
+# They cannot simply be left alone. The packaged DMS unit is
+# "ExecStart=/usr/bin/trilio-dms-server" with no --config-file, and
+# trilio_dms.config falls back to SERVER_CONFIG_FILE
+# ("/etc/triliovault-dms/server.conf") when none is given -- the very file this
+# charm renders. So it comes up on the same rabbitmq_url with the same node_id
+# and becomes a SECOND consumer on this node's queue, beside the unit we
+# manage. RabbitMQ round-robins mount/unmount requests between the two, and the
+# packaged copy (User=nova, and without the snap PYTHONPATH) cannot service
+# either one: mounts finish "status=error" having mounted nothing, and unmounts
+# fail to kill our root-owned s3vaultfuse ("[Errno 1] Operation not permitted")
+# yet still umount and delete the mount directory it is serving -- out from
+# under an in-flight snapshot. Both paths surface to the user as an
+# intermittent "[Errno 2] No such file or directory" under
+# /var/triliovault-mounts, on S3 backup targets only (NFS is a plain kernel
+# mount and never goes through DMS). See TVAULT-7654.
+#
+# tvault-contego's packaged unit duplicates ours the same way and is listed
+# here for the same reason, even though it has so far happened to come out
+# disabled -- nothing guarantees that, and the failure mode would be identical.
+PACKAGED_UNITS = ["trilio-dms-server.service", "tvault-contego.service"]
+
+# Systemd unit for the DMS server on compute nodes. Deliberately a unit of our
+# own rather than the packaged one above: it must run as root, needs the snap
+# PYTHONPATH, and needs StartLimitIntervalSec=0 -- none of which the deb's unit
+# provides. _mask_packaged_units() keeps the two from colliding.
 DMS_SYSTEMD_UNIT = """\
 [Unit]
 Description=TrilioVault Dynamic Mount Service
@@ -407,16 +481,113 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         dm_pkg = f"{DATAMOVER_PACKAGE}={version}*" if version else DATAMOVER_PACKAGE
         dms_pkg = f"python3-trilio-dms={version}*" if version else "python3-trilio-dms"
 
-        subprocess.run(
-            ["apt-get", "install", "-y", "--no-install-recommends",
-             "fuse", "libfuse2", "nfs-common",
-             "udev", "qemu-utils", "ceph-common",
-             "python3-novaclient", "python3-cinderclient",
-             "python3-libvirt", "python3-s3-fuse-plugin",
-             dm_pkg, dms_pkg],
-            check=True,
-        )
-        logger.info("Installed %s and python3-trilio-dms", dm_pkg)
+        # Two apt transactions, deliberately, not one. python3-tvault-contego's
+        # postinst chowns to "nova" under "set -e" without ever creating that
+        # user, so nova must already exist by the time it is configured.
+        # Listing nova-common in the same apt-get call would NOT guarantee
+        # that: apt chooses its own configuration order and no dependency
+        # relates the two packages.
+        try:
+            subprocess.run(
+                ["apt-get", "install", "-y", "--no-install-recommends"]
+                + HOST_PACKAGES,
+                check=True,
+            )
+            logger.info("Installed host prerequisites: %s", " ".join(HOST_PACKAGES))
+
+            subprocess.run(
+                ["apt-get", "install", "-y", "--no-install-recommends",
+                 "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
+                check=True,
+            )
+            logger.info("Installed %s and python3-trilio-dms", dm_pkg)
+        finally:
+            # In a "finally" because a part-way apt failure is exactly when
+            # masking matters most: python3-tvault-contego can configure
+            # (postinst enables and starts its unit) and python3-trilio-dms
+            # then fail to fetch. The hook goes Blocked, but _configure() on
+            # the next relation/config-changed hook still runs
+            # _restart_services() and brings our units up beside the packaged
+            # one -- and the packaged one is now enabled across reboots too.
+            # Masking a unit whose deb never installed is harmless.
+            self._mask_packaged_units()
+        self._warn_on_nova_uid()
+
+    def _mask_packaged_units(self):
+        """Neutralise the deb-shipped units that duplicate our own.
+
+        Called from here rather than alongside _write_systemd_services()
+        because here is where the postinst that enables them has just run --
+        on install and, just as importantly, on every package upgrade, which
+        re-enables and restarts them however thoroughly they were turned off
+        before. See PACKAGED_UNITS for what goes wrong when they are left up.
+
+        Three steps, none of which is redundant:
+          * disable  -- clears the postinst's enablement, so it stays off
+                        across reboots;
+          * --now    -- masking does not stop an already-running unit, and by
+                        this point the postinst has started it;
+          * mask     -- the only state a later "apt install"/"apt upgrade" of
+                        the Trilio debs cannot quietly undo. deb-systemd-helper
+                        honours a mask and leaves it alone.
+
+        check=False throughout: an older package revision genuinely ships no
+        such unit, and "already masked" is the steady state on every hook run
+        after the first. Neither is a failure, and neither should be allowed to
+        block an install. The "mask" result is still inspected, though --
+        see below.
+        """
+        for unit in PACKAGED_UNITS:
+            subprocess.run(["systemctl", "disable", "--now", unit], check=False)
+            # "disable" fails for perfectly ordinary reasons (no such unit, or
+            # already masked from a previous run), but "mask" succeeds even for
+            # a unit that does not exist -- so a non-zero exit here is a real
+            # failure and must not be reported as a mask. Logging it as one
+            # would leave the documented check ("anything other than masked
+            # means this regressed") with nothing to go on.
+            result = subprocess.run(["systemctl", "mask", unit], check=False)
+            if result.returncode == 0:
+                logger.info("Masked package-shipped unit %s", unit)
+            else:
+                logger.warning(
+                    "Failed to mask package-shipped unit %s (systemctl exited "
+                    "%s); it may come up as a second DMS consumer on this "
+                    "node's queue -- see TVAULT-7654",
+                    unit,
+                    result.returncode,
+                )
+
+    def _warn_on_nova_uid(self):
+        """Report, but do not repair, a nova uid that is not Ubuntu's 64060.
+
+        nova-common only creates nova when the user does not already exist. On
+        a node where an earlier revision of this charm ran, python3-trilio-dms
+        will already have created it via "adduser --system" at whatever uid was
+        free, and nova-common leaves that alone -- so upgraded nodes keep the
+        old uid while freshly installed ones get 64060, and a cluster can end
+        up with both.
+
+        Deliberately a warning and not a fix: renumbering a live uid means
+        re-chowning every file it owns, which here includes mounted
+        backup-target data, and doing that from a charm hook is far more
+        dangerous than the inconsistency it would correct. Harmless while every
+        service runs as root; it only becomes real if a service is ever put
+        back under the nova user.
+        """
+        try:
+            uid = pwd.getpwnam("nova").pw_uid
+        except KeyError:
+            # nova-common's postinst should have created it moments ago.
+            logger.error("nova user still absent after installing nova-common")
+            return
+        if uid != NOVA_EXPECTED_UID:
+            logger.warning(
+                "nova uid is %s, not Ubuntu's static %s -- this node predates "
+                "the nova-common install, so it will not match nodes installed "
+                "fresh. Harmless while services run as root; align the uids "
+                "before putting any service back under the nova user.",
+                uid, NOVA_EXPECTED_UID,
+            )
 
     def _create_directories(self):
         dirs = [
@@ -500,6 +671,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             "ceph_client_name": self._ceph_client_name,
             "ceph_conf_path": CEPH_CONF_PATH,
             "ceph_backend_enabled": self._ceph_backend_enabled(),
+            "cinder_http_retries": self.config.get("cinder-http-retries", 10),
         }
         self._write_file(DM_CONFIG_PATH, self._render_template("triliovault-datamover.conf.j2", context))
         logger.info("Wrote %s", DM_CONFIG_PATH)
@@ -865,8 +1037,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     def _write_systemd_services(self):
         """Write systemd unit files for DMS server and tvault-contego.
 
-        Both units are not shipped by their packages (designed for kolla containers).
-        Written once at install time; daemon-reload is called before service start.
+        These are ours, under names the packages do not use; the units the
+        packages do ship are neutralised separately by _mask_packaged_units().
+        Written on install and re-written on upgrade; daemon-reload is called
+        before service start.
         """
         units = {
             f"/lib/systemd/system/{DMS_SERVICE}.service": DMS_SYSTEMD_UNIT,
