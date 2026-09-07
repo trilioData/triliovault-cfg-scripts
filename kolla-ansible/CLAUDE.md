@@ -75,6 +75,11 @@ kolla-ansible/
 - **HAProxy**: Load balancing for T4O API endpoints
 - **Ceph**: Optional block/object storage backend
 
+## DMS runtime directory (/run/dms) — TVAULT-7655
+- **`/run` is a tmpfs, so the role must never create runtime directories there.** `config.yml` used to create `/run/dms` on the host with a `file:` task, but the container is started back up on every boot (restart policy) into a `/run` that was just emptied, and it runs as nova (42436) so it cannot recreate a directory under a `root:root` `/run`. The DMS server then fails permanently with `Permission denied: '/run/dms'` until `kolla-ansible reconfigure` is re-run. Diagnosed and fixed first on RHOSO18 — see `redhat-director-scripts/rhosp18/CLAUDE.md` for the full analysis.
+- **The DMS container does not mount the host's `/run`; the tree is baked into the image.** `docker/kolla-ansible/trilio-dms/Dockerfile_rocky` / `_ubuntu` create `/run/dms/{s3,locks}` as `0755 nova:nova`, so an image layer supplies the directory on every container start, recreate and node reboot with no runtime step. `triliovault_dms_default_volumes` therefore has no `/run` entry, while the datamover and the five wlm/other container volume lists keep `/run:/run:shared` — they genuinely need it (libvirt, privsep). Don't 'tidy up' that asymmetry.
+- **Ownership goes on `/run/dms`, not `/run/dms/s3`.** The server creates missing subdirectories with `os.makedirs()`, which needs write permission on the parent.
+
 ## Key Conventions
 
 ### Per-Version Files

@@ -93,3 +93,13 @@ options:
     description: |
       Process timeout in seconds, used in file-search tool
       This option is ignored if Trilio is before 4.2
+  fail-on-qga-freeze-failure:
+    type: boolean
+    default: False
+    description: |
+      Fail the snapshot when the QEMU guest agent filesystem freeze fails.
+      False (default) logs the failure and continues with a crash-consistent
+      snapshot; True fails the snapshot outright.
+      NOTE: changing this on a running deployment rewrites
+      triliovault-wlm.conf but does not restart the wlm services - restart
+      them (or run the update-trilio action) for the new value to take effect.

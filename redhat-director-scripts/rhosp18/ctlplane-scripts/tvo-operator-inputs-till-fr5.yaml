@@ -42,6 +42,9 @@ spec:
     memcached_servers: "memcached-0.memcached.openstack.svc:11212"
     oslo_enable_proxy_headers_parsing: false
     metallb_address_pool: "internalapi"
+    # Fail the snapshot when the QEMU guest agent filesystem freeze fails.
+    # false (default) = log the failure and continue with a crash-consistent snapshot.
+    fail_on_qga_freeze_failure: false
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"

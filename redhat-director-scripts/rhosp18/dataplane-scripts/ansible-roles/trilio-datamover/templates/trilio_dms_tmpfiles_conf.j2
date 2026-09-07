@@ -1,0 +1,39 @@
+# Trilio Dynamic Mount Service runtime directory - TVAULT-7655.
+# Managed by the trilio-datamover Ansible role. Do not edit by hand.
+#
+# Why this file exists
+# --------------------
+# /run is a tmpfs, so /run/dms is gone after every node reboot and has to be
+# recreated before the DMS container starts. Creating it once from an Ansible
+# "file:" task cannot work: edpm_container_manage generates
+# edpm_triliovault-dms.service as WantedBy=multi-user.target with
+# Restart=always, so the container comes back on every boot into a /run that
+# was just emptied - and because it runs as 42436 under a root-owned /run it
+# can never recreate the directory itself. The service then stays dead until
+# someone re-runs the data plane deployment.
+#
+# systemd-tmpfiles-setup.service is ordered Before=sysinit.target, and
+# multi-user.target pulls in basic.target -> sysinit.target first, so this
+# always runs before any container unit.
+#
+# Why it must be on the host and not baked into the DMS image
+# -----------------------------------------------------------
+# The DMS server must be able to read the pid and lock files written by a
+# previous instance of the container. The FUSE mounts it manages outlive the
+# container (vault_data_dir is bind-mounted :shared onto the host), so its
+# record of which s3vaultfuse process owns which backup target has to outlive
+# it as well. An image layer lands in the container's writable overlay, which
+# podman discards on every recreate. Losing the contents on a *reboot* is
+# fine; losing them on a *recreate* is not.
+#
+# Notes
+# -----
+# uid/gid are numeric on purpose: the host is not required to have a nova user
+# at 42436, only the container is.
+#
+# The age field must stay "-". Any value there makes
+# systemd-tmpfiles-clean.timer delete files under /run/dms on a schedule,
+# which would remove live pid and lock files out from under a running mount.
+d /run/dms       0755 42436 42436 -
+d /run/dms/s3    0755 42436 42436 -
+d /run/dms/locks 0755 42436 42436 -

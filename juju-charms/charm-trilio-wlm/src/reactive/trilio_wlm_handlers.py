@@ -291,6 +291,7 @@ def render_wlm_and_dms_configs(*args):
             'trustee_role': charm_config.get('trustee-role', 'member'),
             'region': charm_config.get('region', 'RegionOne'),
             'progress_tracking_update_interval': charm_config.get('progress-tracking-update-interval', 1200),
+            'fail_on_qga_freeze_failure': charm_config.get('fail-on-qga-freeze-failure', False),
             'client_retry_limit': 5,
             'misfire_grace_time': 10,
             'process_timeout': 300,
