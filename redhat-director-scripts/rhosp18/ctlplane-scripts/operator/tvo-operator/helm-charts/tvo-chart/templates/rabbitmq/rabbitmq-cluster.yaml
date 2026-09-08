@@ -81,27 +81,25 @@ spec:
             topologyKey: kubernetes.io/hostname
   # Broker tuning the FR6 RabbitMQ operator does not set for itself (TVAULT-7678).
   #
-  # infra-operator generates conf.d/10-operatorDefaults.conf covering cluster
-  # formation, cluster_partition_handling, TLS listeners/ports, disk_free_limit and
+  # infra-operator generates conf.d/10-operatorDefaults.conf covering cluster formation,
+  # cluster_partition_handling, TLS listeners/ports, disk_free_limit and
   # vm_memory_high_watermark.relative, but it sets nothing for the connection,
   # message-size, heartbeat or GC limits. Without this block FR6 runs those on bare
-  # broker defaults, while every FR5 deployment had them tuned: they came from the
+  # broker defaults, while every FR5 deployment had them tuned. They came from the
   # till-FR5 inputs file's rabbitmq.cluster.rabbitmq.additional_config, which
   # TVAULT-7511 dropped when it pruned the community-operator fields on the assumption
-  # the native CRD had no equivalent. It does - spec.rabbitmq.additionalConfig, the
-  # same path as the community CRD (the same class of wrong assumption as
+  # the native CRD had no equivalent. It does - spec.rabbitmq.additionalConfig, the same
+  # path as the community CRD (the same class of wrong assumption as
   # spec.containerImage, TVAULT-7634).
   #
-  # The value comes from rabbitmq.cluster.additional_config, NOT from FR5's
-  # rabbitmq.cluster.rabbitmq.additional_config. An FR6 customer who has not run
-  # update_tvo_operator_inputs_to_latest.py - a manual runbook step that no deploy
-  # script calls - still has the FR5 block in their tvo-operator-inputs.yaml, and
-  # rendering that here would push cluster_partition_handling = autoheal and
-  # ssl_options.* onto the native CR. additionalConfig lands in
+  # This reads the same values key as the till-FR5 template on purpose, so the two
+  # variants stay symmetric and a customer's own tuning carries across the FR5 -> FR6
+  # move. The corollary is that update_tvo_operator_inputs_to_latest.py matters for
+  # correctness on that move, not just tidiness: additionalConfig lands in
   # conf.d/90-userDefinedConfiguration.conf, which the broker loads AFTER
-  # 10-operatorDefaults.conf, so those would override the operator's pause_minority
-  # (wrong for our quorum queues) and its TLS listener setup. Reading a separate key
-  # rules that out by construction.
+  # 10-operatorDefaults.conf, so a till-FR5 block carried over by hand would override
+  # the operator's pause_minority and its TLS listener setup. That script strips the
+  # block; the chart default above then supplies the FR6-safe tuning.
   #
   # Deliberately not carried over from FR5 either: advancedConfig, because a user value
   # makes the operator's buildAdvancedConfig() early-return and replace its
@@ -109,10 +107,11 @@ spec:
   # hardcoded tlsv1.2 + verify_none; and erlangInetConfig, because the StatefulSet
   # passes -kernel inetrc, so an inetrc must itself carry {resolv_conf,...} and
   # {hosts_file,...} or DNS resolution breaks - FR5's bare {inet,true}. does not.
-{{- if .Values.rabbitmq.cluster.additional_config }}
+{{- $rabbitmqCfg := .Values.rabbitmq.cluster.rabbitmq | default dict }}
+{{- if $rabbitmqCfg.additional_config }}
   rabbitmq:
     additionalConfig: |
-{{ .Values.rabbitmq.cluster.additional_config | nindent 6 }}
+{{ $rabbitmqCfg.additional_config | nindent 6 }}
 {{- end }}
   terminationGracePeriodSeconds: {{ .Values.rabbitmq.cluster.termination_grace_period_seconds | default 604800 }}
 {{- end }}

@@ -29,16 +29,16 @@ import sys
 # RHOSO's supported RabbitMQ image to quay.io/podified-antelope-centos9. The FR5 and FR6
 # inputs files both carry the key, and the FR6 chart consumes it, so it must survive.
 #
-# spec.rabbitmq.cluster.rabbitmq IS deliberately still in this list, even though the
-# native CRD does support spec.rabbitmq.additionalConfig (TVAULT-7678). The FR6 chart
-# reads its broker tuning from spec.rabbitmq.cluster.additional_config - a separate key
-# - precisely so that a leftover FR5 block here can never reach the native CR: the FR5
-# block carries cluster_partition_handling = autoheal and ssl_options.*, which would
-# override the FR6 operator's own pause_minority and TLS listener setup, and
-# advanced_config/erlang_inet_config, which would replace its FIPS-/version-aware TLS
-# config and break DNS resolution. So on FR6 this block is inert whether or not it is
-# removed; stripping it keeps the file honest. The chart's own default supplies the
-# equivalent tuning, and main() warns if the block being removed was customised.
+# spec.rabbitmq.cluster.rabbitmq stays in this list, and on FR6 removing it matters for
+# correctness rather than tidiness (TVAULT-7678). The FR6 chart reads that same key, so
+# a till-FR5 block carried over by hand would be rendered into the native CR's
+# spec.rabbitmq.additionalConfig, landing in conf.d/90-userDefinedConfiguration.conf -
+# which the broker loads AFTER the operator's 10-operatorDefaults.conf. Its
+# cluster_partition_handling = autoheal would then override FR6's pause_minority (wrong
+# for our quorum queues) and its ssl_options.* would override the operator's TLS
+# listener setup, while advanced_config/erlang_inet_config would replace the operator's
+# FIPS-/version-aware TLS config and break DNS resolution. Stripping the block hands the
+# FR6-safe default in the chart's values.yaml back to the deployment.
 
 FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "api_version"),
@@ -153,14 +153,15 @@ def main():
     if ("spec", "rabbitmq", "cluster", "rabbitmq") in removed_paths:
         print()
         print("NOTE: the removed spec.rabbitmq.cluster.rabbitmq block was the till-FR5")
-        print("      broker config. On FR6 the chart reads")
-        print("      spec.rabbitmq.cluster.additional_config instead and ships the same")
-        print("      connection, message-size, heartbeat and GC limits as its default,")
-        print("      so a stock block needs no action.")
+        print("      broker config. The FR6 chart reads the same key, so leaving it in")
+        print("      place would have pushed FR5's cluster_partition_handling and")
+        print("      ssl_options.* onto the native CR; the chart now supplies an")
+        print("      FR6-safe default with the same connection, message-size, heartbeat")
+        print("      and GC limits, so a stock block needs no further action.")
         print("      If you had CUSTOMISED any value in it (a larger max_message_size or")
-        print("      consumer_timeout, say), re-express just those keys under")
-        print("      spec.rabbitmq.cluster.additional_config - the original block is")
-        print(f"      preserved in {backup_file} for reference.")
+        print("      consumer_timeout, say), re-add just those keys under")
+        print("      spec.rabbitmq.cluster.rabbitmq.additional_config - the original")
+        print(f"      block is preserved in {backup_file} for reference.")
 
     with open(output_file, "w", newline="") as file:
         file.writelines(output_lines)

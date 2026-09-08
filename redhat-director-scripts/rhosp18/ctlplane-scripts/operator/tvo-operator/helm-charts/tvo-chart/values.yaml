@@ -119,65 +119,41 @@ rabbitmq:
     persistence:
       storage_class_name: "ocs-storagecluster-ceph-rbd"
       storage: 10Gi
-    # FR6-only broker tuning (TVAULT-7678). Read by templates/rabbitmq/ (the native
-    # rabbitmq.openstack.org CR) only.
-    #
-    # Deliberately NOT nested under the cluster.rabbitmq: key below, which is the
-    # community/till-FR5 path. An FR6 customer who has not run
-    # update_tvo_operator_inputs_to_latest.py - a manual runbook step that no deploy
-    # script calls - still has their old FR5 block in tvo-operator-inputs.yaml, and
-    # that block carries cluster_partition_handling = autoheal and ssl_options.*.
-    # Reading a separate key makes it impossible for a stale FR5 blob to reach the
-    # native CR by construction.
-    #
-    # Only keys the FR6 operator does not set itself belong here: this value lands in
-    # conf.d/90-userDefinedConfiguration.conf, which the broker loads AFTER the
-    # operator's own 10-operatorDefaults.conf and therefore overrides it.
-    #
-    # Every key here was checked against rabbitmq-server v4.2.x rabbit.schema (4.2.7
-    # ships in openstack-rabbitmq-rhel9:18.0.21). An unrecognised key stops the broker
-    # booting, and a key can also be accepted but dead: FR5's
-    # vm_memory_high_watermark_paging_ratio is marked "DEPRECATED. Not used since
-    # RabbitMQ 4.0" in the schema, so it is deliberately not carried over. FR5's memory
-    # intent still holds without it - the operator sets
-    # vm_memory_high_watermark.relative = 0.6, exactly FR5's value. channel_max and
-    # connection_max resolve as aliases of max_channels_per_connection /
-    # max_connections.
-    additional_config: |
-      # Connection and channel limits
-      channel_max = 2048
-      connection_max = 1000
-
-      # Heartbeat and timeouts
-      heartbeat = 60
-
-      # Message size limit (100MB)
-      max_message_size = 104857600
-
-      # Consumer timeout (30 minutes)
-      consumer_timeout = 1800000
-
-      # Background GC for better memory management
-      background_gc_enabled = true
-      background_gc_target_interval = 60000
     rabbitmq:
+      # Broker tuning applied to whichever RabbitMQ CR this image's chart variant
+      # creates: templates/rabbitmq/ (native CRD, FR6 onwards) or
+      # templates/rabbitmq-till-18.0.18/ (community CRD, till FR5). Both read this same
+      # key. Only one variant ships in a given operator image - build_operator_image.sh
+      # prunes the other - but values.yaml is shared, so this default has to be correct
+      # for both (TVAULT-7678).
+      #
+      # It therefore holds only keys that NEITHER operator sets for itself. Both
+      # generate their own conf.d/10-operatorDefaults.conf covering cluster formation,
+      # cluster_partition_handling, disk_free_limit and log.console, and on FR6 also the
+      # TLS listeners and vm_memory_high_watermark.relative = 0.6. This value lands in
+      # conf.d/90-userDefinedConfiguration.conf, which the broker loads AFTER that and
+      # therefore OVERRIDES it - so adding an operator-owned key here silently changes
+      # platform behaviour. In particular cluster_partition_handling would override
+      # FR6's pause_minority (wrong for our quorum queues) and ssl_options.* would
+      # override its TLS listener setup.
+      #
+      # tvo-operator-inputs-till-fr5.yaml carries its own additional_config, which
+      # replaces this string wholesale, so FR5 deployments do not depend on what is
+      # here. Note the community operator sets no vm_memory_high_watermark.* at all (it
+      # injects total_memory_available_override_value instead), so FR5 relies on its own
+      # inputs value for that - do not prune it from the FR5 inputs file.
+      #
+      # Every key here was checked against rabbitmq-server v4.2.x rabbit.schema (4.2.7
+      # ships in openstack-rabbitmq-rhel9:18.0.21). An unrecognised key stops the broker
+      # booting, and a recognised-but-dead key silently does nothing: FR5's
+      # vm_memory_high_watermark_paging_ratio is marked "DEPRECATED. Not used since
+      # RabbitMQ 4.0", so it is deliberately not carried over. channel_max and
+      # connection_max resolve as aliases of max_channels_per_connection /
+      # max_connections.
       additional_config: |
-        # Cluster formation
-        cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
-        cluster_formation.k8s.host = kubernetes.default.svc
-        cluster_partition_handling = autoheal
-
-        # Quorum queue optimizations (Raft-based)
-        raft.wal_max_size_bytes = 134217728
-        raft.segment_max_entries = 32768
-
-        # Memory and disk management (adjusted for 2Gi memory)
-        vm_memory_high_watermark.relative = 0.5
-        vm_memory_high_watermark_paging_ratio = 0.75
-        disk_free_limit.absolute = 2GB
-
         # Connection and channel limits
         channel_max = 2048
+        connection_max = 1000
 
         # Heartbeat and timeouts
         heartbeat = 60
