@@ -30,13 +30,15 @@ import sys
 # inputs files both carry the key, and the FR6 chart consumes it, so it must survive.
 #
 # spec.rabbitmq.cluster.rabbitmq IS deliberately still in this list, even though the
-# native CRD does support spec.rabbitmq.additionalConfig (TVAULT-7678). A customer's FR5
-# block is actively hostile on FR6: cluster_partition_handling = autoheal would override
-# the operator's pause_minority, ssl_options.* would override its TLS listener setup,
-# advanced_config would replace its FIPS-/version-aware TLS config with FR5's tlsv1.2 +
-# verify_none, and erlang_inet_config's bare {inet,true}. would break DNS resolution.
-# Stripping the block lets the FR6-safe default in the chart's values.yaml supply the
-# tuning instead, so no tuning is lost by removing it.
+# native CRD does support spec.rabbitmq.additionalConfig (TVAULT-7678). The FR6 chart
+# reads its broker tuning from spec.rabbitmq.cluster.additional_config - a separate key
+# - precisely so that a leftover FR5 block here can never reach the native CR: the FR5
+# block carries cluster_partition_handling = autoheal and ssl_options.*, which would
+# override the FR6 operator's own pause_minority and TLS listener setup, and
+# advanced_config/erlang_inet_config, which would replace its FIPS-/version-aware TLS
+# config and break DNS resolution. So on FR6 this block is inert whether or not it is
+# removed; stripping it keeps the file honest. The chart's own default supplies the
+# equivalent tuning, and main() warns if the block being removed was customised.
 
 FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "api_version"),
@@ -147,6 +149,18 @@ def main():
     for path in FIELDS_TO_REMOVE:
         dotted = ".".join(path)
         print(f"- Removed {dotted}" if path in removed_paths else f"- {dotted} not present, skipping")
+
+    if ("spec", "rabbitmq", "cluster", "rabbitmq") in removed_paths:
+        print()
+        print("NOTE: the removed spec.rabbitmq.cluster.rabbitmq block was the till-FR5")
+        print("      broker config. On FR6 the chart reads")
+        print("      spec.rabbitmq.cluster.additional_config instead and ships the same")
+        print("      connection, message-size, heartbeat and GC limits as its default,")
+        print("      so a stock block needs no action.")
+        print("      If you had CUSTOMISED any value in it (a larger max_message_size or")
+        print("      consumer_timeout, say), re-express just those keys under")
+        print("      spec.rabbitmq.cluster.additional_config - the original block is")
+        print(f"      preserved in {backup_file} for reference.")
 
     with open(output_file, "w", newline="") as file:
         file.writelines(output_lines)
