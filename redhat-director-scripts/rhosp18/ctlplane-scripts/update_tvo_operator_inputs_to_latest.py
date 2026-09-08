@@ -28,6 +28,15 @@ import sys
 # community image. Stripping the key would therefore downgrade an upgrading customer from
 # RHOSO's supported RabbitMQ image to quay.io/podified-antelope-centos9. The FR5 and FR6
 # inputs files both carry the key, and the FR6 chart consumes it, so it must survive.
+#
+# spec.rabbitmq.cluster.rabbitmq IS deliberately still in this list, even though the
+# native CRD does support spec.rabbitmq.additionalConfig (TVAULT-7678). A customer's FR5
+# block is actively hostile on FR6: cluster_partition_handling = autoheal would override
+# the operator's pause_minority, ssl_options.* would override its TLS listener setup,
+# advanced_config would replace its FIPS-/version-aware TLS config with FR5's tlsv1.2 +
+# verify_none, and erlang_inet_config's bare {inet,true}. would break DNS resolution.
+# Stripping the block lets the FR6-safe default in the chart's values.yaml supply the
+# tuning instead, so no tuning is lost by removing it.
 
 FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "api_version"),

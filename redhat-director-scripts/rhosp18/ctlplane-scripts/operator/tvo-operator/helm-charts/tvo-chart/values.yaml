@@ -120,23 +120,23 @@ rabbitmq:
       storage_class_name: "ocs-storagecluster-ceph-rbd"
       storage: 10Gi
     rabbitmq:
+      # Broker tuning that NEITHER RabbitMQ operator sets for itself - the community
+      # (till-FR5) and the native FR6 operator both generate cluster formation,
+      # partition handling, TLS listeners, disk_free_limit and
+      # vm_memory_high_watermark.relative into their own conf.d/10-operatorDefaults.conf,
+      # so only the connection, message-size, heartbeat and GC limits belong here
+      # (TVAULT-7678). Anything set here lands in conf.d/90-userDefinedConfiguration.conf,
+      # which the broker loads AFTER the operator defaults and therefore overrides them -
+      # keep it to keys the operator leaves alone.
+      #
+      # Every key here was checked against rabbitmq-server v4.2.x rabbit.schema and is
+      # live on the shipped 4.2.x broker (channel_max and connection_max as aliases of
+      # max_channels_per_connection / max_connections). An unrecognised key in
+      # rabbitmq.conf stops the broker booting, so check the schema before adding one.
       additional_config: |
-        # Cluster formation
-        cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
-        cluster_formation.k8s.host = kubernetes.default.svc
-        cluster_partition_handling = autoheal
-
-        # Quorum queue optimizations (Raft-based)
-        raft.wal_max_size_bytes = 134217728
-        raft.segment_max_entries = 32768
-
-        # Memory and disk management (adjusted for 2Gi memory)
-        vm_memory_high_watermark.relative = 0.5
-        vm_memory_high_watermark_paging_ratio = 0.75
-        disk_free_limit.absolute = 2GB
-
         # Connection and channel limits
         channel_max = 2048
+        connection_max = 1000
 
         # Heartbeat and timeouts
         heartbeat = 60
@@ -146,6 +146,9 @@ rabbitmq:
 
         # Consumer timeout (30 minutes)
         consumer_timeout = 1800000
+
+        # Memory paging threshold
+        vm_memory_high_watermark_paging_ratio = 0.75
 
         # Background GC for better memory management
         background_gc_enabled = true
