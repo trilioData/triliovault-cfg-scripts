@@ -149,20 +149,6 @@ def main():
     for path in FIELDS_TO_REMOVE:
         dotted = ".".join(path)
         print(f"- Removed {dotted}" if path in removed_paths else f"- {dotted} not present, skipping")
-
-    if ("spec", "rabbitmq", "cluster", "rabbitmq") in removed_paths:
-        print()
-        print("NOTE: the removed spec.rabbitmq.cluster.rabbitmq block was the till-FR5")
-        print("      broker config. The FR6 chart reads the same key, so leaving it in")
-        print("      place would have pushed FR5's cluster_partition_handling and")
-        print("      ssl_options.* onto the native CR; the chart now supplies an")
-        print("      FR6-safe default with the same connection, message-size, heartbeat")
-        print("      and GC limits, so a stock block needs no further action.")
-        print("      If you had CUSTOMISED any value in it (a larger max_message_size or")
-        print("      consumer_timeout, say), re-add just those keys under")
-        print("      spec.rabbitmq.cluster.rabbitmq.additional_config - the original")
-        print(f"      block is preserved in {backup_file} for reference.")
-
     with open(output_file, "w", newline="") as file:
         file.writelines(output_lines)
 
