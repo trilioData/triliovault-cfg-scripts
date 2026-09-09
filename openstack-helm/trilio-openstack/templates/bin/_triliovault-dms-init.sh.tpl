@@ -9,8 +9,9 @@ set -ex
 
 # The /run directory is a tmpfs, so the DMS mount directories must be recreated
 # upon pod startup and owned by the nova user (42424 in Helm).
-mkdir -p /run/dms/s3 /run/dms/locks
+mkdir -p /run/dms/s3 /run/dms/certs /run/dms/locks /run/dms/instances
 chown -R 42424:42424 /run/dms
+chmod 0700 /run/dms/certs
 
 # The nova base image (openstackhelm/nova) leaves host-mounted directories root-owned.
 # Since this init container runs as root (runAsUser: 0), ensure both the mount

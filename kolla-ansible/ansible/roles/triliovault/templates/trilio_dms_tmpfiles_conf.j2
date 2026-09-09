@@ -1,0 +1,5 @@
+d /run/dms           0755 {{ triliovault_services['triliovault-dms'].run_user }} {{ triliovault_services['triliovault-dms'].run_group }} -
+d /run/dms/s3        0755 {{ triliovault_services['triliovault-dms'].run_user }} {{ triliovault_services['triliovault-dms'].run_group }} -
+d /run/dms/certs     0700 {{ triliovault_services['triliovault-dms'].run_user }} {{ triliovault_services['triliovault-dms'].run_group }} -
+d /run/dms/locks     0755 {{ triliovault_services['triliovault-dms'].run_user }} {{ triliovault_services['triliovault-dms'].run_group }} -
+d /run/dms/instances 0755 {{ triliovault_services['triliovault-dms'].run_user }} {{ triliovault_services['triliovault-dms'].run_group }} -
