@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: sql-exporter
-  namespace: openshift-user-workload-monitoring
+  namespace: trilio-monitoring
   labels:
     release: prometheus-user-workload
 spec:
@@ -11,7 +11,7 @@ spec:
       app: sql-exporter
   namespaceSelector:
     matchNames:
-      - openshift-user-workload-monitoring
+      - trilio-monitoring
   endpoints:
     - port: metrics
       interval: 30s

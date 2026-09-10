@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-exporter
+  namespace: trilio-monitoring
+  labels:
+    app: rabbitmq-exporter
+    # Must match the pod label so the ServiceMonitor relabeling can read it.
+    # Change to "compute-0" etc. when deploying additional exporter instances.
+    rabbitmq-exporter-instance: controller
+spec:
+  selector:
+    app: rabbitmq-exporter
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 9419
+      targetPort: 9419

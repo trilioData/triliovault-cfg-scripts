@@ -6,13 +6,39 @@ metadata:
     dashboards: "grafana"
     folders: "grafana"
 spec:
+  # Operator creates and owns the PVC (named "grafana-pvc").
+  # This operator version creates the PVC but hardcodes grafana-data as emptyDir
+  # in the Deployment — it does not mount the PVC automatically.  We work around
+  # this by mounting the PVC at a separate path and redirecting Grafana's data
+  # directory to it via GF_PATHS_DATA, so all state survives pod restarts.
+  persistentVolumeClaim:
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ocs-storagecluster-ceph-rbd
+      resources:
+        requests:
+          storage: 1Gi
   deployment:
     spec:
       template:
         spec:
+          # NOTE: apply this file with server-side apply to avoid field-manager
+          # conflicts with the operator:
+          #   oc apply --server-side --force-conflicts -f grafana-instance.yaml
+          volumes:
+            - name: grafana-pvc-mount
+              persistentVolumeClaim:
+                claimName: grafana-pvc
           containers:
             - name: grafana
               env:
+                # Plugins to preinstall at container startup (comma-separated).
+                # This persists across pod restarts, unlike installing a plugin
+                # ad-hoc via the Grafana API/UI into /var/lib/grafana (an
+                # emptyDir that's wiped on every pod recreation).
+                - name: GF_PLUGINS_PREINSTALL
+                  value: yesoreyeram-infinity-datasource,grafana-image-renderer
                 - name: GF_SECURITY_ADMIN_USER
                   valueFrom:
                     secretKeyRef:
@@ -23,6 +49,15 @@ spec:
                     secretKeyRef:
                       key: GF_SECURITY_ADMIN_PASSWORD
                       name: credentials
+                # Redirect Grafana's data dir to the PVC so the SQLite DB,
+                # sessions, and dashboard/datasource state survive restarts.
+                # The operator hardcodes grafana-data as emptyDir in the
+                # Deployment — this env var makes Grafana ignore that path.
+                - name: GF_PATHS_DATA
+                  value: /var/lib/grafana-persistent
+              volumeMounts:
+                - name: grafana-pvc-mount
+                  mountPath: /var/lib/grafana-persistent
   config:
     auth:
       disable_login_form: "false"

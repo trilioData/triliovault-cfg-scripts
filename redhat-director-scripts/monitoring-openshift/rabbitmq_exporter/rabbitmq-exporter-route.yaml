@@ -1,16 +1,13 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: openstack-exporter
+  name: rabbitmq-exporter
   namespace: trilio-monitoring
 spec:
   to:
     kind: Service
-    name: openstack-exporter
-    weight: 100
+    name: rabbitmq-exporter
   port:
-    targetPort: os-metrics
+    targetPort: 9419
   tls:
     termination: edge
-  wildcardPolicy: None
-
