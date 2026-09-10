@@ -419,6 +419,73 @@ Charms must observe `ingress_*_relation_changed` (not just `_joined`) to re-regi
 ### dispatch file permissions
 The `dispatch` file in machine subordinate charms MUST be stored with execute permission (`100755`) in git. Windows git clones silently drop the x-bit — always verify with `git ls-files -s dispatch` (should show `100755`). If it shows `100644`, run `git update-index --chmod=+x dispatch` and commit. Without the x-bit, Juju logs "exec: dispatch: permission denied" on every hook invocation.
 
+### TrilioVault owns its database cluster — Sunbeam's `mysql` may not exist at all (TVAULT-7685)
+
+`sunbeam cluster bootstrap --topology` decides the database layout, and the two layouts do
+not share an application name:
+
+| Topology | What exists |
+|---|---|
+| `single` | one shared `mysql` (mysql-k8s), plus a `<service>-mysql-router` per service |
+| `multi` | a `<service>-mysql` **per service** (`keystone-mysql`, `nova-mysql`, …) and **no application named `mysql`** |
+
+The rule is in the snap's own terraform, `deploy-openstack/main.tf`:
+`local.mysql[svc] = many-mysql ? "${svc}-mysql" : "mysql"`. So any script that hardcodes
+`mysql` as a relation target works on a `single` cloud and silently finds nothing on a
+`multi` one — which is exactly how TVAULT-7685 left wlm and dm-api in
+`waiting / "Waiting for: database"` while the deploy reported success.
+
+`deploy_trilio.py` therefore **always deploys TrilioVault's own `trilio-mysql`** (mysql-k8s)
+and never relates to Sunbeam's database, in either topology. Two reasons beyond the naming:
+
+- Sunbeam sizes its database from a hardcoded `CONNECTIONS` table in
+  `sunbeam/steps/openstack.py` that has no TrilioVault entry and never will. Those limits
+  are recomputed and reapplied every time the openstack terraform plan re-runs, so sharing
+  means permanently borrowing headroom from a budget computed without us.
+- Uninstall becomes `juju remove-application trilio-mysql` instead of hand-dropping
+  `workloadmgr`/`dmapi` out of a cluster that also holds keystone and nova data.
+
+**No `mysql-router-k8s` in front of it, deliberately.** Sunbeam puts a router before every
+service, but a router (and a modern mysql-k8s) publishes credentials as a Juju secret
+(`secret-user`) when the requirer advertises `requested-secrets` — and `_db_data()` in both
+charms reads plaintext `username`/`password` only. Our charms don't use
+`data_platform_libs`, so they never advertise it and mysql-k8s falls back to plaintext,
+which is why the direct relation works. Verified on the QA cloud: keystone's databag has
+`secret-user` and no password; `trilio-wlm-k8s`'s has plaintext. **Putting a router in
+front of Trilio requires teaching `_db_data()` to read the secret first** — do not add one
+casually. A router is still needed eventually for the `[dmapi_database]` route from compute
+nodes, which needs `expose-external=loadbalancer`.
+
+#### Database storage follows the cloud, and is never reused or reformatted
+
+`trilio-mysql`'s storage pool and volume size are read off the cloud's own mysql-k8s
+`database` volumes (the largest of them) rather than hardcoded — Sunbeam's real values are
+20G per unit for a `single` cloud, and 1G per service with 10G for nova in a `multi` one.
+`--db-storage=<size>` and `--db-storage-pool=<pool>` override it; the pool is what selects
+the Kubernetes storage class, and it is validated against `juju storage-pools` before the
+deploy so a typo fails immediately instead of half way through.
+
+The k8s storage class reclaims with **Delete**, but Juju retains PVCs on
+`remove-application` unless `--destroy-storage` is passed — so PVCs left by a removed
+`trilio-mysql` are the only copy of that metadata. Before deploying, the script lists PVCs
+whose name carries both `trilio-mysql` and `database` (Juju's k8s PVC names are
+`trilio-mysql-database-<id>-trilio-mysql-<ordinal>`) and **refuses to continue** if any
+exist, rather than
+creating an empty cluster beside them; `--force-new-database` is the explicit override.
+Nothing in these scripts ever deletes a volume. Note this is stricter than Sunbeam itself,
+which just deploys and leaves the old volumes detached (this cloud carries three orphaned
+`database/51-53` from an earlier topology change).
+
+#### A missing application must fail the deploy, not be skipped
+
+`integrate()` takes a `required` flag per relation. The original code skipped **any**
+relation whose target application was absent and returned success — right for `microceph`
+on an LVM cloud, catastrophic for `mysql`. `rabbitmq`, `keystone`, `send-ca-cert`,
+`openstack-hypervisor` and the consumed offers are required; ingress and ceph are not.
+`deploy_trilio.py` also waits for every application to report `active` before printing
+`Done.` — `juju integrate` exiting 0 means "relation added", never "the application came
+up", and that gap is what let the original bug report a successful install.
+
 ### NEVER declare a Sunbeam application in a Trilio bundle — relate to it from the script instead
 A Juju bundle is a **desired-state document**, not a list of things to relate. Any application named in it gets reconciled to the `revision:`/`scale:` the bundle states, whether or not the bundle "owns" it. So a bundle must declare **only the applications Trilio itself owns**, and every relation to one of Sunbeam's own applications (mysql, rabbitmq, keystone, traefik, traefik-public, openstack-hypervisor, microceph) is added afterwards by `deploy_trilio.py` using `juju integrate`, which adds a relation *without* touching revision or scale.
 
