@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus RabbitMQ Exporter (T4O RabbitMQ Queue Monitoring dashboard)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/rabbitmq_exporter/rabbitmq-exporter.env
+ExecStart=/usr/local/bin/rabbitmq_exporter
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target

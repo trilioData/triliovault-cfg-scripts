@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus SQL Exporter (T4O workloadmgr DB metrics)
+Wants=network-online.target
+After=network-online.target mysql-router.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/sql_exporter/dsn.env
+ExecStart=/usr/local/bin/sql_exporter -config.file=/etc/sql_exporter/sql-exporter.yml -web.listen-address=:9399
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
