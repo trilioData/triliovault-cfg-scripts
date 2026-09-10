@@ -11,7 +11,7 @@
 #   ./deploy_trilio.py ctlplane
 #
 # This bundle declares TRILIO APPLICATIONS ONLY. Sunbeam's own applications
-# (mysql, rabbitmq, keystone, traefik, traefik-public) are NOT declared here,
+# (rabbitmq, keystone, traefik, traefik-public) are NOT declared here,
 # and the relations to them are added afterwards by deploy_trilio.py.
 #
 # WHY (TVAULT-7644): a bundle is a DESIRED-STATE document. Naming an existing
