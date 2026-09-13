@@ -24,8 +24,11 @@ TrilioVault brings its own database cluster (trilio-mysql, mysql-k8s). It does
 not use Sunbeam's mysql, which exists only in "single" topology clouds and is
 sized from a service list that does not include TrilioVault. Its storage pool
 and volume size are copied from the cloud's own OpenStack database clusters
-unless overridden with the options above, and its memory and connection limits
-come from Sunbeam's own sizing formula.
+unless overridden with the options above. Its connection and memory limits use
+Sunbeam's own formula, but fed with TrilioVault's process model rather than
+Sunbeam's: the wlm launchers fork api-workers and workloads-workers times four,
+and neither workloadmgr nor dmapi narrows its SQLAlchemy pool the way every
+Sunbeam charm does by rendering max_pool_size = 2.
 
 Everything that touches one of Sunbeam's own applications -- the relations to
 rabbitmq / keystone / traefik / openstack-hypervisor / microceph, and the
@@ -59,11 +62,18 @@ MYSQL_BASE = "ubuntu@22.04"
 MYSQL_STORAGE_NAME = "database"
 MYSQL_STORAGE_FALLBACK = "20G"
 
-DB_PROCESSES = {"trilio-wlm-k8s": 6, "trilio-dm-api-k8s": 3}
-DB_MAX_POOL_SIZE = 2
+DB_MAX_POOL_SIZE = 5
 DB_MB_PER_CONNECTION = 12
 DB_OVERSIZE_FACTOR = 1.2
-DB_BUFFER_MB = 600
+DB_BUFFER_MB = 2600
+
+WLM_APP = "trilio-wlm-k8s"
+DMAPI_APP = "trilio-dm-api-k8s"
+WLM_FORK_FACTOR = 4
+WLM_WORKER_OPTIONS = ("api-workers", "workloads-workers")
+WLM_WORKER_DEFAULT = 2
+WLM_SINGLETON_PROCESSES = 3
+DMAPI_PROCESSES = 3
 
 DEFAULT_WAIT_TIMEOUT = 1800
 WAIT_POLL_SECONDS = 20
@@ -142,10 +152,37 @@ def app_scale(present, app):
     return len(a.get("units") or {}) or 1
 
 
-def mysql_resources(scale):
+def app_config(model, app, key, default):
+    p = run(["config", "-m", model, app, key], check=False)
+    value = p.stdout.strip() if p.returncode == 0 else ""
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def db_processes(model, present):
+    """Processes that hold a connection to the TrilioVault database.
+
+    workloadmgr-api and workloadmgr-workloads each fork their worker
+    option times WLM_FORK_FACTOR children and the launcher keeps a
+    connection of its own; wlm-scheduler and the wlm-cron pair are the
+    singletons. dmapi-api is a launcher and two children."""
+    procs = {}
+    if WLM_APP in present:
+        forked = sum(
+            app_config(model, WLM_APP, opt, WLM_WORKER_DEFAULT)
+            * WLM_FORK_FACTOR + 1 for opt in WLM_WORKER_OPTIONS)
+        procs[WLM_APP] = forked + WLM_SINGLETON_PROCESSES
+    if DMAPI_APP in present:
+        procs[DMAPI_APP] = DMAPI_PROCESSES
+    return procs
+
+
+def mysql_resources(model, present, scale):
     connections = 0
     memory = 0
-    for processes in DB_PROCESSES.values():
+    for processes in db_processes(model, present).values():
         needed = DB_MAX_POOL_SIZE * processes + 3
         connections += needed
         memory += needed * DB_MB_PER_CONNECTION
@@ -155,6 +192,26 @@ def mysql_resources(scale):
         "profile-limit-memory":
             int(math.ceil(memory * scale * DB_OVERSIZE_FACTOR)) + DB_BUFFER_MB,
     }
+
+
+def apply_mysql_resources(model, resources):
+    """Both settings are written together: mysql-k8s derives the InnoDB
+    buffer pool from profile-limit-memory MINUS max_connections * 12MB,
+    so raising one alone drives the pool to its floor."""
+    p = run(["config", "-m", model, MYSQL_APP, "--format=json"], check=False)
+    current = {}
+    if p.returncode == 0:
+        for key, spec in (json.loads(p.stdout or "{}")
+                          .get("settings", {}).items()):
+            current[key] = spec.get("value")
+    changed = ["%s=%s" % (k, v) for k, v in sorted(resources.items())
+               if str(current.get(k)) != str(v)]
+    if not changed:
+        print("  ok      %s sized for %d connections"
+              % (MYSQL_APP, resources["experimental-max-connections"]))
+        return
+    run(["config", "-m", model, MYSQL_APP] + changed)
+    print("  sized   %s: %s" % (MYSQL_APP, " ".join(changed)))
 
 
 def valid_storage_size(value):
@@ -259,6 +316,8 @@ def retained_db_volumes(model):
 def ensure_mysql(model, force_new, db_pool, db_size):
     print("\n-- TrilioVault database cluster --")
     present = applications(model)
+    scale = max(app_scale(present, a) for a in CTLPLANE_APPS)
+    resources = mysql_resources(model, present, scale)
     if MYSQL_APP in present:
         print("  ok      %s already deployed" % MYSQL_APP)
     else:
@@ -281,17 +340,18 @@ def ensure_mysql(model, force_new, db_pool, db_size):
         elif volumes:
             print("  note    keeping retained storage untouched: %s"
                   % ", ".join(volumes))
-        scale = max(app_scale(present, a) for a in CTLPLANE_APPS)
         storage = mysql_storage_directive(model, db_pool, db_size)
         cmd = ["deploy", MYSQL_CHARM, MYSQL_APP, "-m", model,
                "--channel", MYSQL_CHANNEL, "--base", MYSQL_BASE, "--trust",
                "-n", str(scale),
                "--storage", "%s=%s" % (MYSQL_STORAGE_NAME, storage)]
-        for key, value in sorted(mysql_resources(scale).items()):
+        for key, value in sorted(resources.items()):
             cmd += ["--config", "%s=%s" % (key, value)]
         run(cmd)
         print("  deployed %s (scale %d, storage %s)"
               % (MYSQL_APP, scale, storage))
+
+    apply_mysql_resources(model, resources)
 
     present = applications(model)
     rc = 0
