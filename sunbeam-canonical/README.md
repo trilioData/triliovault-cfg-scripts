@@ -30,58 +30,83 @@ When a new compute node joins via `sunbeam cluster join`, Juju automatically dep
 
 ## Install
 
-### Step 1 — Verify cross-model offers
+Both bundles declare **Trilio applications only**. Every relation to one of Sunbeam's own
+applications, and every cross-model offer, is added by `deploy_trilio.py`, which is the
+supported way to install. Do not run `juju deploy ./trilio-*-bundle.yaml` by hand — the
+bundle alone leaves the applications with no relations.
 
-Sunbeam creates RabbitMQ and Keystone offers by default. Verify they exist:
+`deploy_trilio.py` is idempotent: deploys, offers, consumes and relations are each skipped
+if they already exist, so it is safe to re-run after fixing a problem.
 
-```bash
-juju find-offers --format=tabular | grep -E 'rabbitmq|keystone-credentials'
-```
-
-If missing, create them:
-
-```bash
-juju switch openstack
-juju offer rabbitmq:amqp
-juju offer keystone:identity-credentials
-```
-
-### Step 2 — Deploy control plane (k8s model)
+### Step 1 — Clone
 
 ```bash
 git clone https://github.com/trilioData/triliovault-cfg-scripts.git
 cd triliovault-cfg-scripts/sunbeam-canonical
-
-juju switch openstack
-juju deploy ./trilio-ctlplane-bundle.yaml
 ```
 
-All relations — including CA certificate distribution for Keystone TLS — are included in the bundle.
+The script resolves the `openstack` and `openstack-machines` models itself, including the
+owner prefix Juju requires, so no `juju switch` is needed.
+
+### Step 2 — Deploy control plane (k8s model)
+
+```bash
+./deploy_trilio.py ctlplane
+```
+
+This deploys `trilio-wlm-k8s`, `trilio-dm-api-k8s` and TrilioVault's own database cluster
+`trilio-mysql`; relates them to `rabbitmq`, `keystone` (including the CA certificate
+distribution Keystone TLS needs), `traefik` and `traefik-public`; creates the three offers
+the data plane consumes; and then waits for every application to report `active`.
+
+**TrilioVault always deploys its own `trilio-mysql` (mysql-k8s) cluster** rather than using
+Sunbeam's database. Sunbeam's shared `mysql` application only exists in a `single`-topology
+cloud; a `multi`-topology cloud has a per-service `<service>-mysql` for each OpenStack
+service and no application named `mysql` at all. Its connection and memory limits are also
+computed from a service list that does not include TrilioVault.
+
+`trilio-mysql` gets the same storage pool and volume size the cloud gives its own OpenStack
+database clusters, and memory and connection limits from the same formula Sunbeam uses.
+Both storage settings can be overridden:
+
+```bash
+./deploy_trilio.py ctlplane --db-storage=50G
+./deploy_trilio.py ctlplane --db-storage-pool=<pool>
+```
+
+The storage pool is what selects the Kubernetes storage class. Create one with:
+
+```bash
+juju create-storage-pool <pool> kubernetes storage-class=<storage class>
+```
+
+Other options: `--no-wait` returns as soon as everything is wired instead of waiting for
+active, `--timeout=<seconds>` changes how long the wait allows (default 1800).
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-wlm-k8s    --query='status=="active"' --timeout=10m
-juju wait-for application trilio-dm-api-k8s --query='status=="active"' --timeout=10m
-juju status trilio-wlm-k8s trilio-dm-api-k8s
+juju status trilio-wlm-k8s trilio-dm-api-k8s trilio-mysql
 kubectl get pods -n openstack | grep trilio
 ```
 
 ### Step 3 — Deploy data plane (machine model)
 
 ```bash
-juju switch openstack-machines
-juju deploy ./trilio-dataplane-bundle.yaml
+./deploy_trilio.py dataplane
 ```
 
-Cross-model RabbitMQ and Keystone relations are declared in the bundle's `saas:` section.
+This consumes the `rabbitmq`, `keystone-credentials` and `cert-distributor` offers created
+in step 2, deploys the `trilio-data-mover` subordinate, and relates it to
+`openstack-hypervisor`, the consumed offers, and `microceph` when the cloud has it.
 
 **Verify:**
 
 ```bash
-juju wait-for application trilio-data-mover --query='status=="active"' --timeout=10m
-juju status trilio-data-mover
+juju status trilio-data-mover -m openstack-machines
 ```
+
+`./deploy_trilio.py all` runs both steps in order.
 
 ### Step 4 — Attach Horizon Plugin
 
@@ -110,6 +135,11 @@ juju run trilio-wlm-k8s/leader create-license
 ```
 
 ## Upgrade
+
+An upgrade refreshes the Trilio charms only. `trilio-mysql` is not refreshed by
+`deploy_trilio.py` and is not touched by any of the steps below — its volumes hold the
+TrilioVault metadata and are never reused, reformatted or destroyed by these scripts.
+
 
 ### Step 1 — Upgrade control plane
 
