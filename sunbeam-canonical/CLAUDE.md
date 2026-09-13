@@ -469,16 +469,50 @@ only true because every Sunbeam charm *renders* `max_pool_size = 2` into its ser
   is really 8 processes. Per WLM unit: 9 api + 9 workloads + 1 scheduler, plus 2 wlm-cron
   on the leader. dmapi is 3.
 
+**Size for the ceiling, not the steady state.** Connections do NOT grow with the number of
+snapshots or restores: each process holds one module-global engine, so the hard bound is
+`processes x (pool_size + max_overflow)` = `processes x 15`, whatever the workload volume.
+Measured on the QA cloud: 200 concurrent API requests moved the connection count from 62 to
+88, because requests queue on the per-process pool instead of opening sockets. A 3-unit
+control plane is 72 processes -> a **1080** hard ceiling; `DB_MAX_POOL_SIZE = 15` plus the
++3/app and Sunbeam's 1.2 factor lands on 1317, i.e. the ceiling with room for the charm's
+own connections.
+
 **`experimental-max-connections` and `profile-limit-memory` must always be written
-together.** mysql-k8s derives the buffer pool from
-`profile-limit-memory - max_connections * 12 MiB` (`mysql.py`, around the
-`experimental_max_connections` branch). Raise connections alone and that goes negative and
-`innodb_buffer_pool_size` collapses to the 128 MiB default — the database ends up *slower*
-than before the change, which is exactly what a well-meant
-`juju config trilio-mysql experimental-max-connections=500` did on the QA cloud. The
-formula keeps a constant ~2.6 GB residual at every scale, which is what holds the pool at
-768 MiB. `mysql_resources()` is applied on **every** run, not just at first deploy, so an
-existing cluster converges and a control-plane scale change is picked up.
+together, and the units differ.** The charm does:
+
+```python
+available_memory = min(get_available_memory(), memory_limit)   # node allocatable vs profile-limit-memory
+available_memory = max(available_memory - max_connections * 12 * BYTES_1MiB, 200 * BYTES_1MiB)
+```
+
+`profile-limit-memory` is read as **megabytes (10^6)** while the per-connection reserve is
+subtracted in **mebibytes (2^20)**, so holding the residual constant in MB silently loses
+4.86% of the connection term as connections grow - at 1317 connections that is 768 MiB of
+residual, and the pool halves from 768 MiB to 384 MiB with no error anywhere. Compute the
+budget in MiB and convert (`mysql_memory_mb()`); a constant `DB_RESIDUAL_MIB` then pins the
+pool at one size for every scale.
+
+The `max(..., 200 * BYTES_1MiB)` floor is why a wrong pair does not fail loudly: the residual
+clamps to 200 MiB and `get_innodb_buffer_pool_parameters` rounds `0.5 * 200` up to the
+**128 MiB** default. That is exactly what a bare
+`juju config trilio-mysql experimental-max-connections=500` produced on the QA cloud.
+
+**`get_available_memory()` is the node's allocatable memory**, not the pod's - the `mysql`
+container declares no memory limit (only `charm` does, 1Gi). So `profile-limit-memory` is an
+upper bound that the node silently caps: on a 31.2 GiB node, `max_connections` above about
+**2470** leaves less than the 2300 MiB residual no matter what budget is configured, and
+4096 (what RHOSO18's Galera uses) would need a 54 GB budget and always collapses to 128 MiB
+here. RHOSO18 gets away with 4096 only because its Galera CR has no such coupling - and it
+runs a 128 MiB pool anyway.
+
+**Reconfiguring a live cluster** is one command -
+`juju config trilio-mysql experimental-max-connections=N profile-limit-memory=M` - but it
+triggers a rolling restart that does **not** reliably reach every unit: the app can go back
+to `active` with one unit still on the old `innodb_buffer_pool_size` (it is a static
+variable). Always verify per unit and `pebble restart mysqld` inside the `mysql` container of
+any unit left behind. `deploy_trilio.py` never lowers an operator-raised
+`experimental-max-connections`; it recomputes the matching memory instead.
 
 **A saturated `trilio-mysql` locks the charm out of its own database.** At the ceiling,
 `mysqlsh` cannot get a connection either: `get-cluster-status` returns "Failed to read
