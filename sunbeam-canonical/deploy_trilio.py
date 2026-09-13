@@ -28,7 +28,9 @@ unless overridden with the options above. Its connection and memory limits use
 Sunbeam's own formula, but fed with TrilioVault's process model rather than
 Sunbeam's: the wlm launchers fork api-workers and workloads-workers times four,
 and neither workloadmgr nor dmapi narrows its SQLAlchemy pool the way every
-Sunbeam charm does by rendering max_pool_size = 2.
+Sunbeam charm does by rendering max_pool_size = 2, so each process can hold
+pool_size + max_overflow connections and trilio-mysql is sized for that
+ceiling rather than for a steady state.
 
 Everything that touches one of Sunbeam's own applications -- the relations to
 rabbitmq / keystone / traefik / openstack-hypervisor / microceph, and the
@@ -62,10 +64,11 @@ MYSQL_BASE = "ubuntu@22.04"
 MYSQL_STORAGE_NAME = "database"
 MYSQL_STORAGE_FALLBACK = "20G"
 
-DB_MAX_POOL_SIZE = 5
+DB_MAX_POOL_SIZE = 15
 DB_MB_PER_CONNECTION = 12
 DB_OVERSIZE_FACTOR = 1.2
-DB_BUFFER_MB = 2600
+DB_RESIDUAL_MIB = 2300
+MB_PER_MIB = 1.048576
 
 WLM_APP = "trilio-wlm-k8s"
 DMAPI_APP = "trilio-dm-api-k8s"
@@ -179,18 +182,24 @@ def db_processes(model, present):
     return procs
 
 
+def mysql_memory_mb(connections):
+    """profile-limit-memory that leaves DB_RESIDUAL_MIB for the InnoDB pool.
+
+    mysql-k8s reads this option as megabytes and then subtracts
+    max_connections * 12 MEBIbytes from it, so the two units have to be
+    reconciled here or the residual shrinks as connections grow."""
+    return int(math.ceil(
+        (connections * DB_MB_PER_CONNECTION + DB_RESIDUAL_MIB) * MB_PER_MIB))
+
+
 def mysql_resources(model, present, scale):
     connections = 0
-    memory = 0
     for processes in db_processes(model, present).values():
-        needed = DB_MAX_POOL_SIZE * processes + 3
-        connections += needed
-        memory += needed * DB_MB_PER_CONNECTION
+        connections += DB_MAX_POOL_SIZE * processes + 3
+    connections = int(math.floor(connections * scale * DB_OVERSIZE_FACTOR))
     return {
-        "experimental-max-connections":
-            int(math.floor(connections * scale * DB_OVERSIZE_FACTOR)),
-        "profile-limit-memory":
-            int(math.ceil(memory * scale * DB_OVERSIZE_FACTOR)) + DB_BUFFER_MB,
+        "experimental-max-connections": connections,
+        "profile-limit-memory": mysql_memory_mb(connections),
     }
 
 
@@ -204,6 +213,14 @@ def apply_mysql_resources(model, resources):
         for key, spec in (json.loads(p.stdout or "{}")
                           .get("settings", {}).items()):
             current[key] = spec.get("value")
+    resources = dict(resources)
+    raised = current.get("experimental-max-connections")
+    if isinstance(raised, int) and raised > resources["experimental-max-connections"]:
+        print("  keep    %s at %d connections, above the computed %d"
+              % (MYSQL_APP, raised,
+                 resources["experimental-max-connections"]))
+        resources["experimental-max-connections"] = raised
+        resources["profile-limit-memory"] = mysql_memory_mb(raised)
     changed = ["%s=%s" % (k, v) for k, v in sorted(resources.items())
                if str(current.get(k)) != str(v)]
     if not changed:
