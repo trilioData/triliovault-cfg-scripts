@@ -445,6 +445,97 @@ and never relates to Sunbeam's database, in either topology. Two reasons beyond 
 - Uninstall becomes `juju remove-application trilio-mysql` instead of hand-dropping
   `workloadmgr`/`dmapi` out of a cluster that also holds keystone and nova data.
 
+#### Sizing `trilio-mysql`: the two settings are one setting
+
+`deploy_trilio.py` sizes the cluster with **Sunbeam's own formula**, copied from
+`sunbeam/steps/openstack.py` (`max_pool_size * processes + 3`, then
+`* scale * 1.2`, memory at 12 MB per connection plus a flat buffer). Reproducing
+`keystone-mysql` (46 / 1162) and `nova-mysql` (248 / 3581) exactly is the check that the
+formula is still right after a snap upgrade.
+
+What is **not** transferable is Sunbeam's `DATABASE_MAX_POOL_SIZE = 2`. That constant is
+only true because every Sunbeam charm *renders* `max_pool_size = 2` into its service conf
+(see any `keystone.conf`). TrilioVault cannot:
+
+- `workloadmgr` does not use oslo.db. `db/sqlalchemy/session.py:get_engine()` calls
+  `sqlalchemy.create_engine()` itself and passes only `pool_recycle`, `echo` and
+  `pool_pre_ping` — never `pool_size` or `max_overflow`. SQLAlchemy's QueuePool defaults
+  therefore apply: **5 + 10 overflow = 15 connections per process**.
+- `[database] max_pool_size` / `max_overflow` are **not registered options** in
+  workloadmgr. Adding them to `triliovault-wlm.conf` silently does nothing. The only
+  pool knob it honours is `sql_idle_timeout` (-> `pool_recycle`).
+- `workloadmgr-api` and `workloadmgr-workloads` fork **`<n>_workers * 4`** children (the
+  `* 4` is in `/usr/bin/workloadmgr-api` itself), so the charm's `api-workers = 2` default
+  is really 8 processes. Per WLM unit: 9 api + 9 workloads + 1 scheduler, plus 2 wlm-cron
+  on the leader. dmapi is 3.
+
+**Size for the ceiling, not the steady state.** Connections do NOT grow with the number of
+snapshots or restores: each process holds one module-global engine, so the hard bound is
+`processes x (pool_size + max_overflow)` = `processes x 15`, whatever the workload volume.
+Measured on the QA cloud: 200 concurrent API requests moved the connection count from 62 to
+88, because requests queue on the per-process pool instead of opening sockets. A 3-unit
+control plane is 72 processes -> a **1080** hard ceiling; `DB_MAX_POOL_SIZE = 15` plus the
++3/app and Sunbeam's 1.2 factor lands on 1317, which `DB_CONNECTION_STEP` rounds up to
+**1500** - the ceiling with room for the charm's own connections, on a round number rather
+than a derived one. Scale 1 gives 500.
+
+**`experimental-max-connections` and `profile-limit-memory` must always be written
+together, and the units differ.** The charm does:
+
+```python
+available_memory = min(get_available_memory(), memory_limit)   # node allocatable vs profile-limit-memory
+available_memory = max(available_memory - max_connections * 12 * BYTES_1MiB, 200 * BYTES_1MiB)
+```
+
+`profile-limit-memory` is read as **megabytes (10^6)** while the per-connection reserve is
+subtracted in **mebibytes (2^20)**, so holding the residual constant in MB silently loses
+4.86% of the connection term as connections grow - at 1317 connections that is 768 MiB of
+residual, and the pool halves from 768 MiB to 384 MiB with no error anywhere. Compute the
+budget in MiB and convert (`mysql_memory_mb()`); a constant `DB_RESIDUAL_MIB` then pins the
+pool at one size for every scale. The charm gives InnoDB `0.75 * residual - 1 GiB` rounded up
+to a multiple of 128 MiB, so `DB_RESIDUAL_MIB = 2700` is what lands on a standard **1 GiB**
+pool (`DB_POOL_MIB`) at both scale 1 and scale 3 - and Sunbeam caps k8s app scale at
+`min(control_nodes, 3)`, so those are the only cases.
+
+The `max(..., 200 * BYTES_1MiB)` floor is why a wrong pair does not fail loudly: the residual
+clamps to 200 MiB and `get_innodb_buffer_pool_parameters` rounds `0.5 * 200` up to the
+**128 MiB** default. That is exactly what a bare
+`juju config trilio-mysql experimental-max-connections=500` produced on the QA cloud.
+
+**The buffer pool is RAM, not disk.** It is allocated inside mysqld (measured: 1020 MiB RSS
+for a 768 MiB pool) and is unrelated to the `database` PVC, which holds the data files - on
+the QA cloud 210 MiB of files in a 10 GiB volume. That is why node memory, not storage, is
+the constraint. For scale, the whole `workloadmgr` schema is **2.2 MiB** with 70 tables and
+`dmapi` 0.1 MiB; with a 1 GiB pool the hit rate is 99.8% and the pool sits 97% empty, so the
+size is headroom for customer-scale metadata growth, not a response to a measured shortfall.
+
+**`get_available_memory()` is the node's allocatable memory**, not the pod's - the `mysql`
+container declares no memory limit (only `charm` does, 1Gi). So `profile-limit-memory` is an
+upper bound that the node silently caps: on a 31.2 GiB node, `max_connections` above about
+**2470** leaves less than the 2300 MiB residual no matter what budget is configured, and
+4096 (what RHOSO18's Galera uses) would need a 54 GB budget and always collapses to 128 MiB
+here. RHOSO18 gets away with 4096 only because its Galera CR has no such coupling - and it
+runs a 128 MiB pool anyway.
+
+**Reconfiguring a live cluster** is one command -
+`juju config trilio-mysql experimental-max-connections=N profile-limit-memory=M` - but it
+triggers a rolling restart that does **not** reliably reach every unit: the app can go back
+to `active` with one unit still on the old `innodb_buffer_pool_size` (it is a static
+variable). Always verify per unit and `pebble restart mysqld` inside the `mysql` container of
+any unit left behind. `deploy_trilio.py` never lowers an operator-raised
+`experimental-max-connections`; it recomputes the matching memory instead.
+
+**A saturated `trilio-mysql` locks the charm out of its own database.** At the ceiling,
+`mysqlsh` cannot get a connection either: `get-cluster-status` returns "Failed to read
+cluster status", `is_instance_in_cluster()` keeps failing, and the rolling restart stalls
+**holding the rolling-ops lock** (`juju show-unit <unit>` -> `endpoint: restart` ->
+`granted`), so the other units never restart and `juju config` alone cannot fix it. Break
+it by raising the live value first:
+`SET GLOBAL max_connections = <n>` as **`serverconfig`** — the `root` account mysql-k8s
+hands out lacks `SYSTEM_VARIABLES_ADMIN` and is refused. `max_connections` is dynamic;
+`innodb_buffer_pool_size` is not, so units that skipped the restart keep the old pool until
+`pebble restart mysqld` (available inside the `mysql` container) is run on each.
+
 **No `mysql-router-k8s` in front of it, deliberately.** Sunbeam puts a router before every
 service, but a router (and a modern mysql-k8s) publishes credentials as a Juju secret
 (`secret-user`) when the requirer advertises `requested-secrets` — and `_db_data()` in both
