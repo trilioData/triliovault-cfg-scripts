@@ -475,8 +475,9 @@ snapshots or restores: each process holds one module-global engine, so the hard 
 Measured on the QA cloud: 200 concurrent API requests moved the connection count from 62 to
 88, because requests queue on the per-process pool instead of opening sockets. A 3-unit
 control plane is 72 processes -> a **1080** hard ceiling; `DB_MAX_POOL_SIZE = 15` plus the
-+3/app and Sunbeam's 1.2 factor lands on 1317, i.e. the ceiling with room for the charm's
-own connections.
++3/app and Sunbeam's 1.2 factor lands on 1317, which `DB_CONNECTION_STEP` rounds up to
+**1500** - the ceiling with room for the charm's own connections, on a round number rather
+than a derived one. Scale 1 gives 500.
 
 **`experimental-max-connections` and `profile-limit-memory` must always be written
 together, and the units differ.** The charm does:
@@ -491,12 +492,22 @@ subtracted in **mebibytes (2^20)**, so holding the residual constant in MB silen
 4.86% of the connection term as connections grow - at 1317 connections that is 768 MiB of
 residual, and the pool halves from 768 MiB to 384 MiB with no error anywhere. Compute the
 budget in MiB and convert (`mysql_memory_mb()`); a constant `DB_RESIDUAL_MIB` then pins the
-pool at one size for every scale.
+pool at one size for every scale. The charm gives InnoDB `0.75 * residual - 1 GiB` rounded up
+to a multiple of 128 MiB, so `DB_RESIDUAL_MIB = 2700` is what lands on a standard **1 GiB**
+pool (`DB_POOL_MIB`) at both scale 1 and scale 3 - and Sunbeam caps k8s app scale at
+`min(control_nodes, 3)`, so those are the only cases.
 
 The `max(..., 200 * BYTES_1MiB)` floor is why a wrong pair does not fail loudly: the residual
 clamps to 200 MiB and `get_innodb_buffer_pool_parameters` rounds `0.5 * 200` up to the
 **128 MiB** default. That is exactly what a bare
 `juju config trilio-mysql experimental-max-connections=500` produced on the QA cloud.
+
+**The buffer pool is RAM, not disk.** It is allocated inside mysqld (measured: 1020 MiB RSS
+for a 768 MiB pool) and is unrelated to the `database` PVC, which holds the data files - on
+the QA cloud 210 MiB of files in a 10 GiB volume. That is why node memory, not storage, is
+the constraint. For scale, the whole `workloadmgr` schema is **2.2 MiB** with 70 tables and
+`dmapi` 0.1 MiB; with a 1 GiB pool the hit rate is 99.8% and the pool sits 97% empty, so the
+size is headroom for customer-scale metadata growth, not a response to a measured shortfall.
 
 **`get_available_memory()` is the node's allocatable memory**, not the pod's - the `mysql`
 container declares no memory limit (only `charm` does, 1Gi). So `profile-limit-memory` is an
