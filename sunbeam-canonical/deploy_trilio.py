@@ -67,7 +67,9 @@ MYSQL_STORAGE_FALLBACK = "20G"
 DB_MAX_POOL_SIZE = 15
 DB_MB_PER_CONNECTION = 12
 DB_OVERSIZE_FACTOR = 1.2
-DB_RESIDUAL_MIB = 2300
+DB_RESIDUAL_MIB = 2700
+DB_CONNECTION_STEP = 500
+DB_POOL_MIB = 1024
 MB_PER_MIB = 1.048576
 
 WLM_APP = "trilio-wlm-k8s"
@@ -187,7 +189,10 @@ def mysql_memory_mb(connections):
 
     mysql-k8s reads this option as megabytes and then subtracts
     max_connections * 12 MEBIbytes from it, so the two units have to be
-    reconciled here or the residual shrinks as connections grow."""
+    reconciled here or the residual shrinks as connections grow. The charm
+    then gives InnoDB 0.75 of what is left minus 1 GiB, rounded up to a
+    multiple of 128 MiB, so DB_RESIDUAL_MIB is the residual that lands on
+    DB_POOL_MIB."""
     return int(math.ceil(
         (connections * DB_MB_PER_CONNECTION + DB_RESIDUAL_MIB) * MB_PER_MIB))
 
@@ -197,6 +202,8 @@ def mysql_resources(model, present, scale):
     for processes in db_processes(model, present).values():
         connections += DB_MAX_POOL_SIZE * processes + 3
     connections = int(math.floor(connections * scale * DB_OVERSIZE_FACTOR))
+    connections = int(math.ceil(float(connections) / DB_CONNECTION_STEP)
+                      * DB_CONNECTION_STEP)
     return {
         "experimental-max-connections": connections,
         "profile-limit-memory": mysql_memory_mb(connections),
