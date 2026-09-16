@@ -7,8 +7,15 @@ metadata:
     application: triliovault
     component: wlm-rabbitmq-cleanup
   annotations:
-    helm.sh/hook: pre-upgrade
-    helm.sh/hook-weight: "-4"
+    # Weight 99 lands this immediately before the Deployments, which are themselves
+    # post-upgrade hooks at weight 100-104. That is the last moment before any pod of
+    # the new release declares a fanout exchange, and it keeps the window in which the
+    # still-running old pods are disturbed down to seconds. It used to be a pre-upgrade
+    # hook, on the belief that Helm applies the release Deployments before post-upgrade
+    # hooks - which is not true for this chart, because those Deployments ARE
+    # post-upgrade hooks. TVAULT-7572.
+    helm.sh/hook: post-upgrade
+    helm.sh/hook-weight: "99"
 spec:
   backoffLimit: 1000
   template:
