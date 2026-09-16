@@ -116,6 +116,8 @@ spec:
               {{- if or ( gt .Capabilities.KubeVersion.Major "1" ) ( ge .Capabilities.KubeVersion.Minor "10" ) }}
               mountPropagation: HostToContainer
               {{- end }}
+            - name: run
+              mountPath: /run
             - name: trilio-mounts
               mountPath: /var/lib/trilio
               mountPropagation: Bidirectional
@@ -158,7 +160,8 @@ spec:
           hostPath:
             path: /lib/modules
         - name: run
-          emptyDir: {}
+          hostPath:
+            path: /run
         - name: dev
           hostPath:
             path: /dev

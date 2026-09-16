@@ -92,6 +92,24 @@
         ( inventory_hostname in groups[triliovault_wlm_cron_group] ) or
         ( inventory_hostname in groups[triliovault_dms_group] )
 
+- name: Ship tmpfiles.d config for the Triliovault DMS runtime directory
+  become: true
+  template:
+    src: trilio_dms_tmpfiles_conf.j2
+    dest: /etc/tmpfiles.d/trilio-dms.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
+
+- name: Create the Triliovault DMS runtime directory now
+  become: true
+  command: systemd-tmpfiles --create /etc/tmpfiles.d/trilio-dms.conf
+  changed_when: false
+  when:
+    - inventory_hostname in groups[triliovault_dms_group]
+
 - include_tasks: copy-certs.yml
   when:
     - kolla_copy_ca_into_containers | bool

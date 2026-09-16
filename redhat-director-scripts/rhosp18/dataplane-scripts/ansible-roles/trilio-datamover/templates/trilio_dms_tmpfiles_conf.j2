@@ -34,6 +34,8 @@
 # The age field must stay "-". Any value there makes
 # systemd-tmpfiles-clean.timer delete files under /run/dms on a schedule,
 # which would remove live pid and lock files out from under a running mount.
-d /run/dms       0755 42436 42436 -
-d /run/dms/s3    0755 42436 42436 -
-d /run/dms/locks 0755 42436 42436 -
+d /run/dms           0755 42436 42436 -
+d /run/dms/s3        0755 42436 42436 -
+d /run/dms/certs     0700 42436 42436 -
+d /run/dms/locks     0755 42436 42436 -
+d /run/dms/instances 0755 42436 42436 -

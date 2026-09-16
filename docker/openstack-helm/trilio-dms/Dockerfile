@@ -52,7 +52,6 @@ RUN mkdir -p \
     /etc/${PROJECT_DIR} \
     /opt/${PROJECT_DIR} \
     /var/log/${PROJECT_DIR} \
-    /run/dms/ \
     && chmod 777 ${TRILIO_MOUNT_DIR}
 
 # Copy and configure nova user script
@@ -67,7 +66,6 @@ RUN set -eux; \
     /etc/${PROJECT_DIR} \
     /opt/${PROJECT_DIR} \
     /var/log/${PROJECT_DIR} \
-    /run/dms/ \
     ${TRILIO_MOUNT_DIR}
 
 # Add nova to disk group

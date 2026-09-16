@@ -2,8 +2,9 @@
 
 set -e
 
-mkdir -p /run/dms
-chown {{ .Values.common.nova_user_id }}:{{ .Values.common.nova_group_id }} /run/dms
+mkdir -p /run/dms/s3 /run/dms/certs /run/dms/locks /run/dms/instances
+chown -R {{ .Values.common.nova_user_id }}:{{ .Values.common.nova_group_id }} /run/dms
+chmod 0700 /run/dms/certs
 
 touch /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf
 
