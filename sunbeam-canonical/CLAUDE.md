@@ -894,8 +894,12 @@ TRILIO_ENV_DIR=/home/ubuntu/env bash test/04_create_backup_targets.sh
 `create-license` fetches the `license` Juju resource and pushes it into the trilio-wlm container itself (TVAULT-7691), so there is no `kubectl cp` step:
 ```bash
 juju attach-resource trilio-wlm-k8s license=/home/ubuntu/license
+# attaching rolls every WLM pod (~45s); wait or the action dies "terminated"
+kubectl rollout status statefulset/trilio-wlm-k8s -n openstack --timeout=10m
 juju run trilio-wlm-k8s/leader create-license
 ```
+
+**`juju wait-for` does not work as the wait here.** `juju attach-resource` rewrites the k8s pod spec, and Juju rolls the units a second or two later. In that gap the units still report `active/idle` from *before* the rollout, so `juju wait-for ... status=="active"` returns almost instantly and `create-license` then races the restart and reports `terminated` (measured: attach at 09:03:43, wait-for satisfied at 09:03:44, action terminated at 09:03:51). The wait has to be edge-triggered — watch for the StatefulSet generation to change, then for the rollout to complete. `apply_license()` in `test/t4o_env.sh` does exactly that. A `terminated` action says nothing about the licence; re-run it.
 The license file must have **no extension** when uploading via `juju attach-resource` (the resource type is `file`, not `string`, and Juju validates extension against the resource definition — which expects empty extension). Copy it as `license` (no `.txt`).
 
 `license-file-path=<path>` is still accepted as an override for a file already inside the container. It is only useful for debugging, and it reintroduces the trap the resource path removes: the action runs on the leader, so the file must be on the **leader's** pod, not just pod 0 — a redeploy that moves leadership off unit 0 otherwise produces "License applied successfully" against a file that does not exist.
@@ -974,6 +978,10 @@ scp C:\vscode-workspace\env\license_trilio.txt ubuntu@<build-server>:/tmp/licens
 
 # Attach as a Juju resource; the action copies it into the container itself
 juju attach-resource trilio-wlm-k8s license=/tmp/license
+
+# Attaching rolls every WLM pod. Wait, or the action reports "terminated".
+kubectl rollout status statefulset/trilio-wlm-k8s -n openstack --timeout=10m
+
 juju run trilio-wlm-k8s/leader create-license
 
 # Expected output: "result: License applied successfully"

@@ -470,6 +470,95 @@ _t4o_first_pod() {
 }
 
 # ---------------------------------------------------------------------------
+# apply_license — install a licence file, however this distro does it
+#
+# Sunbeam and Canonical attach the licence as a Juju resource and let the
+# charm's create-license action apply it; everything else copies the file into
+# the WLM service and calls the CLI directly.
+#
+# The Sunbeam arm has to work around a Juju behaviour: `juju attach-resource`
+# rewrites the k8s pod spec, so Juju rolls every WLM pod (all three were
+# observed getting fresh UIDs 2-22s after the attach, settling by ~46s). An
+# action started inside that window dies with "terminated".
+#
+# A status-based wait does NOT close this. Immediately after the attach the
+# units still report active/idle from *before* the rollout, so
+# `juju wait-for ... status=="active"` returns in about a second and the action
+# races the restart anyway — measured, not theorised. The wait has to be
+# edge-triggered: block until the StatefulSet generation actually changes
+# (rollout started), and only then wait for it to finish.
+# ---------------------------------------------------------------------------
+apply_license() {
+    local staged="$1"
+    case "$T4O_DISTRO" in
+      sunbeam)
+        local sts=trilio-wlm-k8s gen0 gen1 i
+        gen0=$(kubectl get statefulset "$sts" -n "$K8S_NAMESPACE" \
+                 -o jsonpath='{.metadata.generation}' 2>/dev/null)
+        juju attach-resource "$sts" "license=$staged" -m "$T4O_JUJU_K8S_MODEL" 2>&1 | sed 's/^/  /' \
+          || t4o_die "juju attach-resource failed — the licence was never uploaded."
+        t4o_info "  Attached; waiting for the WLM rollout the attach triggers..."
+        if [[ -z "$gen0" ]]; then
+            # With no baseline the edge check cannot tell "rollout started" from
+            # "not started yet": any non-empty generation differs from the empty
+            # string, so the loop would break on its first pass and fall straight
+            # through into the race this block exists to close. Wait out the
+            # observed settle time instead and let the retry cover the remainder.
+            t4o_warn "  Could not read the $sts generation; falling back to a fixed wait."
+            sleep 90
+        else
+            for i in $(seq 1 30); do
+                gen1=$(kubectl get statefulset "$sts" -n "$K8S_NAMESPACE" \
+                         -o jsonpath='{.metadata.generation}' 2>/dev/null)
+                [[ -n "$gen1" && "$gen1" != "$gen0" ]] && break
+                sleep 2
+            done
+            [[ "${gen1:-$gen0}" != "$gen0" ]] \
+              || t4o_warn "  $sts generation never changed; the attach may not have rolled the units."
+        fi
+        # Both waits are best effort, but say so when they give up rather than
+        # burning two silent ten-minute timeouts and blaming the licence for it.
+        kubectl rollout status "statefulset/$sts" -n "$K8S_NAMESPACE" --timeout=10m >/dev/null 2>&1 \
+          || t4o_warn "  rollout did not confirm complete; create-license may be terminated and retried."
+        juju wait-for application "$sts" -m "$T4O_JUJU_K8S_MODEL" \
+            --query='forEach(units, unit => unit.agent-status=="idle" && unit.workload-status=="active")' \
+            --timeout=10m >/dev/null 2>&1 \
+          || t4o_warn "  units did not all reach active/idle; attempting create-license anyway."
+        _t4o_create_license_action "$sts" -m "$T4O_JUJU_K8S_MODEL"
+        ;;
+      canonical)
+        juju attach-resource trilio-wlm "license=$staged" 2>&1 | sed 's/^/  /' \
+          || t4o_die "juju attach-resource failed — the licence was never uploaded."
+        _t4o_create_license_action trilio-wlm
+        ;;
+      *)
+        copy_to_wlm "$staged" /tmp/license
+        wlm_exec license-create /tmp/license --accept-eula 2>&1 | t4o_denoise | sed 's/^/  /'
+        ;;
+    esac
+}
+
+# _t4o_create_license_action — run create-license, retrying a terminated action.
+#
+# "terminated" means the unit agent went away mid-action, normally because a
+# pod was replaced under it. It says nothing about the licence, so it is worth
+# retrying; any other failure is real and is returned to the caller. The wait
+# in apply_license makes this rare, but the rollout is Juju's to schedule and
+# nothing guarantees it has even started when the generation check gives up.
+_t4o_create_license_action() {
+    local app="$1"; shift
+    local attempt out rc
+    for attempt in 1 2 3; do
+        out=$(juju run "$app/leader" create-license "$@" 2>&1); rc=$?
+        printf '%s\n' "$out" | sed 's/^/  /'
+        grep -q 'terminated' <<<"$out" || return $rc
+        t4o_warn "create-license was terminated (attempt $attempt/3) — a unit restarted mid-action; retrying."
+        sleep 20
+    done
+    return 1
+}
+
+# ---------------------------------------------------------------------------
 # Cloud admin credential discovery
 #
 # Preference order per distro is documented in the Confluence companion page

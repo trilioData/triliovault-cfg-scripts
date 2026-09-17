@@ -131,13 +131,22 @@ juju run trilio-wlm-k8s/leader create-cloud-admin-trust \
   password=<cloud-admin-password>
 
 juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
+
+# Attaching a resource rewrites the pod spec, so Juju rolls every WLM unit
+# (~45s). Wait for that to finish, or the action is killed mid-run and reports
+# "terminated". Do not use `juju wait-for` on its own here: right after the
+# attach the units still report the state they had before the rollout, so it
+# returns immediately and the action races the restart anyway.
+kubectl rollout status statefulset/trilio-wlm-k8s -n openstack --timeout=10m
+
 juju run trilio-wlm-k8s/leader create-license
 ```
 
 The licence file must have **no extension** — Juju validates the attached
 filename against the resource definition, which declares `filename: license`.
 The action copies it into the trilio-wlm container on the leader unit itself,
-so no `kubectl cp` is needed.
+so no `kubectl cp` is needed. If the action does report `terminated`, nothing
+is wrong with the licence — the unit restarted underneath it; just run it again.
 
 ## Upgrade
 
