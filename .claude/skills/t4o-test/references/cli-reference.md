@@ -65,9 +65,11 @@ curses EULA prompt. Verify with `license-list` — never by exit code.
 Canonical and Sunbeam wrap this in charm actions instead:
 
 ```
-juju attach-resource trilio-wlm license=<file>      # file must have NO extension
+juju attach-resource trilio-wlm license=<file>          # file must have NO extension
 juju run trilio-wlm/leader create-license
-juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license
+
+juju attach-resource trilio-wlm-k8s license=<file>      # same, Sunbeam
+juju run trilio-wlm-k8s/leader create-license
 ```
 
 ### Trust

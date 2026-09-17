@@ -64,6 +64,15 @@ OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_log
 VAULT_MOUNTS_PATH = "/var/triliovault-mounts"
 LOG_DIR = "/var/log/triliovault"
 CA_BUNDLE_PATH = "/usr/local/share/ca-certificates/ca-bundle.crt"
+# The licence arrives as a Juju file resource. resources.fetch() unpacks it into
+# the *charm* container; the workload container has its own filesystem and cannot
+# see that path, so create-license pushes the bytes here before pointing
+# workloadmgr at them. LICENSE_RESOURCE must match the resource name declared in
+# charmcraft.yaml. LICENSE_PATH deliberately keeps the /tmp/license location the
+# old manual `kubectl cp` flow used, so anything still pointing there lands on
+# the same file.
+LICENSE_RESOURCE = "license"
+LICENSE_PATH = "/tmp/license"
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 # The api-paste.ini shipped by the WLM deb package contains legacy
@@ -350,10 +359,22 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _on_create_license_action(self, event):
         """Action: apply TrilioVault license.
 
-        The license file must already exist inside the trilio-wlm workload
-        container (copy it there first, e.g.
-        `kubectl cp <file> openstack/trilio-wlm-k8s-0:/tmp/license -c trilio-wlm`),
-        then pass its in-container path as license-file-path.
+        The licence normally comes from the Juju `license` file resource:
+
+            juju attach-resource trilio-wlm-k8s license=<path>
+            juju run trilio-wlm-k8s/leader create-license
+
+        resources.fetch() returns a path inside the *charm* container, which the
+        workload container cannot see, so the bytes are pushed to LICENSE_PATH in
+        the trilio-wlm container before workloadmgr is pointed at them. That is
+        what removes the old `kubectl cp` step -- and with it the leader-vs-pod-0
+        trap, since the leader now fetches and writes the file itself, on the very
+        unit that runs the command.
+
+        license-file-path stays supported as an override for a licence already
+        placed inside the container by other means. When it is given the resource
+        is not consulted at all, and the old pre-flight existence check still
+        applies, because in that mode nothing guarantees the file is on this unit.
 
         Auth uses the WLM service account from the identity-service relation
         (the same credentials the old charm-trilio-wlm's create_license()
@@ -378,7 +399,85 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Workload container not ready")
             return
-        license_file_path = event.params["license-file-path"]
+        license_file_path = (event.params.get("license-file-path") or "").strip()
+        if license_file_path:
+            # Override mode. The file is whatever the operator put there, so it
+            # still has to be proven to exist. Checked through the Pebble file
+            # API rather than `test -f` via exec, because exec is exactly what
+            # cannot be trusted here -- see below.
+            directory, _, basename = license_file_path.rpartition("/")
+            try:
+                present = any(
+                    f.name == basename
+                    for f in container.list_files(directory or "/", pattern=basename)
+                )
+            except ops.pebble.PathError:
+                present = False
+            if not present:
+                event.fail(
+                    f"licence file {license_file_path} does not exist in the {CONTAINER}"
+                    f" container on this unit ({self.unit.name}). Note this action runs"
+                    " on the leader, so the file has to be copied to the leader's pod,"
+                    " not just to pod 0. Attaching the licence as a Juju resource"
+                    f" instead (juju attach-resource {self.app.name}"
+                    f" {LICENSE_RESOURCE}=<file>, then run this action with no"
+                    " parameters) avoids that."
+                )
+                return
+        else:
+            try:
+                resource_path = self.model.resources.fetch(LICENSE_RESOURCE)
+            except ops.ModelError:
+                # Declared in charmcraft.yaml but never uploaded: `resource-get`
+                # exits non-zero and ops turns that into ModelError. This is the
+                # operator-facing case and by far the likeliest one.
+                event.fail(
+                    f"no {LICENSE_RESOURCE} resource attached. Run"
+                    f" 'juju attach-resource {self.app.name} {LICENSE_RESOURCE}=<file>'"
+                    " (the file must have no extension) and then this action again,"
+                    " or pass license-file-path=<path> for a licence already inside"
+                    f" the {CONTAINER} container."
+                )
+                return
+            except NameError:
+                # ops raises NameError, not ModelError, when the name is not in
+                # the charm's own metadata. That is a packaging bug -- attaching
+                # harder will not fix it -- so it gets its own message.
+                event.fail(
+                    f"this charm build does not declare a '{LICENSE_RESOURCE}'"
+                    " resource; use license-file-path=<path> instead, and file a bug."
+                )
+                return
+            try:
+                license_bytes = resource_path.read_bytes()
+            except OSError as e:
+                event.fail(f"could not read the attached {LICENSE_RESOURCE} resource: {e}")
+                return
+            if not license_bytes:
+                # Some Juju versions hand back a zero-byte placeholder instead of
+                # failing outright for a never-uploaded file resource. Left alone,
+                # license-create would take it, be rejected by the API, and still
+                # exit 0 -- the exact failure this action already defends against.
+                event.fail(
+                    f"the attached {LICENSE_RESOURCE} resource is empty. Re-run"
+                    f" 'juju attach-resource {self.app.name} {LICENSE_RESOURCE}=<file>'"
+                    " with the real licence file."
+                )
+                return
+            # Pushed as bytes, not str: the licence is an opaque signed blob, and
+            # decoding it would only add an encoding guess and a chance to rewrite
+            # line endings. This way workloadmgr reads exactly what was attached --
+            # the same bytes the old reactive charm handed to license-create.
+            try:
+                container.push(LICENSE_PATH, license_bytes, make_dirs=True)
+            except ops.pebble.Error as e:
+                event.fail(
+                    f"could not write the licence into the {CONTAINER} container: {e}"
+                )
+                return
+            logger.info("Wrote %s from the %s resource", LICENSE_PATH, LICENSE_RESOURCE)
+            license_file_path = LICENSE_PATH
+
         auth_url = (
             f"{identity['service_protocol']}://"
             f"{identity['service_host']}:{identity['service_port']}/v3"
@@ -400,25 +499,6 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         cmd = wlm_auth + [
             "license-create", license_file_path, "-f", "json", "--accept-eula",
         ]
-        # The licence file has to be here before we run anything. Checked through
-        # the Pebble file API rather than `test -f` via exec, because exec is
-        # exactly what cannot be trusted here -- see below.
-        directory, _, basename = license_file_path.rpartition("/")
-        try:
-            present = any(
-                f.name == basename
-                for f in container.list_files(directory or "/", pattern=basename)
-            )
-        except ops.pebble.PathError:
-            present = False
-        if not present:
-            event.fail(
-                f"licence file {license_file_path} does not exist in the {CONTAINER}"
-                f" container on this unit ({self.unit.name}). Note this action runs"
-                " on the leader, so the file has to be copied to the leader's pod,"
-                " not just to pod 0."
-            )
-            return
 
         try:
             process = container.exec(cmd)

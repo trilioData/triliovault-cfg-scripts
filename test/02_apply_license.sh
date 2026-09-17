@@ -47,9 +47,15 @@ cp -f "$LICENSE_SRC" "$STAGED"
 
 case "$T4O_DISTRO" in
   sunbeam)
-    copy_to_wlm "$STAGED" /tmp/license
+    # Guarded, because the copy_to_wlm this replaced was t4o_die-guarded: a
+    # silent attach failure would leave the charm fetching a stale resource
+    # revision, or none, and the apply below would then be testing the wrong
+    # file. pipefail is set, so the pipeline carries juju's exit status.
+    juju attach-resource trilio-wlm-k8s "license=$STAGED" \
+        -m "$T4O_JUJU_K8S_MODEL" 2>&1 | sed 's/^/  /' \
+      || t4o_die "juju attach-resource failed — the licence was never uploaded."
     juju run trilio-wlm-k8s/leader create-license \
-        license-file-path=/tmp/license -m "$T4O_JUJU_K8S_MODEL" 2>&1 | sed 's/^/  /'
+        -m "$T4O_JUJU_K8S_MODEL" 2>&1 | sed 's/^/  /'
     ;;
   canonical)
     juju attach-resource trilio-wlm "license=$STAGED" 2>&1 | sed 's/^/  /'

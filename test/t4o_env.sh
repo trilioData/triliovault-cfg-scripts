@@ -434,16 +434,17 @@ copy_to_wlm() {
 
 # _t4o_copy_to_all_wlm_pods — put a file on every WLM pod, not just pod 0.
 #
-# The charm actions that consume these files run as
-# `juju run trilio-wlm-k8s/leader ...`, i.e. on whichever unit currently holds
-# leadership. Copying to a single hard-coded pod only worked while pod 0 happened
-# to be the leader; once a redeploy moved leadership to unit 2, create-license
-# read a path that did not exist there and the action still reported
-# "License applied successfully", which cost a long detour to diagnose.
+# Still needed for the CA cert and the barbican helper in step 04, which are
+# consumed by wlm_exec/wlm_exec_python against $WLM_POD. These files are a few
+# hundred bytes, so copying everywhere is free insurance against $WLM_POD
+# drifting or the pod set being recreated between the copy and the read.
 #
-# Copying to every pod also closes the race where leadership moves between the
-# copy and the action. These files are a few hundred bytes, so the cost is
-# irrelevant next to the failure mode.
+# Historical note: this originally existed because create-license ran on the
+# leader and read an in-container path, so a redeploy that moved leadership off
+# pod 0 made the action read a nonexistent file and still report "License
+# applied successfully" — a long detour to diagnose. TVAULT-7691 removed that
+# path: create-license now takes the licence from the Juju resource and pushes
+# it into the leader's own pod itself.
 _t4o_copy_to_all_wlm_pods() {
     local src="$1" dst="$2" pods pod rc=0
     pods=$(kubectl get pods -n "$K8S_NAMESPACE"              -l app.kubernetes.io/name=trilio-wlm-k8s              -o jsonpath='{range .items[*]}{.metadata.name} {end}' 2>/dev/null)

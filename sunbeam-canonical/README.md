@@ -134,6 +134,11 @@ juju attach-resource trilio-wlm-k8s license=<path-to-license-file>
 juju run trilio-wlm-k8s/leader create-license
 ```
 
+The licence file must have **no extension** — Juju validates the attached
+filename against the resource definition, which declares `filename: license`.
+The action copies it into the trilio-wlm container on the leader unit itself,
+so no `kubectl cp` is needed.
+
 ## Upgrade
 
 An upgrade refreshes the Trilio charms only. `trilio-mysql` is not refreshed by

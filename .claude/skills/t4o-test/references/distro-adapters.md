@@ -88,7 +88,7 @@ prints the password — only which discovery path succeeded.
 | Distro | Licence | Trust |
 |---|---|---|
 | canonical | `juju attach-resource trilio-wlm license=<file>` (file must have **no extension**) then `juju run trilio-wlm/leader create-license` | `juju run trilio-wlm/leader create-cloud-admin-trust password=<pw>` |
-| sunbeam | copy into the pod, then `juju run trilio-wlm-k8s/leader create-license license-file-path=/tmp/license` | `juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<pw>` |
+| sunbeam | `juju attach-resource trilio-wlm-k8s license=<file>` (file must have **no extension**) then `juju run trilio-wlm-k8s/leader create-license` | `juju run trilio-wlm-k8s/leader create-cloud-admin-trust password=<pw>` |
 | kolla, rhoso18, rhosp17, openstack-helm | copy into the WLM container, then `workloadmgr license-create /tmp/license --accept-eula` | `workloadmgr trust-create --is_cloud_trust True admin`, 5 retries 30s apart while wlm-api is still starting |
 
 Both charm actions wrap a CLI that exits 0 on failure, so verify with
