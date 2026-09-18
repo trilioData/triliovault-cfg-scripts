@@ -465,7 +465,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
                 )
                 return
             # Pushed as bytes, not str: the licence is an opaque signed blob, and
-            # decoding it would only add an encoding guess and a chance to rewrite
+            # decoding it would only add an encoding guess, and a chance to rewrite
             # line endings. This way workloadmgr reads exactly what was attached --
             # the same bytes the old reactive charm handed to license-create.
             try:
