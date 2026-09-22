@@ -39,6 +39,7 @@ The `sql_exporter/sql-exporter-config.yaml` defines the `mysql_workloads` collec
 - `mysql_trilio_snapshots_info` — snapshot counts by project/status (successful, failed, running)
 - `mysql_trilio_restore_info` — restore counts by project/status
 - `mysql_trilio_backup_size_info` — backup size in GB by project
+- `mysql_trilio_restore_size_info` — logical (restore) size in GB by project; same underlying `snapshots.restore_size` column the `mysql_trilio_backup_size_info` query already selects as `total_restore_size` but never exposed as a metric value, so it's split into its own metric rather than added as a second `values` column (which would require `value_label` and silently change what `sum(mysql_trilio_backup_size_info)` returns for every existing panel)
 - `mysql_trilio_snapshots_status` — per-snapshot detail with workload/snapshot IDs
 - `mysql_trilio_snapshot_last_updated` — per-snapshot last-status-change timestamp, enables Grafana time-range filtering on the Backup Monitor dashboard
 - `mysql_trilio_restore_last_updated` — per-restore last-status-change timestamp, mirrors `mysql_trilio_snapshot_last_updated`; powers the "Failed Restores" table on the Backup Monitor dashboard
