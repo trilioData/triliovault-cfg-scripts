@@ -28,6 +28,17 @@ import sys
 # community image. Stripping the key would therefore downgrade an upgrading customer from
 # RHOSO's supported RabbitMQ image to quay.io/podified-antelope-centos9. The FR5 and FR6
 # inputs files both carry the key, and the FR6 chart consumes it, so it must survive.
+#
+# spec.rabbitmq.cluster.rabbitmq stays in this list, and on FR6 removing it matters for
+# correctness rather than tidiness (TVAULT-7678). The FR6 chart reads that same key, so
+# a till-FR5 block carried over by hand would be rendered into the native CR's
+# spec.rabbitmq.additionalConfig, landing in conf.d/90-userDefinedConfiguration.conf -
+# which the broker loads AFTER the operator's 10-operatorDefaults.conf. Its
+# cluster_partition_handling = autoheal would then override FR6's pause_minority (wrong
+# for our quorum queues) and its ssl_options.* would override the operator's TLS
+# listener setup, while advanced_config/erlang_inet_config would replace the operator's
+# FIPS-/version-aware TLS config and break DNS resolution. Stripping the block hands the
+# FR6-safe default in the chart's values.yaml back to the deployment.
 
 FIELDS_TO_REMOVE = [
     ("spec", "rabbitmq", "cluster", "api_version"),
@@ -138,7 +149,6 @@ def main():
     for path in FIELDS_TO_REMOVE:
         dotted = ".".join(path)
         print(f"- Removed {dotted}" if path in removed_paths else f"- {dotted} not present, skipping")
-
     with open(output_file, "w", newline="") as file:
         file.writelines(output_lines)
 
