@@ -57,12 +57,10 @@ RUN mkdir -p \
     /etc/triliovault-dms \
     /etc/triliovault-dms/client.conf.d \
     /var/log/triliovault \
-    /run/dms/s3 \
     && chmod 777 /var/lib/trilio/triliovault-mounts \
     && chown -R nova:nova \
     /var/lib/trilio/triliovault-mounts \
     /var/log/triliovault \
-    /run/dms/s3 \
     /etc/triliovault-dms
 
 RUN echo "user_allow_other" > /etc/fuse.conf
