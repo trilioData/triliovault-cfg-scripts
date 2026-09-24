@@ -4,12 +4,21 @@
   hosts: triliovault-wlm-api
   become: true
   gather_facts: false
+  vars:
+    # This is a standalone play, so the triliovault role defaults are not in scope - the
+    # variables below come from /etc/kolla/globals.yml. globals.yml also defines
+    # triliovault_docker_image_prefix and, being extra-vars, overrides this fallback; the
+    # fallback only covers a globals.yml that predates TVAULT-7702.
+    triliovault_docker_image_prefix: >-
+      {{ '' if (kolla_container_engine | default('docker')) == 'docker'
+      and (triliovault_docker_registry | default('docker.io')) in ['', 'docker.io', 'index.docker.io']
+      else ((triliovault_docker_registry ~ '/') if triliovault_docker_registry else '') }}
   tasks:
     - name: Create Cloud Admin Trust
       become: true
       docker_container:
         name: wlm_cloud_trust
-        image: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
+        image: "{{ triliovault_docker_image_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
         command: 
           - /bin/bash
           - -c

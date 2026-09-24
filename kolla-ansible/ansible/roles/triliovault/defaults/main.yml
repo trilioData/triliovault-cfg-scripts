@@ -156,8 +156,8 @@ triliovault_services:
 # Docker
 ####################
 ###### START OF DATAMOVER ##
-triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
-triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
+triliovault_datamover_image_full: "{{ triliovault_docker_image_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
+triliovault_datamover_api_image_full: "{{ triliovault_docker_image_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
 
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
@@ -165,13 +165,13 @@ triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
 
 
 ###### START OF WORKLOADMGR ####
-triliovault_wlm_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
+triliovault_wlm_image_full: "{{ triliovault_docker_image_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
 
 triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
 ###### START OF DMS ####
-triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_dms_tag }}"
+triliovault_dms_image_full: "{{ triliovault_docker_image_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_dms_tag }}"
 triliovault_dms_dimensions: "{{ default_container_dimensions }}"
 ###### END OF WORKLOADMGR ####
 
@@ -438,6 +438,21 @@ triliovault_tag: "5.0.X-wallaby"
 triliovault_docker_username: ""
 triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
+
+## Registry prefix used to build the Trilio image names.
+## The docker daemon normalises the default registry out of the image names it stores
+## locally, while kolla's docker check_image() does an exact string match against RepoTags:
+## a "docker.io/trilio/..." name therefore never matches, compare_image() is True on every
+## run, and every Trilio container is stopped, removed and recreated on every deploy - which
+## is what exposed the systemd start race behind TVAULT-7702. So drop the prefix for the
+## default registry, but only on docker: podman stores names fully qualified, looks images
+## up through its API instead of matching strings, and ignores the registry part when
+## comparing, so it keeps the prefix and its short-name resolution stays undisturbed.
+## triliovault_docker_registry itself is unchanged - it is still the login (auth_registry).
+triliovault_docker_image_prefix: >-
+  {{ '' if (kolla_container_engine | default('docker')) == 'docker'
+  and (triliovault_docker_registry | default('docker.io')) in ['', 'docker.io', 'index.docker.io']
+  else ((triliovault_docker_registry ~ '/') if triliovault_docker_registry else '') }}
 
 ##################
 # RabbitMQ

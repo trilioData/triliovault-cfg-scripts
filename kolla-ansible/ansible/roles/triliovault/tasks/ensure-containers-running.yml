@@ -1,0 +1,153 @@
+---
+# TVAULT-7702 - make sure the containers the handlers just (re)created are actually running.
+#
+# From Bobcat (2023.2) onwards kolla never runs "<engine> start" itself. kolla_container
+# writes /etc/systemd/system/kolla-<container>-container.service
+# (ExecStart=/usr/bin/<engine> start -a <container>) and asks systemd to start it over
+# D-Bus. kolla_systemd_worker.py wraps that call in "except Exception: return False", and
+# kolla_docker_worker.start_container() turns the False into the generic
+# "Module failed: Container timed out". Any StartUnit refusal - a unit sitting in
+# failed/start-limit-hit from an earlier crash loop, a transient D-Bus error right after a
+# daemon-reload - therefore leaves the container in 'Created' with the engine never asked to
+# start it, and the real reason discarded. Upstream bug, open since 2023.2:
+# https://bugs.launchpad.net/kolla-ansible/+bug/2048841
+#
+# Clearing the failed unit and starting it through the systemd module recovers that in-run,
+# and when it genuinely cannot start the failure names the reason instead of "timed out".
+
+- name: Check whether the triliovault containers are running
+  become: true
+  command: >-
+    {{ kolla_container_engine }} inspect
+    --format={% raw %}{{.State.Status}}{% endraw %}
+    {{ item.value.container_name }}
+  register: triliovault_container_status
+  changed_when: false
+  failed_when: false
+  with_dict: "{{ triliovault_services }}"
+  when:
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+    # wlm-cron is a single-instance service: start_wlm_cron_service.yml deliberately leaves
+    # it stopped on every wlm-cron host but the first, so it must only be checked there.
+    - item.key != 'triliovault-wlm-cron' or inventory_hostname == groups[triliovault_wlm_cron_group][0]
+
+# Containers that exist but are not running (created / exited / paused) - recoverable here.
+# A container that does not exist at all is reported with the failures further down: the
+# handler should have created it and there is nothing for this guard to start.
+- name: Build the list of triliovault containers that need to be started
+  set_fact:
+    triliovault_containers_stopped: >-
+      {{ triliovault_container_status.results | default([])
+         | rejectattr('skipped', 'defined')
+         | selectattr('rc', 'equalto', 0)
+         | rejectattr('stdout', 'equalto', 'running')
+         | map(attribute='item.value.container_name') | list }}
+
+# Branch on the unit actually being there rather than on triliovault_kolla_module: zed and
+# 2023.1 have no units at all, and on later releases kolla also skips the unit when
+# docker_restart_policy is 'oneshot'. Either way the container is then started directly.
+- name: Look for the kolla systemd units of the triliovault containers to be started
+  become: true
+  stat:
+    path: "/etc/systemd/system/kolla-{{ item }}-container.service"
+  register: triliovault_container_units
+  changed_when: false
+  loop: "{{ triliovault_containers_stopped }}"
+
+- name: Split those containers by whether kolla manages them through systemd
+  set_fact:
+    triliovault_containers_with_unit: >-
+      {{ triliovault_container_units.results | default([])
+         | selectattr('stat.exists') | map(attribute='item') | list }}
+    triliovault_containers_without_unit: >-
+      {{ triliovault_container_units.results | default([])
+         | rejectattr('stat.exists') | map(attribute='item') | list }}
+
+- name: Clear the failed state of the triliovault container systemd units
+  become: true
+  command: "systemctl reset-failed kolla-{{ item }}-container.service"
+  changed_when: false
+  failed_when: false
+  loop: "{{ triliovault_containers_with_unit }}"
+
+# ignore_errors rather than failed_when, so that 'until' still sees a failure and the
+# retries actually happen - a transient StartUnit refusal is exactly what this absorbs.
+- name: Start the triliovault container systemd units
+  become: true
+  systemd:
+    name: "kolla-{{ item }}-container.service"
+    state: started
+  loop: "{{ triliovault_containers_with_unit }}"
+  register: triliovault_unit_start
+  until: triliovault_unit_start is succeeded
+  retries: 3
+  delay: 15
+  ignore_errors: true
+
+- name: Start the triliovault containers that are not managed through systemd
+  become: true
+  command: "{{ kolla_container_engine }} start {{ item }}"
+  loop: "{{ triliovault_containers_without_unit }}"
+  register: triliovault_engine_start
+  until: triliovault_engine_start is succeeded
+  retries: 3
+  delay: 15
+  ignore_errors: true
+
+- name: Wait for the triliovault containers to reach the running state
+  become: true
+  command: >-
+    {{ kolla_container_engine }} inspect
+    --format={% raw %}{{.State.Status}}{% endraw %}
+    {{ item }}
+  register: triliovault_container_recheck
+  changed_when: false
+  failed_when: false
+  until: triliovault_container_recheck.stdout == 'running'
+  retries: 6
+  delay: 10
+  loop: "{{ triliovault_containers_stopped }}"
+
+# Built from the two registered results rather than from a previous set_fact, so the list
+# arithmetic never depends on how the templar hands a fact back.
+- name: Build the list of triliovault containers that are still not running
+  set_fact:
+    triliovault_containers_failed: >-
+      {{ (triliovault_container_recheck.results | default([])
+          | rejectattr('skipped', 'defined')
+          | rejectattr('stdout', 'equalto', 'running')
+          | map(attribute='item') | list)
+         + (triliovault_container_status.results | default([])
+            | rejectattr('skipped', 'defined')
+            | rejectattr('rc', 'equalto', 0)
+            | map(attribute='item.value.container_name') | list) }}
+
+- name: Collect diagnostics for the triliovault containers that are still not running
+  become: true
+  shell: |
+    echo "=== {{ kolla_container_engine }} inspect {{ item }} ==="
+    {{ kolla_container_engine }} inspect --format={% raw %}'{{.State.Status}} {{.State.Error}}'{% endraw %} {{ item }} 2>&1 | tail -5
+    {% if item in triliovault_containers_with_unit %}
+    echo "=== systemctl status kolla-{{ item }}-container.service ==="
+    systemctl status --no-pager --full kolla-{{ item }}-container.service 2>&1 | tail -20
+    echo "=== journalctl -u kolla-{{ item }}-container.service ==="
+    journalctl -u kolla-{{ item }}-container.service -n 30 --no-pager 2>&1 | tail -30
+    {% endif %}
+    echo "=== {{ kolla_container_engine }} logs {{ item }} ==="
+    {{ kolla_container_engine }} logs --tail 30 {{ item }} 2>&1 | tail -30
+  register: triliovault_container_diagnostics
+  changed_when: false
+  failed_when: false
+  loop: "{{ triliovault_containers_failed }}"
+
+- name: Fail when a triliovault container could not be started
+  fail:
+    msg: |
+      These triliovault containers are not running on {{ inventory_hostname }}:
+      {{ triliovault_containers_failed | join(', ') }}
+
+      {% for result in triliovault_container_diagnostics.results | default([]) %}
+      {{ result.stdout | default('no diagnostics collected') }}
+      {% endfor %}
+  when: triliovault_containers_failed | length > 0

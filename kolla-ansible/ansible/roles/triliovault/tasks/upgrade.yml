@@ -1,2 +1,12 @@
 ---
 - include_tasks: config.yml
+
+- name: Flush handlers
+  meta: flush_handlers
+
+# The handlers recreate wlm-cron on every wlm-cron host, so the single-instance placement
+# has to be re-applied here exactly as deploy.yml does it.
+- include_tasks: start_wlm_cron_service.yml
+  when: inventory_hostname in groups[triliovault_wlm_cron_group]
+
+- include_tasks: ensure-containers-running.yml
