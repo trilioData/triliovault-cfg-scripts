@@ -1,5 +1,18 @@
 ---
-- name: Stop wlm_cron service (kolla_docker)
+# wlm-cron must run as a single instance, so it is stopped on every wlm-cron host except the
+# first one, which is where it is started.
+#
+# TVAULT-7702: the start task used to pair a per-host stop on every wlm-cron host with a
+# bare "run_once: true" start, which leaves the host the start actually runs on up to the
+# play's host ordering and to how run_once interacts with the conditional include above it -
+# if it does not land on a wlm-cron host the stop has run everywhere and nothing is started.
+# delegate_to makes the placement explicit instead of implied.
+#
+# The start also passes the same spec as the handler (privileged, dimensions and the volumes
+# from defaults). While it did not, compare_container saw a permanent difference and the
+# container was torn down and recreated on every single run, flip-flopping with the handler.
+
+- name: Stop wlm_cron service on the non-primary wlm-cron hosts (kolla_docker)
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
@@ -9,9 +22,10 @@
     name: "{{ triliovault_wlm_cron.container_name }}"
   when:
     - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - inventory_hostname != groups[triliovault_wlm_cron_group][0]
     - triliovault_kolla_module == 'kolla_docker'
 
-- name: Stop wlm_cron service (kolla_container)
+- name: Stop wlm_cron service on the non-primary wlm-cron hosts (kolla_container)
   vars:
     triliovault_wlm_cron: "{{ triliovault_services['triliovault-wlm-cron'] }}"
   become: true
@@ -21,6 +35,7 @@
     name: "{{ triliovault_wlm_cron.container_name }}"
   when:
     - inventory_hostname in groups[triliovault_wlm_cron_group]
+    - inventory_hostname != groups[triliovault_wlm_cron_group][0]
     - triliovault_kolla_module == 'kolla_container'
 
 - name: Starting triliovault workloadmgr cron container (kolla_docker)
@@ -32,22 +47,15 @@
     common_options: "{{ docker_common_options }}"
     image: "{{ triliovault_wlm_cron.image }}"
     name: "{{ triliovault_wlm_cron.container_name }}"
-    volumes:
-      - "{{ node_config_directory }}/triliovault-wlm-cron/:{{ container_config_directory }}/:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
-      - "/var/log/kolla/triliovault-wlm-cron/:/var/log/triliovault:rw"
-      - "/dev:/dev"
-      - "/lib/modules:/lib/modules:ro"
-      - "/run:/run:shared"
-      - "libvirtd:/var/lib/libvirt"
-      - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
-      - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
-      - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+    privileged: "{{ triliovault_wlm_cron.privileged | default(False) }}"
+    volumes: "{{ triliovault_wlm_cron.volumes | reject('equalto', '') | list }}"
+    dimensions: "{{ triliovault_wlm_cron.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
   run_once: true
-  when:
-    - inventory_hostname in groups[triliovault_wlm_cron_group]
-    - triliovault_kolla_module == 'kolla_docker'
+  delegate_to: "{{ groups[triliovault_wlm_cron_group][0] }}"
+  when: triliovault_kolla_module == 'kolla_docker'
 
 - name: Starting triliovault workloadmgr cron container (kolla_container)
   vars:
@@ -58,19 +66,12 @@
     common_options: "{{ docker_common_options }}"
     image: "{{ triliovault_wlm_cron.image }}"
     name: "{{ triliovault_wlm_cron.container_name }}"
-    volumes:
-      - "{{ node_config_directory }}/triliovault-wlm-cron/:{{ container_config_directory }}/:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "{{ '/etc/timezone:/etc/timezone:ro' if kolla_base_distro in ['debian', 'ubuntu'] else '' }}"
-      - "/var/log/kolla/triliovault-wlm-cron/:/var/log/triliovault:rw"
-      - "/dev:/dev"
-      - "/lib/modules:/lib/modules:ro"
-      - "/run:/run:shared"
-      - "libvirtd:/var/lib/libvirt"
-      - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
-      - "{{ nova_instance_datadir_volume }}:/var/lib/nova/"
-      - "{{ triliovault_parent_data_directory }}:{{ triliovault_parent_data_directory }}:shared"
+    privileged: "{{ triliovault_wlm_cron.privileged | default(False) }}"
+    volumes: "{{ triliovault_wlm_cron.volumes | reject('equalto', '') | list }}"
+    dimensions: "{{ triliovault_wlm_cron.dimensions }}"
+    auth_username: "{{ triliovault_docker_username }}"
+    auth_password: "{{ triliovault_docker_password }}"
+    auth_registry: "{{ triliovault_docker_registry }}"
   run_once: true
-  when:
-    - inventory_hostname in groups[triliovault_wlm_cron_group]
-    - triliovault_kolla_module == 'kolla_container'
+  delegate_to: "{{ groups[triliovault_wlm_cron_group][0] }}"
+  when: triliovault_kolla_module == 'kolla_container'
