@@ -22,7 +22,7 @@ spec:
       serviceAccountName: galera-wait-sa
       containers:
         - name: wait-for-galera
-          image: registry.redhat.io/openshift4/ose-cli:latest
+          image: {{ .Values.images.openshift_cli }}
           command:
             - /bin/bash
             - -c
