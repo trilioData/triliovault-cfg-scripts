@@ -39,7 +39,7 @@ spec:
         - operator: Exists
       containers:
         - name: trilio-ctlplane-bt-cleanup
-          image: registry.redhat.io/openshift4/ose-cli:latest
+          image: registry.redhat.io/openshift4/ose-cli:v4.14
           securityContext:
             privileged: true
             readOnlyRootFilesystem: false
