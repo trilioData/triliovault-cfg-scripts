@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sql-exporter
-  namespace: openshift-user-workload-monitoring
+  namespace: trilio-monitoring
 spec:
   replicas: 1
   selector:
