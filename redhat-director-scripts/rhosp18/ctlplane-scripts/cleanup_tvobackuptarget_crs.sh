@@ -82,12 +82,11 @@ fi
 leftover=""
 for cr in ${bt_crs}; do
   s=$(oc -n "${NAMESPACE}" get secrets -l "owner=helm,name=${cr##*/}" -o name 2>/dev/null || true)
-  [ -n "${s}" ] && leftover="${leftover}${s}"$'
-'
+  leftover="${leftover}${s:+${s} }"
 done
 if [ -n "${leftover}" ]; then
   log "ERROR: Helm release secrets still present:"
-  echo "${leftover}"
+  echo "${leftover}" | tr ' ' '\n'
   exit 1
 fi
 log "All TVOBackupTarget CRs, Helm release secrets and the CRD are removed."
