@@ -25,7 +25,7 @@ images:
   triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:5.0.0-train-ubuntu_bionic
   triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:5.0.0-train-ubuntu_bionic
   triliovault_dms: docker.io/trilio/trilio-dms:6.2.0-stable-rhosp18.0
-  openshift_cli: registry.redhat.io/openshift4/ose-cli:latest
+  openshift_cli: registry.redhat.io/openshift4/ose-cli:v4.14
   # RHOSO's supported RabbitMQ image. Consumed by both rabbitmq chart variants
   # (spec.image on the community RabbitmqCluster, spec.containerImage on the native
   # RabbitMq). Kept here as a chart default so an inputs file that predates the
