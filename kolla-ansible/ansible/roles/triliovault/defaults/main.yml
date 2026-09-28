@@ -155,7 +155,7 @@ triliovault_services:
 ####################
 # Docker
 ####################
-triliovault_image_registry_prefix: "{{ '' if (kolla_container_engine == 'docker' and triliovault_docker_registry == 'docker.io') else triliovault_docker_registry ~ '/' }}"
+triliovault_image_registry_prefix: ""
 
 ###### START OF DATAMOVER ##
 triliovault_datamover_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
