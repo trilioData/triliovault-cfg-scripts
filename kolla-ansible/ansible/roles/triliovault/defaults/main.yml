@@ -155,9 +155,11 @@ triliovault_services:
 ####################
 # Docker
 ####################
+triliovault_image_registry_prefix: "{{ '' if (kolla_container_engine == 'docker' and triliovault_docker_registry == 'docker.io') else triliovault_docker_registry ~ '/' }}"
+
 ###### START OF DATAMOVER ##
-triliovault_datamover_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
-triliovault_datamover_api_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
+triliovault_datamover_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
+triliovault_datamover_api_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
 
 triliovault_datamover_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
@@ -165,13 +167,13 @@ triliovault_datamover_dimensions: "{{ default_container_dimensions }}"
 
 
 ###### START OF WORKLOADMGR ####
-triliovault_wlm_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
+triliovault_wlm_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
 
 triliovault_wlm_api_dimensions: "{{ default_container_dimensions }}"
 triliovault_wlm_dimensions: "{{ default_container_dimensions }}"
 
 ###### START OF DMS ####
-triliovault_dms_image_full: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_dms_tag }}"
+triliovault_dms_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-dms:{{ triliovault_dms_tag }}"
 triliovault_dms_dimensions: "{{ default_container_dimensions }}"
 ###### END OF WORKLOADMGR ####
 
