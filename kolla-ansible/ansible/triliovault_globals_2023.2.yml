@@ -27,7 +27,7 @@ enable_triliovault: "yes"
 horizon_source_image_prefix: "kolla-{{ kolla_base_distro }}-trilio-horizon-plugin"
 horizon_binary_image_prefix: "{{ kolla_base_distro }}-{{ kolla_install_type }}-trilio-horizon-plugin"
 
-triliovault_horizon_image_full: "{{ triliovault_docker_registry }}/trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
+triliovault_horizon_image_full: "{{ triliovault_image_registry_prefix }}trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
 
 ## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
 ## By default triliovault horizon will not be enabled on openstack horizon
@@ -51,6 +51,7 @@ triliovault_dms_tag: "6.2.0-stable"
 triliovault_docker_username: ""
 triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"
+triliovault_image_registry_prefix: "{{ '' if (kolla_container_engine == 'docker' and triliovault_docker_registry == 'docker.io') else triliovault_docker_registry ~ '/' }}"
 
 ## NOTE: Backup target (NFS/S3) configuration has been removed in T4O 6.2.
 ## Backup targets are now managed dynamically via the Trilio DMS service and
