@@ -189,4 +189,25 @@ else
   log "  No per-BT S3 secrets found."
 fi
 
+log_step "Step 8: Remove orphaned TVOBackupTarget CRs and CRD"
+BT_CRD="tvobackuptargets.tvo.trilio.io"
+if oc get crd "${BT_CRD}" &>/dev/null; then
+  bt_crs=$(oc -n "${NAMESPACE}" get tvobackuptarget -o name 2>/dev/null || true)
+  if [ -n "${bt_crs}" ]; then
+    for cr in ${bt_crs}; do
+      cr_name="${cr##*/}"
+      oc -n "${NAMESPACE}" patch "${cr}" --type=merge -p '{"metadata":{"finalizers":null}}'
+      oc -n "${NAMESPACE}" delete "${cr}" --ignore-not-found --wait=false
+      oc -n "${NAMESPACE}" delete secret -l "owner=helm,name=${cr_name}" --ignore-not-found
+      log "  Deleted TVOBackupTarget: ${cr_name}"
+    done
+  else
+    log "  No TVOBackupTarget CRs found."
+  fi
+  oc delete crd "${BT_CRD}" --ignore-not-found
+  log "  Deleted CRD: ${BT_CRD}"
+else
+  log "  CRD ${BT_CRD} not found (skip)."
+fi
+
 log_step "Control plane backup target cleanup complete"
