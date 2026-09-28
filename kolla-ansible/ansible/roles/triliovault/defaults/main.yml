@@ -155,8 +155,6 @@ triliovault_services:
 ####################
 # Docker
 ####################
-triliovault_image_registry_prefix: ""
-
 ###### START OF DATAMOVER ##
 triliovault_datamover_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover:{{ triliovault_tag }}"
 triliovault_datamover_api_image_full: "{{ triliovault_image_registry_prefix }}trilio/kolla-{{ kolla_base_distro }}-trilio-datamover-api:{{ triliovault_tag }}"
