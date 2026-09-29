@@ -1,2 +1,11 @@
 ---
 - include_tasks: config.yml
+
+# Clear any failed container unit BEFORE the handlers run: a handler failure drops the
+# host from the play, so ensure-containers-running.yml below would never be reached on it.
+- include_tasks: clear-failed-container-units.yml
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include_tasks: ensure-containers-running.yml
