@@ -38,6 +38,11 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y \
     && dnf install virt-v2v virtio-win nbdkit -y
 
+RUN dnf install -y centos-release-ceph-tentacle \
+    && dnf upgrade -y $(rpm -qa --qf '%{NAME}\n' | grep -E '^(ceph-|librados|librbd|libcephfs|librgw|python3-ceph|python3-rados|python3-rbd|python3-rgw)') \
+    && rpm -q ceph-common | grep -q '^ceph-common-20\.2\.' \
+    && dnf clean all
+
 ## Downgrade eventlet to 0.30.2-1 from CBS to satisfy s3fuse eventlet <= 0.30.2-4 constraint
 RUN dnf install -y --allowerasing \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
