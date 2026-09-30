@@ -11,6 +11,9 @@ auth_url = {{ .Values.keystone.common.auth_url }}
 # Use quorum queue type for RabbitMQ
 rabbitmq_queue_type = quorum
 {{- end }}
+{{- if .Values.rabbitmq.common.amqp_durable_queues }}
+rabbitmq_queue_durable = true
+{{- end }}
 
 # Barbican SSL verification (optional, default: False)
 # Set to True to enable SSL certificate verification for Barbican API

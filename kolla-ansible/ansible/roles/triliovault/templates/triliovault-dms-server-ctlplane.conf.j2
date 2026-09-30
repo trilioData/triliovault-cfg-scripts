@@ -4,6 +4,9 @@ rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rp
 {% if rabbit_quorum_queue | bool %}
 rabbitmq_queue_type = quorum
 {% endif %}
+{% if amqp_durable_queues | bool %}
+rabbitmq_queue_durable = true
+{% endif %}
 
 # Node identifier — must match OS-EXT-SRV-ATTR:host from nova (the nova-compute host value)
 node_id = {{ ansible_fqdn }}

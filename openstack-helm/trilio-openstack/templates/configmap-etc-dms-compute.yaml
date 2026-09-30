@@ -19,6 +19,13 @@ limitations under the License.
 {{- $base := deepCopy .Values.conf.dms_server.server }}
 
 {{- $_ := set $base "auth_url" $auth_url }}
+{{- $oslo := .Values.conf.wlm.oslo_messaging_rabbit | default .Values.conf.datamover_api.oslo_messaging_rabbit | default dict }}
+{{- if and (eq (lower (toString (index $oslo "rabbit_quorum_queue" | default false))) "true") (not (hasKey $base "rabbitmq_queue_type")) }}
+{{- $_ := set $base "rabbitmq_queue_type" "quorum" }}
+{{- end }}
+{{- if and (eq (lower (toString (index $oslo "amqp_durable_queues" | default false))) "true") (not (hasKey $base "rabbitmq_queue_durable")) }}
+{{- $_ := set $base "rabbitmq_queue_durable" "true" }}
+{{- end }}
 {{- $_ := set $base "rabbitmq_url" (tuple "oslo_messaging_wlm" "internal" "triliovault_wlm" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup") }}
 
 apiVersion: v1
