@@ -453,9 +453,8 @@ triliovault_wlm_rabbitmq_users:
     vhost: "{{ triliovault_wlm_rpc_vhost }}"
     tags: "{{ triliovault_tags }}"
 
-# Set to true if your RabbitMQ cluster uses quorum queues (>= 3.13 / Bobcat+)
-rabbit_quorum_queue: "{{ om_enable_rabbitmq_quorum_queues | default(openstack_release not in ['zed', '2023.1']) }}"
-amqp_durable_queues: "{{ om_enable_rabbitmq_high_availability | default(false) }}"
+rabbit_quorum_queue: "{{ openstack_release not in ['zed', '2023.1', '2023.2', '2024.1', '2024.2'] or om_enable_rabbitmq_quorum_queues | default(false) | bool }}"
+amqp_durable_queues: "{{ openstack_release in ['zed', '2023.1', '2023.2', '2024.1', '2024.2'] and om_enable_rabbitmq_high_availability | default(false) | bool }}"
 
 ## cinder http retries default value
 cinder_http_retries: '10'
