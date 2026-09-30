@@ -359,6 +359,8 @@ def render_wlm_and_dms_configs(*args):
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'True' if barbican_ca_bundle else 'False',
         'barbican_ca_bundle': barbican_ca_bundle,
+        'rabbitmq_queue_type': 'classic',
+        'rabbitmq_queue_durable': 'false',
     }
     dms_server_conf_path = os.path.join(dms_conf_dir, 'server.conf')
     render(

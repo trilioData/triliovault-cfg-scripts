@@ -168,6 +168,8 @@ def _build_dms_server_context():
         'node_id': socket.getfqdn(),
         'auth_url': keystone_auth_url,
         'barbican_ssl_verify': 'False',
+        'rabbitmq_queue_type': 'classic',
+        'rabbitmq_queue_durable': 'false',
     }
 
 
