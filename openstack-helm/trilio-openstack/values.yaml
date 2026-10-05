@@ -780,6 +780,9 @@ conf:
     ## If triliovault docker images are used from a authentication enabled registry, then make this variable value to 'true'
     ## Otherwise set it to 'false'
     docker_registry_auth_enabled: true
+    rabbit_quorum_queue: false
+    rabbit_transient_quorum_queue: false
+    amqp_durable_queues: false
   fuse: |
     # /etc/fuse.conf - Configuration file for Filesystem in Userspace (FUSE)
 
@@ -1128,9 +1131,6 @@ conf:
       rootwrap_bin: /usr/bin/trilio-dms-rootwrap
       rootwrap_conf: /etc/triliovault-dms/rootwrap.conf
       worker_threads: 10
-
-      # Set to 'quorum' if your RabbitMQ cluster uses quorum queues (>= 3.13)
-      # rabbitmq_queue_type: quorum
 
       # Barbican SSL verification
       barbican_ssl_verify: True
