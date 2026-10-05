@@ -5,10 +5,31 @@ Helm charts for deploying TrilioVault (T4O) on OpenStack Helm and MOSK (Mirantis
 T4O is deployed as a single Helm release (`trilio-openstack`) that creates all required Kubernetes workloads, jobs, and config maps.
 
 ## Supported Versions
-| Platform | OpenStack Release |
-|----------|------------------|
-| OpenStack Helm | Antelope, Bobcat, Epoxy |
-| MOSK 22.x | Victoria, Yoga |
+| Platform | OpenStack Release | values override |
+|----------|------------------|-----------------|
+| OpenStack Helm | Antelope, Bobcat, Epoxy | `2023.x.yaml` etc. |
+| MOSK 22.x | Victoria, Yoga | `mosk22.*.yaml` |
+| MOSK 25.1 | Caracal | `mosk25.1.yaml` |
+| MOSK 26.2 | Gazpacho only | `mosk26.2.yaml` + `ingress_mosk.yaml` |
+
+## MOSK 26.2 (Gazpacho) — TVAULT-7745
+- **MOSK 26.2 support is opt-in files only. Every existing script, `values.yaml` and `Chart.yaml` is unchanged**, so OpenStack-Helm and MOSK ≤ 25.1 renders are identical to before. The new files are:
+  - `values_overrides/mosk26.2.yaml`
+  - `values_overrides/ingress_mosk.yaml`
+  - `values_overrides/app_gateway.yaml` and `templates/httproute-{wlm,datamover}-api.yaml` (parked)
+  - `docker/openstack-helm/trilio-horizon-plugin/Dockerfile_mosk26.2`
+- **Installing:** operators hand-edit `utils/install_mosk.sh` before every install, as for earlier MOSK releases. For 26.2, change `mosk25.1.yaml` to `mosk26.2.yaml` and `ingress.yaml` to `ingress_mosk.yaml`. Don't add a `*_26.2.sh` script and don't commit the edit; the other MOSK utils are reused as they are.
+- **Only Gazpacho is qualified on 26.2.** MOSK 26.2 dropped Caracal and offers Gazpacho and Epoxy. Host nodes must be Ubuntu 24.04.
+- **The 22.04 (`mosk25.1`) T4O images are reused unchanged** for WLM, datamover, DMAPI and DMS, so `mosk26.2.yaml` has the same tags as `mosk25.1.yaml`. Why this works:
+  - The containers bring their own userspace, so the host OS doesn't matter.
+  - The datamover (Caracal `python3-nova` 29.2) uses nova `Instance` 2.8 and `BlockDeviceMapping` 1.21, the same object versions as Gazpacho.
+  - The datamover registers its own service record, not a nova-compute one, so Gazpacho's "oldest supported service = Epoxy" check doesn't apply to it.
+  - The images' Ceph Reef 18.2 client is two releases behind the cluster's Tentacle 20.2, which Ceph supports.
+- **Only the Horizon plugin is rebuilt**, on the MOSK Gazpacho Horizon image. Build it with the unchanged `devops-build-publish.sh <tag> mosk26.2`: containers without a `Dockerfile_mosk26.2` are skipped. Pulling the base image needs `mirantis.azurecr.io` credentials.
+- **The qualified path is NGINX Ingress.** `ingress_mosk.yaml` sets the class to `openstack-ingress-nginx`. The shared `ingress.yaml` uses `nginx`, which plain OpenStack-Helm needs; MOSK installs used to edit it by hand. The cloud must not have run Mirantis' Application Gateway migration (`spec.migration.ingress.state: absent`); after that migration nothing serves Ingress objects.
+- **Gateway API is parked, not qualified.** MOSK 26.2 replaces NGINX Ingress with *Application Gateway* (Envoy Gateway, `Gateway` `openstack/app-gateway`), and Mirantis says Ingress support will be removed in a later MOSK release. `app_gateway.yaml`, used in place of `ingress_mosk.yaml`, turns on `templates/httproute-{wlm,datamover}-api.yaml` and turns off the Ingress / service_ingress / ingress TLS secret manifests. It is self-contained: `values.yaml` has no `httproute_*` / `http_route` defaults, so the default render is unaffected.
+- **Keep the vendored helm-toolkit at 2024.2.0.** Upstream helm-toolkit 2026.1.x removed the ingress helpers (`manifests.ingress`, `service_ingress`, `secret_ingress_tls`) that `templates/ingress-*.yaml` use.
+- **`sync_nova_compute.sh` can only be run once per checkout.** `get_admin_creds_mosk.sh` calls it, and it consumes the `<INJECT_*>` placeholders in `templates/bin/`. Before re-running, restore them with `git checkout -- templates/bin/`.
 
 ## Directory Structure
 

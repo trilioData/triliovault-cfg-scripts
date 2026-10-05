@@ -1,0 +1,38 @@
+---
+# PARKED - NOT YET QUALIFIED. MOSK 26.2 is qualified with NGINX Ingress (ingress_mosk.yaml).
+# Expose the T4O public endpoints through a Gateway API Gateway (MOSK 26.2+ Application
+# Gateway, Envoy) instead of an Ingress controller. For a cloud whose public endpoints are
+# migrated to Application Gateway, pass this file in utils/install_mosk.sh in place of
+# ingress_mosk.yaml / ingress.yaml. Renders templates/httproute-{wlm,datamover}-api.yaml.
+manifests:
+  httproute_wlm_api: true
+  httproute_datamover_api: true
+  ingress_wlm_api: false
+  ingress_datamover_api: false
+  service_ingress_wlm_api: false
+  service_ingress_datamover_api: false
+  secret_ingress_tls_wlm: false
+  secret_ingress_tls_datamover: false
+# TODO(TVAULT-7745): confirm on the MOSK 26.2 lab
+#   kubectl -n openstack get gateway app-gateway -o yaml
+# - the HTTPS listener name (set sectionName to it if the Gateway has more than one listener)
+# - spec.listeners[].allowedRoutes.namespaces admits routes from the trilio-openstack namespace
+# - the listener certificate covers the triliovault-wlm / triliovault-datamover public hostnames
+network:
+  wlm_api:
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts:
+        request: 300s
+  datamover_api:
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts:
+        request: 300s
+...

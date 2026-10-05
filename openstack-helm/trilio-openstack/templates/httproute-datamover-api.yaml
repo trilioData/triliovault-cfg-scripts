@@ -1,0 +1,50 @@
+{{/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{/*
+Gateway API alternative to ingress-datamover-api.yaml, for platforms whose public
+endpoints are served by a Gateway instead of an Ingress controller (MOSK 26.2+
+Application Gateway). TLS is terminated at the Gateway listener; the route
+forwards plain HTTP to the internal datamover-api service.
+*/}}
+{{- if .Values.manifests.httproute_datamover_api }}
+{{- $envAll := . }}
+{{- $route := .Values.network.datamover_api.http_route }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: triliovault-datamover-api
+spec:
+  parentRefs:
+    - name: {{ $route.gateway.name }}
+      namespace: {{ $route.gateway.namespace }}
+{{- if $route.gateway.sectionName }}
+      sectionName: {{ $route.gateway.sectionName }}
+{{- end }}
+  hostnames:
+    - {{ tuple "datamover" "public" $envAll | include "helm-toolkit.endpoints.hostname_fqdn_endpoint_lookup" | quote }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ tuple "datamover" "internal" $envAll | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup" }}
+          port: {{ tuple "datamover" "internal" "api" $envAll | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+{{- if $route.timeouts }}
+      timeouts:
+{{ toYaml $route.timeouts | indent 8 }}
+{{- end }}
+{{- end }}

@@ -1,6 +1,84 @@
 # Install 'triliovault' helm chart
 
+## MOSK 26.2 (OpenStack Gazpacho)
 
+Run these steps from the node you use to manage the MOSK cluster (kubectl access to the
+`openstack` namespace). Run all scripts from `trilio-openstack/utils/`; they are the same
+scripts as for MOSK 25.1. The T4O container images are the MOSK 25.1 images; only the Horizon
+plugin image is built for 26.2.
+
+### Requirements
+- MOSK 26.2 with OpenStack **Gazpacho** (`kubectl -n openstack get osdpl -o jsonpath='{.items[0].spec.openstack_version}'` returns `gazpacho`).
+  T4O on MOSK 26.2 is qualified for Gazpacho only, not Epoxy.
+- Ubuntu 24.04 on all MOSK nodes (mandatory from MOSK 26.2).
+- The cloud's public endpoints must still be served by MOSK's NGINX Ingress
+  (`openstack-ingress-nginx`), i.e. **not** migrated to the MOSK 26.2 Application Gateway
+  (OsDpl `spec.migration.ingress.state: absent`). MOSK 26.2 is qualified with NGINX Ingress only.
+  Gateway API support (`values_overrides/app_gateway.yaml`) exists but is not yet qualified.
+- Upgrading from MOSK 25.1 (Caracal): first upgrade MOSK 25.1 -> 26.1 -> 26.2 and OpenStack
+  Caracal -> Epoxy -> Gazpacho, then install/upgrade T4O with `mosk26.2.yaml`.
+
+### Steps
+1. Install pre-requisites and label the nodes as in sections 1 and 5 below
+   (`triliovault-control-plane=enabled` on the control plane nodes).
+2. Create T4O's RabbitMQ cluster:
+   ```
+   ./create_rabbitmq.sh
+   ```
+3. Fetch Keystone, database, RabbitMQ and nova-compute details. This writes
+   `values_overrides/admin_creds.yaml` and syncs the MOSK nova-compute init script into the
+   datamover templates. The sync consumes placeholders in `templates/bin/`, so before
+   re-running it, restore them with `git checkout -- ../templates/bin/`:
+   ```
+   ./get_admin_creds_mosk.sh <internal_domain_name> <public_domain_name>
+   ```
+   Get the domain names as described in section 7.1 below.
+4. Fetch the Ceph details (writes `values_overrides/ceph.yaml`, uses the `nova` Ceph user):
+   ```
+   ./get_ceph_mosk.sh
+   ```
+5. Create the image pull secret and the service passwords:
+   ```
+   ./create_image_pull_secret.sh <DOCKERHUB_USERNAME> <DOCKERHUB_PASSWORD>
+   ./generate_passwords.sh
+   ```
+6. Check the T4O image tags in `values_overrides/mosk26.2.yaml`. Then edit `install_mosk.sh`
+   and change two `--values` lines:
+   - `mosk25.1.yaml` -> `mosk26.2.yaml`
+   - `ingress.yaml` -> `ingress_mosk.yaml` (sets the ingress class to `openstack-ingress-nginx`)
+
+   and install:
+   ```
+   ./install_mosk.sh
+   ```
+7. Create DNS records for `triliovault-wlm.<public_domain_name>` and
+   `triliovault-datamover.<public_domain_name>` pointing to the external IP of the MOSK NGINX
+   Ingress service (the same IP as the other OpenStack public endpoints).
+8. Install the Horizon plugin by overriding the Horizon image in the OpenStackDeployment, then
+   wait until the OsDpl status is `APPLIED`:
+   ```
+   kubectl -n openstack edit osdpl <osdpl_name>
+
+   spec:
+     services:
+       dashboard:
+         horizon:
+           values:
+             images:
+               tags:
+                 horizon: docker.io/trilio/trilio-horizon-plugin-helm:<TAG>-mosk26.2
+   ```
+   Horizon pulls this image from Docker Hub, so the `triliovault-image-registry` pull secret
+   created in step 5 must exist in the `openstack` namespace.
+9. Verify: all pods in `trilio-openstack` are Running/Completed, and
+   `curl -k https://triliovault-wlm.<public_domain_name>` answers. Then run the functional test
+   suite (`bash test/run_all.sh` from the repository root).
+
+---
+
+## Legacy flow (MOSK 22.x - 25.x)
+
+The sections below describe the older MOSK install flow.
 
 Note: Run following steps on node from where you have install openstack cloud helm charts.
 

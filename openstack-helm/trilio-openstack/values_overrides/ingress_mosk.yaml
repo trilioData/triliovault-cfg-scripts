@@ -1,0 +1,14 @@
+---
+# Expose the T4O public endpoints through MOSK's NGINX Ingress controller
+# (class openstack-ingress-nginx). For MOSK, pass this file in utils/install_mosk.sh
+# in place of ingress.yaml. Plain OpenStack-Helm installs keep using ingress.yaml (class nginx).
+network:
+  wlm_api:
+    ingress:
+      classes:
+        namespace: "openstack-ingress-nginx"
+  datamover_api:
+    ingress:
+      classes:
+        namespace: "openstack-ingress-nginx"
+...
