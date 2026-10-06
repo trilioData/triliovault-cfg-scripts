@@ -1,0 +1,37 @@
+---
+# Qualified path for MOSK 26.2 (TVAULT-7745). Exposes the T4O public endpoints through the
+# MOSK Application Gateway (Gateway API, Envoy; Gateway openstack/app-gateway) instead of an
+# Ingress controller. Pass this file in utils/install_mosk.sh in place of ingress.yaml.
+# Renders templates/httproute-{wlm,datamover}-api.yaml. For a 26.2 cloud whose public endpoints
+# are not yet migrated to Application Gateway, keep ingress.yaml and apply the MOSK 25.1
+# ingress patch (kubernetes.io/ingress.class: openstack-ingress-nginx annotation).
+manifests:
+  httproute_wlm_api: true
+  httproute_datamover_api: true
+  ingress_wlm_api: false
+  ingress_datamover_api: false
+  service_ingress_wlm_api: false
+  service_ingress_datamover_api: false
+  secret_ingress_tls_wlm: false
+  secret_ingress_tls_datamover: false
+# Verified on a MOSK 26.2 lab: app-gateway's HTTPS listener allows routes from All namespaces,
+# so sectionName can stay null and no ReferenceGrant is needed, and its *.<public_domain>
+# certificate covers the triliovault-wlm / triliovault-datamover hostnames.
+network:
+  wlm_api:
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts:
+        request: 300s
+  datamover_api:
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts:
+        request: 300s
+...

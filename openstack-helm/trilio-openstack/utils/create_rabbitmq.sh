@@ -6,6 +6,10 @@ set -euo pipefail
 # Namespace
 NAMESPACE="trilio-openstack"
 CLUSTER_NAME="rabbitmq"
+# Pinned: from v2.22.0 the operator's admission webhooks need cert-manager in the cluster,
+# and its startup probe needs RabbitMQ >= 4.2.4 (the cluster below runs 3.13.3).
+# v2.21.1 is the last release that needs neither. Do not switch back to 'latest'.
+RABBITMQ_OPERATOR_VERSION="${RABBITMQ_OPERATOR_VERSION:-v2.21.1}"
 
 # Check if kubectl is installed
 if ! command -v kubectl &> /dev/null; then
@@ -16,8 +20,8 @@ fi
 # Install RabbitMQ Cluster Operator (CRD + controller) only if not already present
 echo "Checking RabbitMQ Cluster Operator..."
 if ! kubectl get crd rabbitmqclusters.rabbitmq.com >/dev/null 2>&1; then
-    echo "Installing RabbitMQ Cluster Operator..."
-    kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
+    echo "Installing RabbitMQ Cluster Operator ${RABBITMQ_OPERATOR_VERSION}..."
+    kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/download/${RABBITMQ_OPERATOR_VERSION}/cluster-operator.yml"
 else
     echo "RabbitMQ Cluster Operator already installed, skipping..."
 fi
