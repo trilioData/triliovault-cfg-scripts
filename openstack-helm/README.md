@@ -14,8 +14,8 @@ plugin image is built for 26.2.
 - Public endpoints served by the MOSK 26.2 **Application Gateway** (`app-gateway`, Gateway API).
   This is the qualified path and the MOSK 26.2 default; the cloud is migrated when OsDpl has
   `spec.migration.ingress.state: absent` and `kubectl get ingressclass` returns nothing.
-  For a 26.2 cloud still on NGINX Ingress, use `ingress_mosk.yaml` in step 6 instead (fallback,
-  not validated on 26.2).
+  For a 26.2 cloud still on NGINX Ingress, keep `ingress.yaml` and, after the install, patch the T4O Ingresses to the `kubernetes.io/ingress.class: openstack-ingress-nginx` annotation, as on MOSK 25.1
+  (remove `spec.ingressClassName`, add the annotation).
 - Upgrading from MOSK 25.1 (Caracal): first upgrade MOSK 25.1 -> 26.1 -> 26.2 and OpenStack
   Caracal -> Epoxy -> Gazpacho, then install/upgrade T4O with `mosk26.2.yaml`.
 
@@ -49,8 +49,8 @@ plugin image is built for 26.2.
 6. Check the T4O image tags in `values_overrides/mosk26.2.yaml`. Then edit `install_mosk.sh`
    and change two `--values` lines:
    - `mosk25.1.yaml` -> `mosk26.2.yaml`
-   - `ingress.yaml` -> `app_gateway.yaml` (creates HTTPRoutes on `app-gateway`; use
-     `ingress_mosk.yaml` instead only for a cloud still on NGINX Ingress)
+   - `ingress.yaml` -> `app_gateway.yaml` (creates HTTPRoutes on `app-gateway`; for a cloud
+     still on NGINX Ingress keep `ingress.yaml` and apply the MOSK 25.1 ingress patch)
 
    and install:
    ```
