@@ -19,7 +19,8 @@ fi
 
 
 oc delete secret cert-triliovault-wlm-internal-svc cert-triliovault-wlm-public-svc \
-  cert-triliovault-datamover-internal-svc cert-triliovault-datamover-public-svc -n openstack
+  cert-triliovault-datamover-internal-svc cert-triliovault-datamover-public-svc \
+  cert-trilio-rabbitmq-cluster cert-trilio-galera-cluster -n openstack
 
 sleep 60s
 
@@ -37,6 +38,12 @@ oc get secret cert-triliovault-datamover-public-svc -n openstack -o jsonpath='{.
 
 echo -e "\nCertificate Validity for cert-triliovault-datamover-internal-svc "
 oc get secret cert-triliovault-datamover-internal-svc  -n openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
+echo -e "\nCertificate Validity for cert-trilio-rabbitmq-cluster:"
+oc get secret cert-trilio-rabbitmq-cluster -n openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+
+echo -e "\nCertificate Validity for cert-trilio-galera-cluster:"
+oc get secret cert-trilio-galera-cluster -n openstack -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
 
 
 echo -e "\n\nIn the above output, if any of the certificate validity dates does not look okay to you then you can stop script here using key ctrl + c"
@@ -106,6 +113,10 @@ oc describe secret cert-trilio-galera-cluster -n trilio-openstack
 
 
 echo -e "\n\nCertificates renewed"
+
+echo -e "\nNow restarting trilio rabbitmq pods"
+oc -n trilio-openstack rollout restart statefulset trilio-rabbitmq-cluster-server
+oc rollout status statefulset/trilio-rabbitmq-cluster-server -n trilio-openstack --timeout=1800s
 
 echo -e "\nNow restarting trilio control plane pods"
 oc -n trilio-openstack rollout restart deployment triliovault-datamover-api triliovault-wlm-api triliovault-wlm-cron triliovault-wlm-scheduler triliovault-wlm-workloads
