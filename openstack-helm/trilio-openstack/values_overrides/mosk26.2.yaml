@@ -2,13 +2,13 @@
 # MOSK 26.2 with OpenStack Gazpacho (2026.1). Pass this file in utils/install_mosk.sh in
 # place of mosk25.1.yaml, together with app_gateway.yaml in place of ingress.yaml
 # (ingress_mosk.yaml only for clouds not yet migrated to Application Gateway).
-# Reuses the MOSK 25.1 (Ubuntu 22.04 / Caracal) T4O images unchanged: the containers carry
-# their own userspace, so the Ubuntu 24.04 hosts don't affect them, and the nova objects the
-# datamover uses (Instance 2.8, BlockDeviceMapping 1.21) are the same versions in Caracal and
-# Gazpacho. Only the Horizon plugin is rebuilt (on the MOSK Gazpacho Horizon image), and it is
-# set in the OpenStackDeployment, not here.
-# Verified on a MOSK 26.2 Gazpacho lab with the 6.2.1 mosk25.1 images: install, cloud trust and a
-# full NFS snapshot all succeeded (TVAULT-7745).
+# The *-mosk26.2 T4O images are retags of the 6.2.1 *-mosk25.1 images (same digests, no
+# rebuild): the containers carry their own userspace, so the Ubuntu 24.04 hosts don't affect
+# them, and the nova objects the datamover uses (Instance 2.8, BlockDeviceMapping 1.21) are the
+# same versions in Caracal and Gazpacho. Only the Horizon plugin is rebuilt (on the MOSK Gazpacho
+# Horizon image), and it is set in the OpenStackDeployment, not here.
+# Verified on a MOSK 26.2 Gazpacho lab: install, cloud trust, NFS and S3 full and incremental
+# snapshots, and restores all succeeded (TVAULT-7745).
 images:
   tags:
     bootstrap: docker.io/openstackhelm/heat:2024.1-ubuntu_jammy
@@ -20,14 +20,14 @@ images:
     ks_endpoints: docker.io/openstackhelm/heat:2024.1-ubuntu_jammy
     dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
     image_repo_sync: docker.io/docker:17.07.0
-    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:6.2.0-stable-1-mosk25.1
-    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:6.2.0-stable-1-mosk25.1
-    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:6.2.0-stable-1-mosk25.1
-    triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:6.2.0-stable-1-mosk25.1
-    triliovault_dms: docker.io/trilio/trilio-dms-helm:6.2.0-stable-1-mosk25.1
-    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:6.2.0-stable-1-mosk25.1
+    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:6.2.1-test-mosk26.2
+    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:6.2.1-test-mosk26.2
+    triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:6.2.1-test-mosk26.2
+    triliovault_dms: docker.io/trilio/trilio-dms-helm:6.2.1-test-mosk26.2
+    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:6.2.1-test-mosk26.2
