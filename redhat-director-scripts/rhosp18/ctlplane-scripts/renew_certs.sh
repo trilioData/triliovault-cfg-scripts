@@ -19,7 +19,8 @@ fi
 
 
 oc delete secret cert-triliovault-wlm-internal-svc cert-triliovault-wlm-public-svc \
-  cert-triliovault-datamover-internal-svc cert-triliovault-datamover-public-svc -n openstack
+  cert-triliovault-datamover-internal-svc cert-triliovault-datamover-public-svc \
+  cert-trilio-rabbitmq-cluster cert-trilio-galera-cluster -n openstack
 
 sleep 60s
 
@@ -106,6 +107,10 @@ oc describe secret cert-trilio-galera-cluster -n trilio-openstack
 
 
 echo -e "\n\nCertificates renewed"
+
+echo -e "\nNow restarting trilio rabbitmq pods"
+oc -n trilio-openstack rollout restart statefulset trilio-rabbitmq-cluster-server
+oc rollout status statefulset/trilio-rabbitmq-cluster-server -n trilio-openstack --timeout=600s
 
 echo -e "\nNow restarting trilio control plane pods"
 oc -n trilio-openstack rollout restart deployment triliovault-datamover-api triliovault-wlm-api triliovault-wlm-cron triliovault-wlm-scheduler triliovault-wlm-workloads
