@@ -2,7 +2,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: sql-exporter
-  namespace: openshift-user-workload-monitoring
+  namespace: trilio-monitoring
 spec:
   to:
     kind: Service
