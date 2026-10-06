@@ -1,0 +1,30 @@
+# Base tag from the MOSK 26.2 release artifacts list. The python3.12 site-packages layout
+# below was confirmed on a MOSK 26.2 lab (Django loads trilio_dashboard.templatetags).
+FROM mirantis.azurecr.io/openstack/horizon:gazpacho-noble-20260901110644
+
+LABEL name="triliovault-horizon-helm" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="6.3.0" \
+      release="6.3" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for Mirantis OpenStack on Kubernetes 26.2 (OpenStack Gazpacho)"
+
+## Become root
+USER root
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+# The Gazpacho Horizon venv ships setuptools 84, but setuptools 82.0.0 removed pkg_resources.
+# trilio_dashboard/workloadmgr.py still does "import pkg_resources", so without this pin
+# Horizon's startup "compress" step fails with ModuleNotFoundError and the pod crash-loops.
+RUN source /var/lib/openstack/bin/activate && pip install --force-reinstall "setuptools<82" && pip install pytz && export PIP_EXTRA_INDEX_URL=${TRILIO_PIP_INDEX_URL} && pip install tvault-horizon-plugin workloadmgrclient contegoclient --no-deps
+
+RUN cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/enabled/ && \
+    cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/templatetags/ && \
+    cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/local/local_settings.d/_001_trilio_dashboard.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/local/local_settings.d/
+
+## Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+## Become horizon user
+USER horizon
