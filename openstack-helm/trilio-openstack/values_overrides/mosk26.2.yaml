@@ -1,7 +1,7 @@
 ---
 # MOSK 26.2 with OpenStack Gazpacho (2026.1). Pass this file in utils/install_mosk.sh in
 # place of mosk25.1.yaml, together with app_gateway.yaml in place of ingress.yaml
-# (ingress_mosk.yaml only for clouds not yet migrated to Application Gateway).
+# (clouds not yet migrated to Application Gateway keep ingress.yaml + the MOSK 25.1 ingress patch).
 # Reuses the MOSK 25.1 (Ubuntu 22.04 / Caracal) T4O images unchanged: the containers carry
 # their own userspace, so the Ubuntu 24.04 hosts don't affect them, and the nova objects the
 # datamover uses (Instance 2.8, BlockDeviceMapping 1.21) are the same versions in Caracal and

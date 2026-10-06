@@ -3,7 +3,8 @@
 # MOSK Application Gateway (Gateway API, Envoy; Gateway openstack/app-gateway) instead of an
 # Ingress controller. Pass this file in utils/install_mosk.sh in place of ingress.yaml.
 # Renders templates/httproute-{wlm,datamover}-api.yaml. For a 26.2 cloud whose public endpoints
-# are not yet migrated to Application Gateway, use ingress_mosk.yaml instead.
+# are not yet migrated to Application Gateway, keep ingress.yaml and apply the MOSK 25.1
+# ingress patch (kubernetes.io/ingress.class: openstack-ingress-nginx annotation).
 manifests:
   httproute_wlm_api: true
   httproute_datamover_api: true
