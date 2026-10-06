@@ -384,6 +384,9 @@ manifests:
   daemonset_dms: true
   ingress_wlm_api: true
   ingress_datamover_api: true
+  # Gateway API HTTPRoutes for the MOSK 26.2+ Application Gateway; enabled by values_overrides/app_gateway.yaml
+  httproute_wlm_api: false
+  httproute_datamover_api: false
   job_bootstrap: false
   job_wlm_cloud_trust: false
   job_datamover_db_drop: false
@@ -435,6 +438,13 @@ network:
         cluster: "nginx-cluster"
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
+    # Used only when manifests.httproute_wlm_api is true
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts: {}
     external_policy_local: false
     node_port:
       enabled: false
@@ -447,6 +457,13 @@ network:
         cluster: "nginx-cluster"
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
+    # Used only when manifests.httproute_datamover_api is true
+    http_route:
+      gateway:
+        name: app-gateway
+        namespace: openstack
+        sectionName: null
+      timeouts: {}
     external_policy_local: false
     node_port:
       enabled: false
