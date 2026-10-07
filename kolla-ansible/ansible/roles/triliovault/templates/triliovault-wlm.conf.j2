@@ -56,6 +56,16 @@ nova_production_endpoint_template = "{{ internal_protocol }}://{{ nova_internal_
 neutron_admin_auth_url = {{ keystone_internal_url }}
 neutron_production_url = {{ neutron_internal_endpoint }}
 
+# Dedicated service-role account for Neutron operations Secure RBAC
+# restricts to role:service (e.g. binding:profile on port create), which
+# policy denies even to role:admin. Provisioned in the "service" project
+# by the triliovault_ks_users task in register.yml.
+neutron_service_auth_url = {{ keystone_internal_url }}
+neutron_service_username = {{ triliovault_neutron_service_keystone_user }}
+neutron_service_password = {{ triliovault_neutron_service_keystone_password }}
+neutron_service_project_name = service
+neutron_service_domain_name = {{ service_ks_register_domain }}
+
 
 
 # The path to store the taskflow data
