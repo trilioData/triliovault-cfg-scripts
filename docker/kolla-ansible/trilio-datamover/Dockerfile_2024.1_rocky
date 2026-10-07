@@ -39,6 +39,11 @@ RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-mo
     && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y --exclude=iscsi-initiator-utils\* \
     && dnf install virt-v2v virtio-win nbdkit -y --exclude=iscsi-initiator-utils\*
 
+ADD ceph-tentacle.repo /etc/yum.repos.d/CentOS-Ceph-Tentacle.repo
+RUN dnf upgrade -y --exclude=iscsi-initiator-utils\* $(rpm -qa --qf '%{NAME}\n' | grep -E '^(ceph-|librados|librbd|libcephfs|librgw|python3-ceph|python3-rados|python3-rbd|python3-rgw)') \
+    && rpm -q ceph-common | grep -q '^ceph-common-20\.2\.' \
+    && dnf clean all
+
 RUN dnf install -y --allowerasing --exclude=iscsi-initiator-utils\* \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
 RUN dnf install -y --exclude=iscsi-initiator-utils\* python3-s3fuse-plugin-el9
