@@ -104,7 +104,7 @@ class TrilioDataMoverBaseCharm(
 
     required_relations = ["amqp", "shared-db"]
 
-    base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
+    base_packages = ["python3-tvault-contego", "nfs-common", "trilio-streaming-tools", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
 
     # configuration file permissions
     user = "root"
@@ -177,7 +177,6 @@ class TrilioDataMoverBaseCharm(
         ]
 
     dms_server_conf = "/etc/triliovault-dms/server.conf"
-    dms_s3vaultfuse_conf = "/etc/triliovault-dms/s3vaultfuse-global.conf"
 
     @property
     def services(self):
@@ -185,20 +184,6 @@ class TrilioDataMoverBaseCharm(
 
     @property
     def restart_map(self):
-        # The DMS files are deliberately NOT in this map. charms_openstack
-        # renders every restart_map key by deriving a template name from the
-        # path, so /etc/triliovault-dms/server.conf is looked up as
-        # "server.conf" / "etc_triliovault-dms_server.conf" -- neither of
-        # which exists (the template is "triliovault-dms-server.conf"), and
-        # s3vaultfuse-global.conf has no template at all. Any
-        # render_with_interfaces() over the full map therefore dies with
-        # "Could not load template ...", which is what made the update-trilio
-        # action fail on every data-mover unit (TVAULT-7592).
-        #
-        # Nothing is lost by leaving them out: _write_dms_server_config()
-        # renders server.conf explicitly and enables/restarts
-        # trilio-dms-server itself. charm-trilio-dm-api keeps its DMS client
-        # conf out of restart_map for the same reason.
         _restart_map = {
             self.data_mover_conf: self.services,
             self.datamover_log_conf: self.services,

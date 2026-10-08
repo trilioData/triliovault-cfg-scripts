@@ -39,11 +39,6 @@ RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-r
     && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/epel.repo \
     && dnf config-manager --disable epel-cisco-openh264
 
-## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet 
-RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms \
-    && dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9 \
-    && dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
-
 RUN dnf erase --releasever 9.6 -y epel-release
 
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru

@@ -39,7 +39,7 @@ RUN set -eux; \
     libfuse2 \
     default-mysql-client; \
     apt-get update && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
-    python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated; \
+    python3-trilio-dms --allow-unauthenticated; \
     pip3 install --no-cache-dir --upgrade pip; \
     pip3 install --no-cache-dir azure-storage-blob==12.25.1 azure-core loguru; \
     echo "user_allow_other" > /etc/fuse.conf; \

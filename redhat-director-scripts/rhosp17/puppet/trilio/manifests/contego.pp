@@ -41,13 +41,6 @@ class trilio::contego (
     }
 
 
-##Set object_store_ext
-
-    if $backup_target_type == 's3' {
-        $contego_ext_object_store = "${contego_virtenv_dir}/lib/python2.7/site-packages/contego/nova/extension/driver/s3vaultfuse.py"
-
-    }
-
     class {'trilio::contego::config': }
 
 }

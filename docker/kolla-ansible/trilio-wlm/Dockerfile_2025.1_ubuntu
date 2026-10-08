@@ -38,17 +38,17 @@ RUN set -ex \
 # install remaining packages first via apt-get, then force-install workloadmgr last
 # via dpkg to bypass the unresolvable python3-shade dep without leaving apt in broken state
 RUN pip3 install shade \
-    && apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install python3-workloadmgrclient python3-contegoclient python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated \
+    && apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install python3-workloadmgrclient python3-contegoclient python3-trilio-dms --allow-unauthenticated \
     && apt-get download workloadmgr \
     && dpkg --force-depends -i workloadmgr*.deb \
     && rm -f workloadmgr*.deb
 
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault 
+RUN mkdir -p /etc/triliovault-wlm /var/trilio/triliovault-mounts /var/triliovault /var/log/triliovault 
 RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
-    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store 
-RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store /var/lib/workloadmgr \
+    && chown -R root:nova /etc/triliovault-wlm 
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 RUN ln -s /usr/bin/workloadmgr-rootwrap /var/lib/kolla/venv/bin/workloadmgr-rootwrap

@@ -69,20 +69,10 @@ RUN apt-get update -y && \
         python3-workloadmgrclient \
         python3-contegoclient \
         python3-trilio-dms \
-        python3-s3-fuse-plugin \
     --allow-unauthenticated && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /etc/apt/sources.list.d/trilio.list
-
-# python3-s3-fuse-plugin declares boto3==1.35.12/botocore==1.35.12 (see its
-# dist-info requires) but apt/pip leaves much older versions installed
-# (boto3 1.20.34/botocore 1.23.34), which crash s3vaultfuse at import time:
-# "ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'"
-# — that botocore predates urllib3 2.x. Pin explicitly to what the package
-# itself requires. This image is used for both the WLM containers and the
-# embedded DMS sidecar container, so the fix covers all s3vaultfuse usage.
-RUN pip3 --no-cache-dir install 'boto3==1.35.12' 'botocore==1.35.12'
 
 # Migration 030: add WorkloadsBase audit columns (created_at, updated_at,
 # deleted_at, deleted, version) and progress to the job table.
@@ -96,7 +86,6 @@ COPY 030_add_job_audit_columns.py \
 # Create required directories
 RUN mkdir -p \
     /etc/triliovault-wlm \
-    /etc/triliovault-object-store \
     /etc/triliovault-dms \
     /var/trilio/triliovault-mounts \
     /var/triliovault \
@@ -107,8 +96,7 @@ RUN mkdir -p \
 # All WLM services run as root
 RUN chmod -R 755 \
         /var/log/triliovault \
-        /etc/triliovault-wlm \
-        /etc/triliovault-object-store && \
+        /etc/triliovault-wlm && \
     chmod -R 777 \
         /var/trilio/triliovault-mounts \
         /var/triliovault

@@ -38,7 +38,7 @@ RUN set -ex \
         python3-tvault-contego \
 	python3-nova \
         fuse \
-        python3-s3-fuse-plugin \
+        trilio-streaming-tools \
         nfs-common \
         udev
 
@@ -60,13 +60,12 @@ ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 RUN usermod -aG disk nova \
     && usermod -aG kvm nova
 
-RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store \
+RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} \
     && chown nova.nova -R ${TRILIO_MOUNT_DIR} \
         /var/triliovault \
         /etc/${PROJECT_DIR} \
         /opt/${PROJECT_DIR} \
         /var/log/${PROJECT_DIR} \
-        /etc/triliovault-object-store \
     && chmod 777 ${TRILIO_MOUNT_DIR} /var/triliovault
 
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego

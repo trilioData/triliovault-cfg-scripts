@@ -81,9 +81,6 @@ fail_on_qga_freeze_failure = {{ fail_on_qga_freeze_failure | default(false, true
 [global_job_scheduler]
 misfire_grace_time = 600
 
-[s3fuse_sys_admin]
-helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
-
 [keystone_authtoken]
 admin_tenant_name = service
 project_name = service

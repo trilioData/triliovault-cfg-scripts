@@ -11,26 +11,7 @@ options:
   is-vmware-migration-enabled:
     type: boolean
     default: False
-    description: If VMWare to OpenStack migration feature enabled or not 
-  vault_s3_max_pool_connections:
-    type: int
-    default: 500
-    description: |
-      The maximum number of connections to keep in a connection pool
-      This option is ignored if Trilio is before 4.2
-  bucket_object_lock:
-    type: boolean
-    default: False
-    description: |
-      S3 bucket object locking is enabled
-      This option is ignored if Trilio is before 4.2
-  use_manifest_suffix:
-    type: boolean
-    default: False
-    description: |
-      To preserve backward compatibility, set this to False. When set to False,
-      s3fuse creates manifest file names without suffix
-      This option is ignored if Trilio is before 4.2
+    description: If VMWare to OpenStack migration feature enabled or not
   # General configuration
   tv-datamover-max-uploads-pending:
     type: int

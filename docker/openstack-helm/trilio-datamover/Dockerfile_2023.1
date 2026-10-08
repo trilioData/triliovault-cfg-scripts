@@ -32,7 +32,7 @@ RUN set -ex \
     && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
         python3-tvault-contego \
         fuse \
-        python3-s3-fuse-plugin \
+        trilio-streaming-tools \
         nfs-common \
         python3-nova \
         python3-novaclient 
@@ -55,13 +55,12 @@ RUN groupadd -r kvm || true \
     && usermod -aG disk nova \
     && usermod -aG kvm nova
 
-RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store \
+RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} \
     && chown nova.nova -R ${TRILIO_MOUNT_DIR} \
         /var/triliovault \
         /etc/${PROJECT_DIR} \
         /opt/${PROJECT_DIR} \
         /var/log/${PROJECT_DIR} \
-        /etc/triliovault-object-store \
     && chmod 777 ${TRILIO_MOUNT_DIR} /var/triliovault
 
 ADD log-rotate-conf /etc/logrotate.d/tvault-contego

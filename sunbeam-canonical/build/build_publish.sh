@@ -25,8 +25,7 @@
 # Note: there is no separate trilio-dms-k8s charm as of 2026-07-25 — the
 # Dynamic Mount Service control-plane instance is now a second container
 # embedded directly in trilio-wlm-k8s's own pod (1:1 with each WLM replica).
-# Both containers use the trilio-wlm image (it already includes
-# python3-trilio-dms and python3-s3-fuse-plugin).
+# Both containers use the trilio-wlm image.
 #
 # OCI image resources are NOT uploaded by this script — it only re-releases
 # whatever resource revisions are already on Charmhub. If you've rebuilt any

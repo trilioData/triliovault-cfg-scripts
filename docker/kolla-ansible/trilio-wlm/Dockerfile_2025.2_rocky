@@ -50,15 +50,12 @@ RUN pip3 install shade \
     && rpm -ivh --nodeps /tmp/python3-workloadmgr-el9*.rpm \
     && rm -f /tmp/python3-workloadmgr-el9*.rpm
 RUN dnf install python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
-RUN dnf install -y --allowerasing \
-    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y python3-s3fuse-plugin-el9
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
+RUN mkdir -p /etc/triliovault-wlm /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
 RUN chown -R nova:nova /var/log/triliovault /var/trilio /var/trilio/triliovault-mounts /var/triliovault /var/lib/workloadmgr \
-    && chown -R root:nova /etc/triliovault-wlm /etc/triliovault-object-store
-RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm /etc/triliovault-object-store  /var/lib/workloadmgr \
+    && chown -R root:nova /etc/triliovault-wlm
+RUN chmod -R 755 /var/log/triliovault /etc/triliovault-wlm  /var/lib/workloadmgr \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
 ADD nova-sudoers /etc/sudoers.d/nova-sudoers
 RUN ln -s /usr/bin/workloadmgr-rootwrap /var/lib/kolla/venv/bin/workloadmgr-rootwrap

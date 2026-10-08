@@ -84,9 +84,6 @@ debug = {{ debug }}
 [global_job_scheduler]
 misfire_grace_time = 600
 
-[s3fuse_sys_admin]
-helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
-
 [keystone_authtoken]
 project_name = {{ keystone_project_name }}
 

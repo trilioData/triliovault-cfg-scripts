@@ -864,8 +864,6 @@ conf:
       keyring_ext: .nova.keyring
     contego_sys_admin:
       helper_command: sudo /usr/bin/privsep-helper
-    s3fuse_sys_admin:
-      helper_command: sudo /usr/bin/privsep-helper
     conductor:
       use_local: True
     oslo_messaging_rabbit:
@@ -928,8 +926,6 @@ conf:
       version_locations: /usr/share/workloadmgr/migrate_repo/versions
     filesearch:
       process_timeout: 300
-    s3fuse_sys_admin:
-      helper_command: sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
     barbican:
       encryption_support: True
   wlm_logging:
@@ -1141,7 +1137,6 @@ conf:
       log_max_bytes: '26214400'
       log_backup_count: 5
 
-      s3vaultfuse_bin: /usr/bin/s3vaultfuse.py
       rootwrap_bin: /usr/bin/trilio-dms-rootwrap
       rootwrap_conf: /etc/triliovault-dms/rootwrap.conf
       worker_threads: 10

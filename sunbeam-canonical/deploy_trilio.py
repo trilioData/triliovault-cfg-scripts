@@ -418,9 +418,6 @@ def deploy_bundle(model, bundle, apps, trust=False):
     # and the chdir in main().
     cmd = ["deploy", "-m", model, "./" + bundle]
     if trust:
-        # The k8s charms patch their own StatefulSets via lightkube to get
-        # /dev/fuse for s3vaultfuse. Without --trust the bundle's own
-        # "trust: true" is not honoured and the patch fails on RBAC.
         cmd.append("--trust")
     run(cmd)
     print("  deployed %s" % bundle)

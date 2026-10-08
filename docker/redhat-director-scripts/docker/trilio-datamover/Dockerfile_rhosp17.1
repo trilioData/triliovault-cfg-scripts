@@ -33,14 +33,14 @@ RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-r
 RUN dnf --releasever 9.6 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
 RUN dnf install --releasever 9.6 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
-RUN dnf install --releasever 9.6 python3-tvault-contego-el9 python3-s3fuse-plugin-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
+RUN dnf install --releasever 9.6 python3-tvault-contego-el9 trilio-streaming-tools-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y
 
 RUN dnf erase --releasever 9.6 -y epel-release
 
 
 #Copy executable files
 RUN mkdir -p /opt/triliovault/
-ADD start_triliovault_datamover_s3 start_triliovault_datamover_nfs start_triliovault_object_store /opt/triliovault/
+ADD start_triliovault_datamover_nfs /opt/triliovault/
 RUN chown -R nova:nova /opt/triliovault/
 RUN chmod -R 755 /opt/triliovault
 
@@ -52,8 +52,8 @@ RUN chown root:root /etc/sudoers.d/nova-sudoers \
   && chown root:nova /usr/share/nova/nova-dist.conf
   
 ## Create conf directories
-RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-datamover /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
-    && chown -R nova:nova /etc/triliovault-datamover /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault \
+RUN mkdir -p /etc/triliovault-datamover /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-datamover /var/lib/nova /var/log/triliovault /var/triliovault \
     && chmod -R 755 /var/lib/nova
 
 

@@ -16,9 +16,6 @@ barbican_ssl_verify = {{ 'True' if openstack_cacert else 'False' }}
 barbican_ca_bundle = {{ openstack_cacert }}
 {% endif %}
 
-# s3vaultfuse binary path
-s3vaultfuse_bin = /usr/bin/s3vaultfuse.py
-
 # rootwrap paths
 rootwrap_bin = /usr/bin/trilio-dms-rootwrap
 rootwrap_conf = /etc/triliovault-dms/rootwrap.conf

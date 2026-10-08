@@ -37,7 +37,7 @@ RUN dnf -y --releasever 9.6 update-minimal --security --sec-severity=Important -
 RUN dnf install --releasever 9.6 -y ntfs-3g python3-pyvmomi
 
 ## Install Triliovault wlm packages
-RUN dnf -y --releasever 9.6 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-s3fuse-plugin-el9 python3-trilio-dms-el9
+RUN dnf -y --releasever 9.6 install python3-workloadmgr-el9 python3-workloadmgrclient-el9  python3-contegoclient-el9 python3-trilio-dms-el9
 
 RUN dnf erase --releasever 9.6 -y epel-release
 
@@ -57,8 +57,8 @@ RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomi
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
-    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
+RUN mkdir -p /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-wlm /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
     && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
 
 ##Disable repos and Clean subscription
