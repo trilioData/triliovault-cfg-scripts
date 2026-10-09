@@ -38,6 +38,10 @@ log_max_bytes = 26214400
 # Number of rotated log backups to keep (optional, default: 5)
 log_backup_count = 5
 
+# S3VaultFuse binary path (optional, default: /usr/bin/s3vaultfuse.py)
+# If not found, will auto-detect using 'which s3vaultfuse.py'
+s3vaultfuse_bin = /usr/bin/s3vaultfuse.py
+
 # Rootwrap binary path (optional, default: /usr/bin/trilio-dms-rootwrap)
 rootwrap_bin = /usr/bin/trilio-dms-rootwrap
 

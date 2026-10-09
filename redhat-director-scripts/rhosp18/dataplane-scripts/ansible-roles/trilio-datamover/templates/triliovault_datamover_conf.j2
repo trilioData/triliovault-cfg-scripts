@@ -36,3 +36,6 @@ use_local = True
 
 [cinder]
 http_retries = {{ cinder_http_retries }}
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper

@@ -41,7 +41,7 @@ RUN dnf --releasever 8.4 -y install openstack-nova-common python3-nova python3-n
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
 ## Install Triliovault wlm packages
-RUN dnf -y --releasever 8.4 install workloadmgr
+RUN dnf -y --releasever 8.4 install workloadmgr python3-s3fuse-plugin
 
 ## Install important security patches
 RUN dnf -y --releasever 8.4 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
@@ -51,8 +51,8 @@ RUN dnf -y --releasever 8.4 update-minimal --security --sec-severity=Important -
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,kolla nova
 
 ##Copy conf files
-RUN mkdir -p /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
-    && chown -R nova:nova /etc/triliovault-wlm /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
+RUN mkdir -p /etc/triliovault-object-store /etc/triliovault-wlm /var/log/triliovault /var/triliovault /var/lib/nova/triliovault-mounts \
+    && chown -R nova:nova /etc/triliovault-wlm /etc/triliovault-object-store/ /var/lib/nova /var/log/triliovault /var/triliovault /var/lib/workloadmgr \
     && chmod -R 755 /var/lib/nova /var/lib/workloadmgr
 
 ##Clean subscription

@@ -6,6 +6,12 @@
             "dest": "/etc/triliovault-dms/server.conf",
             "owner": "nova",
             "perm": "0640"
+        },
+        {
+            "source": "{{ container_config_directory }}/s3vaultfuse-global.conf",
+            "dest": "/etc/triliovault-dms/s3vaultfuse-global.conf",
+            "owner": "nova",
+            "perm": "0644"
         }
     ],
     "permissions": [

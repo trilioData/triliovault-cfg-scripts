@@ -51,6 +51,8 @@ WLM_LOGGING_CONF_PATH = "/etc/triliovault-wlm/wlm_logging.conf"
 DMS_CLIENT_CONF = "/etc/triliovault-dms/client.conf"
 DMS_SERVER_CONF = "/etc/triliovault-dms/server.conf"
 DMS_SERVER_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
+S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 # DMS performs the actual `mount` syscall for NFS/S3 backup targets inside its
 # own container. Sharing a volume across containers isn't sufficient on its
 # own for one container's mount() calls to become visible in a sibling's mount
@@ -595,6 +597,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
 
         # Embedded DMS server, co-located 1:1 with this WLM pod (see module docstring).
         self._write_dms_server_config(dms_container)
+        self._write_dms_s3vaultfuse_config(dms_container)
         self._write_ca_cert(dms_container)
         self._update_dms_pebble_layer(dms_container)
 
@@ -699,6 +702,10 @@ class TrilioWlmK8sCharm(ops.CharmBase):
     def _patch_privileged_devices(self):
         """Grant trilio-dms and trilio-wlm the host device access they need.
 
+        Two containers, two reasons:
+
+        * trilio-dms runs s3vaultfuse, which needs /dev/fuse to mount the backup
+          target. trilio-wlm never mounts a backup target directly.
         * trilio-wlm runs file search (workloadmgr/workloads/filesearch.py) as
           part of wlm-workloads — all four WLM services are Pebble services in
           this one container, there is no separate workloads container. File
@@ -1230,6 +1237,20 @@ class TrilioWlmK8sCharm(ops.CharmBase):
         rendered = self._render_template("triliovault-dms-server.conf.j2", context)
         container.push(DMS_SERVER_CONF, rendered, make_dirs=True)
         logger.info("Wrote %s", DMS_SERVER_CONF)
+
+    def _write_dms_s3vaultfuse_config(self, container):
+        container.push(
+            S3VAULTFUSE_CONF,
+            self._render_template("s3vaultfuse-global.conf.j2", {}),
+            make_dirs=True,
+        )
+        logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        container.push(
+            OBJECT_STORE_LOGGING_CONF_PATH,
+            self._render_template("object_store_logging.conf.j2", {}),
+            make_dirs=True,
+        )
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _update_dms_pebble_layer(self, container):
         layer = ops.pebble.Layer({

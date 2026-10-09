@@ -37,7 +37,6 @@ import ops
 logger = logging.getLogger(__name__)
 
 DATAMOVER_PACKAGE = "python3-tvault-contego"
-STREAMING_TOOLS_PACKAGE = "trilio-streaming-tools"
 
 # Host prerequisites the Trilio debs need but do not (and cannot) pull in
 # themselves. Installed in their own apt transaction, BEFORE the Trilio
@@ -90,6 +89,8 @@ SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
 CA_BUNDLE_COPY = "/etc/triliovault-datamover/ca-bundle.pem"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
+S3VAULTFUSE_CONF = "/etc/triliovault-dms/s3vaultfuse-global.conf"
+OBJECT_STORE_LOGGING_CONF_PATH = "/etc/triliovault-object-store/object_store_logging.conf"
 DMS_LOG_FILE = "/var/log/triliovault/trilio-dms-server.log"
 DMS_CLIENT_LOG_FILE = "/var/log/triliovault/trilio-dms-client.log"
 TRILIO_LIST_PATH = "/etc/apt/sources.list.d/trilio.list"
@@ -367,6 +368,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
+            self._write_s3vaultfuse_config()
             self._restart_services()
         except Exception as e:
             logger.error("Configuration failed: %s", e)
@@ -495,10 +497,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
             subprocess.run(
                 ["apt-get", "install", "-y", "--no-install-recommends",
-                 dm_pkg, dms_pkg, STREAMING_TOOLS_PACKAGE],
+                 "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
                 check=True,
             )
-            logger.info("Installed %s, python3-trilio-dms and %s", dm_pkg, STREAMING_TOOLS_PACKAGE)
+            logger.info("Installed %s and python3-trilio-dms", dm_pkg)
         finally:
             # In a "finally" because a part-way apt failure is exactly when
             # masking matters most: python3-tvault-contego can configure
@@ -591,6 +593,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         dirs = [
             "/etc/triliovault-datamover",
             "/etc/triliovault-dms",
+            "/etc/triliovault-object-store",
             "/var/log/triliovault",
             "/var/triliovault-mounts",
             "/var/triliovault",
@@ -1047,6 +1050,15 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
             with open(path, "w") as f:
                 f.write(content)
             logger.info("Wrote systemd unit %s", path)
+
+    def _write_s3vaultfuse_config(self):
+        self._write_file(S3VAULTFUSE_CONF, self._render_template("s3vaultfuse-global.conf.j2", {}))
+        logger.info("Wrote %s", S3VAULTFUSE_CONF)
+        self._write_file(
+            OBJECT_STORE_LOGGING_CONF_PATH,
+            self._render_template("object_store_logging.conf.j2", {}),
+        )
+        logger.info("Wrote %s", OBJECT_STORE_LOGGING_CONF_PATH)
 
     def _on_update_status(self, event):
         """Periodic status check — verify services are running."""

@@ -386,6 +386,16 @@ def render_wlm_and_dms_configs(*args):
     os.chmod(dms_client_conf_path, 0o640)
     os.chown(dms_client_conf_path, root_uid, nova_gid)
 
+    # Render s3vaultfuse global config for DMS server
+    dms_s3vaultfuse_conf_path = os.path.join(dms_conf_dir, 's3vaultfuse-global.conf')
+    render(
+        source='etc_triliovault-dms_s3vaultfuse-global.conf',
+        target=dms_s3vaultfuse_conf_path,
+        context={},
+    )
+    os.chmod(dms_s3vaultfuse_conf_path, 0o644)
+    os.chown(dms_s3vaultfuse_conf_path, root_uid, nova_gid)
+
     # Enable and (re)start DMS server service
     host.service('enable', 'trilio-dms-server')
     if host.service_running('trilio-dms-server'):

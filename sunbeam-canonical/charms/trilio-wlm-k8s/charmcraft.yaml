@@ -43,7 +43,7 @@ resources:
     description: >
       OCI image for TrilioVault WorkloadManager and the embedded DMS sidecar.
       Both trilio-wlm and trilio-dms containers use this same image — the WLM
-      image already includes python3-trilio-dms.
+      image already includes python3-trilio-dms and python3-s3-fuse-plugin.
     upstream-source: docker.io/trilio/trilio-wlm-canonical:6.2.1-2024.1
   license:
     type: file

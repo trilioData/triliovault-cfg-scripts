@@ -18,14 +18,16 @@ ADD trilio.repo delorean-component-tripleo.repo /etc/yum.repos.d/
 RUN dnf install -y python3-tripleo-repos
 RUN tripleo-repos -b train current && tripleo-repos -b train current ceph
 RUN sed -i 's#baseurl.*#baseurl=http://mirror.centos.org/centos-8/8/storage/x86_64/ceph-nautilus/#g' /etc/yum.repos.d/tripleo-centos-ceph-nautilus.repo
-RUN dnf install python3-tvault-contego trilio-streaming-tools-el9 nbdkit -y
+RUN dnf install python3-tvault-contego python3-s3fuse-plugin -y
 
 #Copy executable files
 RUN mkdir -p /opt/tvault/
+ADD start_datamover_s3  /opt/tvault/
+ADD start_tvault_object_store_tripleo_centos8 /opt/tvault/start_tvault_object_store
 ADD start_datamover_nfs_tripleo_centos8 /opt/tvault/start_datamover_nfs
 RUN sed  -i '0,/^/s//sudo \/usr\/sbin\/modprobe nbd nbds_max=128\n\n/' /opt/tvault/start_datamover_nfs
 RUN chown -R nova:nova /opt/tvault/
-RUN chmod 755 /opt/tvault/start_datamover_nfs
+RUN chmod 755 /opt/tvault/start_datamover_s3 /opt/tvault/start_datamover_nfs /opt/tvault/start_tvault_object_store
 
 ##Copy conf files
 ADD nova-sudoers-rhel8 /etc/sudoers.d/nova-sudoers

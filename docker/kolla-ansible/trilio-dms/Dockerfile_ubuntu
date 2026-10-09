@@ -17,7 +17,7 @@ RUN apt-get update -y
 
 RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y \
     fuse libfuse2 nfs-common \
-    python3-trilio-dms --allow-unauthenticated
+    python3-trilio-dms python3-s3-fuse-plugin --allow-unauthenticated
 
 RUN /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru

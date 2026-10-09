@@ -62,6 +62,9 @@ signing_dir = /var/cache/workloadmgr
 username = {{ .Values.keystone.wlm_api.user }}
 memcached_servers = {{ .Values.common.memcached_servers }}
 
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper
+
 [oslo_messaging_rabbit]
 ssl = {{ .Values.rabbitmq.common.ssl }}
 ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem

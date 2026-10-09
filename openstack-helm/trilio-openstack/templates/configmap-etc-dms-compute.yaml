@@ -28,4 +28,5 @@ metadata:
 type: Opaque
 data:
   server.conf: {{ dict "server" $base | include "helm-toolkit.utils.to_oslo_conf" | b64enc }}
+  s3vaultfuse-global.conf: {{ dict "s3fuse_sys_admin" (dict "helper_command" "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper") "DEFAULT" (.Values.conf.dms_server.s3vaultfuse | default dict) | include "helm-toolkit.utils.to_oslo_conf" | b64enc }}
 {{- end }}

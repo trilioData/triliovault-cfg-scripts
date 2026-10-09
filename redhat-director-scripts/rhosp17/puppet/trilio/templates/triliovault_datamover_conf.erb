@@ -29,3 +29,6 @@ ssl = <%= @oslomsg_rpc_use_ssl %>
 
 [cinder]
 http_retries = <%= @cinder_http_retries %>
+
+[s3fuse_sys_admin]
+helper_command = sudo /usr/bin/privsep-helper
