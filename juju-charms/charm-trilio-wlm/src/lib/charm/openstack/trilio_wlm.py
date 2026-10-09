@@ -112,6 +112,7 @@ class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
         "python3-workloadmgrclient",
         "python3-contegoclient",
         "python3-s3-fuse-plugin",
+        "trilio-streaming-tools",
         "python-apt",
         "python3-trilio-dms",
     ]

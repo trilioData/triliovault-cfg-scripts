@@ -35,7 +35,7 @@ RUN dnf install --releasever 9.6 -y ntfs-3g python3-pyvmomi
 
 ## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet install
 RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms
-RUN dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9
+RUN dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9 nbdkit trilio-streaming-tools-el9
 RUN dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 RUN dnf erase --releasever 9.6 -y epel-release

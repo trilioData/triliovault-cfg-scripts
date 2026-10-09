@@ -70,6 +70,7 @@ RUN apt-get update -y && \
         python3-contegoclient \
         python3-trilio-dms \
         python3-s3-fuse-plugin \
+        trilio-streaming-tools \
     --allow-unauthenticated && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \

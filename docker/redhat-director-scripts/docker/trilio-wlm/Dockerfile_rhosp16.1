@@ -41,7 +41,7 @@ RUN dnf --releasever 8.2 -y install openstack-nova-common python3-nova python3-n
 RUN pip3 install --upgrade pip && pip3 install igraph && pip3 install namedatomiclock
 
 ## Install Triliovault wlm packages
-RUN dnf repolist && dnf --releasever 8.2 -y install workloadmgr python3-s3fuse-plugin
+RUN dnf repolist && dnf --releasever 8.2 -y install workloadmgr python3-s3fuse-plugin nbdkit trilio-streaming-tools-el9
 
 ## Install important security patches
 RUN dnf -y --releasever 8.2 update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest

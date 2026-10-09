@@ -41,7 +41,7 @@ RUN dnf install --releasever 9.6 -y https://dl.fedoraproject.org/pub/epel/epel-r
 
 ## Enable openstack-17.1-for-rhel-9-x86_64-rpms for eventlet 
 RUN dnf config-manager --enable openstack-17.1-for-rhel-9-x86_64-rpms \
-    && dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9 \
+    && dnf -y --releasever 9.6 install python3-s3fuse-plugin-el9 nbdkit trilio-streaming-tools-el9 \
     && dnf config-manager --disable openstack-17.1-for-rhel-9-x86_64-rpms
 
 RUN dnf erase --releasever 9.6 -y epel-release
