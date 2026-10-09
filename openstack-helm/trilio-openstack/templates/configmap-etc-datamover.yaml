@@ -46,6 +46,8 @@ limitations under the License.
 
 {{- $_ := set .Values.conf.datamover.barbican "barbican_endpoint_type" .Values.conf.triliovault.interface -}}
 
+{{- include "triliovault.oslo_messaging_rabbit_queues" (list .Values.conf.datamover .Values.conf.triliovault) -}}
+
 
 {{/* **********************************************************************
      set logging.conf conf parameters
