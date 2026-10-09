@@ -104,7 +104,7 @@ class TrilioDataMoverBaseCharm(
 
     required_relations = ["amqp", "shared-db"]
 
-    base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
+    base_packages = ["python3-tvault-contego", "nfs-common", "python3-s3-fuse-plugin", "trilio-streaming-tools", "libguestfs-tools", "build-essential", "libperl-dev", "virt-v2v", "python3-apt", "python3-trilio-dms"]
 
     # configuration file permissions
     user = "root"
