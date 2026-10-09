@@ -497,7 +497,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
             subprocess.run(
                 ["apt-get", "install", "-y", "--no-install-recommends",
-                 "python3-s3-fuse-plugin", dm_pkg, dms_pkg],
+                 "python3-s3-fuse-plugin", dm_pkg, dms_pkg, "trilio-streaming-tools"],
                 check=True,
             )
             logger.info("Installed %s and python3-trilio-dms", dm_pkg)

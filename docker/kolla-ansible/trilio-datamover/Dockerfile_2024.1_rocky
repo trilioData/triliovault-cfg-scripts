@@ -46,7 +46,7 @@ RUN dnf upgrade -y --exclude=iscsi-initiator-utils\* $(rpm -qa --qf '%{NAME}\n' 
 
 RUN dnf install -y --allowerasing --exclude=iscsi-initiator-utils\* \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y --exclude=iscsi-initiator-utils\* python3-s3fuse-plugin-el9
+RUN dnf install -y --exclude=iscsi-initiator-utils\* python3-s3fuse-plugin-el9 trilio-streaming-tools-el9
 
 ## Explicitly install iscsi-initiator-utils 6.2.1.9 from Rocky 9.4 vault (TVAULT-7336: 6.2.1.11 breaks iSCSI portal login)
 ## Rocky current repos only carry 6.2.1.11; pin to 6.2.1.9 from the vault with --allowerasing to downgrade if needed.

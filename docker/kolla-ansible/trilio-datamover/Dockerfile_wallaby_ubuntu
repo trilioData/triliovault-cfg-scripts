@@ -20,7 +20,7 @@ RUN apt-get update -y
 RUN usermod -aG disk,kvm nova
 
 ##Install Triliovault-Datamover packages
-RUN apt-get install -y python3-tvault-contego python3-s3-fuse-plugin --allow-unauthenticated
+RUN apt-get install -y python3-tvault-contego python3-s3-fuse-plugin trilio-streaming-tools --allow-unauthenticated
 
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
