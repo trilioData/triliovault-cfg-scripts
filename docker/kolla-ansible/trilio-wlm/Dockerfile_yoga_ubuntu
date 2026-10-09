@@ -29,7 +29,7 @@ RUN set -ex \
      && apt-get clean -y
 
 # Installing TrilioVaultWLM packages
-RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-s3-fuse-plugin --allow-unauthenticated
+RUN apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install workloadmgr python3-workloadmgrclient python3-contegoclient python3-s3-fuse-plugin trilio-streaming-tools --allow-unauthenticated
 
 
 ##Copy conf files

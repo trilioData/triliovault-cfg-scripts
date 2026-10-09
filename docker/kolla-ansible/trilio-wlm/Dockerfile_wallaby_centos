@@ -32,7 +32,7 @@ RUN dnf -y install python3-tzlocal
 
 
 # Installing TrilioVaultWLM packages
-RUN dnf install workloadmgr python3-workloadmgrclient-el8  python3-contegoclient-el8 python3-s3fuse-plugin -y
+RUN dnf install workloadmgr python3-workloadmgrclient-el8  python3-contegoclient-el8 python3-s3fuse-plugin nbdkit trilio-streaming-tools-el9 -y
 
 ##Copy conf files
 RUN mkdir -p /etc/triliovault-wlm /etc/triliovault-object-store /var/triliovault /var/trilio/triliovault-mounts /var/log/triliovault
