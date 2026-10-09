@@ -17,8 +17,14 @@
   when: inventory_hostname in groups[triliovault_datamover_api_group] or
         inventory_hostname in groups[triliovault_wlm_api_group]
 
+# Clear any failed container unit BEFORE the handlers run: a handler failure drops the
+# host from the play, so ensure-containers-running.yml below would never be reached on it.
+- include_tasks: clear-failed-container-units.yml
+
 - name: Flush handlers
   meta: flush_handlers
 
 - include_tasks: start_wlm_cron_service.yml
   when: inventory_hostname in groups[triliovault_wlm_cron_group]
+
+- include_tasks: ensure-containers-running.yml
