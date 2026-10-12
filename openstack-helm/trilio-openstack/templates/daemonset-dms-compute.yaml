@@ -90,8 +90,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+{{- if not (has $envAll.Values.conf.dms_compute_node_id (list "hostname" "fqdn")) }}
+{{- fail (printf "conf.dms_compute_node_id must be 'hostname' or 'fqdn', got '%v'" $envAll.Values.conf.dms_compute_node_id) }}
+{{- end }}
           command:
+{{- if eq $envAll.Values.conf.dms_compute_node_id "fqdn" }}
+            # DMAPI addresses this DMS by the nova compute host name; OpenStack-Helm nova-compute
+            # uses $(hostname --fqdn), so name the DMS the same way (see conf.dms_compute_node_id).
+            - /bin/bash
+            - -c
+            - /tmp/triliovault-dms-init.sh && sed -i "s/^node_id = .*/node_id = $(hostname --fqdn)/" /tmp/pod-shared-triliovault-dms/triliovault-dms-server-dynamic.conf
+{{- else }}
             - /tmp/triliovault-dms-init.sh
+{{- end }}
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

@@ -8,9 +8,17 @@ T4O is deployed as a single Helm release (`trilio-openstack`) that creates all r
 | Platform | OpenStack Release | values override |
 |----------|------------------|-----------------|
 | OpenStack Helm | Antelope, Bobcat, Epoxy | `2023.x.yaml` etc. |
+| OpenStack Helm | Gazpacho (2026.1) | `app_gateway.yaml` + `2026.1.yaml` (in that order) |
 | MOSK 22.x | Victoria, Yoga | `mosk22.*.yaml` |
 | MOSK 25.1 | Caracal | `mosk25.1.yaml` |
 | MOSK 26.2 | Gazpacho only | `mosk26.2.yaml` + `app_gateway.yaml` |
+
+## OpenStack-Helm 2026.1 (Gazpacho) — TVAULT-7746
+- **Same opt-in approach as MOSK 26.2: no script, template, `values.yaml` or `Chart.yaml` change.** New files: `values_overrides/2026.1.yaml` and `docker/openstack-helm/trilio-horizon-plugin/Dockerfile_2026.1`. Upstream OSH names the release `2026.1`; "26.2" is the MOSK release number.
+- **Gateway API is not optional on OSH 2026.1.** Upstream helm-toolkit 2026.1 removed the ingress helpers, and upstream OSH exposes services with HTTPRoutes on Envoy Gateway `envoy-gateway-system/gateway-default` (`roles/deploy-env/tasks/public_endpoints.yaml`: `http` :80 listener, optional HTTPS listener with cert `gateway-tls`, `allowedRoutes: All`).
+- **Reuse `app_gateway.yaml`; don't add an OSH copy of it.** Its `manifests` switches are platform-neutral; only its Gateway parentRef (`openstack/app-gateway`) is MOSK's. `2026.1.yaml` overrides the parentRef, so it **must come after `app_gateway.yaml`** in `install.sh`. Helm's last `--values` file wins, and with the order reversed the routes silently attach to the non-existent `openstack/app-gateway` (not Accepted, no install error).
+- **The 6.2.1 `2023.2` images are reused** (retagged `-2026.1`, same digests) for WLM, datamover, DMAPI and DMS. The chart has no MOSK/OSH branching and doesn't depend on anything platform-specific in the images. Job images stay `openstackhelm/heat:2023.2-ubuntu_jammy`: upstream's `openstack-client:2026.1` image targets helm-toolkit 2026.1's job scripts, not our vendored 2024.2 ones.
+- **Horizon plugin on OSH 2026.1:** the `quay.io/airshipit/horizon:2026.1-ubuntu_noble` venv (`/var/lib/openstack`, python 3.12) has no pip and ships setuptools 84 without `pkg_resources`. `include-system-site-packages = true`, so apt's `python3-pip` drives installs into the venv. `Dockerfile_2026.1` pins `setuptools<82` (installs 81.0.0, which has `pkg_resources`), as `Dockerfile_mosk26.2` does. Build with the unchanged `devops-build-publish.sh <tag> 2026.1 trilio-horizon-plugin`.
 
 ## MOSK 26.2 (Gazpacho) — TVAULT-7745
 - **MOSK 26.2 support is opt-in files only. Every existing script, `values.yaml` and `Chart.yaml` is unchanged**, so OpenStack-Helm and MOSK ≤ 25.1 renders are identical to before. The new files are:

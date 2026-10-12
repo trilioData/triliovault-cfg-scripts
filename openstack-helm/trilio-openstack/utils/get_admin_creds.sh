@@ -32,6 +32,15 @@ TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secret/rabbitmq
 
 ## Create nova compute related conf file
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
+## OpenStack-Helm 2026.1+: nova-compute.conf no longer carries the service credentials
+## ([placement], [neutron], [cinder], [keystone_authtoken], [service_user]); nova-compute loads them
+## from secret nova-ks-etc via --config-dir. Without them the datamover can't authenticate to
+## Placement and exits 0 (pod shows "Completed"). Append them; oslo.config merges a section that
+## appears more than once. Older releases have no nova-ks-etc, so nothing changes there.
+if kubectl -n openstack get secret/nova-ks-etc >/dev/null 2>&1; then
+   echo "Found secret openstack/nova-ks-etc: appending nova service credentials to nova-compute.conf"
+   kubectl -n openstack get secret/nova-ks-etc -o go-template='{{range $k, $v := .data}}{{"\n"}}{{$v | base64decode}}{{end}}' >> ../templates/bin/_triliovault-nova-compute.conf.tpl
+fi
 ./sync_nova_compute.sh
 
 CRT=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')

@@ -1,0 +1,111 @@
+FROM openstackhelm/nova:2024.1-ubuntu_jammy
+
+LABEL name="trilio/triliovault-datamover" \
+      version="6.2.1" \
+      release="6.2" \
+      vendor="TrilioData" \
+      summary="TrilioData Datamover" \
+      description="TrilioData Datamover container image for OpenStack-Helm 2026.1 (Gazpacho)" \
+      org.opencontainers.image.authors="kanav.malhotra@trilio.io"
+
+ARG UID=42424
+ARG GID=42424
+ARG PROJECT_DIR=triliovault-datamover
+ARG TRILIO_MOUNT_DIR=/var/lib/trilio/triliovault-mounts
+ARG OPENSTACK_REPO=cloud-archive:caracal
+ARG CEPH_RELEASE=tentacle
+
+# Switch to root and install a custom RPM, etc.
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
+
+# Same as Dockerfile_mosk25.1, except for the Ceph client and oslo.messaging (see below).
+# Ceph: the base image installs Ceph Reef 18.2
+# from download.ceph.com/debian-reef. Reef can't read CephX keys of type aes256k (the fix for
+# CVE-2025-30156, Tentacle 20.2.4 / Squid 19.2.6), which fresh Tentacle clusters create for every
+# client and which OSSN-0108 tells operators to rotate to; the datamover then fails with
+# "Could not find any valid ceph key to use". A Tentacle client reads both aes and aes256k keys.
+# The Ceph release key is the same for every release, so only the repository line changes;
+# the "apt-get upgrade --with-new-pkgs" below moves all installed Ceph packages to it.
+RUN sed -i "s#download.ceph.com/debian-[a-z]*/#download.ceph.com/debian-${CEPH_RELEASE}/#" /etc/apt/sources.list.d/ceph.list
+
+# Install pre-requisite packages
+RUN set -ex \
+    && apt-get update && apt-get -y install \
+        software-properties-common  apt-utils vim \
+        less  iputils-ping udev qemu-utils ceph-common \
+        python3-libvirt python3-cinderclient
+
+RUN apt-get -y upgrade --only-upgrade --with-new-pkgs --show-upgraded
+
+# Fail the build if the Ceph client isn't the expected release. tvault-contego runs under the
+# system Python (/usr/bin/python3); "python3" on PATH is the base image's virtualenv.
+RUN ceph --version | grep -q "${CEPH_RELEASE}" \
+    && /usr/bin/python3 -c "import rbd, rados" \
+    && ceph --version
+
+# Install datamover packages
+COPY trilio.list /etc/apt/sources.list.d/
+
+RUN set -ex \
+    && apt-add-repository ${OPENSTACK_REPO} && apt-get update -y && apt-get -y --allow-unauthenticated install \
+        python3-tvault-contego \
+        fuse \
+        python3-s3-fuse-plugin \
+        nfs-common \
+        python3-nova \
+        python3-novaclient
+
+# tvault-contego runs under the system Python with Caracal's python3-oslo.messaging 14.6.0, which
+# has no rabbit_transient_quorum_queue. Upstream OpenStack-Helm 2026.1 runs nova on RabbitMQ 4 with
+# quorum queues, and RabbitMQ 4 refuses transient non-exclusive queues, so the reply queue of every
+# nova conductor call (needed by restores) is rejected and the call never returns. 14.7.2 is the
+# same Caracal series and declares those queues as quorum queues. pip installs it into
+# /usr/local/lib/python3.10/dist-packages, which the system Python searches before the apt package.
+ARG OSLO_MESSAGING_VERSION=14.7.2
+RUN set -ex \
+    && apt-get -y install python3-pip \
+    && /usr/bin/python3 -m pip install --no-cache-dir --no-deps "oslo.messaging==${OSLO_MESSAGING_VERSION}" \
+    && /usr/bin/python3 -c "import oslo_messaging, importlib.metadata as m; \
+from oslo_messaging._drivers import impl_rabbit as r; \
+assert m.version('oslo.messaging') == '${OSLO_MESSAGING_VERSION}'; \
+assert 'rabbit_transient_quorum_queue' in [o.name for o in r.rabbit_opts]; \
+import contego, nova.rpc, nova.objects; print('oslo.messaging', m.version('oslo.messaging'))"
+
+# Configuring the Nova user
+COPY nova_userid.sh /opt/${PROJECT_DIR}/
+
+# Split thesse since all three are dependent operations
+RUN sed -i -r "s/^(user_id=).*/\1${UID}/" /opt/${PROJECT_DIR}/nova_userid.sh \
+    && sed -i -r "s/^(group_id=).*/\1${GID}/" /opt/${PROJECT_DIR}/nova_userid.sh
+RUN chmod +x /opt/${PROJECT_DIR}/nova_userid.sh && /opt/${PROJECT_DIR}/nova_userid.sh
+
+RUN mkdir -p /etc/udev/rules.d
+RUN echo 'KERNEL=="rbd[0-9]*", PROGRAM="/usr/bin/ceph-rbdnamer %n", SYMLINK+="rbd/%c{1}/%c{2}"' > /etc/udev/rules.d/trilio-rbd.rules
+
+# Copy conf files
+ADD nova-sudoers /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+RUN groupadd -r kvm || true \
+    && usermod -aG disk nova \
+    && usermod -aG kvm nova
+
+RUN mkdir -p ${TRILIO_MOUNT_DIR} /var/triliovault /etc/${PROJECT_DIR} /opt/${PROJECT_DIR} /var/log/${PROJECT_DIR} /etc/triliovault-object-store \
+    && chown nova.nova -R ${TRILIO_MOUNT_DIR} \
+        /var/triliovault \
+        /etc/${PROJECT_DIR} \
+        /opt/${PROJECT_DIR} \
+        /var/log/${PROJECT_DIR} \
+        /etc/triliovault-object-store \
+    && chmod 777 ${TRILIO_MOUNT_DIR} /var/triliovault
+
+ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+
+# Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+# Become nova user for further operations
+USER nova

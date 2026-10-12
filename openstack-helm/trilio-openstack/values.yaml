@@ -1131,7 +1131,15 @@ conf:
       db_pool_size: 20
       db_max_overflow: 40
       db_pool_recycle: 3600
-  dms_server:  
+  # How the DMS on a compute node names itself (its node_id / RabbitMQ queue dms.<node_id>).
+  # DMAPI addresses it by the nova compute host name, so this must match how the cloud's nova
+  # names compute hosts:
+  #   hostname - short host name; nova's default (MOSK, and OSH nodes without a DNS domain)
+  #   fqdn     - hostname --fqdn; OpenStack-Helm nova-compute sets host = $(hostname --fqdn),
+  #              which differs from the short name when the nodes have a domain (OSH 2026.1 lab)
+  # Check with: openstack compute service list --service nova-compute -c Host
+  dms_compute_node_id: hostname
+  dms_server:
     server:
       log_level: INFO
       log_file: /var/log/triliovault/trilio-dms-server.log

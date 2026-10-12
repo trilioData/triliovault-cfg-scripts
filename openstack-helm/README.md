@@ -1,5 +1,100 @@
 # Install 'triliovault' helm chart
 
+## OpenStack-Helm 2026.1 (OpenStack Gazpacho)
+
+Run these steps from a node with kubectl/helm access to the cluster. Run all scripts from
+`trilio-openstack/utils/`; they are the same scripts as for OpenStack-Helm 2023.2. The T4O
+container images are retags of the 6.2.1 2023.2 images; only the Horizon plugin image is built
+for 2026.1.
+
+### Requirements
+- OpenStack-Helm charts deployed with OpenStack **2026.1 Gazpacho** images
+  (`quay.io/airshipit/*:2026.1-ubuntu_noble`).
+- Public endpoints served through **Gateway API** (Envoy Gateway), as in the upstream
+  OpenStack-Helm 2026.1 deployment. Upstream helm-toolkit 2026.1 no longer renders Ingress, so
+  T4O creates HTTPRoutes instead. Find the Gateway with `kubectl get gateway -A`; the upstream
+  default is `envoy-gateway-system/gateway-default`, which `values_overrides/2026.1.yaml` uses.
+  If yours differs, change `network.*.http_route.gateway` in that file.
+- `tls_public_endpoint.yaml` publishes the T4O public endpoints as `https`:443. Keep it only if
+  the Gateway has an HTTPS listener whose certificate covers `triliovault-wlm.<public_domain_name>`
+  and `triliovault-datamover.<public_domain_name>`; for an HTTP-only Gateway, drop it from
+  `install.sh`. TODO(TVAULT-7746): record the lab result.
+
+### Steps
+1. Install pre-requisites and label the nodes as in sections 1 and 5 below
+   (`triliovault-control-plane=enabled` on the control plane nodes).
+2. Create T4O's RabbitMQ cluster:
+   ```
+   ./create_rabbitmq.sh
+   ```
+3. Fetch Keystone, database, RabbitMQ and nova-compute details (writes
+   `values_overrides/admin_creds.yaml`). The nova-compute sync consumes placeholders in
+   `templates/bin/`, so before re-running it, restore them with `git checkout -- ../templates/bin/`:
+   ```
+   ./get_admin_creds.sh <internal_domain_name> <public_domain_name>
+   ```
+   OpenStack-Helm 2026.1 nova keeps its service credentials (`[placement]`, `[neutron]`, `[cinder]`,
+   `[keystone_authtoken]`, `[service_user]`) in the secret `nova-ks-etc`, not in
+   `nova-compute.conf`. The script detects that secret and appends them (it prints
+   "Found secret openstack/nova-ks-etc ..."); without them the datamover pods restart in a loop
+   showing `Completed`. It also prints two harmless `NotFound` errors for `keystone-tls-public`
+   and `trilio-ca-cert`: they are only used for Ingress TLS, which `app_gateway.yaml` turns off.
+4. Fetch the Ceph details (writes `values_overrides/ceph.yaml`):
+   ```
+   ./get_ceph.sh
+   ```
+5. Create the image pull secret and the service passwords:
+   ```
+   ./create_image_pull_secret.sh <DOCKERHUB_USERNAME> <DOCKERHUB_PASSWORD>
+   ./generate_passwords.sh
+   ```
+6. Check the T4O image tags in `values_overrides/2026.1.yaml`. Then edit `install.sh`:
+   replace `ingress.yaml` with `app_gateway.yaml`, and replace `2023.2.yaml` with `2026.1.yaml`
+   **listed after `app_gateway.yaml`**. Helm applies `--values` files in order and the last one
+   wins; `app_gateway.yaml` points the routes at MOSK's `openstack/app-gateway`, and
+   `2026.1.yaml` must override that. The `--values` lines become:
+   ```
+   --values=./trilio-openstack/values_overrides/image_pull_secrets.yaml \
+   --values=./trilio-openstack/values_overrides/keystone.yaml \
+   --values=./trilio-openstack/values_overrides/admin_creds.yaml \
+   --values=./trilio-openstack/values_overrides/tls_public_endpoint.yaml \
+   --values=./trilio-openstack/values_overrides/ceph.yaml \
+   --values=./trilio-openstack/values_overrides/db_drop.yaml \
+   --values=./trilio-openstack/values_overrides/app_gateway.yaml \
+   --values=./trilio-openstack/values_overrides/2026.1.yaml \
+   --values=./trilio-openstack/values_overrides/triliovault_passwords.yaml
+   ```
+   and install:
+   ```
+   ./install.sh
+   ```
+7. Check that both routes are attached to your Gateway and accepted, then make
+   `triliovault-wlm.<public_domain_name>` and `triliovault-datamover.<public_domain_name>`
+   resolve to the Gateway address (the same address as the other OpenStack public endpoints):
+   ```
+   kubectl -n trilio-openstack get httproute      # describe: parentRef = your Gateway, Accepted=True, ResolvedRefs=True
+   kubectl get gateway -A                         # ADDRESS
+   ```
+8. Install the Horizon plugin. `HORIZON_CHART` is the `horizon` chart the release was installed
+   from, at the same version (`helm -n openstack list` shows it):
+   ```
+   HORIZON_CHART=<path to the horizon chart> \
+     ./install_horizon_plugin.sh docker.io/trilio/trilio-horizon-plugin-helm:<TAG>-2026.1
+   ```
+   The plugin image is private and the Horizon pods have no pull secret, so the script copies
+   `trilio-openstack/triliovault-image-registry` to `openstack/trilio-horizon-image-registry` and
+   adds it to the `horizon` ServiceAccount's `imagePullSecrets` (pre-pulling the image onto the
+   nodes doesn't work on Kubernetes 1.35+, where the kubelet re-checks the pod's own credentials).
+   It then runs `helm upgrade horizon --reuse-values --set images.tags.horizon=<image>`, waits for
+   the rollout and checks that the Trilio panels are enabled. To go back to the stock Horizon image:
+   `HORIZON_CHART=<path> ./install_horizon_plugin.sh --rollback`. Use a new `<TAG>` for every
+   rebuild, because Horizon pulls with `IfNotPresent`.
+9. Verify: all pods in `trilio-openstack` are Running/Completed, and
+   `curl -k https://triliovault-wlm.<public_domain_name>` answers. Then run the functional test
+   suite (`bash test/run_all.sh` from the repository root).
+
+---
+
 ## MOSK 26.2 (OpenStack Gazpacho)
 
 Run these steps from the node you use to manage the MOSK cluster (kubectl access to the
