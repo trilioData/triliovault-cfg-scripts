@@ -7,9 +7,10 @@
 # public endpoints through Gateway API (Envoy Gateway), so Ingress is not used here.
 # The T4O images are the MOSK 26.2 ones (*-test-mosk26.2 = the 6.2.1 *-mosk25.1 Caracal build, same
 # digests), validated on Gazpacho in TVAULT-7745. They are built on upstream openstackhelm/nova and
-# ubuntu:jammy, not on Mirantis images. Not the 2023.2 (Bobcat) images: their oslo.messaging 14.4.2
-# can't declare transient quorum queues, and upstream 2026.1 runs RabbitMQ 4 with nova on quorum
-# queues (transient non-exclusive queues are denied by default); Caracal's 14.7.2 can. Only the
+# ubuntu:jammy, not on Mirantis images. Upstream 2026.1 runs nova on RabbitMQ 4 with quorum queues,
+# which denies transient non-exclusive queues, so components that talk to nova's RabbitMQ need an
+# oslo.messaging that declares transient quorum queues (>= 14.7); the datamover image below adds
+# 14.7.2 for its system Python (Caracal's python3-oslo.messaging is 14.6.0). Only the
 # Horizon plugin is rebuilt (Dockerfile_2026.1), and it is set in the horizon release values, not here.
 images:
   pull_policy: "IfNotPresent"

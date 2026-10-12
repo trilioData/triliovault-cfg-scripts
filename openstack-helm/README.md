@@ -31,15 +31,14 @@ for 2026.1.
    `values_overrides/admin_creds.yaml`). The nova-compute sync consumes placeholders in
    `templates/bin/`, so before re-running it, restore them with `git checkout -- ../templates/bin/`:
    ```
-   ./get_admin_creds_2026.1.sh <internal_domain_name> <public_domain_name>
+   ./get_admin_creds.sh <internal_domain_name> <public_domain_name>
    ```
-   Use `get_admin_creds_2026.1.sh`, not `get_admin_creds.sh`: OpenStack-Helm 2026.1 nova keeps its
-   service credentials (`[placement]`, `[neutron]`, `[cinder]`, `[keystone_authtoken]`,
-   `[service_user]`) in the secret `nova-ks-etc`, not in `nova-compute.conf`, and this script
-   appends them. With the old script the datamover pods restart in a loop showing `Completed`
-   (the Placement login fails and the datamover exits 0). It prints two harmless `NotFound`
-   errors for `keystone-tls-public` and `trilio-ca-cert`: they are only used for Ingress TLS,
-   which `app_gateway.yaml` turns off.
+   OpenStack-Helm 2026.1 nova keeps its service credentials (`[placement]`, `[neutron]`, `[cinder]`,
+   `[keystone_authtoken]`, `[service_user]`) in the secret `nova-ks-etc`, not in
+   `nova-compute.conf`. The script detects that secret and appends them (it prints
+   "Found secret openstack/nova-ks-etc ..."); without them the datamover pods restart in a loop
+   showing `Completed`. It also prints two harmless `NotFound` errors for `keystone-tls-public`
+   and `trilio-ca-cert`: they are only used for Ingress TLS, which `app_gateway.yaml` turns off.
 4. Fetch the Ceph details (writes `values_overrides/ceph.yaml`):
    ```
    ./get_ceph.sh

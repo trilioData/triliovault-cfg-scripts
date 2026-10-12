@@ -85,3 +85,7 @@ Individual component directories may also have their own `build_container.sh` an
 - The `trilio-common` base image (openstack-helm) must be built before other images in that platform.
 - `nova-sudoers` in the datamover image is required — without it the datamover cannot interact with libvirt/QEMU on the compute node.
 - Config files packaged into images (e.g., `datamover_logging.conf`, `dmapi.conf.sample`) serve as defaults that may be overridden at runtime via volume mounts or environment variables.
+
+## Known Size Optimizations (not applied)
+- **`openstack-helm/trilio-datamover/Dockerfile_2026.1`: `python3-pip` adds ~250 MB.** The step that installs oslo.messaging 14.7.2 for the system Python runs `apt-get -y install python3-pip`, which also pulls pip's recommended packages (compiler toolchain, Python dev headers). Measured in TVAULT-7746: that layer is 258 MB; with `--no-install-recommends` and `apt-get -y purge python3-pip` in the same `RUN` it is 5.8 MB (image 4,397 MB -> 3,997 MB), and the build check still passes. Don't use `apt-get autoremove` there: it also removes runtime packages that are marked auto-installed.
+- The build-time checks (`ceph --version`, `/usr/bin/python3 -c "import ..."`) cost ~0.1 MB; they are not a size problem.
