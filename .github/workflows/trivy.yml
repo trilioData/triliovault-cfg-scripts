@@ -40,8 +40,8 @@ jobs:
       - name: Trivy image scan - datamover-api
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   # v0.36.0
         env:
-          TRIVY_USERNAME: ${{ secrets.RH_REGISTRY_USER }}
-          TRIVY_PASSWORD: ${{ secrets.RH_REGISTRY_TOKEN }}
+          TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USER }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         with:
           version: ${{ env.TRIVY_VERSION }}
           scan-type: image
