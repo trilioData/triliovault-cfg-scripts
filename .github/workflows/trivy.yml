@@ -45,7 +45,7 @@ jobs:
         with:
           version: ${{ env.TRIVY_VERSION }}
           scan-type: image
-          image-ref: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:6.2.1-rhoso18.0
+          image-ref: docker.io/trilio/trilio-datamover-api:6.2.1-rhoso18.0
           format: template
           template: '@trivy-html.tpl'
           output: trivy-report-trilio-datamover-api-rhoso-6-2-1-rhoso18-0-pr${{ env.PR }}.html
