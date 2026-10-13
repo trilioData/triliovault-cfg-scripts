@@ -1,0 +1,97 @@
+name: Trivy scans - RHOSO18
+
+on:
+  pull_request:
+    branches: ["dev-stable/6.3"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TRIVY_VERSION: v0.75.0      # match the version you run locally
+  PR: ${{ github.event.pull_request.number }}
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Fetch the HTML template matching the Trivy version, so the path is predictable
+      - name: Get HTML template
+        run: |
+          wget -qO trivy-html.tpl \
+            https://raw.githubusercontent.com/aquasecurity/trivy/${TRIVY_VERSION}/contrib/html.tpl
+
+      # 1) trivy fs ... ./triliovault-cfg-scripts/redhat-director-scripts/rhosp18
+      - name: Trivy fs scan - rhosp18 dir
+        uses: aquasecurity/trivy-action@<full-commit-sha>   # vX.Y.Z
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: fs
+          scan-ref: ./triliovault-cfg-scripts/redhat-director-scripts/rhosp18
+          scanners: vuln,secret,misconfig
+          format: template
+          template: '@trivy-html.tpl'
+          output: trivy-report-rhoso18-dir-pr${{ env.PR }}.html
+
+      # 2) trivy image ... registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:6.2.1-rhoso18.0
+      - name: Trivy image scan - datamover-api
+        uses: aquasecurity/trivy-action@<full-commit-sha>   # vX.Y.Z
+        env:
+          TRIVY_USERNAME: ${{ secrets.RH_REGISTRY_USER }}
+          TRIVY_PASSWORD: ${{ secrets.RH_REGISTRY_TOKEN }}
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:6.2.1-rhoso18.0
+          format: template
+          template: '@trivy-html.tpl'
+          output: trivy-report-trilio-datamover-api-rhoso-6-2-1-rhoso18-0-pr${{ env.PR }}.html
+
+      # upload-artifact with archive:false accepts one file per step
+      - name: Upload fs report
+        id: up_fs
+        uses: actions/upload-artifact@v7
+        with:
+          path: trivy-report-rhoso18-dir-pr${{ env.PR }}.html
+          archive: false
+          retention-days: 30
+
+      - name: Upload image report
+        id: up_img
+        uses: actions/upload-artifact@v7
+        with:
+          path: trivy-report-trilio-datamover-api-rhoso-6-2-1-rhoso18-0-pr${{ env.PR }}.html
+          archive: false
+          retention-days: 30
+
+      - name: Job summary
+        run: |
+          echo "### Trivy reports" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [rhosp18 directory scan](${{ steps.up_fs.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [datamover-api image scan](${{ steps.up_img.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment report links on PR
+        uses: actions/github-script@v7
+        env:
+          FS_URL: ${{ steps.up_fs.outputs.artifact-url }}
+          IMG_URL: ${{ steps.up_img.outputs.artifact-url }}
+        with:
+          script: |
+            const marker = '<!-- trivy-rhoso18-reports -->';
+            const body = `${marker}
+            ### 🛡️ Trivy scans - RHOSO18
+            - 📄 [rhosp18 directory scan](${process.env.FS_URL})
+            - 📄 [trilio-datamover-api-rhoso:6.2.1-rhoso18.0 image scan](${process.env.IMG_URL})`;
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo, issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
