@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-NAMESPACE="openshift-user-workload-monitoring"
+NAMESPACE="trilio-monitoring"
 APP_LABEL="app.kubernetes.io/name=kube-state-metrics"
 DEPLOYMENT_NAME="kube-state-metrics"
 
