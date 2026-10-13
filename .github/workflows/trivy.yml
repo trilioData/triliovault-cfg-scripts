@@ -25,13 +25,12 @@ jobs:
           wget -qO trivy-html.tpl \
             https://raw.githubusercontent.com/aquasecurity/trivy/${TRIVY_VERSION}/contrib/html.tpl
 
-      # 1) trivy fs ... ./triliovault-cfg-scripts/redhat-director-scripts/rhosp18
       - name: Trivy fs scan - rhosp18 dir
-        uses: aquasecurity/trivy-action@<full-commit-sha>   # vX.Y.Z
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   # v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
           scan-type: fs
-          scan-ref: ./triliovault-cfg-scripts/redhat-director-scripts/rhosp18
+          scan-ref: ./redhat-director-scripts/rhosp18
           scanners: vuln,secret,misconfig
           format: template
           template: '@trivy-html.tpl'
@@ -39,7 +38,7 @@ jobs:
 
       # 2) trivy image ... registry.connect.redhat.com/trilio/trilio-datamover-api-rhoso:6.2.1-rhoso18.0
       - name: Trivy image scan - datamover-api
-        uses: aquasecurity/trivy-action@<full-commit-sha>   # vX.Y.Z
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   # v0.36.0
         env:
           TRIVY_USERNAME: ${{ secrets.RH_REGISTRY_USER }}
           TRIVY_PASSWORD: ${{ secrets.RH_REGISTRY_TOKEN }}
