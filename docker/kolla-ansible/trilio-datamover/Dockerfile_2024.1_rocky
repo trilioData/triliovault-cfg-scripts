@@ -13,41 +13,99 @@ LABEL name="kolla/trilio-datamover" \
 # switch to root and install a custom RPM, etc.
 USER root
 
-RUN dnf clean all
+# TVAULT-7336: iscsi-initiator-utils 6.2.1.11 breaks iSCSI portal login, so every dnf
+# transaction below excludes it and the known-good 6.2.1.9 build is pinned explicitly.
+# TVAULT-7629: install_weak_deps=False keeps RHEL9 "Recommends:" packages out of the image.
+ARG DNF_OPTS="-y --setopt=install_weak_deps=False --exclude=iscsi-initiator-utils*"
+# Same, but with default dependency resolution -- used for the virt-v2v/nbdkit transaction,
+# whose plugins are Recommends rather than Requires.
+ARG DNF_V2V_OPTS="-y --exclude=iscsi-initiator-utils*"
+
 RUN dnf config-manager --save --setopt=epel.skip_if_unavailable=true
 
 ##Copy RPM Repo
 ADD trilio.repo /etc/yum.repos.d/
 
-##Install Required Packages
-# Exclude iscsi-initiator-utils from update: 6.2.1.11 breaks iSCSI portal login; keep 6.2.1.9 from base image (TVAULT-7336)
+# TVAULT-7629: the blanket `dnf update -y` that used to run here is now
+# `dnf update --security`, and it has moved down into the install RUN so the cache it
+# creates is cleaned inside the same layer that created it.
+#
+# Why not the full update. It rewrote hundreds of base-image files into a new layer while
+# the originals stayed resident in the base layer, so every replaced file shipped twice.
+# On this base a full update is 2 installs + 242 upgrades, 265 MB of downloads. Most of
+# that is bugfix/enhancement, plus a silent Rocky 9.7 -> 9.8 minor-version bump that made
+# the image depend on the day it happened to be built.
+#
+# Why not drop updating altogether. `dnf updateinfo summary` on this base reports 137
+# outstanding security notices (75 Important, 56 Moderate, 6 Low), so --security is a real
+# transaction and not a quiet no-op: 2 installs + 93 upgrades, 143 MB of downloads. It
+# keeps the CVE coverage and leaves the non-security drift behind. The kolla base does run
+# `dnf -y distro-sync --security --sec-severity=Important` at ITS own build time, so this
+# tops up what has accrued since the base was built, and additionally covers Moderate and
+# Low, which the base's --sec-severity flag excludes.
+#
+# Measured cost of keeping --security: 5.84 GB without it, 6.58 GB with. That exceeds the
+# 143 MB downloaded because an updated file is stored in the base layer and again here --
+# the same duplication that made the full update so expensive, at a third of the scale.
+# Against the image this ticket set out to shrink it is still 8.16 GB -> 6.58 GB.
+#
+# Re-measure both numbers when the FROM tag is bumped: a newer base has fewer outstanding
+# errata, so the --security transaction shrinks and the image gets closer to 5.84 GB.
+
+##Add nova user into the disk and kvm group, and create the config directories
 RUN set -ex \
-    && dnf update -y --exclude=iscsi-initiator-utils\*
-
-##Add nova user into the disk and kvm group
-RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla,kvm nova
-
-## Create Config Dir.
-RUN mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
-    && chown -R nova:nova /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault \
-    && chown -R root:nova /etc/triliovault-datamover  /etc/triliovault-object-store \
+    && usermod -u 42436 nova && groupmod -g 42436 nova \
+    && usermod -aG disk,libvirt,kolla,kvm nova \
+    && mkdir -p /var/log/triliovault /var/trilio/triliovault-mounts /var/triliovault \
+                /etc/triliovault-datamover /etc/triliovault-object-store /opt/triliovault \
+    && chown -R nova:nova /var/log/triliovault /var/trilio/triliovault-mounts \
+                          /var/triliovault /opt/triliovault \
+    && chown -R root:nova /etc/triliovault-datamover /etc/triliovault-object-store \
     && chmod -R 755 /var/log/triliovault /etc/triliovault-datamover /etc/triliovault-object-store \
     && chmod -R 777 /var/trilio/triliovault-mounts /var/triliovault
-	
+
 ##Install datamover packages
-RUN dnf install openstack-nova-common python3-nova python3-novaclient python3-monotonic udev fuse -y --exclude=iscsi-initiator-utils\* \
-    && dnf install python3-tvault-contego-el9 qemu-img ceph-common python3-libvirt python3-cinderclient qemu-kvm-block-rbd -y --exclude=iscsi-initiator-utils\* \
-    && dnf install virt-v2v virtio-win nbdkit -y --exclude=iscsi-initiator-utils\*
-
-RUN dnf install -y --allowerasing --exclude=iscsi-initiator-utils\* \
-    https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
-RUN dnf install -y --exclude=iscsi-initiator-utils\* python3-s3fuse-plugin-el9
-
-## Explicitly install iscsi-initiator-utils 6.2.1.9 from Rocky 9.4 vault (TVAULT-7336: 6.2.1.11 breaks iSCSI portal login)
-## Rocky current repos only carry 6.2.1.11; pin to 6.2.1.9 from the vault with --allowerasing to downgrade if needed.
-RUN dnf install -y --allowerasing \
-    https://dl.rockylinux.org/vault/rocky/9.4/BaseOS/x86_64/os/Packages/i/iscsi-initiator-utils-6.2.1.9-1.gita65a472.el9.x86_64.rpm \
-    https://dl.rockylinux.org/vault/rocky/9.4/BaseOS/x86_64/os/Packages/i/iscsi-initiator-utils-iscsiuio-6.2.1.9-1.gita65a472.el9.x86_64.rpm
+# TVAULT-7629: every package transaction is kept in this single layer so that the
+# `dnf clean all` at the end actually reclaims the caches those transactions created.
+# A clean running in a later RUN cannot free bytes an earlier layer already committed.
+#
+# The virt-v2v/virtio-win/nbdkit transaction deliberately keeps default dependency
+# resolution ($DNF_V2V_OPTS): nbdkit ships several of its plugins as Recommends only, and
+# virt-v2v fails at runtime with "cannot open plugin" if they are pruned. Those payloads
+# are being kept for TVAULT-7629 anyway, so there is nothing to gain by pruning here.
+#
+# The last install pins iscsi-initiator-utils 6.2.1.9 from the Rocky 9.4 vault
+# (TVAULT-7336). Rocky's current repos only carry 6.2.1.11, so --allowerasing is needed
+# to downgrade; that transaction deliberately omits the exclude used by the others.
+#
+# NOTE: assert `systemd-udev`, not `udev`. On Rocky 9 `udev` is only a virtual Provides:,
+# so `dnf install udev` works but `rpm -q udev` always reports it as not installed.
+# The rpm -q and --version checks assert that nothing the datamover needs at runtime was
+# pruned by install_weak_deps=False. set -e turns a miss into a build failure instead of a
+# green build that breaks on a compute node.
+RUN set -ex \
+    && dnf update --security $DNF_OPTS \
+    && dnf install $DNF_OPTS openstack-nova-common python3-nova python3-novaclient \
+                             python3-monotonic udev fuse \
+    && dnf install $DNF_OPTS python3-tvault-contego-el9 qemu-img ceph-common \
+                             python3-libvirt python3-cinderclient qemu-kvm-block-rbd \
+    && dnf install $DNF_V2V_OPTS virt-v2v virtio-win nbdkit \
+    && dnf install $DNF_OPTS --allowerasing \
+       https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm \
+    && dnf install $DNF_OPTS python3-s3fuse-plugin-el9 \
+    && dnf install -y --allowerasing --setopt=install_weak_deps=False \
+       https://dl.rockylinux.org/vault/rocky/9.4/BaseOS/x86_64/os/Packages/i/iscsi-initiator-utils-6.2.1.9-1.gita65a472.el9.x86_64.rpm \
+       https://dl.rockylinux.org/vault/rocky/9.4/BaseOS/x86_64/os/Packages/i/iscsi-initiator-utils-iscsiuio-6.2.1.9-1.gita65a472.el9.x86_64.rpm \
+    && rpm -q python3-tvault-contego-el9 python3-s3fuse-plugin-el9 openstack-nova-common \
+              python3-nova python3-novaclient python3-cinderclient python3-libvirt \
+              python3-monotonic virt-v2v virtio-win nbdkit ceph-common qemu-img \
+              qemu-kvm-block-rbd fuse systemd-udev iscsi-initiator-utils python3-eventlet \
+    && rpm -q --qf '%{VERSION}\n' python3-eventlet | grep -qx 0.30.2 \
+    && rpm -q --qf '%{VERSION}\n' iscsi-initiator-utils | grep -qx 6.2.1.9 \
+    && virt-v2v --version && nbdkit --version && qemu-img --version \
+    && test -n "$(ls -A /usr/share/virtio-win)" \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /var/cache/yum /var/tmp/* /tmp/*
 
 ## Copy locally built virt-v2v-in-place binary
 COPY virt-v2v-in-place /usr/local/bin/
@@ -55,17 +113,12 @@ COPY virt-v2v-in-place /usr/local/bin/
 ## Kolla settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
 
-## Create directory to hold service start scripts
-RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
-
-
 ##Copy conf files
 ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers
 ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
 COPY log-rotate-conf /etc/logrotate.d/tvault-contego
 
 ##Clean subscription
-RUN dnf clean all
 RUN rm -f /etc/yum.repos.d/trilio.repo
 
 ##Become nova user for further operations
