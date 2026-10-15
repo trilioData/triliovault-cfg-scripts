@@ -77,7 +77,7 @@ echo "INFO: using unit: $WLM_UNIT"
 # rc file with only OS_* exports (no commands, no OS_CACERT) and copy it
 # to the unit. Certs are already in the trusted path on the unit.
 # ---------------------------------------------------------------------------
-CLEAN_OPENRC="/tmp/trilio_openrc_clean_$$.tmp"
+CLEAN_OPENRC="./trilio_openrc_clean_$$.tmp"
 EXISTING_FILE=""
 
 cleanup() {
@@ -160,7 +160,7 @@ lines = sys.stdin.read()
 m = re.search(r'\[.*\]', lines, re.DOTALL)
 print(m.group(0) if m else '[]')
 ")
-EXISTING_FILE="/tmp/trilio_existing_$$.json"
+EXISTING_FILE="./trilio_existing_$$.json"
 echo "$EXISTING_JSON" > "$EXISTING_FILE"
 
 # ---------------------------------------------------------------------------
