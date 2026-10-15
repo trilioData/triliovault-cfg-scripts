@@ -18,11 +18,29 @@ echo ""
 
 if [ "${JUJU_MAJOR}" -ge 3 ]; then
     echo "=== Unmounting on trilio-wlm units ==="
-    juju run trilio-wlm/* unmount-old-backup-targets
+    for unit in $(juju status trilio-wlm --format=json | \
+      python3 -c "import sys,json; [print(u) for u in json.load(sys.stdin)['applications']['trilio-wlm']['units']]"); do
+        echo "  Running on ${unit} ..."
+        juju run "${unit}" unmount-old-backup-targets
+    done
 
     echo ""
     echo "=== Unmounting on trilio-data-mover units ==="
-    juju run trilio-data-mover/* unmount-old-backup-targets
+    for unit in $(juju status --format=json | \
+      python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+units = []
+for app in d['applications'].values():
+    for u in app.get('units', {}).values():
+        for sub in u.get('subordinates', {}).keys():
+            if sub.startswith('trilio-data-mover/'):
+                units.append(sub)
+print('\n'.join(units))
+"); do
+        echo "  Running on ${unit} ..."
+        juju run "${unit}" unmount-old-backup-targets
+    done
 else
     echo "=== Unmounting on trilio-wlm units ==="
     for unit in $(juju status trilio-wlm --format=json | \
