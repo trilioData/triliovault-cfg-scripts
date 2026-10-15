@@ -1,0 +1,82 @@
+---
+# OpenStack-Helm 2026.1 (Gazpacho). Use it in utils/install.sh in place of 2023.2.yaml, together with
+# app_gateway.yaml in place of ingress.yaml. This file must be listed AFTER app_gateway.yaml: helm
+# merges --values files in order, and app_gateway.yaml points the HTTPRoutes at MOSK's
+# openstack/app-gateway, which this file overrides with the upstream OpenStack-Helm Gateway.
+# Upstream helm-toolkit 2026.1 removed the ingress helpers and OpenStack-Helm 2026.1 exposes its
+# public endpoints through Gateway API (Envoy Gateway), so Ingress is not used here.
+# The T4O images are the MOSK 26.2 ones (*-test-mosk26.2 = the 6.2.1 *-mosk25.1 Caracal build, same
+# digests), validated on Gazpacho in TVAULT-7745. They are built on upstream openstackhelm/nova and
+# ubuntu:jammy, not on Mirantis images. Upstream 2026.1 runs nova on RabbitMQ 4 with quorum queues,
+# which denies transient non-exclusive queues, so components that talk to nova's RabbitMQ need an
+# oslo.messaging that declares transient quorum queues (>= 14.7); the datamover image below adds
+# 14.7.2 for its system Python (Caracal's python3-oslo.messaging is 14.6.0). Only the
+# Horizon plugin is rebuilt (Dockerfile_2026.1), and it is set in the horizon release values, not here.
+# TODO(TVAULT-7746): update the tags for the 6.3 build. The 6.3 datamover image must be built from
+# Dockerfile_2026.1 on this branch, which also installs trilio-streaming-tools (TVAULT-7762).
+images:
+  pull_policy: "IfNotPresent"
+  tags:
+    bootstrap: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    db_init: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    db_drop: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    rabbit_init: docker.io/rabbitmq:3.7-management
+    ks_user: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    ks_service: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    ks_endpoints: docker.io/openstackhelm/heat:2023.2-ubuntu_jammy
+    # v1.0.0 (2019) has a Docker schema 1 manifest. containerd 2.0 stops pulling schema 1 by default
+    # and 2.1 removes it ("schema 1 image manifests are no longer supported"); MOSK runs containerd 1.7.
+    # Same tag as upstream OpenStack-Helm 2026.1.
+    dep_check: quay.io/airshipit/kubernetes-entrypoint:latest-ubuntu_noble
+    image_repo_sync: docker.io/docker:17.07.0
+    triliovault_wlm_cloud_trust: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_api: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_cron: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_scheduler: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_workloads: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    triliovault_wlm_db_sync: docker.io/trilio/trilio-wlm-helm:6.2.1-test-mosk26.2
+    # Built from docker/openstack-helm/trilio-datamover/Dockerfile_2026.1: the MOSK image plus a Ceph
+    # Tentacle client, which reads the aes256k CephX keys of fresh Tentacle clusters (Reef can't), and
+    # oslo.messaging 14.7.2 for the system Python, which declares the transient quorum queues that
+    # nova's RabbitMQ 4 requires (Caracal's 14.6.0 can't, so restores hung on conductor calls).
+    triliovault_datamover: docker.io/trilio/trilio-datamover-helm:6.2.1-test3-2026.1
+    triliovault_datamover_api: docker.io/trilio/trilio-datamover-api-helm:6.2.1-test-mosk26.2
+    triliovault_datamover_db_sync: docker.io/trilio/trilio-datamover-api-helm:6.2.1-test-mosk26.2
+    triliovault_dms: docker.io/trilio/trilio-dms-helm:6.2.1-test-mosk26.2
+    triliovault_dms_init: docker.io/trilio/trilio-dms-helm:6.2.1-test-mosk26.2
+# Upstream OpenStack-Helm 2026.1 runs nova on RabbitMQ 4 with quorum queues, and the datamover loads
+# nova's config, so it declares its queues and exchanges durable/quorum on every broker it uses,
+# including T4O's own RabbitMQ (vhost dmapi). DMAPI must declare them the same way, otherwise the
+# datamover's channel fails with "inequivalent arg 'durable' for exchange 'dmapi'". Set both sides
+# explicitly. On an existing install, delete the dmapi vhost (or the 'dmapi' exchange) before upgrading:
+# RabbitMQ never changes the durability of an existing exchange.
+conf:
+  # OpenStack-Helm nova-compute registers compute hosts as $(hostname --fqdn). DMAPI sends DMS mount
+  # requests to that name, so the compute DMS must use it too; with the short name the requests go
+  # to a queue nobody consumes and snapshots hang in wait_to_be_uploading (DMS mount timeout).
+  dms_compute_node_id: fqdn
+  datamover_api:
+    oslo_messaging_rabbit:
+      amqp_durable_queues: true
+      rabbit_quorum_queue: true
+      rabbit_transient_quorum_queue: true
+  datamover:
+    oslo_messaging_rabbit:
+      amqp_durable_queues: true
+      rabbit_quorum_queue: true
+      rabbit_transient_quorum_queue: true
+# Upstream OpenStack-Helm Gateway (roles/deploy-env). Change name/namespace if your Gateway differs:
+# kubectl get gateway -A
+network:
+  wlm_api:
+    http_route:
+      gateway:
+        name: gateway-default
+        namespace: envoy-gateway-system
+        sectionName: null
+  datamover_api:
+    http_route:
+      gateway:
+        name: gateway-default
+        namespace: envoy-gateway-system
+        sectionName: null
