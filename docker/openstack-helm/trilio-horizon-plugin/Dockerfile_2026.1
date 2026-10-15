@@ -1,0 +1,35 @@
+FROM quay.io/airshipit/horizon:2026.1-ubuntu_noble
+
+LABEL name="ubuntu-binary-trilio-horizon-plugin" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="6.2.1" \
+      release="6.2" \
+      summary="TrilioVault Horizon Plugin" \
+      description="TrilioVault Horizon Plugin for OpenStack-Helm 2026.1 (OpenStack Gazpacho)"
+
+# Install pip since it is missing from the Airshipit Ubuntu Noble base image
+USER root
+RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
+
+# Install Trilio plugin and dependencies
+ARG TRILIO_PIP_INDEX_URL="DEFAULT"
+#Eg. TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-stable-6-1/"
+# The 2026.1 Horizon venv ships setuptools 84, but setuptools 82.0.0 removed pkg_resources.
+# trilio_dashboard/workloadmgr.py still does "import pkg_resources", so without this pin
+# the compress step below fails with ModuleNotFoundError.
+RUN export PIP_EXTRA_INDEX_URL="${TRILIO_PIP_INDEX_URL}" && \
+    python3 -m pip install --break-system-packages --force-reinstall "setuptools<82" && \
+    python3 -m pip install --break-system-packages pytz && \
+    python3 -m pip install --break-system-packages --no-deps tvault-horizon-plugin workloadmgrclient contegoclient
+# Copy Trilio plugin files
+RUN cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/local/enabled/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/local/enabled/
+RUN cp /var/lib/openstack/lib/python3.12/site-packages/trilio_dashboard/templatetags/*.py /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/templatetags/
+
+# Run Django management commands to collect static files and compress
+RUN python3 /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/manage.py collectstatic --clear --noinput
+RUN python3 /var/lib/openstack/lib/python3.12/site-packages/openstack_dashboard/manage.py compress --force
+
+# Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
