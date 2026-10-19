@@ -1,0 +1,13 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: rabbitmq-exporter
+  namespace: trilio-monitoring
+spec:
+  to:
+    kind: Service
+    name: rabbitmq-exporter
+  port:
+    targetPort: 9419
+  tls:
+    termination: edge
