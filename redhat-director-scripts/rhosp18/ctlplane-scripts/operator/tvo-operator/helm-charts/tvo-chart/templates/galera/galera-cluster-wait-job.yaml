@@ -44,7 +44,7 @@ spec:
                   # Verify all containers in pods are ready
                   ALL_READY=true
                   for i in $(seq 0 $((REPLICAS - 1))); do
-                    POD_NAME="trilio-galera-cluster-galera-$i"
+                    POD_NAME="trilio-db-cluster-galera-$i"
                     POD_READY=$(oc get pod $POD_NAME -n {{ .Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
                     if [ "$POD_READY" != "True" ]; then
                       echo "Pod $POD_NAME is not ready yet (Ready=$POD_READY)"

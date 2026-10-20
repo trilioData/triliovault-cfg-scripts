@@ -82,7 +82,7 @@ spec:
     common:
       use_trilio_galera: true
       root_user_name: "root"
-      host: "trilio-galera-cluster.trilio-openstack.svc"
+      host: "trilio-db-cluster.trilio-openstack.svc"
       port: 3306
     datamover_api:
       user: "dmapi"
