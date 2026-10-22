@@ -88,6 +88,8 @@ limitations under the License.
 {{- $_ := tuple "oslo_messaging_datamover" "internal" "triliovault_datamover" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.datamover_api.DEFAULT "transport_url" -}}
 {{- end -}}
 
+{{- include "triliovault.oslo_messaging_rabbit_queues" (list .Values.conf.datamover_api .Values.conf.triliovault) -}}
+
 
 {{/* **********************************************************************
      set logging.conf conf parameters

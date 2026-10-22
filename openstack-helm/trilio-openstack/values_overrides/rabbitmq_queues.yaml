@@ -1,0 +1,5 @@
+conf:
+  triliovault:
+    rabbit_quorum_queue: false
+    rabbit_transient_quorum_queue: false
+    amqp_durable_queues: false

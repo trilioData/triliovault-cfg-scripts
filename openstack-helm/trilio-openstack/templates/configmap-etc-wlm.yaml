@@ -190,6 +190,8 @@ limitations under the License.
 {{- $_ := tuple "oslo_messaging_wlm" "internal" "triliovault_wlm" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.dms_client.client "rabbitmq_url" -}}
 {{- end -}}
 
+{{- include "triliovault.oslo_messaging_rabbit_queues" (list .Values.conf.wlm .Values.conf.triliovault) -}}
+
 {{/* **********************************************************************
      DONE
      **********************************************************************
