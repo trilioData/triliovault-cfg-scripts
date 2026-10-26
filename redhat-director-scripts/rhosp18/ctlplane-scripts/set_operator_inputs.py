@@ -250,7 +250,7 @@ if keystone_url:
     parsed = urlparse(keystone_url)
     keystone_common = {
         "auth_url": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
-        "auth_uri": keystone_url,
+        "auth_uri": f"{keystone_url.rstrip('/').removesuffix('/v3')}/v3",
         "keystone_auth_protocol": parsed.scheme,
         "keystone_auth_host": parsed.hostname,
         "keystone_auth_port": str(parsed.port)
