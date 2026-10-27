@@ -20,7 +20,6 @@ compute node (this charm). The instances communicate via RabbitMQ and handle
 NFS / S3 mount operations on their respective hosts.
 """
 
-import configparser
 import json
 import jinja2
 import logging
@@ -30,7 +29,6 @@ import pwd
 import shutil
 import socket
 import subprocess
-import xml.etree.ElementTree as ET
 
 import ops
 
@@ -85,7 +83,6 @@ DATAMOVER_SERVICE = "triliovault-datamover"
 DMS_SERVICE = "triliovault-dms"
 DM_CONFIG_PATH = "/etc/triliovault-datamover/triliovault-datamover.conf"
 DM_LOGGING_CONF_PATH = "/etc/triliovault-datamover/datamover_logging.conf"
-SNAP_NOVA_CONF = "/var/snap/openstack-hypervisor/common/etc/nova/nova.conf"
 CA_BUNDLE_COPY = "/etc/triliovault-datamover/ca-bundle.pem"
 DMS_CONFIG_PATH = "/etc/triliovault-dms/server.conf"
 DMS_CLIENT_CONF_PATH = "/etc/triliovault-dms/client.conf"
@@ -102,15 +99,10 @@ TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 # flow (Nova gets a per-attachment secret dynamically from Cinder's
 # connection_info and never talks to the Ceph cluster directly for that case).
 # Credentials are obtained via a dedicated ceph-client relation to the same
-# ceph-mon/microceph application cinder-volume-ceph already uses, requesting a
-# key scoped to read/write/execute on whichever pools are actually in use —
-# never a brand new pool of our own.
+# ceph-mon/microceph application cinder-volume-ceph already uses.
 #
 # The ceph-mon/microceph broker auto-provisions a client key named after the
-# REQUESTING JUJU APPLICATION the moment the relation is established — that
-# key already exists with a default (unscoped) osd cap before we ever send our
-# own broker request, which only *modifies* caps on an existing key rather
-# than creating one. So the client name here must match self.app.name exactly,
+# REQUESTING JUJU APPLICATION. So the client name here must match self.app.name exactly,
 # not an arbitrary string — a mismatch means our requests silently target a
 # key that was never created (ceph auth caps on a nonexistent client fails,
 # but the broker swallows that error and still reports exit-code 0).
@@ -128,10 +120,11 @@ CEPH_CONF_PATH = "/etc/ceph/ceph.conf"
 # existed get adopted on upgrade instead of disowning their own file forever
 # (see _is_charm_shaped_conf).
 CEPH_CONF_MARKER = "/etc/ceph/.trilio-managed-ceph-conf"
-# Records the last set of pools our ceph key was scoped to, so we only send a
-# follow-up broker request when that set actually changes (new pool discovered,
-# or one disappeared) rather than on every hook run.
 CEPH_GRANTED_POOLS_MARKER = "/var/lib/trilio-data-mover/.ceph-granted-pools"
+CEPH_KEY_PERMISSIONS = [
+    "mon", 'allow r, allow command "osd blacklist", allow command "osd blocklist"',
+    "osd", "allow rwx",
+]
 
 # Unit files shipped -- and enabled and started by their own postinst -- by the
 # Trilio debs themselves. Every other distro runs these services inside a
@@ -239,6 +232,8 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         )
         self.framework.observe(self.on.update_status, self._on_update_status)
         self.framework.observe(self.on.stop, self._on_stop)
+        self.framework.observe(self.on.leader_elected, self._on_relation_changed)
+        self.framework.observe(self.on.ceph_relation_changed, self._on_relation_changed)
         self._setup_ceph_client()
 
     @property
@@ -261,9 +256,6 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self.ceph = ceph_client.CephClientRequires(self, "ceph")
         self.framework.observe(
             self.ceph.on.broker_available, self._on_ceph_broker_available
-        )
-        self.framework.observe(
-            self.ceph.on.pools_available, self._on_ceph_pools_available
         )
 
     # --- event handlers ---
@@ -303,6 +295,12 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         except subprocess.CalledProcessError as e:
             self.unit.status = ops.BlockedStatus(f"Upgrade failed: {e}")
             return
+        try:
+            os.remove(CEPH_GRANTED_POOLS_MARKER)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            logger.warning("Could not remove %s: %s", CEPH_GRANTED_POOLS_MARKER, e)
         # Re-send relation requests in case the relations were joined before this charm
         # version had the correct app-bag write logic. Idempotent.
         self._send_relation_requests()
@@ -358,6 +356,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
     # --- core configure logic ---
 
     def _configure(self, event):
+        self._ensure_ceph_permissions()
         missing = self._missing_relations()
         if missing:
             self.unit.status = ops.WaitingStatus(f"Waiting for: {', '.join(missing)}")
@@ -365,6 +364,7 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
 
         try:
             self._write_ca_cert()
+            self._sync_ceph_credentials()
             self._write_datamover_config()
             self._write_dms_config()
             self._write_dms_client_config()
@@ -739,64 +739,46 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         self._write_file(DMS_CLIENT_CONF_PATH, self._render_template("triliovault-dms-client.conf.j2", context))
         logger.info("Wrote %s", DMS_CLIENT_CONF_PATH)
 
-    # TVAULT-7404 root-user experiment: contego now runs as root (see
-    # DATAMOVER_SYSTEMD_UNIT), so root always resolves in libvirtd's own
-    # snap-confined passwd view and the qemu+ext:// sudo-wrapped-nc relay
-    # (previously needed to make the socket-connecting peer look like root
-    # while contego itself ran as nova) is no longer needed — connection_uri
-    # in triliovault-datamover.conf.j2 goes back to a plain qemu+unix:// path.
-    # See nova-user-known-good-state.md for that approach and how to roll
-    # back to it.
-    LIBVIRT_SOCKET_PATH = "/var/snap/openstack-hypervisor/common/run/libvirt/libvirt-sock"
-
     # --- ceph-client relation: fetch contego's own Ceph credentials ---
 
     def _on_ceph_broker_available(self, event):
-        """Phase 1: request minimal mon-read-only access.
+        self._ensure_ceph_permissions()
 
-        We don't yet know which pools are actually in use (that requires
-        querying the cluster ourselves before we have credentials for it), so
-        pool discovery here goes through libvirt directly (charm hooks run as
-        root, no credentials needed) rather than a ceph client call — see
-        _discover_cinder_ceph_pools/_discover_nova_ceph_pool.
+    def _ensure_ceph_permissions(self):
+        rel = self.model.get_relation("ceph")
+        if not rel:
+            return
+        unit_data = rel.data[self.unit]
+        if not self.unit.is_leader():
+            if unit_data.get("broker_req"):
+                del unit_data["broker_req"]
+                logger.info("Cleared broker request from non-leader unit")
+            return
 
-        This charm sends exactly ONE set-key-permissions request, ever, for a
-        given pool set. interface_ceph_client's own duplicate-request check
-        (CephBrokerRq._ops_equal) only compares a fixed key list — replicas,
-        name, op, pg_num, group-permission, object-prefix-permissions — which
-        does NOT include 'client' or 'permissions'. Two different
-        set-key-permissions requests therefore always compare as "equal" to
-        that check, so a second request with different content silently gets
-        discarded and replaced with the first one's stale content instead of
-        being sent. Concretely: don't try to "upgrade" an already-granted key
-        to a different capability string later — it won't take effect.
-        """
-        candidates = self._discover_cinder_ceph_pools()
-        nova_pool = self._discover_nova_ceph_pool()
-        if nova_pool:
-            candidates.add(nova_pool)
+        wanted = {
+            "op": "set-key-permissions",
+            "permissions": CEPH_KEY_PERMISSIONS,
+            "client": self._ceph_client_name,
+        }
+        sent = unit_data.get("broker_req")
+        if sent:
+            try:
+                if json.loads(sent).get("ops") == [wanted]:
+                    return
+            except ValueError:
+                pass
 
-        if candidates:
-            pools = sorted(candidates)
-            osd_cap = ", ".join(f"allow rwx pool={p}" for p in pools)
-            mon_cap = 'allow r, allow command "osd blacklist", allow command "osd blocklist"'
-            permissions = ["mon", mon_cap, "osd", osd_cap]
-            os.makedirs(os.path.dirname(CEPH_GRANTED_POOLS_MARKER), exist_ok=True)
-            with open(CEPH_GRANTED_POOLS_MARKER, "w") as f:
-                f.write("\n".join(pools))
-        else:
-            # No Ceph-backed Cinder volume attached and no Ceph-backed Nova
-            # ephemeral config found yet — request read-only mon access only.
-            # Per the note above, if pools appear later there's no way to
-            # widen this same key's capability through this relation; that's
-            # a known limitation of the single-request approach.
-            permissions = ["mon", "allow r"]
+        rq = self.ceph.new_request
+        rq.add_op(wanted)
+        unit_data["broker_req"] = rq.request
+        logger.info(
+            "Requested ceph permissions for client=%s: %s",
+            self._ceph_client_name, CEPH_KEY_PERMISSIONS,
+        )
 
-        logger.info("Requesting ceph permissions for client=%s: %s", self._ceph_client_name, permissions)
-        self.ceph.request_ceph_permissions(self._ceph_client_name, permissions)
-
-    def _on_ceph_pools_available(self, event):
-        """Fires once our one-and-only ceph-client request is satisfied."""
+    def _sync_ceph_credentials(self):
+        if not self.model.get_relation("ceph"):
+            return
         data = self.ceph.get_relation_data()
         mon_hosts = data.get("mon_hosts")
         key = data.get("key")
@@ -949,79 +931,10 @@ class TrilioDataMoverSunbeamCharm(ops.CharmBase):
         os.chmod(keyring_path, 0o640)
         logger.info("Wrote %s", keyring_path)
 
-    def _discover_cinder_ceph_pools(self) -> set:
-        """Find RBD pool names actually attached to instances on this node.
-
-        Scans every domain's live XML for network/rbd disks (Cinder-attached
-        Ceph volumes) — this reflects what's genuinely in use on this compute
-        node regardless of how Cinder's backend happens to be configured,
-        since we have no direct relation to cinder-volume itself to ask.
-        """
-        pools = set()
-        try:
-            import libvirt
-        except ImportError:
-            return pools
-        try:
-            conn = libvirt.open(
-                "qemu+unix:///system?socket="
-                f"{self.LIBVIRT_SOCKET_PATH}"
-            )
-        except Exception as e:
-            logger.warning("Cannot open libvirt connection for ceph pool discovery: %s", e)
-            return pools
-        try:
-            for dom in conn.listAllDomains():
-                try:
-                    xml = dom.XMLDesc()
-                except Exception:
-                    continue
-                root = ET.fromstring(xml)
-                for disk in root.findall("./devices/disk"):
-                    if disk.get("type") != "network":
-                        continue
-                    source = disk.find("source")
-                    if source is None or source.get("protocol") not in ("rbd", "ceph"):
-                        continue
-                    name = source.get("name", "")
-                    if "/" in name:
-                        pools.add(name.split("/", 1)[0])
-        finally:
-            conn.close()
-        return pools
-
-    def _discover_nova_ceph_pool(self):
-        """Return Nova's own ephemeral-disk RBD pool name, if it uses one.
-
-        Only relevant when nova.conf's [libvirt] images_type is rbd — reads
-        directly from the snap nova.conf (service runs as root so the file
-        is readable regardless of its root:root 640 permissions).
-        """
-        parser = configparser.ConfigParser(strict=False)
-        try:
-            parser.read(SNAP_NOVA_CONF)
-        except OSError:
-            return None
-        if not parser.has_section("libvirt"):
-            return None
-        if parser.get("libvirt", "images_type", fallback="default") != "rbd":
-            return None
-        return parser.get("libvirt", "images_rbd_pool", fallback="nova")
-
     def _ceph_backend_enabled(self) -> bool:
-        """True once we have at least one pool actually granted.
-
-        Gates the [libvirt] images_rbd_ceph_conf/rbd_user and [ceph]
-        keyring_ext block in triliovault-datamover.conf.j2 — mirrors kolla-
-        ansible's own cinder_backend_ceph conditional, except driven by
-        confirmed pool grants rather than a static deployment variable, since
-        we discover this dynamically rather than being told about it.
-        """
-        try:
-            with open(CEPH_GRANTED_POOLS_MARKER) as f:
-                return bool(f.read().split())
-        except OSError:
-            return False
+        return bool(self.model.get_relation("ceph")) and os.path.exists(
+            self._ceph_keyring_path()
+        )
 
     def _install_rootwrap_filters(self):
         """Install trilio.filters for nova rootwrap (mirrors kolla ADD trilio.filters)."""
