@@ -1,4 +1,40 @@
 #!/usr/bin/env python3
+"""Make T4O follow nova's RabbitMQ queue settings on OpenStack-Helm and MOSK.
+
+What it does:
+  Reads the [oslo_messaging_rabbit] section of nova's configuration and writes
+  values_overrides/rabbitmq_quorum_queues.yaml, so every T4O service uses the
+  same queue settings as nova. If nova uses quorum queues, T4O does too; if
+  nova uses mirrored or classic queues, T4O matches that instead.
+
+  Nova settings read (a setting nova does not set counts as false):
+    amqp_durable_queues, rabbit_quorum_queue,
+    rabbit_transient_quorum_queue, rabbit_ha_queues
+
+  Written to the override file:
+    conf.wlm / conf.datamover_api / conf.datamover .oslo_messaging_rabbit
+        the four settings above, exactly as nova has them
+    conf.dms_server.server (DMS on controllers and computes)
+        rabbitmq_queue_type    quorum if rabbit_quorum_queue is true, else classic
+        rabbitmq_queue_durable same as amqp_durable_queues
+
+  By default nova's configuration is read from key nova-compute.conf of secret
+  openstack/nova-etc, so kubectl must be able to read that secret.
+
+  The script exits with an error, writing nothing, if nova has both
+  rabbit_quorum_queue and rabbit_ha_queues enabled. It prints a warning if the
+  generated settings differ from the file's previous contents: on an existing
+  T4O install, delete the T4O dmapi and wlm RabbitMQ vhosts before
+  helm upgrade, because RabbitMQ does not change the durability or type of
+  existing exchanges and queues.
+
+How to use it:
+  1. Run it before every T4O helm install or upgrade:
+       cd openstack-helm/trilio-openstack/utils
+       python3 set_rabbitmq_queues.py
+  2. Pass the generated file as the last --values file to helm:
+       --values=./trilio-openstack/values_overrides/rabbitmq_quorum_queues.yaml
+"""
 import argparse
 import base64
 import configparser
@@ -20,8 +56,17 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "values_overrides" / "
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Read the RabbitMQ queue settings nova uses and write them to the T4O values "
-                    "override rabbitmq_quorum_queues.yaml, so every T4O service follows nova."
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n"
+               "  Read nova's settings from the default secret openstack/nova-etc:\n"
+               "    python3 set_rabbitmq_queues.py\n"
+               "  Nova runs in another namespace:\n"
+               "    python3 set_rabbitmq_queues.py --namespace my-openstack\n"
+               "  Read a nova.conf copied from a nova-compute pod, without kubectl:\n"
+               "    python3 set_rabbitmq_queues.py --nova-conf /tmp/nova.conf\n"
+               "  Write the override somewhere else:\n"
+               "    python3 set_rabbitmq_queues.py --output /tmp/rabbitmq_quorum_queues.yaml\n",
     )
     parser.add_argument("--namespace", default="openstack",
                         help="Namespace of the OpenStack nova deployment (default: openstack)")
