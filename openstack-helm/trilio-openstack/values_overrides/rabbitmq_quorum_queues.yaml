@@ -5,16 +5,19 @@ conf:
       amqp_durable_queues: true
       rabbit_quorum_queue: true
       rabbit_transient_quorum_queue: true
+      rabbit_ha_queues: false
   datamover_api:
     oslo_messaging_rabbit:
       amqp_durable_queues: true
       rabbit_quorum_queue: true
       rabbit_transient_quorum_queue: true
+      rabbit_ha_queues: false
   datamover:
     oslo_messaging_rabbit:
       amqp_durable_queues: true
       rabbit_quorum_queue: true
       rabbit_transient_quorum_queue: true
+      rabbit_ha_queues: false
   dms_server:
     server:
       rabbitmq_queue_type: quorum
