@@ -12,8 +12,13 @@ What it does:
     rabbit_transient_quorum_queue, rabbit_ha_queues
 
   Written to the override file:
-    conf.wlm / conf.datamover_api / conf.datamover .oslo_messaging_rabbit
-        the four settings above, exactly as nova has them
+    conf.wlm / conf.datamover_api .oslo_messaging_rabbit
+        amqp_durable_queues, rabbit_quorum_queue and
+        rabbit_transient_quorum_queue, exactly as nova has them
+    conf.datamover.oslo_messaging_rabbit
+        the same three settings plus rabbit_ha_queues: the datamover loads
+        nova's configuration before its own, so it must override nova's
+        rabbit_ha_queues as well
     conf.dms_server.server (DMS on controllers and computes)
         rabbitmq_queue_type    quorum if rabbit_quorum_queue is true, else classic
         rabbitmq_queue_durable same as amqp_durable_queues
@@ -42,13 +47,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-OSLO_PARAMS = (
+QUEUE_PARAMS = (
     "amqp_durable_queues",
     "rabbit_quorum_queue",
     "rabbit_transient_quorum_queue",
-    "rabbit_ha_queues",
 )
-OSLO_SERVICES = ("wlm", "datamover_api", "datamover")
+OSLO_PARAMS = QUEUE_PARAMS + ("rabbit_ha_queues",)
+OSLO_SERVICES = {
+    "wlm": QUEUE_PARAMS,
+    "datamover_api": QUEUE_PARAMS,
+    "datamover": OSLO_PARAMS,
+}
 TRUE_VALUES = {"true", "1", "yes", "on"}
 FALSE_VALUES = {"false", "0", "no", "off", ""}
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "values_overrides" / "rabbitmq_quorum_queues.yaml"
@@ -120,9 +129,9 @@ def detect_settings(nova_conf_text):
 
 def render_override(settings):
     lines = ["---", "conf:"]
-    for service in OSLO_SERVICES:
+    for service, params in OSLO_SERVICES.items():
         lines += [f"  {service}:", "    oslo_messaging_rabbit:"]
-        lines += [f"      {name}: {str(settings[name]).lower()}" for name in OSLO_PARAMS]
+        lines += [f"      {name}: {str(settings[name]).lower()}" for name in params]
     queue_type = "quorum" if settings["rabbit_quorum_queue"] else "classic"
     lines += [
         "  dms_server:",
