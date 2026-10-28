@@ -132,7 +132,8 @@ process_timeout = 300
 encryption_support = True
 
 [oslo_messaging_rabbit]
-heartbeat_in_pthread = False
+{# TVAULT-7735: wlm-api only; a green-thread heartbeat can stall its HTTP workers (HAProxy 504s) #}
+heartbeat_in_pthread = {{ 'True' if item | default('') == 'triliovault-wlm-api' else 'False' }}
 {% if om_enable_rabbitmq_tls | bool %}
 ssl = true
 ssl_ca_file = {{ om_rabbitmq_cacert }}
