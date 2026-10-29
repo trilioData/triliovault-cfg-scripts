@@ -36,7 +36,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: vuln,secret,misconfig
-          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          severity: UNKNOWN,MEDIUM,HIGH,CRITICAL
           format: json
           output: ${{ runner.temp }}/trivy-results.json
           exit-code: "0"

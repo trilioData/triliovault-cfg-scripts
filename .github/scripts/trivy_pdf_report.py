@@ -21,12 +21,14 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]
+SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "UNKNOWN"]
+EXCLUDED_SEVERITIES = {"LOW"}
+ALERT_SEVERITIES = {"CRITICAL", "HIGH"}
+ALERT_COLOR = "#c62828"
 SEVERITY_COLORS = {
     "CRITICAL": "#7b1fa2",
     "HIGH": "#c62828",
     "MEDIUM": "#ef6c00",
-    "LOW": "#f9a825",
     "UNKNOWN": "#757575",
 }
 ROOT_GROUP = "(repository root)"
@@ -51,6 +53,8 @@ CELL = ParagraphStyle("Cell", parent=BODY, fontSize=7.5, leading=9)
 CODE = ParagraphStyle("Code", parent=CELL, fontName="Courier", fontSize=7, leading=8.5)
 HEAD = ParagraphStyle("Head", parent=CELL, fontName="Helvetica-Bold", textColor=colors.white)
 NUM = ParagraphStyle("Num", parent=CELL, alignment=TA_RIGHT)
+ALERT_NUM = ParagraphStyle("AlertNum", parent=NUM, fontName="Helvetica-Bold",
+                           textColor=colors.HexColor(ALERT_COLOR))
 CLEAN = ParagraphStyle("Clean", parent=BODY, textColor=colors.HexColor("#2e7d32"), fontName="Helvetica-Bold")
 
 
@@ -104,13 +108,19 @@ def collect(results):
         target = normalize(result.get("Target", ""))
         bucket = findings.setdefault(group_of(target), empty_bucket())
         for vuln in result.get("Vulnerabilities") or []:
-            bucket["vulns"].append(dict(vuln, Target=target))
+            if reportable(vuln):
+                bucket["vulns"].append(dict(vuln, Target=target))
         for misconf in result.get("Misconfigurations") or []:
-            if misconf.get("Status", "FAIL") == "FAIL":
+            if misconf.get("Status", "FAIL") == "FAIL" and reportable(misconf):
                 bucket["misconfigs"].append(dict(misconf, Target=target))
         for secret in result.get("Secrets") or []:
-            bucket["secrets"].append(dict(secret, Target=target))
+            if reportable(secret):
+                bucket["secrets"].append(dict(secret, Target=target))
     return findings
+
+
+def reportable(item):
+    return item.get("Severity", "UNKNOWN") not in EXCLUDED_SEVERITIES
 
 
 def severity_of(item):
@@ -155,6 +165,10 @@ def grid_table(header, rows, widths, severity_column=None, severities=None, tota
     return table
 
 
+def alert(severity, count):
+    return severity in ALERT_SEVERITIES and count > 0
+
+
 def severity_cell(severity):
     return Paragraph(f'<font color="white"><b>{esc(severity)}</b></font>', CELL)
 
@@ -168,13 +182,13 @@ def summary_flowable(groups, findings):
             totals[severity] += tally[severity]
         link = f'<a href="#{anchor(group)}" color="#1565c0">{esc(group)}</a>'
         rows.append([Paragraph(link, CELL)]
-                    + [para(tally[s], NUM) for s in SEVERITIES]
+                    + [para(tally[s], ALERT_NUM if alert(s, tally[s]) else NUM) for s in SEVERITIES]
                     + [para(sum(tally.values()), NUM)])
     bold_num = ParagraphStyle("BoldNum", parent=NUM, fontName="Helvetica-Bold")
     rows.append([Paragraph("<b>Total</b>", CELL)]
-                + [para(totals[s], bold_num) for s in SEVERITIES]
+                + [para(totals[s], ALERT_NUM if alert(s, totals[s]) else bold_num) for s in SEVERITIES]
                 + [para(sum(totals.values()), bold_num)])
-    widths = [0.34] + [0.11] * 5 + [0.11]
+    widths = [0.36] + [0.128] * (len(SEVERITIES) + 1)
     return grid_table(["Directory"] + SEVERITIES + ["Total"], rows, widths, total_row=True), totals
 
 
@@ -297,7 +311,9 @@ def write_email_summary(path, title, meta, groups, findings):
     cell = "border:1px solid #cfd8dc;padding:6px 8px;"
     head = cell + "background:#37474f;color:#ffffff;text-align:left;"
     num = cell + "text-align:right;"
+    alert_num = num + f"font-weight:bold;color:{ALERT_COLOR};"
     total = num + "font-weight:bold;background:#eceff1;"
+    alert_total = total + f"color:{ALERT_COLOR};"
     rows = []
     totals = {severity: 0 for severity in SEVERITIES}
     for group in groups:
@@ -305,10 +321,12 @@ def write_email_summary(path, title, meta, groups, findings):
         for severity in SEVERITIES:
             totals[severity] += tally[severity]
         rows.append(f'<tr><td style="{cell}">{esc(group)}</td>'
-                    + "".join(f'<td style="{num}">{tally[s]}</td>' for s in SEVERITIES)
+                    + "".join(f'<td style="{alert_num if alert(s, tally[s]) else num}">{tally[s]}</td>'
+                              for s in SEVERITIES)
                     + f'<td style="{num}">{sum(tally.values())}</td></tr>')
     rows.append(f'<tr><td style="{cell}font-weight:bold;background:#eceff1;">Total</td>'
-                + "".join(f'<td style="{total}">{totals[s]}</td>' for s in SEVERITIES)
+                + "".join(f'<td style="{alert_total if alert(s, totals[s]) else total}">{totals[s]}</td>'
+                          for s in SEVERITIES)
                 + f'<td style="{total}">{sum(totals.values())}</td></tr>')
     meta_html = "".join(
         f'<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">{esc(k)}</td><td>{esc(v)}</td></tr>'
