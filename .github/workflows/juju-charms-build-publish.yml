@@ -12,7 +12,7 @@ on:
         default: 6.3/candidate
         options:
           - 6.3/candidate
-          - 6.3/edge
+          - 6.2/candidate
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
