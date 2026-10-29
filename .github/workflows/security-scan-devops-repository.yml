@@ -14,8 +14,7 @@ permissions:
 
 env:
   TRIVY_VERSION: v0.75.0
-  MAIL_TO_REPORT: engineering@trilio.io
-  MAIL_TO_FAILURE: shyam.biradar@trilio.io
+  MAIL_FROM: trilio.build@trilio.io
 
 jobs:
   security-scan-devops-repository:
@@ -89,10 +88,10 @@ jobs:
           server_address: smtp.gmail.com
           server_port: 465
           secure: true
-          username: ${{ secrets.SMTP_USERNAME }}
+          username: ${{ env.MAIL_FROM }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          from: T4O DevOps security scan <${{ secrets.SMTP_USERNAME }}>
-          to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && env.MAIL_TO_REPORT || env.MAIL_TO_FAILURE }}
+          from: Trilio Build <${{ env.MAIL_FROM }}>
+          to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
           subject: "security-scan-devops-repository: ${{ github.repository }} ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }} ${{ steps.report.outputs.day }}${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/trivy-summary.html
           attachments: ${{ steps.report.outputs.report }}
