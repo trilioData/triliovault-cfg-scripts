@@ -54,7 +54,7 @@ jobs:
         run: |
           day=$(date -u +%Y-%m-%d)
           echo "day=$day" >> "$GITHUB_OUTPUT"
-          report="$RUNNER_TEMP/trivy-report-devops-repository-$day.pdf"
+          report="$RUNNER_TEMP/security-scan-job-repository-$day.pdf"
           summary="$RUNNER_TEMP/trivy-summary.html"
           if [[ "$SCAN_OUTCOME" == "success" && -s "$RUNNER_TEMP/trivy-results.json" ]] \
             && python3 -m venv "$RUNNER_TEMP/venv" \
