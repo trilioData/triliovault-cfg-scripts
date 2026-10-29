@@ -296,8 +296,8 @@ def write_pdf(path, title, meta, groups, findings):
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
     summary, totals = summary_flowable(groups, findings)
-    summary_heading = Paragraph("Summary by directory", H1)
-    summary_heading.outline_title = "Summary by directory"
+    summary_heading = Paragraph("Summary By Directory", H1)
+    summary_heading.outline_title = "Summary By Directory"
     story = [Paragraph(esc(title), TITLE), meta_table, Spacer(1, 6 * mm), summary_heading, summary, PageBreak()]
     for number, group in enumerate(groups, start=1):
         story.extend(directory_flowables(number, group, findings.get(group, empty_bucket())))
@@ -364,7 +364,7 @@ def main():
     findings = collect(report.get("Results") or [])
     groups = top_level_groups(args.repo_root)
     groups += sorted(set(findings) - set(groups))
-    title = f"Trivy security scan - {args.repository or 'repository'}"
+    title = f"Trilio Security Scan for DevOps Repository - {args.repository or 'repository'}"
     meta = meta_rows(args, report)
 
     write_pdf(args.pdf, title, meta, groups, findings)
