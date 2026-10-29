@@ -1,0 +1,97 @@
+name: security-scan-devops-repository
+
+on:
+  schedule:
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_VERSION: v0.75.0
+  MAIL_FROM: trilio.build@trilio.io
+
+jobs:
+  security-scan-devops-repository:
+    name: security-scan-devops-repository
+    if: vars.CURRENT_DEVOPS_RELEASE_BRANCH != '' && (github.event_name == 'schedule' || github.ref_name == vars.CURRENT_DEVOPS_RELEASE_BRANCH)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: security-scan
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }}
+          persist-credentials: false
+
+      - name: Trivy scan
+        id: scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: UNKNOWN,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: ${{ runner.temp }}/trivy-results.json
+          exit-code: "0"
+          hide-progress: true
+
+      - name: Render PDF report
+        id: report
+        if: always()
+        env:
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          echo "day=$day" >> "$GITHUB_OUTPUT"
+          report="$RUNNER_TEMP/trivy-report-devops-repository-$day.pdf"
+          summary="$RUNNER_TEMP/trivy-summary.html"
+          if [[ "$SCAN_OUTCOME" == "success" && -s "$RUNNER_TEMP/trivy-results.json" ]] \
+            && python3 -m venv "$RUNNER_TEMP/venv" \
+            && "$RUNNER_TEMP/venv/bin/pip" install --quiet reportlab==4.4.10 \
+            && "$RUNNER_TEMP/venv/bin/python" .github/scripts/trivy_pdf_report.py \
+              --input "$RUNNER_TEMP/trivy-results.json" \
+              --repo-root . \
+              --pdf "$report" \
+              --summary "$summary" \
+              --repository "$REPOSITORY" \
+              --branch "$BRANCH" \
+              --commit "$(git rev-parse HEAD 2>/dev/null)" \
+              --run-url "$RUN_URL"; then
+            echo "report=$report" >> "$GITHUB_OUTPUT"
+          else
+            cat > "$summary" <<EOF
+          <html><body style="font-family:Arial,Helvetica,sans-serif;color:#212121;">
+          <h2 style="font-size:20px;">Trilio Security Scan for DevOps Repository - $REPOSITORY</h2>
+          <p style="font-size:14px;color:#c62828;font-weight:bold;">The scan of branch $BRANCH failed and no report was produced.</p>
+          <p style="font-size:13px;">See the workflow run for the error: <a href="$RUN_URL">$RUN_URL</a></p>
+          </body></html>
+          EOF
+            echo "report=" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Email report
+        if: always()
+        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ env.MAIL_FROM }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: Trilio Build <${{ env.MAIL_FROM }}>
+          to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
+          subject: "Trilio for OpenStack Security Scan for DevOps Repository${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
+          html_body: file://${{ runner.temp }}/trivy-summary.html
+          attachments: ${{ steps.report.outputs.report }}
