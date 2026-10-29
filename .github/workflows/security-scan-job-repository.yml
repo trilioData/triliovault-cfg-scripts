@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  TRIVY_VERSION: v0.75.0
+  SCANNER_VERSION: v0.75.0
   MAIL_FROM: trilio.build@trilio.io
 
 jobs:
@@ -30,17 +30,17 @@ jobs:
           ref: ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }}
           persist-credentials: false
 
-      - name: Trivy scan
+      - name: Security scan
         id: scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          version: ${{ env.TRIVY_VERSION }}
+          version: ${{ env.SCANNER_VERSION }}
           scan-type: fs
           scan-ref: .
           scanners: vuln,secret,misconfig
           severity: UNKNOWN,MEDIUM,HIGH,CRITICAL
           format: json
-          output: ${{ runner.temp }}/trivy-results.json
+          output: ${{ runner.temp }}/security-scan-results.json
           exit-code: "0"
           hide-progress: true
 
@@ -56,12 +56,12 @@ jobs:
           day=$(date -u +%Y-%m-%d)
           echo "day=$day" >> "$GITHUB_OUTPUT"
           report="$RUNNER_TEMP/security-scan-job-repository-$day.pdf"
-          summary="$RUNNER_TEMP/trivy-summary.html"
-          if [[ "$SCAN_OUTCOME" == "success" && -s "$RUNNER_TEMP/trivy-results.json" ]] \
+          summary="$RUNNER_TEMP/security-scan-summary.html"
+          if [[ "$SCAN_OUTCOME" == "success" && -s "$RUNNER_TEMP/security-scan-results.json" ]] \
             && python3 -m venv "$RUNNER_TEMP/venv" \
             && "$RUNNER_TEMP/venv/bin/pip" install --quiet reportlab==4.4.10 \
-            && "$RUNNER_TEMP/venv/bin/python" .github/scripts/trivy_pdf_report.py \
-              --input "$RUNNER_TEMP/trivy-results.json" \
+            && "$RUNNER_TEMP/venv/bin/python" .github/scripts/security_scan_pdf_report.py \
+              --input "$RUNNER_TEMP/security-scan-results.json" \
               --repo-root . \
               --pdf "$report" \
               --summary "$summary" \
@@ -93,6 +93,6 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           from: Trilio Build <${{ env.MAIL_FROM }}>
           to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
-          subject: "Trilio for OpenStack Security Scan for DevOps Repository${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
-          html_body: file://${{ runner.temp }}/trivy-summary.html
+          subject: "Security Scan Report: Trilio for OpenStack DevOps Repository${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
+          html_body: file://${{ runner.temp }}/security-scan-summary.html
           attachments: ${{ steps.report.outputs.report }}
