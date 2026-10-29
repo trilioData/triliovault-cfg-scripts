@@ -14,7 +14,8 @@ permissions:
 
 env:
   TRIVY_VERSION: v0.75.0
-  MAIL_TO: shyam.biradar@trilio.io
+  MAIL_TO_REPORT: engineering@trilio.io
+  MAIL_TO_FAILURE: shyam.biradar@trilio.io
 
 jobs:
   security-scan-devops-repository:
@@ -30,6 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Trivy scan
+        id: scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           version: ${{ env.TRIVY_VERSION }}
@@ -44,28 +46,44 @@ jobs:
 
       - name: Render PDF report
         id: report
+        if: always()
         env:
           REPOSITORY: ${{ github.repository }}
           BRANCH: ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
         run: |
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet reportlab==4.4.10
           day=$(date -u +%Y-%m-%d)
-          report="$RUNNER_TEMP/trivy-report-devops-repository-$day.pdf"
-          "$RUNNER_TEMP/venv/bin/python" .github/scripts/trivy_pdf_report.py \
-            --input "$RUNNER_TEMP/trivy-results.json" \
-            --repo-root . \
-            --pdf "$report" \
-            --summary "$RUNNER_TEMP/trivy-summary.html" \
-            --repository "$REPOSITORY" \
-            --branch "$BRANCH" \
-            --commit "$(git rev-parse HEAD)" \
-            --run-url "$RUN_URL"
-          echo "report=$report" >> "$GITHUB_OUTPUT"
           echo "day=$day" >> "$GITHUB_OUTPUT"
+          report="$RUNNER_TEMP/trivy-report-devops-repository-$day.pdf"
+          summary="$RUNNER_TEMP/trivy-summary.html"
+          if [[ "$SCAN_OUTCOME" == "success" && -s "$RUNNER_TEMP/trivy-results.json" ]] \
+            && python3 -m venv "$RUNNER_TEMP/venv" \
+            && "$RUNNER_TEMP/venv/bin/pip" install --quiet reportlab==4.4.10 \
+            && "$RUNNER_TEMP/venv/bin/python" .github/scripts/trivy_pdf_report.py \
+              --input "$RUNNER_TEMP/trivy-results.json" \
+              --repo-root . \
+              --pdf "$report" \
+              --summary "$summary" \
+              --repository "$REPOSITORY" \
+              --branch "$BRANCH" \
+              --commit "$(git rev-parse HEAD 2>/dev/null)" \
+              --run-url "$RUN_URL"; then
+            echo "report=$report" >> "$GITHUB_OUTPUT"
+          else
+            cat > "$summary" <<EOF
+          <html><body style="font-family:Arial,Helvetica,sans-serif;color:#212121;">
+          <h2 style="font-size:20px;">Trilio Security Scan for DevOps Repository - $REPOSITORY</h2>
+          <p style="font-size:14px;color:#c62828;font-weight:bold;">The scan of branch $BRANCH failed and no report was produced.</p>
+          <p style="font-size:13px;">See the workflow run for the error: <a href="$RUN_URL">$RUN_URL</a></p>
+          </body></html>
+          EOF
+            echo "report=" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
 
       - name: Email report
+        if: always()
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968
         with:
           server_address: smtp.gmail.com
@@ -74,7 +92,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           from: T4O DevOps security scan <${{ secrets.SMTP_USERNAME }}>
-          to: ${{ env.MAIL_TO }}
-          subject: "security-scan-devops-repository: ${{ github.repository }} ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }} ${{ steps.report.outputs.day }}"
+          to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && env.MAIL_TO_REPORT || env.MAIL_TO_FAILURE }}
+          subject: "security-scan-devops-repository: ${{ github.repository }} ${{ vars.CURRENT_DEVOPS_RELEASE_BRANCH }} ${{ steps.report.outputs.day }}${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/trivy-summary.html
           attachments: ${{ steps.report.outputs.report }}
