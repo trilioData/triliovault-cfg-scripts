@@ -102,11 +102,11 @@ def empty_bucket():
     return {"vulns": [], "misconfigs": [], "secrets": []}
 
 
-def collect(results):
-    findings = {}
+def collect(results, findings=None, group=None):
+    findings = {} if findings is None else findings
     for result in results:
         target = normalize(result.get("Target", ""))
-        bucket = findings.setdefault(group_of(target), empty_bucket())
+        bucket = findings.setdefault(group or group_of(target), empty_bucket())
         for vuln in result.get("Vulnerabilities") or []:
             if reportable(vuln):
                 bucket["vulns"].append(dict(vuln, Target=target))
@@ -173,7 +173,7 @@ def severity_cell(severity):
     return Paragraph(f'<font color="white"><b>{esc(severity)}</b></font>', CELL)
 
 
-def summary_flowable(groups, findings):
+def summary_flowable(groups, findings, label):
     rows = []
     totals = {severity: 0 for severity in SEVERITIES}
     for group in groups:
@@ -189,7 +189,7 @@ def summary_flowable(groups, findings):
                 + [para(totals[s], ALERT_NUM if alert(s, totals[s]) else bold_num) for s in SEVERITIES]
                 + [para(sum(totals.values()), bold_num)])
     widths = [0.36] + [0.128] * (len(SEVERITIES) + 1)
-    return grid_table(["Directory"] + SEVERITIES + ["Total"], rows, widths, total_row=True), totals
+    return grid_table([label] + SEVERITIES + ["Total"], rows, widths, total_row=True), totals
 
 
 def anchor(name):
@@ -225,7 +225,7 @@ def secret_flowable(items):
     rows = [[severity_cell(severity_of(i)), para(i.get("RuleID")), para(i.get("Title")),
              code(i.get("Target", "") + lines(i.get("StartLine"), i.get("EndLine"))),
              code((i.get("Match") or "")[:200])] for i in items]
-    return grid_table(["Severity", "Rule", "Title", "File", "Match (redacted by Trivy)"], rows,
+    return grid_table(["Severity", "Rule", "Title", "File", "Match (redacted)"], rows,
                       [0.08, 0.14, 0.2, 0.26, 0.32], 0, [severity_of(i) for i in items])
 
 
@@ -271,21 +271,33 @@ def footer(text):
 
 
 def meta_rows(args, report):
-    rows = [
-        ("Repository", args.repository),
-        ("Branch", args.branch),
-        ("Commit", args.commit),
-        ("Scanned at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")),
-        ("Scanners", "vulnerabilities, secrets, misconfigurations"),
+    scanned = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    if args.group_by == "image":
+        rows = [
+            ("Registry", args.registry),
+            ("Image tag", args.image_tag),
+            ("Images", ", ".join(name for name, _ in args.input)),
+            ("Scanned at", scanned),
+            ("Scanners", "vulnerabilities, secrets"),
+        ]
+    else:
+        rows = [
+            ("Repository", args.repository),
+            ("Branch", args.branch),
+            ("Commit", args.commit),
+            ("Scanned at", scanned),
+            ("Scanners", "vulnerabilities, secrets, misconfigurations"),
+        ]
+    rows += [
         ("Severities", ", ".join(SEVERITIES)),
-        ("Trivy version", (report.get("Trivy") or {}).get("Version", "")),
+        ("Scanner version", (report.get("Trivy") or {}).get("Version", "")),
     ]
     if args.run_url:
         rows.append(("Workflow run", args.run_url))
     return rows
 
 
-def write_pdf(path, title, meta, groups, findings):
+def write_pdf(path, title, meta, groups, findings, label, stamp):
     doc = ReportDoc(path, pagesize=PAGE, leftMargin=MARGIN, rightMargin=MARGIN,
                     topMargin=MARGIN, bottomMargin=14 * mm, title=title, author="T4O DevOps")
     meta_table = Table([[para(k, ParagraphStyle("MetaKey", parent=CELL, fontName="Helvetica-Bold")), para(v)]
@@ -295,19 +307,18 @@ def write_pdf(path, title, meta, groups, findings):
         ("GRID", (0, 0), (-1, -1), 0.4, GRID),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
-    summary, totals = summary_flowable(groups, findings)
-    summary_heading = Paragraph("Summary By Directory", H1)
-    summary_heading.outline_title = "Summary By Directory"
+    summary, totals = summary_flowable(groups, findings, label)
+    summary_heading = Paragraph(f"Summary By {label}", H1)
+    summary_heading.outline_title = f"Summary By {label}"
     story = [Paragraph(esc(title), TITLE), meta_table, Spacer(1, 6 * mm), summary_heading, summary, PageBreak()]
     for number, group in enumerate(groups, start=1):
         story.extend(directory_flowables(number, group, findings.get(group, empty_bucket())))
         story.append(Spacer(1, 4 * mm))
-    stamp = f"{title} | {dict(meta).get('Branch', '')} | {dict(meta).get('Commit', '')[:12]}"
     doc.build(story, onFirstPage=footer(stamp), onLaterPages=footer(stamp))
     return totals
 
 
-def write_email_summary(path, title, meta, groups, findings):
+def write_email_summary(path, title, meta, groups, findings, label):
     cell = "border:1px solid #cfd8dc;padding:6px 8px;"
     head = cell + "background:#37474f;color:#ffffff;text-align:left;"
     num = cell + "text-align:right;"
@@ -337,39 +348,63 @@ def write_email_summary(path, title, meta, groups, findings):
             f'<h2 style="font-size:20px;">{esc(title)}</h2>'
             f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
-            f'<tr><th style="{head}">Directory</th>'
+            f'<tr><th style="{head}">{label}</th>'
             + "".join(f'<th style="{head}">{s}</th>' for s in SEVERITIES)
             + f'<th style="{head}">Total</th></tr>'
             + "".join(rows)
             + '</table><p style="font-size:13px;">The full report, with a section for every '
-            "directory, is attached as a PDF.</p></body></html>"
+            f"{label.lower()}, is attached as a PDF.</p></body></html>"
         )
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Render a Trivy JSON report as a PDF grouped by top-level directory.")
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--repo-root", required=True)
+    parser = argparse.ArgumentParser(
+        description="Render security scan JSON reports as a PDF grouped by top-level directory or by image.")
+    parser.add_argument("--group-by", choices=["directory", "image"], default="directory")
+    parser.add_argument("--input", required=True, action="append")
+    parser.add_argument("--repo-root")
     parser.add_argument("--pdf", required=True)
     parser.add_argument("--summary", required=True)
+    parser.add_argument("--title")
     parser.add_argument("--repository", default="")
     parser.add_argument("--branch", default="")
     parser.add_argument("--commit", default="")
+    parser.add_argument("--registry", default="")
+    parser.add_argument("--image-tag", default="")
     parser.add_argument("--run-url", default="")
     args = parser.parse_args()
 
-    with open(args.input, encoding="utf-8") as handle:
-        report = json.load(handle)
-
-    findings = collect(report.get("Results") or [])
-    groups = top_level_groups(args.repo_root)
-    groups += sorted(set(findings) - set(groups))
-    title = f"Trilio Security Scan for DevOps Repository - {args.repository or 'repository'}"
+    if args.group_by == "image":
+        args.input = [value.partition("=")[::2] for value in args.input]
+        if not all(name and path for name, path in args.input):
+            parser.error("image mode needs every --input as NAME=PATH")
+        findings = {}
+        report = {}
+        for name, path in args.input:
+            with open(path, encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            collect(loaded.get("Results") or [], findings, name)
+            report = loaded if loaded.get("Trivy") else report
+        groups = [name for name, _ in args.input]
+        label = "Image"
+        title = args.title or f"Trilio Security Scan for Images - {args.image_tag}"
+        stamp = f"{title} | {args.registry}"
+    else:
+        if len(args.input) != 1 or not args.repo_root:
+            parser.error("directory mode needs exactly one --input and --repo-root")
+        with open(args.input[0], encoding="utf-8") as handle:
+            report = json.load(handle)
+        findings = collect(report.get("Results") or [])
+        groups = top_level_groups(args.repo_root)
+        groups += sorted(set(findings) - set(groups))
+        label = "Directory"
+        title = args.title or f"Trilio Security Scan for DevOps Repository - {args.repository or 'repository'}"
+        stamp = f"{title} | {args.branch} | {args.commit[:12]}"
     meta = meta_rows(args, report)
 
-    write_pdf(args.pdf, title, meta, groups, findings)
-    write_email_summary(args.summary, title, meta, groups, findings)
-    print(f"Report written for {len(groups)} directories")
+    write_pdf(args.pdf, title, meta, groups, findings, label, stamp)
+    write_email_summary(args.summary, title, meta, groups, findings, label)
+    print(f"Report written for {len(groups)} {label.lower()} groups")
     return 0
 
 
