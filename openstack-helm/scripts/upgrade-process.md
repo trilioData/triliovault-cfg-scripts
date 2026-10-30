@@ -31,7 +31,10 @@ bash scripts/collect_backup_targets_osh.sh
 ### Step 2: Clean Up Helm Values
 Modify your `values.yaml` and override files for the 6.2 deployment:
 1. **Remove legacy overrides:** Do not pass `nfs.yaml` or `s3.yaml` overrides to the `helm upgrade` command.
-2. **Prevent Race Conditions:** Ensure `manifests.job_wlm_cloud_trust: false` is set in your `values.yaml`.
+2. **Leave `manifests.job_wlm_cloud_trust` at its default (`true`).** The chart creates the cloud admin
+   trust for you as a `post-install,post-upgrade` hook. The job is idempotent: it checks for an
+   existing trust first and exits without doing anything if one is present, so re-running it on an
+   upgrade is safe.
 
 ### Step 3: Upgrade Helm Release
 Upgrade the helm chart to 6.2 using your updated image tags and values.
@@ -66,23 +69,43 @@ bash scripts/migrate_backup_targets_osh.sh
 ```
 Verify the script summary output to ensure all targets migrated successfully.
 
-### Step 6: Post-Upgrade — Re-Initialize Cloud Admin Trust
-> [!WARNING]
-> Because Trust Creation uploads metadata to the storage backend, this step **MUST** happen after Step 5 (when the Backup Target is officially online).
+### Step 6: Post-Upgrade — Verify the Cloud Admin Trust
 
-Re-initialize the cloud trust object against the newly migrated Multi-Backup Target backend:
+The `triliovault-wlm-cloud-trust` job runs automatically as a `post-upgrade` hook and creates the
+trust if it is missing. You only need to confirm it succeeded:
 
 ```bash
-WLM_POD=$(kubectl get pods -n trilio-openstack -l component=wlm-api -o jsonpath="{.items[0].metadata.name}")
-kubectl exec -it -n trilio-openstack $WLM_POD -- bash -c \
-  "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure --os-endpoint-type internal trust-create --is_cloud_trust True admin"
+kubectl get job triliovault-wlm-cloud-trust -n trilio-openstack
+kubectl logs -n trilio-openstack job/triliovault-wlm-cloud-trust
 ```
+
+A `Completed` job means the trust exists — the job verifies with `trust-list` before exiting, so it
+cannot report success on a failed create.
+
+> [!NOTE]
+> **Recovery only.** If the job failed after exhausting its retries, create the trust by hand:
+>
+> ```bash
+> WLM_POD=$(kubectl get pods -n trilio-openstack -l component=wlm-api -o jsonpath="{.items[0].metadata.name}")
+> kubectl exec -it -n trilio-openstack $WLM_POD -- bash -c \
+>   "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure --os-endpoint-type internal trust-create --is_cloud_trust True admin"
+> ```
+>
+> `trust-create` exits 0 even when wlm-api answers HTTP 500, so always confirm with the
+> `trust-list` command in Step 7 rather than trusting the exit code.
 
 ### Step 7: Final Verification
 Verify that your backup targets are in an `available` state and your trust is successfully listed.
 
 ```bash
+WLM_POD=$(kubectl get pods -n trilio-openstack -l component=wlm-api -o jsonpath="{.items[0].metadata.name}")
 kubectl exec -it -n trilio-openstack $WLM_POD -- bash -c \
-  "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure backup-target-list && workloadmgr --insecure trust-list --get_hidden True"
+  "source /etc/triliovault-wlm/admin-openrc.sh && workloadmgr --insecure backup-target-list && workloadmgr --insecure trust-list --is_cloud_admin True"
 ```
+
+> [!IMPORTANT]
+> `--is_cloud_admin True` is required. A cloud trust is stored with `user_id='cloud_admin'` (a literal
+> string), while a plain `trust-list` filters on the caller's own user ID — so without the flag the
+> command returns nothing even on a healthy deployment.
+
 Your TrilioVault 6.2 environment is now fully upgraded and operational!
