@@ -50,41 +50,27 @@ def store_status(store):
         return None, detail.strip().splitlines()[-1] if detail.strip() else "charmcraft status failed"
 
 
-def channel_cells(status, track):
-    cells = {risk: set() for risk in RISKS}
-    for entry in status or []:
-        if entry.get("track") != track:
-            continue
-        for mapping in entry.get("mappings") or []:
-            for release in mapping.get("releases") or []:
-                risk = release.get("channel", "").split("/")[-1]
-                if risk not in cells:
-                    continue
-                if release.get("status") == "tracking":
-                    cells[risk].add("\u2191")
-                    continue
-                if release.get("status") != "open" or release.get("revision") is None:
-                    continue
-                resources = ", ".join(f"{r['name']} r{r['revision']}" for r in release.get("resources") or [])
-                cells[risk].add(f"r{release['revision']}" + (f" ({resources})" if resources else ""))
-    return {risk: "<br>".join(esc(value) for value in sorted(values)) or "-" for risk, values in cells.items()}
-
-
-def released_revision(status, channel):
+def channel_release(status, channel):
     track, _, risk = channel.rpartition("/")
     if risk not in RISKS:
-        return ""
+        return "", "-"
     for candidate_risk in reversed(RISKS[:RISKS.index(risk) + 1]):
-        revisions = set()
+        revisions, details = set(), set()
         for entry in status or []:
             for mapping in entry.get("mappings") or []:
                 for release in mapping.get("releases") or []:
-                    if (release.get("channel") == f"{track}/{candidate_risk}" and release.get("status") == "open"
-                            and release.get("revision") is not None):
-                        revisions.add(release["revision"])
+                    if (release.get("channel") != f"{track}/{candidate_risk}" or release.get("status") != "open"
+                            or release.get("revision") is None):
+                        continue
+                    resources = ", ".join(f"{r['name']} r{r['revision']}" for r in release.get("resources") or [])
+                    revisions.add(release["revision"])
+                    details.add(f"r{release['revision']}" + (f" ({resources})" if resources else ""))
         if revisions:
-            return ", ".join(f"r{revision}" for revision in sorted(revisions))
-    return ""
+            cell = "<br>".join(esc(value) for value in sorted(details))
+            if candidate_risk != risk:
+                cell += f'<br><span style="color:{MUTED_COLOR};font-size:12px;">follows {esc(track)}/{esc(candidate_risk)}</span>'
+            return ", ".join(f"r{revision}" for revision in sorted(revisions)), cell
+    return "", "-"
 
 
 def run_summary_html(channel, published, failed_charms, unchanged):
@@ -149,7 +135,6 @@ def main():
 
     selected = set(json.loads(args.selected))
     results = load_results(args.results)
-    track = args.channel.split("/")[0]
     failed = False
     rows = []
     published, failed_charms, unchanged = [], [], []
@@ -157,21 +142,21 @@ def main():
         outcome = results.get(name, "failure") if name in selected else None
         failed = failed or (outcome is not None and outcome != "success")
         status, error = store_status(store)
+        revision, cell = channel_release(status, args.channel)
+        if status is None:
+            cell = f'<span style="color:{MUTED_COLOR};">unavailable</span>'
+            print(f"{store}: {error}", file=sys.stderr)
         if outcome is None:
-            unchanged.append((name, released_revision(status, args.channel)))
+            unchanged.append((name, revision))
         elif outcome == "success":
-            published.append((name, released_revision(status, args.channel)))
+            published.append((name, revision))
         else:
             failed_charms.append(name)
-        cells = channel_cells(status, track)
-        if status is None:
-            cells = {risk: f'<span style="color:{MUTED_COLOR};">unavailable</span>' for risk in RISKS}
-            print(f"{store}: {error}", file=sys.stderr)
         store_line = (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">{esc(store)}</span>'
                       if store != name else "")
         rows.append(f'<tr><td style="{CELL}"><b>{esc(name)}</b>{store_line}</td>'
                     f'<td style="{CELL}">{outcome_cell(outcome)}</td>'
-                    + "".join(f'<td style="{CELL}">{cells[risk]}</td>' for risk in RISKS) + "</tr>")
+                    f'<td style="{CELL}">{cell}</td></tr>')
 
     meta = [
         ("Released to", args.channel),
@@ -197,10 +182,10 @@ def main():
             + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
             f'<tr><th style="{HEAD}">Charm</th><th style="{HEAD}">This run</th>'
-            + "".join(f'<th style="{HEAD}">{esc(track)}/{risk}</th>' for risk in RISKS)
-            + "</tr>" + "".join(rows) + "</table>"
-            f'<p style="font-size:12px;color:{MUTED_COLOR};">Channel columns show the charm revision currently '
-            "released on Charmhub, with its resource revisions.</p></body></html>"
+            f'<th style="{HEAD}">{esc(args.channel)}</th></tr>'
+            + "".join(rows) + "</table>"
+            f'<p style="font-size:12px;color:{MUTED_COLOR};">The {esc(args.channel)} column shows the charm revision '
+            "currently released on that channel in Charmhub, with its resource revisions.</p></body></html>"
         )
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
