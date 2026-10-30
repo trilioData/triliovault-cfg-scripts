@@ -53,20 +53,18 @@ def store_status(store):
 def channel_release(status, channel):
     track, _, risk = channel.rpartition("/")
     if risk not in RISKS:
-        return "", "-"
+        return "", "-", esc(channel)
     for candidate_risk in reversed(RISKS[:RISKS.index(risk) + 1]):
-        revisions, details = set(), set()
+        revisions = set()
         for entry in status or []:
             for mapping in entry.get("mappings") or []:
                 for release in mapping.get("releases") or []:
                     if (release.get("channel") != f"{track}/{candidate_risk}" or release.get("status") != "open"
                             or release.get("revision") is None):
                         continue
-                    resources = ", ".join(f"{r['name']}: {r['revision']}" for r in release.get("resources") or [])
                     revisions.add(release["revision"])
-                    details.add(f"{release['revision']}" + (f" ({resources})" if resources else ""))
         if revisions:
-            cell = "<br>".join(esc(value) for value in sorted(details))
+            cell = ", ".join(str(revision) for revision in sorted(revisions))
             channel_cell = esc(channel)
             if candidate_risk != risk:
                 channel_cell += (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">'
@@ -164,7 +162,7 @@ def main():
             f'<th style="{HEAD}">Channel</th><th style="{HEAD}">This Run</th></tr>'
             + "".join(rows) + "</table>"
             f'<p style="font-size:12px;color:{MUTED_COLOR};">Revision is the charm revision currently released on the '
-            "channel in Charmhub, with its resource revisions.</p>"
+            "channel in Charmhub.</p>"
             + verdict
             + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table></body></html>'
         )
