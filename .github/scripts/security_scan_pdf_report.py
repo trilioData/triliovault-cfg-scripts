@@ -318,7 +318,7 @@ def write_pdf(path, title, meta, groups, findings, label, stamp):
     return totals
 
 
-def write_email_summary(path, title, meta, groups, findings, label):
+def write_email_summary(path, title, meta, groups, findings, label, attachment):
     cell = "border:1px solid #cfd8dc;padding:6px 8px;"
     head = cell + "background:#37474f;color:#ffffff;text-align:left;"
     num = cell + "text-align:right;"
@@ -346,14 +346,15 @@ def write_email_summary(path, title, meta, groups, findings, label):
         handle.write(
             '<html><body style="font-family:Arial,Helvetica,sans-serif;color:#212121;">'
             f'<h2 style="font-size:20px;">{esc(title)}</h2>'
+            '<p style="font-size:14px;font-weight:bold;">The detailed report is attached to this email: '
+            f'{esc(attachment)}. It has a section for every {label.lower()} with each finding.</p>'
             f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
             f'<tr><th style="{head}">{label}</th>'
             + "".join(f'<th style="{head}">{s}</th>' for s in SEVERITIES)
             + f'<th style="{head}">Total</th></tr>'
             + "".join(rows)
-            + '</table><p style="font-size:13px;">The full report, with a section for every '
-            f"{label.lower()}, is attached as a PDF.</p></body></html>"
+            + "</table></body></html>"
         )
 
 
@@ -403,7 +404,7 @@ def main():
     meta = meta_rows(args, report)
 
     write_pdf(args.pdf, title, meta, groups, findings, label, stamp)
-    write_email_summary(args.summary, title, meta, groups, findings, label)
+    write_email_summary(args.summary, title, meta, groups, findings, label, os.path.basename(args.pdf))
     print(f"Report written for {len(groups)} {label.lower()} groups")
     return 0
 
