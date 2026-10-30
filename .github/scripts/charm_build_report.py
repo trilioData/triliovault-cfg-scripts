@@ -62,16 +62,16 @@ def channel_release(status, channel):
                     if (release.get("channel") != f"{track}/{candidate_risk}" or release.get("status") != "open"
                             or release.get("revision") is None):
                         continue
-                    resources = ", ".join(f"{r['name']} r{r['revision']}" for r in release.get("resources") or [])
+                    resources = ", ".join(f"{r['name']}: {r['revision']}" for r in release.get("resources") or [])
                     revisions.add(release["revision"])
-                    details.add(f"r{release['revision']}" + (f" ({resources})" if resources else ""))
+                    details.add(f"{release['revision']}" + (f" ({resources})" if resources else ""))
         if revisions:
             cell = "<br>".join(esc(value) for value in sorted(details))
             channel_cell = esc(channel)
             if candidate_risk != risk:
                 channel_cell += (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">'
                                  f'follows {esc(track)}/{esc(candidate_risk)}</span>')
-            return ", ".join(f"r{revision}" for revision in sorted(revisions)), cell, channel_cell
+            return ", ".join(str(revision) for revision in sorted(revisions)), cell, channel_cell
     return "", "-", esc(channel)
 
 
