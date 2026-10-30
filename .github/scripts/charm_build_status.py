@@ -38,7 +38,7 @@ def classify(outcome, text):
             return label
     revision = uploaded_revision(text)
     if revision:
-        return f"Release failed (r{revision} uploaded)"
+        return f"Release failed (revision {revision} uploaded)"
     if "PUBLISH-FAILED" in text or "Pack complete" in text:
         return "Upload failed"
     return "Build failed"
