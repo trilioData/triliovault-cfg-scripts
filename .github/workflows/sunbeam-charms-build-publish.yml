@@ -175,5 +175,5 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           from: Trilio Build <trilio.build@trilio.io>
           to: ${{ vars.BUILD_PERSON_EMAIL_ID }}
-          subject: "${{ steps.report.outputs.stamp }} - T4O Canonical Sunbeam Charms Build${{ (needs.build-publish.result != 'success' || steps.report.outputs.failed == 'true') && ' - FAILED' || '' }}"
+          subject: "Build ${{ steps.report.outputs.stamp }} - T4O Canonical Sunbeam Charms${{ (needs.build-publish.result != 'success' || steps.report.outputs.failed == 'true') && ' - FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/charm-build-report.html
