@@ -71,21 +71,28 @@ def channel_cells(status, track):
 
 
 def released_revision(status, channel):
-    revisions = set()
-    for entry in status or []:
-        for mapping in entry.get("mappings") or []:
-            for release in mapping.get("releases") or []:
-                if (release.get("channel") == channel and release.get("status") == "open"
-                        and release.get("revision") is not None):
-                    revisions.add(release["revision"])
-    return ", ".join(f"r{revision}" for revision in sorted(revisions))
+    track, _, risk = channel.rpartition("/")
+    if risk not in RISKS:
+        return ""
+    for candidate_risk in reversed(RISKS[:RISKS.index(risk) + 1]):
+        revisions = set()
+        for entry in status or []:
+            for mapping in entry.get("mappings") or []:
+                for release in mapping.get("releases") or []:
+                    if (release.get("channel") == f"{track}/{candidate_risk}" and release.get("status") == "open"
+                            and release.get("revision") is not None):
+                        revisions.add(release["revision"])
+        if revisions:
+            return ", ".join(f"r{revision}" for revision in sorted(revisions))
+    return ""
 
 
 def run_summary_html(channel, published, failed_charms, unchanged):
     published_text = ", ".join(f"<b>{esc(name)}</b> ({esc(revision) or 'revision unknown'})"
                                for name, revision in published) or "None"
     failed_text = ", ".join(f"<b>{esc(name)}</b>" for name in failed_charms) or "None"
-    unchanged_text = ", ".join(esc(name) for name in unchanged) or "None"
+    unchanged_text = ", ".join(f"<b>{esc(name)}</b> ({esc(channel)}: {esc(revision) or 'nothing released'})"
+                               for name, revision in unchanged) or "None"
     label = "padding:4px 12px 4px 0;font-weight:bold;vertical-align:top;white-space:nowrap;"
     return (
         '<h3 style="font-size:16px;margin-bottom:4px;">Charms in this run</h3>'
@@ -151,7 +158,7 @@ def main():
         failed = failed or (outcome is not None and outcome != "success")
         status, error = store_status(store)
         if outcome is None:
-            unchanged.append(name)
+            unchanged.append((name, released_revision(status, args.channel)))
         elif outcome == "success":
             published.append((name, released_revision(status, args.channel)))
         else:
