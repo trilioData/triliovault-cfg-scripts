@@ -1,0 +1,97 @@
+name: Juju charms build and publish
+
+on:
+  push:
+    paths:
+      - "juju-charms/charm-trilio-*/**"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Charmhub channel to release the charms to
+        type: choice
+        default: 6.3/candidate
+        options:
+          - 6.3/candidate
+          - 6.2/candidate
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CHANNEL: ${{ inputs.channel || '6.3/candidate' }}
+
+jobs:
+  detect:
+    name: Detect changed charms
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == vars.CURRENT_DEVOPS_RELEASE_BRANCH
+    runs-on: ubuntu-24.04
+    outputs:
+      charms: ${{ steps.changed.outputs.charms }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: changed
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          all=(wlm dm-api data-mover horizon-plugin)
+          selected=()
+          if [[ "$EVENT_NAME" != "push" ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            selected=("${all[@]}")
+          else
+            for charm in "${all[@]}"; do
+              if ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- "juju-charms/charm-trilio-$charm"; then
+                selected+=("$charm")
+              fi
+            done
+          fi
+          charms=$(jq -cn '$ARGS.positional' --args "${selected[@]}")
+          echo "Charms to build: $charms"
+          echo "charms=$charms" >> "$GITHUB_OUTPUT"
+
+  build-publish:
+    name: Build and publish ${{ matrix.charm }}
+    needs: detect
+    if: needs.detect.outputs.charms != '[]'
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref_name == vars.CURRENT_DEVOPS_RELEASE_BRANCH && 'charmhub-release' || 'charmhub-manual' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        charm: ${{ fromJSON(needs.detect.outputs.charms) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - uses: canonical/setup-lxd@a3c85fc6fb7fff43fcfeae87659e41a8f635b7dd
+
+      - name: Install charmcraft
+        run: |
+          sudo snap install charmcraft --classic --channel=3.x/stable
+          charmcraft version
+
+      - name: Build and publish
+        env:
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
+          CHARM: ${{ matrix.charm }}
+        run: bash juju-charms/devops-build-publish.sh "$CHARM"
+
+      - name: Show build log
+        if: always()
+        run: cat juju-charms/build-*.log 2>/dev/null || true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: charm-trilio-${{ matrix.charm }}
+          path: juju-charms/charm-trilio-${{ matrix.charm }}/*.charm
+          if-no-files-found: ignore
