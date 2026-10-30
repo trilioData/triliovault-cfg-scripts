@@ -177,7 +177,7 @@ build_and_release_charm() {
     # Clean
     sayf "    %-12s" "clean"
     log "--- clean: $DIR_NAME ---"
-    if charmcraft clean >>"$LOG_FILE" 2>&1; then
+    if ! lxc project show charmcraft >/dev/null 2>&1 || charmcraft clean >>"$LOG_FILE" 2>&1; then
         step_ok
     else
         step_fail
