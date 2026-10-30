@@ -70,6 +70,33 @@ def channel_cells(status, track):
     return {risk: "<br>".join(esc(value) for value in sorted(values)) or "-" for risk, values in cells.items()}
 
 
+def released_revision(status, channel):
+    revisions = set()
+    for entry in status or []:
+        for mapping in entry.get("mappings") or []:
+            for release in mapping.get("releases") or []:
+                if (release.get("channel") == channel and release.get("status") == "open"
+                        and release.get("revision") is not None):
+                    revisions.add(release["revision"])
+    return ", ".join(f"r{revision}" for revision in sorted(revisions))
+
+
+def run_summary_html(channel, published, failed_charms, unchanged):
+    published_text = ", ".join(f"<b>{esc(name)}</b> ({esc(revision) or 'revision unknown'})"
+                               for name, revision in published) or "None"
+    failed_text = ", ".join(f"<b>{esc(name)}</b>" for name in failed_charms) or "None"
+    unchanged_text = ", ".join(esc(name) for name in unchanged) or "None"
+    label = "padding:4px 12px 4px 0;font-weight:bold;vertical-align:top;white-space:nowrap;"
+    return (
+        '<h3 style="font-size:16px;margin-bottom:4px;">Charms in this run</h3>'
+        '<table style="font-size:13px;margin-bottom:16px;">'
+        f'<tr><td style="{label}color:{OK_COLOR};">Built and published to {esc(channel)}</td><td>{published_text}</td></tr>'
+        f'<tr><td style="{label}color:{FAIL_COLOR};">Build or publish failed</td><td>{failed_text}</td></tr>'
+        f'<tr><td style="{label}color:{MUTED_COLOR};">Not built, no code change</td><td>{unchanged_text}</td></tr>'
+        "</table>"
+    )
+
+
 def changes(path):
     if not path or not os.path.isfile(path):
         return [], []
@@ -90,10 +117,10 @@ def links_html(jiras, prs, jira_url, repo_url):
 
 def outcome_cell(outcome):
     if outcome == "success":
-        return f'<span style="color:{OK_COLOR};font-weight:bold;">Published</span>'
+        return f'<span style="color:{OK_COLOR};font-weight:bold;">Built and published</span>'
     if outcome is None:
-        return f'<span style="color:{MUTED_COLOR};">Not built (unchanged)</span>'
-    return f'<span style="color:{FAIL_COLOR};font-weight:bold;">Failed</span>'
+        return f'<span style="color:{MUTED_COLOR};">Not built, no code change</span>'
+    return f'<span style="color:{FAIL_COLOR};font-weight:bold;">Build or publish failed</span>'
 
 
 def main():
@@ -118,10 +145,17 @@ def main():
     track = args.channel.split("/")[0]
     failed = False
     rows = []
+    published, failed_charms, unchanged = [], [], []
     for name, store in args.charm:
         outcome = results.get(name, "failure") if name in selected else None
         failed = failed or (outcome is not None and outcome != "success")
         status, error = store_status(store)
+        if outcome is None:
+            unchanged.append(name)
+        elif outcome == "success":
+            published.append((name, released_revision(status, args.channel)))
+        else:
+            failed_charms.append(name)
         cells = channel_cells(status, track)
         if status is None:
             cells = {risk: f'<span style="color:{MUTED_COLOR};">unavailable</span>' for risk in RISKS}
@@ -152,6 +186,7 @@ def main():
             '<html><body style="font-family:Arial,Helvetica,sans-serif;color:#212121;">'
             f'<h2 style="font-size:20px;">{esc(args.title)}</h2>'
             + verdict
+            + run_summary_html(args.channel, published, failed_charms, unchanged)
             + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
             f'<tr><th style="{HEAD}">Charm</th><th style="{HEAD}">This run</th>'
