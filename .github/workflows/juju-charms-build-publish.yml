@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 env:
-  CHANNEL: ${{ inputs.channel || '6.3/candidate' }}
+  CHANNEL: ${{ inputs.channel || vars.CHARMHUB_DEFAULT_CHANNEL || '6.3/candidate' }}
 
 jobs:
   detect:
