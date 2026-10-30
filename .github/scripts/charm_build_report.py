@@ -67,10 +67,12 @@ def channel_release(status, channel):
                     details.add(f"r{release['revision']}" + (f" ({resources})" if resources else ""))
         if revisions:
             cell = "<br>".join(esc(value) for value in sorted(details))
+            channel_cell = esc(channel)
             if candidate_risk != risk:
-                cell += f'<br><span style="color:{MUTED_COLOR};font-size:12px;">follows {esc(track)}/{esc(candidate_risk)}</span>'
-            return ", ".join(f"r{revision}" for revision in sorted(revisions)), cell
-    return "", "-"
+                channel_cell += (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">'
+                                 f'follows {esc(track)}/{esc(candidate_risk)}</span>')
+            return ", ".join(f"r{revision}" for revision in sorted(revisions)), cell, channel_cell
+    return "", "-", esc(channel)
 
 
 def run_summary_html(channel, published, failed_charms, unchanged):
@@ -142,7 +144,7 @@ def main():
         outcome = results.get(name, "failure") if name in selected else None
         failed = failed or (outcome is not None and outcome != "success")
         status, error = store_status(store)
-        revision, cell = channel_release(status, args.channel)
+        revision, cell, channel_cell = channel_release(status, args.channel)
         if status is None:
             cell = f'<span style="color:{MUTED_COLOR};">unavailable</span>'
             print(f"{store}: {error}", file=sys.stderr)
@@ -155,8 +157,9 @@ def main():
         store_line = (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">{esc(store)}</span>'
                       if store != name else "")
         rows.append(f'<tr><td style="{CELL}"><b>{esc(name)}</b>{store_line}</td>'
-                    f'<td style="{CELL}">{outcome_cell(outcome)}</td>'
-                    f'<td style="{CELL}">{cell}</td></tr>')
+                    f'<td style="{CELL}">{cell}</td>'
+                    f'<td style="{CELL}">{channel_cell}</td>'
+                    f'<td style="{CELL}">{outcome_cell(outcome)}</td></tr>')
 
     meta = [
         ("Released to", args.channel),
@@ -181,11 +184,11 @@ def main():
             + run_summary_html(args.channel, published, failed_charms, unchanged)
             + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
-            f'<tr><th style="{HEAD}">Charm</th><th style="{HEAD}">This run</th>'
-            f'<th style="{HEAD}">{esc(args.channel)}</th></tr>'
+            f'<tr><th style="{HEAD}">Charm</th><th style="{HEAD}">Revision</th>'
+            f'<th style="{HEAD}">Channel</th><th style="{HEAD}">This Run</th></tr>'
             + "".join(rows) + "</table>"
-            f'<p style="font-size:12px;color:{MUTED_COLOR};">The {esc(args.channel)} column shows the charm revision '
-            "currently released on that channel in Charmhub, with its resource revisions.</p></body></html>"
+            f'<p style="font-size:12px;color:{MUTED_COLOR};">Revision is the charm revision currently released on the '
+            "channel in Charmhub, with its resource revisions.</p></body></html>"
         )
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
