@@ -85,10 +85,14 @@ or until Trilio project quotas are set.
 Copy this directory to the jump host and run:
 
 ```bash
-GRAFANA_URL=http://172.20.1.100/cos-grafana \
-PROMETHEUS_URL=http://172.20.1.100/cos-prometheus-0 \
+GRAFANA_URL=http://<cos-ingress-ip-or-host>/cos-grafana \
+PROMETHEUS_URL=http://<cos-ingress-ip-or-host>/cos-prometheus-0 \
 ./deploy.sh all
 ```
+
+Replace `<cos-ingress-ip-or-host>` with the IP or hostname your COS model's
+ingress/traefik is reachable on (find it with `juju_juju3 run traefik/leader
+show-proxied-endpoints -m "${COS_MODEL}"`).
 
 `all` runs these steps in order. Each step can also be run on its own and is
 safe to re-run:
