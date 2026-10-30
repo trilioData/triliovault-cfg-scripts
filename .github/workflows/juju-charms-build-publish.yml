@@ -180,6 +180,6 @@ jobs:
           username: trilio.build@trilio.io
           password: ${{ secrets.SMTP_PASSWORD }}
           from: Trilio Build <trilio.build@trilio.io>
-          to: ${{ vars.BUILD_PERSON_EMAIL_ID }}
+          to: ${{ (needs.build-publish.result == 'success' && steps.report.outputs.failed != 'true') && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
           subject: "Build ${{ steps.report.outputs.stamp }} - T4O Canonical Juju Charms${{ (needs.build-publish.result != 'success' || steps.report.outputs.failed == 'true') && ' - FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/charm-build-report.html

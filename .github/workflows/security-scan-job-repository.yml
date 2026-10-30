@@ -1,6 +1,9 @@
 name: security-scan-devops-repository
 
 on:
+  push:
+    branches:
+      - dev-stable/6.3
   schedule:
     - cron: "30 20 * * *"
   workflow_dispatch:
