@@ -124,6 +124,6 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           from: Trilio Build <${{ env.MAIL_FROM }}>
           to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
-          subject: "Security Scan Report: Trilio for OpenStack RHOSO18 Images${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
+          subject: "Security Scan Report: Trilio for OpenStack RHOSO18 Container Images${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/security-scan-summary.html
           attachments: ${{ steps.report.outputs.report }}
