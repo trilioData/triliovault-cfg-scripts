@@ -1,0 +1,15 @@
+[Unit]
+Description=Trilio SQL exporter (workloadmgr DB metrics for COS Prometheus)
+Wants=network-online.target
+After=network-online.target mysqlrouter.service
+
+[Service]
+Type=simple
+User=sql_exporter
+Group=sql_exporter
+ExecStart=/usr/local/bin/sql_exporter -config.file=/etc/sql_exporter/sql_exporter.yml -web.listen-address=:9399
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
