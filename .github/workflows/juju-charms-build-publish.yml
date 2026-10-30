@@ -80,10 +80,26 @@ jobs:
           charmcraft version
 
       - name: Build and publish
+        id: build
         env:
           CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
           CHARM: ${{ matrix.charm }}
         run: bash juju-charms/devops-build-publish.sh "$CHARM"
+
+      - name: Record result
+        if: always()
+        env:
+          CHARM: ${{ matrix.charm }}
+          OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/result"
+          jq -n --arg charm "$CHARM" --arg outcome "$OUTCOME" '{charm: $charm, outcome: $outcome}' > "$RUNNER_TEMP/result/$CHARM.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: result-${{ matrix.charm }}
+          path: ${{ runner.temp }}/result/${{ matrix.charm }}.json
 
       - name: Show build log
         if: always()
@@ -95,3 +111,72 @@ jobs:
           name: charm-trilio-${{ matrix.charm }}
           path: juju-charms/charm-trilio-${{ matrix.charm }}/*.charm
           if-no-files-found: ignore
+
+  report:
+    name: Email build report
+    needs: [detect, build-publish]
+    if: always() && needs.detect.result == 'success' && needs.detect.outputs.charms != '[]'
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref_name == vars.CURRENT_DEVOPS_RELEASE_BRANCH && 'charmhub-release' || 'charmhub-manual' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: result-*
+          path: ${{ runner.temp }}/results
+          merge-multiple: true
+
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic --channel=3.x/stable
+
+      - name: Render report
+        id: report
+        env:
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
+          SELECTED: ${{ needs.detect.outputs.charms }}
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          echo "stamp=$(TZ=Asia/Kolkata date +%d%m%Y)" >> "$GITHUB_OUTPUT"
+          : > "$RUNNER_TEMP/changes.txt"
+          if [[ "$EVENT_NAME" == "push" ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            git log --format='%s%n%b' "$BEFORE..$GITHUB_SHA" > "$RUNNER_TEMP/changes.txt"
+          fi
+          python3 .github/scripts/charm_build_report.py \
+            --title "T4O Canonical Juju Charms Build" \
+            --channel "$CHANNEL" \
+            --charm wlm=trilio-charmers-trilio-wlm \
+            --charm dm-api=trilio-charmers-trilio-dm-api \
+            --charm data-mover=trilio-charmers-trilio-data-mover \
+            --charm horizon-plugin=trilio-charmers-trilio-horizon-plugin \
+            --selected "$SELECTED" \
+            --results "$RUNNER_TEMP/results" \
+            --summary "$RUNNER_TEMP/charm-build-report.html" \
+            --branch "$BRANCH" \
+            --commit "$GITHUB_SHA" \
+            --trigger "$EVENT_NAME" \
+            --run-url "$RUN_URL" \
+            --changes "$RUNNER_TEMP/changes.txt" \
+            --jira-url https://triliodata.atlassian.net/browse \
+            --repo-url "$REPO_URL"
+
+      - name: Email report
+        if: always() && steps.report.outcome == 'success'
+        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: trilio.build@trilio.io
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: Trilio Build <trilio.build@trilio.io>
+          to: ${{ vars.BUILD_PERSON_EMAIL_ID }}
+          subject: "${{ steps.report.outputs.stamp }} - T4O Canonical Juju Charms Build${{ (needs.build-publish.result != 'success' || steps.report.outputs.failed == 'true') && ' - FAILED' || '' }}"
+          html_body: file://${{ runner.temp }}/charm-build-report.html
