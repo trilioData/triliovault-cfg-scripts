@@ -80,6 +80,7 @@ jobs:
           SCAN_OUTCOME: ${{ steps.scan.outcome }}
         run: |
           day=$(date -u +%Y-%m-%d)
+          echo "stamp=$(TZ=Asia/Kolkata date +%d%m%Y)" >> "$GITHUB_OUTPUT"
           report="$RUNNER_TEMP/trilio-rhoso18-container-images-report-${TAG:-unknown}-$day.pdf"
           summary="$RUNNER_TEMP/security-scan-summary.html"
           inputs=()
@@ -123,6 +124,6 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           from: Trilio Build <${{ env.MAIL_FROM }}>
           to: ${{ steps.scan.outcome == 'success' && steps.report.outcome == 'success' && vars.TEAM_EMAIL_ID || vars.BUILD_PERSON_EMAIL_ID }}
-          subject: "Security Scan Report: Trilio for OpenStack RHOSO18 Container Images${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
+          subject: "${{ steps.report.outputs.stamp }} - Security Scan Report: Trilio for OpenStack RHOSO18 Container Images${{ (steps.scan.outcome != 'success' || steps.report.outcome != 'success') && ' - SCAN FAILED' || '' }}"
           html_body: file://${{ runner.temp }}/security-scan-summary.html
           attachments: ${{ steps.report.outputs.report }}
