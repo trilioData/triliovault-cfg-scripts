@@ -84,8 +84,9 @@ jobs:
           CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
           CHARM: ${{ matrix.charm }}
         run: |
+          set -o pipefail
           bash sunbeam-canonical/build/build_publish.sh \
-            --charms "$CHARM" --mode build-and-publish --channel "$CHANNEL"
+            --charms "$CHARM" --mode build-and-publish --channel "$CHANNEL" 2>&1 | tee "$RUNNER_TEMP/build-output.log"
 
       - name: Record result
         if: always()
@@ -94,7 +95,9 @@ jobs:
           OUTCOME: ${{ steps.build.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/result"
-          jq -n --arg charm "$CHARM" --arg outcome "$OUTCOME" '{charm: $charm, outcome: $outcome}' > "$RUNNER_TEMP/result/$CHARM.json"
+          status=$(python3 .github/scripts/charm_build_status.py --outcome "$OUTCOME" "$RUNNER_TEMP/build-output.log")
+          jq -n --arg charm "$CHARM" --arg outcome "$OUTCOME" --arg status "$status" \
+            '{charm: $charm, outcome: $outcome, status: $status}' > "$RUNNER_TEMP/result/$CHARM.json"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

@@ -36,7 +36,7 @@ def load_results(directory):
             if entry.name.endswith(".json"):
                 with open(entry.path, encoding="utf-8") as handle:
                     data = json.load(handle)
-                results[data["charm"]] = data.get("outcome", "unknown")
+                results[data["charm"]] = (data.get("outcome", "unknown"), data.get("status") or "Build failed")
     return results
 
 
@@ -75,23 +75,6 @@ def channel_release(status, channel):
     return "", "-", esc(channel)
 
 
-def run_summary_html(channel, published, failed_charms, unchanged):
-    published_text = ", ".join(f"<b>{esc(name)}</b> ({esc(revision) or 'revision unknown'})"
-                               for name, revision in published) or "None"
-    failed_text = ", ".join(f"<b>{esc(name)}</b>" for name in failed_charms) or "None"
-    unchanged_text = ", ".join(f"<b>{esc(name)}</b> ({esc(channel)}: {esc(revision) or 'nothing released'})"
-                               for name, revision in unchanged) or "None"
-    label = "padding:4px 12px 4px 0;font-weight:bold;vertical-align:top;white-space:nowrap;"
-    return (
-        '<h3 style="font-size:16px;margin-bottom:4px;">Charms in this run</h3>'
-        '<table style="font-size:13px;margin-bottom:16px;">'
-        f'<tr><td style="{label}color:{OK_COLOR};">Built and published to {esc(channel)}</td><td>{published_text}</td></tr>'
-        f'<tr><td style="{label}color:{FAIL_COLOR};">Build or publish failed</td><td>{failed_text}</td></tr>'
-        f'<tr><td style="{label}color:{MUTED_COLOR};">Not built, no code change</td><td>{unchanged_text}</td></tr>'
-        "</table>"
-    )
-
-
 def changes(path):
     if not path or not os.path.isfile(path):
         return [], []
@@ -110,12 +93,12 @@ def links_html(jiras, prs, jira_url, repo_url):
             f'<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">Merged PRs</td><td>{pr_links}</td></tr>')
 
 
-def outcome_cell(outcome):
+def outcome_cell(outcome, detail):
     if outcome == "success":
         return f'<span style="color:{OK_COLOR};font-weight:bold;">Built and published</span>'
     if outcome is None:
         return f'<span style="color:{MUTED_COLOR};">Not built, no code change</span>'
-    return f'<span style="color:{FAIL_COLOR};font-weight:bold;">Build or publish failed</span>'
+    return f'<span style="color:{FAIL_COLOR};font-weight:bold;">{esc(detail)}</span>'
 
 
 def main():
@@ -139,27 +122,23 @@ def main():
     results = load_results(args.results)
     failed = False
     rows = []
-    published, failed_charms, unchanged = [], [], []
     for name, store in args.charm:
-        outcome = results.get(name, "failure") if name in selected else None
-        failed = failed or (outcome is not None and outcome != "success")
+        outcome, detail = results.get(name, ("failure", "Build failed")) if name in selected else (None, "")
+        charm_failed = outcome is not None and outcome != "success"
+        failed = failed or charm_failed
         status, error = store_status(store)
-        revision, cell, channel_cell = channel_release(status, args.channel)
+        _, cell, channel_cell = channel_release(status, args.channel)
         if status is None:
             cell = f'<span style="color:{MUTED_COLOR};">unavailable</span>'
             print(f"{store}: {error}", file=sys.stderr)
-        if outcome is None:
-            unchanged.append((name, revision))
-        elif outcome == "success":
-            published.append((name, revision))
-        else:
-            failed_charms.append(name)
+        if charm_failed:
+            cell = f'<span style="color:{FAIL_COLOR};font-weight:bold;">FAILED</span>'
         store_line = (f'<br><span style="color:{MUTED_COLOR};font-size:12px;">{esc(store)}</span>'
                       if store != name else "")
         rows.append(f'<tr><td style="{CELL}"><b>{esc(name)}</b>{store_line}</td>'
                     f'<td style="{CELL}">{cell}</td>'
                     f'<td style="{CELL}">{channel_cell}</td>'
-                    f'<td style="{CELL}">{outcome_cell(outcome)}</td></tr>')
+                    f'<td style="{CELL}">{outcome_cell(outcome, detail)}</td></tr>')
 
     meta = [
         ("Released to", args.channel),
@@ -180,15 +159,14 @@ def main():
         handle.write(
             '<html><body style="font-family:Arial,Helvetica,sans-serif;color:#212121;">'
             f'<h2 style="font-size:20px;">{esc(args.title)}</h2>'
-            + verdict
-            + run_summary_html(args.channel, published, failed_charms, unchanged)
-            + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table>'
             '<table style="border-collapse:collapse;font-size:13px;">'
             f'<tr><th style="{HEAD}">Charm</th><th style="{HEAD}">Revision</th>'
             f'<th style="{HEAD}">Channel</th><th style="{HEAD}">This Run</th></tr>'
             + "".join(rows) + "</table>"
             f'<p style="font-size:12px;color:{MUTED_COLOR};">Revision is the charm revision currently released on the '
-            "channel in Charmhub, with its resource revisions.</p></body></html>"
+            "channel in Charmhub, with its resource revisions.</p>"
+            + verdict
+            + f'<table style="font-size:13px;margin-bottom:16px;">{meta_html}</table></body></html>'
         )
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
