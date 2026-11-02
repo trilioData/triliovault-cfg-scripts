@@ -24,6 +24,7 @@ restore:restore_delete: rule:admin_or_owner
 restore:restore_get_all: rule:admin_or_owner
 restore:restore_show: rule:admin_or_owner
 snapshot:mounted_list: rule:admin_or_owner
+snapshot:snapshot_bulk_delete: rule:admin_or_owner
 snapshot:snapshot_cancel: rule:admin_or_owner
 snapshot:snapshot_delete: rule:admin_or_owner
 snapshot:snapshot_dismount: rule:admin_or_owner
