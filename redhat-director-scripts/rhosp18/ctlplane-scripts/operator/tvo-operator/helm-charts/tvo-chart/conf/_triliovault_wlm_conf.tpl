@@ -71,5 +71,5 @@ ssl_ca_file = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 rabbit_quorum_queue = {{ .Values.rabbitmq.common.rabbit_quorum_queue }}
 rabbit_transient_quorum_queue = {{ .Values.rabbitmq.common.rabbit_transient_quorum_queue }}
 amqp_durable_queues = {{ .Values.rabbitmq.common.amqp_durable_queues }}
-heartbeat_in_pthread = false
+heartbeat_in_pthread = true
 

@@ -50,7 +50,8 @@ transport_url = {{ transport_url }}
 driver = noop
 
 [oslo_messaging_rabbit]
-heartbeat_in_pthread = False
+{# TVAULT-7735: a green-thread heartbeat can stall the API's HTTP workers (HAProxy 504s) #}
+heartbeat_in_pthread = True
 # Must match nova.conf's rabbit_quorum_queue on the compute nodes — contego
 # (which loads nova.conf alongside its own config) declares its RPC queue as
 # a quorum queue there. A mismatch here means dm-api's client declares the
