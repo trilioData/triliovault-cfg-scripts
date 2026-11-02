@@ -52,8 +52,7 @@ driver = noop
 {% endif %}
 
 [oslo_messaging_rabbit]
-{# TVAULT-7735: a green-thread heartbeat can stall the API's HTTP workers (HAProxy 504s) #}
-heartbeat_in_pthread = True
+heartbeat_in_pthread = False
 {% if om_enable_rabbitmq_tls | bool %}
 ssl = true
 ssl_ca_file = {{ om_rabbitmq_cacert }}

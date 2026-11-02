@@ -135,7 +135,8 @@ process_timeout = 300
 encryption_support = True
 
 [oslo_messaging_rabbit]
-heartbeat_in_pthread = False
+{# TVAULT-7735: a green-thread heartbeat can stall the service's workers (HAProxy 504s on wlm-api) #}
+heartbeat_in_pthread = True
 # Must match nova.conf's rabbit_quorum_queue on the compute nodes — contego
 # (which loads nova.conf alongside its own config) declares its RPC queues as
 # quorum queues there. A mismatch means whichever side declares a shared-name
