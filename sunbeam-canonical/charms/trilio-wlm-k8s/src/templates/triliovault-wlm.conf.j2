@@ -91,7 +91,7 @@ helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwra
 project_name = {{ keystone_project_name }}
 
 signing_dir = /var/cache/workloadmgr
-auth_url = {{ auth_url }}
+auth_url = {{ keystone_authtoken_auth_url }}
 
 www_authenticate_uri = {{ auth_url }}
 auth_type = password

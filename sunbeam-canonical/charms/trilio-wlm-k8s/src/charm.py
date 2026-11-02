@@ -1072,10 +1072,11 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             f"@{amqp['host']}:{amqp.get('port', '5672')}"
             f"/{amqp.get('vhost', 'workloadmgr')}"
         )
-        auth_url = (
+        keystone_base_url = (
             f"{identity.get('service_protocol', 'http')}://"
-            f"{identity['service_host']}:{identity.get('service_port', '5000')}/v3"
+            f"{identity['service_host']}:{identity.get('service_port', '5000')}"
         )
+        auth_url = f"{keystone_base_url}/v3"
         # Provide cafile path only when the CA cert has been pushed to the container.
         cafile = CA_BUNDLE_PATH if self._get_ca_cert() else ""
 
@@ -1113,6 +1114,7 @@ class TrilioWlmK8sCharm(ops.CharmBase):
             "workloads_workers": self.config["workloads-workers"],
             "glance_production_api_servers": self.config["glance-endpoint"],
             "auth_url": auth_url,
+            "keystone_authtoken_auth_url": keystone_base_url,
             "cinder_production_endpoint_template": self.config["cinder-endpoint"],
             "nova_production_endpoint_template": self.config["nova-endpoint"],
             "neutron_production_url": self.config["neutron-endpoint"],
