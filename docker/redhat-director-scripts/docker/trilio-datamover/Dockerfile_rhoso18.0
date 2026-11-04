@@ -27,6 +27,15 @@ RUN dnf config-manager \
   --enable rhceph-9-tools-for-rhel-9-x86_64-rpms \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
+## iscsiadm and multipath talk to the compute host's iscsid/multipathd, so they
+## must match the host (RHOSO 18 EDPM = RHEL 9.4 EUS), not the 9.8 packages below.
+## iscsiadm 6.2.1.11 (9.8) sends a node record the host's 6.2.1.9 iscsid misreads:
+## every login fails with exit 12 (TVAULT-7943). Install them from 9.4 first and
+## keep the later --releasever 9.8 transactions from upgrading them.
+RUN dnf install --releasever 9.4 -y iscsi-initiator-utils iscsi-initiator-utils-iscsiuio \
+    device-mapper-multipath device-mapper-multipath-libs kpartx \
+    && echo "excludepkgs=iscsi-initiator-utils* device-mapper-multipath* kpartx" >> /etc/dnf/dnf.conf
+
 ## Install triliovault datamover packages
 RUN dnf install --releasever 9.8 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
@@ -47,6 +56,8 @@ RUN dnf erase --releasever 9.8 -y epel-release
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
 RUN dnf --releasever 9.8 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
+RUN sed -i '/^excludepkgs=iscsi-initiator-utils/d' /etc/dnf/dnf.conf \
+    && rpm -q iscsi-initiator-utils device-mapper-multipath
 
 
 #Copy executable files
