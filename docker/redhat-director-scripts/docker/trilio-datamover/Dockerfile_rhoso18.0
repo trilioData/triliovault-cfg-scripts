@@ -28,7 +28,7 @@ RUN dnf config-manager \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
 RUN dnf install --releasever 9.6 -y iscsi-initiator-utils iscsi-initiator-utils-iscsiuio \
-    && dnf install --releasever 9.4 -y device-mapper-multipath device-mapper-multipath-libs kpartx \
+    device-mapper-multipath device-mapper-multipath-libs kpartx \
     && dnf config-manager --save "--setopt=excludepkgs=iscsi-initiator-utils*,device-mapper-multipath*,kpartx"
 
 ## Install triliovault datamover packages
