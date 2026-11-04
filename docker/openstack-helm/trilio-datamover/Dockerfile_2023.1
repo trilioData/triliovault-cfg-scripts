@@ -23,7 +23,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Install pre-requisite packages 
 RUN set -ex \
     && apt-get update && apt-get -y install \
-        software-properties-common  apt-utils vim  less  iputils-ping
+        software-properties-common  apt-utils vim  less  iputils-ping \
+        cryptsetup-bin
 
 # Install datamover packages
 COPY trilio.list /etc/apt/sources.list.d/
