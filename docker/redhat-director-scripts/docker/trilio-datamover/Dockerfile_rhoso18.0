@@ -27,6 +27,10 @@ RUN dnf config-manager \
   --enable rhceph-9-tools-for-rhel-9-x86_64-rpms \
   --enable rhoso-18.0-for-rhel-9-x86_64-rpms
 
+RUN dnf install --releasever 9.6 -y iscsi-initiator-utils iscsi-initiator-utils-iscsiuio \
+    device-mapper-multipath device-mapper-multipath-libs kpartx \
+    && dnf config-manager --save "--setopt=excludepkgs=iscsi-initiator-utils*,device-mapper-multipath*,kpartx"
+
 ## Install triliovault datamover packages
 RUN dnf install --releasever 9.8 openstack-nova-common python3-nova python3-novaclient udev fuse virt-v2v virtio-win nbdkit --nobest -y
 RUN usermod -u 42436 nova && groupmod -g 42436 nova && usermod -aG disk,libvirt,kolla nova
@@ -47,6 +51,9 @@ RUN dnf erase --releasever 9.8 -y epel-release
 RUN pip3 install --upgrade pip && pip3 install azure-storage-blob==12.25.1 azure-core loguru
 
 RUN dnf --releasever 9.8 -y update-minimal --security --sec-severity=Important --sec-severity=Critical --exclude=python3-libvirt --nobest
+RUN dnf config-manager --save --setopt=excludepkgs= \
+    && rpm -q --qf '%{VERSION}\n' iscsi-initiator-utils | grep -qx 6.2.1.9 \
+    && rpm -q iscsi-initiator-utils device-mapper-multipath
 
 
 #Copy executable files
