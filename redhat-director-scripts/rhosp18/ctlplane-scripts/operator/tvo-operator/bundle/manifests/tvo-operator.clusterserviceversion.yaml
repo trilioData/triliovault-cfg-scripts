@@ -611,11 +611,11 @@ spec:
                   periodSeconds: 10
                 resources:
                   limits:
-                    cpu: 500m
-                    memory: 500Mi
+                    cpu: "1"
+                    memory: 2Gi
                   requests:
-                    cpu: 10m
-                    memory: 256Mi
+                    cpu: 100m
+                    memory: 512Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:
