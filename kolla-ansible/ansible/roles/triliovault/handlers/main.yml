@@ -21,6 +21,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-datamover-api container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -42,6 +45,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-datamover-api container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -64,6 +70,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-datamover container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -86,6 +95,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-datamover container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -107,6 +119,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-api container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -128,6 +143,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-api container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -149,6 +167,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-workloads container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -170,6 +191,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-workloads container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -191,6 +215,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-scheduler container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -212,6 +239,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-scheduler container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -233,6 +263,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-cron container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -254,6 +287,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-wlm-cron container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
@@ -276,6 +312,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-dms container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_docker'
@@ -298,6 +337,9 @@
     auth_password: "{{ triliovault_docker_password }}"
     auth_registry: "{{ triliovault_docker_registry }}"
   listen: "Restart triliovault-dms container"
+  # A failure here must not drop the host from the play: tasks/ensure-containers-running.yml
+  # retries the start and reports systemd's actual error instead of "Container timed out".
+  ignore_errors: true
   when:
     - kolla_action != "config"
     - triliovault_kolla_module == 'kolla_container'
