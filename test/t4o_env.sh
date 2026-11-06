@@ -632,6 +632,8 @@ discover_cloud_admin() {
     local conf_auth_url
     conf_auth_url=$(wlm_conf auth_url)
     if [[ -n "$conf_auth_url" ]]; then
+        conf_auth_url="${conf_auth_url%/}"
+        conf_auth_url="${conf_auth_url%/v3}/v3"
         if [[ -n "${OS_AUTH_URL:-}" && "$OS_AUTH_URL" != "$conf_auth_url" ]]; then
             t4o_warn "auth_url differs: rc says '$OS_AUTH_URL', WLM conf says '$conf_auth_url'. Using the WLM conf value."
         fi
