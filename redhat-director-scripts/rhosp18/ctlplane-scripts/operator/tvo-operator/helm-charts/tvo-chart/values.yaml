@@ -40,6 +40,9 @@ common:
   memcached_servers: ""
   oslo_enable_proxy_headers_parsing: false
   vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+  # Seconds WLM waits for a datamover progress update before treating the job as failed.
+  # Default 1200 (20 min).
+  progress_tracking_update_interval: "1200"
 openstack:
   namespace: "openstack"
   osp_secret_name: "osp-secret"
