@@ -43,6 +43,36 @@ if kubectl -n openstack get secret/nova-ks-etc >/dev/null 2>&1; then
 fi
 ./sync_nova_compute.sh
 
+{ set +x; } 2>/dev/null
+LIBVIRT_TLS_CLIENT_SECRET=${LIBVIRT_TLS_CLIENT_SECRET:-libvirt-tls-client}
+LIBVIRT_TLS_SERVER_SECRET=${LIBVIRT_TLS_SERVER_SECRET:-libvirt-tls-server}
+LIBVIRT_TLS_ENABLED=false
+LIBVIRT_CA=""
+LIBVIRT_CLIENT_CERT=""
+LIBVIRT_CLIENT_KEY=""
+if kubectl -n openstack get secret/nova-etc -o go-template='{{range $k, $v := .data}}{{$v | base64decode}}{{"\n"}}{{end}}' | grep -q 'qemu+tls://'; then
+   if ! kubectl -n openstack get secret/$LIBVIRT_TLS_CLIENT_SECRET >/dev/null 2>&1; then
+      echo "ERROR: nova connects to libvirt over qemu+tls but secret openstack/$LIBVIRT_TLS_CLIENT_SECRET was not found. Set LIBVIRT_TLS_CLIENT_SECRET to the libvirt client certificate secret name."
+      exit 1
+   fi
+   echo "Libvirt TLS is enabled: datamover will use the libvirt client certificate from secret openstack/$LIBVIRT_TLS_CLIENT_SECRET"
+   LIBVIRT_TLS_ENABLED=true
+   LIBVIRT_CA=$(kubectl -n openstack get secret/$LIBVIRT_TLS_CLIENT_SECRET -o "jsonpath={.data['cacert\.pem']}" | base64 -d)
+   if [ -z "$LIBVIRT_CA" ]; then
+      LIBVIRT_CA=$(kubectl -n openstack get secret/$LIBVIRT_TLS_SERVER_SECRET -o "jsonpath={.data['cacert\.pem']}" | base64 -d)
+   fi
+   LIBVIRT_CLIENT_CERT=$(kubectl -n openstack get secret/$LIBVIRT_TLS_CLIENT_SECRET -o "jsonpath={.data['clientcert\.pem']}" | base64 -d)
+   LIBVIRT_CLIENT_KEY=$(kubectl -n openstack get secret/$LIBVIRT_TLS_CLIENT_SECRET -o "jsonpath={.data['clientkey\.pem']}" | base64 -d)
+   if [ -z "$LIBVIRT_CA" ] || [ -z "$LIBVIRT_CLIENT_CERT" ] || [ -z "$LIBVIRT_CLIENT_KEY" ]; then
+      echo "ERROR: cacert.pem, clientcert.pem or clientkey.pem is missing in secrets openstack/$LIBVIRT_TLS_CLIENT_SECRET and openstack/$LIBVIRT_TLS_SERVER_SECRET"
+      exit 1
+   fi
+fi
+LIBVIRT_CA=$(echo "$LIBVIRT_CA" | sed 's/^/        /')
+LIBVIRT_CLIENT_CERT=$(echo "$LIBVIRT_CLIENT_CERT" | sed 's/^/        /')
+LIBVIRT_CLIENT_KEY=$(echo "$LIBVIRT_CLIENT_KEY" | sed 's/^/        /')
+set -x
+
 CRT=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')
 KEY=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.key']}" | base64 -d | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}')
 CA=$(kubectl -n openstack get secrets/trilio-ca-cert -o "jsonpath={.data['ca\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /') 
@@ -51,6 +81,16 @@ cd ../
 tee > values_overrides/admin_creds.yaml  << EOF
 
 conf:
+  triliovault:
+    libvirt_tls:
+      enabled: $LIBVIRT_TLS_ENABLED
+      source: secret
+      ca_cert: |
+$LIBVIRT_CA
+      client_cert: |
+$LIBVIRT_CLIENT_CERT
+      client_key: |
+$LIBVIRT_CLIENT_KEY
   wlm: 
     keystone_authtoken:
       memcached_servers: memcached.openstack.svc.$INTERNAL_DOMAIN_NAME:11211
