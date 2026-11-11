@@ -42,6 +42,8 @@ spec:
     memcached_servers: "memcached-0.memcached.openstack.svc:11212"
     oslo_enable_proxy_headers_parsing: false
     metallb_address_pool: "internalapi"
+    # Seconds WLM waits for datamover progress before treating the job as failed. Default 1200 (20 min).
+    progress_tracking_update_interval: "1200"
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
