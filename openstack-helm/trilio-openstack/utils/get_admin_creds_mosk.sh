@@ -34,6 +34,12 @@ TRILIO_RABBITMQ_ADMIN_USERNAME=$(kubectl -n trilio-openstack get secret/rabbitmq
 kubectl -n openstack get secret/nova-etc -o "jsonpath={.data['nova-compute\.conf']}" | base64 -d > ../templates/bin/_triliovault-nova-compute.conf.tpl
 ./sync_nova_compute.sh
 
+LIBVIRT_TLS_ENABLED=false
+if kubectl -n openstack get cm/nova-bin -o "jsonpath={.data['nova-compute-init\.sh']}" | grep -q '^listen_tls="true"'; then
+   echo "MOSK libvirt TLS is enabled: datamover will mount the libvirt client certificates from the compute host"
+   LIBVIRT_TLS_ENABLED=true
+fi
+
 CRT=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /')
 KEY=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['tls\.key']}" | base64 -d | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}')
 CA=$(kubectl -n openstack get secrets/keystone-tls-public -o "jsonpath={.data['ca\.crt']}" | base64 -d | sed 's/^[ \t]*//' | sed 's/^/            /') 
@@ -46,6 +52,9 @@ conf:
     cloud_admin_user_name: $OS_USERNAME
     cloud_admin_project_name: $OS_PROJECT_NAME
     cloud_admin_domain_name: $OS_USER_DOMAIN_NAME
+    libvirt_tls:
+      enabled: $LIBVIRT_TLS_ENABLED
+      source: hostpath
   wlm:
     keystone_authtoken:
       memcached_servers: memcached.openstack.svc.$INTERNAL_DOMAIN_NAME:11211
