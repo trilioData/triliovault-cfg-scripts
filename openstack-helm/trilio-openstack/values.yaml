@@ -797,6 +797,12 @@ conf:
     ## If triliovault docker images are used from a authentication enabled registry, then make this variable value to 'true'
     ## Otherwise set it to 'false'
     docker_registry_auth_enabled: true
+    libvirt_tls:
+      enabled: false
+      source: hostpath
+      ca_cert: ""
+      client_cert: ""
+      client_key: ""
   fuse: |
     # /etc/fuse.conf - Configuration file for Filesystem in Userspace (FUSE)
 
