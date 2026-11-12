@@ -20,6 +20,7 @@
       domain: "{{ service_ks_register_domain }}"
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_triliovault_auth }}"
+      cloud: "{{ openstack_auth_cloud | default(omit) }}"
       interface: "{{ openstack_interface }}"
       cacert: "{{ openstack_cacert }}"
   run_once: True
