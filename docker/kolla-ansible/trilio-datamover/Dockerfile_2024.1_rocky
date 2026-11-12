@@ -8,7 +8,7 @@ LABEL name="kolla/trilio-datamover" \
       release="5.2" \
       type="source" \
       summary="TrilioData Datamover" \
-      description="TrilioData Datamover"
+      description="TrilioData Datamover for OpenStack 2024.1, 2025.1, 2025.2"
 
 # switch to root and install a custom RPM, etc.
 USER root

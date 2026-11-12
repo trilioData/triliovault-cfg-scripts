@@ -8,7 +8,7 @@ LABEL name="kolla/openstack-nova-api-triliodata-wlm-plugin" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData TrilioVault WLM Image based on Rocky OS"
+      description="TrilioData TrilioVault WLM Image based on Rocky OS for OpenStack 2024.1, 2025.1, 2025.2"
 
 
 # switch to root and install a custom RPM packages, etc.

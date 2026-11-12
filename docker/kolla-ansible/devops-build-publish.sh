@@ -73,8 +73,8 @@ fi
 TAG="$1"
 PLATFORM="$2"
 SINGLE_CONTAINER="${3:-}"
-OPENSTACK_RELEASE="2025.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
+OPENSTACK_RELEASE="${OPENSTACK_RELEASE:-2025.1}"
+TRILIO_PIP_INDEX_URL="${TRILIO_PIP_INDEX_URL:-https://pypi.fury.io/trilio-6-2/}"
 
 case "$PLATFORM" in
     rocky|ubuntu) ;;
@@ -131,6 +131,9 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     fi
 
     SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}_${PLATFORM}"
+    if [ ! -f "$SOURCE_DF" ]; then
+        SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_2024.1_${PLATFORM}"
+    fi
 
     if [ ! -f "$SOURCE_DF" ]; then
         echo ""
