@@ -25,7 +25,7 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
      && dnf update -y \
      && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
-     && dnf install -y fuse fuse-libs python3-neutronclient python3-retrying python3-cryptography
+     && dnf install -y fuse fuse-libs nfs-utils python3-neutronclient python3-retrying python3-cryptography
 
 RUN dnf install -y python3-novaclient \
     && dnf remove -y --noautoremove python3-novaclient \
