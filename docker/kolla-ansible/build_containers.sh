@@ -67,11 +67,6 @@ do
 		        mv Dockerfile_${openstack_release}_${openstack_platform} Dockerfile
 		        docker build --no-cache --pull -t trilio/${openstack_platform}-binary-${container_to_build}:${tag}-${openstack_release} .
 		    fi
-		elif [[ ${container_to_build} == "trilio-dms" ]]
-		then
-		    # DMS Dockerfiles are named Dockerfile_<platform> (no release prefix)
-		    mv Dockerfile_${openstack_platform} Dockerfile
-		    docker build --no-cache --pull -t trilio/kolla-${openstack_platform}-trilio-dms:${tag} .
 		else
 		    #Docker hub repo/tag for all non horizon containers to be in format <distro>-<os platform>-<container>.
 		    #Eg. kolla-centos-trilio-dataover
