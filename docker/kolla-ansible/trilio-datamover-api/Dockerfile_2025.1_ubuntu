@@ -1,4 +1,4 @@
-FROM quay.io/openstack.kolla/nova-api:2024.1-ubuntu-jammy
+FROM quay.io/openstack.kolla/nova-api:2025.1-ubuntu-noble
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
@@ -8,7 +8,7 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       release="5.2" \
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData trilio-datamover-api for OpenStack 2024.1, 2025.1, 2025.2"
+      description="TrilioData trilio-datamover-api for OpenStack 2025.1, 2025.2, 2026.1"
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -19,6 +19,11 @@ ADD trilio.list /etc/apt/sources.list.d/
 RUN apt-get update -y
 RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-dmapi python3-trilio-dms python3-nova --allow-unauthenticated
 
+## Downgrade oslo.db and SQLAlchemy for Epoxy compatibility
+RUN pip3 install --upgrade pip \
+    && pip3 install "oslo.db<15.1.0" \
+    && pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 
 ## Kolla specifc settings
 COPY extend_start.sh /usr/local/bin/kolla_extend_start
@@ -31,6 +36,9 @@ RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
 ##Copy license file
 RUN mkdir /licenses
 COPY licensing.txt /licenses
+
+##Clean apt repo
+RUN rm -f /etc/apt/sources.list.d/trilio.list
 
 ##Become nova user for further operations
 USER dmapi

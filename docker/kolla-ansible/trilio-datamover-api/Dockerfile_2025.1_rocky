@@ -1,14 +1,14 @@
-FROM quay.io/openstack.kolla/nova-api:2024.1-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2025.1-rocky-9
 MAINTAINER TrilioData shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData trilio-datamover-api for OpenStack 2024.1, 2025.1, 2025.2"
+      description="TrilioData trilio-datamover-api for OpenStack 2025.1, 2025.2, 2026.1"
 
 # switch to root and install a custom RPM, etc.
 USER root
@@ -28,10 +28,19 @@ RUN set -ex \
 ##Install datamover packages
 RUN dnf install python3-dmapi-el9 python3-trilio-dms-el9 python3-nova python3-devel -y
 
-## Downgrade SQLAlchemy to compatible version
-RUN /usr/bin/pip3 install --upgrade pip \
+# oslo_db.concurrency was removed in oslo.db 15.1.0 (Epoxy); downgrade via Antelope repo
+# System-level downgrade covers /usr/bin/python3; also pin in kolla venv since we use
+# /var/lib/kolla/venv/bin/python3 to start the service (venv packages take priority)
+RUN dnf install -y centos-release-openstack-antelope \
+    && dnf downgrade -y python3-oslo-db \
+    && dnf remove -y --noautoremove centos-release-openstack-antelope \
+    && dnf clean all
+
+## Downgrade SQLAlchemy and oslo.db to compatible versions in both system Python and kolla venv
+RUN set -ex \
+    && /usr/bin/pip3 install --upgrade pip \
     && /usr/bin/pip3 install --ignore-installed "SQLAlchemy==1.4.51" \
-    && /var/lib/kolla/venv/bin/pip install --ignore-installed "SQLAlchemy==1.4.51"
+    && /var/lib/kolla/venv/bin/pip install --ignore-installed "oslo.db<15.1.0" "SQLAlchemy==1.4.51"
 
 ## Create Config Dir
 RUN mkdir -p /var/log/triliovault /etc/triliovault-datamover \

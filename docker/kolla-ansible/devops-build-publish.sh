@@ -126,7 +126,7 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
 
     SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}_${PLATFORM}"
     if [ ! -f "$SOURCE_DF" ]; then
-        SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_2024.1_${PLATFORM}"
+        SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_2025.1_${PLATFORM}"
     fi
 
     if [ ! -f "$SOURCE_DF" ]; then
