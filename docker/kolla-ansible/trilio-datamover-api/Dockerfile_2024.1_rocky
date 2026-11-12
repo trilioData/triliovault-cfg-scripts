@@ -8,7 +8,7 @@ LABEL name="kolla/openstack-nova-api-triliodata-plugin" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData trilio-datamover-api"
+      description="TrilioData trilio-datamover-api for OpenStack 2024.1, 2025.1, 2025.2"
 
 # switch to root and install a custom RPM, etc.
 USER root
