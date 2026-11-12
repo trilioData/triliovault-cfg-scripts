@@ -40,6 +40,7 @@ common:
   memcached_servers: ""
   oslo_enable_proxy_headers_parsing: false
   vault_data_dir: "/var/lib/trilio/triliovault-mounts"
+  progress_tracking_update_interval: "1200"
 openstack:
   namespace: "openstack"
   osp_secret_name: "osp-secret"

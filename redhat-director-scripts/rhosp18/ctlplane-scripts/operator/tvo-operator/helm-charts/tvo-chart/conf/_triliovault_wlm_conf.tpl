@@ -22,6 +22,7 @@ trustee_role  = {{ .Values.common.trustee_role }}
 use_syslog = false
 vault_data_directory = {{ .Values.common.vault_data_dir }}
 vault_data_directory_old = /var/triliovault
+progress_tracking_update_interval = {{ .Values.common.progress_tracking_update_interval | default 1200 }}
 
 workloads_workers = 4
 
