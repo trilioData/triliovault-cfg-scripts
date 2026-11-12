@@ -44,10 +44,18 @@ Containers:
 Published image format:
   docker.io/trilio/kolla-<platform>-<container>:<tag>
 
+Environment:
+  DEB_REPO_URL          Trilio APT source line written to trilio.list (ubuntu)
+  RPM_REPO_URL          Trilio RPM repo baseurl written to trilio.repo (rocky)
+  OPENSTACK_RELEASE     Dockerfile release to build (default 2025.1)
+  TRILIO_PIP_INDEX_URL  Trilio PyPI index for trilio-horizon-plugin
+
 Examples:
   $0 6.2.0-2025.1 rocky
   $0 6.2.0-2025.1 ubuntu
   $0 6.2.0-2025.1 rocky trilio-datamover
+  RPM_REPO_URL=https://yum.fury.io/<repo>/ $0 6.3.0-2025.1 rocky
+  DEB_REPO_URL='deb [trusted=yes] https://apt.fury.io/<repo>/ /' $0 6.3.0-2025.1 ubuntu
 
 Options:
   -h, --help   Show this help message and exit.
@@ -146,6 +154,19 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     cp -R "$BASE_DIR/$CONTAINER" "$CONT_BUILD_DIR"
     cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
+
+    if [ "$PLATFORM" = "ubuntu" ]; then
+        REPO_FILE="trilio.list"; REPO_VAR="DEB_REPO_URL"; REPO_VALUE="${DEB_REPO_URL:-}"
+    else
+        REPO_FILE="trilio.repo"; REPO_VAR="RPM_REPO_URL"; REPO_VALUE="${RPM_REPO_URL:-}"
+    fi
+    if [ -f "$CONT_BUILD_DIR/$REPO_FILE" ] && grep -q "$REPO_FILE" "$CONT_BUILD_DIR/Dockerfile"; then
+        if [ -z "$REPO_VALUE" ]; then
+            echo "ERROR: $CONTAINER installs Trilio packages from $REPO_FILE; set $REPO_VAR."
+            exit 1
+        fi
+        sed -i "s|{$REPO_VAR}|$REPO_VALUE|g" "$CONT_BUILD_DIR/$REPO_FILE"
+    fi
 
     BUILD_ARGS=""
     if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
