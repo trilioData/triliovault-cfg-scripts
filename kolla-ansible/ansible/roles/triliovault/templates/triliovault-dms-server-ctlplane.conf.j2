@@ -1,5 +1,5 @@
 [server]
-rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rpc_group][0]]['ansible_' + hostvars[groups[om_rpc_group][0]]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}//
+rabbitmq_url = rabbit://openstack:{{ om_rpc_password }}@{{ hostvars[groups[om_rpc_group][0]]['ansible_' + hostvars[groups[om_rpc_group][0]]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}//{{ '?ssl=1' if om_enable_rabbitmq_tls | bool else '' }}
 
 rabbitmq_queue_type = {{ 'quorum' if rabbit_quorum_queue | bool else 'classic' }}
 rabbitmq_queue_durable = {{ 'true' if amqp_durable_queues | bool else 'false' }}
