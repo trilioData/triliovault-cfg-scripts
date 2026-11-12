@@ -73,8 +73,8 @@ fi
 TAG="$1"
 PLATFORM="$2"
 SINGLE_CONTAINER="${3:-}"
-OPENSTACK_RELEASE="2025.1"
-TRILIO_PIP_INDEX_URL="https://pypi.fury.io/trilio-6-2/"
+OPENSTACK_RELEASE="${OPENSTACK_RELEASE:-2025.1}"
+TRILIO_PIP_INDEX_URL="${TRILIO_PIP_INDEX_URL:-https://pypi.fury.io/trilio-6-2/}"
 
 case "$PLATFORM" in
     rocky|ubuntu) ;;
