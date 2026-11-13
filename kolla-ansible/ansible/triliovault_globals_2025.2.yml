@@ -27,7 +27,7 @@ enable_triliovault: "yes"
 horizon_source_image_prefix: "kolla-{{ kolla_base_distro }}-trilio-horizon-plugin"
 horizon_binary_image_prefix: "{{ kolla_base_distro }}-{{ kolla_install_type }}-trilio-horizon-plugin"
 
-triliovault_horizon_image_full: "{{ triliovault_image_registry_prefix }}trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_tag }}"
+triliovault_horizon_image_full: "{{ triliovault_image_registry_prefix }}trilio/{{ horizon_source_image_prefix if kolla_install_type == 'source' else horizon_binary_image_prefix }}:{{ triliovault_horizon_tag }}"
 
 ## If you wants to enable triliovault horizon then please uncomment following variable named - 'horizon_image_full'
 ## By default triliovault horizon will not be enabled on openstack horizon
@@ -46,8 +46,7 @@ dmapi_workers: "16"
 ## TrilioVault's containers tag
 ## TrilioVault docker registry credentials. Request credentials from TrilioVault team.
 triliovault_tag: "6.2.0-stable-2025.2"
-## DMS image tag does not include OpenStack release (common image across releases)
-triliovault_dms_tag: "6.2.0-stable"
+triliovault_horizon_tag: "6.2.0-stable-2025.2"
 triliovault_docker_username: ""
 triliovault_docker_password: ""
 triliovault_docker_registry: "docker.io"

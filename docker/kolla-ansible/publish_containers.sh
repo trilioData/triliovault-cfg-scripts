@@ -53,11 +53,6 @@ do
 		    CONT_TAG="trilio/${openstack_platform}-binary-${container_to_build}:${tag}-${openstack_release}"
 		    tagAndPushCont "${CONT_TAG}"
 		fi
-	    elif [[ ${container_to_build} == "trilio-dms" ]]
-	    then
-		# DMS image is platform-specific (no release suffix in tag)
-		CONT_TAG="trilio/kolla-${openstack_platform}-trilio-dms:${tag}"
-		tagAndPushCont "${CONT_TAG}"
 	    else
 	        CONT_TAG="trilio/kolla-${openstack_platform}-${container_to_build}:${tag}-${openstack_release}"
 		tagAndPushCont "${CONT_TAG}"

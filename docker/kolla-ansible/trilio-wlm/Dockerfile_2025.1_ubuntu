@@ -1,14 +1,14 @@
-FROM quay.io/openstack.kolla/nova-api:2024.1-ubuntu-jammy
+FROM docker.io/trilio/nova-api:2024.1-ubuntu-jammy
 MAINTAINER Trilio shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata--wlm-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData TrilioVault WLM Image based on Ubuntu OS for OpenStack 2024.1, 2025.1, 2025.2"
+      description="TrilioData TrilioVault WLM Image based on Ubuntu OS for OpenStack 2025.1, 2025.2, 2026.1"
 
 
 # switch to root and install a custom Debian packages, etc.

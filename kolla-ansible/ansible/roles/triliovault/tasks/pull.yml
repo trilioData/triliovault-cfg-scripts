@@ -68,4 +68,17 @@
     reauthorize: yes
   when:
     - inventory_hostname in groups['horizon']
+    - kolla_container_engine | default('docker') == 'docker'
+  tags: triliovault
+
+- name: Log into triliovault registry (podman)
+  become: true
+  containers.podman.podman_login:
+    registry: "{{ triliovault_docker_registry }}"
+    username: "{{ triliovault_docker_username }}"
+    password: "{{ triliovault_docker_password }}"
+  no_log: true
+  when:
+    - inventory_hostname in groups['horizon']
+    - kolla_container_engine | default('docker') == 'podman'
   tags: triliovault

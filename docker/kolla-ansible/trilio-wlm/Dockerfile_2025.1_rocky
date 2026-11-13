@@ -1,14 +1,14 @@
-FROM quay.io/openstack.kolla/nova-api:2024.1-rocky-9
+FROM quay.io/openstack.kolla/nova-api:2025.1-rocky-9
 MAINTAINER Trilio shyam.biradar@trilio.io
 
 LABEL name="kolla/openstack-nova-api-triliodata-wlm-plugin" \
       maintainer="shyam.biradar@trilio.io" \
       vendor="TrilioData" \
-      version="5.2.0" \
+      version="5.2.8" \
       release="5.2"\
       type="source" \
       summary="TrilioData trilio-datamover-api" \
-      description="TrilioData TrilioVault WLM Image based on Rocky OS for OpenStack 2024.1, 2025.1, 2025.2"
+      description="TrilioData TrilioVault WLM Image based on Rocky OS for OpenStack 2025.1, 2025.2, 2026.1"
 
 
 # switch to root and install a custom RPM packages, etc.
@@ -25,7 +25,7 @@ ADD trilio.repo /etc/yum.repos.d/
 RUN set -ex \
      && dnf update -y \
      && dnf install -y python3-devel libxslt-devel swig python3-pip libguestfs-tools gcc gcc-c++ make openssl-devel \
-     && dnf install -y fuse fuse-libs python3-neutronclient python3-retrying python3-cryptography
+     && dnf install -y fuse fuse-libs nfs-utils python3-neutronclient python3-retrying python3-cryptography
 
 RUN dnf install -y python3-novaclient \
     && dnf remove -y --noautoremove python3-novaclient \
@@ -34,14 +34,23 @@ RUN dnf install -y python3-novaclient \
 RUN dnf config-manager --enable epel epel-cisco-openh264 && dnf install -y python3-mysqlclient ntfs-3g
 
 RUN /usr/bin/pip3 install --upgrade pip \
-    && /usr/bin/pip3 install igraph namedatomiclock jinja2 munch paramiko taskflow \
+    && /usr/bin/pip3 install igraph namedatomiclock jinja2 \
     && /usr/bin/pip3 install "SQLAlchemy==1.4.51" \
-    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
+    && pip3 install "SQLAlchemy==1.4.51" \
+    && /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru \
+    && /usr/bin/pip3 install sqlalchemy-utils defusedxml "pyvmomi<9" pymongo python-editor munch paramiko taskflow
+
 RUN dnf -y install python3-tzlocal
 
-
 # Installing TrilioVaultWLM packages
-RUN dnf install python3-workloadmgr-el9 python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
+# python3-shade was removed from OpenStack repos in Epoxy; install via pip then
+# download and force-install workloadmgr RPM bypassing the unsatisfied RPM dep
+RUN pip3 install shade \
+    && dnf download --downloaddir=/tmp python3-workloadmgr-el9 \
+    && rpm -ivh --nodeps /tmp/python3-workloadmgr-el9*.rpm \
+    && rm -f /tmp/python3-workloadmgr-el9*.rpm
+RUN dnf reinstall -y python3-cffi python3-attrs python3-pyparsing
+RUN dnf install python3-workloadmgrclient-el9 python3-contegoclient-el9 python3-trilio-dms-el9 -y
 RUN dnf install -y --allowerasing \
     https://cbs.centos.org/kojifiles/packages/python-eventlet/0.30.2/1.el9s/noarch/python3-eventlet-0.30.2-1.el9s.noarch.rpm
 RUN dnf install -y python3-s3fuse-plugin-el9 nbdkit trilio-streaming-tools-el9

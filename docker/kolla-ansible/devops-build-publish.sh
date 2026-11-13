@@ -12,21 +12,17 @@
 #   os_platform  OS platform: rocky | ubuntu
 #   container    (optional) Build only this container:
 #                  trilio-datamover | trilio-datamover-api |
-#                  trilio-horizon-plugin | trilio-wlm | trilio-dms
-#                If omitted, all 5 containers are built.
+#                  trilio-horizon-plugin | trilio-wlm
 #
 # Examples:
 #   bash devops-build-publish.sh 6.2.0-2025.1 rocky
 #   bash devops-build-publish.sh 6.2.0-2025.1 ubuntu
 #   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-datamover
-#   bash devops-build-publish.sh 6.2.0-2025.1 rocky trilio-dms
 #
 # Published image format:
 #   docker.io/trilio/kolla-<platform>-<container>:<tag>
 #   e.g. docker.io/trilio/kolla-rocky-trilio-datamover:6.2.0-2025.1
 #        docker.io/trilio/kolla-ubuntu-trilio-datamover:6.2.0-2025.1
-#        docker.io/trilio/kolla-rocky-trilio-dms:6.2.0-2025.1
-#        docker.io/trilio/kolla-ubuntu-trilio-dms:6.2.0-2025.1
 
 set -e
 
@@ -37,23 +33,29 @@ Usage: $0 <tag> <os_platform> [container]
   tag          Docker image tag (any format), e.g. 6.2.0-2025.1
   os_platform  OS platform to build for: rocky | ubuntu
   container    (optional) Build and publish a single container.
-               If omitted, all 5 containers are built.
+               If omitted, all 4 containers are built.
 
 Containers:
   trilio-datamover        Compute node datamover
   trilio-datamover-api    Control plane datamover API
   trilio-horizon-plugin   OpenStack Horizon UI plugin
   trilio-wlm              Workload Manager
-  trilio-dms              Dynamic Mount Service
 
 Published image format:
   docker.io/trilio/kolla-<platform>-<container>:<tag>
+
+Environment:
+  DEB_REPO_URL          Trilio APT source line written to trilio.list (ubuntu)
+  RPM_REPO_URL          Trilio RPM repo baseurl written to trilio.repo (rocky)
+  OPENSTACK_RELEASE     Dockerfile release to build (default 2025.1)
+  TRILIO_PIP_INDEX_URL  Trilio PyPI index for trilio-horizon-plugin
 
 Examples:
   $0 6.2.0-2025.1 rocky
   $0 6.2.0-2025.1 ubuntu
   $0 6.2.0-2025.1 rocky trilio-datamover
-  $0 6.2.0-2025.1 rocky trilio-dms
+  RPM_REPO_URL=https://yum.fury.io/<repo>/ $0 6.3.0-2025.1 rocky
+  DEB_REPO_URL='deb [trusted=yes] https://apt.fury.io/<repo>/ /' $0 6.3.0-2025.1 ubuntu
 
 Options:
   -h, --help   Show this help message and exit.
@@ -84,7 +86,7 @@ case "$PLATFORM" in
         ;;
 esac
 
-ALL_CONTAINERS=(trilio-datamover trilio-datamover-api trilio-horizon-plugin trilio-wlm trilio-dms)
+ALL_CONTAINERS=(trilio-datamover trilio-datamover-api trilio-horizon-plugin trilio-wlm)
 if [ -n "$SINGLE_CONTAINER" ]; then
     valid=0
     for c in "${ALL_CONTAINERS[@]}"; do
@@ -132,7 +134,7 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
 
     SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_${OPENSTACK_RELEASE}_${PLATFORM}"
     if [ ! -f "$SOURCE_DF" ]; then
-        SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_2024.1_${PLATFORM}"
+        SOURCE_DF="$BASE_DIR/$CONTAINER/Dockerfile_2025.1_${PLATFORM}"
     fi
 
     if [ ! -f "$SOURCE_DF" ]; then
@@ -153,6 +155,19 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
     cp "$SOURCE_DF" "$CONT_BUILD_DIR/Dockerfile"
     rm -f "$CONT_BUILD_DIR/Dockerfile_"*
 
+    if [ "$PLATFORM" = "ubuntu" ]; then
+        REPO_FILE="trilio.list"; REPO_VAR="DEB_REPO_URL"; REPO_VALUE="${DEB_REPO_URL:-}"
+    else
+        REPO_FILE="trilio.repo"; REPO_VAR="RPM_REPO_URL"; REPO_VALUE="${RPM_REPO_URL:-}"
+    fi
+    if [ -f "$CONT_BUILD_DIR/$REPO_FILE" ] && grep -q "$REPO_FILE" "$CONT_BUILD_DIR/Dockerfile"; then
+        if [ -z "$REPO_VALUE" ]; then
+            echo "ERROR: $CONTAINER installs Trilio packages from $REPO_FILE; set $REPO_VAR."
+            exit 1
+        fi
+        sed -i "s|{$REPO_VAR}|$REPO_VALUE|g" "$CONT_BUILD_DIR/$REPO_FILE"
+    fi
+
     BUILD_ARGS=""
     if [ "$CONTAINER" = "trilio-horizon-plugin" ]; then
         BUILD_ARGS="--build-arg TRILIO_PIP_INDEX_URL=${TRILIO_PIP_INDEX_URL}"
@@ -163,33 +178,6 @@ for CONTAINER in "${OS_CONTAINERS[@]}"; do
 
     echo " Published : $IMAGE"
 done
-
-# Build trilio-dms — platform-specific (Dockerfile_rocky / Dockerfile_ubuntu)
-if [ -z "$SINGLE_CONTAINER" ] || [ "$SINGLE_CONTAINER" = "trilio-dms" ]; then
-
-    DMS_SOURCE_DF="$BASE_DIR/trilio-dms/Dockerfile_${PLATFORM}"
-    DMS_IMAGE="docker.io/trilio/kolla-${PLATFORM}-trilio-dms:${TAG}"
-
-    if [ ! -f "$DMS_SOURCE_DF" ]; then
-        echo ""
-        echo "SKIP: trilio-dms — $(basename "$DMS_SOURCE_DF") not found"
-    else
-        echo ""
-        echo "--------------------------------------------------"
-        echo " Building : $DMS_IMAGE"
-        echo "--------------------------------------------------"
-
-        DMS_BUILD_DIR="$BUILD_DIR/trilio-dms"
-        cp -R "$BASE_DIR/trilio-dms" "$DMS_BUILD_DIR"
-        cp "$DMS_SOURCE_DF" "$DMS_BUILD_DIR/Dockerfile"
-        rm -f "$DMS_BUILD_DIR/Dockerfile_"*
-
-        docker build --no-cache --pull --network host -t "$DMS_IMAGE" "$DMS_BUILD_DIR"
-        docker push "$DMS_IMAGE"
-
-        echo " Published : $DMS_IMAGE"
-    fi
-fi
 
 echo ""
 echo "=================================================="
