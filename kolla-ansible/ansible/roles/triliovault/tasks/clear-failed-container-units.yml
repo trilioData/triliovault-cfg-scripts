@@ -1,0 +1,41 @@
+---
+# TVAULT-7702 - clear systemd's "failed" marking BEFORE the handlers run.
+#
+# systemd refuses to start a unit that is marked failed (StartLimitBurst exhausted,
+# "Start request repeated too quickly"), and nothing in kolla ever clears that marking.
+# kolla then reports the refusal as the generic "Module failed: Container timed out" and
+# leaves the container in 'Created'. Because that failure happens inside a handler, the host
+# is dropped from the play and tasks/ensure-containers-running.yml is never reached on the
+# very host that needs it - so the marking has to be cleared before kolla asks, not after.
+#
+# Deliberately narrow: only units systemd itself reports as 'failed' are touched. Healthy
+# units, deliberately stopped ones (wlm-cron off the primary host) and releases with no unit
+# files at all are left completely alone, and on a healthy cloud this is a no-op.
+#
+# 'systemctl reset-failed' clears the failed state and the restart counter. It does not
+# start anything, so it cannot itself set off a restart loop: a container that genuinely
+# cannot start still gets only one bounded round of attempts (StartLimitBurst) per run.
+
+- name: Check whether any triliovault container unit is in a failed state
+  become: true
+  command: "systemctl is-failed kolla-{{ item.value.container_name }}-container.service"
+  register: triliovault_unit_failed_check
+  changed_when: false
+  failed_when: false
+  with_dict: "{{ triliovault_services }}"
+  when:
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+
+# 'systemctl is-failed' prints the unit's state: 'failed' when it is failed, 'inactive' or
+# 'active' when it is not, and 'unknown' when no such unit exists (fresh install, or Zed /
+# 2023.1 where kolla starts containers directly).
+- name: Clear the failed state so that kolla's own start request is not refused
+  become: true
+  command: "systemctl reset-failed kolla-{{ item }}-container.service"
+  changed_when: true
+  loop: >-
+    {{ triliovault_unit_failed_check.results | default([])
+       | rejectattr('skipped', 'defined')
+       | selectattr('stdout', 'equalto', 'failed')
+       | map(attribute='item.value.container_name') | list }}
