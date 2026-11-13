@@ -15,7 +15,8 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app.kubernetes.io/name: trilio-galera-cluster-galera
+    app: galera
+    cr: galera-trilio-galera-cluster
   ports:
   - name: mysql
     port: 3306
