@@ -9,7 +9,7 @@
       become: true
       docker_container:
         name: wlm_cloud_trust
-        image: "{{ triliovault_docker_registry }}/trilio/kolla-{{ kolla_base_distro }}-trilio-wlm:{{ triliovault_tag }}"
+        image: "{{ triliovault_wlm_image_full | default(triliovault_docker_registry ~ '/trilio/kolla-' ~ kolla_base_distro ~ '-trilio-wlm:' ~ triliovault_tag) }}"
         command: 
           - /bin/bash
           - -c
