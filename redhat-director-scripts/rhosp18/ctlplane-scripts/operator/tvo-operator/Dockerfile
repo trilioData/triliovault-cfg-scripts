@@ -10,6 +10,8 @@ LABEL name="trilio/trilio-openstack-operator" \
       description="Trilio for OpenStack Operator - RHOSO"
 
 USER root
+# Apply pending security errata from the base image (fixes gawk, libattr, xz-libs)
+RUN microdnf update -y && microdnf clean all
 RUN mkdir /licenses
 COPY licensing.txt /licenses
 
