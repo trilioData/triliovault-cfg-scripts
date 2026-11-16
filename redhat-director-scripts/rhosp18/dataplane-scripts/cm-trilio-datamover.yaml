@@ -16,6 +16,7 @@ data:
     keystone_auth_url: "https://keystone.openstack.svc:5000/v3"
     keystone_ssl_verify: true
     cinder_backend_ceph: true
+    cinder_backend_lightos: false
     libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
     ceph_cinder_user: "cinder"
     oslomsg_rpc_use_ssl: true

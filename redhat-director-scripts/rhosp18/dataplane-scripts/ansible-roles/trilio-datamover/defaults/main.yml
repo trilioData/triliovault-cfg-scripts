@@ -18,6 +18,7 @@ rabbit_quorum_queue: true
 rabbit_transient_quorum_queue: true
 amqp_durable_queues: true
 cinder_backend_power_flex: false
+cinder_backend_lightos: false
 ## Do we need this parameter? Check datamover conf.
 cinder_http_retries: "10"
 

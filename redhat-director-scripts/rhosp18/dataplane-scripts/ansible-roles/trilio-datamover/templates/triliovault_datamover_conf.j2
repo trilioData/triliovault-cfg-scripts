@@ -39,3 +39,8 @@ http_retries = {{ cinder_http_retries }}
 
 [s3fuse_sys_admin]
 helper_command = sudo /usr/bin/privsep-helper
+{% if cinder_backend_lightos|bool %}
+
+[privsep_osbrick]
+helper_command = sudo /usr/bin/privsep-helper --config-file /usr/share/nova/nova-dist.conf --config-file /etc/nova/nova.conf --config-dir /etc/nova/nova.conf.d --config-file /etc/triliovault-datamover/triliovault-datamover.conf
+{% endif %}
