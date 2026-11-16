@@ -37,6 +37,7 @@ keystone_auth_url = data["spec"]["keystone"]["common"].get("auth_url", "")
 keystone_ssl_verify = data["spec"]["keystone"]["common"].get("ssl_verify", True)
 dms_image = data["spec"]["images"].get("triliovault_dms", "")
 wlm_image = data["spec"]["images"].get("triliovault_wlm", "")
+cinder_backend_lightos = (data["spec"].get("common") or {}).get("cinder_backend_lightos", False)
 
 
 # Read and update lines before backup targets
@@ -65,6 +66,8 @@ with open(CM_FILE, "r") as f:
             updated_lines.append(f'    triliovault_dms_image: "{dms_image}"\n')
         elif "triliovault_wlm_image:" in line:
             updated_lines.append(f'    triliovault_wlm_image: "{wlm_image}"\n')
+        elif "cinder_backend_lightos:" in line:
+            updated_lines.append(f'    cinder_backend_lightos: {str(cinder_backend_lightos).lower()}\n')
         else:
             updated_lines.append(line)
 
@@ -72,4 +75,4 @@ with open(CM_FILE, "r") as f:
 with open(CM_FILE, "w") as f:
     f.writelines(updated_lines)
 
-print("Updated rabbit/database/keystone config, image URLs, and backup targets in cm-trilio-datamover.yaml")
+print("Updated rabbit/database/keystone config, image URLs, Cinder backend options, and backup targets in cm-trilio-datamover.yaml")
