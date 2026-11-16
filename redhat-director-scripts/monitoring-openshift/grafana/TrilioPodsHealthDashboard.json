@@ -1,0 +1,2238 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
+  "title": "TrilioVault Pod Health Overview",
+  "uid": "trilio-pod-health",
+  "description": "Pod-level health for all TrilioVault workloads across controller and compute nodes",
+  "tags": [
+    "triliovault",
+    "kube-state-metrics",
+    "pods"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 7,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": "label_values(kube_pod_info{pod=~\"triliovault.*|tvault.*\"}, namespace)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "sort": 1,
+        "current": {}
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": "label_values(kube_pod_info{namespace=~\"$namespace\", pod=~\"triliovault.*|tvault.*\"}, node)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "sort": 1,
+        "current": {}
+      },
+      {
+        "name": "trilio_pod",
+        "label": "Trilio Pod",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": "label_values(kube_pod_info{namespace=~\"$namespace\", pod=~\"triliovault.*|tvault.*\", node=~\"$node\"}, pod)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": "triliovault.*|tvault.*",
+        "multi": true,
+        "sort": 1,
+        "current": {}
+      },
+      {
+        "name": "resource_pod",
+        "label": "CPU/Mem/Net \u2014 Pod Filter",
+        "description": "Select 1 or more pods to compare in the resource usage panels below",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": "label_values(kube_pod_info{namespace=~\"$namespace\", pod=~\"triliovault.*|tvault.*\", node=~\"$node\"}, pod)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": "triliovault.*|tvault.*",
+        "multi": true,
+        "sort": 1,
+        "hide": 0,
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Running",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Running\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Running",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Pending",
+      "type": "stat",
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Pending\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Pending",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Failed",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Failed\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Failed",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "CrashLoopBackOff",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "CrashLoopBackOff",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Pods With Restarts",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} > 0) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Pods w/ Restarts",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Deployments Ready",
+      "type": "stat",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count(kube_deployment_status_replicas_ready{namespace=~\"$namespace\", deployment=~\"triliovault.*|tvault.*\"} > 0) or vector(0)",
+          "legendFormat": "Deployments Ready",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Trilio Pod Status (All States)",
+      "description": "Shows pod phase for all Trilio pods. CrashLoopBackOff pods appear Running in phase \u2014 check the CrashLoopBackOff column.",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 14,
+        "h": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Status",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Running": {
+                        "text": "Running",
+                        "color": "green"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Pending": {
+                        "text": "Pending",
+                        "color": "yellow"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Succeeded": {
+                        "text": "Succeeded",
+                        "color": "blue"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Unknown": {
+                        "text": "Unknown",
+                        "color": "orange"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CrashLoop"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "CrashLoopBackOff",
+                        "color": "red"
+                      }
+                    }
+                  },
+                  {
+                    "type": "special",
+                    "options": {
+                      "match": "null",
+                      "result": {
+                        "text": "-",
+                        "color": "green"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "(kube_pod_status_phase{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left(node) topk by (namespace, pod) (1, kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "max by (pod, namespace) (kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+          "legendFormat": "__auto",
+          "refId": "B",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "namespace",
+                "pod",
+                "node",
+                "phase",
+                "Value #B"
+              ]
+            }
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "namespace": "Namespace",
+              "pod": "Pod",
+              "phase": "Status",
+              "Value #B": "CrashLoop",
+              "node": "Node"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Pod Phase Distribution",
+      "type": "piechart",
+      "gridPos": {
+        "x": 14,
+        "y": 4,
+        "w": 10,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "pieType": "pie",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "targets": [
+        {
+          "expr": "count by(phase) ((kube_pod_status_phase{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"}))",
+          "legendFormat": "{{phase}}",
+          "refId": "A",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "CrashLoopBackOff / Waiting Pods",
+      "type": "table",
+      "gridPos": {
+        "x": 14,
+        "y": 10,
+        "w": 10,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Reason",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "CrashLoopBackOff": {
+                        "color": "red"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "OOMKilled": {
+                        "color": "red"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Error": {
+                        "color": "red"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "ImagePullBackOff": {
+                        "color": "orange"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "ErrImagePull": {
+                        "color": "orange"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "ContainerCreating": {
+                        "color": "yellow"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "(kube_pod_container_status_waiting_reason{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left(node) topk by (namespace, pod) (1, kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "namespace",
+                "pod",
+                "node",
+                "container",
+                "reason"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "namespace": "Namespace",
+              "pod": "Pod",
+              "container": "Container",
+              "reason": "Reason",
+              "node": "Node"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Trilio Pod Status Over Time",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Running\",   namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Running",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Pending\",   namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Pending",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "count((kube_pod_status_phase{phase=\"Failed\",    namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "Failed",
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "count((kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\", namespace=~\"$namespace\", pod=~\"$trilio_pod\"} == 1) * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})) or vector(0)",
+          "legendFormat": "CrashLoopBackOff",
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Container Restarts Over Time",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"$trilio_pod\"}[5m]) * on(pod, namespace) group_left(node) topk by (namespace, pod) (1, kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+          "legendFormat": "{{node}} / {{pod}} / {{container}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Trilio Deployment Health",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 14,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Namespace",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unavailable"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ready"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_ready{namespace=~\"$namespace\", deployment=~\"triliovault.*|tvault.*\"}",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=~\"$namespace\", deployment=~\"triliovault.*|tvault.*\"}",
+          "legendFormat": "__auto",
+          "refId": "B",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "kube_deployment_status_replicas_unavailable{namespace=~\"$namespace\", deployment=~\"triliovault.*|tvault.*\"}",
+          "legendFormat": "__auto",
+          "refId": "C",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "namespace",
+                "deployment",
+                "Value #A",
+                "Value #B",
+                "Value #C"
+              ]
+            }
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "namespace": "Namespace",
+              "deployment": "Deployment",
+              "Value #A": "Ready",
+              "Value #B": "Desired",
+              "Value #C": "Unavailable"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Container Restart Counts",
+      "type": "table",
+      "gridPos": {
+        "x": 14,
+        "y": 24,
+        "w": 10,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Restarts",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Restarts"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 3
+                    },
+                    {
+                      "color": "red",
+                      "value": 10
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sort_desc((kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} > 0) * on(pod, namespace) group_left(node) topk by (namespace, pod) (1, kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"}))",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "namespace",
+                "pod",
+                "node",
+                "container",
+                "Value"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "namespace": "Namespace",
+              "pod": "Pod",
+              "container": "Container",
+              "Value": "Restarts",
+              "node": "Node"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "title": "Container CPU / Memory Requests vs Limits",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Namespace",
+            "desc": false
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Memory.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "kube_pod_container_resource_requests{resource=\"cpu\",    namespace=~\"$namespace\", pod=~\"$trilio_pod\", node=~\"$node\"}",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "kube_pod_container_resource_limits{resource=\"cpu\",      namespace=~\"$namespace\", pod=~\"$trilio_pod\", node=~\"$node\"}",
+          "legendFormat": "__auto",
+          "refId": "B",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "kube_pod_container_resource_requests{resource=\"memory\",  namespace=~\"$namespace\", pod=~\"$trilio_pod\", node=~\"$node\"}",
+          "legendFormat": "__auto",
+          "refId": "C",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "kube_pod_container_resource_limits{resource=\"memory\",    namespace=~\"$namespace\", pod=~\"$trilio_pod\", node=~\"$node\"}",
+          "legendFormat": "__auto",
+          "refId": "D",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "namespace",
+                "pod",
+                "node",
+                "container",
+                "Value #A",
+                "Value #B",
+                "Value #C",
+                "Value #D"
+              ]
+            }
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "namespace": "Namespace",
+              "pod": "Pod",
+              "container": "Container",
+              "Value #A": "CPU Request",
+              "Value #B": "CPU Limit",
+              "Value #C": "Memory Request",
+              "Value #D": "Memory Limit",
+              "node": "Node"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "title": "Pod Resource Usage \u2014 Controller Nodes",
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 70,
+      "title": "Trilio Pod CPU Usage",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "custom": {
+            "lineWidth": 2,
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$resource_pod\", container!=\"\", container!=\"POD\", node=~\"$node\"}[5m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "title": "Trilio Pod Memory Usage",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 54,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "lineWidth": 2,
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 536870912
+              },
+              {
+                "color": "red",
+                "value": 1073741824
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$resource_pod\", container!=\"\", container!=\"POD\", node=~\"$node\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "title": "Trilio Pod Network I/O",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$resource_pod\", node=~\"$node\"}[5m])",
+          "legendFormat": "Rx {{pod}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$resource_pod\", node=~\"$node\"}[5m])",
+          "legendFormat": "Tx {{pod}}",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "title": "Failed Pods",
+      "type": "row",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 70,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 74,
+          "title": "Failed Pod List",
+          "description": "All Trilio pods currently in Failed phase with node placement and failure reason",
+          "type": "table",
+          "gridPos": {
+            "x": 0,
+            "y": 71,
+            "w": 24,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "Pod",
+                "desc": false
+              }
+            ]
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Node"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Namespace"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Reason"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "Evicted": {
+                            "color": "orange",
+                            "index": 0
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "NodeLost": {
+                            "color": "red",
+                            "index": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "Preempting": {
+                            "color": "yellow",
+                            "index": 2
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "OOMKilled": {
+                            "color": "red",
+                            "index": 3
+                          }
+                        }
+                      },
+                      {
+                        "type": "special",
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "text": "\u2014",
+                            "color": "blue"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "(kube_pod_status_phase{namespace=~\"$namespace\", pod=~\"$trilio_pod\", phase=\"Failed\"} == 1) * on(pod, namespace) group_left(node) topk by (namespace, pod) (1, kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "kube_pod_status_reason{namespace=~\"$namespace\", pod=~\"$trilio_pod\"} * on(pod, namespace) group_left() max by (namespace, pod) (kube_pod_info{namespace=~\"$namespace\", node=~\"$node\"})",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "B"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "namespace",
+                    "pod",
+                    "node",
+                    "phase",
+                    "reason"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "fieldName": "phase",
+                    "config": {
+                      "id": "equal",
+                      "options": {
+                        "value": "Failed"
+                      }
+                    }
+                  }
+                ],
+                "match": "any",
+                "type": "include"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "pod": 0,
+                  "node": 1,
+                  "namespace": 2,
+                  "phase": 3,
+                  "reason": 4
+                },
+                "renameByName": {
+                  "pod": "Pod",
+                  "node": "Node",
+                  "namespace": "Namespace",
+                  "phase": "Phase",
+                  "reason": "Reason"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "title": "Compute Node Services",
+      "type": "row",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 79,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 78,
+          "title": "Trilio Compute Node Containers",
+          "description": "State and health of all Trilio containers on compute nodes, reported by podman_exporter",
+          "type": "table",
+          "gridPos": {
+            "x": 0,
+            "y": 84,
+            "w": 24,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "Container",
+                "desc": false
+              }
+            ]
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "State"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "2": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "Running"
+                          },
+                          "5": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "Exited"
+                          },
+                          "3": {
+                            "color": "red",
+                            "index": 2,
+                            "text": "Stopped"
+                          },
+                          "0": {
+                            "color": "orange",
+                            "index": 3,
+                            "text": "Created"
+                          },
+                          "4": {
+                            "color": "orange",
+                            "index": 4,
+                            "text": "Paused"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Health"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "0": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "Healthy"
+                          },
+                          "1": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "Unhealthy"
+                          },
+                          "2": {
+                            "color": "yellow",
+                            "index": 2,
+                            "text": "Starting"
+                          },
+                          "-1": {
+                            "color": "blue",
+                            "index": 3,
+                            "text": "No Check"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Node"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name, image) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "podman_container_health{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "B"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "name",
+                    "instance",
+                    "image",
+                    "Value #A",
+                    "Value #B"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "name": 0,
+                  "instance": 1,
+                  "image": 2,
+                  "Value #A": 3,
+                  "Value #B": 4
+                },
+                "renameByName": {
+                  "name": "Container",
+                  "instance": "Node",
+                  "image": "Image",
+                  "Value #A": "State",
+                  "Value #B": "Health"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": 76,
+          "title": "Running",
+          "type": "stat",
+          "gridPos": {
+            "x": 0,
+            "y": 80,
+            "w": 6,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto"
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count((podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 2) or vector(0)",
+              "instant": true,
+              "legendFormat": "Running",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 77,
+          "title": "Exited",
+          "type": "stat",
+          "gridPos": {
+            "x": 6,
+            "y": 80,
+            "w": 6,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto"
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count((podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 5) or vector(0)",
+              "instant": true,
+              "legendFormat": "Exited",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 79,
+          "title": "Stopped",
+          "type": "stat",
+          "gridPos": {
+            "x": 12,
+            "y": 80,
+            "w": 6,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto"
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count((podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 3) or vector(0)",
+              "instant": true,
+              "legendFormat": "Stopped",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 80,
+          "title": "Other States",
+          "type": "stat",
+          "gridPos": {
+            "x": 18,
+            "y": 80,
+            "w": 6,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto"
+          },
+          "pluginVersion": "12.1.0",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count((podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) unless (podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 2 unless (podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 5 unless (podman_container_state{job=\"podman-exporter-compute\"} * on(id) group_left(name) podman_container_info{job=\"podman-exporter-compute\", name=~\"triliovault.*\"}) == 3) or vector(0)",
+              "instant": true,
+              "legendFormat": "Other",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

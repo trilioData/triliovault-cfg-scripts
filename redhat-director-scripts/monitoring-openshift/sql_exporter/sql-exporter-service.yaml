@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sql-exporter
-  namespace: openshift-user-workload-monitoring
+  namespace: trilio-monitoring
   labels:
     app: sql-exporter
 spec:
