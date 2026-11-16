@@ -10,6 +10,7 @@ LABEL name="trilio/trilio-openstack-operator" \
       description="Trilio for OpenStack Operator - RHOSO"
 
 USER root
+RUN microdnf update -y && microdnf clean all
 RUN mkdir /licenses
 COPY licensing.txt /licenses
 
