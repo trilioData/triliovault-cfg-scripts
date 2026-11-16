@@ -1,2 +1,2 @@
-nova ALL = (root) NOPASSWD: /usr/bin/privsep-helper *
+nova ALL = (root) SETENV: NOPASSWD: /usr/bin/privsep-helper *
 nova ALL = (root) NOPASSWD: /usr/sbin/modprobe *

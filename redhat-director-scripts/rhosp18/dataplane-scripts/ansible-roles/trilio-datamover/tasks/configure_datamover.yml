@@ -79,6 +79,13 @@
 #    group: '42436'
 #    mode: '0755'
 
+- name: Ensure Lightbits discovery-client configuration directory exists
+  when: cinder_backend_lightos | bool
+  become: true
+  ansible.builtin.file:
+    path: /etc/discovery-client/discovery.d
+    state: directory
+
 - name: Check for FR5 nova config path
   become: true
   ansible.builtin.stat:
