@@ -44,6 +44,7 @@ common:
   # false (default) = log the failure and continue with a crash-consistent snapshot.
   fail_on_qga_freeze_failure: false
   progress_tracking_update_interval: "1200"
+  max_wait_for_upload: "48"
 openstack:
   namespace: "openstack"
   osp_secret_name: "osp-secret"
