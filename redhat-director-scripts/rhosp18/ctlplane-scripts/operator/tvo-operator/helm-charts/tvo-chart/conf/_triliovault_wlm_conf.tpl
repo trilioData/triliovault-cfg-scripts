@@ -10,7 +10,7 @@ global_job_scheduler_override = false
 helper_command = sudo /usr/bin/workloadmgr-rootwrap /etc/triliovault-wlm/rootwrap.conf privsep-helper 
 keystone_auth_version = 3
 log_config_append = /etc/triliovault-wlm/wlm_logging.conf
-max_wait_for_upload = 48
+max_wait_for_upload = {{ .Values.common.max_wait_for_upload | default 48 }}
 neutron_api_insecure = false
 
 osapi_workloads_listen_port = 8780
