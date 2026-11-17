@@ -1,2 +1,11 @@
 ---
 - import_tasks: check-containers.yml
+
+# The handlers this queues flush at the end of the play. They carry ignore_errors, so the
+# guard has to run here too - otherwise a container that failed to start would go unreported.
+- include_tasks: clear-failed-container-units.yml
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include_tasks: ensure-containers-running.yml
