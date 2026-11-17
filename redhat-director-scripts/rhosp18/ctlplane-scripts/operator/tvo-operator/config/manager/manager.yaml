@@ -81,14 +81,15 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
-        # TODO(user): Configure the resources accordingly based on the project requirements.
-        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        # The Helm operator renders and dry-runs the whole tvo-chart on every reconcile;
+        # 500Mi got OOMKilled on real deployments (TVAULT-7790).
+        # Keep in sync with bundle/manifests/tvo-operator.clusterserviceversion.yaml.
         resources:
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: "1"
+            memory: 2Gi
           requests:
-            cpu: 10m
-            memory: 256Mi
+            cpu: 100m
+            memory: 512Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
