@@ -43,6 +43,7 @@ spec:
     oslo_enable_proxy_headers_parsing: false
     metallb_address_pool: "internalapi"
     progress_tracking_update_interval: "1200"
+    max_wait_for_upload: "48"
   openstack:
     namespace: "openstack"
     osp_secret_name: "osp-secret"
