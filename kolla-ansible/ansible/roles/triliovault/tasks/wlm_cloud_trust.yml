@@ -4,8 +4,12 @@
   hosts: triliovault-wlm-api
   become: true
   gather_facts: false
+  # This playbook is run standalone (ansible-playbook <path> -e @globals.yml), not
+  # through the kolla-ansible CLI, so kolla's library/ modules (kolla_container) and
+  # group_vars are not loaded. Pick the container engine module explicitly instead;
+  # default to docker because kolla's own default lives in the unloaded group_vars.
   tasks:
-    - name: Create Cloud Admin Trust
+    - name: Create Cloud Admin Trust (docker)
       become: true
       docker_container:
         name: wlm_cloud_trust
@@ -26,3 +30,28 @@
           - /etc/kolla/triliovault-wlm-api/create_cloud_trust.sh:/opt/create_cloud_trust.sh:rw
       tags: wlm_cloud_trust
       run_once: true
+      when: (kolla_container_engine | default('docker')) == 'docker'
+
+    - name: Create Cloud Admin Trust (podman)
+      become: true
+      containers.podman.podman_container:
+        name: wlm_cloud_trust
+        image: "{{ triliovault_wlm_image_full | default(triliovault_docker_registry ~ '/trilio/kolla-' ~ kolla_base_distro ~ '-trilio-wlm:' ~ triliovault_tag) }}"
+        command:
+          - /bin/bash
+          - -c
+          - /opt/create_cloud_trust.sh
+        state: started
+        detach: false
+        # Remove on exit so a re-run creates a fresh container that runs in the
+        # foreground, instead of restarting a stopped one in the background.
+        rm: true
+        network: host
+        volumes:
+          - /etc/kolla/triliovault-wlm-api/triliovault-wlm-api.conf:/etc/triliovault-wlm/triliovault-wlm.conf:ro
+          - /etc/kolla/triliovault-wlm-api/api-paste.ini:/etc/triliovault-wlm/api-paste.ini:ro
+          - /etc/kolla/triliovault-cloudrc:/opt/triliovault-cloudrc:rw
+          - /etc/kolla/triliovault-wlm-api/create_cloud_trust.sh:/opt/create_cloud_trust.sh:rw
+      tags: wlm_cloud_trust
+      run_once: true
+      when: (kolla_container_engine | default('docker')) == 'podman'
