@@ -32,7 +32,7 @@ rhosp18/
 │   │   └── Makefile                # Operator build targets
 │   ├── dev/                        # Development utilities
 │   ├── deploy_tvo_control_plane.sh # Main control plane deployment entry point
-│   ├── install_operator.sh         # Install TVO operator via OLM
+│   ├── install_operator.sh         # Install TVO operator via kustomize (make deploy), not OLM
 │   ├── create_cert_secrets.sh      # Create TLS secrets
 │   └── operator-rbac.yaml          # RBAC for operator service account
 └── dataplane-scripts/              # Data plane deployment
@@ -60,6 +60,7 @@ rhosp18/
 - `build/build_operator_image.sh` builds the operator container image
 - `build/publish_operator.sh` pushes to registry
 - OLM bundle format used for OperatorHub distribution
+- **Two operator install paths, two sources of truth — TVAULT-7790**: `install_operator.sh` runs `make deploy` (kustomize + `oc apply`), so the operator Deployment comes from `config/manager/manager.yaml` and there is no OLM `Subscription`. OperatorHub installs come from the Red Hat-certified bundle (`registry.connect.redhat.com/trilio/tvo-operator-rhoso`), where OLM builds the Deployment from the CSV and reverts hand edits. That certified bundle is **not** built from `bundle/` as-is — the repo CSV still says `version: 6.0.1` / `tvo-operator:6.0-dev-27` on every branch while 6.2.4 is published; `bundle/` is hand-maintained, so edit it by hand (never `make bundle`, which regenerates RBAC/`createdAt`). Any change to the operator pod spec (resources, args, env) must go into both `manager.yaml` and the CSV. Operator resources are deliberately not a customer input (no doc surface): defaults were raised to 512Mi/2Gi; a one-off override is `oc set resources` on the Deployment (reset by the next `make deploy`) for CLI installs, or `Subscription.spec.config.resources` for OperatorHub installs.
 
 ### Deployment Flow
 1. `create-image-pull-secret.sh` — registry credentials
