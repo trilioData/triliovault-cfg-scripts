@@ -37,7 +37,7 @@ RUN set -ex \
         software-properties-common  apt-utils vim \
         less  iputils-ping udev qemu-utils ceph-common \
         python3-libvirt python3-cinderclient \
-        cryptsetup-bin
+        cryptsetup-bin sg3-utils
 
 RUN apt-get -y upgrade --only-upgrade --with-new-pkgs --show-upgraded
 
