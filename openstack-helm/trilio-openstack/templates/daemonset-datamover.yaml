@@ -18,6 +18,10 @@ limitations under the License.
 
 {{- $mounts_triliovault_datamover := .Values.pod.mounts.triliovault_datamover.triliovault_datamover }}
 {{- $mounts_triliovault_datamover_init := .Values.pod.mounts.triliovault_datamover.init_container }}
+{{- $libvirt_tls := .Values.conf.triliovault.libvirt_tls }}
+{{- if and $libvirt_tls.enabled (not (has $libvirt_tls.source (list "hostpath" "secret"))) }}
+{{- fail "conf.triliovault.libvirt_tls.source must be hostpath or secret" }}
+{{- end }}
 
 {{- $serviceAccountName := printf "%s-%s" "triliovault-datamover" .Values.labels.datamover.node_selector_key }}
 {{ tuple $envAll "datamover" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
@@ -43,6 +47,9 @@ spec:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
         configmap-bin-datamover-hash: {{ tuple "configmap-bin-datamover.yaml" . | include "helm-toolkit.utils.hash" }}
         configmap-etc-datamover-hash: {{ tuple "configmap-etc-datamover.yaml" . | include "helm-toolkit.utils.hash" }}
+{{- if and $libvirt_tls.enabled (eq $libvirt_tls.source "secret") }}
+        secret-libvirt-tls-hash: {{ tuple "secret-libvirt-tls.yaml" . | include "helm-toolkit.utils.hash" }}
+{{- end }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       securityContext:
@@ -231,6 +238,29 @@ spec:
               mountPropagation: HostToContainer
               {{- end }}
             {{- end }}
+            {{- if $libvirt_tls.enabled }}
+            {{- if eq $libvirt_tls.source "hostpath" }}
+            - name: etcpkica
+              mountPath: /etc/pki/CA
+              readOnly: true
+            - name: etcpkilibvirt
+              mountPath: /etc/pki/libvirt
+              readOnly: true
+            {{- else }}
+            - name: libvirt-tls-client
+              mountPath: /etc/pki/CA/cacert.pem
+              subPath: cacert.pem
+              readOnly: true
+            - name: libvirt-tls-client
+              mountPath: /etc/pki/libvirt/clientcert.pem
+              subPath: clientcert.pem
+              readOnly: true
+            - name: libvirt-tls-client
+              mountPath: /etc/pki/libvirt/private/clientkey.pem
+              subPath: clientkey.pem
+              readOnly: true
+            {{- end }}
+            {{- end }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal "path" "/etc/mysql/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal "path" "/etc/triliovault_datamover/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_datamover.auth.admin.secret.tls.internal "path" "/etc/rabbitmq/certs" | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
@@ -318,6 +348,23 @@ spec:
         - name: etciscsi
           hostPath:
             path: /etc/iscsi
+        {{- if $libvirt_tls.enabled }}
+        {{- if eq $libvirt_tls.source "hostpath" }}
+        - name: etcpkica
+          hostPath:
+            path: /etc/pki/CA
+            type: Directory
+        - name: etcpkilibvirt
+          hostPath:
+            path: /etc/pki/libvirt
+            type: Directory
+        {{- else }}
+        - name: libvirt-tls-client
+          secret:
+            secretName: triliovault-datamover-libvirt-tls
+            defaultMode: 0444
+        {{- end }}
+        {{- end }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_db_triliovault_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.secrets.tls.datamover.datamover_api.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
 {{- dict "enabled" $envAll.Values.manifests.certificates "name" $envAll.Values.endpoints.oslo_messaging_datamover.auth.admin.secret.tls.internal | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
