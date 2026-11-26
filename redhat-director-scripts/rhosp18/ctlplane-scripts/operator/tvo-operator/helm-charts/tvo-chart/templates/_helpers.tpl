@@ -8,6 +8,79 @@
 {{- end -}}
 
 
+{{- define "tvo.ini_value" -}}
+{{- if kindIs "slice" . -}}
+{{- join "," . -}}
+{{- else if kindIs "invalid" . -}}
+{{- else if and (kindIs "float64" .) (eq . (floor .)) -}}
+{{- int64 . -}}
+{{- else -}}
+{{- toString . -}}
+{{- end -}}
+{{- end -}}
+
+
+{{- define "tvo.ini_merge" -}}
+{{- $overrides := .overrides | default dict -}}
+{{- if not $overrides -}}
+{{- .base -}}
+{{- else -}}
+{{- $out := list -}}
+{{- $blanks := list -}}
+{{- $section := "" -}}
+{{- $seen := dict -}}
+{{- $applied := dict -}}
+{{- range $raw := splitList "\n" .base -}}
+{{- $line := trimSuffix "\r" $raw -}}
+{{- if regexMatch `^\s*\[[^\]]+\]\s*$` $line -}}
+{{- range $key, $value := (get $overrides $section | default dict) -}}
+{{- if not (hasKey $applied (printf "%s/%s" $section $key)) -}}
+{{- $out = append $out (printf "%s = %s" $key (include "tvo.ini_value" $value)) -}}
+{{- end -}}
+{{- end -}}
+{{- $out = concat $out $blanks -}}
+{{- $blanks = list -}}
+{{- $section = $line | trim | trimPrefix "[" | trimSuffix "]" | trim -}}
+{{- $_ := set $seen $section true -}}
+{{- $out = append $out $line -}}
+{{- else if eq (trim $line) "" -}}
+{{- $blanks = append $blanks $line -}}
+{{- else -}}
+{{- $out = concat $out $blanks -}}
+{{- $blanks = list -}}
+{{- $key := "" -}}
+{{- if regexMatch `^\s*[^#;\s][^=]*=` $line -}}
+{{- $key = (splitn "=" 2 $line)._0 | trim -}}
+{{- end -}}
+{{- $sectionOverrides := get $overrides $section | default dict -}}
+{{- if and $key (hasKey $sectionOverrides $key) -}}
+{{- $out = append $out (printf "%s = %s" $key (include "tvo.ini_value" (get $sectionOverrides $key))) -}}
+{{- $_ := set $applied (printf "%s/%s" $section $key) true -}}
+{{- else -}}
+{{- $out = append $out $line -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- range $key, $value := (get $overrides $section | default dict) -}}
+{{- if not (hasKey $applied (printf "%s/%s" $section $key)) -}}
+{{- $out = append $out (printf "%s = %s" $key (include "tvo.ini_value" $value)) -}}
+{{- end -}}
+{{- end -}}
+{{- $out = concat $out $blanks -}}
+{{- range $name, $pairs := $overrides -}}
+{{- if not (hasKey $seen $name) -}}
+{{- $out = append $out "" -}}
+{{- $out = append $out (printf "[%s]" $name) -}}
+{{- range $key, $value := ($pairs | default dict) -}}
+{{- $out = append $out (printf "%s = %s" $key (include "tvo.ini_value" $value)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $out -}}
+{{- end -}}
+{{- end -}}
+
+
 {{- define "trilio.workloadmgr.defaultPolicy" -}}
 admin_api:
 - - is_admin:True

@@ -270,6 +270,7 @@ dms:
     s3fuse_sys_admin:
       helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
 workloadmgr:
+  confOverrides: {}
   policyOverrides:
     # Example of overriding a default policy rule
     # workload:workload_delete: rule:admin_api

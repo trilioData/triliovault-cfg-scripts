@@ -278,6 +278,10 @@ spec:
       s3fuse_sys_admin:
         helper_command: "sudo /usr/bin/trilio-dms-rootwrap /etc/triliovault-dms/rootwrap.conf privsep-helper"
   workloadmgr:
+    confOverrides:
+      # Parameters merged into /etc/triliovault-wlm/triliovault-wlm.conf, given as section -> parameter -> value. Uncomment and modify the below lines to add or override parameters.
+      # DEFAULT:
+      #   serial_vm_backup: true
     policyOverrides:
       # Refer file policy-example.yaml for examples of overriding default policy rules. Uncomment and modify the below lines to override specific rules.
       # workload:workload_delete: rule:admin_api
