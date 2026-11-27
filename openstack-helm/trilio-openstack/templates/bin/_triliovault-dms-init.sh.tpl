@@ -23,7 +23,8 @@ chmod 0700 /run/dms/certs
 #     prevents the nova process from writing any log output.
 mkdir -p /var/lib/trilio/triliovault-mounts
 mkdir -p /var/log/triliovault
-chown -R 42424:42424 /var/lib/trilio /var/log/triliovault
+chown 42424:42424 /var/lib/trilio /var/lib/trilio/triliovault-mounts
+chown -R 42424:42424 /var/log/triliovault
 chmod 775 /var/lib/trilio/triliovault-mounts
 
 # Create the dynamic config handoff file.
