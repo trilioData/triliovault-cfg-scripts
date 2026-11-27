@@ -19,6 +19,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # We use 'upgrade --install' to safely apply changes over the existing release
+# --timeout covers the post-install/post-upgrade cloud-trust hook: helm blocks on it,
+# and its retry loop alone can run to 10 x 30s, which exceeds helm's 5m default.
 helm upgrade --install trilio-openstack ./trilio-openstack --namespace=trilio-openstack \
 --values=./trilio-openstack/values_overrides/image_pull_secrets.yaml \
 --values=./trilio-openstack/values_overrides/keystone.yaml \
@@ -28,7 +30,8 @@ helm upgrade --install trilio-openstack ./trilio-openstack --namespace=trilio-op
 --values=./trilio-openstack/values_overrides/ceph.yaml \
 --values=./trilio-openstack/values_overrides/ingress.yaml \
 --values=./trilio-openstack/values_overrides/triliovault_passwords.yaml \
---values=./trilio-openstack/values_overrides/rabbitmq_upgrade_creds.yaml
+--values=./trilio-openstack/values_overrides/rabbitmq_upgrade_creds.yaml \
+--timeout 20m
 
 # Clean up runtime credentials file
 rm -f ./trilio-openstack/values_overrides/rabbitmq_upgrade_creds.yaml
