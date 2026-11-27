@@ -1,0 +1,83 @@
+FROM docker.io/trilio/nova-compute:2024.1-ubuntu-jammy
+MAINTAINER TrilioData shyam.biradar@trilio.io
+
+LABEL name="kolla/trilio-datamover" \
+      maintainer="shyam.biradar@trilio.io" \
+      vendor="TrilioData" \
+      version="5.2.8" \
+      release="5.2" \
+      type="source" \
+      summary="TrilioData Datamover" \
+      description="TrilioData Datamover for OpenStack 2026.1"
+
+# Same as Dockerfile_2025.1_ubuntu, except for the Ceph client (TVAULT-8040).
+# The jammy base ships Ceph Squid 19.2.3 from the Ubuntu Cloud Archive (caracal).
+# Squid before 19.2.6 and Tentacle before 20.2.4 can't read CephX keys of type
+# aes256k (the fix for CVE-2025-30156), which Tentacle clusters create for new
+# clients. The datamover then fails every snapshot with "Could not find any valid
+# ceph key to use". A Tentacle client reads both aes and aes256k keys, so this image
+# moves every installed Ceph package to Tentacle from download.ceph.com, as
+# Dockerfile_2026.1_rocky does with ceph-tentacle.repo. The Ceph release signing key
+# is downloaded from download.ceph.com at build time.
+
+# switch to root and install a custom RPM, etc.
+USER root
+
+##Ceph Tentacle client repo
+## ADD from a URL creates the file as 0600; apt verifies signatures as the _apt user, so make it readable.
+ADD https://download.ceph.com/keys/release.asc /etc/apt/keyrings/ceph.asc
+RUN chmod 644 /etc/apt/keyrings/ceph.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/ceph.asc] https://download.ceph.com/debian-tentacle/ jammy main" \
+      > /etc/apt/sources.list.d/ceph.list
+
+##Install datamover packages
+ADD trilio.list /etc/apt/sources.list.d/
+RUN apt-get update -y
+
+RUN apt-get install -o Dpkg::Options::="--force-confold" -y --only-upgrade \
+      $(dpkg-query -W -f '${Package}\n' | grep -E '^(ceph-|libceph|librados|librbd|librgw|python3-ceph|python3-rados|python3-rbd|python3-rgw)')
+
+RUN apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y nova-common python3-nova \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-novaclient python3-monotonic udev fuse \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y qemu-utils ceph-common python3-libvirt python3-cinderclient \
+    && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y python3-tvault-contego python3-s3-fuse-plugin trilio-streaming-tools --allow-unauthenticated
+
+## Fail the build unless the Ceph client is Tentacle. tvault-contego runs under the
+## system Python (/usr/bin/python3), so check the rbd and rados bindings there.
+RUN ceph --version | grep -q tentacle \
+    && /usr/bin/python3 -c "import rbd, rados" \
+    && ceph --version
+
+RUN /usr/bin/pip3 install azure-storage-blob==12.25.1 azure-core loguru
+
+## Kolla settings
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+
+## Create directory to hold service start scripts
+RUN mkdir -p /opt/triliovault && chown -R nova:nova /opt/triliovault
+
+##Copy conf files
+ADD nova-sudoers-source /etc/sudoers.d/nova-sudoers
+ADD trilio.filters /usr/share/nova/rootwrap/trilio.filters
+RUN usermod -aG disk nova \
+ && usermod -aG kvm nova
+
+RUN mkdir -p /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault-mounts \
+ && mkdir -p /var/triliovault \
+ && chmod 777 /var/triliovault-mounts \
+ && chown nova:nova /var/triliovault \
+ && chmod 777 /var/triliovault
+
+ADD log-rotate-conf /etc/logrotate.d/tvault-contego
+
+##Clean apt repo
+RUN rm -f /etc/apt/sources.list.d/trilio.list
+
+##Add license
+RUN mkdir /licenses
+COPY licensing.txt /licenses
+
+
+##Become nova user for further operations
+USER nova
