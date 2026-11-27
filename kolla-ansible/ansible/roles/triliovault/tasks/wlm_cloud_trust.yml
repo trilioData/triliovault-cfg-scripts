@@ -43,9 +43,7 @@
           - /opt/create_cloud_trust.sh
         state: started
         detach: false
-        # Remove on exit so a re-run creates a fresh container that runs in the
-        # foreground, instead of restarting a stopped one in the background.
-        rm: true
+        recreate: true
         network: host
         volumes:
           - /etc/kolla/triliovault-wlm-api/triliovault-wlm-api.conf:/etc/triliovault-wlm/triliovault-wlm.conf:ro
