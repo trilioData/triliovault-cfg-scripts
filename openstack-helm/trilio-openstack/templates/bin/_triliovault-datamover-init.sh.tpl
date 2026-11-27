@@ -21,7 +21,7 @@ chown nova:nova /var/log/triliovault /var/trilio /var/lib/trilio
 
 # Ensure the triliovault-mounts directory exists and has the correct permissions for the nova user (UID 42424)
 mkdir -p /var/lib/trilio/triliovault-mounts
-chown -R 42424:42424 /var/lib/trilio/triliovault-mounts
+chown 42424:42424 /var/lib/trilio/triliovault-mounts
 chmod 775 /var/lib/trilio/triliovault-mounts
 
 touch /tmp/pod-shared-triliovault-datamover/triliovault-datamover-dynamic-values.conf
